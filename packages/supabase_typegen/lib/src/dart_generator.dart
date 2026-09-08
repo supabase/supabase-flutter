@@ -4,11 +4,14 @@ import 'identifiers.dart';
 import 'schema_description.dart';
 
 class _Binding {
-  const _Binding(this.dartType, this.kind);
+  const _Binding(this.dartType, this.kind, {this.boundKind});
 
   /// The non-nullable Dart type of the column.
   final String dartType;
   final ColumnTypeKind kind;
+
+  /// The kind of the bounds of a [ColumnTypeKind.range] column.
+  final ColumnTypeKind? boundKind;
 }
 
 /// Generates a Dart source file with typed table definitions, row extension
@@ -17,14 +20,17 @@ class _Binding {
 ///
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
-/// `PostgrestColumn` and `PostgrestNullableColumn`).
+/// `PostgrestColumn`, `PostgrestNullableColumn` and `PostgrestRange`).
 String generateDartCode(
   SchemaDescription schema, {
   String importUri = 'package:postgrest/postgrest.dart',
 }) {
   final usesDateColumns = schema.tables.any(
-    (table) =>
-        table.columns.any((column) => column.typeKind == ColumnTypeKind.date),
+    (table) => table.columns.any(
+      (column) =>
+          column.typeKind == ColumnTypeKind.date ||
+          column.boundTypeKind == ColumnTypeKind.date,
+    ),
   );
   // Caller-provided values are encoded before they are written into source:
   // a line terminator in the schema name would escape the comment, and a
@@ -92,6 +98,7 @@ class _TypeNameRegistry {
     'PostgrestTable',
     'PostgrestColumn',
     'PostgrestNullableColumn',
+    'PostgrestRange',
   };
 
   String claim(String name) {
@@ -382,8 +389,48 @@ _Binding _bindingFor(
     ColumnTypeKind.timestampWithTimeZone,
   ),
   ColumnTypeKind.text => const _Binding('String', ColumnTypeKind.text),
+  ColumnTypeKind.range => _Binding(
+    'PostgrestRange<${_boundDartType(column.boundTypeKind)}>',
+    ColumnTypeKind.range,
+    boundKind: column.boundTypeKind,
+  ),
   ColumnTypeKind.json ||
   ColumnTypeKind.unknown => const _Binding('Object', ColumnTypeKind.json),
+};
+
+String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
+  ColumnTypeKind.integer => 'int',
+  ColumnTypeKind.numeric => 'num',
+  ColumnTypeKind.date ||
+  ColumnTypeKind.timestamp ||
+  ColumnTypeKind.timestampWithTimeZone => 'DateTime',
+  ColumnTypeKind.floating ||
+  ColumnTypeKind.boolean ||
+  ColumnTypeKind.text ||
+  ColumnTypeKind.json ||
+  ColumnTypeKind.enumType ||
+  ColumnTypeKind.array ||
+  ColumnTypeKind.range ||
+  ColumnTypeKind.unknown ||
+  null => 'String',
+};
+
+/// The function that reads one bound of a range literal.
+String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
+  ColumnTypeKind.integer => 'int.parse',
+  ColumnTypeKind.numeric => 'num.parse',
+  ColumnTypeKind.date ||
+  ColumnTypeKind.timestamp ||
+  ColumnTypeKind.timestampWithTimeZone => 'DateTime.parse',
+  ColumnTypeKind.floating ||
+  ColumnTypeKind.boolean ||
+  ColumnTypeKind.text ||
+  ColumnTypeKind.json ||
+  ColumnTypeKind.enumType ||
+  ColumnTypeKind.array ||
+  ColumnTypeKind.range ||
+  ColumnTypeKind.unknown ||
+  null => '(bound) => bound',
 };
 
 String _elementDartType(ColumnTypeKind? elementTypeKind) =>
@@ -392,13 +439,14 @@ String _elementDartType(ColumnTypeKind? elementTypeKind) =>
       ColumnTypeKind.floating => 'double',
       ColumnTypeKind.numeric => 'num',
       ColumnTypeKind.boolean => 'bool',
-      // Temporal and enum elements stay in their wire representation, a
-      // documented limitation of array columns.
+      // Temporal, enum and range elements stay in their wire representation,
+      // a documented limitation of array columns.
       ColumnTypeKind.text ||
       ColumnTypeKind.date ||
       ColumnTypeKind.timestamp ||
       ColumnTypeKind.timestampWithTimeZone ||
-      ColumnTypeKind.enumType => 'String',
+      ColumnTypeKind.enumType ||
+      ColumnTypeKind.range => 'String',
       ColumnTypeKind.json ||
       ColumnTypeKind.array ||
       ColumnTypeKind.unknown ||
@@ -450,6 +498,15 @@ String _readExpression(ColumnDescription column, _Binding binding) {
               '${binding.dartType}.fromWire(value as String)',
             )
           : '${binding.dartType}.fromWire($access as String)',
+    ColumnTypeKind.range =>
+      nullable
+          ? _nullableSwitch(
+              access,
+              'PostgrestRange.parse(value as String, '
+              '${_boundParser(binding.boundKind)})',
+            )
+          : 'PostgrestRange.parse($access as String, '
+                '${_boundParser(binding.boundKind)})',
     ColumnTypeKind.json || ColumnTypeKind.unknown => '$access as Object?',
   };
 }
@@ -475,6 +532,24 @@ String _writeExpression(
           ? '$access.toUtc().toIso8601String()'
           : '$parameterName.toUtc().toIso8601String()',
     ColumnTypeKind.enumType => '$access.wireName',
+    ColumnTypeKind.range => switch (binding.boundKind) {
+      ColumnTypeKind.date => '$access.render(_dateString)',
+      ColumnTypeKind.timestamp =>
+        '$access.render((bound) => bound.toIso8601String())',
+      ColumnTypeKind.timestampWithTimeZone =>
+        '$access.render((bound) => bound.toUtc().toIso8601String())',
+      ColumnTypeKind.integer ||
+      ColumnTypeKind.numeric ||
+      ColumnTypeKind.floating ||
+      ColumnTypeKind.boolean ||
+      ColumnTypeKind.text ||
+      ColumnTypeKind.json ||
+      ColumnTypeKind.enumType ||
+      ColumnTypeKind.array ||
+      ColumnTypeKind.range ||
+      ColumnTypeKind.unknown ||
+      null => '$access.literal',
+    },
     ColumnTypeKind.integer ||
     ColumnTypeKind.floating ||
     ColumnTypeKind.numeric ||

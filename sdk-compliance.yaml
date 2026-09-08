@@ -777,6 +777,23 @@ features:
       - PostgrestColumn.expression
       - PostgrestNullableColumn
       - PostgrestNullableColumn.PostgrestNullableColumn
+      - PostgrestRange
+      - PostgrestRange.closedOpen
+      - PostgrestRange.closed
+      - PostgrestRange.open
+      - PostgrestRange.openClosed
+      - PostgrestRange.empty
+      - PostgrestRange.parse
+      - PostgrestRange.lower
+      - PostgrestRange.upper
+      - PostgrestRange.lowerInclusive
+      - PostgrestRange.upperInclusive
+      - PostgrestRange.isEmpty
+      - PostgrestRange.render
+      - PostgrestRange.literal
+      - PostgrestRange.toString
+      - PostgrestRange.==
+      - PostgrestRange.hashCode
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table
@@ -975,26 +992,28 @@ features:
       - PostgrestFilterBuilder.not
   database.using_filters.contains:
     status: implemented
-    note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. The column-expression surface spells the three as separate methods so each takes the operand shape it needs; the string builder takes one list, string or map argument."
+    note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. On the column-expression surface the array and range forms exist only on columns of that type, taking a List or a PostgrestRange, and the JSON form is `containsJson`; the string builder takes one list, string or map argument."
     symbols:
       - PostgrestFilterBuilder.contains
       - PostgrestArrayFilters
       - PostgrestArrayFilters.contains
-      - PostgrestFilterableExpression.containsRange
+      - PostgrestRangeFilters
+      - PostgrestRangeFilters.contains
+      - PostgrestRangeFilters.containsElement
       - PostgrestFilterableExpression.containsJson
   database.using_filters.contained_by:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.containedBy
       - PostgrestArrayFilters.containedBy
-      - PostgrestFilterableExpression.containedByRange
+      - PostgrestRangeFilters.containedBy
       - PostgrestFilterableExpression.containedByJson
   database.using_filters.overlaps:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.overlaps
       - PostgrestArrayFilters.overlaps
-      - PostgrestFilterableExpression.overlapsRange
+      - PostgrestRangeFilters.overlaps
   database.using_filters.match:
     status: implemented
     symbols:
@@ -1013,27 +1032,27 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGt
-      - PostgrestFilterableExpression.rangeGt
+      - PostgrestRangeFilters.rangeGt
   database.using_filters.range_gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGte
-      - PostgrestFilterableExpression.rangeGte
+      - PostgrestRangeFilters.rangeGte
   database.using_filters.range_lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLt
-      - PostgrestFilterableExpression.rangeLt
+      - PostgrestRangeFilters.rangeLt
   database.using_filters.range_lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLte
-      - PostgrestFilterableExpression.rangeLte
+      - PostgrestRangeFilters.rangeLte
   database.using_filters.range_adjacent:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeAdjacent
-      - PostgrestFilterableExpression.rangeAdjacent
+      - PostgrestRangeFilters.rangeAdjacent
   database.using_filters.text_search:
     status: implemented
     symbols:

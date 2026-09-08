@@ -20,7 +20,9 @@ class Books {
   static const id = PostgrestColumn<Book, int>('id');
   static const title = PostgrestColumn<Book, String>('title');
   static const tags = PostgrestColumn<Book, List<String>>('tags');
-  static const ageRange = PostgrestColumn<Book, String>('age_range');
+  static const ageRange = PostgrestColumn<Book, PostgrestRange<int>>(
+    'age_range',
+  );
   static const metadata = PostgrestColumn<Book, Map<String, dynamic>>(
     'metadata',
   );
@@ -273,6 +275,7 @@ void main() {
     });
 
     test('builds the same URLs as the untyped filters', () async {
+      const ages = PostgrestRange.closedOpen(2, 25);
       final filters = {
         Books.id.eq(1): ('id', 'eq.1'),
         Books.id.neq(1): ('id', 'neq.1'),
@@ -287,12 +290,12 @@ void main() {
         Books.id.isDistinct(5): ('id', 'isdistinct.5'),
         Books.tags.contains(['a', 'b']): ('tags', 'cs.{a,b}'),
         Books.tags.containedBy(['a', 'b']): ('tags', 'cd.{a,b}'),
-        Books.ageRange.overlapsRange('[2,25)'): ('age_range', 'ov.[2,25)'),
-        Books.ageRange.rangeLt('[2,25)'): ('age_range', 'sl.[2,25)'),
-        Books.ageRange.rangeGt('[2,25)'): ('age_range', 'sr.[2,25)'),
-        Books.ageRange.rangeGte('[2,25)'): ('age_range', 'nxl.[2,25)'),
-        Books.ageRange.rangeLte('[2,25)'): ('age_range', 'nxr.[2,25)'),
-        Books.ageRange.rangeAdjacent('[2,25)'): ('age_range', 'adj.[2,25)'),
+        Books.ageRange.overlaps(ages): ('age_range', 'ov.[2,25)'),
+        Books.ageRange.rangeLt(ages): ('age_range', 'sl.[2,25)'),
+        Books.ageRange.rangeGt(ages): ('age_range', 'sr.[2,25)'),
+        Books.ageRange.rangeGte(ages): ('age_range', 'nxl.[2,25)'),
+        Books.ageRange.rangeLte(ages): ('age_range', 'nxr.[2,25)'),
+        Books.ageRange.rangeAdjacent(ages): ('age_range', 'adj.[2,25)'),
         Books.title.ilike('%a%'): ('title', 'ilike.%a%'),
         Books.title.likeAllOf(['%a%', '%b%']): ('title', 'like(all).{%a%,%b%}'),
         Books.title.likeAnyOf(['%a%', '%b%']): ('title', 'like(any).{%a%,%b%}'),

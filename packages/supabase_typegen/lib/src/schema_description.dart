@@ -39,6 +39,11 @@ enum ColumnTypeKind {
   /// [ColumnDescription.elementTypeKind].
   array,
 
+  /// A range type such as `int4range` or `tstzrange`, mapped to
+  /// `PostgrestRange`; the bound type is in
+  /// [ColumnDescription.boundTypeKind].
+  range,
+
   /// A type without a specific mapping, treated like [json].
   unknown,
 }
@@ -103,6 +108,7 @@ class ColumnDescription {
     required this.isNullable,
     this.isReadOnly = false,
     this.elementTypeKind,
+    this.boundTypeKind,
     this.enumValues,
     this.foreignKey,
     this.comment,
@@ -120,6 +126,9 @@ class ColumnDescription {
   /// The kind of Dart type of the array elements for [ColumnTypeKind.array]
   /// columns.
   final ColumnTypeKind? elementTypeKind;
+
+  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] columns.
+  final ColumnTypeKind? boundTypeKind;
 
   /// The values of the Postgres enum for enum columns.
   final List<String>? enumValues;
