@@ -43,11 +43,17 @@ void main() {
     return client;
   }
 
-  Future<List<AuthState>> collectBroadcasts(AuthClient auth) async {
+  /// Runs [act] while listening for broadcasts on [auth], then gives a
+  /// message that [act] may have caused time to arrive.
+  Future<List<AuthState>> collectBroadcasts(
+    AuthClient auth,
+    Future<void> Function() act,
+  ) async {
     final broadcasts = <AuthState>[];
     final subscription = auth.onAuthStateChange
         .where((state) => state.fromBroadcast)
         .listen(broadcasts.add);
+    await act();
     await Future<void>.delayed(const Duration(milliseconds: 500));
     await subscription.cancel();
     return broadcasts;
@@ -57,10 +63,12 @@ void main() {
     final appAuth = await initializeApp();
     final serviceClient = createClient('service-role-key');
 
-    final broadcasts = collectBroadcasts(serviceClient.auth);
-    await signInTestUser(appAuth);
+    final broadcasts = await collectBroadcasts(
+      serviceClient.auth,
+      () => signInTestUser(appAuth),
+    );
 
-    expect(await broadcasts, isEmpty);
+    expect(broadcasts, isEmpty);
     expect(serviceClient.auth.currentSession, isNull);
   });
 
@@ -84,10 +92,12 @@ void main() {
     );
     final otherClient = createClient(supabaseKey, persistSession: true);
 
-    final broadcasts = collectBroadcasts(otherClient.auth);
-    await signInTestUser(appAuth);
+    final broadcasts = await collectBroadcasts(
+      otherClient.auth,
+      () => signInTestUser(appAuth),
+    );
 
-    expect(await broadcasts, isEmpty);
+    expect(broadcasts, isEmpty);
     expect(otherClient.auth.currentSession, isNull);
   });
 }

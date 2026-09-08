@@ -19,11 +19,17 @@ void main() {
     return client;
   }
 
-  Future<List<AuthState>> collectBroadcasts(AuthClient auth) async {
+  /// Runs [act] while listening for broadcasts on [auth], then gives a
+  /// message that [act] may have caused time to arrive.
+  Future<List<AuthState>> collectBroadcasts(
+    AuthClient auth,
+    Future<void> Function() act,
+  ) async {
     final broadcasts = <AuthState>[];
     final subscription = auth.onAuthStateChange
         .where((state) => state.fromBroadcast)
         .listen(broadcasts.add);
+    await act();
     await Future<void>.delayed(const Duration(milliseconds: 500));
     await subscription.cancel();
     return broadcasts;
@@ -48,10 +54,12 @@ void main() {
     final sender = createClient(persistSession: true);
     final bystander = createClient(persistSession: false);
 
-    final broadcasts = collectBroadcasts(bystander);
-    await signInTestUser(sender);
+    final broadcasts = await collectBroadcasts(
+      bystander,
+      () => signInTestUser(sender),
+    );
 
-    expect(await broadcasts, isEmpty);
+    expect(broadcasts, isEmpty);
     expect(bystander.currentSession, isNull);
   });
 
@@ -59,10 +67,12 @@ void main() {
     final sender = createClient(persistSession: false);
     final receiver = createClient(persistSession: true);
 
-    final broadcasts = collectBroadcasts(receiver);
-    await signInTestUser(sender);
+    final broadcasts = await collectBroadcasts(
+      receiver,
+      () => signInTestUser(sender),
+    );
 
-    expect(await broadcasts, isEmpty);
+    expect(broadcasts, isEmpty);
     expect(receiver.currentSession, isNull);
   });
 }
