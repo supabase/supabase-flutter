@@ -9,16 +9,17 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     super.autoRefreshToken,
     super.pkceAsyncStorage,
     super.appendPkceFlowIdToRedirects,
+    super.persistSession = true,
     this.localStorage,
     this.detectSessionInUri = true,
     this.detectSessionInUriPredicate,
-    this.persistSession = true,
   });
 
   /// Where the session is persisted.
   ///
   /// Defaults to shared preferences when [persistSession] is `true`, and to
-  /// an in-memory-only storage otherwise.
+  /// an in-memory-only storage otherwise. A custom storage is used regardless
+  /// of [persistSession].
   final LocalStorage? localStorage;
 
   /// If true, the client will start the deep link observer and obtain sessions
@@ -37,13 +38,6 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   /// same parameters for other purposes, or to restrict detection to specific
   /// redirect paths.
   final bool Function(Uri uri)? detectSessionInUriPredicate;
-
-  /// Whether to persist the session to [localStorage].
-  ///
-  /// When false and no [localStorage] is provided, sessions are kept
-  /// in memory only and are not restored across app restarts. Supplying a
-  /// custom [localStorage] always takes precedence over this flag.
-  final bool persistSession;
 
   FlutterAuthClientOptions copyWith({
     AuthFlowType? authFlowType,

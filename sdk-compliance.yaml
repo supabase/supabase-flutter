@@ -2294,7 +2294,7 @@ features:
   client.session_management.persist_session:
     status: implemented
     symbols:
-      - FlutterAuthClientOptions.persistSession
+      - AuthClientOptions.persistSession
       - AuthClient.recoverSession
       - AuthClient.setInitialSession
     supporting_symbols:

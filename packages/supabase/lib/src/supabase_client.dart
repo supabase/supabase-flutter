@@ -98,6 +98,7 @@ class SupabaseClient {
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       authAsyncStorage: authOptions.pkceAsyncStorage,
+      persistSession: authOptions.persistSession,
       authFlowType: authOptions.authFlowType,
       appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
       retryOptions: authOptions.retryOptions,
@@ -344,6 +345,7 @@ class SupabaseClient {
   AuthClient _initSupabaseAuthClient({
     required bool autoRefreshToken,
     required AuthAsyncStorage? authAsyncStorage,
+    required bool persistSession,
     required AuthFlowType authFlowType,
     required bool appendPkceFlowIdToRedirects,
     required SupabaseRetryOptions retryOptions,
@@ -358,6 +360,7 @@ class SupabaseClient {
       autoRefreshToken: autoRefreshToken,
       httpClient: _authApiHttpClient,
       asyncStorage: authAsyncStorage,
+      persistSession: persistSession,
       flowType: authFlowType,
       appendPkceFlowIdToRedirects: appendPkceFlowIdToRedirects,
       retryOptions: retryOptions,
