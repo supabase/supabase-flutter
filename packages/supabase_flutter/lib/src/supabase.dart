@@ -1,14 +1,12 @@
 import 'dart:async';
 
-import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
-import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
-import 'package:supabase_flutter/src/local_storage.dart';
+import 'package:supabase_flutter/src/shared_preferences_auth_async_storage.dart';
 import 'package:supabase_flutter/src/logger.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
@@ -73,17 +71,15 @@ class Supabase {
   /// `storageOptions.retryOptions` configures how an upload to Supabase
   /// storage that failed due to a network interruption is retried.
   ///
-  /// [authOptions] configures authentication behavior. Pass a custom
-  /// [FlutterAuthClientOptions.localStorage] there to override the default
-  /// local storage option used to persist auth.
+  /// [authOptions] configures authentication behavior. The session and the
+  /// pkce code verifiers are stored in shared preferences by default. Pass a
+  /// custom [AuthClientOptions.asyncStorage] there to store them elsewhere, or
+  /// set [AuthClientOptions.persistSession] to false to keep the session in
+  /// memory only.
   ///
   /// Set [AuthClientOptions.authFlowType] on [authOptions] to
   /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
-  ///
-  /// PKCE flow uses shared preferences for storing the code verifier by
-  /// default. Pass a custom storage to [AuthClientOptions.pkceAsyncStorage]
-  /// on [authOptions] to override the behavior.
   ///
   /// All Supabase packages log through `package:logging` using loggers under
   /// the `supabase` hierarchy (for example `supabase.auth` or
@@ -113,23 +109,11 @@ class Supabase {
 
     flutterLogger.config('Initialize Supabase v$version');
 
-    if (authOptions.pkceAsyncStorage == null) {
+    if (authOptions.asyncStorage == null) {
       authOptions = authOptions.copyWith(
-        pkceAsyncStorage: SharedPreferencesAuthAsyncStorage(),
+        asyncStorage: SharedPreferencesAuthAsyncStorage(),
       );
     }
-    if (authOptions.localStorage == null) {
-      authOptions = authOptions.copyWith(
-        localStorage: authOptions.persistSession
-            ? SharedPreferencesLocalStorage(
-                persistSessionKey: defaultPersistSessionKey(url),
-              )
-            : const EmptyLocalStorage(),
-      );
-    }
-    authOptions = authOptions.copyWith(
-      persistSession: authOptions.localStorage is! EmptyLocalStorage,
-    );
     _instance._init(
       url,
       publishableKey,
@@ -148,12 +132,6 @@ class Supabase {
       final supabaseAuth = SupabaseAuth();
       _instance._supabaseAuth = supabaseAuth;
       await supabaseAuth.initialize(options: authOptions);
-
-      // Wrap `recoverSession()` in a `CancelableOperation` so that it can be
-      // canceled in dispose
-      // if still in progress
-      _instance._restoreSessionCancellableOperation =
-          CancelableOperation.fromFuture(supabaseAuth.recoverSession());
     }
 
     flutterLogger.info('Supabase initialization completed');
@@ -187,13 +165,6 @@ class Supabase {
 
   SupabaseAuth? _supabaseAuth;
 
-  /// Wraps the `recoverSession()` call so that it can be terminated when
-  /// `dispose()` is called
-  ///
-  /// Only set when [Supabase.initialize] is called without a custom
-  /// `accessToken`, since session recovery is skipped for third-party auth.
-  CancelableOperation<dynamic>? _restoreSessionCancellableOperation;
-
   // Listener for app lifecycle events to handle Realtime reconnection.
   AppLifecycleListener? _lifecycleListener;
 
@@ -216,12 +187,10 @@ class Supabase {
 
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
-    final restoreSession = _restoreSessionCancellableOperation;
     final pendingLifecycleOperation = _pendingLifecycleOperation;
 
     _client = null;
     _supabaseAuth = null;
-    _restoreSessionCancellableOperation = null;
     _lifecycleListener = null;
     _isInitialized = false;
 
@@ -232,7 +201,6 @@ class Supabase {
     // lifecycle event cannot reach a client that is already torn down.
     await _disposeAll([
       () => supabaseAuth?.dispose(),
-      () => restoreSession?.cancel(),
       () => pendingLifecycleOperation,
       currentClient.dispose,
     ]);

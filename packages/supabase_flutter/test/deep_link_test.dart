@@ -32,16 +32,15 @@ void main() {
       );
       final pkceAsyncStorage = MockAsyncStorage();
       await pkceAsyncStorage.setItem(
-        key: 'supabase.auth.token-code-verifier',
-        value: 'raw-code-verifier',
+        '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
+        'raw-code-verifier',
       );
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockEmptyLocalStorage(),
-          pkceAsyncStorage: pkceAsyncStorage,
+          asyncStorage: pkceAsyncStorage,
         ),
       );
     });
@@ -82,8 +81,7 @@ void main() {
         publishableKey: supabaseKey,
         httpClient: getUserHttpClient,
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockEmptyLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: MockAsyncStorage(),
         ),
       );
 
@@ -121,16 +119,15 @@ void main() {
         );
         final pkceAsyncStorage = MockAsyncStorage();
         await pkceAsyncStorage.setItem(
-          key: 'supabase.auth.token-code-verifier',
-          value: 'raw-code-verifier',
+          '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
+          'raw-code-verifier',
         );
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
-            localStorage: const MockEmptyLocalStorage(),
-            pkceAsyncStorage: pkceAsyncStorage,
+            asyncStorage: pkceAsyncStorage,
             detectSessionInUriPredicate: (uri) => false,
           ),
         );
@@ -153,16 +150,15 @@ void main() {
         );
         final pkceAsyncStorage = MockAsyncStorage();
         await pkceAsyncStorage.setItem(
-          key: 'supabase.auth.token-code-verifier',
-          value: 'raw-code-verifier',
+          '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
+          'raw-code-verifier',
         );
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
-            localStorage: const MockEmptyLocalStorage(),
-            pkceAsyncStorage: pkceAsyncStorage,
+            asyncStorage: pkceAsyncStorage,
             detectSessionInUriPredicate: (uri) {
               receivedUris.add(uri);
               return uri.queryParameters.containsKey('code');
@@ -196,25 +192,22 @@ void main() {
           mockEventChannel: true,
           initialLink: 'com.supabase://callback/?code=my-code-verifier',
         );
-        final pkceAsyncStorage = MockAsyncStorage();
-        await pkceAsyncStorage.setItem(
-          key: 'supabase.auth.token-code-verifier',
-          value: 'raw-code-verifier',
+        final preferences = SharedPreferencesAsync();
+        await preferences.setString(
+          '$persistSessionKey-code-verifier',
+          'raw-code-verifier',
         );
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
           httpClient: pkceHttpClient,
-          authOptions: FlutterAuthClientOptions(
-            pkceAsyncStorage: pkceAsyncStorage,
-          ),
         );
 
         await Supabase.instance.client.auth.onAuthStateChange
             .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
             .timeout(const Duration(seconds: 5));
+        await pumpEventQueue();
 
-        final preferences = SharedPreferencesAsync();
         expect(await preferences.getString(persistSessionKey), isNotNull);
       },
     );
@@ -230,27 +223,25 @@ void main() {
           mockEventChannel: true,
           initialLink: 'com.supabase://callback/?code=my-code-verifier',
         );
-        final pkceAsyncStorage = MockAsyncStorage();
-        await pkceAsyncStorage.setItem(
-          key: 'supabase.auth.token-code-verifier',
-          value: 'raw-code-verifier',
+        final preferences = SharedPreferencesAsync();
+        await preferences.setString(
+          '$persistSessionKey-code-verifier',
+          'raw-code-verifier',
         );
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
           httpClient: pkceHttpClient,
-          authOptions: FlutterAuthClientOptions(
-            pkceAsyncStorage: pkceAsyncStorage,
-            persistSession: false,
-          ),
+          authOptions: const FlutterAuthClientOptions(persistSession: false),
         );
 
         await Supabase.instance.client.auth.onAuthStateChange
             .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
             .timeout(const Duration(seconds: 5));
+        await pumpEventQueue();
 
-        final preferences = SharedPreferencesAsync();
         expect(await preferences.getString(persistSessionKey), isNull);
+        expect(Supabase.instance.client.auth.currentSession, isNotNull);
       },
     );
   });
@@ -272,8 +263,7 @@ void main() {
         publishableKey: supabaseKey,
         httpClient: createGetUserHttpClient('new@email.com'),
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockEmptyLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: MockAsyncStorage(),
         ),
       );
 

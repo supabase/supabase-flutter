@@ -207,7 +207,7 @@ void main() {
   });
 
   group('auth', () {
-    test('the pkce flow asserts when no pkceAsyncStorage is given', () {
+    test('the pkce flow asserts when no asyncStorage is given', () {
       expect(
         () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
         throwsA(
@@ -225,7 +225,7 @@ void main() {
         'http://localhost:1',
         'supabaseKey',
         authOptions: AuthClientOptions(
-          pkceAsyncStorage: MemoryAuthAsyncStorage(),
+          asyncStorage: MemoryAuthAsyncStorage(),
         ),
       );
       addTearDown(supabase.dispose);
@@ -627,8 +627,7 @@ class SupabaseClient extends real.SupabaseClient {
   }) : super(
          authOptions: AuthClientOptions(
            autoRefreshToken: authOptions.autoRefreshToken,
-           pkceAsyncStorage:
-               authOptions.pkceAsyncStorage ?? MemoryAuthAsyncStorage(),
+           asyncStorage: authOptions.asyncStorage ?? MemoryAuthAsyncStorage(),
            authFlowType: authOptions.authFlowType,
          ),
        );

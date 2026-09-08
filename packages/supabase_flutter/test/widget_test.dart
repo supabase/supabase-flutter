@@ -20,8 +20,9 @@ void main() {
         url: supabaseUrl,
         publishableKey: supabaseKey,
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: MockAsyncStorage.withSession(
+            DateTime.now().add(const Duration(hours: 1)),
+          ),
         ),
       ),
     );

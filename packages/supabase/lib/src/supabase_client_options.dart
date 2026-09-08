@@ -32,8 +32,9 @@ class PostgrestClientOptions {
 class AuthClientOptions {
   const AuthClientOptions({
     this.autoRefreshToken = true,
-    this.pkceAsyncStorage,
+    this.asyncStorage,
     this.persistSession = false,
+    this.storageKey,
     this.authFlowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
@@ -50,10 +51,12 @@ class AuthClientOptions {
   /// backoff can squeeze into that window.
   final SupabaseRetryOptions retryOptions;
 
-  /// Storage for the code verifiers of the pkce flow, required when
-  /// [authFlowType] is [AuthFlowType.pkce].
+  /// Storage for the session and the code verifiers of the pkce flow.
   ///
-  /// A persistent implementation is needed whenever the flow can leave the
+  /// Required when [authFlowType] is [AuthFlowType.pkce] or [persistSession]
+  /// is true.
+  ///
+  /// A persistent implementation is needed whenever a pkce flow can leave the
   /// process before the code comes back. Email links do so by definition, and
   /// so does a redirect to an OAuth provider, since the app may be reaped
   /// while it waits and the page context is gone after a web redirect.
@@ -64,17 +67,27 @@ class AuthClientOptions {
   /// listener open. It is also unfit for a server handling more than one user
   /// at a time, because the verifier is held under a single key that
   /// concurrent sign-ins overwrite.
-  final AuthAsyncStorage? pkceAsyncStorage;
+  final AuthAsyncStorage? asyncStorage;
 
-  /// Whether the session is meant to outlive this client.
+  /// Whether the session is written to [asyncStorage] whenever it changes and
+  /// restored from there when the client is created.
   ///
-  /// The client stores nothing itself. On web a persisted session is kept in
-  /// sync across the tabs of the same project, so a sign-in or sign-out in one
-  /// tab reaches the others. Leave it false for a client that must keep its
-  /// own session, such as one created with the service role key next to the
-  /// user's client. `supabase_flutter` persists the session and defaults it to
-  /// true.
+  /// Await `AuthClient.initialized` to know when the restore is done. On web a
+  /// persisted session is also kept in sync across the tabs of the same
+  /// project, so a sign-in or sign-out in one tab reaches the others. Leave it
+  /// false for a client that must keep its own session, such as one created
+  /// with the service role key next to the user's client. `supabase_flutter`
+  /// defaults it to true.
   final bool persistSession;
+
+  /// The key the session is stored under in [asyncStorage].
+  ///
+  /// It also prefixes the keys of the pkce code verifiers and names the
+  /// channel that keeps the tabs of a web app in sync, so clients for
+  /// different projects can share one storage. Defaults to the key the other
+  /// Supabase client libraries derive from the project URL, so a session
+  /// written by one of them is found by the others.
+  final String? storageKey;
 
   /// The auth flow used for sign-in, sign-up, and password recovery.
   final AuthFlowType authFlowType;

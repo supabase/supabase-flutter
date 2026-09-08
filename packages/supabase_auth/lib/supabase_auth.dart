@@ -2,7 +2,11 @@
 library;
 
 export 'package:supabase_common/supabase_common.dart'
-    show SupabaseApiException, SupabaseException, SupabaseRetryOptions;
+    show
+        SupabaseApiException,
+        SupabaseException,
+        SupabaseRetryOptions,
+        defaultPersistSessionKey;
 
 export 'src/constants.dart';
 export 'src/auth_admin_api.dart';

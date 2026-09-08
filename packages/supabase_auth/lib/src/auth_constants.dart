@@ -9,8 +9,10 @@ class AuthConstants {
     'X-Client-Info': buildClientInfoHeader('gotrue-dart', version),
   };
 
-  /// storage key prefix to store code verifiers
-  static const String defaultStorageKey = 'supabase.auth.token';
+  /// The prefix code verifiers were stored under before they were keyed by
+  /// `AuthClient.storageKey`. Still read so a flow started before the change
+  /// can complete.
+  static const String legacyStorageKey = 'supabase.auth.token';
 
   /// Maximum number of PKCE code verifiers kept in storage at once. Starting
   /// another flow beyond this evicts the oldest pending verifier.

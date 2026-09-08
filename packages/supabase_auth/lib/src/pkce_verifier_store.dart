@@ -19,11 +19,19 @@ import 'package:supabase_common/supabase_common.dart';
 /// The verifier of the most recently started flow is also written to the key
 /// that was used before slots existed, so an exchange that cannot identify its
 /// flow keeps working exactly as it did.
+///
+/// Every key is prefixed with [storageKey], so clients for different projects
+/// can share one storage. Keys under [AuthConstants.legacyStorageKey], the
+/// prefix used before, are still read and cleaned up so a flow that started
+/// before the prefix changed can complete.
 @internal
 class PKCEVerifierStore {
-  PKCEVerifierStore(this._storage);
+  PKCEVerifierStore(this._storage, {required this.storageKey});
 
   final AuthAsyncStorage _storage;
+
+  /// The prefix of every key this store writes.
+  final String storageKey;
 
   /// The mutation the next one has to wait for, null while none is in flight.
   ///
@@ -52,12 +60,18 @@ class PKCEVerifierStore {
   /// this store generates is rejected before it is used to build a key.
   static final _flowIdPattern = RegExp(r'^[a-zA-Z0-9_-]{8,64}$');
 
-  static const _legacyKey = '${AuthConstants.defaultStorageKey}-code-verifier';
-  static const _indexKey =
-      '${AuthConstants.defaultStorageKey}-flows-code-verifier';
+  String get _legacyKey => '$storageKey-code-verifier';
+  String get _indexKey => '$storageKey-flows-code-verifier';
 
-  static String _slotKey(String flowId) =>
-      '${AuthConstants.defaultStorageKey}-flow-$flowId-code-verifier';
+  String _slotKey(String flowId) => '$storageKey-flow-$flowId-code-verifier';
+
+  static const _legacyPrefixKey =
+      '${AuthConstants.legacyStorageKey}-code-verifier';
+  static const _legacyPrefixIndexKey =
+      '${AuthConstants.legacyStorageKey}-flows-code-verifier';
+
+  static String _legacyPrefixSlotKey(String flowId) =>
+      '${AuthConstants.legacyStorageKey}-flow-$flowId-code-verifier';
 
   /// Returns [flowId] when it has the shape of a flow id, `null` otherwise.
   static String? validateFlowId(String? flowId) =>
@@ -92,21 +106,21 @@ class PKCEVerifierStore {
     required String flowId,
     required String verifier,
   }) async {
-    await _storage.setItem(key: _slotKey(flowId), value: verifier);
+    await _storage.setItem(_slotKey(flowId), verifier);
 
     final index = (await _readIndex()).where((id) => id != flowId).toList()
       ..add(flowId);
     final evicted = <String>[];
     while (index.length > AuthConstants.pkceMaxConcurrentFlows) {
       final oldest = index.removeAt(0);
-      await _storage.removeItem(key: _slotKey(oldest));
+      await _storage.removeItem(_slotKey(oldest));
       evicted.add(oldest);
     }
-    await _storage.setItem(key: _indexKey, value: jsonEncode(index));
+    await _storage.setItem(_indexKey, jsonEncode(index));
 
     // Mirror the most recently started flow under the key used before slots
     // existed, so an exchange that carries no flow id behaves as it always has.
-    await _storage.setItem(key: _legacyKey, value: verifier);
+    await _storage.setItem(_legacyKey, verifier);
 
     return evicted;
   }
@@ -117,8 +131,15 @@ class PKCEVerifierStore {
   /// A given [flowId] is looked up in its slot only, deliberately without
   /// falling back to the key used before slots existed: submitting another
   /// flow's verifier would spend the single-use auth code.
-  Future<String?> retrieve({String? flowId}) =>
-      _storage.getItem(key: flowId == null ? _legacyKey : _slotKey(flowId));
+  Future<String?> retrieve({String? flowId}) async {
+    final verifier = await _storage.getItem(
+      flowId == null ? _legacyKey : _slotKey(flowId),
+    );
+    return verifier ??
+        await _storage.getItem(
+          flowId == null ? _legacyPrefixKey : _legacyPrefixSlotKey(flowId),
+        );
+  }
 
   /// Removes the verifier of [flowId], or the one of the most recently started
   /// flow when [flowId] is `null`.
@@ -143,28 +164,30 @@ class PKCEVerifierStore {
         ? const <String>[]
         : [
             for (final id in index)
-              if (await _storage.getItem(key: _slotKey(id)) == verifier) id,
+              if (await _storage.getItem(_slotKey(id)) == verifier) id,
           ];
 
     for (final spentFlowId in spentFlowIds) {
-      await _storage.removeItem(key: _slotKey(spentFlowId));
+      await _storage.removeItem(_slotKey(spentFlowId));
+      await _storage.removeItem(_legacyPrefixSlotKey(spentFlowId));
     }
 
     final remaining = index.where((id) => !spentFlowIds.contains(id)).toList();
     if (remaining.length != index.length) {
       if (remaining.isEmpty) {
-        await _storage.removeItem(key: _indexKey);
+        await _storage.removeItem(_indexKey);
       } else {
-        await _storage.setItem(key: _indexKey, value: jsonEncode(remaining));
+        await _storage.setItem(_indexKey, jsonEncode(remaining));
       }
     }
 
     // The legacy key mirrors the most recently started flow, which may be this
     // one. Leaving a spent verifier there would let a later exchange without a
     // flow id reuse it.
-    final legacyVerifier = await _storage.getItem(key: _legacyKey);
-    if (verifier != null && verifier == legacyVerifier) {
-      await _storage.removeItem(key: _legacyKey);
+    for (final key in [_legacyKey, _legacyPrefixKey]) {
+      if (verifier != null && verifier == await _storage.getItem(key)) {
+        await _storage.removeItem(key);
+      }
     }
   }
 
@@ -173,16 +196,21 @@ class PKCEVerifierStore {
 
   Future<void> _removeAll() async {
     for (final flowId in await _readIndex()) {
-      await _storage.removeItem(key: _slotKey(flowId));
+      await _storage.removeItem(_slotKey(flowId));
     }
-    await _storage.removeItem(key: _indexKey);
-    await _storage.removeItem(key: _legacyKey);
+    for (final flowId in await _readIndex(_legacyPrefixIndexKey)) {
+      await _storage.removeItem(_legacyPrefixSlotKey(flowId));
+    }
+    await _storage.removeItem(_indexKey);
+    await _storage.removeItem(_legacyKey);
+    await _storage.removeItem(_legacyPrefixIndexKey);
+    await _storage.removeItem(_legacyPrefixKey);
   }
 
   /// The index goes through the same validation as a flow id read off a URL:
   /// with cookie backed storage its contents are no more trustworthy.
-  Future<List<String>> _readIndex() async {
-    final index = await _storage.getItem(key: _indexKey);
+  Future<List<String>> _readIndex([String? key]) async {
+    final index = await _storage.getItem(key ?? _indexKey);
     if (index == null) {
       return [];
     }

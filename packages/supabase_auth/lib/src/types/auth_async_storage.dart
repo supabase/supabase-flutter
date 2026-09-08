@@ -1,39 +1,42 @@
-/// Interface to provide async storage to store pkce tokens.
+/// Key-value storage the auth client keeps its session and pkce code
+/// verifiers in.
+///
+/// The session is written under `AuthClient.storageKey` whenever it changes
+/// and read back when a client is created, so that it outlives the process.
+/// Code verifiers are stored under keys prefixed with the same key while
+/// their pkce flow is pending.
 abstract class AuthAsyncStorage {
   const AuthAsyncStorage();
 
-  /// Retrieves an item asynchronously from the storage with the key.
-  Future<String?> getItem({required String key});
+  /// Returns the value stored under [key], or `null` when there is none.
+  Future<String?> getItem(String key);
 
-  /// Stores the value asynchronously to the storage with the key.
-  Future<void> setItem({
-    required String key,
-    required String value,
-  });
+  /// Stores [value] under [key], replacing any earlier value.
+  Future<void> setItem(String key, String value);
 
-  /// Removes an item asynchronously from the storage for the given key.
-  Future<void> removeItem({required String key});
+  /// Removes the value stored under [key], if any.
+  Future<void> removeItem(String key);
 }
 
-/// A [AuthAsyncStorage] that keeps the pkce code verifiers in memory only.
+/// An [AuthAsyncStorage] that keeps everything in memory only.
 ///
-/// Everything it holds is lost when the process exits, so a pkce flow started
-/// before a restart can no longer be completed. Use a persistent
-/// implementation when the code exchange happens after the app was closed,
-/// which is what `supabase_flutter` does with shared preferences.
+/// Everything it holds is lost when the process exits, so a session is not
+/// restored after a restart and a pkce flow started before one can no longer
+/// be completed. Use a persistent implementation when either needs to outlive
+/// the process, which is what `supabase_flutter` does with shared preferences.
 class MemoryAuthAsyncStorage extends AuthAsyncStorage {
   final _items = <String, String>{};
 
   @override
-  Future<String?> getItem({required String key}) async => _items[key];
+  Future<String?> getItem(String key) async => _items[key];
 
   @override
-  Future<void> setItem({required String key, required String value}) async {
+  Future<void> setItem(String key, String value) async {
     _items[key] = value;
   }
 
   @override
-  Future<void> removeItem({required String key}) async {
+  Future<void> removeItem(String key) async {
     _items.remove(key);
   }
 }

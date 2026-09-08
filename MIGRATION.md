@@ -997,7 +997,7 @@ client you construct directly no longer takes part unless you ask for it:
 final client = SupabaseClient(
   url,
   publishableKey,
-  authOptions: AuthClientOptions(pkceAsyncStorage: MemoryAuthAsyncStorage()),
+  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
 );
 
 // After: opt in where the session should be shared.
@@ -1005,7 +1005,7 @@ final client = SupabaseClient(
   url,
   publishableKey,
   authOptions: AuthClientOptions(
-    pkceAsyncStorage: MemoryAuthAsyncStorage(),
+    asyncStorage: MemoryAuthAsyncStorage(),
     persistSession: true,
   ),
 );
@@ -1015,24 +1015,144 @@ A client configured with a third-party `accessToken` has no session of its own a
 channel.
 
 `FlutterAuthClientOptions.persistSession` moved up to `AuthClientOptions` and still defaults to
-`true`. In `supabase_flutter` the channel follows the storage that is actually in use: an app that
-passes `persistSession: false`, or `localStorage: const EmptyLocalStorage()`, keeps its session in
-memory and no longer syncs it across tabs, while a custom `localStorage` counts as persisting and
-keeps syncing.
+`true`. An app that passes `persistSession: false` keeps its session in memory and no longer syncs
+it across tabs.
+
+### The auth client persists the session itself
+
+Session persistence used to live in `supabase_flutter`: it listened to `onAuthStateChange` and
+wrote the session to a `LocalStorage`, while the pkce code verifiers went to a separate
+`AuthAsyncStorage` passed as `pkceAsyncStorage`. Customizing where the session lives meant
+implementing two interfaces, and the plain `supabase` package had no session persistence at all.
+
+`AuthClient` now owns both, the way auth-js does. It takes one `AuthAsyncStorage` for the session
+and the code verifiers, writes the session whenever it changes and restores it when the client is
+created. Dart programs that do not use Flutter get session persistence out of it too.
+
+What changed:
+
+- `LocalStorage`, `EmptyLocalStorage`, `SharedPreferencesLocalStorage` and
+  `FlutterAuthClientOptions.localStorage` are gone.
+- `AuthClientOptions.pkceAsyncStorage` is renamed to `asyncStorage` and holds the session as well.
+  `SharedPreferencesAuthAsyncStorage` remains the default of `Supabase.initialize`. On web it writes
+  to `window.localStorage`, so the session is shared with supabase-js under the same key.
+- The methods of `AuthAsyncStorage` take positional parameters: `getItem(key)`,
+  `setItem(key, value)` and `removeItem(key)`.
+- `AuthClientOptions.persistSession` decides whether the session is written and restored. It
+  defaults to `false`, and `FlutterAuthClientOptions` keeps defaulting it to `true`.
+- `AuthClientOptions.storageKey` names the key the session is stored under. It defaults to
+  `defaultPersistSessionKey(url)`, which is `sb-<project-ref>-auth-token`, the same key the other
+  Supabase client libraries use. The key also prefixes the code verifier keys and names the channel
+  that keeps the tabs of a web app in sync.
+- `AuthClient.initialized` completes once the persisted session has been restored.
+  `Supabase.initialize` awaits it, so `currentSession` is set when it returns, as before. When you
+  construct a client yourself, await it before reading the session.
+
+A custom storage implements the one interface and no longer needs to know the key:
+
+```dart
+// Before
+class MySecureStorage extends LocalStorage {
+  MySecureStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
+
+  final storage = FlutterSecureStorage();
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<String?> accessToken() => storage.read(key: persistSessionKey);
+
+  @override
+  Future<bool> hasAccessToken() => storage.containsKey(key: persistSessionKey);
+
+  @override
+  Future<void> persistSession(String persistSessionString) =>
+      storage.write(key: persistSessionKey, value: persistSessionString);
+
+  @override
+  Future<void> removePersistedSession() => storage.delete(key: persistSessionKey);
+}
+
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  authOptions: FlutterAuthClientOptions(
+    localStorage: MySecureStorage(
+      persistSessionKey: defaultPersistSessionKey(url),
+    ),
+  ),
+);
+
+// After
+class MySecureStorage extends AuthAsyncStorage {
+  final storage = FlutterSecureStorage();
+
+  @override
+  Future<String?> getItem(String key) => storage.read(key: key);
+
+  @override
+  Future<void> setItem(String key, String value) =>
+      storage.write(key: key, value: value);
+
+  @override
+  Future<void> removeItem(String key) => storage.delete(key: key);
+}
+
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  authOptions: FlutterAuthClientOptions(asyncStorage: MySecureStorage()),
+);
+```
+
+Keeping the session in memory only is a flag rather than a storage:
+
+```dart
+// Before
+authOptions: FlutterAuthClientOptions(localStorage: const EmptyLocalStorage()),
+
+// After
+authOptions: FlutterAuthClientOptions(persistSession: false),
+```
+
+The code verifiers are still stored in that case, so a sign-in through an email link or an OAuth
+redirect completes even when the app was closed in between.
+
+A Dart program persists the session by passing a storage and opting in:
+
+```dart
+final client = SupabaseClient(
+  url,
+  publishableKey,
+  authOptions: AuthClientOptions(
+    asyncStorage: FileStorage(), // your AuthAsyncStorage
+    persistSession: true,
+  ),
+);
+await client.auth.initialized;
+print(client.auth.currentSession?.user.email);
+```
+
+The code verifiers are stored under `<storageKey>-…` rather than `supabase.auth.token-…`. Verifiers
+under the old prefix are still read and cleaned up, so a sign-in link requested before the update
+still completes after it.
 
 ### The session is persisted with `SharedPreferencesAsync`
 
-`SharedPreferencesLocalStorage` and `SharedPreferencesAuthAsyncStorage`, the storage
-implementations `Supabase.initialize` uses by default, wrote through the legacy
+`SharedPreferencesAuthAsyncStorage`, the storage `Supabase.initialize` uses by default, wrote
+through the legacy
 [`SharedPreferences`](https://pub.dev/packages/shared_preferences#sharedpreferences-vs-sharedpreferencesasync-vs-sharedpreferenceswithcache)
-API. They now use `SharedPreferencesAsync`. On web the session still goes into
+API. It now uses `SharedPreferencesAsync`. On web the session still goes into
 `window.localStorage` under the same key as before, so nothing changes there.
 
 The two APIs do not share a store on every platform, and on the ones where they do the legacy API
-prefixes its keys, so a session written by v2 is invisible to the new one. `initialize()` therefore
-moves an existing session over to `SharedPreferencesAsync` the first time it runs and deletes the
-legacy entry, so your users stay signed in. No code change is needed for this, and there is nothing
-to migrate if you already pass your own `LocalStorage`.
+prefixes its keys, so a session written by v2 is invisible to the new one. The storage therefore
+moves a value over to `SharedPreferencesAsync` the first time it is read and deletes the legacy
+entry, so your users stay signed in. No code change is needed for this, and there is nothing to
+migrate if you pass your own `AuthAsyncStorage`.
 
 What this does mean is that the SDK no longer holds up its end of a mixed setup, and mixing is
 worse than it first looks. How the two APIs relate depends on the platform:
@@ -1050,48 +1170,31 @@ drop preferences your own code wrote through the legacy API. So if your code sti
 [migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache)
 as well. The snippet below is the way out if you cannot do that yet.
 
-If you would rather keep the session in the legacy store for now, pass a `LocalStorage` that reads
-and writes it. Supplying your own storage is also where the session key comes in: `initialize()`
-derives it from your project URL for the default storage, so you only name the key when you
-construct a `LocalStorage` yourself, and `defaultPersistSessionKey` hands you the same one.
+If you would rather keep the session in the legacy store for now, pass an `AuthAsyncStorage` that
+reads and writes it:
 
 ```dart
-class LegacySharedPreferencesLocalStorage extends LocalStorage {
-  LegacySharedPreferencesLocalStorage({required this.persistSessionKey});
-
-  final String persistSessionKey;
-
-  late final SharedPreferences _preferences;
+class LegacySharedPreferencesStorage extends AuthAsyncStorage {
+  Future<SharedPreferences> get _preferences => SharedPreferences.getInstance();
 
   @override
-  Future<void> initialize() async {
-    _preferences = await SharedPreferences.getInstance();
-  }
+  Future<String?> getItem(String key) async =>
+      (await _preferences).getString(key);
 
   @override
-  Future<bool> hasAccessToken() async =>
-      _preferences.containsKey(persistSessionKey);
+  Future<void> setItem(String key, String value) async =>
+      (await _preferences).setString(key, value);
 
   @override
-  Future<String?> accessToken() async =>
-      _preferences.getString(persistSessionKey);
-
-  @override
-  Future<void> removePersistedSession() =>
-      _preferences.remove(persistSessionKey);
-
-  @override
-  Future<void> persistSession(String persistSessionString) =>
-      _preferences.setString(persistSessionKey, persistSessionString);
+  Future<void> removeItem(String key) async =>
+      (await _preferences).remove(key);
 }
 
 await Supabase.initialize(
   url: url,
   publishableKey: publishableKey,
   authOptions: FlutterAuthClientOptions(
-    localStorage: LegacySharedPreferencesLocalStorage(
-      persistSessionKey: defaultPersistSessionKey(url),
-    ),
+    asyncStorage: LegacySharedPreferencesStorage(),
   ),
 );
 ```
@@ -1113,51 +1216,32 @@ setUp(() {
 ```
 
 `shared_preferences_platform_interface` needs to be a `dev_dependency` for that import. Passing
-`FlutterAuthClientOptions(localStorage: const EmptyLocalStorage())` instead skips storage in tests
-altogether.
+`FlutterAuthClientOptions(asyncStorage: MemoryAuthAsyncStorage())` instead keeps the tests away
+from shared preferences altogether.
 
 ### `supabasePersistSessionKey` is gone
 
 The constant existed for the v1 to v2 migration from Hive, which v3 no longer carries, and the SDK
-itself never read it. The session is stored under the key you pass to `LocalStorage`, which for the
-default storage is `sb-<project-ref>-auth-token`.
+itself never read it. The session is stored under `AuthClientOptions.storageKey`, which defaults to
+`sb-<project-ref>-auth-token`.
 
-The `LocalStorage` examples in the README used the constant as their storage key, so if you copied
-one of those, take the key as a parameter instead:
+The `LocalStorage` examples in the README used the constant as their storage key. A custom
+`AuthAsyncStorage` receives the key with every call, so there is nothing to replace it with in the
+storage itself. If you want to keep reading the sessions stored under the constant, pass it as the
+key instead:
 
 ```dart
-// Before
-class MySecureStorage extends LocalStorage {
-  @override
-  Future<String?> accessToken() => storage.read(key: supabasePersistSessionKey);
-  // ...
-}
-
-// After
-class MySecureStorage extends LocalStorage {
-  MySecureStorage({required this.persistSessionKey});
-
-  final String persistSessionKey;
-
-  @override
-  Future<String?> accessToken() => storage.read(key: persistSessionKey);
-  // ...
-}
-
 await Supabase.initialize(
   url: url,
   publishableKey: publishableKey,
   authOptions: FlutterAuthClientOptions(
-    localStorage: MySecureStorage(
-      persistSessionKey: defaultPersistSessionKey(url),
-    ),
+    asyncStorage: MySecureStorage(),
+    storageKey: 'SUPABASE_PERSIST_SESSION_KEY',
   ),
 );
 ```
 
-Passing the key you already store under keeps your users signed in; switching to a different key
-signs them out once. To keep the old value, pass `'SUPABASE_PERSIST_SESSION_KEY'`, which is what the
-constant held.
+Leaving the key at its default signs your users out once instead.
 
 The `MigrationLocalStorage` and `HiveLocalStorage` snippets that migrated a v1 session out of
 [hive](https://pub.dev/packages/hive) are gone from the README along with it. If you are still on

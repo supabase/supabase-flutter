@@ -3,15 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widget_test_stubs.dart';
 
-class _MockLocalStorage extends MockLocalStorage {
-  bool _initializeCalled = false;
-
-  bool get initializeCalled => _initializeCalled;
+class _RecordingStorage extends MockAsyncStorage {
+  final readKeys = <String>[];
 
   @override
-  Future<void> initialize() {
-    _initializeCalled = true;
-    return super.initialize();
+  Future<String?> getItem(String key) {
+    readKeys.add(key);
+    return super.getItem(key);
   }
 }
 
@@ -41,23 +39,35 @@ void main() {
     });
 
     group('Session management', () {
-      test('initializes local storage on initialize', () async {
-        final mockStorage = _MockLocalStorage();
+      test('reads the persisted session on initialize', () async {
+        final mockStorage = _RecordingStorage();
 
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          authOptions: FlutterAuthClientOptions(
-            localStorage: mockStorage,
-            pkceAsyncStorage: MockAsyncStorage(),
-          ),
+          authOptions: FlutterAuthClientOptions(asyncStorage: mockStorage),
         );
 
-        // Give time for initialization to complete
-        await Future.delayed(const Duration(milliseconds: 100));
-
-        expect(mockStorage.initializeCalled, isTrue);
+        expect(mockStorage.readKeys, [defaultPersistSessionKey(supabaseUrl)]);
       });
+
+      test(
+        'does not read the storage when the session is not persisted',
+        () async {
+          final mockStorage = _RecordingStorage();
+
+          await Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            authOptions: FlutterAuthClientOptions(
+              asyncStorage: mockStorage,
+              persistSession: false,
+            ),
+          );
+
+          expect(mockStorage.readKeys, isEmpty);
+        },
+      );
     });
 
     group('Auth state stream error handling', () {
@@ -68,8 +78,7 @@ void main() {
             url: supabaseUrl,
             publishableKey: supabaseKey,
             authOptions: FlutterAuthClientOptions(
-              localStorage: const MockEmptyLocalStorage(),
-              pkceAsyncStorage: MockAsyncStorage(),
+              asyncStorage: MockAsyncStorage(),
             ),
           );
 
@@ -93,32 +102,27 @@ void main() {
     });
 
     group('Session recovery', () {
-      test('handles corrupted session data gracefully', () async {
-        const corruptedStorage = MockExpiredStorage();
-
+      test('restores an expired session', () async {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
           authOptions: FlutterAuthClientOptions(
-            localStorage: corruptedStorage,
-            pkceAsyncStorage: MockAsyncStorage(),
+            asyncStorage: MockAsyncStorage.withSession(
+              DateTime.now().subtract(const Duration(hours: 1)),
+            ),
           ),
         );
 
-        // MockExpiredStorage returns an expired session, not null
         expect(Supabase.instance.client.auth.currentSession, isNotNull);
         expect(Supabase.instance.client.auth.currentSession?.isExpired, isTrue);
       });
 
       test('handles null session during initialization', () async {
-        const emptyStorage = MockEmptyLocalStorage();
-
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
           authOptions: FlutterAuthClientOptions(
-            localStorage: emptyStorage,
-            pkceAsyncStorage: MockAsyncStorage(),
+            asyncStorage: MockAsyncStorage(),
           ),
         );
 

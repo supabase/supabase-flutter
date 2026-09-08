@@ -19,7 +19,7 @@ void main() {
     });
 
     test('has correct default storage key', () {
-      expect(AuthConstants.defaultStorageKey, equals('supabase.auth.token'));
+      expect(AuthConstants.legacyStorageKey, equals('supabase.auth.token'));
     });
 
     test('has correct expiry margin duration', () {
