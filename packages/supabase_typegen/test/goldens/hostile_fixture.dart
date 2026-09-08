@@ -119,6 +119,32 @@ const SchemaDescription hostileSchema = SchemaDescription(
       ],
     ),
   ],
+  relationships: [
+    // A self reference: PostgREST cannot embed it, so no member is generated.
+    RelationshipDescription(
+      foreignKeyName: 'map_list_fkey',
+      sourceTable: 'map',
+      sourceColumns: ['list'],
+      targetTable: 'map',
+      targetColumns: ['list'],
+    ),
+    // Two keys to the same target: the plain table name is ambiguous.
+    RelationshipDescription(
+      foreignKeyName: 'postgrest_table_mood_fkey',
+      sourceTable: 'postgrest_table',
+      sourceColumns: ['mood'],
+      targetTable: 'map',
+      targetColumns: ['list'],
+    ),
+    RelationshipDescription(
+      foreignKeyName: 'postgrest_table_days_fkey',
+      sourceTable: 'postgrest_table',
+      sourceColumns: ['days'],
+      targetTable: 'map',
+      targetColumns: ['list'],
+      isOneToOne: true,
+    ),
+  ],
   enums: [
     EnumDescription(
       qualifiedName: 'public.string',

@@ -53,6 +53,11 @@ class AuthorStats {
   static const bookCount = PostgrestNullableColumn<AuthorStatsRow, int>(
     'book_count',
   );
+
+  /// The `authors` row referenced by `author_id`.
+  static const authors = PostgrestToOneRelation<AuthorStatsRow, AuthorsRow>(
+    'authors',
+  );
 }
 
 /// A row of the `authors` table.
@@ -89,6 +94,13 @@ class Authors {
 
   static const id = PostgrestColumn<AuthorsRow, int>('id');
   static const name = PostgrestColumn<AuthorsRow, String>('name');
+
+  /// The `books` rows referencing this row through `author_id`.
+  static const books = PostgrestToManyRelation<AuthorsRow, BooksRow>('books');
+
+  /// The `author_stats` rows referencing this row through `author_id`.
+  static const authorStats =
+      PostgrestToManyRelation<AuthorsRow, AuthorStatsRow>('author_stats');
 }
 
 /// A row of the `book_prices` table.
@@ -437,6 +449,11 @@ class Books {
   static const title = PostgrestColumn<BooksRow, String>('title');
   static const updatedAt = PostgrestNullableColumn<BooksRow, DateTime>(
     'updated_at',
+  );
+
+  /// The `authors` row referenced by `author_id`.
+  static const authors = PostgrestToOneRelation<BooksRow, AuthorsRow>(
+    'authors',
   );
 }
 

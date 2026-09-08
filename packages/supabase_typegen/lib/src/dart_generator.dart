@@ -20,7 +20,8 @@ class _Binding {
 ///
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
-/// `PostgrestColumn`, `PostgrestNullableColumn` and `PostgrestRange`).
+/// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestRange`,
+/// `PostgrestToOneRelation` and `PostgrestToManyRelation`).
 String generateDartCode(
   SchemaDescription schema, {
   String importUri = 'package:postgrest/postgrest.dart',
@@ -59,9 +60,21 @@ String generateDartCode(
     _writeEnum(buffer, enumDescription, typeName);
   }
 
-  for (final table in schema.tables) {
-    if (table.columns.isEmpty) continue;
-    _writeTable(buffer, table, typeNames, enumTypeNames);
+  final tables = [
+    for (final table in schema.tables)
+      if (table.columns.isNotEmpty) table,
+  ];
+  final tableNames = {
+    for (final table in tables) table.name: _TableNames.claim(table, typeNames),
+  };
+  for (final table in tables) {
+    _writeTable(
+      buffer,
+      table,
+      tableNames[table.name]!,
+      _relationMembers(table, schema, tableNames),
+      enumTypeNames,
+    );
   }
 
   if (usesDateColumns) {
@@ -99,15 +112,11 @@ class _TypeNameRegistry {
     'PostgrestColumn',
     'PostgrestNullableColumn',
     'PostgrestRange',
+    'PostgrestToOneRelation',
+    'PostgrestToManyRelation',
   };
 
-  String claim(String name) {
-    var candidate = name;
-    while (!_used.add(candidate)) {
-      candidate = '$candidate\$';
-    }
-    return candidate;
-  }
+  String claim(String name) => _claimName(_used, name);
 }
 
 void _writeEnum(
@@ -164,21 +173,153 @@ void _writeEnum(
     ..writeln();
 }
 
+/// The generated type names of one table, claimed in a fixed order so a
+/// collision always resolves the same way.
+class _TableNames {
+  const _TableNames({
+    required this.rowType,
+    required this.insertType,
+    required this.updateType,
+    required this.namespaceType,
+  });
+
+  factory _TableNames.claim(
+    TableDescription table,
+    _TypeNameRegistry typeNames,
+  ) {
+    final baseName = pascalCase(table.name);
+    return _TableNames(
+      rowType: typeNames.claim('${baseName}Row'),
+      insertType: table.isInsertable
+          ? typeNames.claim('${baseName}Insert')
+          : null,
+      updateType: table.isUpdatable
+          ? typeNames.claim('${baseName}Update')
+          : null,
+      namespaceType: typeNames.claim(baseName),
+    );
+  }
+
+  final String rowType;
+  final String? insertType;
+  final String? updateType;
+  final String namespaceType;
+}
+
+/// One relation member of a namespace class, before its Dart name is settled
+/// against the table's columns.
+class _RelationMember {
+  const _RelationMember({
+    required this.baseName,
+    required this.disambiguatedName,
+    required this.type,
+    required this.embedName,
+    required this.docLine,
+  });
+
+  /// The name used when nothing else in the namespace claims it.
+  final String baseName;
+
+  /// The name used when [baseName] collides, spelling out the foreign key
+  /// columns.
+  final String disambiguatedName;
+
+  /// `PostgrestToOneRelation<SourceRow, TargetRow>` or the to-many kind.
+  final String type;
+
+  /// The name PostgREST addresses the embed by, with a foreign key hint when
+  /// the plain table name would be ambiguous.
+  final String embedName;
+
+  final String docLine;
+}
+
+/// The relation members of [table]: one to-one member per foreign key it
+/// holds, and one to-many (or to-one, for a unique key) member per foreign
+/// key pointing at it.
+///
+/// A self-referential key produces no member. PostgREST cannot tell the two
+/// directions of such an embed apart and needs a computed relationship, so a
+/// generated member could never be requested.
+List<_RelationMember> _relationMembers(
+  TableDescription table,
+  SchemaDescription schema,
+  Map<String, _TableNames> tableNames,
+) {
+  final members = <_RelationMember>[];
+  for (final relationship in schema.relationships) {
+    final source = tableNames[relationship.sourceTable];
+    final target = tableNames[relationship.targetTable];
+    if (source == null || target == null) continue;
+    if (relationship.sourceTable == relationship.targetTable) continue;
+    final columns = relationship.sourceColumns.join('_');
+    // `By` names the key this table holds, `Via` the key the other table
+    // holds.
+    final byColumns = 'By${pascalCase(columns)}';
+    final viaColumns = 'Via${pascalCase(columns)}';
+
+    if (relationship.sourceTable == table.name) {
+      // Several keys from this table to the same target make the plain
+      // table name ambiguous for PostgREST, so the embed carries the hint.
+      final ambiguous = schema.relationships.any(
+        (other) =>
+            other != relationship &&
+            other.sourceTable == relationship.sourceTable &&
+            other.targetTable == relationship.targetTable,
+      );
+      final targetName = memberIdentifier(relationship.targetTable);
+      members.add(
+        _RelationMember(
+          baseName: ambiguous ? '$targetName$byColumns' : targetName,
+          disambiguatedName: '$targetName$byColumns',
+          type: 'PostgrestToOneRelation<${source.rowType}, ${target.rowType}>',
+          embedName: ambiguous
+              ? '${relationship.targetTable}!${relationship.foreignKeyName}'
+              : relationship.targetTable,
+          docLine:
+              'The `${relationship.targetTable}` row referenced by '
+              '`$columns`.',
+        ),
+      );
+    }
+    if (relationship.targetTable == table.name) {
+      final ambiguous = schema.relationships.any(
+        (other) =>
+            other != relationship &&
+            other.sourceTable == relationship.sourceTable &&
+            other.targetTable == relationship.targetTable,
+      );
+      final sourceName = memberIdentifier(relationship.sourceTable);
+      final kind = relationship.isOneToOne
+          ? 'PostgrestToOneRelation'
+          : 'PostgrestToManyRelation';
+      members.add(
+        _RelationMember(
+          baseName: ambiguous ? '$sourceName$viaColumns' : sourceName,
+          disambiguatedName: '$sourceName$viaColumns',
+          type: '$kind<${target.rowType}, ${source.rowType}>',
+          embedName: ambiguous
+              ? '${relationship.sourceTable}!${relationship.foreignKeyName}'
+              : relationship.sourceTable,
+          docLine:
+              'The `${relationship.sourceTable}` '
+              '${relationship.isOneToOne ? 'row' : 'rows'} referencing this '
+              'row through `$columns`.',
+        ),
+      );
+    }
+  }
+  return members;
+}
+
 void _writeTable(
   StringBuffer buffer,
   TableDescription table,
-  _TypeNameRegistry typeNames,
+  _TableNames names,
+  List<_RelationMember> relations,
   Map<String, String> enumTypeNames,
 ) {
-  final baseName = pascalCase(table.name);
-  final rowType = typeNames.claim('${baseName}Row');
-  final insertType = table.isInsertable
-      ? typeNames.claim('${baseName}Insert')
-      : null;
-  final updateType = table.isUpdatable
-      ? typeNames.claim('${baseName}Update')
-      : null;
-  final namespaceType = typeNames.claim(baseName);
+  final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
 
   final memberNames = _uniqueMemberNames(
     [for (final column in table.columns) column.name],
@@ -221,7 +362,15 @@ void _writeTable(
           'Use the `set…ToNull` methods to write SQL NULL explicitly.',
     );
   }
-  _writeNamespace(buffer, table, namespaceType, rowType, memberNames, bindings);
+  _writeNamespace(
+    buffer,
+    table,
+    namespaceType,
+    rowType,
+    memberNames,
+    bindings,
+    relations,
+  );
 }
 
 void _writeRow(
@@ -329,12 +478,32 @@ void _writeNamespace(
   String rowType,
   Map<String, String> memberNames,
   Map<String, _Binding> bindings,
+  List<_RelationMember> relations,
 ) {
   final columnNames = _uniqueMemberNames(
     [for (final column in table.columns) column.name],
     reserved: {'table', namespaceType},
     existing: memberNames,
   );
+  final used = {'table', namespaceType, ...columnNames.values};
+  final baseNameCounts = <String, int>{};
+  for (final relation in relations) {
+    baseNameCounts.update(
+      relation.baseName,
+      (count) => count + 1,
+      ifAbsent: () => 1,
+    );
+  }
+  final relationNames = [
+    for (final relation in relations)
+      _claimName(
+        used,
+        used.contains(relation.baseName) ||
+                baseNameCounts[relation.baseName]! > 1
+            ? relation.disambiguatedName
+            : relation.baseName,
+      ),
+  ];
 
   buffer
     ..writeln('/// Typed access to the `${table.name}` table.')
@@ -356,6 +525,14 @@ void _writeNamespace(
       '  static const ${columnNames[column.name]} = '
       '$columnType<$rowType, ${binding.dartType}>'
       '(${_stringLiteral(column.name)});',
+    );
+  }
+  for (final (index, relation) in relations.indexed) {
+    buffer.writeln();
+    _writeDocComment(buffer, relation.docLine, indent: '  ');
+    buffer.writeln(
+      '  static const ${relationNames[index]} = '
+      '${relation.type}(${_stringLiteral(relation.embedName)});',
     );
   }
   buffer
@@ -572,15 +749,20 @@ Map<String, String> _uniqueMemberNames(
   Map<String, String>? existing,
 }) {
   final used = {...reserved};
-  final result = <String, String>{};
-  for (final name in names) {
-    var candidate = existing?[name] ?? memberIdentifier(name);
-    while (!used.add(candidate)) {
-      candidate = '$candidate\$';
-    }
-    result[name] = candidate;
+  return {
+    for (final name in names)
+      name: _claimName(used, existing?[name] ?? memberIdentifier(name)),
+  };
+}
+
+/// Adds [candidate] to [used], suffixed with `\$` until no earlier name
+/// matches, and returns the name added.
+String _claimName(Set<String> used, String candidate) {
+  var name = candidate;
+  while (!used.add(name)) {
+    name = '$name\$';
   }
-  return result;
+  return name;
 }
 
 void _writeDocComment(

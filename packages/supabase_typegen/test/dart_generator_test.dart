@@ -91,6 +91,57 @@ void main() {
     );
   });
 
+  test('emits a relation member for each side of a foreign key', () {
+    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstauthors=PostgrestToOneRelation<BooksRow,AuthorsRow>"
+        "('authors'",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstbooks=PostgrestToManyRelation<AuthorsRow,BooksRow>('books'",
+      ),
+    );
+  });
+
+  test('relation members are disambiguated by hint and column', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    // Two keys from postgrest_table to map: both carry the constraint hint,
+    // and `map` itself is renamed like any member that shadows a core name.
+    expect(
+      compact,
+      contains(
+        r"staticconstmap$ByMood=PostgrestToOneRelation<PostgrestTableRow,"
+        "MapRow>('map!postgrest_table_mood_fkey'",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstpostgrestTableViaDays=PostgrestToOneRelation<MapRow,"
+        "PostgrestTableRow>('postgrest_table!postgrest_table_days_fkey'",
+      ),
+    );
+  });
+
+  test('a self-referential key produces no relation member', () {
+    // PostgREST needs a computed relationship to embed a table into itself.
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(compact, isNot(contains('<MapRow,MapRow>')));
+    expect(compact, isNot(contains(r'map$ByList')));
+  });
+
   test('respects a custom import', () {
     final code = generateDartCode(
       schema,

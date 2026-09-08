@@ -226,6 +226,40 @@ void main() {
     expect(authorId.foreignKey?.column, 'id');
   });
 
+  test('collects the relationships between tables of the schema', () {
+    final books = schema.relationships.singleWhere(
+      (relationship) => relationship.sourceTable == 'books',
+    );
+
+    expect(books.foreignKeyName, 'books_author_id_fkey');
+    expect(books.sourceColumns, ['author_id']);
+    expect(books.targetTable, 'authors');
+    expect(books.targetColumns, ['id']);
+    expect(books.isOneToOne, isFalse);
+  });
+
+  test('leaves out relationships into another schema', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+      ],
+      'columns': [_column(tableId: 1, table: 'books', name: 'author_id')],
+      'relationships': [
+        {
+          'foreign_key_name': 'books_author_id_fkey',
+          'schema': 'public',
+          'relation': 'books',
+          'columns': ['author_id'],
+          'referenced_schema': 'private',
+          'referenced_relation': 'authors',
+          'referenced_columns': ['id'],
+        },
+      ],
+    });
+
+    expect(parsed.relationships, isEmpty);
+  });
+
   test('derives type kinds from formats', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     ColumnTypeKind kindOf(String name) =>
