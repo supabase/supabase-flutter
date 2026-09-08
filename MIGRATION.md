@@ -979,6 +979,34 @@ the server to restore both.
 The `ApiVersions` class, and its `ApiVersions.v20240101` field, are removed along with it. Nothing
 replaces them; they only existed to drive the comparison above.
 
+### Cross-tab session sync is opt-in for standalone clients
+
+On web the auth client keeps the tabs of a project in sync through a `BroadcastChannel`, and it
+opened that channel for every client, including a `SupabaseClient` or `AuthClient` you construct
+yourself. Every client for the same project on a page therefore shared one channel: when the app's
+client signed a user in, a standalone client created with the service role key picked the session
+up as well and started sending the user's JWT.
+
+The channel is now only opened when the session is persisted. `AuthClientOptions` and `AuthClient`
+gain `persistSession`, which defaults to `false`. `Supabase.initialize` keeps defaulting it to `true`
+through `FlutterAuthClientOptions`, so an app initialized that way syncs across tabs as before. A
+client you construct directly no longer takes part unless you ask for it:
+
+```dart
+// Before: every client synced its session across tabs.
+final client = SupabaseClient(url, publishableKey);
+
+// After: opt in where the session should be shared.
+final client = SupabaseClient(
+  url,
+  publishableKey,
+  authOptions: AuthClientOptions(persistSession: true),
+);
+```
+
+`FlutterAuthClientOptions.persistSession` moved up to `AuthClientOptions`. Code that passes it keeps
+working, since the Flutter options still accept it and default it to `true`.
+
 ### The session is persisted with `SharedPreferencesAsync`
 
 `SharedPreferencesLocalStorage` and `SharedPreferencesAuthAsyncStorage`, the storage
