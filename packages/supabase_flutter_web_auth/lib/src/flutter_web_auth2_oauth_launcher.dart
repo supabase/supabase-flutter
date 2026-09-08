@@ -7,7 +7,9 @@ import 'oauth_redirect_stub.dart'
 
 /// Runs the OAuth, SSO, and identity-linking flows through a system web
 /// authentication session (`ASWebAuthenticationSession` on Apple platforms,
-/// Custom Tabs on Android and desktop) instead of a plain browser launch.
+/// Custom Tabs on Android) instead of a plain browser launch. On Linux and
+/// Windows, which have no equivalent OS session, the flow runs in an
+/// embedded webview window instead, with its own separate cookie store.
 ///
 /// The session captures the redirect to [redirectTo], closes itself, and
 /// hands the callback URL back, which is exchanged for a session directly —
@@ -17,8 +19,8 @@ import 'oauth_redirect_stub.dart'
 /// Unlike [UrlLauncherOAuthLauncher], this never forces an external browser
 /// for Google sign-in on Android: Custom Tabs runs as Chrome's own sandboxed
 /// process, not an embedded user-agent under the app's control, so it already
-/// satisfies Google's OAuth policy
-/// (https://developers.google.com/identity/protocols/oauth2/resources/best-practices).
+/// satisfies Google's OAuth policy. See
+/// https://developers.google.com/identity/protocols/oauth2/resources/best-practices.
 class FlutterWebAuth2OAuthLauncher extends OAuthLauncher {
   const FlutterWebAuth2OAuthLauncher();
 

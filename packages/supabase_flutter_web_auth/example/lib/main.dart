@@ -102,9 +102,9 @@ class _SignedInView extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        spacing: 16,
         children: [
           Text('Signed in as ${user.email}'),
-          const SizedBox(height: 16),
           TextButton(
             onPressed: () => unawaited(
               Supabase.instance.client.auth.signOut(),

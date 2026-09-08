@@ -46,6 +46,13 @@ features:
       - OAuthProvider
       - OAuthProvider.OAuthProvider
     supporting_symbols:
+      - FlutterAuthClientOptions.oauthLauncher
+      - FlutterWebAuth2OAuthLauncher
+      - FlutterWebAuth2OAuthLauncher.FlutterWebAuth2OAuthLauncher
+      - FlutterWebAuth2OAuthLauncher.launch
+      - OAuthLauncher
+      - OAuthLauncher.OAuthLauncher
+      - OAuthLauncher.launch
       - OAuthProvider.==
       - OAuthProvider.apple
       - OAuthProvider.azure
@@ -77,6 +84,10 @@ features:
       - OAuthResponse.OAuthResponse
       - OAuthResponse.provider
       - OAuthResponse.url
+      - Supabase.oauthLauncher
+      - UrlLauncherOAuthLauncher
+      - UrlLauncherOAuthLauncher.UrlLauncherOAuthLauncher
+      - UrlLauncherOAuthLauncher.launch
   auth.sign_in.sign_in_with_id_token:
     status: implemented
     symbols:

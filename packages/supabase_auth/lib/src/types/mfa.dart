@@ -274,7 +274,7 @@ class AuthMFARecoveryCodesGenerateResponse {
       id: json['id'] as String,
       friendlyName: json['friendly_name'] as String?,
       total: (json['total'] as num).toInt(),
-      codes: codes.cast<String>(),
+      codes: codes.cast(),
     );
   }
 

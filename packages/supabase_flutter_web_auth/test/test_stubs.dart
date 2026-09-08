@@ -17,8 +17,8 @@ class FakeFlutterWebAuth2 extends FlutterWebAuth2Platform
   final String callbackUrl;
 
   String? authenticatedUrl;
-  String? callbackUrlScheme;
-  Map<String, dynamic>? options;
+  String? capturedCallbackUrlScheme;
+  Map<String, dynamic>? capturedOptions;
 
   @override
   Future<String> authenticate({
@@ -27,8 +27,8 @@ class FakeFlutterWebAuth2 extends FlutterWebAuth2Platform
     required Map<String, dynamic> options,
   }) async {
     authenticatedUrl = url;
-    this.callbackUrlScheme = callbackUrlScheme;
-    this.options = options;
+    capturedCallbackUrlScheme = callbackUrlScheme;
+    capturedOptions = options;
     return callbackUrl;
   }
 

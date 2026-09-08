@@ -3,15 +3,18 @@
 Runs [supabase_flutter](https://pub.dev/packages/supabase_flutter)'s
 `signInWithOAuth`, `signInWithSSO`, and `linkIdentity` flows through a system
 web authentication session (`ASWebAuthenticationSession` on iOS/macOS, Custom
-Tabs on Android and desktop) instead of a plain browser launch.
+Tabs on Android) instead of a plain browser launch. On Linux and Windows there
+is no equivalent OS session, so the flow runs in an embedded webview window
+instead (see Setup below).
 
 By default, `supabase_flutter` opens the sign-in URL with `url_launcher`. That
 browser surface does not close itself when the OAuth redirect returns to the
 app, so the user is left on a blank page after a successful sign-in and has to
-dismiss it manually. A system web authentication session is owned by the OS:
-it auto-dismisses and hands the callback URL straight back, and it shares
-cookies with the system browser, so a user already signed in to a provider
-elsewhere isn't asked to sign in again.
+dismiss it manually. This package's launcher always auto-dismisses once the
+redirect arrives. On iOS/macOS and Android it also shares cookies with the
+system browser, so a user already signed in to a provider elsewhere isn't
+asked to sign in again; the embedded webview used on Linux and Windows has its
+own separate cookie store and does not share that session.
 
 This behavior isn't the default in `supabase_flutter` because achieving it
 pulls in `flutter_web_auth_2` and, on Linux/Windows, its own embedded-webview

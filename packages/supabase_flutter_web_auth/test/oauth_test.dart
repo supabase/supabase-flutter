@@ -56,7 +56,7 @@ void main() {
       // scheme is derived from redirectTo.
       expect(fakeWebAuth.authenticatedUrl, contains('/authorize'));
       expect(fakeWebAuth.authenticatedUrl, contains('provider=github'));
-      expect(fakeWebAuth.callbackUrlScheme, 'io.supabase.flutter');
+      expect(fakeWebAuth.capturedCallbackUrlScheme, 'io.supabase.flutter');
 
       // The code from the callback URL is exchanged for a session.
       expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
@@ -76,7 +76,7 @@ void main() {
         preferEphemeral: true,
       );
 
-      expect(fakeWebAuth.options?['preferEphemeral'], true);
+      expect(fakeWebAuth.capturedOptions?['preferEphemeral'], true);
     },
   );
 
@@ -86,9 +86,9 @@ void main() {
       redirectTo: 'https://myapp.com/auth/callback',
     );
 
-    expect(fakeWebAuth.callbackUrlScheme, 'https');
-    expect(fakeWebAuth.options?['httpsHost'], 'myapp.com');
-    expect(fakeWebAuth.options?['httpsPath'], '/auth/callback');
+    expect(fakeWebAuth.capturedCallbackUrlScheme, 'https');
+    expect(fakeWebAuth.capturedOptions?['httpsHost'], 'myapp.com');
+    expect(fakeWebAuth.capturedOptions?['httpsPath'], '/auth/callback');
   });
 
   test(
