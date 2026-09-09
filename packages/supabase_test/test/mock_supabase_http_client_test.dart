@@ -573,4 +573,104 @@ void main() {
       expect(response.user?.email, 'fresh@example.com');
     });
   });
+
+  group('query matching', () {
+    test(
+      'differently filtered reads of one table receive different rows',
+      () async {
+        httpClient.stubTable(
+          'todos',
+          query: {'id': 'eq.1'},
+          rows: [
+            {'id': 1, 'task': 'First'},
+          ],
+        );
+        httpClient.stubTable(
+          'todos',
+          query: {'id': 'eq.2'},
+          rows: [
+            {'id': 2, 'task': 'Second'},
+          ],
+        );
+
+        final first = await supabase
+            .from('todos')
+            .select()
+            .eq('id', 1)
+            .single();
+        final second = await supabase
+            .from('todos')
+            .select()
+            .eq('id', 2)
+            .single();
+
+        expect(first['task'], 'First');
+        expect(second['task'], 'Second');
+      },
+    );
+
+    test('a query stub matches a subset of the request query', () async {
+      httpClient.stubTable('todos', query: {'status': 'eq.true'}, rows: []);
+
+      final done = await supabase
+          .from('todos')
+          .select('id, task')
+          .eq('status', true)
+          .order('id');
+
+      expect(done, isEmpty);
+    });
+
+    test('a query stub does not answer a request without the entry', () async {
+      httpClient.stubTable('todos', query: {'status': 'eq.true'}, rows: []);
+
+      await expectLater(
+        () => supabase.from('todos').select(),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('/rest/v1/todos?status=eq.true'),
+          ),
+        ),
+      );
+    });
+
+    test('a broad stub still answers what the narrow one does not', () async {
+      httpClient.stubTable('todos', rows: []);
+      httpClient.stubTable(
+        'todos',
+        query: {'status': 'eq.false'},
+        rows: [
+          {'id': 1},
+        ],
+      );
+
+      final open = await supabase.from('todos').select().eq('status', false);
+      final all = await supabase.from('todos').select();
+
+      expect(open, hasLength(1));
+      expect(all, isEmpty);
+    });
+
+    test('edge function invocations match on their query parameters', () async {
+      httpClient.stubEdgeFunction(
+        'weather',
+        query: {'city': 'Springfield'},
+        body: {'weather': 'sunny'},
+      );
+      httpClient.stubEdgeFunction(
+        'weather',
+        query: {'city': 'Shelbyville'},
+        body: {'weather': 'rain'},
+      );
+
+      final response = await supabase.functions.invoke(
+        'weather',
+        queryParameters: {'city': 'Shelbyville'},
+      );
+
+      expect(response.data, {'weather': 'rain'});
+    });
+  });
 }

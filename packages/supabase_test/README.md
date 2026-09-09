@@ -88,6 +88,15 @@ Three rules cover most test setups:
   // First select returns [newTodo], every one after that returns [].
   ```
 
+- **`query` narrows a stub to matching query parameters.** The stub answers
+  only requests whose query carries every entry, so differently filtered
+  reads of one table can receive different rows:
+
+  ```dart
+  httpClient.stubTable('todos', query: {'id': 'eq.1'}, rows: [first]);
+  httpClient.stubTable('todos', query: {'id': 'eq.2'}, rows: [second]);
+  ```
+
 - **An unmatched request throws.** The `StateError` names the request and the
   registered stubs, so a typo in a path surfaces as a failing test with the
   mismatch spelled out instead of a silent wrong answer.

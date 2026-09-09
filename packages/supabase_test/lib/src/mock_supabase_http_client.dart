@@ -50,12 +50,14 @@ class _Stub {
   _Stub({
     required this.method,
     required this.path,
+    required this.query,
     required this.respond,
     required this.remaining,
   });
 
   final String? method;
   final String? path;
+  final Map<String, String>? query;
   final FutureOr<StreamedResponse> Function(
     BaseRequest request,
     RecordedRequest recorded,
@@ -74,11 +76,26 @@ class _Stub {
     if (path != null && !_pathMatches(request.url.path, path!)) {
       return false;
     }
+    final query = this.query;
+    if (query != null) {
+      final requestQuery = request.url.queryParameters;
+      for (final MapEntry(:key, :value) in query.entries) {
+        if (requestQuery[key] != value) {
+          return false;
+        }
+      }
+    }
     return true;
   }
 
   @override
-  String toString() => '${method ?? '(any method)'} ${path ?? '(any path)'}';
+  String toString() {
+    final query = this.query;
+    final querySuffix = query == null || query.isEmpty
+        ? ''
+        : '?${Uri(queryParameters: query).query}';
+    return '${method ?? '(any method)'} ${path ?? '(any path)'}$querySuffix';
+  }
 }
 
 /// Whether [requestPath] is [stubPath], or ends in [stubPath] at a segment
@@ -159,7 +176,9 @@ class MockSupabaseHttpClient extends BaseClient {
   /// A null [method] or [path] matches any method or path. [path] matches a
   /// request whose URL path is [path] or ends in it, ignoring the query, so a
   /// stub for `/rest/v1/todos` also answers a project served under a path
-  /// prefix. A [Uint8List]
+  /// prefix. [query] narrows the match further to requests whose query
+  /// carries every one of its entries, so two stubs of the same endpoint can
+  /// answer differently filtered queries. A [Uint8List]
   /// body is sent as is with the content type `application/octet-stream`, any
   /// other body is encoded as JSON, and a null [body] produces an empty
   /// response body. [headers] are added to the response, and override the
@@ -170,6 +189,7 @@ class MockSupabaseHttpClient extends BaseClient {
     Object? body, {
     String? method,
     String? path,
+    Map<String, String>? query,
     int statusCode = 200,
     Map<String, String> headers = const {},
     int? times,
@@ -178,6 +198,7 @@ class MockSupabaseHttpClient extends BaseClient {
       _Stub(
         method: method,
         path: path,
+        query: query,
         remaining: times,
         respond: (request, _) => _response(
           body,
@@ -207,17 +228,19 @@ class MockSupabaseHttpClient extends BaseClient {
   /// );
   /// ```
   ///
-  /// [method], [path] and [times] match as they do for [stub].
+  /// [method], [path], [query] and [times] match as they do for [stub].
   void stubHandler(
     StubHandler handler, {
     String? method,
     String? path,
+    Map<String, String>? query,
     int? times,
   }) {
     _stubs.add(
       _Stub(
         method: method,
         path: path,
+        query: query,
         remaining: times,
         respond: (request, recorded) async {
           final response = await handler(recorded);
@@ -239,7 +262,9 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Stubs the PostgREST endpoint `/rest/v1/[table]` that `select`, `insert`,
   /// `update`, `upsert` and `delete` are served through. A null [method]
   /// matches all of them; pass `'GET'` or `'POST'` to answer reads and writes
-  /// differently.
+  /// differently. [query] narrows the stub to queries carrying the given
+  /// PostgREST filters, `{'id': 'eq.1'}` for example, so differently filtered
+  /// reads of one table receive different rows.
   ///
   /// The response is shaped the way PostgREST shapes it for the request: a
   /// query ending in `single()` receives the only row of a one-row list, or
@@ -250,6 +275,7 @@ class MockSupabaseHttpClient extends BaseClient {
     String table, {
     Object? rows,
     String? method,
+    Map<String, String>? query,
     int statusCode = 200,
     int? count,
     int? times,
@@ -258,6 +284,7 @@ class MockSupabaseHttpClient extends BaseClient {
       rows,
       method: method,
       path: '/rest/v1/$table',
+      query: query,
       statusCode: statusCode,
       count: count,
       times: times,
@@ -272,6 +299,7 @@ class MockSupabaseHttpClient extends BaseClient {
   void stubRpc(
     String function, {
     Object? body,
+    Map<String, String>? query,
     int statusCode = 200,
     int? count,
     int? times,
@@ -279,6 +307,7 @@ class MockSupabaseHttpClient extends BaseClient {
     _stubPostgrest(
       body,
       path: '/rest/v1/rpc/$function',
+      query: query,
       statusCode: statusCode,
       count: count,
       times: times,
@@ -291,12 +320,14 @@ class MockSupabaseHttpClient extends BaseClient {
   void stubEdgeFunction(
     String function, {
     Object? body,
+    Map<String, String>? query,
     int statusCode = 200,
     int? times,
   }) {
     stub(
       body,
       path: '/functions/v1/$function',
+      query: query,
       statusCode: statusCode,
       times: times,
     );
@@ -373,6 +404,7 @@ class MockSupabaseHttpClient extends BaseClient {
     required String path,
     required int statusCode,
     String? method,
+    Map<String, String>? query,
     int? count,
     int? times,
   }) {
@@ -380,6 +412,7 @@ class MockSupabaseHttpClient extends BaseClient {
       _Stub(
         method: method,
         path: path,
+        query: query,
         remaining: times,
         respond: (request, _) => _postgrestResponse(
           body,
