@@ -47,6 +47,22 @@ void main() {
     expect(second.client.auth.currentSession, isNull);
   });
 
+  test('a realtime transport is wired into the client', () async {
+    final urls = <String>[];
+    final supabase = await initializeTestSupabase(
+      httpClient: httpClient,
+      realtimeTransport: (url, headers) {
+        urls.add(url);
+        throw StateError('no socket in this test');
+      },
+    );
+    addTearDown(supabase.dispose);
+
+    await supabase.client.realtime.connect();
+
+    expect(urls.single, startsWith('ws://localhost:54321/realtime/v1'));
+  });
+
   test('the publishable key carries the anon role', () {
     expect(decodeTestJwtClaims(testPublishableKey)['role'], 'anon');
   });

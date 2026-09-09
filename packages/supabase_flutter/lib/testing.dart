@@ -47,9 +47,9 @@ final String testPublishableKey = _unsignedJwt({
 /// pkce code verifier in memory, turns off the token auto refresh so no timer
 /// outlives the test, disables deep link detection so no platform channel is
 /// touched, and defaults [publishableKey] to [testPublishableKey]. Pass a
-/// `MockSupabaseHttpClient` as [httpClient] to answer the requests, and a
-/// `MockRealtimeTransport` through [realtimeClientOptions] to answer the
-/// realtime traffic.
+/// `MockSupabaseHttpClient` as [httpClient] to answer the requests, and the
+/// `call` method of a `MockRealtimeTransport` as [realtimeTransport] to
+/// answer the realtime traffic.
 ///
 /// Dispose the instance when the test ends, for example with
 /// `addTearDown(supabase.dispose)`, so the next test can initialize again.
@@ -59,7 +59,7 @@ Future<Supabase> initializeTestSupabase({
   String url = 'http://localhost:54321',
   String? publishableKey,
   Map<String, String>? headers,
-  RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+  WebSocketTransport? realtimeTransport,
   LocalStorage? localStorage,
   bool autoRefreshToken = false,
 }) {
@@ -68,7 +68,7 @@ Future<Supabase> initializeTestSupabase({
     publishableKey: publishableKey ?? testPublishableKey,
     httpClient: httpClient,
     headers: headers,
-    realtimeClientOptions: realtimeClientOptions,
+    realtimeClientOptions: RealtimeClientOptions(transport: realtimeTransport),
     authOptions: FlutterAuthClientOptions(
       autoRefreshToken: autoRefreshToken,
       localStorage: localStorage ?? const EmptyLocalStorage(),
