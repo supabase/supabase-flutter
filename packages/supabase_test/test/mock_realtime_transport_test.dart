@@ -263,6 +263,15 @@ void main() {
     });
   });
 
+  test('disposing the client forgets its connection and topics', () async {
+    await subscribed(supabase.channel('room'));
+
+    await supabase.dispose();
+
+    expect(realtime.isConnected, isFalse);
+    expect(realtime.joinedTopics, isEmpty);
+  });
+
   test('emitting without a connection names the problem', () {
     expect(
       () => realtime.emitBroadcast('room', event: 'x', payload: {}),

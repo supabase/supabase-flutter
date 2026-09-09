@@ -57,7 +57,7 @@ class MockRealtimeTransport {
   /// echoed them in the join reply, with the ids it assigned.
   final _postgresBindings = <String, List<Map<String, dynamic>>>{};
 
-  final _joinRefs = <String, String?>{};
+  final _joinedTopics = <String>{};
 
   var _nextBindingId = 1;
 
@@ -71,13 +71,16 @@ class MockRealtimeTransport {
 
   /// The topics the client has joined and not left, with their `realtime:`
   /// prefix.
-  List<String> get joinedTopics => _joinRefs.keys.toList();
+  List<String> get joinedTopics => _joinedTopics.toList();
 
   /// Opens a connection; hand this method to
   /// `RealtimeClientOptions.transport`, or the whole object to
   /// `testSupabaseClient`.
   WebSocketChannel call(String url, Map<String, String> headers) {
-    final connection = _MockWebSocketChannel(_onClientMessage);
+    final connection = _MockWebSocketChannel(
+      onMessage: _onClientMessage,
+      onClosed: _onConnectionClosed,
+    );
     _connections.add(connection);
     return connection;
   }
@@ -165,11 +168,8 @@ class MockRealtimeTransport {
   /// Closes the open connection from the server side with [code] and
   /// [reason], so the code under test observes the disconnect and the client
   /// reconnects on its schedule.
-  Future<void> closeConnection({int code = 1000, String? reason}) async {
-    final connection = _openConnection();
-    _joinRefs.clear();
-    _postgresBindings.clear();
-    await connection.closeFromServer(code, reason);
+  Future<void> closeConnection({int code = 1000, String? reason}) {
+    return _openConnection().closeFromServer(code, reason);
   }
 
   _MockWebSocketChannel _openConnection() {
@@ -189,6 +189,14 @@ class MockRealtimeTransport {
   String _prefixed(String topic) =>
       topic.startsWith('realtime:') ? topic : 'realtime:$topic';
 
+  /// Whichever side closed the connection, its channels are gone with it.
+  void _onConnectionClosed(_MockWebSocketChannel connection) {
+    if (_connections.isNotEmpty && connection == _connections.last) {
+      _joinedTopics.clear();
+      _postgresBindings.clear();
+    }
+  }
+
   void _onClientMessage(_MockWebSocketChannel connection, Object? frame) {
     if (frame is! String) {
       // Binary broadcast frames carry no reference to reply to.
@@ -205,14 +213,17 @@ class MockRealtimeTransport {
         final bindings = <Map<String, dynamic>>[
           if (requested is List)
             for (final filter in requested)
-              {...filter as Map, 'id': _nextBindingId++},
+              {
+                ...Map<String, dynamic>.from(filter as Map),
+                'id': _nextBindingId++,
+              },
         ];
         _postgresBindings[message.topic] = bindings;
-        _joinRefs[message.topic] = message.ref;
+        _joinedTopics.add(message.topic);
         response = {'postgres_changes': bindings};
       case 'phx_leave':
         _postgresBindings.remove(message.topic);
-        _joinRefs.remove(message.topic);
+        _joinedTopics.remove(message.topic);
     }
     if (message.ref == null) {
       return;
@@ -233,12 +244,13 @@ class MockRealtimeTransport {
 
 class _MockWebSocketChannel extends StreamChannelMixin<dynamic>
     implements WebSocketChannel {
-  _MockWebSocketChannel(this._onMessage) {
+  _MockWebSocketChannel({required this.onMessage, required this.onClosed}) {
     _sink = _MockWebSocketSink(this);
   }
 
   final void Function(_MockWebSocketChannel connection, Object? frame)
-  _onMessage;
+  onMessage;
+  final void Function(_MockWebSocketChannel connection) onClosed;
   final _toClient = StreamController<dynamic>();
   late final _MockWebSocketSink _sink;
 
@@ -269,7 +281,7 @@ class _MockWebSocketChannel extends StreamChannelMixin<dynamic>
   }
 
   void receive(Object? frame) {
-    _onMessage(this, frame);
+    onMessage(this, frame);
   }
 
   Future<void> closeFromServer(int code, String? reason) async {
@@ -281,6 +293,7 @@ class _MockWebSocketChannel extends StreamChannelMixin<dynamic>
   Future<void> _close() async {
     _sink.markDone();
     if (!_toClient.isClosed) {
+      onClosed(this);
       await _toClient.close();
     }
   }

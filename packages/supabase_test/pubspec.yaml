@@ -1,5 +1,5 @@
 name: supabase_test
-description: Test helpers for apps built on the Supabase Dart and Flutter clients, with mock HTTP clients, JWT builders and auth fixtures.
+description: Test helpers for apps built on the Supabase Dart and Flutter clients, with a mock HTTP client, a mock realtime transport, JWT builders and auth fixtures.
 version: 0.1.1
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_test'

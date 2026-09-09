@@ -2,8 +2,8 @@
 
 Test helpers for apps and packages built on the Supabase Dart and Flutter
 clients. Your tests run against a real `SupabaseClient` whose HTTP layer is
-stubbed per endpoint, so no Supabase stack, network access or hand-rolled
-fakes are needed. The test suites of the Supabase client packages themselves
+stubbed per endpoint and whose realtime socket is served in memory, so no
+Supabase stack, network access or hand-rolled fakes are needed. The test suites of the Supabase client packages themselves
 run on the same primitives.
 
 ## Getting started
