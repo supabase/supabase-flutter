@@ -53,6 +53,7 @@ class Push {
   void resend(Duration newTimeout) {
     _timeout = newTimeout;
     _cancelRefEvent();
+    _cancelTimeout();
     _ref = '';
     _refEvent = null;
     _receivedResponse = null;
