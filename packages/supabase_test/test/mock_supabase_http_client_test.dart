@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
 import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -157,6 +160,316 @@ void main() {
       );
 
       expect(supabase.auth.currentUser?.id, 'custom-id');
+    });
+  });
+
+  group('PostgREST shaping', () {
+    test('single returns the only row of a one-row list', () async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1, 'task': 'Ship it'},
+        ],
+      );
+
+      final todo = await supabase.from('todos').select().eq('id', 1).single();
+
+      expect(todo, {'id': 1, 'task': 'Ship it'});
+    });
+
+    test('single passes a stubbed object through untouched', () async {
+      httpClient.stubTable('todos', rows: {'id': 1, 'task': 'Ship it'});
+
+      final todo = await supabase.from('todos').select().single();
+
+      expect(todo, {'id': 1, 'task': 'Ship it'});
+    });
+
+    test('single fails with PGRST116 when no row matches', () async {
+      httpClient.stubTable('todos', rows: []);
+
+      await expectLater(
+        () => supabase.from('todos').select().single(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having(
+                (exception) => exception.errorCode,
+                'errorCode',
+                'PGRST116',
+              )
+              .having((exception) => exception.statusCode, 'statusCode', 406),
+        ),
+      );
+    });
+
+    test('single fails with PGRST116 when several rows match', () async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1},
+          {'id': 2},
+        ],
+      );
+
+      await expectLater(
+        () => supabase.from('todos').select().single(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (exception) => exception.errorCode,
+            'errorCode',
+            'PGRST116',
+          ),
+        ),
+      );
+    });
+
+    test('single after an insert returns the inserted row', () async {
+      httpClient.stubTable(
+        'todos',
+        method: 'POST',
+        statusCode: 201,
+        rows: [
+          {'id': 1, 'task': 'Write tests'},
+        ],
+      );
+
+      final todo = await supabase
+          .from('todos')
+          .insert({'task': 'Write tests'})
+          .select()
+          .single();
+
+      expect(todo, {'id': 1, 'task': 'Write tests'});
+    });
+
+    test('maybeSingle resolves to null for no rows', () async {
+      httpClient.stubTable('todos', rows: []);
+
+      final todo = await supabase.from('todos').select().maybeSingle();
+
+      expect(todo, isNull);
+    });
+
+    test('an error body is not shaped for single', () async {
+      httpClient.stubTable(
+        'todos',
+        rows: {'message': 'permission denied', 'code': '42501'},
+        statusCode: 403,
+      );
+
+      await expectLater(
+        () => supabase.from('todos').select().single(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (exception) => exception.errorCode,
+            'errorCode',
+            '42501',
+          ),
+        ),
+      );
+    });
+
+    test('count defaults to the number of stubbed rows', () async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1},
+          {'id': 2},
+        ],
+      );
+
+      final response = await supabase
+          .from('todos')
+          .select()
+          .count(CountOption.exact);
+
+      expect(response.data, hasLength(2));
+      expect(response.count, 2);
+    });
+
+    test('an explicit count overrides the number of rows', () async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1},
+        ],
+        count: 42,
+      );
+
+      final response = await supabase
+          .from('todos')
+          .select()
+          .limit(1)
+          .count(CountOption.exact);
+
+      expect(response.data, hasLength(1));
+      expect(response.count, 42);
+    });
+
+    test('a head count carries no body', () async {
+      httpClient.stubTable('todos', rows: [], count: 7);
+
+      final count = await supabase.from('todos').count();
+
+      expect(count, 7);
+      expect(httpClient.requests.single.method, 'HEAD');
+    });
+
+    test('single combined with count', () async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1},
+        ],
+      );
+
+      final response = await supabase
+          .from('todos')
+          .select()
+          .single()
+          .count(CountOption.exact);
+
+      expect(response.data, {'id': 1});
+      expect(response.count, 1);
+    });
+
+    test('no content-range is sent unless a count was asked for', () async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1},
+        ],
+      );
+
+      final response = await httpClient.get(
+        Uri.parse('http://localhost:54321/rest/v1/todos'),
+      );
+
+      expect(response.headers, isNot(contains('content-range')));
+    });
+
+    test('stubRpc shapes a single result', () async {
+      httpClient.stubRpc(
+        'current_profile',
+        body: [
+          {'id': 'user-1'},
+        ],
+      );
+
+      final profile = await supabase.rpc('current_profile').select().single();
+
+      expect(profile, {'id': 'user-1'});
+    });
+  });
+
+  group('stubHandler', () {
+    test('builds the response from the request body', () async {
+      httpClient.stubHandler((request) {
+        final params = request.jsonBody as Map<String, dynamic>;
+        return jsonResponse(params['a'] + params['b']);
+      }, path: '/rest/v1/rpc/add_them');
+
+      final result = await supabase.rpc('add_them', params: {'a': 1, 'b': 2});
+
+      expect(result, 3);
+    });
+
+    test('sees the method and query of an edge function invocation', () async {
+      httpClient.stubHandler((request) {
+        return jsonResponse({
+          'method': request.method,
+          'city': request.url.queryParameters['city'],
+        });
+      }, path: '/functions/v1/where');
+
+      final response = await supabase.functions.invoke(
+        'where',
+        method: HttpMethod.patch,
+        queryParameters: {'city': 'Springfield'},
+      );
+
+      expect(response.data, {'method': 'PATCH', 'city': 'Springfield'});
+    });
+
+    test('chooses the status code per request', () async {
+      httpClient.stubHandler(
+        (request) {
+          final row = request.jsonBody as Map<String, dynamic>;
+          if (row['email'] == 'taken@example.com') {
+            return jsonResponse(
+              {'message': 'duplicate key value', 'code': '23505'},
+              statusCode: 409,
+            );
+          }
+          return jsonResponse([row], statusCode: 201);
+        },
+        method: 'POST',
+        path: '/rest/v1/users',
+      );
+
+      await supabase.from('users').insert({'email': 'free@example.com'});
+
+      await expectLater(
+        () => supabase.from('users').insert({'email': 'taken@example.com'}),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (exception) => exception.errorCode,
+            'errorCode',
+            '23505',
+          ),
+        ),
+      );
+    });
+
+    test('may answer asynchronously with any response', () async {
+      httpClient.stubHandler(
+        (request) async => http.Response('plain text', 200),
+        path: '/functions/v1/text',
+      );
+
+      final response = await supabase.functions.invoke('text');
+
+      expect(response.data, 'plain text');
+    });
+
+    test('encodes non-ASCII JSON as UTF-8', () async {
+      httpClient.stubHandler(
+        (request) => jsonResponse({'greeting': 'こんにちは 👋'}),
+        path: '/functions/v1/hello',
+      );
+
+      final response = await supabase.functions.invoke('hello');
+
+      expect(response.data, {'greeting': 'こんにちは 👋'});
+    });
+  });
+
+  group('binary bodies', () {
+    test('a Uint8List body reaches the caller as bytes', () async {
+      httpClient.stubEdgeFunction(
+        'binary',
+        body: Uint8List.fromList([1, 2, 3]),
+      );
+
+      final response = await supabase.functions.invoke('binary');
+
+      expect(response.data, isA<Uint8List>());
+      expect(response.data, [1, 2, 3]);
+    });
+  });
+
+  group('reset', () {
+    test('forgets the stubs and the recorded requests', () async {
+      httpClient.stubTable('todos', rows: []);
+      await supabase.from('todos').select();
+
+      httpClient.reset();
+
+      expect(httpClient.requests, isEmpty);
+      await expectLater(
+        () => supabase.from('todos').select(),
+        throwsA(isA<StateError>()),
+      );
     });
   });
 }

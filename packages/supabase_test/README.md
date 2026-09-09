@@ -101,6 +101,67 @@ httpClient.stubTable(
 // supabase.from('todos').select() now throws a PostgrestApiException.
 ```
 
+### Single rows and counts
+
+`stubTable` and `stubRpc` shape their rows the way PostgREST would for the
+query that arrives. A query ending in `single()` receives the only row of a
+one-row list, and the `PGRST116` error when the list holds any other number
+of rows, so the same stub serves both a list query and a single-row query:
+
+```dart
+httpClient.stubTable('todos', rows: [
+  {'id': 1, 'task': 'Ship it'},
+]);
+
+final todos = await supabase.from('todos').select();
+final todo = await supabase.from('todos').select().eq('id', 1).single();
+```
+
+A query asking for a count receives the number of stubbed rows, or the
+`count` you pass when the stub represents one page of a larger table:
+
+```dart
+httpClient.stubTable('todos', rows: [{'id': 1}], count: 42);
+
+final page = await supabase
+    .from('todos')
+    .select()
+    .limit(1)
+    .count(CountOption.exact);
+// page.data has one row, page.count is 42.
+```
+
+### Responses that depend on the request
+
+When a fixed body is not enough, `stubHandler` builds the response from the
+request it receives, with the body already read. `jsonResponse` wraps a JSON
+body with the right content type:
+
+```dart
+httpClient.stubHandler(
+  (request) {
+    final params = request.jsonBody as Map<String, dynamic>;
+    return jsonResponse(params['a'] + params['b']);
+  },
+  path: '/rest/v1/rpc/add_them',
+);
+
+httpClient.stubHandler(
+  (request) => request.url.queryParameters['city'] == null
+      ? jsonResponse({'message': 'city is required'}, statusCode: 400)
+      : jsonResponse({'weather': 'sunny'}),
+  path: '/functions/v1/weather',
+);
+```
+
+The handler may be asynchronous and may return any `http.Response`, so a
+plain text or binary edge function response is a `Response.bytes` away. A
+`Uint8List` passed as the body of `stub` or `stubEdgeFunction` is sent as
+bytes with the content type `application/octet-stream`.
+
+A client shared between tests is wiped with `reset`, which forgets the
+registered stubs and the recorded requests.
+
 ## Asserting on requests
 
 The client records every request it answered in `requests`, with the body
@@ -186,6 +247,24 @@ Mocks are for fast unit tests. For integration coverage, run your tests
 against a local Supabase stack started with the
 [Supabase CLI](https://supabase.com/docs/guides/local-development) and point
 your client at the URL and keys `supabase start` prints.
+
+## Migrating from mock_supabase_http_client
+
+The community package `mock_supabase_http_client` kept an in-memory database
+and interpreted every filter, order and limit of a query. `supabase_test`
+takes the other approach and answers each endpoint with what you stub, which
+keeps a test independent of the query it runs and keeps the mock free of
+subtle differences to PostgREST. The pieces map as follows:
+
+- Rows that used to be inserted through the client are passed to `stubTable`
+  as `rows`. The filters of a query are not applied, so stub the rows the
+  query is expected to return.
+- `registerRpcFunction` and `registerEdgeFunction` become `stubRpc` and
+  `stubEdgeFunction` for fixed responses, or `stubHandler` when the response
+  depends on the parameters.
+- `postgrestExceptionTrigger` becomes a stub with an error `statusCode`, or a
+  `stubHandler` that chooses the status per request.
+- `reset` keeps its name.
 
 ## A note on scope
 
