@@ -253,11 +253,11 @@ void main() {
       response.session?.accessToken,
     );
     expect(states.map((state) => state.event), [
-      AuthChangeEvent.signedIn,
       AuthChangeEvent.initialSession,
+      AuthChangeEvent.signedIn,
     ]);
     expect(
-      states.last.session?.accessToken,
+      states.first.session?.accessToken,
       response.session?.accessToken,
     );
   });
@@ -313,6 +313,32 @@ void main() {
 
     expect(client.currentSession?.accessToken, stored.accessToken);
     expect(countingStorage.writes, 0);
+  });
+
+  test('a late subscriber receives the current session as its initial '
+      'event', () async {
+    final client = createClient(persistSession: false);
+    await client.initialized;
+    final response = await client.signInWithPassword(
+      email: email1,
+      password: password,
+    );
+
+    final state = await client.onAuthStateChange.first;
+
+    expect(state.event, AuthChangeEvent.initialSession);
+    expect(state.session?.accessToken, response.session?.accessToken);
+  });
+
+  test('every subscriber receives its own initial event', () async {
+    final client = createClient(persistSession: false);
+    await client.initialized;
+
+    final first = await client.onAuthStateChange.first;
+    final second = await client.onAuthStateChange.first;
+
+    expect(first.event, AuthChangeEvent.initialSession);
+    expect(second.event, AuthChangeEvent.initialSession);
   });
 
   test('a failing storage does not break sign in', () async {

@@ -1047,9 +1047,12 @@ What changed:
 - `AuthClient.initialized` completes once the persisted session has been restored.
   `Supabase.initialize` awaits it, so `currentSession` is set when it returns, as before. When you
   construct a client yourself, await it before reading the session.
-- Every `AuthClient` emits `AuthChangeEvent.initialSession` once it is created, carrying the
-  restored session or `null`, as auth-js does. Before, only `Supabase.initialize` emitted it, so a
-  client you construct yourself now has that event first on `onAuthStateChange`.
+- `AuthChangeEvent.initialSession` is emitted to every new subscriber of `onAuthStateChange` as
+  its first event, carrying the session at that moment or `null`, the way auth-js and
+  supabase-swift do. Before, it was emitted once at startup by `Supabase.initialize` and the stream
+  replayed its latest event to late subscribers. A listener attached after a sign-in now receives
+  `initialSession` with the signed-in session instead of a replayed `signedIn`, and a client you
+  construct yourself gets the event too. Earlier events and errors are no longer replayed.
 
 A custom storage implements the one interface and no longer needs to know the key:
 

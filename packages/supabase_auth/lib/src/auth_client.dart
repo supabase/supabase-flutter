@@ -184,10 +184,11 @@ class AuthClient {
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
 
-  final _onAuthStateChangeController = ReplaySubject<AuthState>();
-  final _onAuthStateChangeControllerSync = ReplaySubject<AuthState>(
-    sync: true,
-  );
+  final _onAuthStateChangeController = StreamController<AuthState>.broadcast();
+  final _onAuthStateChangeControllerSync =
+      StreamController<AuthState>.broadcast(
+        sync: true,
+      );
 
   /// Keeps one code verifier per pending pkce flow. Null when no
   /// [AuthAsyncStorage] was provided, in which case the pkce flow cannot run.
@@ -207,13 +208,13 @@ class AuthClient {
 
   final _initialized = Completer<void>();
 
-  /// Completes once the session persisted by an earlier run has been restored
-  /// and the [AuthChangeEvent.initialSession] event has been emitted.
+  /// Completes once the session persisted by an earlier run has been restored.
   ///
-  /// From then on [currentSession] holds the restored session. A restored
-  /// session that has expired is refreshed in the background, which
-  /// [onAuthStateChange] reports like any other refresh. When the session is
-  /// not persisted the event carries no session and this completes right away.
+  /// From then on [currentSession] holds the restored session, and
+  /// subscribers of [onAuthStateChange] receive their initial event. A
+  /// restored session that has expired is refreshed in the background, which
+  /// [onAuthStateChange] reports like any other refresh. Completes right away
+  /// when the session is not persisted.
   Future<void> get initialized => _initialized.future;
 
   /// The storage writes that have not completed yet, run one after the other
@@ -236,6 +237,11 @@ class AuthClient {
   final bool appendPkceFlowIdToRedirects;
 
   /// Receive a notification every time an auth event happens.
+  ///
+  /// Every subscriber first receives an [AuthChangeEvent.initialSession] with
+  /// the session at that moment, or `null` when there is none, once the
+  /// session persisted by an earlier run has been restored. Earlier events are
+  /// not replayed.
   ///
   /// Network errors (e.g. when the device is offline) are emitted as stream
   /// errors. You **must** supply an `onError` handler when calling `.listen()`,
@@ -265,12 +271,70 @@ class AuthClient {
   /// );
   /// ```
   Stream<AuthState> get onAuthStateChange =>
-      _onAuthStateChangeController.stream;
+      _withInitialSession(_onAuthStateChangeController.stream, sync: false);
 
   /// Don't use this, it's for internal use only.
   @internal
   Stream<AuthState> get onAuthStateChangeSync =>
-      _onAuthStateChangeControllerSync.stream;
+      _withInitialSession(_onAuthStateChangeControllerSync.stream, sync: true);
+
+  /// Wraps [events] so that every subscriber first receives an
+  /// [AuthChangeEvent.initialSession] with the session at that moment.
+  ///
+  /// The initial event waits for [initialized], so a subscriber that arrives
+  /// while the persisted session is still being read gets the restored session
+  /// rather than a null that is about to change. Events that fire in the
+  /// meantime are held back until then, so the initial event stays first.
+  Stream<AuthState> _withInitialSession(
+    Stream<AuthState> events, {
+    required bool sync,
+  }) {
+    return Stream.multi((controller) {
+      var initialSent = false;
+      final held = <void Function()>[];
+
+      void forward(void Function() deliver) {
+        if (initialSent) {
+          deliver();
+        } else {
+          held.add(deliver);
+        }
+      }
+
+      final subscription = events.listen(
+        (state) => forward(() => controller.addSync(state)),
+        onError: (Object error, StackTrace stackTrace) =>
+            forward(() => controller.addErrorSync(error, stackTrace)),
+        onDone: () => forward(controller.closeSync),
+      );
+      controller.onCancel = subscription.cancel;
+
+      void sendInitial() {
+        if (controller.isClosed) {
+          return;
+        }
+        initialSent = true;
+        controller.addSync(
+          AuthState(AuthChangeEvent.initialSession, currentSession),
+        );
+        for (final deliver in held) {
+          deliver();
+        }
+        held.clear();
+      }
+
+      // A completed future runs its callbacks in the zone it was created in,
+      // which is not the subscriber's zone under a fake async clock, so the
+      // initial event is scheduled directly once the restore is done.
+      if (!_initialized.isCompleted) {
+        unawaited(_initialized.future.then((_) => sendInitial()));
+      } else if (sync) {
+        sendInitial();
+      } else {
+        scheduleMicrotask(sendInitial);
+      }
+    }, isBroadcast: true);
+  }
 
   final AuthFlowType _flowType;
 
@@ -1792,15 +1856,14 @@ class AuthClient {
         );
   }
 
-  /// Restores the session persisted by an earlier run, when there is one,
-  /// emits [AuthChangeEvent.initialSession] and completes [initialized].
+  /// Restores the session persisted by an earlier run, when there is one, and
+  /// completes [initialized].
   ///
   /// An expired session is refreshed after [initialized] completes, so that
   /// waiting for the restore never waits for the network.
   Future<void> _restoreSession() async {
     final storage = _asyncStorage;
     if (!_persistSession || storage == null) {
-      notifyAllSubscribers(AuthChangeEvent.initialSession);
       _initialized.complete();
       return;
     }
@@ -1824,8 +1887,7 @@ class AuthClient {
     );
   }
 
-  /// Makes the session persisted in [storage] the current one and emits
-  /// [AuthChangeEvent.initialSession].
+  /// Makes the session persisted in [storage] the current one.
   ///
   /// A value that does not hold a session is removed from the storage. A
   /// sign-in or sign-out that happened while the storage was being read is
@@ -1850,7 +1912,6 @@ class AuthClient {
     }
     if (_sessionVersion != versionBeforeRead) {
       authLogger.fine('Session changed during restore, keeping it');
-      notifyAllSubscribers(AuthChangeEvent.initialSession);
       return null;
     }
     Session? session;
@@ -1870,7 +1931,6 @@ class AuthClient {
         _currentSession = session;
       }
     }
-    notifyAllSubscribers(AuthChangeEvent.initialSession);
     return session != null && session.isExpired ? persisted : null;
   }
 

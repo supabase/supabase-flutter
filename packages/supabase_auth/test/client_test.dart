@@ -634,7 +634,9 @@ void main() {
         stream,
         emitsInOrder([
           predicate<AuthState>(
-            (event) => event.event == AuthChangeEvent.signedIn,
+            (event) =>
+                event.event == AuthChangeEvent.initialSession &&
+                event.session != null,
           ),
           predicate<AuthState>(
             (event) => event.event == AuthChangeEvent.signedOut,
@@ -721,6 +723,9 @@ void main() {
     });
 
     test('Session recovery succeeds after retries', () async {
+      final event = client.onAuthStateChange.firstWhere(
+        (state) => state.event != AuthChangeEvent.initialSession,
+      );
       try {
         await client.recoverSession(
           '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OD'
@@ -744,9 +749,8 @@ void main() {
       } on ClientException {
         // the method should throw
       }
-      final event = await client.onAuthStateChange.first;
       expect(httpClient.retryCount, 4);
-      expect(event.event, AuthChangeEvent.tokenRefreshed);
+      expect((await event).event, AuthChangeEvent.tokenRefreshed);
     });
   });
 

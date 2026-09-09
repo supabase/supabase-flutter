@@ -3,8 +3,10 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// The kind of change reported on `AuthClient.onAuthStateChange`.
 enum AuthChangeEvent {
-  /// Emitted once at startup with the session restored from storage, or
-  /// `null` if there was none.
+  /// Emitted to every new subscriber of `AuthClient.onAuthStateChange` as its
+  /// first event, with the session at that moment or `null` if there is none.
+  /// A subscriber that arrives while a persisted session is still being
+  /// restored receives it once the restore is done.
   initialSession,
 
   /// Emitted after the user follows a password recovery link.

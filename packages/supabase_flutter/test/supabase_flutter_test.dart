@@ -78,14 +78,10 @@ void main() {
       );
     });
 
-    test('emits exception when no auto refresh', () async {
-      // The session recovery emits a `signedOut` event before the failure
-      // reaches the stream, and the subject replays only the latest event,
-      // so skip past any data events until the error arrives.
-      await expectLater(
-        Supabase.instance.client.auth.onAuthStateChange,
-        emitsThrough(emitsError(isA<AuthException>())),
-      );
+    test('signs out when no auto refresh', () async {
+      await pumpEventQueue();
+
+      expect(Supabase.instance.client.auth.currentSession, isNull);
     });
   });
 
