@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 
 /// The code under test: a repository that reads and writes todos.
 class TodoRepository {
-  TodoRepository(this.supabase);
+  const TodoRepository(this.supabase);
 
   final SupabaseClient supabase;
 
