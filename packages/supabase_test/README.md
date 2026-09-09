@@ -222,8 +222,8 @@ run against stubs too.
 For code that inspects tokens, `unsignedTestJwt` and `signedTestJwt` craft
 JWTs carrying exactly the claims you pass, with no auto-injected `iat` and no
 claim overrides, and `decodeTestJwtClaims` reads them back for assertions.
-The fixtures `testUserJson`, `testSessionResponseJson` and `getSessionData`
-produce the JSON shapes the auth server would return.
+The fixtures `testUserJson` and `testSessionResponseJson` produce the JSON
+shapes the auth server would return.
 
 ## Testing realtime
 
