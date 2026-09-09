@@ -58,7 +58,8 @@ void main() {
     );
     addTearDown(supabase.dispose);
 
-    await supabase.client.realtime.connect();
+    supabase.client.channel('room').subscribe();
+    await pumpEventQueue();
 
     expect(urls.single, startsWith('ws://localhost:54321/realtime/v1'));
   });
