@@ -46,8 +46,8 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - name: Trigger publish workflows
         # --order-dependents cannot be used here: melos builds its ordering
-        # graph from dev_dependencies as well, and supabase_testing depends on
-        # supabase while the client packages dev-depend on supabase_testing, so
+        # graph from dev_dependencies as well, and supabase_test depends on
+        # supabase while the client packages dev-depend on supabase_test, so
         # the graph is cyclic and melos exec refuses to run. The dispatch order
         # does not matter, since every tag points at the same release commit and
         # melos publish resolves each package against the workspace.

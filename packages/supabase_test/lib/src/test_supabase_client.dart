@@ -40,7 +40,7 @@ SupabaseClient testSupabaseClient({
 }) {
   return SupabaseClient(
     url,
-    apiKey ?? unsignedTestJwt({'role': 'anon', 'iss': 'supabase_testing'}),
+    apiKey ?? unsignedTestJwt({'role': 'anon', 'iss': 'supabase_test'}),
     httpClient: httpClient,
     authOptions: AuthClientOptions(
       autoRefreshToken: autoRefreshToken,

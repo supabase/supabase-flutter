@@ -1,4 +1,4 @@
-# supabase_testing
+# supabase_test
 
 Test helpers for apps and packages built on the Supabase Dart and Flutter
 clients. Your tests run against a real `SupabaseClient` whose HTTP layer is
@@ -12,14 +12,14 @@ Add the package as a dev dependency:
 
 ```yaml
 dev_dependencies:
-  supabase_testing: ^0.1.0
+  supabase_test: ^0.1.0
 ```
 
 Create a client with `testSupabaseClient`, hand it a `MockSupabaseHttpClient`,
 and stub the endpoints the code under test talks to:
 
 ```dart
-import 'package:supabase_testing/supabase_testing.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 void main() {
