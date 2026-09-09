@@ -144,6 +144,41 @@ void main() {
     );
   });
 
+  group('SharedPreferencesAuthAsyncStorage operation order', () {
+    const sessionKey = 'sb-test-auth-token';
+
+    test(
+      'a write during a legacy migration wins over the legacy value',
+      () async {
+        mockSharedPreferences();
+        SharedPreferencesStorePlatform.instance = _SlowLegacyStore({
+          'flutter.$sessionKey': '{"key": "legacy"}',
+        });
+        final storage = SharedPreferencesAuthAsyncStorage();
+
+        final read = storage.getItem(sessionKey);
+        await storage.setItem(sessionKey, '{"key": "new"}');
+
+        expect(await read, '{"key": "legacy"}');
+        expect(await storage.getItem(sessionKey), '{"key": "new"}');
+      },
+    );
+
+    test('a removal during a legacy migration is not undone', () async {
+      mockSharedPreferences();
+      SharedPreferencesStorePlatform.instance = _SlowLegacyStore({
+        'flutter.$sessionKey': '{"key": "legacy"}',
+      });
+      final storage = SharedPreferencesAuthAsyncStorage();
+
+      final read = storage.getItem(sessionKey);
+      await storage.removeItem(sessionKey);
+
+      expect(await read, '{"key": "legacy"}');
+      expect(await storage.getItem(sessionKey), isNull);
+    });
+  });
+
   group('SharedPreferencesAuthAsyncStorage migration of a v2 verifier', () {
     const codeVerifierKey = 'supabase.auth.token-code-verifier';
     const codeVerifier = 'raw-code-verifier';
@@ -181,6 +216,35 @@ void main() {
       expect(await SharedPreferencesAsync().getKeys(), isEmpty);
     });
   });
+}
+
+/// Stands in for a legacy store that takes a while to answer, so that another
+/// operation can be started while a migration is still reading it.
+class _SlowLegacyStore extends SharedPreferencesStorePlatform {
+  _SlowLegacyStore(this._data);
+
+  final Map<String, Object> _data;
+
+  @override
+  Future<bool> clear() => throw UnimplementedError();
+
+  @override
+  Future<Map<String, Object>> getAll() async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return Map.of(_data);
+  }
+
+  @override
+  Future<bool> remove(String key) async {
+    _data.remove(key);
+    return true;
+  }
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    _data[key] = value;
+    return true;
+  }
 }
 
 /// Stands in for a legacy store that can be read but not written.

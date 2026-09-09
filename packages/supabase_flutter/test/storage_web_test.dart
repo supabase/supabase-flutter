@@ -15,6 +15,7 @@ void main() {
 
     setUp(() {
       window.localStorage.clear();
+      SharedPreferences.setMockInitialValues({});
       storage = SharedPreferencesAuthAsyncStorage();
     });
 
@@ -56,6 +57,16 @@ void main() {
       window.localStorage.setItem(testKey, '"not json');
 
       expect(await storage.getItem(testKey), '"not json');
+    });
+
+    test('removeItem also removes the value of the legacy API', () async {
+      SharedPreferences.setMockInitialValues({testKey: 'legacy-session'});
+
+      await storage.removeItem(testKey);
+
+      expect(await storage.getItem(testKey), isNull);
+      final legacyPreferences = await SharedPreferences.getInstance();
+      expect(legacyPreferences.getString(testKey), isNull);
     });
 
     test('moves a verifier written by the legacy API over', () async {

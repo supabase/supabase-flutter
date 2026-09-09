@@ -37,16 +37,38 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
   /// same thing.
   final _legacyChecked = <String>{};
 
+  /// The operation the next one has to wait for.
+  ///
+  /// A read that moves a legacy value over yields while it consults the legacy
+  /// store. Were a write allowed to run in the meantime, the migration would
+  /// finish by putting the legacy value over the value just written, or by
+  /// bringing back a session that was just signed out of.
+  Future<void> _operations = Future.value();
+
+  Future<T> _serialize<T>(Future<T> Function() operation) {
+    final result = _operations.then((_) => operation());
+    _operations = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
   @override
-  Future<String?> getItem(String key) async {
+  Future<String?> getItem(String key) => _serialize(() => _getItem(key));
+
+  @override
+  Future<void> setItem(String key, String value) =>
+      _serialize(() => _setItem(key, value));
+
+  @override
+  Future<void> removeItem(String key) => _serialize(() => _removeItem(key));
+
+  Future<String?> _getItem(String key) async {
     if (_useWebLocalStorage) {
       return _webItem(key) ?? await _migrateLegacyWebItem(key);
     }
     return await _preferences.getString(key) ?? await _migrateLegacyItem(key);
   }
 
-  @override
-  Future<void> setItem(String key, String value) async {
+  Future<void> _setItem(String key, String value) async {
     if (_useWebLocalStorage) {
       web.setItem(key, value);
       return;
@@ -54,10 +76,10 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
     await _preferences.setString(key, value);
   }
 
-  @override
-  Future<void> removeItem(String key) async {
+  Future<void> _removeItem(String key) async {
     if (_useWebLocalStorage) {
       web.removeItem(key);
+      await _retireLegacyWebItem(key);
       return;
     }
     await _preferences.remove(key);
@@ -115,6 +137,27 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
         stackTrace,
       );
       return null;
+    }
+  }
+
+  /// Deletes the value the legacy [SharedPreferences] API holds for [key], so
+  /// that a later read cannot move a value over that was removed on purpose.
+  Future<void> _retireLegacyWebItem(String key) async {
+    if (_legacyChecked.contains(key)) {
+      return;
+    }
+    try {
+      final legacyPreferences = await SharedPreferences.getInstance();
+      _legacyChecked.add(key);
+      if (legacyPreferences.containsKey(key)) {
+        await _removeLegacyItem(legacyPreferences, key);
+      }
+    } catch (error, stackTrace) {
+      flutterLogger.warning(
+        'Could not read the legacy store',
+        error,
+        stackTrace,
+      );
     }
   }
 
