@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
-import 'package:supabase_test/supabase_test.dart';
+import 'package:supabase_test/internal.dart';
 
 class CustomHttpClient extends BaseClient {
   /// List of received requests by the client.

@@ -1,9 +1,10 @@
 /// Test helpers for apps and packages built on the Supabase clients.
 ///
-/// Holds the mock HTTP clients, JWT builders, auth fixtures and realtime
-/// frames that the test suites of the client packages themselves run on,
-/// published so that apps can test code that talks to Supabase without a
-/// running stack.
+/// Holds the mock HTTP client, JWT builders, auth fixtures and realtime
+/// frames an app needs to test code that talks to Supabase without a running
+/// stack. The test suites of the client packages themselves run on the same
+/// primitives, and keep the fixtures only they need in
+/// `package:supabase_test/internal.dart`.
 ///
 /// Everything here is annotated with `@visibleForTesting`, so the analyzer
 /// warns when a helper leaks outside of test code.
