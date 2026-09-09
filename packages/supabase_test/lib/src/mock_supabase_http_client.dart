@@ -12,6 +12,7 @@ import 'package:meta/meta.dart';
 
 import 'mock_http_clients.dart';
 import 'session_fixture.dart';
+import 'storage_fixture.dart';
 import 'test_jwt.dart';
 
 /// A request a [MockSupabaseHttpClient] has answered, with its body already
@@ -383,6 +384,119 @@ class MockSupabaseHttpClient extends BaseClient {
   /// so `getUser` and `updateUser` succeed.
   void stubUser({Map<String, dynamic>? user, int? times}) {
     stub(user ?? testUserJson(), path: '/auth/v1/user', times: times);
+  }
+
+  /// Answers an upload of [path] to [bucket], whether through `upload`,
+  /// `uploadBinary`, `update` or `updateBinary`, with the object key and [id]
+  /// the storage API reports.
+  void stubStorageUpload(
+    String bucket,
+    String path, {
+    String id = 'test-object-id',
+    int statusCode = 200,
+    int? times,
+  }) {
+    final objectPath = _storageObjectPath(bucket, path);
+    for (final method in ['POST', 'PUT']) {
+      stub(
+        {'Key': '$bucket/${_cleanStoragePath(path)}', 'Id': id},
+        method: method,
+        path: '/storage/v1/object/$objectPath',
+        statusCode: statusCode,
+        times: times,
+      );
+    }
+  }
+
+  /// Answers a `download` of [path] from [bucket] with [bytes], whether or
+  /// not an image transformation was requested.
+  void stubStorageDownload(
+    String bucket,
+    String path, {
+    required Uint8List bytes,
+    String contentType = 'application/octet-stream',
+    int statusCode = 200,
+    int? times,
+  }) {
+    final objectPath = _storageObjectPath(bucket, path);
+    for (final endpoint in ['object', 'render/image/authenticated']) {
+      stub(
+        bytes,
+        method: 'GET',
+        path: '/storage/v1/$endpoint/$objectPath',
+        statusCode: statusCode,
+        headers: {'content-type': contentType},
+        times: times,
+      );
+    }
+  }
+
+  /// Answers `createSignedUrl` for [path] in [bucket] with a URL carrying
+  /// [token], so the returned URL is
+  /// `<project>/storage/v1/object/sign/<bucket>/<path>?token=<token>`.
+  void stubStorageSignedUrl(
+    String bucket,
+    String path, {
+    String token = 'test-token',
+    int statusCode = 200,
+    int? times,
+  }) {
+    final objectPath = _storageObjectPath(bucket, path);
+    stub(
+      {'signedURL': '/object/sign/$objectPath?token=$token'},
+      method: 'POST',
+      path: '/storage/v1/object/sign/$objectPath',
+      statusCode: statusCode,
+      times: times,
+    );
+  }
+
+  /// Answers `list` on [bucket] with [objects], each in the JSON shape of a
+  /// `FileObject`, which [storageObjectJson] produces.
+  void stubStorageList(
+    String bucket, {
+    required List<Map<String, dynamic>> objects,
+    int statusCode = 200,
+    int? times,
+  }) {
+    stub(
+      objects,
+      method: 'POST',
+      path: '/storage/v1/object/list/$bucket',
+      statusCode: statusCode,
+      times: times,
+    );
+  }
+
+  /// Answers `remove` on [bucket] with the objects at [paths], as the storage
+  /// API reports the deleted objects.
+  void stubStorageRemove(
+    String bucket, {
+    required List<String> paths,
+    int statusCode = 200,
+    int? times,
+  }) {
+    stub(
+      [
+        for (final path in paths)
+          storageObjectJson(_cleanStoragePath(path), bucketId: bucket),
+      ],
+      method: 'DELETE',
+      path: '/storage/v1/object/$bucket',
+      statusCode: statusCode,
+      times: times,
+    );
+  }
+
+  /// The `<bucket>/<path>` the storage client puts in its URLs, with every
+  /// path segment percent-encoded the way the client encodes it.
+  String _storageObjectPath(String bucket, String path) {
+    final encoded = Uri(pathSegments: _cleanStoragePath(path).split('/')).path;
+    return '$bucket/$encoded';
+  }
+
+  String _cleanStoragePath(String path) {
+    return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
   }
 
   Map<String, dynamic> _sessionJson({

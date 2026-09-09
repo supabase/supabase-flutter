@@ -14,5 +14,6 @@ export 'src/mock_http_clients.dart';
 export 'src/mock_supabase_http_client.dart';
 export 'src/realtime_frames.dart';
 export 'src/session_fixture.dart';
+export 'src/storage_fixture.dart';
 export 'src/test_jwt.dart';
 export 'src/test_supabase_client.dart';

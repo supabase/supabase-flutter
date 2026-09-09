@@ -673,4 +673,100 @@ void main() {
       expect(response.data, {'weather': 'rain'});
     });
   });
+
+  group('storage shorthands', () {
+    test('stubStorageUpload answers a binary upload and an update', () async {
+      httpClient.stubStorageUpload('avatars', 'me.png', id: 'object-1');
+
+      final uploaded = await supabase.storage
+          .from('avatars')
+          .uploadBinary('me.png', Uint8List.fromList([1, 2, 3]));
+      final updated = await supabase.storage
+          .from('avatars')
+          .updateBinary('me.png', Uint8List.fromList([4, 5, 6]));
+
+      expect(uploaded.fullPath, 'avatars/me.png');
+      expect(uploaded.path, 'me.png');
+      expect(uploaded.id, 'object-1');
+      expect(updated.fullPath, 'avatars/me.png');
+      expect(
+        httpClient.requestsTo('/storage/v1/object/avatars/me.png'),
+        hasLength(2),
+      );
+    });
+
+    test('stubStorageUpload encodes the object path like the client', () async {
+      httpClient.stubStorageUpload('avatars', 'folder/my file.png');
+
+      final response = await supabase.storage
+          .from('avatars')
+          .uploadBinary('folder/my file.png', Uint8List.fromList([1]));
+
+      expect(response.fullPath, 'avatars/folder/my file.png');
+    });
+
+    test('stubStorageDownload answers a download with bytes', () async {
+      httpClient.stubStorageDownload(
+        'avatars',
+        'me.png',
+        bytes: Uint8List.fromList([1, 2, 3]),
+        contentType: 'image/png',
+      );
+
+      final bytes = await supabase.storage.from('avatars').download('me.png');
+      final transformed = await supabase.storage
+          .from('avatars')
+          .download('me.png', transform: const TransformOptions(width: 10));
+
+      expect(bytes, [1, 2, 3]);
+      expect(transformed, [1, 2, 3]);
+    });
+
+    test('stubStorageSignedUrl answers createSignedUrl', () async {
+      httpClient.stubStorageSignedUrl('avatars', 'me.png', token: 'abc');
+
+      final url = await supabase.storage
+          .from('avatars')
+          .createSignedUrl('me.png', 60);
+
+      expect(
+        url,
+        'http://localhost:54321/storage/v1/object/sign/avatars/me.png?token=abc',
+      );
+    });
+
+    test('stubStorageList answers list with file objects', () async {
+      httpClient.stubStorageList(
+        'avatars',
+        objects: [
+          storageObjectJson('me.png'),
+          storageObjectJson('you.png', bucketId: 'avatars'),
+        ],
+      );
+
+      final objects = await supabase.storage.from('avatars').list();
+
+      expect(objects.map((object) => object.name), ['me.png', 'you.png']);
+      expect(objects.last.bucketId, 'avatars');
+      expect(objects.first.metadata?['size'], 1024);
+    });
+
+    test('stubStorageRemove answers remove with the deleted objects', () async {
+      httpClient.stubStorageRemove('avatars', paths: ['me.png', 'you.png']);
+
+      final removed = await supabase.storage.from('avatars').remove([
+        'me.png',
+        'you.png',
+      ]);
+
+      expect(removed.map((object) => object.name), ['me.png', 'you.png']);
+      final request = httpClient
+          .requestsTo('/storage/v1/object/avatars')
+          .single;
+      expect(request.method, 'DELETE');
+      expect(request.jsonBody, {
+        'prefixes': ['me.png', 'you.png'],
+      });
+    });
+  });
 }

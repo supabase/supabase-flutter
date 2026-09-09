@@ -62,16 +62,28 @@ final httpClient = MockSupabaseHttpClient()
   ..stubSignIn();
 ```
 
-Anything else, storage endpoints for example, is stubbed through the general
-`stub`, which matches on method and URL path. A path matches a request whose
-path is the same or ends in it, so stubs written for `/rest/v1/todos` keep
-working for a project served under a path prefix:
+Storage has shorthands for the calls apps make most, which know the paths
+and the response shapes of the storage API:
+
+```dart
+httpClient
+  ..stubStorageUpload('avatars', 'me.png')
+  ..stubStorageDownload('avatars', 'me.png', bytes: pngBytes)
+  ..stubStorageSignedUrl('avatars', 'me.png')
+  ..stubStorageList('avatars', objects: [storageObjectJson('me.png')])
+  ..stubStorageRemove('avatars', paths: ['me.png']);
+```
+
+Anything else is stubbed through the general `stub`, which matches on method
+and URL path. A path matches a request whose path is the same or ends in it,
+so stubs written for `/rest/v1/todos` keep working for a project served under
+a path prefix:
 
 ```dart
 httpClient.stub(
-  {'Key': 'avatars/me.png'},
-  method: 'POST',
-  path: '/storage/v1/object/avatars/me.png',
+  {'name': 'avatars', 'id': 'avatars', 'public': true},
+  method: 'GET',
+  path: '/storage/v1/bucket/avatars',
 );
 ```
 
