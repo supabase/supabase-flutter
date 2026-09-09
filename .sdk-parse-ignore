@@ -26,6 +26,11 @@ packages/supabase_typegen/
 # so its public symbols are not capability-matrix symbols.
 packages/supabase_test/
 
+# The testing library of supabase_flutter holds helpers for the tests of an
+# app, not SDK client surface, so its public symbols are not capability-matrix
+# symbols.
+packages/supabase_flutter/lib/testing.dart
+
 # The examples are standalone demo apps, not part of the published SDK, so their
 # public classes are not capability-matrix symbols. Each package also ships its
 # own example app, which the extractor treats as a package of its own because it

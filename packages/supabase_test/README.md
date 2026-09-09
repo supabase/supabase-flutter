@@ -163,21 +163,15 @@ that, run against a real stack (see below).
 
 ## Flutter apps
 
-Widget tests initialize `supabase_flutter` the same way, with persistence
-pointed at in-memory implementations:
+Widget tests initialize `supabase_flutter` through `initializeTestSupabase`
+from `package:supabase_flutter/testing.dart`, which applies the same test
+defaults as `testSupabaseClient` and takes the same mock HTTP client:
 
 ```dart
-await Supabase.initialize(
-  url: 'http://localhost:54321',
-  publishableKey: unsignedTestJwt({'role': 'anon'}),
-  httpClient: httpClient,
-  authOptions: FlutterAuthClientOptions(
-    localStorage: const EmptyLocalStorage(),
-    pkceAsyncStorage: MemoryAuthAsyncStorage(),
-    autoRefreshToken: false,
-  ),
-);
-addTearDown(Supabase.instance.dispose);
+import 'package:supabase_flutter/testing.dart';
+
+final supabase = await initializeTestSupabase(httpClient: httpClient);
+addTearDown(supabase.dispose);
 ```
 
 ## Testing against a real stack
