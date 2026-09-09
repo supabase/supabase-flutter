@@ -207,14 +207,13 @@ class AuthClient {
 
   final _initialized = Completer<void>();
 
-  /// Completes once the session persisted by an earlier run has been restored.
+  /// Completes once the session persisted by an earlier run has been restored
+  /// and the [AuthChangeEvent.initialSession] event has been emitted.
   ///
-  /// When the session is persisted, [currentSession] holds the restored
-  /// session and the [AuthChangeEvent.initialSession] event has been emitted
-  /// by then. A restored session that has expired is refreshed in the
-  /// background, which [onAuthStateChange] reports like any other refresh.
-  /// Completes right away, without emitting an event, when the session is not
-  /// persisted.
+  /// From then on [currentSession] holds the restored session. A restored
+  /// session that has expired is refreshed in the background, which
+  /// [onAuthStateChange] reports like any other refresh. When the session is
+  /// not persisted the event carries no session and this completes right away.
   Future<void> get initialized => _initialized.future;
 
   /// The storage writes that have not completed yet, run one after the other
@@ -1793,14 +1792,15 @@ class AuthClient {
         );
   }
 
-  /// Restores the session persisted by an earlier run, when there is one, and
-  /// completes [initialized].
+  /// Restores the session persisted by an earlier run, when there is one,
+  /// emits [AuthChangeEvent.initialSession] and completes [initialized].
   ///
   /// An expired session is refreshed after [initialized] completes, so that
   /// waiting for the restore never waits for the network.
   Future<void> _restoreSession() async {
     final storage = _asyncStorage;
     if (!_persistSession || storage == null) {
+      notifyAllSubscribers(AuthChangeEvent.initialSession);
       _initialized.complete();
       return;
     }

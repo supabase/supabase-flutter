@@ -1047,6 +1047,9 @@ What changed:
 - `AuthClient.initialized` completes once the persisted session has been restored.
   `Supabase.initialize` awaits it, so `currentSession` is set when it returns, as before. When you
   construct a client yourself, await it before reading the session.
+- Every `AuthClient` emits `AuthChangeEvent.initialSession` once it is created, carrying the
+  restored session or `null`, as auth-js does. Before, only `Supabase.initialize` emitted it, so a
+  client you construct yourself now has that event first on `onAuthStateChange`.
 
 A custom storage implements the one interface and no longer needs to know the key:
 

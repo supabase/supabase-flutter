@@ -203,7 +203,12 @@ void main() {
 
       expect(
         client.onAuthStateChange,
-        emits(predicate<AuthState>((s) => s.event == AuthChangeEvent.signedIn)),
+        emitsInOrder([
+          predicate<AuthState>(
+            (s) => s.event == AuthChangeEvent.initialSession,
+          ),
+          predicate<AuthState>((s) => s.event == AuthChangeEvent.signedIn),
+        ]),
       );
 
       await client.setSession('some-refresh-token', accessToken: accessToken);
@@ -220,11 +225,14 @@ void main() {
 
       expect(
         client.onAuthStateChange,
-        emits(
+        emitsInOrder([
+          predicate<AuthState>(
+            (s) => s.event == AuthChangeEvent.initialSession,
+          ),
           predicate<AuthState>(
             (s) => s.event == AuthChangeEvent.tokenRefreshed,
           ),
-        ),
+        ]),
       );
 
       await client.setSession('some-refresh-token', accessToken: accessToken);

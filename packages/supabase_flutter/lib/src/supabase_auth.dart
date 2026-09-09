@@ -33,9 +33,6 @@ import 'clear_auth_url_parameters_stub.dart'
 ///   `WidgetsBindingObserver`) to the auth client so that token refresh
 ///   resumes correctly after the app
 ///   returns to the foreground.
-/// - Emits an [AuthChangeEvent.initialSession] event at startup when the
-///   session is not persisted, so that listeners receive a consistent first
-///   event regardless of the persistence settings.
 ///
 /// **Key collaborators:**
 /// - [AuthClient] (`Supabase.instance.client.auth`) — the underlying auth
@@ -81,7 +78,6 @@ class SupabaseAuth with WidgetsBindingObserver {
   bool _isDisposed = false;
 
   /// - Waits for the auth client to restore the persisted session
-  /// - Emits an initial session when the session is not persisted
   /// - Starts a deep link observer
   Future<void> initialize({
     required FlutterAuthClientOptions options,
@@ -89,15 +85,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     _autoRefreshToken = options.autoRefreshToken;
     _detectSessionInUriPredicate = options.detectSessionInUriPredicate;
 
-    final auth = Supabase.instance.client.auth;
-    await auth.initialized;
-    if (!options.persistSession) {
-      // A client that does not persist has no session to restore and so emits
-      // no initial session of its own, but apps wait for the event to know
-      // that the restore is over.
-      // ignore: invalid_use_of_internal_member
-      auth.notifyAllSubscribers(AuthChangeEvent.initialSession);
-    }
+    await Supabase.instance.client.auth.initialized;
     _widgetsBindingInstance.addObserver(this);
 
     if (options.detectSessionInUri) {

@@ -136,14 +136,21 @@ void main() {
     expect(client.currentSession, isNotNull);
   });
 
-  test('a client that does not persist emits no initial session', () async {
+  test('a client that does not persist emits a null initial session', () async {
     final client = createClient(persistSession: false);
     await client.initialized;
+    final states = <AuthState>[];
+    final subscription = client.onAuthStateChange.listen(states.add);
+    addTearDown(subscription.cancel);
 
     await client.signInWithPassword(email: email1, password: password);
+    await settle();
 
-    final state = await client.onAuthStateChange.first;
-    expect(state.event, AuthChangeEvent.signedIn);
+    expect(states.map((state) => state.event), [
+      AuthChangeEvent.initialSession,
+      AuthChangeEvent.signedIn,
+    ]);
+    expect(states.first.session, isNull);
   });
 
   test('restores an expired session and signs out when it cannot be '

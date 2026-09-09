@@ -172,6 +172,9 @@ void main() {
         stream,
         emitsInOrder([
           predicate<AuthState>(
+            (event) => event.event == AuthChangeEvent.initialSession,
+          ),
+          predicate<AuthState>(
             (event) => event.event == AuthChangeEvent.signedIn,
           ),
           predicate<AuthState>(
@@ -334,9 +337,12 @@ void main() {
 
         expect(
           newClient.onAuthStateChange,
-          emits(
+          emitsInOrder([
+            predicate<AuthState>(
+              (s) => s.event == AuthChangeEvent.initialSession,
+            ),
             predicate<AuthState>((s) => s.event == AuthChangeEvent.signedIn),
-          ),
+          ]),
         );
 
         final response = await newClient.setSession(
@@ -892,6 +898,8 @@ void main() {
 
         await pumpEventQueue();
         expect(events, [
+          // creating the client
+          AuthChangeEvent.initialSession,
           // signInWithPassword
           AuthChangeEvent.signedIn,
           // updateUser requested the change
