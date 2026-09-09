@@ -208,6 +208,11 @@ jobs:
             dart test $CONCURRENCY
           fi
 
+      - name: Run browser tests
+        if: ${{ matrix.package.name == 'supabase_auth' }}
+        working-directory: packages/${{ matrix.package.name }}
+        run: dart test -p chrome test/browser
+
       - name: Upload coverage to Coveralls
         if: ${{ matrix.channel == 'stable' }}
         uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8

@@ -9,16 +9,20 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     super.autoRefreshToken,
     super.pkceAsyncStorage,
     super.appendPkceFlowIdToRedirects,
+    super.retryOptions,
+    super.persistSession = true,
     this.localStorage,
     this.detectSessionInUri = true,
     this.detectSessionInUriPredicate,
-    this.persistSession = true,
   });
 
   /// Where the session is persisted.
   ///
   /// Defaults to shared preferences when [persistSession] is `true`, and to
-  /// an in-memory-only storage otherwise.
+  /// an in-memory-only storage otherwise. A custom storage is used regardless
+  /// of [persistSession], and the session then counts as persisted unless the
+  /// storage is an [EmptyLocalStorage], so cross-tab sync on web follows the
+  /// storage that is actually in use.
   final LocalStorage? localStorage;
 
   /// If true, the client will start the deep link observer and obtain sessions
@@ -38,19 +42,13 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   /// redirect paths.
   final bool Function(Uri uri)? detectSessionInUriPredicate;
 
-  /// Whether to persist the session to [localStorage].
-  ///
-  /// When false and no [localStorage] is provided, sessions are kept
-  /// in memory only and are not restored across app restarts. Supplying a
-  /// custom [localStorage] always takes precedence over this flag.
-  final bool persistSession;
-
   FlutterAuthClientOptions copyWith({
     AuthFlowType? authFlowType,
     bool? autoRefreshToken,
     LocalStorage? localStorage,
     AuthAsyncStorage? pkceAsyncStorage,
     bool? appendPkceFlowIdToRedirects,
+    SupabaseRetryOptions? retryOptions,
     bool? detectSessionInUri,
     bool Function(Uri uri)? detectSessionInUriPredicate,
     bool? persistSession,
@@ -62,6 +60,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
       appendPkceFlowIdToRedirects:
           appendPkceFlowIdToRedirects ?? this.appendPkceFlowIdToRedirects,
+      retryOptions: retryOptions ?? this.retryOptions,
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
       detectSessionInUriPredicate:
           detectSessionInUriPredicate ?? this.detectSessionInUriPredicate,

@@ -49,6 +49,14 @@ class _SessionState {
 /// using the pkce flow. Pass a [MemoryAuthAsyncStorage] when the verifiers
 /// do not need to outlive the process.
 ///
+/// [persistSession] whether the session is meant to outlive this client. On
+/// web such a session is kept in sync across the tabs of the same project
+/// through a `BroadcastChannel`, so a sign-in or sign-out in one tab reaches
+/// the others. Defaults to false: a client that keeps its own session, such as
+/// one created with the service role key next to the user's client, must not
+/// be signed in by another tab. `supabase_flutter` persists the session and
+/// defaults this to true.
+///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 ///
 /// Set [AuthClient.appendPkceFlowIdToRedirects] to match a pkce callback to the
@@ -67,6 +75,7 @@ class AuthClient {
     bool? autoRefreshToken,
     Client? httpClient,
     AuthAsyncStorage? asyncStorage,
+    bool persistSession = false,
     AuthFlowType flowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
@@ -82,6 +91,7 @@ class AuthClient {
        _pkceVerifierStore = asyncStorage == null
            ? null
            : PKCEVerifierStore(asyncStorage),
+       _persistSession = persistSession,
        _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
@@ -89,7 +99,8 @@ class AuthClient {
     authLogger.config(
       'Initialize AuthClient v$version with url: '
       '${Uri.parse(_url).redacted}, autoRefreshToken: '
-      '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
+      '$_autoRefreshToken, persistSession: $_persistSession, flowType: '
+      '${_flowType.name}, tickDuration: '
       '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
       '${AuthConstants.autoRefreshTickThreshold}',
     );
@@ -216,6 +227,8 @@ class AuthClient {
       _onAuthStateChangeControllerSync.stream;
 
   final AuthFlowType _flowType;
+
+  final bool _persistSession;
 
   /// Configures how a token refresh that never reached the service is retried.
   final SupabaseRetryOptions retryOptions;
@@ -1699,7 +1712,8 @@ class AuthClient {
   }
 
   void _mayStartBroadcastChannel() {
-    if (const bool.fromEnvironment('dart.library.js_interop')) {
+    if (_persistSession &&
+        const bool.fromEnvironment('dart.library.js_interop')) {
       final broadcastKey = defaultPersistSessionKey(_url);
 
       assert(
