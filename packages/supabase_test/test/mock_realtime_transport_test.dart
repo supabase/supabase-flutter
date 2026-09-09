@@ -58,7 +58,7 @@ void main() {
     });
 
     test('a heartbeat is answered with an ok reply', () async {
-      final connection = realtime.call('ws://localhost:54321/realtime/v1', {});
+      final connection = realtime('ws://localhost:54321/realtime/v1', {});
       final reply = connection.stream.first;
 
       connection.sink.add('[null,"7","phoenix","phx_heartbeat",{}]');
