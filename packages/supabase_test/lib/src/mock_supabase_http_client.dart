@@ -52,6 +52,7 @@ class _Stub {
     required this.method,
     required this.path,
     required this.query,
+    required this.schema,
     required this.respond,
     required this.remaining,
   });
@@ -59,6 +60,7 @@ class _Stub {
   final String? method;
   final String? path;
   final Map<String, String>? query;
+  final String? schema;
   final FutureOr<StreamedResponse> Function(
     BaseRequest request,
     RecordedRequest recorded,
@@ -86,7 +88,21 @@ class _Stub {
         }
       }
     }
+    if (schema != null && _requestSchema(request) != schema) {
+      return false;
+    }
     return true;
+  }
+
+  /// The schema a PostgREST request addresses: reads carry it in
+  /// `Accept-Profile`, writes in `Content-Profile`, and a request without
+  /// either targets `public`.
+  static String _requestSchema(BaseRequest request) {
+    final method = request.method.toUpperCase();
+    final header = method == 'GET' || method == 'HEAD'
+        ? 'Accept-Profile'
+        : 'Content-Profile';
+    return request.headers[header] ?? 'public';
   }
 
   @override
@@ -95,7 +111,9 @@ class _Stub {
     final querySuffix = query == null || query.isEmpty
         ? ''
         : '?${Uri(queryParameters: query).query}';
-    return '${method ?? '(any method)'} ${path ?? '(any path)'}$querySuffix';
+    final schemaSuffix = schema == null ? '' : ' (schema $schema)';
+    return '${method ?? '(any method)'} ${path ?? '(any path)'}'
+        '$querySuffix$schemaSuffix';
   }
 }
 
@@ -200,6 +218,7 @@ class MockSupabaseHttpClient extends BaseClient {
         method: method,
         path: path,
         query: query,
+        schema: null,
         remaining: times,
         respond: (request, _) => _response(
           body,
@@ -242,6 +261,7 @@ class MockSupabaseHttpClient extends BaseClient {
         method: method,
         path: path,
         query: query,
+        schema: null,
         remaining: times,
         respond: (request, recorded) async {
           final response = await handler(recorded);
@@ -265,7 +285,9 @@ class MockSupabaseHttpClient extends BaseClient {
   /// matches all of them; pass `'GET'` or `'POST'` to answer reads and writes
   /// differently. [query] narrows the stub to queries carrying the given
   /// PostgREST filters, `{'id': 'eq.1'}` for example, so differently filtered
-  /// reads of one table receive different rows.
+  /// reads of one table receive different rows. [schema] narrows it to
+  /// requests addressing that schema, so tables of the same name in different
+  /// schemas receive different rows; a null [schema] matches every schema.
   ///
   /// The response is shaped the way PostgREST shapes it for the request: a
   /// query ending in `single()` receives the only row of a one-row list, or
@@ -277,6 +299,7 @@ class MockSupabaseHttpClient extends BaseClient {
     Object? rows,
     String? method,
     Map<String, String>? query,
+    String? schema,
     int statusCode = 200,
     int? count,
     int? times,
@@ -286,6 +309,7 @@ class MockSupabaseHttpClient extends BaseClient {
       method: method,
       path: '/rest/v1/$table',
       query: query,
+      schema: schema,
       statusCode: statusCode,
       count: count,
       times: times,
@@ -296,11 +320,12 @@ class MockSupabaseHttpClient extends BaseClient {
   /// with [body].
   ///
   /// The response is shaped for `single()` and counts the way [stubTable]
-  /// shapes it.
+  /// shapes it, and [schema] narrows the stub to one schema the same way.
   void stubRpc(
     String function, {
     Object? body,
     Map<String, String>? query,
+    String? schema,
     int statusCode = 200,
     int? count,
     int? times,
@@ -309,6 +334,7 @@ class MockSupabaseHttpClient extends BaseClient {
       body,
       path: '/rest/v1/rpc/$function',
       query: query,
+      schema: schema,
       statusCode: statusCode,
       count: count,
       times: times,
@@ -519,6 +545,7 @@ class MockSupabaseHttpClient extends BaseClient {
     required int statusCode,
     String? method,
     Map<String, String>? query,
+    String? schema,
     int? count,
     int? times,
   }) {
@@ -527,6 +554,7 @@ class MockSupabaseHttpClient extends BaseClient {
         method: method,
         path: path,
         query: query,
+        schema: schema,
         remaining: times,
         respond: (request, _) => _postgrestResponse(
           body,

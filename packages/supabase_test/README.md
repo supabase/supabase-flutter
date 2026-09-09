@@ -109,6 +109,11 @@ Three rules cover most test setups:
   httpClient.stubTable('todos', query: {'id': 'eq.2'}, rows: [second]);
   ```
 
+- **`schema` narrows a table or function stub to one schema.** A request
+  made through `schema('archive')` carries the schema in a header, so a stub
+  for the `public` table and one for the `archive` table of the same name can
+  answer differently. A stub without a schema answers every schema.
+
 - **An unmatched request throws.** The `StateError` names the request and the
   registered stubs, so a typo in a path surfaces as a failing test with the
   mismatch spelled out instead of a silent wrong answer.
