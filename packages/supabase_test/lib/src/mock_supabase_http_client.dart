@@ -3,6 +3,7 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -21,8 +22,14 @@ class RecordedRequest {
 
   final String method;
   final Uri url;
+
+  /// The request headers, looked up case-insensitively like the headers of
+  /// the request itself.
   final Map<String, String> headers;
   final Uint8List bodyBytes;
+
+  /// The query parameters of [url].
+  Map<String, String> get queryParameters => url.queryParameters;
 
   /// The request body decoded as UTF-8.
   String get body => utf8.decode(bodyBytes);
@@ -64,7 +71,7 @@ class _Stub {
         method!.toUpperCase() != request.method.toUpperCase()) {
       return false;
     }
-    if (path != null && path != request.url.path) {
+    if (path != null && !_pathMatches(request.url.path, path!)) {
       return false;
     }
     return true;
@@ -72,6 +79,20 @@ class _Stub {
 
   @override
   String toString() => '${method ?? '(any method)'} ${path ?? '(any path)'}';
+}
+
+/// Whether [requestPath] is [stubPath], or ends in [stubPath] at a segment
+/// boundary, so that a stub written for `/rest/v1/todos` also answers a
+/// project hosted under a path prefix, `/supabase/rest/v1/todos` for example.
+bool _pathMatches(String requestPath, String stubPath) {
+  if (requestPath == stubPath) {
+    return true;
+  }
+  if (!requestPath.endsWith(stubPath)) {
+    return false;
+  }
+  final boundary = requestPath.length - stubPath.length;
+  return stubPath.startsWith('/') || requestPath[boundary - 1] == '/';
 }
 
 const _singleObjectAccept = 'application/vnd.pgrst.object+json';
@@ -107,6 +128,24 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Every request this client has answered, oldest first.
   final requests = <RecordedRequest>[];
 
+  /// The answered requests whose URL path ends in [path], optionally
+  /// narrowed to [method], oldest first.
+  ///
+  /// ```dart
+  /// final inserts = httpClient.requestsTo('/rest/v1/todos', method: 'POST');
+  /// expect(inserts.single.jsonBody, {'task': 'Write tests'});
+  /// ```
+  List<RecordedRequest> requestsTo(String path, {String? method}) {
+    return requests
+        .where(
+          (request) =>
+              _pathMatches(request.url.path, path) &&
+              (method == null ||
+                  method.toUpperCase() == request.method.toUpperCase()),
+        )
+        .toList();
+  }
+
   /// Forgets every registered stub and every recorded request, so a client
   /// shared between tests starts each of them clean.
   void reset() {
@@ -117,8 +156,10 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Answers requests matching [method] and [path] with [body] under
   /// [statusCode].
   ///
-  /// A null [method] or [path] matches any method or path; [path] is compared
-  /// against the path of the request URL, ignoring the query. A [Uint8List]
+  /// A null [method] or [path] matches any method or path. [path] matches a
+  /// request whose URL path is [path] or ends in it, ignoring the query, so a
+  /// stub for `/rest/v1/todos` also answers a project served under a path
+  /// prefix. A [Uint8List]
   /// body is sent as is with the content type `application/octet-stream`, any
   /// other body is encoded as JSON, and a null [body] produces an empty
   /// response body. [headers] are added to the response, and override the
@@ -272,6 +313,51 @@ class MockSupabaseHttpClient extends BaseClient {
     DateTime? expiresAt,
     int? times,
   }) {
+    stub(
+      _sessionJson(user: user, expiresAt: expiresAt),
+      method: 'POST',
+      path: '/auth/v1/token',
+      times: times,
+    );
+  }
+
+  /// Answers the sign-up endpoint the way an auto-confirming project does:
+  /// `signUp` succeeds with a session for [user], which defaults to
+  /// [testUserJson], built as [stubSignIn] builds it.
+  void stubSignUp({
+    Map<String, dynamic>? user,
+    DateTime? expiresAt,
+    int? times,
+  }) {
+    stub(
+      _sessionJson(user: user, expiresAt: expiresAt),
+      method: 'POST',
+      path: '/auth/v1/signup',
+      times: times,
+    );
+  }
+
+  /// Answers the logout endpoint, so `signOut` completes.
+  void stubSignOut({int? times}) {
+    stub(
+      null,
+      method: 'POST',
+      path: '/auth/v1/logout',
+      statusCode: 204,
+      times: times,
+    );
+  }
+
+  /// Answers the user endpoint with [user], which defaults to [testUserJson],
+  /// so `getUser` and `updateUser` succeed.
+  void stubUser({Map<String, dynamic>? user, int? times}) {
+    stub(user ?? testUserJson(), path: '/auth/v1/user', times: times);
+  }
+
+  Map<String, dynamic> _sessionJson({
+    Map<String, dynamic>? user,
+    DateTime? expiresAt,
+  }) {
     final userJson = user ?? testUserJson();
     final expiry = expiresAt ?? DateTime.now().add(const Duration(hours: 1));
     final accessToken = unsignedTestJwt({
@@ -279,12 +365,7 @@ class MockSupabaseHttpClient extends BaseClient {
       'sub': userJson['id'],
       'role': 'authenticated',
     });
-    stub(
-      testSessionResponseJson(accessToken: accessToken, user: userJson),
-      method: 'POST',
-      path: '/auth/v1/token',
-      times: times,
-    );
+    return testSessionResponseJson(accessToken: accessToken, user: userJson);
   }
 
   void _stubPostgrest(
@@ -402,10 +483,14 @@ class MockSupabaseHttpClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
+    final headers = LinkedHashMap<String, String>(
+      equals: (a, b) => a.toLowerCase() == b.toLowerCase(),
+      hashCode: (key) => key.toLowerCase().hashCode,
+    )..addAll(request.headers);
     final recorded = RecordedRequest._(
       request.method,
       request.url,
-      Map.of(request.headers),
+      UnmodifiableMapView(headers),
       await request.finalize().toBytes(),
     );
     requests.add(recorded);

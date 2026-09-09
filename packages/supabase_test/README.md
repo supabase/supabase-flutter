@@ -63,7 +63,9 @@ final httpClient = MockSupabaseHttpClient()
 ```
 
 Anything else, storage endpoints for example, is stubbed through the general
-`stub`, which matches on method and URL path:
+`stub`, which matches on method and URL path. A path matches a request whose
+path is the same or ends in it, so stubs written for `/rest/v1/todos` keep
+working for a project served under a path prefix:
 
 ```dart
 httpClient.stub(
@@ -165,16 +167,20 @@ registered stubs and the recorded requests.
 ## Asserting on requests
 
 The client records every request it answered in `requests`, with the body
-already read:
+already read, and `requestsTo` narrows them down by path and method:
 
 ```dart
+await supabase.from('todos').select().eq('status', true);
 await supabase.from('todos').insert({'task': 'Write tests'});
 
-final request = httpClient.requests.single;
-expect(request.method, 'POST');
-expect(request.url.path, '/rest/v1/todos');
-expect(request.jsonBody, {'task': 'Write tests'});
+final select = httpClient.requestsTo('/rest/v1/todos', method: 'GET').single;
+expect(select.queryParameters['status'], 'eq.true');
+
+final insert = httpClient.requestsTo('/rest/v1/todos', method: 'POST').single;
+expect(insert.jsonBody, {'task': 'Write tests'});
 ```
+
+Headers are looked up case-insensitively, as on the request itself.
 
 ## Testing auth
 
@@ -208,6 +214,10 @@ await supabase.auth.signInWithPassword(
   password: 'password',
 );
 ```
+
+`stubSignUp`, `stubSignOut` and `stubUser` cover the sign-up, logout and user
+endpoints the same way, so `signUp`, `signOut`, `getUser` and `updateUser`
+run against stubs too.
 
 For code that inspects tokens, `unsignedTestJwt` and `signedTestJwt` craft
 JWTs carrying exactly the claims you pass, with no auto-injected `iat` and no
