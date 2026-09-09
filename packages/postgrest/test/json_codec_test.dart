@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:postgrest/postgrest.dart';
-import 'package:supabase_testing/supabase_testing.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 void main() {

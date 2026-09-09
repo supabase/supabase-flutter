@@ -1,5 +1,5 @@
 import 'package:supabase/supabase.dart';
-import 'package:supabase_testing/supabase_testing.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 void main() {

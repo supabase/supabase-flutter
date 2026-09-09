@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
-import 'package:supabase_testing/supabase_testing.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 extension type const Todo(Map<String, dynamic> _json)

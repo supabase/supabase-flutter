@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:supabase_testing/supabase_testing.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 

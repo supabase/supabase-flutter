@@ -27,7 +27,7 @@ dependencies:
 dev_dependencies:
   collection: ^1.19.0
   supabase_lints: ^0.1.2
-  supabase_testing: 0.1.1
+  supabase_test: 0.1.1
   test: ^1.25.0
 
 false_secrets:
