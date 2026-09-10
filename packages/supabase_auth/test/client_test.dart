@@ -797,19 +797,20 @@ void main() {
           url: authUrl,
           flowType: AuthFlowType.pkce,
           asyncStorage: TestAsyncStorage(),
-          httpClient: MockedHttpClient({
-            'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
-            'aud': '',
-            'role': '',
-            'email': 'new@email.com',
-            'app_metadata': {
-              'provider': 'email',
-              'providers': ['email'],
-            },
-            'user_metadata': {},
-            'created_at': '2023-04-01T09:38:59.784028Z',
-            'updated_at': '2023-04-01T09:38:59.908816Z',
-          }),
+          httpClient: MockSupabaseHttpClient()
+            ..stub({
+              'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
+              'aud': '',
+              'role': '',
+              'email': 'new@email.com',
+              'app_metadata': {
+                'provider': 'email',
+                'providers': ['email'],
+              },
+              'user_metadata': {},
+              'created_at': '2023-04-01T09:38:59.784028Z',
+              'updated_at': '2023-04-01T09:38:59.908816Z',
+            }),
         );
 
         final url = Uri.parse(

@@ -1,21 +1,18 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:http/http.dart' as http;
 import 'package:supabase_storage/supabase_storage.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
-
-import 'custom_http_client.dart';
 
 const storageUrl = 'http://localhost/storage/v1';
 const headers = {'Authorization': 'Bearer token'};
 
 void main() {
-  late CustomHttpClient mockClient;
+  late MockSupabaseHttpClient mockClient;
   late SupabaseStorageClient client;
 
   setUp(() {
-    mockClient = CustomHttpClient();
+    mockClient = MockSupabaseHttpClient();
     client = SupabaseStorageClient(
       storageUrl,
       headers,
@@ -23,10 +20,9 @@ void main() {
     );
   });
 
-  Uri requestUrl() => mockClient.receivedRequests.single.url;
+  Uri requestUrl() => mockClient.requests.single.url;
 
-  dynamic requestBody() =>
-      jsonDecode((mockClient.receivedRequests.single as http.Request).body);
+  dynamic requestBody() => mockClient.requests.single.jsonBody;
 
   const unnormalizedPaths = [
     '/folder/file.txt',
@@ -38,8 +34,7 @@ void main() {
   for (final path in unnormalizedPaths) {
     group('path "$path" is normalized', () {
       test('by download', () async {
-        mockClient.response = Uint8List.fromList([1, 2, 3]);
-        mockClient.statusCode = 200;
+        mockClient.stub(Uint8List.fromList([1, 2, 3]));
 
         await client.from('bucket').download(path);
 
@@ -50,8 +45,7 @@ void main() {
       });
 
       test('by downloadStream', () async {
-        mockClient.response = Uint8List.fromList([1, 2, 3]);
-        mockClient.statusCode = 200;
+        mockClient.stub(Uint8List.fromList([1, 2, 3]));
 
         await client.from('bucket').downloadStream(path).drain<void>();
 
@@ -62,10 +56,9 @@ void main() {
       });
 
       test('by createSignedUrl', () async {
-        mockClient.response = {
+        mockClient.stub({
           'signedURL': '/object/sign/bucket/folder/file.txt?token=abc',
-        };
-        mockClient.statusCode = 200;
+        });
 
         final signedUrl = await client.from('bucket').createSignedUrl(path, 60);
 
@@ -77,10 +70,9 @@ void main() {
       });
 
       test('by createSignedUploadUrl, including the returned path', () async {
-        mockClient.response = {
+        mockClient.stub({
           'url': '/object/upload/sign/bucket/folder/file.txt?token=abc',
-        };
-        mockClient.statusCode = 200;
+        });
 
         final response = await client
             .from('bucket')
@@ -94,7 +86,7 @@ void main() {
       });
 
       test('by getMetadata', () async {
-        mockClient.response = {
+        mockClient.stub({
           'id': 'id',
           'version': '1',
           'name': 'folder/file.txt',
@@ -107,8 +99,7 @@ void main() {
           'etag': 'etag',
           'last_modified': '2024-01-01T00:00:00Z',
           'metadata': <String, dynamic>{},
-        };
-        mockClient.statusCode = 200;
+        });
 
         await client.from('bucket').getMetadata(path);
 
@@ -119,8 +110,7 @@ void main() {
       });
 
       test('by exists', () async {
-        mockClient.response = Uint8List.fromList([]);
-        mockClient.statusCode = 200;
+        mockClient.stub(Uint8List.fromList([]));
 
         final exists = await client.from('bucket').exists(path);
 
@@ -132,8 +122,7 @@ void main() {
       });
 
       test('by purgeCache', () async {
-        mockClient.response = {'message': 'ok'};
-        mockClient.statusCode = 200;
+        mockClient.stub({'message': 'ok'});
 
         await client.from('bucket').purgeCache(path);
 
@@ -153,10 +142,10 @@ void main() {
       });
 
       test('by uploadBinary, including the returned path', () async {
-        mockClient.response = {
+        mockClient.stub({
           'Id': 'id',
           'Key': 'bucket/folder/file.txt',
-        };
+        });
 
         final response = await client
             .from('bucket')
@@ -170,11 +159,10 @@ void main() {
       });
 
       test('by updateBinary, including the returned path', () async {
-        mockClient.response = {
+        mockClient.stub({
           'Id': 'id',
           'Key': 'bucket/folder/file.txt',
-        };
-        mockClient.statusCode = 200;
+        });
 
         final response = await client
             .from('bucket')
@@ -188,8 +176,7 @@ void main() {
       });
 
       test('by move, in the request body', () async {
-        mockClient.response = {'message': 'ok'};
-        mockClient.statusCode = 200;
+        mockClient.stub({'message': 'ok'});
 
         await client.from('bucket').move(path, path);
 
@@ -199,8 +186,7 @@ void main() {
       });
 
       test('by copy, in the request body', () async {
-        mockClient.response = {'Key': 'bucket/folder/file.txt'};
-        mockClient.statusCode = 200;
+        mockClient.stub({'Key': 'bucket/folder/file.txt'});
 
         await client.from('bucket').copy(path, path);
 
@@ -210,8 +196,7 @@ void main() {
       });
 
       test('by remove, in the request body', () async {
-        mockClient.response = <dynamic>[];
-        mockClient.statusCode = 200;
+        mockClient.stub(<dynamic>[]);
 
         await client.from('bucket').remove([path]);
 
@@ -220,13 +205,12 @@ void main() {
       });
 
       test('by createSignedUrls, in the request body', () async {
-        mockClient.response = [
+        mockClient.stub([
           {
             'signedURL': '/object/sign/bucket/folder/file.txt?token=abc',
             'path': 'folder/file.txt',
           },
-        ];
-        mockClient.statusCode = 200;
+        ]);
 
         await client.from('bucket').createSignedUrls([path], 60);
 
@@ -235,8 +219,7 @@ void main() {
       });
 
       test('by list, in the request body', () async {
-        mockClient.response = <dynamic>[];
-        mockClient.statusCode = 200;
+        mockClient.stub(<dynamic>[]);
 
         await client.from('bucket').list(path: path);
 
@@ -245,11 +228,10 @@ void main() {
       });
 
       test('by listPaginated, in the request body', () async {
-        mockClient.response = {
+        mockClient.stub({
           'hasNext': false,
           'objects': <dynamic>[],
-        };
-        mockClient.statusCode = 200;
+        });
 
         await client
             .from('bucket')
@@ -262,10 +244,9 @@ void main() {
       });
 
       test('by uploadBinaryToSignedUrl, including the returned path', () async {
-        mockClient.response = {
+        mockClient.stub({
           'Key': 'bucket/folder/file.txt',
-        };
-        mockClient.statusCode = 200;
+        });
 
         final response = await client
             .from('bucket')

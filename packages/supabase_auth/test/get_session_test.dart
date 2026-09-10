@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:http/http.dart';
 import 'package:test/test.dart';
 
 import 'refresh_token_race_test.dart'
@@ -11,21 +9,6 @@ import 'refresh_token_race_test.dart'
         RefreshTokenTrackingHttpClient,
         createExpiredSessionForUser1;
 import 'utils.dart';
-
-/// HTTP client that always fails a refresh with a retryable server error.
-class RetryableFailureHttpClient extends BaseClient {
-  int requestCount = 0;
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    requestCount++;
-    return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({'msg': 'unavailable'}))),
-      500,
-      request: request,
-    );
-  }
-}
 
 void main() {
   const authUrl = 'http://localhost:9999';
@@ -137,7 +120,9 @@ void main() {
       'returns the still-valid session when a refresh fails but the access '
       'token has not actually expired',
       () async {
-        final httpClient = RetryableFailureHttpClient();
+        // Every refresh fails with a retryable server error.
+        final httpClient = MockSupabaseHttpClient()
+          ..stub({'msg': 'unavailable'}, statusCode: 500);
         final client = AuthClient(
           url: authUrl,
           asyncStorage: TestAsyncStorage(),
@@ -159,7 +144,7 @@ void main() {
         final session = await client.getSession();
         expect(session, isNotNull);
         expect(session!.accessToken, data.accessToken);
-        expect(httpClient.requestCount, greaterThan(0));
+        expect(httpClient.requests, isNotEmpty);
 
         await subscription.cancel();
       },

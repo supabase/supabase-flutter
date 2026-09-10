@@ -1,41 +1,22 @@
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
-_ResponseFactory _errorStatus(int code) =>
-    (request) => Future.value(
-      StreamedResponse(
-        Stream.value(
-          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits),
-        ),
-        code,
-        request: request,
-        headers: {'content-type': 'application/json'},
-      ),
-    );
+MockSupabaseHttpClient _errorStatus(int code) =>
+    MockSupabaseHttpClient()
+      ..stub({'message': 'err', 'code': '$code'}, statusCode: code);
 
-typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
-
-class _MockClient extends BaseClient {
-  _MockClient(this._response);
-  final _ResponseFactory _response;
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) => _response(request);
-}
-
-PostgrestClient _buildClient(_MockClient mock) =>
-    PostgrestClient('http://localhost:3000', httpClient: mock);
+PostgrestClient _buildClient(MockSupabaseHttpClient httpClient) =>
+    PostgrestClient('http://localhost:3000', httpClient: httpClient);
 
 void main() {
   group('stack trace', () {
     test(
       'includes caller frame when PostgrestApiException is thrown',
       () async {
-        final client = _buildClient(_MockClient(_errorStatus(400)));
+        final client = _buildClient(_errorStatus(400));
 
         StackTrace? capturedTrace;
 
@@ -62,7 +43,7 @@ void main() {
     );
 
     test('includes caller frame when using .then() with onError', () async {
-      final client = _buildClient(_MockClient(_errorStatus(400)));
+      final client = _buildClient(_errorStatus(400));
 
       StackTrace? capturedTrace;
 
@@ -94,7 +75,7 @@ void main() {
     test(
       'includes caller frame when using single-arg onError that re-throws',
       () async {
-        final client = _buildClient(_MockClient(_errorStatus(400)));
+        final client = _buildClient(_errorStatus(400));
 
         StackTrace? capturedTrace;
 
@@ -133,9 +114,8 @@ void main() {
       () async {
         final client = PostgrestClient(
           'http://localhost:3000',
-          httpClient: _MockClient(
-            (_) async => throw const SocketException('refused'),
-          ),
+          httpClient: MockSupabaseHttpClient()
+            ..stubError(const SocketException('refused')),
           retryOptions: const SupabaseRetryOptions(enabled: false),
         );
 
@@ -167,7 +147,7 @@ void main() {
     test(
       'includes caller frame when error passes through whenComplete',
       () async {
-        final client = _buildClient(_MockClient(_errorStatus(400)));
+        final client = _buildClient(_errorStatus(400));
 
         StackTrace? capturedTrace;
         var actionCalled = false;

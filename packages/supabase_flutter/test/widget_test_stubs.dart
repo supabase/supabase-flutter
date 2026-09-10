@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'utils.dart';
@@ -145,72 +143,22 @@ void mockAppLink({
   }
 }
 
-class GetUserHttpClient extends BaseClient {
-  GetUserHttpClient(this.email);
-
-  final String email;
-  int requestCount = 0;
-  Uri? lastRequestUrl;
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    requestCount++;
-    lastRequestUrl = request.url;
-
-    return StreamedResponse(
-      Stream.value(
-        utf8.encode(
-          jsonEncode(
-            {
-              'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
-              'aud': '',
-              'role': '',
-              'email': email,
-              'app_metadata': {
-                'provider': 'email',
-                'providers': ['email'],
-              },
-              'user_metadata': {},
-              'created_at': '2023-04-01T09:38:59.784028Z',
-              'updated_at': '2023-04-01T09:38:59.908816Z',
-            },
-          ),
-        ),
-      ),
-      200,
-      request: request,
-    );
-  }
-}
+/// Answers the user endpoint with a user carrying [email].
+MockSupabaseHttpClient createGetUserHttpClient(String email) =>
+    MockSupabaseHttpClient()..stub(testUserJson(email: email));
 
 class MockAsyncStorage extends MemoryAuthAsyncStorage {}
 
-/// Custom HTTP client just to test the PKCE flow.
-class PkceHttpClient extends BaseClient {
-  int requestCount = 0;
-  Map<String, dynamic> lastRequestBody = {};
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    requestCount++;
-
-    if (request is Request) {
-      lastRequestBody = jsonDecode(request.body);
-    }
-
-    final accessToken = signedTestJwt({
-      'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60,
-      'sub': testUserId,
-    }, secret: '37c304f8-51aa-419a-a1af-06154e63707a');
-
-    return StreamedResponse(
-      Stream.value(
-        utf8.encode(
-          jsonEncode(testSessionResponseJson(accessToken: accessToken)),
+/// Answers the token endpoint of the PKCE flow with a fresh session.
+MockSupabaseHttpClient createPkceHttpClient() =>
+    MockSupabaseHttpClient()..stubHandler(
+      (_) => jsonResponse(
+        testSessionResponseJson(
+          accessToken: signedTestJwt({
+            'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60,
+            'sub': testUserId,
+          }, secret: '37c304f8-51aa-419a-a1af-06154e63707a'),
         ),
+        statusCode: 201,
       ),
-      201,
-      request: request,
     );
-  }
-}

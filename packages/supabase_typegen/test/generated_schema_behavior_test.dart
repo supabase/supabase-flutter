@@ -1,38 +1,18 @@
 // The typed table access API under test is annotated @experimental.
 // ignore_for_file: experimental_member_use
 
-import 'dart:convert';
-
-import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 import 'goldens/supabase_schema.dart';
 
-class MockHttpClient extends BaseClient {
-  String responseBody = '[]';
-  BaseRequest? lastRequest;
-  String? lastRequestBody;
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    lastRequest = request;
-    lastRequestBody = utf8.decode(await request.finalize().toBytes());
-    return StreamedResponse(
-      Stream.value(utf8.encode(responseBody)),
-      200,
-      headers: {'content-type': 'application/json'},
-      request: request,
-    );
-  }
-}
-
 void main() {
-  late MockHttpClient httpClient;
+  late MockSupabaseHttpClient httpClient;
   late PostgrestClient client;
 
   setUp(() {
-    httpClient = MockHttpClient();
+    httpClient = MockSupabaseHttpClient()..stub([]);
     client = PostgrestClient(
       'http://localhost/rest/v1',
       httpClient: httpClient,
@@ -44,7 +24,7 @@ void main() {
   });
 
   test('select returns typed rows with converted values', () async {
-    httpClient.responseBody = jsonEncode([
+    httpClient.stub([
       {
         'id': 1,
         'title': 'A typed row',
@@ -81,7 +61,7 @@ void main() {
     ]);
 
     expect(
-      httpClient.lastRequest!.url.queryParameters['select'],
+      httpClient.requests.last.queryParameters['select'],
       'id,authors(name)',
     );
 
@@ -91,7 +71,7 @@ void main() {
     ]);
 
     expect(
-      httpClient.lastRequest!.url.queryParameters['select'],
+      httpClient.requests.last.queryParameters['select'],
       'id,books(id.count())',
     );
   });
@@ -100,13 +80,13 @@ void main() {
     await client.table(Books.table).select().where(Books.mood.eq(Mood.happy));
 
     expect(
-      httpClient.lastRequest!.url.queryParameters['mood'],
+      httpClient.requests.last.queryParameters['mood'],
       'eq.happy',
     );
   });
 
   test('insert sends converted values and omits absent columns', () async {
-    httpClient.responseBody = '';
+    httpClient.stub(null);
 
     await client
         .table(Books.table)
@@ -119,8 +99,7 @@ void main() {
           ),
         );
 
-    final sent =
-        jsonDecode(httpClient.lastRequestBody!) as Map<String, dynamic>;
+    final sent = httpClient.requests.last.jsonBody as Map<String, dynamic>;
     expect(sent, {
       'title': 'A typed row',
       'author_id': 7,
@@ -132,7 +111,7 @@ void main() {
   test(
     'timestamps are sent as UTC instants and dates keep their day',
     () async {
-      httpClient.responseBody = '';
+      httpClient.stub(null);
 
       await client
           .table(Books.table)
@@ -145,8 +124,7 @@ void main() {
             ),
           );
 
-      final sent =
-          jsonDecode(httpClient.lastRequestBody!) as Map<String, dynamic>;
+      final sent = httpClient.requests.last.jsonBody as Map<String, dynamic>;
       expect(
         sent['created_at'],
         DateTime(2026, 7, 23, 10).toUtc().toIso8601String(),
@@ -169,19 +147,19 @@ void main() {
   });
 
   test('update sends only the provided columns', () async {
-    httpClient.responseBody = '';
+    httpClient.stub(null);
 
     await client
         .table(Books.table)
         .update(BooksUpdate(inPrint: false))
         .where(Books.id.eq(1));
 
-    expect(jsonDecode(httpClient.lastRequestBody!), {'in_print': false});
-    expect(httpClient.lastRequest!.url.queryParameters['id'], 'eq.1');
+    expect(httpClient.requests.last.jsonBody, {'in_print': false});
+    expect(httpClient.requests.last.queryParameters['id'], 'eq.1');
   });
 
   test('setXToNull writes SQL NULL explicitly', () async {
-    httpClient.responseBody = '';
+    httpClient.stub(null);
 
     final update = BooksUpdate(inPrint: false);
     await client
@@ -189,7 +167,7 @@ void main() {
         .update(update.setPriceToNull().setMoodToNull())
         .where(Books.id.eq(1));
 
-    expect(jsonDecode(httpClient.lastRequestBody!), {
+    expect(httpClient.requests.last.jsonBody, {
       'in_print': false,
       'price': null,
       'mood': null,
@@ -206,7 +184,7 @@ void main() {
           BooksInsert(title: 'x', authorId: 7).setPublishedOnToNull(),
         );
 
-    expect(jsonDecode(httpClient.lastRequestBody!), {
+    expect(httpClient.requests.last.jsonBody, {
       'title': 'x',
       'author_id': 7,
       'published_on': null,

@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase/src/api_key.dart';
 import 'package:supabase/src/auth_http_client.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -66,17 +66,16 @@ void main() {
   });
 
   group('AuthHttpClient bearer suppression', () {
-    late Map<String, String> capturedHeaders;
+    late MockSupabaseHttpClient mockClient;
+
+    Map<String, String> capturedHeaders() => mockClient.requests.last.headers;
 
     http.Client buildClient({
       required String key,
       required String? session,
       required bool omitNewApiKeyAsBearer,
     }) {
-      final mockClient = MockClient((request) async {
-        capturedHeaders = request.headers;
-        return http.Response('', 200);
-      });
+      mockClient = MockSupabaseHttpClient()..stub(null);
       return AuthHttpClient(
         key,
         mockClient,
@@ -93,8 +92,8 @@ void main() {
       );
       await client.get(Uri.parse('https://example.com'));
 
-      expect(capturedHeaders.containsKey('authorization'), isFalse);
-      expect(capturedHeaders['apikey'], 'sb_publishable_abc');
+      expect(capturedHeaders().containsKey('authorization'), isFalse);
+      expect(capturedHeaders()['apikey'], 'sb_publishable_abc');
     });
 
     test('sends session JWT as Bearer even with a new-format key', () async {
@@ -105,8 +104,8 @@ void main() {
       );
       await client.get(Uri.parse('https://example.com'));
 
-      expect(capturedHeaders['authorization'], 'Bearer jwt-token');
-      expect(capturedHeaders['apikey'], 'sb_publishable_abc');
+      expect(capturedHeaders()['authorization'], 'Bearer jwt-token');
+      expect(capturedHeaders()['apikey'], 'sb_publishable_abc');
     });
 
     test('sends legacy key as Bearer when there is no session', () async {
@@ -117,7 +116,7 @@ void main() {
       );
       await client.get(Uri.parse('https://example.com'));
 
-      expect(capturedHeaders['authorization'], 'Bearer legacy-anon-key');
+      expect(capturedHeaders()['authorization'], 'Bearer legacy-anon-key');
     });
 
     test(
@@ -130,7 +129,7 @@ void main() {
         );
         await client.get(Uri.parse('https://example.com'));
 
-        expect(capturedHeaders['authorization'], 'Bearer sb_publishable_abc');
+        expect(capturedHeaders()['authorization'], 'Bearer sb_publishable_abc');
       },
     );
   });

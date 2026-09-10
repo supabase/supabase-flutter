@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -6,9 +5,8 @@ import 'package:mime/mime.dart';
 import "package:path/path.dart" show join;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_common/testing.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
-
-import 'custom_http_client.dart';
 
 /// Prefix of every bucket this suite creates, so the clean up can tell them
 /// apart from the seeded buckets and from those of any other suite.
@@ -655,11 +653,11 @@ void main() {
   });
 
   group('setHeader', () {
-    late CustomHttpClient customHttpClient;
+    late MockSupabaseHttpClient customHttpClient;
     late SupabaseStorageClient client;
 
     setUp(() {
-      customHttpClient = CustomHttpClient();
+      customHttpClient = MockSupabaseHttpClient();
       client = SupabaseStorageClient(
         localStackStorageUrl,
         {'Authorization': 'Bearer $localStackServiceRoleKey'},
@@ -668,15 +666,14 @@ void main() {
     });
 
     test('sets custom header on storage client', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       client.setHeader('x-custom-header', 'custom-value');
       await client.listBuckets();
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
       expect(
-        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        customHttpClient.requests.first.headers['x-custom-header'],
         'custom-value',
       );
     });
@@ -687,59 +684,55 @@ void main() {
     });
 
     test('sets custom header on the vectors client', () async {
-      customHttpClient.response = {'vectorBuckets': []};
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub({'vectorBuckets': []});
 
       client.setHeader('x-custom-header', 'custom-value');
       await client.vectors.listBuckets();
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
       expect(
-        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        customHttpClient.requests.first.headers['x-custom-header'],
         'custom-value',
       );
     });
 
     test('supports chaining multiple setHeader calls', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       client
           .setHeader('x-header-a', 'value-a')
           .setHeader('x-header-b', 'value-b');
       await client.listBuckets();
 
-      expect(customHttpClient.receivedRequests.length, 1);
-      final headers = customHttpClient.receivedRequests.first.headers;
+      expect(customHttpClient.requests.length, 1);
+      final headers = customHttpClient.requests.first.headers;
       expect(headers['x-header-a'], 'value-a');
       expect(headers['x-header-b'], 'value-b');
     });
 
     test('headers set on client are included in file operations', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       client.setHeader('x-custom-header', 'custom-value');
       await client.from('test-bucket').list();
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
       expect(
-        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        customHttpClient.requests.first.headers['x-custom-header'],
         'custom-value',
       );
     });
 
     test('setHeader on StorageFileApi sets header for that instance', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       final fileApi = client.from('test-bucket');
       fileApi.setHeader('x-file-header', 'file-value');
       await fileApi.list();
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
       expect(
-        customHttpClient.receivedRequests.first.headers['x-file-header'],
+        customHttpClient.requests.first.headers['x-file-header'],
         'file-value',
       );
     });
@@ -748,8 +741,7 @@ void main() {
       'setHeader on StorageFileApi does not affect other StorageFileApi '
       'instances',
       () async {
-        customHttpClient.response = [];
-        customHttpClient.statusCode = 200;
+        customHttpClient.stub([]);
 
         final fileApi1 = client.from('bucket1');
         final fileApi2 = client.from('bucket2');
@@ -759,22 +751,21 @@ void main() {
         await fileApi1.list();
         await fileApi2.list();
 
-        expect(customHttpClient.receivedRequests.length, 2);
+        expect(customHttpClient.requests.length, 2);
         expect(
-          customHttpClient.receivedRequests[0].headers['x-header'],
+          customHttpClient.requests[0].headers['x-header'],
           'value1',
         );
         // fileApi2 should not have the header set on fileApi1
         expect(
-          customHttpClient.receivedRequests[1].headers['x-header'],
+          customHttpClient.requests[1].headers['x-header'],
           isNull,
         );
       },
     );
 
     test('setHeader on StorageFileApi returns this for chaining', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       final fileApi = client.from('test-bucket');
       final result = fileApi.setHeader('x-header', 'value');
@@ -783,26 +774,25 @@ void main() {
     });
 
     test('setHeader can override existing headers', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       client.setHeader('Authorization', 'Bearer new-token');
       await client.listBuckets();
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
       expect(
-        customHttpClient.receivedRequests.first.headers['Authorization'],
+        customHttpClient.requests.first.headers['Authorization'],
         'Bearer new-token',
       );
     });
   });
 
   group('Content-Type header handling', () {
-    late CustomHttpClient customHttpClient;
+    late MockSupabaseHttpClient customHttpClient;
     late SupabaseStorageClient client;
 
     setUp(() {
-      customHttpClient = CustomHttpClient();
+      customHttpClient = MockSupabaseHttpClient();
       client = SupabaseStorageClient(
         localStackStorageUrl,
         {'Authorization': 'Bearer $localStackServiceRoleKey'},
@@ -811,28 +801,26 @@ void main() {
     });
 
     test('defaults to application/json for non-GET requests', () async {
-      customHttpClient.response = {'message': 'Emptied'};
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub({'message': 'Emptied'});
 
       await client.emptyBucket('bucket1');
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
       expect(
-        customHttpClient.receivedRequests.first.headers['content-type'],
+        customHttpClient.requests.first.headers['content-type'],
         contains('application/json'),
       );
     });
 
     test('preserves custom Content-Type set via setHeader', () async {
-      customHttpClient.response = {'message': 'Emptied'};
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub({'message': 'Emptied'});
 
       client.setHeader('Content-Type', 'application/octet-stream');
       await client.emptyBucket('bucket1');
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
       expect(
-        customHttpClient.receivedRequests.first.headers['content-type'],
+        customHttpClient.requests.first.headers['content-type'],
         startsWith('application/octet-stream'),
       );
     });
@@ -840,8 +828,7 @@ void main() {
     test(
       'does not mutate the stored headers map after a non-GET request',
       () async {
-        customHttpClient.response = [];
-        customHttpClient.statusCode = 200;
+        customHttpClient.stub([]);
 
         final fileApi = client.from('test-bucket');
         final headersBefore = Map<String, String>.of(fileApi.headers);
@@ -921,11 +908,11 @@ void main() {
   });
 
   group('list sortBy defaults', () {
-    late CustomHttpClient customHttpClient;
+    late MockSupabaseHttpClient customHttpClient;
     late SupabaseStorageClient client;
 
     setUp(() {
-      customHttpClient = CustomHttpClient();
+      customHttpClient = MockSupabaseHttpClient();
       client = SupabaseStorageClient(
         localStackStorageUrl,
         {'Authorization': 'Bearer $localStackServiceRoleKey'},
@@ -934,14 +921,13 @@ void main() {
     });
 
     Map<String, dynamic> sentSortBy() {
-      final request = customHttpClient.receivedRequests.first as http.Request;
-      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      final body =
+          customHttpClient.requests.first.jsonBody as Map<String, dynamic>;
       return body['sortBy'] as Map<String, dynamic>;
     }
 
     test('fills in order when only column is provided', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       await client
           .from('test-bucket')
@@ -955,8 +941,7 @@ void main() {
     });
 
     test('fills in column when only order is provided', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       await client
           .from('test-bucket')
@@ -970,8 +955,7 @@ void main() {
     });
 
     test('uses defaults when no options are provided', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       await client.from('test-bucket').list();
 
@@ -979,8 +963,7 @@ void main() {
     });
 
     test('fills in a column passed explicitly as null', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       await client
           .from('test-bucket')
@@ -994,8 +977,7 @@ void main() {
     });
 
     test('preserves a complete sortBy', () async {
-      customHttpClient.response = [];
-      customHttpClient.statusCode = 200;
+      customHttpClient.stub([]);
 
       await client
           .from('test-bucket')

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:http/http.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
 
@@ -25,23 +24,28 @@ class PeriodicTimerTracker {
   }
 }
 
-/// Fails the test if the client ever tries to reach the network.
-class UnreachableHttpClient extends BaseClient {
-  @override
-  Future<StreamedResponse> send(BaseRequest request) {
-    fail('No request was expected, got ${request.method} ${request.url}');
-  }
-}
-
 void main() {
   const authUrl = 'http://localhost:9998';
+
+  /// Stubless, so a request the client is not expected to make throws
+  /// instead of being answered, and [MockSupabaseHttpClient.requests] shows
+  /// none was made.
+  late MockSupabaseHttpClient httpClient;
 
   AuthClient createClient() => AuthClient(
     url: authUrl,
     asyncStorage: TestAsyncStorage(),
-    httpClient: UnreachableHttpClient(),
+    httpClient: httpClient,
     autoRefreshToken: true,
   );
+
+  setUp(() {
+    httpClient = MockSupabaseHttpClient();
+  });
+
+  tearDown(() {
+    expect(httpClient.requests, isEmpty);
+  });
 
   test('startAutoRefresh leaves no timer behind after dispose', () async {
     final tracker = PeriodicTimerTracker();

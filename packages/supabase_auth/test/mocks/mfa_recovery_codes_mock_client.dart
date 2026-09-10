@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:http/http.dart';
+import 'package:supabase_test/supabase_test.dart';
 
 /// A mock HTTP client that simulates the MFA recovery codes API of the
 /// Supabase Auth server.
@@ -37,18 +37,16 @@ class MfaRecoveryCodesMockClient extends BaseClient {
     List<String> amr = const ['password'],
   }) {
     final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    return JWT(
-      {
-        'aud': 'authenticated',
-        'role': 'authenticated',
-        'aal': aal,
-        'amr': [
-          for (final method in amr) {'method': method, 'timestamp': issuedAt},
-        ],
-        'exp': issuedAt + 3600,
-      },
-      subject: userId,
-    ).sign(SecretKey('test-secret'));
+    return signedTestJwt({
+      'aud': 'authenticated',
+      'role': 'authenticated',
+      'aal': aal,
+      'amr': [
+        for (final method in amr) {'method': method, 'timestamp': issuedAt},
+      ],
+      'exp': issuedAt + 3600,
+      'sub': userId,
+    }, secret: 'test-secret');
   }
 
   static Map<String, dynamic> sessionJson({

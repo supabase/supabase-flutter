@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:http/http.dart' as http;
@@ -13,7 +12,7 @@ import '../utils.dart';
 /// Builds a signed JWT for [claims] so we can craft access tokens that are
 /// missing optional claims like `amr`.
 String _accessToken(Map<String, dynamic> claims) {
-  return JWT(claims, subject: 'user-id').sign(SecretKey('test-secret'));
+  return signedTestJwt({...claims, 'sub': 'user-id'}, secret: 'test-secret');
 }
 
 Map<String, dynamic> _session(String accessToken) => {
