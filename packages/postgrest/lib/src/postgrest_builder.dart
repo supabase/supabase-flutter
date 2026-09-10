@@ -150,7 +150,7 @@ PostgrestFilterBuilder<P> _filterBuilder<P>(
   _RequestConfig config, {
   _ResultDecoder<P>? decode,
 }) => PostgrestFilterBuilder(
-  PostgrestBuilder<P>._(config: config, decode: decode ?? _bodyDecoder<P>()),
+  PostgrestBuilder._(config: config, decode: decode ?? _bodyDecoder<P>()),
 );
 
 /// Convert list filter to query parameters string

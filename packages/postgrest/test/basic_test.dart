@@ -564,7 +564,7 @@ void main() {
           .select()
           .eq('username', 'no-such-user')
           .maybeSingle()
-          .withConverter((user) => user?['username'] as String?);
+          .withConverter((row) => row?['username'] as String?);
       expect(user, isNull);
     });
 

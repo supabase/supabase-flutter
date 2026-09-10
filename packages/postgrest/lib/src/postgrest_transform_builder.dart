@@ -10,12 +10,11 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// to, so the result is decoded from the response body as [P] instead.
   PostgrestTransformBuilder<P> _copyWithType<P>({
     Uri? url,
-    // ignore: avoid-unnecessary-nullable-parameters
     Headers? headers,
     HttpMethod? method,
     bool? maybeSingle,
   }) => PostgrestTransformBuilder(
-    PostgrestBuilder<P>._(
+    PostgrestBuilder._(
       config: _config.copyWith(
         url: url,
         headers: headers,
