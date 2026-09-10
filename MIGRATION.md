@@ -1473,7 +1473,9 @@ still stops retrying once the next backoff would fall after the next refresh
 tick, so the count only caps how many attempts a short backoff can squeeze into
 that window.
 
-The per-request `PostgrestBuilder.retry()` override is unchanged.
+The per-request `PostgrestBuilder.retry()` override keeps `enabled` and `count`. Its
+`requestTimeout` parameter is now a method of its own, see
+[the builder section](#the-postgrest-builder-has-one-type-parameter-and-no-wrapper-classes).
 
 ### The PostgREST builder has one type parameter and no wrapper classes
 
@@ -1810,8 +1812,8 @@ through an `isolate:` parameter, which named an implementation rather than a con
 named one that does not spawn an isolate at all on web. They now take an `AsyncJsonCodec`
 through `jsonCodec:`, the interface `YAJsonIsolate` implements. The same rename applies to
 the builders that carry the codec through the chain: `PostgrestBuilder`,
-`PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `RawPostgrestBuilder`,
-`SupabaseQueryBuilder` and `SupabaseQuerySchema`.
+`PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `SupabaseQueryBuilder` and
+`SupabaseQuerySchema`.
 
 ```dart
 // Before
