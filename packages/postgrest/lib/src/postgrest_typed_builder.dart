@@ -6,6 +6,7 @@ import 'package:postgrest/postgrest.dart';
 
 part 'postgrest_column_expression.dart';
 part 'postgrest_filter.dart';
+part 'postgrest_filter_operators.dart';
 part 'postgrest_table.dart';
 part 'postgrest_typed_query_builder.dart';
 part 'postgrest_typed_transform_builder.dart';

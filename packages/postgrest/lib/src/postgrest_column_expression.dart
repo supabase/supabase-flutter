@@ -91,6 +91,120 @@ base mixin PostgrestFilterableExpression<Row, Value extends Object>
   /// beneath `|` or [PostgrestFilter.not] unless it is valid inside `or=(…)`.
   PostgrestFilter<Row> raw(String operand) =>
       PostgrestFilter._raw(expression, operand);
+
+  /// Only rows where this expression equals one of [values].
+  ///
+  /// There is no `notIn`; negate instead: `Books.id.inFilter([1, 2]).not()`
+  /// renders `id=not.in.(1,2)`.
+  ///
+  /// An empty [values] matches no rows.
+  PostgrestFilter<Row> inFilter(List<Value> values) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.inFilter,
+        values,
+      );
+
+  /// Only rows whose range value contains [range].
+  ///
+  /// [range] is a Postgres range literal, for example `[2,3)`.
+  PostgrestFilter<Row> containsRange(String range) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.contains,
+        range,
+      );
+
+  /// Only rows whose range value is contained by [range].
+  PostgrestFilter<Row> containedByRange(String range) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.containedBy,
+        range,
+      );
+
+  /// Only rows whose range value overlaps [range].
+  PostgrestFilter<Row> overlapsRange(String range) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.overlaps,
+        range,
+      );
+
+  /// Only rows whose range value is strictly to the left of [range].
+  ///
+  /// [range] is a Postgres range literal, for example
+  /// `[2024-01-01,2024-02-01)`.
+  PostgrestFilter<Row> rangeLt(String range) => PostgrestFilter._comparison(
+    this,
+    PostgrestFilterOperator.rangeLt,
+    range,
+  );
+
+  /// Only rows whose range value is strictly to the right of [range].
+  PostgrestFilter<Row> rangeGt(String range) => PostgrestFilter._comparison(
+    this,
+    PostgrestFilterOperator.rangeGt,
+    range,
+  );
+
+  /// Only rows whose range value does not extend to the left of [range].
+  PostgrestFilter<Row> rangeGte(String range) => PostgrestFilter._comparison(
+    this,
+    PostgrestFilterOperator.rangeGte,
+    range,
+  );
+
+  /// Only rows whose range value does not extend to the right of [range].
+  PostgrestFilter<Row> rangeLte(String range) => PostgrestFilter._comparison(
+    this,
+    PostgrestFilterOperator.rangeLte,
+    range,
+  );
+
+  /// Only rows whose range value is adjacent to [range].
+  PostgrestFilter<Row> rangeAdjacent(String range) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.rangeAdjacent,
+        range,
+      );
+
+  /// Only rows whose `json`/`jsonb` value contains [value].
+  ///
+  /// [value] is the decoded JSON to look for, for example `{'a': 1}` or
+  /// `null`, and is encoded before it is sent.
+  PostgrestFilter<Row> containsJson(Object? value) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.contains,
+        json.encode(value),
+      );
+
+  /// Only rows whose `json`/`jsonb` value is contained by [value].
+  PostgrestFilter<Row> containedByJson(Object? value) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.containedBy,
+        json.encode(value),
+      );
+
+  /// Only rows whose `text` or `tsvector` value matches the full text search
+  /// [query].
+  ///
+  /// [config] is the text search configuration, for example `english`;
+  /// omitted, the database default applies. [type] chooses how [query] is
+  /// turned into a `tsquery`; omitted, `to_tsquery` is used.
+  PostgrestFilter<Row> textSearch(
+    String query, {
+    String? config,
+    TextSearchType? type,
+  }) => PostgrestFilter._textSearch(
+    this,
+    query,
+    config: config,
+    type: type,
+  );
 }
 
 /// A column expression that can be used as an `order` key.

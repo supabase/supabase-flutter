@@ -25,7 +25,62 @@ enum PostgrestFilterOperator {
   isDistinct('isdistinct'),
 
   /// The `IS` check for `null`, `true` and `false`, `is`.
-  isFilter('is');
+  isFilter('is'),
+
+  /// One of a list of values, `in`.
+  inFilter('in'),
+
+  /// Case-sensitive `LIKE`, `like`.
+  like('like'),
+
+  /// Case-insensitive `LIKE`, `ilike`.
+  ilike('ilike'),
+
+  /// Case-sensitive POSIX regular expression, `match`.
+  matchRegex('match'),
+
+  /// Case-insensitive POSIX regular expression, `imatch`.
+  imatchRegex('imatch'),
+
+  /// Case-sensitive `LIKE ALL`, `like(all)`.
+  likeAllOf('like(all)'),
+
+  /// Case-sensitive `LIKE ANY`, `like(any)`.
+  likeAnyOf('like(any)'),
+
+  /// Case-insensitive `LIKE ALL`, `ilike(all)`.
+  ilikeAllOf('ilike(all)'),
+
+  /// Case-insensitive `LIKE ANY`, `ilike(any)`.
+  ilikeAnyOf('ilike(any)'),
+
+  /// Contains, `cs`.
+  contains('cs'),
+
+  /// Contained by, `cd`.
+  containedBy('cd'),
+
+  /// Overlaps, `ov`.
+  overlaps('ov'),
+
+  /// Range strictly left of, `sl`.
+  rangeLt('sl'),
+
+  /// Range strictly right of, `sr`.
+  rangeGt('sr'),
+
+  /// Range does not extend to the left of, `nxl`.
+  rangeGte('nxl'),
+
+  /// Range does not extend to the right of, `nxr`.
+  rangeLte('nxr'),
+
+  /// Range adjacent to, `adj`.
+  rangeAdjacent('adj'),
+
+  /// Full text search, `fts`, prefixed by the query type and suffixed by the
+  /// configuration when given.
+  textSearch('fts');
 
   const PostgrestFilterOperator(this.token);
 
@@ -59,6 +114,13 @@ final class PostgrestFilter<Row> {
     PostgrestFilterOperator operator,
     Object? value,
   ) : _node = _Comparison(column, operator, value);
+
+  PostgrestFilter._textSearch(
+    PostgrestFilterableExpression<Row, Object> column,
+    String query, {
+    required String? config,
+    required TextSearchType? type,
+  }) : _node = _TextSearch(column, query, config: config, type: type);
 
   PostgrestFilter._raw(String column, String operand)
     : _node = _Raw(column, operand);
@@ -137,13 +199,46 @@ base class _Comparison<Row> extends _FilterNode<Row> {
 
   /// The operand as sent at top level.
   String get operand {
+    if (operator == PostgrestFilterOperator.inFilter) {
+      final members = (value! as List<Object?>).map(
+        (member) => _escapeFilterValue(_renderFilterValue(member)),
+      );
+      return '(${members.join(',')})';
+    }
     return _renderFilterValue(value);
   }
 
   /// The operand as sent inside a group, escaped. The parentheses of an `in`
   /// list stay literal there; its members are escaped already.
   String get groupOperand {
+    if (operator == PostgrestFilterOperator.inFilter) return operand;
     return _escapeFilterValue(operand);
+  }
+}
+
+/// A full text search, whose operator token carries the query type and the
+/// configuration: `wfts(english)`.
+final class _TextSearch<Row> extends _Comparison<Row> {
+  const _TextSearch(
+    PostgrestFilterableExpression<Row, Object> column,
+    String query, {
+    required this.config,
+    required this.type,
+  }) : super(column, PostgrestFilterOperator.textSearch, query);
+
+  final String? config;
+  final TextSearchType? type;
+
+  @override
+  String get operatorToken {
+    final prefix = switch (type) {
+      TextSearchType.plain => 'pl',
+      TextSearchType.phrase => 'ph',
+      TextSearchType.websearch => 'w',
+      null => '',
+    };
+    final suffix = config == null ? '' : '($config)';
+    return '$prefix${operator.token}$suffix';
   }
 }
 
