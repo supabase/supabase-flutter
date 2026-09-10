@@ -849,7 +849,7 @@ features:
     supporting_symbols:
       - PostgrestQueryBuilder.count
       - PostgrestRpcBuilder.rpc
-      - PostgrestTransformBuilder.count
+      - PostgrestBuilder.count
       - PostgrestTransformBuilder.head
   database.query.schema_selection:
     status: implemented
@@ -1207,8 +1207,12 @@ features:
     symbols:
       - PostgrestClient.requestTimeout
       - PostgrestClientOptions.requestTimeout
+      - PostgrestBuilder.requestTimeout
     supporting_symbols:
       - PostgrestBuilder.timeout
+      - PostgrestFilterBuilder.requestTimeout
+      - PostgrestQueryBuilder.requestTimeout
+      - PostgrestTransformBuilder.requestTimeout
 
   # storage — file buckets
   storage.file_buckets.access_bucket:
@@ -2331,9 +2335,7 @@ features:
       - PostgrestFilterBuilder.setHeader
       - PostgrestQueryBuilder.setHeader
       - PostgrestTransformBuilder.setHeader
-      - RawPostgrestBuilder.setHeader
       - RealtimeClient.headers
-      - ResponsePostgrestBuilder.setHeader
       - StorageBucketApi.headers
       - StorageFileApi.headers
       - StorageFileApi.setHeader
@@ -2592,6 +2594,7 @@ supporting_symbols:
   - PostgrestBuilder.catchError
   - PostgrestBuilder.then
   - PostgrestBuilder.whenComplete
+  - PostgrestBuilder.withConverter
   - PostgrestApiException
   - PostgrestApiException.PostgrestApiException
   - PostgrestApiException.details
@@ -2632,9 +2635,6 @@ supporting_symbols:
   - PrimitiveType.PrimitiveType
   - PrimitiveType.name
   - PrimitiveType.toJson
-  - RawPostgrestBuilder
-  - RawPostgrestBuilder.RawPostgrestBuilder
-  - RawPostgrestBuilder.withConverter
   - RealtimeChannel
   - RealtimeChannel.RealtimeChannel
   - RealtimeChannelConfig
@@ -2658,9 +2658,6 @@ supporting_symbols:
   - RealtimeSubscribeException.details
   - RealtimeSubscribeException.status
   - RealtimeSubscribeException.toString
-  - ResponsePostgrestBuilder
-  - ResponsePostgrestBuilder.ResponsePostgrestBuilder
-  - ResponsePostgrestBuilder.withConverter
   - Session
   - Session.==
   - Session.Session

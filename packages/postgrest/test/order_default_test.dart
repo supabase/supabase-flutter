@@ -16,7 +16,7 @@ void main() {
   });
 
   Future<Map<String, String>> queryParametersOf(
-    PostgrestBuilder<dynamic, dynamic, dynamic> builder,
+    PostgrestBuilder<dynamic> builder,
   ) async {
     try {
       await builder;

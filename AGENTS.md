@@ -141,10 +141,15 @@ melos version
 
 PostgREST queries use a chain of builder classes:
 ```
-PostgrestQueryBuilder → PostgrestFilterBuilder → PostgrestTransformBuilder → ResponsePostgrestBuilder
+PostgrestQueryBuilder → PostgrestFilterBuilder → PostgrestTransformBuilder → PostgrestBuilder<T>
 ```
 
 Example: `supabase.from('users').select('id, name').eq('id', 1).limit(10)`
+
+`PostgrestBuilder<T>` is the executable base: `T` is what awaiting the request resolves to. Steps
+that change the result (`select()`, `single()`, `count()`, `withConverter()`) each supply a decoder
+for the response, and the decoders compose in call order, so the converter always receives whatever
+the chain resolved to right before it.
 
 ### Realtime Architecture
 

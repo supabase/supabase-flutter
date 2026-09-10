@@ -605,23 +605,14 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   }
 
   @override
-  PostgrestFilterBuilder<T> retry({
-    bool enabled = true,
-    int? count,
-    Duration? requestTimeout,
-  }) {
-    return PostgrestFilterBuilder(
-      _copyWith(
-        retry: _retry.copyWith(enabled: enabled, count: count),
-        requestTimeout: requestTimeout,
-      ),
-    );
-  }
+  PostgrestFilterBuilder<T> retry({bool enabled = true, int? count}) =>
+      PostgrestFilterBuilder(super.retry(enabled: enabled, count: count));
 
   @override
-  PostgrestFilterBuilder<T> setHeader(String key, String value) {
-    return PostgrestFilterBuilder(
-      _copyWith(headers: {..._headers, key: value}),
-    );
-  }
+  PostgrestFilterBuilder<T> requestTimeout(Duration timeout) =>
+      PostgrestFilterBuilder(super.requestTimeout(timeout));
+
+  @override
+  PostgrestFilterBuilder<T> setHeader(String key, String value) =>
+      PostgrestFilterBuilder(super.setHeader(key, value));
 }

@@ -457,7 +457,7 @@ void main() {
       expect(mock.callCount, 1);
     });
 
-    test('.retry(requestTimeout:) overrides the timeout per request', () async {
+    test('.requestTimeout() overrides the timeout per request', () async {
       // The client has no timeout, but the per-request override adds one that
       // is shorter than every attempt, so each attempt times out and is
       // retried.
@@ -475,11 +475,53 @@ void main() {
         () => client
             .from('users')
             .select()
-            .retry(requestTimeout: const Duration(milliseconds: 50)),
+            .requestTimeout(const Duration(milliseconds: 50)),
         throwsA(isA<TimeoutException>()),
       );
       // Initial attempt plus 1 retry.
       expect(mock.callCount, 2);
+    });
+
+    test(
+      '.requestTimeout() before the table operation applies to it',
+      () async {
+        final mock = _MockRetryClient([_ok()]);
+        final client = PostgrestClient(
+          'http://localhost:3000',
+          httpClient: mock,
+          retryOptions: SupabaseRetryOptions(count: 0),
+        );
+
+        await expectLater(
+          () => client
+              .from('users')
+              .requestTimeout(const Duration(milliseconds: 50))
+              .select()
+              .eq('username', 'supabot'),
+          throwsA(isA<TimeoutException>()),
+        );
+        expect(mock.callCount, 1);
+      },
+    );
+
+    test('.requestTimeout() keeps its place in the filter chain', () async {
+      final mock = _MockRetryClient([_ok()]);
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryOptions: SupabaseRetryOptions(count: 0),
+      );
+
+      await expectLater(
+        () => client
+            .from('users')
+            .select()
+            .requestTimeout(const Duration(milliseconds: 50))
+            .eq('username', 'supabot')
+            .limit(1),
+        throwsA(isA<TimeoutException>()),
+      );
+      expect(mock.callCount, 1);
     });
 
     test('a manual abortSignal stops retrying immediately', () async {

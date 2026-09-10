@@ -2,49 +2,53 @@ part of 'postgrest_builder.dart';
 
 /// A builder for shaping the result of a query, such as ordering or limiting
 /// it.
-class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
-  PostgrestTransformBuilder(super.builder);
+class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
+  PostgrestTransformBuilder(PostgrestBuilder<T> builder)
+    : super._(config: builder._config, decode: builder._decode);
+
+  /// Like [_copyWith], but for a step that changes what the request resolves
+  /// to, so the result is decoded from the response body as [P] instead.
+  PostgrestTransformBuilder<P> _copyWithType<P>({
+    Uri? url,
+    // ignore: avoid-unnecessary-nullable-parameters
+    Headers? headers,
+    HttpMethod? method,
+    bool? maybeSingle,
+  }) => PostgrestTransformBuilder(
+    PostgrestBuilder<P>._(
+      config: _config.copyWith(
+        url: url,
+        headers: headers,
+        method: method,
+        maybeSingle: maybeSingle,
+      ),
+      decode: _bodyDecoder<P>(),
+    ),
+  );
 
   /// Returns a copy of this request pointed at [url].
   PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
       PostgrestTransformBuilder(_copyWith(url: url));
 
   @override
-  PostgrestTransformBuilder<T> retry({
-    bool enabled = true,
-    int? count,
-    Duration? requestTimeout,
-  }) {
-    return PostgrestTransformBuilder(
-      _copyWith(
-        retry: _retry.copyWith(enabled: enabled, count: count),
-        requestTimeout: requestTimeout,
-      ),
-    );
-  }
+  PostgrestTransformBuilder<T> retry({bool enabled = true, int? count}) =>
+      PostgrestTransformBuilder(super.retry(enabled: enabled, count: count));
 
   @override
-  PostgrestTransformBuilder<T> setHeader(String key, String value) {
-    return PostgrestTransformBuilder(
-      _copyWith(headers: {..._headers, key: value}),
-    );
-  }
+  PostgrestTransformBuilder<T> requestTimeout(Duration timeout) =>
+      PostgrestTransformBuilder(super.requestTimeout(timeout));
+
+  @override
+  PostgrestTransformBuilder<T> setHeader(String key, String value) =>
+      PostgrestTransformBuilder(super.setHeader(key, value));
 
   /// Performs horizontal filtering with SELECT.
   ///
   /// ```dart
   /// supabase.from('users').insert().select('id, messages');
   /// ```
-  /// ```dart
-  /// supabase
-  ///     .from('users')
-  ///     .insert()
-  ///     .select('id, messages')
-  ///     .count(CountOption.exact);
-  /// ```
   ///
-  /// By appending [count] the return type is [PostgrestResponse]. Otherwise
-  /// it's the data directly without the wrapper.
+  /// Append [count] to also receive the total number of rows.
   PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
@@ -282,31 +286,6 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     );
   }
 
-  /// Performs additionally to the [select] a count query.
-  ///
-  /// It's used to retrieve the total number of rows that satisfy the
-  /// query. The value for count respects any filters (e.g. eq, gt), but ignores
-  /// modifiers (e.g. limit, range).
-  ///
-  /// This changes the return type from the data only to a [PostgrestResponse]
-  /// with the data and the count.
-  ///
-  /// ```dart
-  /// final response = await postgrest
-  ///    .from('users')
-  ///    .select()
-  ///    .count(CountOption.exact);
-  /// final users = response.data;
-  /// int count = response.count;
-  /// ```
-  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count([
-    CountOption count = CountOption.exact,
-  ]) {
-    return ResponsePostgrestBuilder(
-      _copyWithType(count: count),
-    );
-  }
-
   /// Performs a head request.
   ///
   /// This will not return any data, but can only be used for either
@@ -317,7 +296,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```dart
   /// supabase.rpc("function").head();
   ///```
-  PostgrestBuilder<void, void, void> head() {
+  PostgrestBuilder<void> head() {
     return _copyWithType(method: HttpMethod.head);
   }
 
@@ -327,15 +306,10 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// https://supabase.com/docs/guides/database/extensions/postgis
   ///
-  ResponsePostgrestBuilder<
-    Map<String, dynamic>,
-    Map<String, dynamic>,
-    Map<String, dynamic>
-  >
-  geojson() {
+  PostgrestBuilder<Map<String, dynamic>> geojson() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/geo+json;';
-    return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));
+    return _copyWithType(headers: newHeaders);
   }
 
   /// Sets the maximum number of rows that can be affected by the query.
@@ -401,7 +375,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// [format] The format of the returned plan. Defaults to
   /// [ExplainFormat.text]. When [ExplainFormat.json] is used the plan is
   /// returned as a JSON string.
-  PostgrestBuilder<String, String, String> explain({
+  PostgrestBuilder<String> explain({
     bool analyze = false,
     bool verbose = false,
     bool settings = false,
