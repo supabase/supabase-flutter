@@ -45,9 +45,11 @@ class _SessionState {
 ///
 /// [httpClient] custom http client.
 ///
-/// [asyncStorage] local storage to store pkce code verifiers. Required when
-/// using the pkce flow. Pass a [MemoryAuthAsyncStorage] when the verifiers
-/// do not need to outlive the process.
+/// [asyncStorage] local storage to store pkce code verifiers. Defaults to a
+/// [MemoryAuthAsyncStorage], which loses the verifiers when the process exits.
+/// Pass a persistent implementation whenever the flow can leave the process
+/// before the code comes back, such as an email link or an OAuth redirect in
+/// an app.
 ///
 /// [persistSession] whether the session is meant to outlive this client. On
 /// web such a session is kept in sync across the tabs of the same project
@@ -79,18 +81,12 @@ class AuthClient {
     AuthFlowType flowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
-  }) : assert(
-         flowType != AuthFlowType.pkce || asyncStorage != null,
-         'You need to provide asyncStorage to perform pkce flow. Pass a '
-         'MemoryAuthAsyncStorage when the code verifiers do not need to '
-         'outlive the process.',
-       ),
-       _url = url ?? AuthConstants.defaultAuthUrl,
+  }) : _url = url ?? AuthConstants.defaultAuthUrl,
        _headers = {...AuthConstants.defaultHeaders, ...?headers},
        _httpClient = httpClient,
-       _pkceVerifierStore = asyncStorage == null
-           ? null
-           : PKCEVerifierStore(asyncStorage),
+       _pkceVerifierStore = PKCEVerifierStore(
+         asyncStorage ?? MemoryAuthAsyncStorage(),
+       ),
        _persistSession = persistSession,
        _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
@@ -170,9 +166,8 @@ class AuthClient {
     sync: true,
   );
 
-  /// Keeps one code verifier per pending pkce flow. Null when no
-  /// [AuthAsyncStorage] was provided, in which case the pkce flow cannot run.
-  final PKCEVerifierStore? _pkceVerifierStore;
+  /// Keeps one code verifier per pending pkce flow.
+  final PKCEVerifierStore _pkceVerifierStore;
 
   /// Whether the reserved `sb_flow_id` query parameter is appended to the
   /// redirect URL of pkce flows, so a callback can be matched to the flow that
@@ -541,11 +536,6 @@ class AuthClient {
     String authCode, {
     String? flowId,
   }) async {
-    assert(
-      _pkceVerifierStore != null,
-      'You need to provide asyncStorage to perform pkce flow.',
-    );
-
     final requestedFlowId = PKCEVerifierStore.validateFlowId(flowId);
     if (flowId != null && requestedFlowId == null) {
       // Told apart from a missing verifier so the message points at the
@@ -556,7 +546,7 @@ class AuthClient {
       );
     }
 
-    final codeVerifierRawString = await _pkceVerifierStore!.retrieve(
+    final codeVerifierRawString = await _pkceVerifierStore.retrieve(
       flowId: requestedFlowId,
     );
     if (codeVerifierRawString == null) {
@@ -605,13 +595,9 @@ class AuthClient {
     if (_flowType != AuthFlowType.pkce) {
       return null;
     }
-    assert(
-      _pkceVerifierStore != null,
-      'You need to provide asyncStorage to perform pkce flow.',
-    );
     final codeVerifier = generatePKCEVerifier();
     final flowId = PKCEVerifierStore.generateFlowId();
-    final evicted = await _pkceVerifierStore!.store(
+    final evicted = await _pkceVerifierStore.store(
       flowId: flowId,
       verifier: storageEventName == null
           ? codeVerifier
@@ -1294,7 +1280,7 @@ class AuthClient {
 
     if (scope != SignOutScope.others) {
       _removeSession();
-      await _pkceVerifierStore?.removeAll();
+      await _pkceVerifierStore.removeAll();
       notifyAllSubscribers(
         AuthChangeEvent.signedOut,
         signOutReason: reason,

@@ -699,4 +699,75 @@ void main() {
       expect(mockClient.lastRedirectTo, isNull);
     });
   });
+
+  group('client without an asyncStorage', () {
+    late PKCETokenMockClient mockClient;
+    late AuthClient client;
+
+    setUp(() {
+      mockClient = PKCETokenMockClient();
+      client = AuthClient(url: 'https://example.com', httpClient: mockClient);
+    });
+
+    tearDown(() => client.dispose());
+
+    test('can be constructed with the default pkce flow', () {
+      expect(
+        () => AuthClient(url: 'https://example.com', httpClient: mockClient),
+        returnsNormally,
+      );
+    });
+
+    test('starts a pkce flow with a code challenge', () async {
+      final response = await client.getOAuthSignInUrl(
+        provider: OAuthProvider.github,
+      );
+
+      expect(response.flowId, isNotNull);
+      expect(response.url.queryParameters['flow_type'], 'pkce');
+      expect(response.url.queryParameters['code_challenge'], isNotEmpty);
+      expect(response.url.queryParameters['code_challenge_method'], 's256');
+    });
+
+    test('exchanges the code with the verifier kept in memory', () async {
+      final response = await client.getOAuthSignInUrl(
+        provider: OAuthProvider.github,
+      );
+
+      await client.exchangeCodeForSession(
+        'my-auth-code',
+        flowId: response.flowId,
+      );
+
+      expect(mockClient.submittedCodeVerifiers, hasLength(1));
+      expect(
+        generatePKCEChallenge(mockClient.submittedCodeVerifiers.single),
+        response.url.queryParameters['code_challenge'],
+      );
+      expect(client.currentSession, isNotNull);
+    });
+
+    test('keeps the verifiers of two clients apart', () async {
+      final other = AuthClient(
+        url: 'https://example.com',
+        httpClient: mockClient,
+      );
+      addTearDown(other.dispose);
+
+      final response = await client.getOAuthSignInUrl(
+        provider: OAuthProvider.github,
+      );
+
+      await expectLater(
+        other.exchangeCodeForSession('my-auth-code', flowId: response.flowId),
+        throwsA(
+          isA<AuthException>().having(
+            (error) => error.message,
+            'message',
+            contains('Code verifier could not be found'),
+          ),
+        ),
+      );
+    });
+  });
 }

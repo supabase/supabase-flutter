@@ -968,32 +968,6 @@ void main() {
       },
     );
   });
-
-  group('Constructing a client without an asyncStorage', () {
-    test('asserts when the pkce flow is used', () {
-      expect(
-        () => AuthClient(url: authUrl, headers: {'apikey': anonToken}),
-        throwsA(
-          isA<AssertionError>().having(
-            (error) => error.message,
-            'message',
-            contains('You need to provide asyncStorage to perform pkce flow.'),
-          ),
-        ),
-      );
-    });
-
-    test('is allowed when the implicit flow is used', () {
-      expect(
-        () => AuthClient(
-          url: authUrl,
-          headers: {'apikey': anonToken},
-          flowType: AuthFlowType.implicit,
-        ),
-        returnsNormally,
-      );
-    });
-  });
 }
 
 /// Reads the email-change confirmation link that GoTrue delivered to

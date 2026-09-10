@@ -207,17 +207,17 @@ void main() {
   });
 
   group('auth', () {
-    test('the pkce flow asserts when no pkceAsyncStorage is given', () {
-      expect(
-        () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
-        throwsA(
-          isA<AssertionError>().having(
-            (error) => error.message,
-            'message',
-            contains('You need to provide asyncStorage to perform pkce flow.'),
-          ),
-        ),
+    test('the pkce flow keeps its verifiers in memory when no '
+        'pkceAsyncStorage is given', () async {
+      final supabase = real.SupabaseClient('http://localhost:1', 'supabaseKey');
+      addTearDown(supabase.dispose);
+
+      final response = await supabase.auth.getOAuthSignInUrl(
+        provider: OAuthProvider.github,
       );
+
+      expect(response.flowId, isNotNull);
+      expect(response.url.queryParameters['code_challenge'], isNotEmpty);
     });
 
     test('the pkce flow works with a MemoryAuthAsyncStorage', () async {

@@ -48,12 +48,12 @@ import 'trace_http_client.dart';
 /// alone, and it can be shared with other clients.
 ///
 /// The pkce flow is used by default and keeps its code verifiers in the
-/// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions].
-/// Pass a persistent implementation whenever the flow can leave the process
-/// before the code comes back, which covers every email link and every
-/// redirect to an OAuth provider. `MemoryAuthAsyncStorage` only suits flows
-/// that start and complete in the same process, such as tests and command line
-/// tools that keep a redirect listener open.
+/// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions],
+/// in memory when none is passed. Pass a persistent implementation whenever
+/// the flow can leave the process before the code comes back, which covers
+/// every email link and every redirect to an OAuth provider. The in-memory
+/// default only suits flows that start and complete in the same process, such
+/// as tests and command line tools that keep a redirect listener open.
 /// {@endtemplate}
 class SupabaseClient {
   /// {@macro supabase_client}

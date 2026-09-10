@@ -50,8 +50,9 @@ class AuthClientOptions {
   /// backoff can squeeze into that window.
   final SupabaseRetryOptions retryOptions;
 
-  /// Storage for the code verifiers of the pkce flow, required when
-  /// [authFlowType] is [AuthFlowType.pkce].
+  /// Storage for the code verifiers of the pkce flow, used when
+  /// [authFlowType] is [AuthFlowType.pkce]. Defaults to a
+  /// [MemoryAuthAsyncStorage].
   ///
   /// A persistent implementation is needed whenever the flow can leave the
   /// process before the code comes back. Email links do so by definition, and
@@ -59,11 +60,11 @@ class AuthClientOptions {
   /// while it waits and the page context is gone after a web redirect.
   /// `supabase_flutter` therefore defaults this to shared preferences.
   ///
-  /// [MemoryAuthAsyncStorage] only suits flows that start and complete in the
-  /// same process, such as tests and command line tools that keep a redirect
-  /// listener open. It is also unfit for a server handling more than one user
-  /// at a time, because the verifier is held under a single key that
-  /// concurrent sign-ins overwrite.
+  /// The default [MemoryAuthAsyncStorage] only suits flows that start and
+  /// complete in the same process, such as tests and command line tools that
+  /// keep a redirect listener open. It is also unfit for a server handling
+  /// more than one user at a time, because the verifiers are held in memory
+  /// shared by every request.
   final AuthAsyncStorage? pkceAsyncStorage;
 
   /// Whether the session is meant to outlive this client.
