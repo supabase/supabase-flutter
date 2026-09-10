@@ -192,6 +192,34 @@ plain text or binary edge function response is a `Response.bytes` away. A
 `Uint8List` passed as the body of `stub` or `stubEdgeFunction` is sent as
 bytes with the content type `application/octet-stream`.
 
+### Failures, stalls and status sequences
+
+Not every response is a body under a status. `stubError` fails the request
+the way a client fails when the network is gone, `stubStall` never answers
+it, and `stubStatuses` walks it through a sequence of statuses, one per
+request, repeating the last one once they run out:
+
+```dart
+httpClient
+  // The first two requests throw, the ones after them are answered.
+  ..stubError(ClientException('Offline'), times: 2)
+  // Never answered, so only a timeout or an abort ends the request.
+  ..stubStall(path: '/functions/v1/slow')
+  // 503, 503, then 200 for this request and every one after it.
+  ..stubStatuses([503, 503, 200], body: [], path: '/rest/v1/todos');
+```
+
+`stubText` answers with a body that is not JSON, the HTML error page of a
+gateway for example, and carries the reason phrase the client falls back to:
+
+```dart
+httpClient.stubText(
+  '<html><body>502 Bad Gateway</body></html>',
+  statusCode: 502,
+  reasonPhrase: 'Bad Gateway',
+);
+```
+
 A client shared between tests is wiped with `reset`, which forgets the
 registered stubs and the recorded requests.
 
@@ -211,7 +239,15 @@ final insert = httpClient.requestsTo('/rest/v1/todos', method: 'POST').single;
 expect(insert.jsonBody, {'task': 'Write tests'});
 ```
 
-Headers are looked up case-insensitively, as on the request itself.
+Headers are looked up case-insensitively, as on the request itself. For what
+does not survive the wire format, `request` holds the `BaseRequest` the
+client received, so a multipart upload can be asserted on through its
+`files`:
+
+```dart
+final upload = httpClient.requests.single.request as MultipartRequest;
+expect(upload.files.single.contentType.mimeType, 'image/png');
+```
 
 ## Testing auth
 

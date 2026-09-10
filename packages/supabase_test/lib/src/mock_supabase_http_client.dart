@@ -5,11 +5,13 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 
+import 'internal_http_clients.dart';
 import 'mock_http_clients.dart';
 import 'session_fixture.dart';
 import 'storage_fixture.dart';
@@ -19,7 +21,20 @@ import 'test_jwt.dart';
 /// read, so a test can assert on what the code under test sent.
 @visibleForTesting
 class RecordedRequest {
-  const RecordedRequest._(this.method, this.url, this.headers, this.bodyBytes);
+  const RecordedRequest._(
+    this.request,
+    this.method,
+    this.url,
+    this.headers,
+    this.bodyBytes,
+  );
+
+  /// The request the client received, with its body already read, so
+  /// `finalize` must not be called on it again.
+  ///
+  /// Holds what the typed subclasses carry beyond the wire format, the
+  /// `files` of a [MultipartRequest] for example.
+  final BaseRequest request;
 
   final String method;
   final Uri url;
@@ -55,10 +70,16 @@ class _Stub {
     required this.schema,
     required this.respond,
     required this.remaining,
+    this.bareEndpoint,
   });
 
   final String? method;
   final String? path;
+
+  /// The path this stub also answers when it is matched exactly, so a
+  /// shorthand for `/auth/v1/user` answers the `/user` a bare `AuthClient`
+  /// addresses too.
+  final String? bareEndpoint;
   final Map<String, String>? query;
   final String? schema;
   final FutureOr<StreamedResponse> Function(
@@ -76,7 +97,9 @@ class _Stub {
         method!.toUpperCase() != request.method.toUpperCase()) {
       return false;
     }
-    if (path != null && !_pathMatches(request.url.path, path!)) {
+    if (path != null &&
+        !_pathMatches(request.url.path, path!) &&
+        request.url.path != bareEndpoint) {
       return false;
     }
     final query = this.query;
@@ -153,7 +176,12 @@ const _singleObjectAccept = 'application/vnd.pgrst.object+json';
 /// The latest registered stub that matches a request answers it, so a stub
 /// registered inside a test overrides one registered in `setUp`. A request no
 /// stub matches throws a [StateError] naming the request and the registered
-/// stubs.
+/// stubs. The auth shorthands answer their endpoint both under the
+/// `/auth/v1` prefix and at the root, where a bare `AuthClient` addresses it.
+///
+/// A request can be failed instead of answered with [stubError], stalled
+/// with [stubStall], and driven through a sequence of statuses with
+/// [stubStatuses].
 ///
 /// A response that depends on the request, on the parameters of an `rpc` call
 /// for example, is registered with [stubHandler].
@@ -213,10 +241,32 @@ class MockSupabaseHttpClient extends BaseClient {
     Map<String, String> headers = const {},
     int? times,
   }) {
+    _stub(
+      body,
+      method: method,
+      path: path,
+      query: query,
+      statusCode: statusCode,
+      headers: headers,
+      times: times,
+    );
+  }
+
+  void _stub(
+    Object? body, {
+    String? method,
+    String? path,
+    String? bareEndpoint,
+    Map<String, String>? query,
+    int statusCode = 200,
+    Map<String, String> headers = const {},
+    int? times,
+  }) {
     _stubs.add(
       _Stub(
         method: method,
         path: path,
+        bareEndpoint: bareEndpoint,
         query: query,
         schema: null,
         remaining: times,
@@ -226,6 +276,144 @@ class MockSupabaseHttpClient extends BaseClient {
           statusCode: statusCode,
           headers: headers,
         ),
+      ),
+    );
+  }
+
+  /// Answers requests matching [method] and [path] with [body] as text under
+  /// [contentType] and [reasonPhrase].
+  ///
+  /// Use it for the bodies that are not JSON, the HTML error page a gateway
+  /// returns for example. [method], [path], [query] and [times] match as they
+  /// do for [stub].
+  void stubText(
+    String body, {
+    String? method,
+    String? path,
+    Map<String, String>? query,
+    int statusCode = 200,
+    String contentType = 'text/plain; charset=utf-8',
+    String? reasonPhrase,
+    Map<String, String> headers = const {},
+    int? times,
+  }) {
+    final bytes = utf8.encode(body);
+    _stubs.add(
+      _Stub(
+        method: method,
+        path: path,
+        query: query,
+        schema: null,
+        remaining: times,
+        respond: (request, _) => StreamedResponse(
+          Stream.value(bytes),
+          statusCode,
+          request: request,
+          contentLength: bytes.length,
+          reasonPhrase: reasonPhrase,
+          headers: {'content-type': contentType, ...headers},
+        ),
+      ),
+    );
+  }
+
+  /// Fails requests matching [method] and [path] by throwing [error] instead
+  /// of answering them, the way a client fails when the network is gone.
+  ///
+  /// Pair it with [times] to fail the first requests only, so retry handling
+  /// can be exercised:
+  ///
+  /// ```dart
+  /// httpClient
+  ///   ..stubTable('todos', rows: [])
+  ///   ..stubError(ClientException('Offline'), times: 2);
+  /// // The first two reads throw, every one after that returns no rows.
+  /// ```
+  ///
+  /// [method], [path] and [query] match as they do for [stub].
+  void stubError(
+    Object error, {
+    String? method,
+    String? path,
+    Map<String, String>? query,
+    int? times,
+  }) {
+    _stubs.add(
+      _Stub(
+        method: method,
+        path: path,
+        query: query,
+        schema: null,
+        remaining: times,
+        respond: (_, _) => throw error,
+      ),
+    );
+  }
+
+  /// Never answers requests matching [method] and [path], so only their
+  /// timeout or their abort ends them.
+  ///
+  /// A request that carries no abort trigger stalls forever, so give the
+  /// code under test a timeout. [method], [path], [query] and [times] match
+  /// as they do for [stub].
+  void stubStall({
+    String? method,
+    String? path,
+    Map<String, String>? query,
+    int? times,
+  }) {
+    _stubs.add(
+      _Stub(
+        method: method,
+        path: path,
+        query: query,
+        schema: null,
+        remaining: times,
+        respond: (request, _) => stallUntilAborted(request),
+      ),
+    );
+  }
+
+  /// Answers requests matching [method] and [path] with [statuses] in order,
+  /// one status per request, and repeats the last one once they run out.
+  ///
+  /// Retry handling is driven from failures into a success with it, without
+  /// counting how often the stub was hit:
+  ///
+  /// ```dart
+  /// httpClient.stubStatuses([503, 503, 200], body: []);
+  /// ```
+  ///
+  /// [method], [path] and [query] match as they do for [stub].
+  void stubStatuses(
+    List<int> statuses, {
+    Object? body,
+    String? method,
+    String? path,
+    Map<String, String>? query,
+    Map<String, String> headers = const {},
+  }) {
+    if (statuses.isEmpty) {
+      throw ArgumentError.value(statuses, 'statuses', 'must not be empty');
+    }
+    var answered = 0;
+    _stubs.add(
+      _Stub(
+        method: method,
+        path: path,
+        query: query,
+        schema: null,
+        remaining: null,
+        respond: (request, _) {
+          final statusCode = statuses[min(answered, statuses.length - 1)];
+          answered++;
+          return _response(
+            body,
+            request: request,
+            statusCode: statusCode,
+            headers: headers,
+          );
+        },
       ),
     );
   }
@@ -371,10 +559,11 @@ class MockSupabaseHttpClient extends BaseClient {
     DateTime? expiresAt,
     int? times,
   }) {
-    stub(
+    _stub(
       _sessionJson(user: user, expiresAt: expiresAt),
       method: 'POST',
       path: '/auth/v1/token',
+      bareEndpoint: '/token',
       times: times,
     );
   }
@@ -387,20 +576,22 @@ class MockSupabaseHttpClient extends BaseClient {
     DateTime? expiresAt,
     int? times,
   }) {
-    stub(
+    _stub(
       _sessionJson(user: user, expiresAt: expiresAt),
       method: 'POST',
       path: '/auth/v1/signup',
+      bareEndpoint: '/signup',
       times: times,
     );
   }
 
   /// Answers the logout endpoint, so `signOut` completes.
   void stubSignOut({int? times}) {
-    stub(
+    _stub(
       null,
       method: 'POST',
       path: '/auth/v1/logout',
+      bareEndpoint: '/logout',
       statusCode: 204,
       times: times,
     );
@@ -409,7 +600,12 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Answers the user endpoint with [user], which defaults to [testUserJson],
   /// so `getUser` and `updateUser` succeed.
   void stubUser({Map<String, dynamic>? user, int? times}) {
-    stub(user ?? testUserJson(), path: '/auth/v1/user', times: times);
+    _stub(
+      user ?? testUserJson(),
+      path: '/auth/v1/user',
+      bareEndpoint: '/user',
+      times: times,
+    );
   }
 
   /// Answers an upload of [path] to [bucket], whether through `upload`,
@@ -663,6 +859,7 @@ class MockSupabaseHttpClient extends BaseClient {
       hashCode: (key) => key.toLowerCase().hashCode,
     )..addAll(request.headers);
     final recorded = RecordedRequest._(
+      request,
       request.method,
       request.url,
       UnmodifiableMapView(headers),

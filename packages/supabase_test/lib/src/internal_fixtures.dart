@@ -6,17 +6,19 @@ import 'package:meta/meta.dart';
 @visibleForTesting
 const sessionDataUserId = '4d2583da-8de4-49d3-9cd1-37a9a74f55bd';
 
-/// Constructs session data for a given expiration date.
+/// Constructs session data for a given expiration date, belonging to
+/// [userId].
 @visibleForTesting
 ({String accessToken, String sessionString}) getSessionData(
-  DateTime expireDateTime,
-) {
+  DateTime expireDateTime, {
+  String userId = sessionDataUserId,
+}) {
   final expiresAt = expireDateTime.millisecondsSinceEpoch ~/ 1000;
   final accessTokenMid = base64.encode(
     utf8.encode(
       json.encode({
         'exp': expiresAt,
-        'sub': '1234567890',
+        'sub': userId,
         'role': 'authenticated',
       }),
     ),
@@ -26,7 +28,7 @@ const sessionDataUserId = '4d2583da-8de4-49d3-9cd1-37a9a74f55bd';
       '{"access_token":"$accessToken","expires_in":'
       '${expireDateTime.difference(DateTime.now()).inSeconds},"refresh_token":"'
       '-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"pro'
-      'vider_refresh_token":null,"user":{"id":"$sessionDataUserId","app_metadat'
+      'vider_refresh_token":null,"user":{"id":"$userId","app_metadat'
       'a":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"'
       'World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_'
       'at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_a'
