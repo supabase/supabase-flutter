@@ -414,9 +414,13 @@ features:
     status: implemented
     symbols:
       - AuthClientPasskey.registerPasskey
+      - AuthClientRestoreCredential.createRestoreKey
       - AuthPasskeyApi.startRegistration
       - AuthPasskeyApi.verifyRegistration
     supporting_symbols:
+      - AuthClientRestoreCredential
+      - RestoreCredentialInterface
+      - RestoreCredentialInterface.createRestoreCredential
       - PasskeyRegistrationOptionsResponse
       - PasskeyRegistrationOptionsResponse.PasskeyRegistrationOptionsResponse
       - PasskeyRegistrationOptionsResponse.challengeId
@@ -427,9 +431,11 @@ features:
     status: implemented
     symbols:
       - AuthClientPasskey.signInWithPasskey
+      - AuthClientRestoreCredential.signInWithRestoreKey
       - AuthPasskeyApi.startAuthentication
       - AuthPasskeyApi.verifyAuthentication
     supporting_symbols:
+      - RestoreCredentialInterface.getRestoreCredential
       - PasskeyAuthenticationOptionsResponse
       - PasskeyAuthenticationOptionsResponse.PasskeyAuthenticationOptionsResponse
       - PasskeyAuthenticationOptionsResponse.challengeId
