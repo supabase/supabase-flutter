@@ -1,12 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:http/http.dart';
+import 'package:http/http.dart' show ClientException;
 import 'package:supabase_storage/supabase_storage.dart';
+import 'package:supabase_test/internal.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
-
-import 'custom_http_client.dart';
 
 const String supabaseUrl = 'SUPABASE_TEST_URL';
 const String supabaseKey = 'SUPABASE_TEST_KEY';
@@ -42,11 +41,11 @@ String get objectUrl => '$supabaseUrl/storage/v1/object';
 
 void main() {
   late SupabaseStorageClient client;
-  late CustomHttpClient customHttpClient = CustomHttpClient();
+  late MockSupabaseHttpClient customHttpClient = MockSupabaseHttpClient();
   tearDown(() {
     final file = File('a.txt');
     if (file.existsSync()) file.deleteSync();
-    customHttpClient.receivedRequests.clear();
+    customHttpClient.reset();
   });
 
   group('Client with custom http client', () {
@@ -62,24 +61,24 @@ void main() {
     });
 
     test('should list buckets', () async {
-      customHttpClient.response = [testBucketJson, testBucketJson];
+      customHttpClient.stub([testBucketJson, testBucketJson]);
 
       final response = await client.listBuckets();
       expect(response, isA<List<Bucket>>());
-      expect(customHttpClient.receivedRequests.last.url.query, isEmpty);
+      expect(customHttpClient.requests.last.url.query, isEmpty);
     });
 
     test('should list buckets without query params when no options', () async {
-      customHttpClient.response = [testBucketJson];
+      customHttpClient.stub([testBucketJson]);
 
       await client.listBuckets(const ListBucketsOptions());
-      expect(customHttpClient.receivedRequests.last.url.query, isEmpty);
+      expect(customHttpClient.requests.last.url.query, isEmpty);
     });
 
     test(
       'should list buckets with filter, sort and pagination options',
       () async {
-        customHttpClient.response = [testBucketJson];
+        customHttpClient.stub([testBucketJson]);
 
         await client.listBuckets(
           const ListBucketsOptions(
@@ -92,7 +91,7 @@ void main() {
         );
 
         final queryParameters =
-            customHttpClient.receivedRequests.last.url.queryParameters;
+            customHttpClient.requests.last.url.queryParameters;
         expect(queryParameters['limit'], '10');
         expect(queryParameters['offset'], '5');
         expect(queryParameters['search'], 'prod');
@@ -102,14 +101,14 @@ void main() {
     );
 
     test('should include limit and offset of zero', () async {
-      customHttpClient.response = [testBucketJson];
+      customHttpClient.stub([testBucketJson]);
 
       await client.listBuckets(
         const ListBucketsOptions(limit: 0, offset: 0),
       );
 
       final queryParameters =
-          customHttpClient.receivedRequests.last.url.queryParameters;
+          customHttpClient.requests.last.url.queryParameters;
       expect(queryParameters['limit'], '0');
       expect(queryParameters['offset'], '0');
     });
@@ -117,7 +116,7 @@ void main() {
     test('should create bucket', () async {
       const testBucketId = 'test_bucket';
 
-      customHttpClient.response = {'name': 'test_bucket'};
+      customHttpClient.stub({'name': 'test_bucket'});
 
       final response = await client.createBucket(testBucketId);
       expect(response, isA<String>());
@@ -127,7 +126,7 @@ void main() {
     test('should get bucket', () async {
       const testBucketId = 'test_bucket';
 
-      customHttpClient.response = testBucketJson;
+      customHttpClient.stub(testBucketJson);
 
       final response = await client.getBucket(testBucketId);
       expect(response, isA<Bucket>());
@@ -138,7 +137,7 @@ void main() {
     test('should empty bucket', () async {
       const testBucketId = 'test_bucket';
 
-      customHttpClient.response = {'message': 'Emptied'};
+      customHttpClient.stub({'message': 'Emptied'});
 
       final response = await client.emptyBucket(testBucketId);
       expect(response, 'Emptied');
@@ -147,18 +146,18 @@ void main() {
     test('should delete bucket', () async {
       const testBucketId = 'test_bucket';
 
-      customHttpClient.response = {'message': 'Deleted'};
+      customHttpClient.stub({'message': 'Deleted'});
 
       final response = await client.deleteBucket(testBucketId);
       expect(response, 'Deleted');
     });
 
     test('should purgeBucketCache issuing DELETE to /cdn/{bucket}', () async {
-      customHttpClient.response = {'message': 'success'};
+      customHttpClient.stub({'message': 'success'});
 
       final response = await client.purgeBucketCache('test_bucket');
 
-      final request = customHttpClient.receivedRequests.last;
+      final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
       expect(
         request.url.toString(),
@@ -169,28 +168,28 @@ void main() {
     });
 
     test('should purgeBucketCache with transformations query param', () async {
-      customHttpClient.response = {'message': 'success'};
+      customHttpClient.stub({'message': 'success'});
 
       final response = await client.purgeBucketCache(
         'test_bucket',
         transformations: true,
       );
 
-      final request = customHttpClient.receivedRequests.last;
+      final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
       expect(request.url.queryParameters['transformations'], 'true');
       expect(response, 'success');
     });
 
     test('should create analytics bucket', () async {
-      customHttpClient.response = testAnalyticsBucketJson;
+      customHttpClient.stub(testAnalyticsBucketJson);
 
       final response = await client.createAnalyticsBucket('warehouse');
 
-      final request = customHttpClient.receivedRequests.last as Request;
+      final request = customHttpClient.requests.last;
       expect(request.method, 'POST');
       expect(request.url.toString(), endsWith('/storage/v1/iceberg/bucket'));
-      expect(jsonDecode(request.body), {'name': 'warehouse'});
+      expect(request.jsonBody, {'name': 'warehouse'});
       expect(response, isA<AnalyticsBucket>());
       expect(response.id, 'warehouse');
       expect(response.name, 'warehouse');
@@ -199,11 +198,11 @@ void main() {
     });
 
     test('should list analytics buckets without query params', () async {
-      customHttpClient.response = [testAnalyticsBucketJson];
+      customHttpClient.stub([testAnalyticsBucketJson]);
 
       final response = await client.listAnalyticsBuckets();
 
-      final request = customHttpClient.receivedRequests.last;
+      final request = customHttpClient.requests.last;
       expect(request.method, 'GET');
       expect(request.url.toString(), endsWith('/storage/v1/iceberg/bucket'));
       expect(request.url.query, isEmpty);
@@ -212,7 +211,7 @@ void main() {
     });
 
     test('should list analytics buckets with options', () async {
-      customHttpClient.response = [testAnalyticsBucketJson];
+      customHttpClient.stub([testAnalyticsBucketJson]);
 
       await client.listAnalyticsBuckets(
         const ListBucketsOptions(
@@ -225,7 +224,7 @@ void main() {
       );
 
       final queryParameters =
-          customHttpClient.receivedRequests.last.url.queryParameters;
+          customHttpClient.requests.last.url.queryParameters;
       expect(queryParameters['limit'], '10');
       expect(queryParameters['offset'], '5');
       expect(queryParameters['search'], 'ware');
@@ -234,11 +233,11 @@ void main() {
     });
 
     test('should delete analytics bucket', () async {
-      customHttpClient.response = {'message': 'Successfully deleted'};
+      customHttpClient.stub({'message': 'Successfully deleted'});
 
       final response = await client.deleteAnalyticsBucket('warehouse');
 
-      final request = customHttpClient.receivedRequests.last;
+      final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
       expect(
         request.url.toString(),
@@ -251,10 +250,10 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('File content');
 
-      customHttpClient.response = {
+      customHttpClient.stub({
         'Id': 'e668cf46-2f9b-4a89-8889-9d95f2653c78',
         'Key': 'public/a.txt',
-      };
+      });
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response.id, 'e668cf46-2f9b-4a89-8889-9d95f2653c78');
@@ -266,10 +265,10 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
 
-      customHttpClient.response = {
+      customHttpClient.stub({
         'Id': 'e668cf46-2f9b-4a89-8889-9d95f2653c78',
         'Key': 'public/a.txt',
-      };
+      });
 
       final response = await client.from('public').update('a.txt', file);
       expect(response.id, 'e668cf46-2f9b-4a89-8889-9d95f2653c78');
@@ -278,18 +277,18 @@ void main() {
     });
 
     test('should move file', () async {
-      customHttpClient.response = {'message': 'Move'};
+      customHttpClient.stub({'message': 'Move'});
 
       final response = await client.from('public').move('a.txt', 'b.txt');
       expect(response, 'Move');
     });
 
     test('should purgeCache issuing DELETE to /cdn/{bucket}/{path}', () async {
-      customHttpClient.response = {'message': 'success'};
+      customHttpClient.stub({'message': 'success'});
 
       final response = await client.from('public').purgeCache('folder/a.txt');
 
-      final request = customHttpClient.receivedRequests.last;
+      final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
       expect(
         request.url.toString(),
@@ -300,13 +299,13 @@ void main() {
     });
 
     test('should purgeCache with transformations query param', () async {
-      customHttpClient.response = {'message': 'success'};
+      customHttpClient.stub({'message': 'success'});
 
       final response = await client
           .from('public')
           .purgeCache('folder/a.txt', transformations: true);
 
-      final request = customHttpClient.receivedRequests.last;
+      final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
       expect(
         request.url.queryParameters['transformations'],
@@ -316,7 +315,7 @@ void main() {
     });
 
     test('should createSignedUrl file', () async {
-      customHttpClient.response = {'signedURL': '/signed/url'};
+      customHttpClient.stub({'signedURL': '/signed/url'});
 
       final response = await client.from('public').createSignedUrl('b.txt', 60);
       expect(response, isA<String>());
@@ -326,7 +325,7 @@ void main() {
     test(
       'createSignedUrl throws StorageException when signedURL is null',
       () async {
-        customHttpClient.response = {'signedURL': null};
+        customHttpClient.stub({'signedURL': null});
 
         await expectLater(
           client.from('public').createSignedUrl('missing.txt', 60),
@@ -347,7 +346,7 @@ void main() {
     test(
       'createSignedUrls returns success and failure for mixed paths',
       () async {
-        customHttpClient.response = [
+        customHttpClient.stub([
           {
             'path': 'exists.txt',
             'signedURL': '/storage/v1/object/sign/public/exists.txt?token=abc',
@@ -357,7 +356,7 @@ void main() {
             'signedURL': null,
             'error': 'not_found',
           },
-        ];
+        ]);
 
         final results = await client.from('public').createSignedUrls([
           'exists.txt',
@@ -382,20 +381,20 @@ void main() {
     );
 
     test('createSignedUploadUrl omits x-upsert by default', () async {
-      customHttpClient.response = {
+      customHttpClient.stub({
         'url': '/object/upload/sign/public/a.txt?token=xyz',
-      };
+      });
 
       await client.from('public').createSignedUploadUrl('a.txt');
 
-      final request = customHttpClient.receivedRequests.single;
+      final request = customHttpClient.requests.single;
       expect(request.headers.containsKey('x-upsert'), isFalse);
     });
 
     test('createSignedUploadUrl sends x-upsert when upserting', () async {
-      customHttpClient.response = {
+      customHttpClient.stub({
         'url': '/object/upload/sign/public/a.txt?token=xyz',
-      };
+      });
 
       final response = await client
           .from('public')
@@ -403,12 +402,12 @@ void main() {
 
       expect(response.token, 'xyz');
 
-      final request = customHttpClient.receivedRequests.single;
+      final request = customHttpClient.requests.single;
       expect(request.headers['x-upsert'], 'true');
     });
 
     test('should list files', () async {
-      customHttpClient.response = [testFileObjectJson, testFileObjectJson];
+      customHttpClient.stub([testFileObjectJson, testFileObjectJson]);
 
       final response = await client.from('public').list();
       expect(response, isA<List<FileObject>>());
@@ -416,7 +415,7 @@ void main() {
     });
 
     test('listPaginated posts options and parses the result', () async {
-      customHttpClient.response = {
+      customHttpClient.stub({
         'hasNext': true,
         'nextCursor': 'cursor-2',
         'folders': [
@@ -432,7 +431,7 @@ void main() {
             'metadata': {'size': 10},
           },
         ],
-      };
+      });
 
       final result = await client
           .from('public')
@@ -448,9 +447,9 @@ void main() {
             ),
           );
 
-      final request = customHttpClient.receivedRequests.single;
+      final request = customHttpClient.requests.single;
       expect(request.url.toString(), '$objectUrl/list-v2/public');
-      expect(jsonDecode((request as Request).body), {
+      expect(request.jsonBody, {
         'prefix': 'prefix',
         'limit': 100,
         'with_delimiter': true,
@@ -467,15 +466,15 @@ void main() {
     });
 
     test('listPaginated defaults to an empty body and empty result', () async {
-      customHttpClient.response = {
+      customHttpClient.stub({
         'hasNext': false,
         'objects': <dynamic>[],
-      };
+      });
 
       final result = await client.from('public').listPaginated();
 
-      final request = customHttpClient.receivedRequests.single as Request;
-      expect(jsonDecode(request.body), <String, dynamic>{});
+      final request = customHttpClient.requests.single;
+      expect(request.jsonBody, <String, dynamic>{});
       expect(result.hasNext, isFalse);
       expect(result.folders, isEmpty);
       expect(result.objects, isEmpty);
@@ -486,7 +485,7 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
 
-      customHttpClient.response = file.readAsBytesSync();
+      customHttpClient.stub(file.readAsBytesSync());
 
       final response = await client.from('public_bucket').download('b.txt');
       expect(response, isA<Uint8List>());
@@ -497,7 +496,7 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
 
-      customHttpClient.response = file.readAsBytesSync();
+      customHttpClient.stub(file.readAsBytesSync());
 
       final response = await client
           .from('public_bucket')
@@ -505,16 +504,16 @@ void main() {
       expect(response, isA<Uint8List>());
       expect(String.fromCharCodes(response), 'Updated content');
 
-      expect(customHttpClient.receivedRequests.length, 1);
+      expect(customHttpClient.requests.length, 1);
 
-      final request = customHttpClient.receivedRequests.first;
+      final request = customHttpClient.requests.first;
       expect(request.url.queryParameters, {'version': '1'});
     });
 
     test('downloadStream yields the response body as a byte stream', () async {
       final file = File('a.txt');
       file.writeAsStringSync('Streamed content');
-      customHttpClient.response = file.readAsBytesSync();
+      customHttpClient.stub(file.readAsBytesSync());
 
       final stream = client.from('public_bucket').downloadStream('b.txt');
       expect(stream, isA<Stream<Uint8List>>());
@@ -522,12 +521,12 @@ void main() {
 
       expect(String.fromCharCodes(bytes), 'Streamed content');
 
-      final request = customHttpClient.receivedRequests.single;
+      final request = customHttpClient.requests.single;
       expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
     });
 
     test('downloadStream appends transform and cacheNonce', () async {
-      customHttpClient.response = Uint8List.fromList([1, 2, 3]);
+      customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
 
       await client
           .from('public_bucket')
@@ -538,7 +537,7 @@ void main() {
           )
           .drain<void>();
 
-      final request = customHttpClient.receivedRequests.single;
+      final request = customHttpClient.requests.single;
       expect(
         request.url.toString(),
         contains('/render/image/authenticated/public_bucket/b.txt'),
@@ -547,9 +546,7 @@ void main() {
     });
 
     test('downloadStream surfaces an error status on the stream', () async {
-      addTearDown(() => customHttpClient.statusCode = 201);
-      customHttpClient.statusCode = 404;
-      customHttpClient.response = {'message': 'Object not found'};
+      customHttpClient.stub({'message': 'Object not found'}, statusCode: 404);
 
       await expectLater(
         client
@@ -567,15 +564,13 @@ void main() {
     });
 
     test('surfaces the service error code from the response body', () async {
-      addTearDown(() => customHttpClient.statusCode = 201);
-      customHttpClient.statusCode = 404;
       // Mirrors a real storage payload, which sends statusCode, error and code.
-      customHttpClient.response = {
+      customHttpClient.stub({
         'statusCode': '404',
         'error': 'not_found',
         'code': 'NoSuchKey',
         'message': 'Object not found',
-      };
+      }, statusCode: 404);
 
       await expectLater(
         client.from('public_bucket').download('missing.txt'),
@@ -589,13 +584,11 @@ void main() {
     });
 
     test('falls back to error when the response body has no code', () async {
-      addTearDown(() => customHttpClient.statusCode = 201);
-      customHttpClient.statusCode = 404;
-      customHttpClient.response = {
+      customHttpClient.stub({
         'statusCode': '404',
         'error': 'not_found',
         'message': 'Object not found',
-      };
+      }, statusCode: 404);
 
       await expectLater(
         client.from('public_bucket').download('missing.txt'),
@@ -660,13 +653,13 @@ void main() {
       () async {
         final file = File('a.txt');
         file.writeAsStringSync('Updated content');
-        customHttpClient.response = file.readAsBytesSync();
+        customHttpClient.stub(file.readAsBytesSync());
 
         await client
             .from('public_bucket')
             .download('b.txt', transform: const TransformOptions());
 
-        final request = customHttpClient.receivedRequests.first;
+        final request = customHttpClient.requests.first;
         expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
         expect(request.url.toString(), isNot(contains('/render/image/')));
       },
@@ -675,13 +668,13 @@ void main() {
     test('download with actual transform uses render endpoint', () async {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
-      customHttpClient.response = file.readAsBytesSync();
+      customHttpClient.stub(file.readAsBytesSync());
 
       await client
           .from('public_bucket')
           .download('b.txt', transform: const TransformOptions(width: 200));
 
-      final request = customHttpClient.receivedRequests.first;
+      final request = customHttpClient.requests.first;
       expect(
         request.url.toString(),
         contains('/render/image/authenticated/public_bucket/b.txt'),
@@ -690,9 +683,9 @@ void main() {
     });
 
     test('createSignedUrl appends download to the token query', () async {
-      customHttpClient.response = {
+      customHttpClient.stub({
         'signedURL': '/object/sign/public/b.txt?token=abc',
-      };
+      });
 
       final response = await client
           .from('public')
@@ -705,12 +698,12 @@ void main() {
     });
 
     test('createSignedUrls appends download to each URL', () async {
-      customHttpClient.response = [
+      customHttpClient.stub([
         {
           'path': 'exists.txt',
           'signedURL': '/object/sign/public/exists.txt?token=abc',
         },
-      ];
+      ]);
 
       final results = await client
           .from('public')
@@ -745,18 +738,18 @@ void main() {
     test('download appends cacheNonce query parameter', () async {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
-      customHttpClient.response = file.readAsBytesSync();
+      customHttpClient.stub(file.readAsBytesSync());
 
       await client.from('public_bucket').download('b.txt', cacheNonce: 'v2');
 
-      final request = customHttpClient.receivedRequests.first;
+      final request = customHttpClient.requests.first;
       expect(request.url.queryParameters, {'cacheNonce': 'v2'});
     });
 
     test('createSignedUrl appends cacheNonce to the token query', () async {
-      customHttpClient.response = {
+      customHttpClient.stub({
         'signedURL': '/object/sign/public/b.txt?token=abc',
-      };
+      });
 
       final response = await client
           .from('public')
@@ -765,12 +758,12 @@ void main() {
     });
 
     test('createSignedUrls appends cacheNonce to each URL', () async {
-      customHttpClient.response = [
+      customHttpClient.stub([
         {
           'path': 'exists.txt',
           'signedURL': '/object/sign/public/exists.txt?token=abc',
         },
-      ];
+      ]);
 
       final results = await client
           .from('public')
@@ -781,7 +774,7 @@ void main() {
     });
 
     test('should remove file', () async {
-      customHttpClient.response = [testFileObjectJson, testFileObjectJson];
+      customHttpClient.stub([testFileObjectJson, testFileObjectJson]);
 
       final response = await client.from('public').remove(['a.txt', 'b.txt']);
       expect(response, isA<List<dynamic>>());
@@ -796,9 +789,11 @@ void main() {
         '$supabaseUrl/storage/v1',
         {'Authorization': 'Bearer $supabaseKey'},
         retryOptions: const SupabaseRetryOptions(count: 5),
-        // `RetryHttpClient` will throw `SocketException` for the first two
-        // tries
-        httpClient: RetryHttpClient(),
+        // The first three uploads fail as if the device were offline, the
+        // fourth one succeeds.
+        httpClient: MockSupabaseHttpClient()
+          ..stub({'Key': 'public/a.txt'}, statusCode: 201)
+          ..stubError(ClientException('Offline'), times: 3),
       );
     });
 
@@ -941,7 +936,7 @@ void main() {
 
   group('accessToken', () {
     setUp(() {
-      customHttpClient.response = [testBucketJson];
+      customHttpClient.stub([testBucketJson]);
     });
 
     test('is resolved before every request', () async {
@@ -957,7 +952,7 @@ void main() {
       await storage.listBuckets();
 
       expect(
-        customHttpClient.receivedRequests
+        customHttpClient.requests
             .map((request) => request.headers['Authorization'])
             .toList(),
         ['Bearer token-0', 'Bearer token-1'],
@@ -976,7 +971,7 @@ void main() {
       await storage.listBuckets();
 
       expect(
-        customHttpClient.receivedRequests.last.headers['Authorization'],
+        customHttpClient.requests.last.headers['Authorization'],
         'Bearer pinned',
       );
     });

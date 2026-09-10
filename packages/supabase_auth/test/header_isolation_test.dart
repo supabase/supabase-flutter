@@ -1,49 +1,15 @@
-import 'dart:convert';
-
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:http/http.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
 
-/// Records the headers of every request it receives and always answers with a
-/// minimal user payload, so we can inspect what the client actually sent.
-class _RecordingHttpClient extends BaseClient {
-  final List<Map<String, String>> requestHeaders = [];
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    requestHeaders.add(Map.of(request.headers));
-    return StreamedResponse(
-      Stream.value(
-        utf8.encode(
-          jsonEncode({
-            'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
-            'aud': 'authenticated',
-            'role': 'authenticated',
-            'email': 'fake1@email.com',
-            'app_metadata': {
-              'provider': 'email',
-              'providers': ['email'],
-            },
-            'user_metadata': <String, dynamic>{},
-            'created_at': '2023-04-01T09:38:59.784028Z',
-          }),
-        ),
-      ),
-      200,
-      request: request,
-    );
-  }
-}
-
 void main() {
   group('AuthClient header isolation', () {
-    late _RecordingHttpClient http;
+    late MockSupabaseHttpClient http;
     late AuthClient client;
 
     setUp(() {
-      http = _RecordingHttpClient();
+      http = MockSupabaseHttpClient()..stubUser();
       client = AuthClient(
         url: 'http://localhost',
         headers: {'apikey': 'anon-key'},
@@ -57,7 +23,7 @@ void main() {
 
       // The token reached the wire for this single request...
       expect(
-        http.requestHeaders.single['Authorization'],
+        http.requests.single.headers['Authorization'],
         'Bearer user-access-token',
       );
       // ...but it must not be baked into the shared header map, where it would
@@ -82,7 +48,7 @@ void main() {
 
       await client.getUser('user-access-token');
 
-      expect(http.requestHeaders.single['apikey'], 'anon-key');
+      expect(http.requests.single.headers['apikey'], 'anon-key');
     });
 
     test('setHeader adds a header to subsequent requests', () async {
@@ -93,16 +59,19 @@ void main() {
 
       await client.getUser('user-access-token');
 
-      expect(http.requestHeaders.single['x-custom-header'], 'value');
+      expect(http.requests.single.headers['x-custom-header'], 'value');
       expect(client.headers['x-custom-header'], 'value');
     });
 
     test('setHeader is picked up by the admin api', () async {
+      // The admin api reads a user through its own endpoint, which the
+      // stubUser shorthand does not cover.
+      http.stub(testUserJson(), path: '/admin/users/$testUserId');
       client.setHeader('x-custom-header', 'value');
 
-      await client.admin.getUserById('18bc7a4e-c095-4573-93dc-e0be29bada97');
+      await client.admin.getUserById(testUserId);
 
-      expect(http.requestHeaders.single['x-custom-header'], 'value');
+      expect(http.requests.single.headers['x-custom-header'], 'value');
     });
   });
 }

@@ -20,10 +20,10 @@ void main() {
   });
 
   group('Deep Link with PKCE code', () {
-    late final PkceHttpClient pkceHttpClient;
+    late final MockSupabaseHttpClient pkceHttpClient;
 
     setUp(() async {
-      pkceHttpClient = PkceHttpClient();
+      pkceHttpClient = createPkceHttpClient();
 
       mockAppLink(
         mockMethodChannel: false,
@@ -53,18 +53,21 @@ void main() {
         // Wait for the initial app link to be handled, as this is an async
         // process when mocking the event channel.
         await Future.delayed(const Duration(milliseconds: 500));
-        expect(pkceHttpClient.requestCount, 1);
-        expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+        expect(pkceHttpClient.requests.length, 1);
+        expect(
+          pkceHttpClient.requests.last.jsonBody['auth_code'],
+          'my-code-verifier',
+        );
       },
     );
   });
 
   group('Deep Link with implicit token while PKCE flow is configured', () {
-    late final GetUserHttpClient getUserHttpClient;
+    late final MockSupabaseHttpClient getUserHttpClient;
     late final Future<AuthState> userUpdatedState;
 
     setUp(() async {
-      getUserHttpClient = GetUserHttpClient('new@email.com');
+      getUserHttpClient = createGetUserHttpClient('new@email.com');
 
       mockAppLink(
         mockMethodChannel: false,
@@ -95,8 +98,8 @@ void main() {
         'updates the current user', () async {
       final state = await userUpdatedState;
       expect(state.session?.user.email, 'new@email.com');
-      expect(getUserHttpClient.requestCount, 1);
-      expect(getUserHttpClient.lastRequestUrl?.path, endsWith('/user'));
+      expect(getUserHttpClient.requests.length, 1);
+      expect(getUserHttpClient.requests.last.url.path, endsWith('/user'));
       expect(
         Supabase.instance.client.auth.currentUser?.email,
         'new@email.com',
@@ -109,7 +112,7 @@ void main() {
       'predicate returning false suppresses detection of an otherwise valid '
       'auth callback',
       () async {
-        final pkceHttpClient = PkceHttpClient();
+        final pkceHttpClient = createPkceHttpClient();
 
         mockAppLink(
           mockMethodChannel: false,
@@ -133,14 +136,14 @@ void main() {
         );
 
         await Future.delayed(const Duration(milliseconds: 500));
-        expect(pkceHttpClient.requestCount, 0);
+        expect(pkceHttpClient.requests.length, 0);
       },
     );
 
     test(
       'predicate governs detection based on the incoming uri',
       () async {
-        final pkceHttpClient = PkceHttpClient();
+        final pkceHttpClient = createPkceHttpClient();
         final receivedUris = <Uri>[];
 
         mockAppLink(
@@ -169,8 +172,11 @@ void main() {
 
         await Future.delayed(const Duration(milliseconds: 500));
         expect(receivedUris.single.queryParameters['code'], 'my-code-verifier');
-        expect(pkceHttpClient.requestCount, 1);
-        expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+        expect(pkceHttpClient.requests.length, 1);
+        expect(
+          pkceHttpClient.requests.last.jsonBody['auth_code'],
+          'my-code-verifier',
+        );
       },
     );
   });
@@ -183,7 +189,7 @@ void main() {
       'persists the session to the default storage when persistSession is true',
       () async {
         mockSharedPreferences();
-        final pkceHttpClient = PkceHttpClient();
+        final pkceHttpClient = createPkceHttpClient();
 
         mockAppLink(
           mockMethodChannel: false,
@@ -217,7 +223,7 @@ void main() {
       'does not persist the session when persistSession is false',
       () async {
         mockSharedPreferences();
-        final pkceHttpClient = PkceHttpClient();
+        final pkceHttpClient = createPkceHttpClient();
 
         mockAppLink(
           mockMethodChannel: false,
@@ -264,7 +270,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        httpClient: GetUserHttpClient('new@email.com'),
+        httpClient: createGetUserHttpClient('new@email.com'),
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),

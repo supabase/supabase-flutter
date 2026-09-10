@@ -1,7 +1,5 @@
-import 'dart:convert';
-
-import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 extension type const Book(Map<String, dynamic> _json)
@@ -13,7 +11,10 @@ extension type const Book(Map<String, dynamic> _json)
 extension type const Author(Map<String, dynamic> _json)
     implements Map<String, dynamic> {}
 
-const bookRows = '[{"id":1,"title":"a"},{"id":2,"title":"b"}]';
+const bookRows = [
+  {'id': 1, 'title': 'a'},
+  {'id': 2, 'title': 'b'},
+];
 
 class Books {
   static const table = PostgrestTable('books', Book.new);
@@ -47,32 +48,12 @@ class AuthorClass {
   const AuthorClass();
 }
 
-class MockHttpClient extends BaseClient {
-  String responseBody = '[]';
-  int statusCode = 200;
-  Map<String, String> responseHeaders = {'content-type': 'application/json'};
-  BaseRequest? lastRequest;
-  String? lastRequestBody;
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    lastRequest = request;
-    lastRequestBody = utf8.decode(await request.finalize().toBytes());
-    return StreamedResponse(
-      Stream.value(utf8.encode(responseBody)),
-      statusCode,
-      headers: responseHeaders,
-      request: request,
-    );
-  }
-}
-
 void main() {
-  late MockHttpClient httpClient;
+  late MockSupabaseHttpClient httpClient;
   late PostgrestClient client;
 
   setUp(() {
-    httpClient = MockHttpClient();
+    httpClient = MockSupabaseHttpClient()..stub([]);
     client = PostgrestClient(
       'http://localhost/rest/v1',
       httpClient: httpClient,
@@ -84,21 +65,21 @@ void main() {
   });
 
   Map<String, String> requestParameters() =>
-      httpClient.lastRequest!.url.queryParameters;
+      httpClient.requests.last.queryParameters;
 
   group('select', () {
     test('returns rows converted into the table row type', () async {
-      httpClient.responseBody = bookRows;
+      httpClient.stub(bookRows);
 
       final List<Book> books = await client.table(Books.table).select();
 
-      expect(httpClient.lastRequest!.url.path, '/rest/v1/books');
+      expect(httpClient.requests.last.url.path, '/rest/v1/books');
       expect(requestParameters()['select'], '*');
       expect(books.map((book) => book.title), ['a', 'b']);
     });
 
     test('selects the given columns', () async {
-      httpClient.responseBody = bookRows;
+      httpClient.stub(bookRows);
 
       await client.table(Books.table).select([Books.id, Books.title]);
 
@@ -106,7 +87,7 @@ void main() {
     });
 
     test('selects casts and JSON paths', () async {
-      httpClient.responseBody = bookRows;
+      httpClient.stub(bookRows);
 
       await client.table(Books.table).select([
         Books.id,
@@ -118,7 +99,9 @@ void main() {
     });
 
     test('selects aggregates', () async {
-      httpClient.responseBody = '[{"count":2,"max":"b"}]';
+      httpClient.stub([
+        {'count': 2, 'max': 'b'},
+      ]);
 
       await client.table(Books.table).select([
         PostgrestDerivedExpression.countAll(),
@@ -129,7 +112,12 @@ void main() {
     });
 
     test('selects and orders by embedded columns', () async {
-      httpClient.responseBody = '[{"id":1,"author":{"name":"a"}}]';
+      httpClient.stub([
+        {
+          'id': 1,
+          'author': {'name': 'a'},
+        },
+      ]);
 
       await client
           .table(Books.table)
@@ -152,7 +140,7 @@ void main() {
     });
 
     test('single returns one row converted into the table row type', () async {
-      httpClient.responseBody = '{"id":1,"title":"a"}';
+      httpClient.stub({'id': 1, 'title': 'a'});
 
       final Book book = await client
           .table(Books.table)
@@ -161,14 +149,14 @@ void main() {
           .single();
 
       expect(
-        httpClient.lastRequest!.headers['Accept'],
+        httpClient.requests.last.headers['Accept'],
         'application/vnd.pgrst.object+json',
       );
       expect(book.title, 'a');
     });
 
     test('maybeSingle returns null when no row matches', () async {
-      httpClient.responseBody = '[]';
+      httpClient.stub([]);
 
       final Book? book = await client
           .table(Books.table)
@@ -180,7 +168,9 @@ void main() {
     });
 
     test('maybeSingle returns the row when one matches', () async {
-      httpClient.responseBody = '[{"id":1,"title":"a"}]';
+      httpClient.stub([
+        {'id': 1, 'title': 'a'},
+      ]);
 
       final Book? book = await client
           .table(Books.table)
@@ -192,11 +182,7 @@ void main() {
     });
 
     test('count returns typed rows together with the count', () async {
-      httpClient.responseBody = bookRows;
-      httpClient.responseHeaders = {
-        'content-type': 'application/json',
-        'content-range': '0-1/10',
-      };
+      httpClient.stub(bookRows, headers: {'content-range': '0-1/10'});
 
       final PostgrestResponse<List<Book>> response = await client
           .table(Books.table)
@@ -204,7 +190,7 @@ void main() {
           .count(CountOption.exact);
 
       expect(
-        httpClient.lastRequest!.headers['Prefer'],
+        httpClient.requests.last.headers['Prefer'],
         contains('count=exact'),
       );
       expect(response.data.map((book) => book.id), [1, 2]);
@@ -214,7 +200,7 @@ void main() {
 
   group('where', () {
     setUp(() {
-      httpClient.responseBody = bookRows;
+      httpClient.stub(bookRows);
     });
 
     test('chained filters combine with logical AND', () async {
@@ -268,7 +254,7 @@ void main() {
           .select()
           .where(Books.id.gt(1) & Books.id.lt(10));
 
-      expect(httpClient.lastRequest!.url.queryParametersAll['id'], [
+      expect(httpClient.requests.last.url.queryParametersAll['id'], [
         'gt.1',
         'lt.10',
       ]);
@@ -358,7 +344,7 @@ void main() {
 
   group('asStream', () {
     test('returns a broadcast stream that supports multiple listeners', () {
-      httpClient.responseBody = bookRows;
+      httpClient.stub(bookRows);
 
       final stream = client.table(Books.table).select().asStream();
 
@@ -374,7 +360,7 @@ void main() {
 
   group('transforms', () {
     setUp(() {
-      httpClient.responseBody = bookRows;
+      httpClient.stub(bookRows);
     });
 
     test('order sends only what was asked for', () async {
@@ -419,7 +405,7 @@ void main() {
           .order(Books.id);
 
       expect(requestParameters()['order'], 'title.desc,id');
-      expect(httpClient.lastRequest!.url.queryParametersAll['order'], [
+      expect(httpClient.requests.last.url.queryParametersAll['order'], [
         'title.desc,id',
       ]);
     });
@@ -444,16 +430,16 @@ void main() {
 
   group('mutations', () {
     test('insert posts the values', () async {
-      httpClient.responseBody = '';
+      httpClient.stub(null);
 
       await client.table(Books.table).insert({'title': 'foo'});
 
-      expect(httpClient.lastRequest!.method, 'POST');
-      expect(httpClient.lastRequestBody, '{"title":"foo"}');
+      expect(httpClient.requests.last.method, 'POST');
+      expect(httpClient.requests.last.body, '{"title":"foo"}');
     });
 
     test('insert with a trailing select returns the typed row', () async {
-      httpClient.responseBody = '{"id":3,"title":"foo"}';
+      httpClient.stub({'id': 3, 'title': 'foo'});
 
       final Book book = await client
           .table(Books.table)
@@ -461,16 +447,18 @@ void main() {
           .select()
           .single();
 
-      expect(httpClient.lastRequest!.method, 'POST');
+      expect(httpClient.requests.last.method, 'POST');
       expect(
-        httpClient.lastRequest!.headers['Prefer'],
+        httpClient.requests.last.headers['Prefer'],
         contains('return=representation'),
       );
       expect(book.id, 3);
     });
 
     test('a trailing select takes columns', () async {
-      httpClient.responseBody = '[{"id":3}]';
+      httpClient.stub([
+        {'id': 3},
+      ]);
 
       await client.table(Books.table).insert({'title': 'foo'}).select([
         Books.id,
@@ -480,18 +468,18 @@ void main() {
     });
 
     test('upsert sets the resolution header', () async {
-      httpClient.responseBody = '';
+      httpClient.stub(null);
 
       await client.table(Books.table).upsert({'id': 1, 'title': 'foo'});
 
       expect(
-        httpClient.lastRequest!.headers['Prefer'],
+        httpClient.requests.last.headers['Prefer'],
         contains('resolution=merge-duplicates'),
       );
     });
 
     test('upsert names its conflict target with columns', () async {
-      httpClient.responseBody = '';
+      httpClient.stub(null);
 
       await client
           .table(Books.table)
@@ -511,39 +499,35 @@ void main() {
     });
 
     test('update patches the filtered rows', () async {
-      httpClient.responseBody = '';
+      httpClient.stub(null);
 
       await client
           .table(Books.table)
           .update({'title': 'bar'})
           .where(Books.id.eq(1));
 
-      expect(httpClient.lastRequest!.method, 'PATCH');
+      expect(httpClient.requests.last.method, 'PATCH');
       expect(requestParameters()['id'], 'eq.1');
-      expect(httpClient.lastRequestBody, '{"title":"bar"}');
+      expect(httpClient.requests.last.body, '{"title":"bar"}');
     });
 
     test('delete uses the filtered rows', () async {
-      httpClient.responseBody = '';
+      httpClient.stub(null);
 
       await client.table(Books.table).delete().where(Books.id.eq(1));
 
-      expect(httpClient.lastRequest!.method, 'DELETE');
+      expect(httpClient.requests.last.method, 'DELETE');
       expect(requestParameters()['id'], 'eq.1');
     });
   });
 
   group('count', () {
     test('count on the table returns the number of rows', () async {
-      httpClient.responseBody = '';
-      httpClient.responseHeaders = {
-        'content-type': 'application/json',
-        'content-range': '*/42',
-      };
+      httpClient.stub(null, headers: {'content-range': '*/42'});
 
       final int count = await client.table(Books.table).count();
 
-      expect(httpClient.lastRequest!.method, 'HEAD');
+      expect(httpClient.requests.last.method, 'HEAD');
       expect(count, 42);
     });
   });

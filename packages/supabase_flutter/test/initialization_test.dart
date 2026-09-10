@@ -120,7 +120,7 @@ void main() {
 
     group('Custom client initialization', () {
       test('initialize successfully with custom HTTP client', () {
-        final httpClient = PkceHttpClient();
+        final httpClient = createPkceHttpClient();
         expect(
           Supabase.initialize(
             url: supabaseUrl,

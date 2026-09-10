@@ -1,5 +1,3 @@
-import 'package:http/http.dart';
-import 'package:http/testing.dart';
 import 'package:supabase/src/trace_http_client.dart';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
@@ -13,18 +11,19 @@ const _unsampledTraceparent =
 const _supabaseUrl = 'https://project.supabase.co';
 
 void main() {
-  late Request captured;
+  late MockSupabaseHttpClient httpClient;
 
-  MockClient mockClient() => MockClient((request) async {
-    captured = request;
-    return Response('', 200);
+  setUp(() {
+    httpClient = MockSupabaseHttpClient()..stub(null);
   });
+
+  RecordedRequest captured() => httpClient.requests.last;
 
   TracePropagationClient client(
     TracePropagationOptions options, {
     String supabaseUrl = _supabaseUrl,
   }) {
-    return TracePropagationClient(mockClient(), options, supabaseUrl);
+    return TracePropagationClient(httpClient, options, supabaseUrl);
   }
 
   const context = TraceContext(
@@ -49,9 +48,9 @@ void main() {
       optionsWith(() => context),
     ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-    expect(captured.headers['traceparent'], _sampledTraceparent);
-    expect(captured.headers['tracestate'], 'vendor=value');
-    expect(captured.headers['baggage'], 'key=value');
+    expect(captured().headers['traceparent'], _sampledTraceparent);
+    expect(captured().headers['tracestate'], 'vendor=value');
+    expect(captured().headers['baggage'], 'key=value');
   });
 
   test('injects trace headers for wildcard supabase.co subdomains', () async {
@@ -59,7 +58,7 @@ void main() {
       optionsWith(() => context),
     ).get(Uri.parse('https://other.supabase.in/functions/v1/fn'));
 
-    expect(captured.headers['traceparent'], _sampledTraceparent);
+    expect(captured().headers['traceparent'], _sampledTraceparent);
   });
 
   test('injects trace headers for localhost during development', () async {
@@ -68,7 +67,7 @@ void main() {
       supabaseUrl: 'http://localhost:54321',
     ).get(Uri.parse('http://localhost:54321/rest/v1/table'));
 
-    expect(captured.headers['traceparent'], _sampledTraceparent);
+    expect(captured().headers['traceparent'], _sampledTraceparent);
   });
 
   test('does not propagate to third-party hosts', () async {
@@ -76,7 +75,7 @@ void main() {
       optionsWith(() => context),
     ).get(Uri.parse('https://evil.com/api'));
 
-    expect(captured.headers.containsKey('traceparent'), isFalse);
+    expect(captured().headers.containsKey('traceparent'), isFalse);
   });
 
   test('does not inject when the provider returns null', () async {
@@ -84,7 +83,7 @@ void main() {
       optionsWith(() => null),
     ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-    expect(captured.headers.containsKey('traceparent'), isFalse);
+    expect(captured().headers.containsKey('traceparent'), isFalse);
   });
 
   test(
@@ -96,7 +95,7 @@ void main() {
         ),
       ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-      expect(captured.headers.containsKey('traceparent'), isFalse);
+      expect(captured().headers.containsKey('traceparent'), isFalse);
     },
   );
 
@@ -108,7 +107,7 @@ void main() {
       ),
     ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-    expect(captured.headers['traceparent'], _unsampledTraceparent);
+    expect(captured().headers['traceparent'], _unsampledTraceparent);
   });
 
   test('propagates malformed traceparent without suppressing it', () async {
@@ -116,7 +115,7 @@ void main() {
       optionsWith(() => const TraceContext(traceparent: 'not-a-traceparent')),
     ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-    expect(captured.headers['traceparent'], 'not-a-traceparent');
+    expect(captured().headers['traceparent'], 'not-a-traceparent');
   });
 
   test('does not overwrite an existing trace header', () async {
@@ -125,57 +124,35 @@ void main() {
       headers: {'traceparent': 'existing'},
     );
 
-    expect(captured.headers['traceparent'], 'existing');
+    expect(captured().headers['traceparent'], 'existing');
   });
 
   test('SupabaseClient wires trace propagation into rest requests', () async {
-    late Request restRequest;
     final supabase = SupabaseClient(
       _supabaseUrl,
       'anon-key',
       tracePropagationOptions: optionsWith(() => context),
       authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
-      httpClient: MockClient((request) async {
-        restRequest = request;
-        return Response(
-          '[]',
-          200,
-          request: request,
-          headers: {
-            'content-type': 'application/json',
-          },
-        );
-      }),
+      httpClient: httpClient..stubTable('table', rows: []),
     );
     addTearDown(supabase.dispose);
 
     await supabase.from('table').select();
 
-    expect(restRequest.headers['traceparent'], _sampledTraceparent);
+    expect(captured().headers['traceparent'], _sampledTraceparent);
   });
 
   test('SupabaseClient sends no trace headers when disabled', () async {
-    late Request restRequest;
     final supabase = SupabaseClient(
       _supabaseUrl,
       'anon-key',
       authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
-      httpClient: MockClient((request) async {
-        restRequest = request;
-        return Response(
-          '[]',
-          200,
-          request: request,
-          headers: {
-            'content-type': 'application/json',
-          },
-        );
-      }),
+      httpClient: httpClient..stubTable('table', rows: []),
     );
     addTearDown(supabase.dispose);
 
     await supabase.from('table').select();
 
-    expect(restRequest.headers.containsKey('traceparent'), isFalse);
+    expect(captured().headers.containsKey('traceparent'), isFalse);
   });
 }

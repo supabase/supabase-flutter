@@ -1,7 +1,6 @@
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
 
-import 'mocks/sso_mock_client.dart';
 import 'utils.dart';
 
 void main() {
@@ -10,10 +9,10 @@ void main() {
       'https://idp.example.com/sso/saml/login?id=test-id&scope=openid';
 
   group('getSSOSignInUrl with mocked server', () {
-    late SSOMockClient mockClient;
+    late MockSupabaseHttpClient mockClient;
 
     setUp(() {
-      mockClient = SSOMockClient(redirectUrl: redirectUrl);
+      mockClient = MockSupabaseHttpClient()..stub({'url': redirectUrl});
     });
 
     AuthClient createClient({AuthFlowType flowType = AuthFlowType.pkce}) {
@@ -40,16 +39,16 @@ void main() {
     test('posts the provider id to the sso endpoint', () async {
       await createClient().getSSOSignInUrl(providerId: providerId);
 
-      expect(mockClient.lastUri?.path, endsWith('/sso'));
+      expect(mockClient.requests.last.url.path, endsWith('/sso'));
       expect(
-        mockClient.lastRequestBody,
+        mockClient.requests.last.jsonBody,
         containsPair('provider_id', providerId),
       );
       expect(
-        mockClient.lastRequestBody,
+        mockClient.requests.last.jsonBody,
         containsPair('skip_http_redirect', true),
       );
-      expect(mockClient.lastRequestBody, isNot(contains('domain')));
+      expect(mockClient.requests.last.jsonBody, isNot(contains('domain')));
     });
 
     test('posts the domain, redirect target and captcha token', () async {
@@ -59,18 +58,21 @@ void main() {
         captchaToken: 'test-captcha-token',
       );
 
-      expect(mockClient.lastRequestBody, containsPair('domain', 'company.com'));
       expect(
-        mockClient.lastRequestBody,
+        mockClient.requests.last.jsonBody,
+        containsPair('domain', 'company.com'),
+      );
+      expect(
+        mockClient.requests.last.jsonBody,
         containsPair('redirect_to', 'my-app://callback'),
       );
       expect(
-        mockClient.lastRequestBody,
+        mockClient.requests.last.jsonBody,
         containsPair('gotrue_meta_security', {
           'captcha_token': 'test-captcha-token',
         }),
       );
-      expect(mockClient.lastRequestBody, isNot(contains('provider_id')));
+      expect(mockClient.requests.last.jsonBody, isNot(contains('provider_id')));
     });
 
     test('sends a PKCE challenge in the PKCE flow', () async {
@@ -78,8 +80,11 @@ void main() {
         flowType: AuthFlowType.pkce,
       ).getSSOSignInUrl(providerId: providerId);
 
-      expect(mockClient.lastRequestBody?['code_challenge'], isNotEmpty);
-      expect(mockClient.lastRequestBody?['code_challenge_method'], 's256');
+      expect(mockClient.requests.last.jsonBody['code_challenge'], isNotEmpty);
+      expect(
+        mockClient.requests.last.jsonBody['code_challenge_method'],
+        's256',
+      );
     });
 
     test('sends no PKCE challenge in the implicit flow', () async {
@@ -87,8 +92,11 @@ void main() {
         flowType: AuthFlowType.implicit,
       ).getSSOSignInUrl(providerId: providerId);
 
-      expect(mockClient.lastRequestBody?['code_challenge'], isNull);
-      expect(mockClient.lastRequestBody?['code_challenge_method'], isNull);
+      expect(mockClient.requests.last.jsonBody['code_challenge'], isNull);
+      expect(
+        mockClient.requests.last.jsonBody['code_challenge_method'],
+        isNull,
+      );
     });
 
     test('throws when neither a provider id nor a domain is given', () async {
@@ -97,7 +105,7 @@ void main() {
         throwsA(isA<AssertionError>()),
       );
 
-      expect(mockClient.lastRequestBody, isNull);
+      expect(mockClient.requests, isEmpty);
     });
   });
 }

@@ -3,9 +3,8 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:supabase_storage/supabase_storage.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
-
-import 'custom_http_client.dart';
 
 const storageUrl = 'http://localhost/storage/v1';
 const headers = {'Authorization': 'Bearer token'};
@@ -138,9 +137,8 @@ void main() {
     test(
       'detects content type from the path of a binary signed url upload',
       () async {
-        final mockClient = CustomHttpClient();
-        mockClient.response = {'Key': 'bucket/folder/image.png'};
-        mockClient.statusCode = 200;
+        final mockClient = MockSupabaseHttpClient();
+        mockClient.stub({'Key': 'bucket/folder/image.png'});
         final client = SupabaseStorageClient(
           storageUrl,
           headers,
@@ -155,7 +153,7 @@ void main() {
               Uint8List.fromList([1, 2, 3]),
             );
 
-        final request = mockClient.receivedRequests.single as MultipartRequest;
+        final request = mockClient.requests.single.request as MultipartRequest;
         expect(request.files.single.contentType.mimeType, 'image/png');
       },
     );
@@ -165,9 +163,8 @@ void main() {
     test(
       'removes leading, trailing and duplicate slashes from the path',
       () async {
-        final mockClient = CustomHttpClient();
-        mockClient.response = {'Key': 'bucket/folder/image.png'};
-        mockClient.statusCode = 200;
+        final mockClient = MockSupabaseHttpClient();
+        mockClient.stub({'Key': 'bucket/folder/image.png'});
         final client = SupabaseStorageClient(
           storageUrl,
           headers,
@@ -185,7 +182,7 @@ void main() {
         expect(response.path, 'folder/image.png');
         expect(response.fullPath, 'bucket/folder/image.png');
 
-        final requestPath = mockClient.receivedRequests.single.url.path;
+        final requestPath = mockClient.requests.single.url.path;
         expect(requestPath, endsWith('/bucket/folder/image.png'));
         expect(requestPath, isNot(contains('//')));
       },

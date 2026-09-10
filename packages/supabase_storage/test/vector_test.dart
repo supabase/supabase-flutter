@@ -1,22 +1,17 @@
-import 'dart:convert';
-
-import 'package:http/http.dart';
 import 'package:supabase_storage/supabase_storage.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
-
-import 'custom_http_client.dart';
 
 const storageUrl = 'http://localhost/storage/v1';
 const headers = {'Authorization': 'Bearer token'};
 
 void main() {
-  late CustomHttpClient mockClient;
+  late MockSupabaseHttpClient mockClient;
   late SupabaseVectorsClient vectors;
 
   setUp(() {
-    mockClient = CustomHttpClient();
-    mockClient.statusCode = 200;
-    mockClient.response = <String, dynamic>{};
+    mockClient = MockSupabaseHttpClient();
+    mockClient.stub(<String, dynamic>{});
     vectors = SupabaseStorageClient(
       storageUrl,
       headers,
@@ -24,10 +19,10 @@ void main() {
     ).vectors;
   });
 
-  Request lastRequest() => mockClient.receivedRequests.single as Request;
+  RecordedRequest lastRequest() => mockClient.requests.single;
 
   Map<String, dynamic> lastBody() =>
-      jsonDecode(lastRequest().body) as Map<String, dynamic>;
+      lastRequest().jsonBody as Map<String, dynamic>;
 
   group('vector buckets', () {
     test('createBucket posts the bucket name', () async {
@@ -42,13 +37,13 @@ void main() {
     });
 
     test('getBucket parses the bucket metadata', () async {
-      mockClient.response = {
+      mockClient.stub({
         'vectorBucket': {
           'vectorBucketName': 'embeddings',
           'creationTime': 1700000000,
           'encryptionConfiguration': {'sseType': 'AES256'},
         },
-      };
+      });
 
       final bucket = await vectors.getBucket('embeddings');
 
@@ -65,13 +60,13 @@ void main() {
     });
 
     test('listBuckets sends filters and parses buckets and cursor', () async {
-      mockClient.response = {
+      mockClient.stub({
         'vectorBuckets': [
           {'vectorBucketName': 'embeddings-a'},
           {'vectorBucketName': 'embeddings-b'},
         ],
         'nextToken': 'cursor-1',
-      };
+      });
 
       final result = await vectors.listBuckets(
         prefix: 'embeddings-',
@@ -87,12 +82,12 @@ void main() {
     });
 
     test('getBucket leaves a non-numeric creationTime null', () async {
-      mockClient.response = {
+      mockClient.stub({
         'vectorBucket': {
           'vectorBucketName': 'embeddings',
           'creationTime': '2023-11-14T22:13:20Z',
         },
-      };
+      });
 
       final bucket = await vectors.getBucket('embeddings');
 
@@ -138,7 +133,7 @@ void main() {
     });
 
     test('getIndex parses the index metadata', () async {
-      mockClient.response = {
+      mockClient.stub({
         'index': {
           'indexName': 'documents',
           'vectorBucketName': 'embeddings',
@@ -149,7 +144,7 @@ void main() {
             'nonFilterableMetadataKeys': ['raw_text'],
           },
         },
-      };
+      });
 
       final index = await vectors.from('embeddings').getIndex('documents');
 
@@ -162,12 +157,12 @@ void main() {
     });
 
     test('getIndex parses creationTime as UTC', () async {
-      mockClient.response = {
+      mockClient.stub({
         'index': {
           'indexName': 'documents',
           'creationTime': 1700000000,
         },
-      };
+      });
 
       final index = await vectors.from('embeddings').getIndex('documents');
 
@@ -176,12 +171,12 @@ void main() {
     });
 
     test('getIndex leaves a non-numeric creationTime null', () async {
-      mockClient.response = {
+      mockClient.stub({
         'index': {
           'indexName': 'documents',
           'creationTime': '2023-11-14T22:13:20Z',
         },
-      };
+      });
 
       final index = await vectors.from('embeddings').getIndex('documents');
 
@@ -189,12 +184,12 @@ void main() {
     });
 
     test('getIndex leaves unknown enum values null', () async {
-      mockClient.response = {
+      mockClient.stub({
         'index': {
           'indexName': 'documents',
           'distanceMetric': 'manhattan',
         },
-      };
+      });
 
       final index = await vectors.from('embeddings').getIndex('documents');
 
@@ -202,13 +197,13 @@ void main() {
     });
 
     test('listIndexes parses indexes and cursor', () async {
-      mockClient.response = {
+      mockClient.stub({
         'indexes': [
           {'indexName': 'documents'},
           {'indexName': 'images'},
         ],
         'nextToken': 'cursor-2',
-      };
+      });
 
       final result = await vectors.from('embeddings').listIndexes();
 
@@ -283,7 +278,7 @@ void main() {
     });
 
     test('getVectors parses the returned vectors', () async {
-      mockClient.response = {
+      mockClient.stub({
         'vectors': [
           {
             'key': 'doc-1',
@@ -293,7 +288,7 @@ void main() {
             'metadata': {'title': 'Intro'},
           },
         ],
-      };
+      });
 
       final result = await index().getVectors(
         keys: ['doc-1'],
@@ -314,13 +309,13 @@ void main() {
     });
 
     test('listVectors parses vectors and cursor', () async {
-      mockClient.response = {
+      mockClient.stub({
         'vectors': [
           {'key': 'doc-1'},
           {'key': 'doc-2'},
         ],
         'nextToken': 'cursor-3',
-      };
+      });
 
       final result = await index().listVectors(maxResults: 2);
 
@@ -354,7 +349,7 @@ void main() {
     });
 
     test('queryVectors sends the query vector and parses matches', () async {
-      mockClient.response = {
+      mockClient.stub({
         'vectors': [
           {
             'key': 'doc-1',
@@ -363,7 +358,7 @@ void main() {
           },
         ],
         'distanceMetric': 'cosine',
-      };
+      });
 
       final result = await index().queryVectors(
         queryVector: [0.1, 0.2, 0.3],

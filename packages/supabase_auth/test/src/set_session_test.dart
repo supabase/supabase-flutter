@@ -1,8 +1,4 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:http/http.dart';
 import 'package:test/test.dart';
 
 import '../utils.dart';
@@ -22,58 +18,28 @@ Map<String, dynamic> get _mockUserJson => {
   'updated_at': '2024-01-01T00:00:00.000Z',
 };
 
-/// Mock HTTP client for setSession tests.
-///
-/// Handles `GET /user` (returns [_mockUserJson]) and
-/// `POST /token` (returns a fresh session via the refresh path).
-class _SetSessionMockClient extends BaseClient {
-  int userCallCount = 0;
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    if (request.url.path.endsWith('/user')) {
-      userCallCount++;
-      return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode(_mockUserJson))),
-        200,
-      );
-    }
-
-    if (request.url.path.contains('/token')) {
-      // Refresh-token fallback response with a freshly minted access token.
-      final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
-      final issuedAt = expiresAt - 3600;
-      final freshAccessToken = unsignedTestJwt({
-        'exp': expiresAt,
-        'iat': issuedAt,
-        'sub': 'mock-user-id',
-      });
-      return StreamedResponse(
-        Stream.value(
-          utf8.encode(
-            jsonEncode({
-              'access_token': freshAccessToken,
-              'token_type': 'bearer',
-              'expires_in': 3600,
-              'refresh_token': 'new-refresh-token',
-              'user': _mockUserJson,
-            }),
-          ),
-        ),
-        200,
-      );
-    }
-
-    return StreamedResponse(Stream.empty(), 404);
-  }
-}
-
 void main() {
-  late _SetSessionMockClient mockClient;
+  late MockSupabaseHttpClient mockClient;
   late AuthClient client;
 
   setUp(() {
-    mockClient = _SetSessionMockClient();
+    mockClient = MockSupabaseHttpClient()
+      ..stubUser(user: _mockUserJson)
+      // Refresh-token fallback response with a freshly minted access token.
+      ..stubHandler((_) {
+        final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
+        return jsonResponse({
+          'access_token': unsignedTestJwt({
+            'exp': expiresAt,
+            'iat': expiresAt - 3600,
+            'sub': 'mock-user-id',
+          }),
+          'token_type': 'bearer',
+          'expires_in': 3600,
+          'refresh_token': 'new-refresh-token',
+          'user': _mockUserJson,
+        });
+      }, path: '/token');
     client = AuthClient(
       url: 'https://example.supabase.co',
       httpClient: mockClient,
@@ -96,7 +62,7 @@ void main() {
         throwsA(isA<AuthSessionMissingException>()),
       );
       // No network call should have been made.
-      expect(mockClient.userCallCount, 0);
+      expect(mockClient.requestsTo('/user'), isEmpty);
     });
 
     test('access token with exp within the 30-second expiry margin is treated '
@@ -118,7 +84,7 @@ void main() {
       // The returned token must be the freshly refreshed one, not our
       // near-expired JWT.
       expect(response.session?.accessToken, isNot(equals(accessToken)));
-      expect(mockClient.userCallCount, 0); // /user was NOT called
+      expect(mockClient.requestsTo('/user'), isEmpty); // /user was NOT called
     });
 
     test('access token with no exp claim is treated as expired and falls back '
@@ -136,7 +102,7 @@ void main() {
 
       expect(response.session, isNotNull);
       expect(response.session?.accessToken, isNot(equals(accessToken)));
-      expect(mockClient.userCallCount, 0);
+      expect(mockClient.requestsTo('/user'), isEmpty);
     });
   });
 

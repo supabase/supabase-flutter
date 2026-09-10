@@ -22,7 +22,7 @@ dependencies:
   dart_style: ^3.1.0
 
 dev_dependencies:
-  http: ^1.6.0
   postgrest: 3.0.0-dev.2
   supabase_lints: ^0.1.2
+  supabase_test: 0.1.1
   test: ^1.25.0

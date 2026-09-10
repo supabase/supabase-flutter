@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 
+import 'custom_http_client.dart' show testJwtSecret;
 import 'utils.dart';
 
 /// HTTP client that simulates server-side refresh token consumption.
@@ -88,21 +88,17 @@ class RefreshTokenTrackingHttpClient extends BaseClient {
     // Generate new tokens
     final newRefreshToken =
         'new-refresh-token-${DateTime.now().millisecondsSinceEpoch}';
-    final jwt = JWT(
-      {
-        'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 3600,
-        'sub': userId1,
-        'role': 'authenticated',
-      },
-    );
+    final accessToken = signedTestJwt({
+      'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 3600,
+      'sub': userId1,
+      'role': 'authenticated',
+    }, secret: testJwtSecret);
 
     return StreamedResponse(
       Stream.value(
         utf8.encode(
           jsonEncode({
-            'access_token': jwt.sign(
-              SecretKey('37c304f8-51aa-419a-a1af-06154e63707a'),
-            ),
+            'access_token': accessToken,
             'token_type': 'bearer',
             'expires_in': 3600,
             'refresh_token': newRefreshToken,
@@ -152,24 +148,10 @@ class InvalidRefreshTokenHttpClient extends BaseClient {
 }
 
 /// Creates an expired session string for the test user (userId1)
-String createExpiredSessionForUser1() {
-  final expireDateTime = DateTime.now().subtract(Duration(hours: 1));
-  final expiresAt = expireDateTime.millisecondsSinceEpoch ~/ 1000;
-  final accessTokenMid = base64.encode(
-    utf8.encode(
-      json.encode({'exp': expiresAt, 'sub': userId1, 'role': 'authenticated'}),
-    ),
-  );
-  final accessToken = 'any.$accessTokenMid.any';
-  return '{"access_token":"$accessToken","expires_in":-3600,"refresh_token":"-y'
-      'eS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provi'
-      'der_refresh_token":null,"user":{"id":"$userId1","app_metadata":{"provide'
-      'r":"email","providers":["email"]},"user_metadata":{},"aud":"","email":"t'
-      'est@example.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","'
-      'confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z"'
-      ',"phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755'
-      '878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}}';
-}
+String createExpiredSessionForUser1() => getSessionData(
+  DateTime.now().subtract(Duration(hours: 1)),
+  userId: userId1,
+).sessionString;
 
 void main() {
   const authUrl = 'http://localhost:9999';
