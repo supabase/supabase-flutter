@@ -19,9 +19,9 @@ extension type const Todo(Map<String, dynamic> _json)
 
 class Todos {
   static const table = PostgrestTable('todos', Todo.new);
-  static const id = TableColumn<int>('id');
-  static const task = TableColumn<String>('task');
-  static const status = TableColumn<bool>('status');
+  static const id = PostgrestColumn<Todo, int>('id');
+  static const task = PostgrestColumn<Todo, String>('task');
+  static const status = PostgrestColumn<Todo, bool>('status');
 }
 
 void main() {
@@ -911,6 +911,17 @@ void main() {
         () => stream.filter(Todos.task.textSearch('task')),
         throwsArgumentError,
       );
+    });
+
+    test('a composed filter throws', () {
+      unawaited(handleRequests(mockServer));
+      final stream = supabase.table(Todos.table).stream(primaryKey: [Todos.id]);
+
+      expect(
+        () => stream.filter(Todos.status.eq(true) & Todos.id.gt(1)),
+        throwsArgumentError,
+      );
+      expect(() => stream.filter(Todos.id.eq(1).not()), throwsArgumentError);
     });
   });
 }

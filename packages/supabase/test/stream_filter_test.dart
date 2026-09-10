@@ -280,10 +280,10 @@ extension type const _User(Map<String, dynamic> _json)
 
 class _Users {
   static const table = PostgrestTable('users', _User.new);
-  static const username = TableColumn<String>('username');
-  static const status = TableColumn<String>('status');
-  static const age = TableColumn<int>('age');
-  static const data = TableColumn<String>('data');
+  static const username = PostgrestColumn<_User, String>('username');
+  static const status = PostgrestColumn<_User, String>('status');
+  static const age = PostgrestColumn<_User, int>('age');
+  static const data = PostgrestNullableColumn<_User, String>('data');
 }
 
 typedef _TypedTestCase = ({
@@ -373,8 +373,8 @@ final _typedTestCases = <_TypedTestCase>[
     restQuery: {'select': '*', 'data': 'is.null'},
   ),
   (
-    name: 'isDistinctFrom',
-    filter: (stream) => stream.filter(_Users.status.isDistinctFrom('ONLINE')),
+    name: 'isDistinct',
+    filter: (stream) => stream.filter(_Users.status.isDistinct('ONLINE')),
     realtimeFilter: 'status=isdistinct.ONLINE',
     restQuery: {'select': '*', 'status': 'isdistinct.ONLINE'},
   ),
