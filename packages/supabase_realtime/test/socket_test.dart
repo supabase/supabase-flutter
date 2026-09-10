@@ -1260,7 +1260,8 @@ void main() {
         final streamController = StreamController<dynamic>.broadcast();
         final readyCompleter = Completer<void>();
         final capturedMessages = <String>[];
-        final joinSent = Completer<Map<dynamic, dynamic>>();
+        final joinSent = Completer<List<dynamic>>();
+        final subscribed = Completer<void>();
 
         final mockedChannel = MockIOWebSocketChannel();
         final mockedSink = MockWebSocketSink();
@@ -1281,7 +1282,7 @@ void main() {
           final frame = json.decode(raw) as List;
           if (frame[3] == ChannelEvent.join.eventName() &&
               !joinSent.isCompleted) {
-            joinSent.complete(frame[4] as Map);
+            joinSent.complete(frame);
           }
         });
 
@@ -1295,6 +1296,12 @@ void main() {
         );
 
         final channel = socket.channel('realtime:test');
+        channel.onStatusChange.listen((change) {
+          if (change.status == RealtimeSubscribeStatus.subscribed &&
+              !subscribed.isCompleted) {
+            subscribed.complete();
+          }
+        });
         channel.subscribe();
 
         // The join is buffered while the socket is still connecting and the
@@ -1305,13 +1312,25 @@ void main() {
         // Once the connection is ready the token is resolved and the buffered
         // join is re-sent with the token patched into its payload.
         readyCompleter.complete();
-        final joinPayload = await joinSent.future.timeout(
+        final joinFrame = await joinSent.future.timeout(
           const Duration(seconds: 5),
         );
 
         expect(tokenCallbackCalls, greaterThan(0));
         expect(socket.accessToken, token);
-        expect(joinPayload['access_token'], token);
+        expect((joinFrame[4] as Map)['access_token'], token);
+        expect(joinFrame[1], isNotEmpty, reason: 'resent join has no ref');
+
+        streamController.add(
+          json.encode([
+            joinFrame[0],
+            joinFrame[1],
+            joinFrame[2],
+            'phx_reply',
+            {'status': 'ok', 'response': <String, dynamic>{}},
+          ]),
+        );
+        await subscribed.future.timeout(const Duration(seconds: 5));
 
         await socket.disconnect();
         await streamController.close();
