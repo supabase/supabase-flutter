@@ -38,6 +38,11 @@ void main() {
 }
 ```
 
+The typed table API works the same way, since it runs on the same requests:
+`supabase.table(Todos.table).select().where(Todos.id.eq(1)).single()` is
+answered by the same `stubTable`, and typed streams by the same realtime
+transport.
+
 `testSupabaseClient` is a regular `SupabaseClient` wired for tests: it
 configures the in-memory storage the pkce flow requires, turns off the token
 auto refresh so no timer outlives the test, and defaults the API key to an
@@ -108,6 +113,11 @@ Three rules cover most test setups:
   httpClient.stubTable('todos', query: {'id': 'eq.1'}, rows: [first]);
   httpClient.stubTable('todos', query: {'id': 'eq.2'}, rows: [second]);
   ```
+
+- **`schema` narrows a table or function stub to one schema.** A request
+  made through `schema('archive')` carries the schema in a header, so a stub
+  for the `public` table and one for the `archive` table of the same name can
+  answer differently. A stub without a schema answers every schema.
 
 - **An unmatched request throws.** The `StateError` names the request and the
   registered stubs, so a typo in a path surfaces as a failing test with the

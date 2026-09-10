@@ -769,4 +769,72 @@ void main() {
       });
     });
   });
+
+  group('schema matching', () {
+    test(
+      'tables of the same name in different schemas get their own rows',
+      () async {
+        httpClient.stubTable(
+          'todos',
+          schema: 'public',
+          rows: [
+            {'id': 1, 'task': 'Public'},
+          ],
+        );
+        httpClient.stubTable(
+          'todos',
+          schema: 'archive',
+          rows: [
+            {'id': 2, 'task': 'Archived'},
+          ],
+        );
+
+        final current = await supabase.from('todos').select();
+        final archived = await supabase
+            .schema('archive')
+            .from('todos')
+            .select();
+
+        expect(current.single['task'], 'Public');
+        expect(archived.single['task'], 'Archived');
+      },
+    );
+
+    test('writes are matched on their schema too', () async {
+      httpClient.stubTable('todos', schema: 'archive', method: 'POST');
+
+      await supabase.schema('archive').from('todos').insert({'id': 1});
+
+      await expectLater(
+        () => supabase.from('todos').insert({'id': 1}),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('(schema archive)'),
+          ),
+        ),
+      );
+    });
+
+    test('a stub without a schema answers every schema', () async {
+      httpClient.stubTable('todos', rows: []);
+
+      await supabase.from('todos').select();
+      await supabase.schema('archive').from('todos').select();
+
+      expect(httpClient.requests, hasLength(2));
+    });
+
+    test('stubRpc narrows to a schema', () async {
+      httpClient.stubRpc('total', schema: 'public', body: 1);
+      httpClient.stubRpc('total', schema: 'archive', body: 2);
+
+      final current = await supabase.rpc('total');
+      final archived = await supabase.schema('archive').rpc('total');
+
+      expect(current, 1);
+      expect(archived, 2);
+    });
+  });
 }
