@@ -8,7 +8,12 @@ class Posts {
   static const id = PostgrestColumn<Post, int>('id');
   static const tags = PostgrestColumn<Post, List<String>>('tags');
   static const labels = PostgrestColumn<Post, List<String?>>('labels');
-  static const scheduled = PostgrestColumn<Post, String>('scheduled');
+  static const scheduled = PostgrestColumn<Post, PostgrestRange<int>>(
+    'scheduled',
+  );
+  static const during = PostgrestColumn<Post, PostgrestRange<DateTime>>(
+    'during',
+  );
   static const content = PostgrestColumn<Post, String>('content');
   static const metadata = PostgrestColumn<Post, Map<String, Object?>>(
     'metadata',
@@ -132,41 +137,70 @@ void main() {
 
   group('range operators', () {
     test('render their abbreviation', () {
-      const range = '[2024-01-01,2024-02-01)';
-      expect(rendered(Posts.scheduled.rangeLt(range)), 'scheduled=sl.$range');
-      expect(rendered(Posts.scheduled.rangeGt(range)), 'scheduled=sr.$range');
-      expect(rendered(Posts.scheduled.rangeGte(range)), 'scheduled=nxl.$range');
-      expect(rendered(Posts.scheduled.rangeLte(range)), 'scheduled=nxr.$range');
+      const range = PostgrestRange.closedOpen(2, 25);
+      expect(rendered(Posts.scheduled.rangeLt(range)), 'scheduled=sl.[2,25)');
+      expect(rendered(Posts.scheduled.rangeGt(range)), 'scheduled=sr.[2,25)');
+      expect(rendered(Posts.scheduled.rangeGte(range)), 'scheduled=nxl.[2,25)');
+      expect(rendered(Posts.scheduled.rangeLte(range)), 'scheduled=nxr.[2,25)');
       expect(
         rendered(Posts.scheduled.rangeAdjacent(range)),
-        'scheduled=adj.$range',
+        'scheduled=adj.[2,25)',
       );
     });
 
-    test('containment takes a range literal', () {
-      // Same wire operators as the array trio, but taking a range literal.
-      // Crossing the two shapes (`span=ov.{1,20}`) is a 400.
+    test('containment takes a range or a single value', () {
+      // Same wire operators as the array trio, but only on a range column and
+      // only with a range of the column's bound type.
       expect(
-        rendered(Posts.scheduled.containsRange('[21,22)')),
+        rendered(
+          Posts.scheduled.contains(const PostgrestRange.closedOpen(21, 22)),
+        ),
         'scheduled=cs.[21,22)',
       );
+      expect(rendered(Posts.scheduled.containsElement(21)), 'scheduled=cs.21');
       expect(
-        rendered(Posts.scheduled.containedByRange('[21,22)')),
-        'scheduled=cd.[21,22)',
+        rendered(
+          Posts.scheduled.containedBy(const PostgrestRange.closed(21, 22)),
+        ),
+        'scheduled=cd.[21,22]',
       );
       expect(
-        rendered(Posts.scheduled.overlapsRange('[25,35)')),
-        'scheduled=ov.[25,35)',
+        rendered(Posts.scheduled.overlaps(const PostgrestRange.open(25, 35))),
+        'scheduled=ov.(25,35)',
+      );
+    });
+
+    test('a DateTime bound renders in ISO 8601', () {
+      expect(
+        rendered(
+          Posts.during.overlaps(
+            PostgrestRange.closedOpen(DateTime.utc(2024), DateTime.utc(2025)),
+          ),
+        ),
+        'during=ov.[2024-01-01T00:00:00.000Z,2025-01-01T00:00:00.000Z)',
+      );
+      expect(
+        rendered(Posts.during.containsElement(DateTime.utc(2024, 6))),
+        'during=cs.2024-06-01T00:00:00.000Z',
       );
     });
 
     test('a range operand is escaped inside a group', () {
       // Bare, the `)` in `or=(span.ov.[25,35),id.eq.3)` closes the logic
-      // group early and 400s, so a range must not take the raw path `in`
-      // takes.
+      // group early and 400s.
       expect(
-        rendered(Posts.scheduled.overlapsRange('[25,35)') | Posts.id.eq(3)),
+        rendered(
+          Posts.scheduled.overlaps(const PostgrestRange.closedOpen(25, 35)) |
+              Posts.id.eq(3),
+        ),
         'or=(scheduled.ov."[25,35)",id.eq.3)',
+      );
+    });
+
+    test('a range column compares against a range', () {
+      expect(
+        rendered(Posts.scheduled.eq(const PostgrestRange.closedOpen(2, 25))),
+        'scheduled=eq.[2,25)',
       );
     });
   });

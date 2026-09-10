@@ -52,6 +52,45 @@ void main() {
     );
   });
 
+  test('range columns parse their literal and render it back', () {
+    final code = _normalize(generateDartCode(hostileSchema));
+    final compact = code.replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains("PostgrestColumn<MapRow,PostgrestRange<int>>('pages')"),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<MapRow,PostgrestRange<DateTime>>('during')",
+      ),
+    );
+    expect(
+      code,
+      contains("PostgrestRange.parse(_json['pages'] as String, int.parse)"),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestRange<num>?getprices=>switch(_json['prices']){null=>null,"
+        "finalObjectvalue=>PostgrestRange.parse(valueasString,num.parse),};",
+      ),
+    );
+    expect(code, contains("'pages': pages.literal,"));
+    expect(code, contains("'season': ?season?.render(_dateString),"));
+    expect(
+      code,
+      contains("'shift': shift.render((bound) => bound.toIso8601String()),"),
+    );
+    expect(
+      compact,
+      contains(
+        "'during':?during?.render((bound)=>bound.toUtc().toIso8601String()),",
+      ),
+    );
+  });
+
   test('respects a custom import', () {
     final code = generateDartCode(
       schema,

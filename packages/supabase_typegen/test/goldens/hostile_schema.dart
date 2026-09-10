@@ -136,6 +136,20 @@ extension type const MapRow(Map<String, dynamic> _json)
     null => null,
     final Object value => DateTime.parse(value as String),
   };
+  PostgrestRange<int> get pages =>
+      PostgrestRange.parse(_json['pages'] as String, int.parse);
+  PostgrestRange<num>? get prices => switch (_json['prices']) {
+    null => null,
+    final Object value => PostgrestRange.parse(value as String, num.parse),
+  };
+  PostgrestRange<DateTime> get season =>
+      PostgrestRange.parse(_json['season'] as String, DateTime.parse);
+  PostgrestRange<DateTime> get shift =>
+      PostgrestRange.parse(_json['shift'] as String, DateTime.parse);
+  PostgrestRange<DateTime>? get during => switch (_json['during']) {
+    null => null,
+    final Object value => PostgrestRange.parse(value as String, DateTime.parse),
+  };
 }
 
 /// Values for inserting a row into `map`. Columns that are nullable, identity,
@@ -145,12 +159,35 @@ extension type const MapRow(Map<String, dynamic> _json)
 /// insert SQL NULL explicitly.
 extension type const MapInsert._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  MapInsert({required int list, DateTime? dateTime})
-    : this._({'list': list, 'date_time': ?dateTime?.toUtc().toIso8601String()});
+  MapInsert({
+    required int list,
+    DateTime? dateTime,
+    required PostgrestRange<int> pages,
+    PostgrestRange<num>? prices,
+    PostgrestRange<DateTime>? season,
+    required PostgrestRange<DateTime> shift,
+    PostgrestRange<DateTime>? during,
+  }) : this._({
+         'list': list,
+         'date_time': ?dateTime?.toUtc().toIso8601String(),
+         'pages': pages.literal,
+         'prices': ?prices?.literal,
+         'season': ?season?.render(_dateString),
+         'shift': shift.render((bound) => bound.toIso8601String()),
+         'during': ?during?.render((bound) => bound.toUtc().toIso8601String()),
+       });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
   /// default.
   MapInsert setDateTimeToNull() => MapInsert._({..._json, 'date_time': null});
+
+  /// Returns a copy with `prices` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setPricesToNull() => MapInsert._({..._json, 'prices': null});
+
+  /// Returns a copy with `during` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setDuringToNull() => MapInsert._({..._json, 'during': null});
 }
 
 /// Values for updating rows of `map`. All columns are optional; passing `null`
@@ -158,15 +195,35 @@ extension type const MapInsert._(Map<String, dynamic> _json)
 /// write SQL NULL explicitly.
 extension type const MapUpdate._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  MapUpdate({int? list, DateTime? dateTime})
-    : this._({
-        'list': ?list,
-        'date_time': ?dateTime?.toUtc().toIso8601String(),
-      });
+  MapUpdate({
+    int? list,
+    DateTime? dateTime,
+    PostgrestRange<int>? pages,
+    PostgrestRange<num>? prices,
+    PostgrestRange<DateTime>? season,
+    PostgrestRange<DateTime>? shift,
+    PostgrestRange<DateTime>? during,
+  }) : this._({
+         'list': ?list,
+         'date_time': ?dateTime?.toUtc().toIso8601String(),
+         'pages': ?pages?.literal,
+         'prices': ?prices?.literal,
+         'season': ?season?.render(_dateString),
+         'shift': ?shift?.render((bound) => bound.toIso8601String()),
+         'during': ?during?.render((bound) => bound.toUtc().toIso8601String()),
+       });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
   /// default.
   MapUpdate setDateTimeToNull() => MapUpdate._({..._json, 'date_time': null});
+
+  /// Returns a copy with `prices` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setPricesToNull() => MapUpdate._({..._json, 'prices': null});
+
+  /// Returns a copy with `during` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setDuringToNull() => MapUpdate._({..._json, 'during': null});
 }
 
 /// Typed access to the `map` table.
@@ -180,4 +237,21 @@ class Map$ {
   static const dateTime = PostgrestNullableColumn<MapRow, DateTime>(
     'date_time',
   );
+  static const pages = PostgrestColumn<MapRow, PostgrestRange<int>>('pages');
+  static const prices = PostgrestNullableColumn<MapRow, PostgrestRange<num>>(
+    'prices',
+  );
+  static const season = PostgrestColumn<MapRow, PostgrestRange<DateTime>>(
+    'season',
+  );
+  static const shift = PostgrestColumn<MapRow, PostgrestRange<DateTime>>(
+    'shift',
+  );
+  static const during =
+      PostgrestNullableColumn<MapRow, PostgrestRange<DateTime>>('during');
 }
+
+String _dateString(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';

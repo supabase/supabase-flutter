@@ -10,7 +10,9 @@ For every table the generator emits:
   construction site,
 - a `PostgrestTable` definition and `PostgrestColumn` tokens for compile-time
   checked filters and orderings, with nullable columns as
-  `PostgrestNullableColumn` so `isNull()` only exists where it can match,
+  `PostgrestNullableColumn` so `isNull()` only exists where it can match, and
+  range columns typed `PostgrestRange<int>`, `PostgrestRange<num>` or
+  `PostgrestRange<DateTime>` so the range operators only exist on them,
 - Dart enums for Postgres enums, with wire-name mapping.
 
 ## Usage
@@ -69,9 +71,9 @@ await client.table(Books.table).insert(
   nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; arrays containing SQL NULL
-  elements throw when the element is read. Enum, date, and timestamp array
-  elements stay in their wire representation (`List<String>`); the Dart enum
-  for enum array elements is still generated for manual conversion.
+  elements throw when the element is read. Enum, date, timestamp, and range
+  array elements stay in their wire representation (`List<String>`); the
+  Dart enum for enum array elements is still generated for manual conversion.
 - `timestamptz` values are written back in UTC, naive `timestamp` values as
   local wall time, and `date` values date-only, so calendar dates never
   shift with the client timezone.

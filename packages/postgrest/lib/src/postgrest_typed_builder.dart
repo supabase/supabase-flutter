@@ -11,6 +11,7 @@ part 'postgrest_embedded_relation.dart';
 part 'postgrest_filter.dart';
 part 'postgrest_filter_operators.dart';
 part 'postgrest_ordering.dart';
+part 'postgrest_range.dart';
 part 'postgrest_table.dart';
 part 'postgrest_typed_query_builder.dart';
 part 'postgrest_typed_transform_builder.dart';

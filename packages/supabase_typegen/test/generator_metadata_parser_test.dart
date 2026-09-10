@@ -281,6 +281,49 @@ void main() {
     }
   });
 
+  test('range types read as ranges with the kind of their bounds', () {
+    Map<String, dynamic> columnOf(String format) => {
+      'table_id': 1,
+      'schema': 'public',
+      'table': 'bookings',
+      'id': '1.1',
+      'ordinal_position': 1,
+      'name': 'value',
+      'default_value': null,
+      'data_type': format,
+      'format': format,
+      'is_identity': false,
+      'identity_generation': null,
+      'is_generated': false,
+      'is_nullable': true,
+      'is_updatable': true,
+      'is_unique': false,
+      'enums': <String>[],
+      'check': null,
+      'comment': null,
+    };
+    const bounds = {
+      'int4range': ColumnTypeKind.integer,
+      'int8range': ColumnTypeKind.integer,
+      'numrange': ColumnTypeKind.numeric,
+      'daterange': ColumnTypeKind.date,
+      'tsrange': ColumnTypeKind.timestamp,
+      'tstzrange': ColumnTypeKind.timestampWithTimeZone,
+    };
+
+    for (final MapEntry(key: format, value: boundKind) in bounds.entries) {
+      final column = parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'bookings', 'comment': null},
+        ],
+        'columns': [columnOf(format)],
+      }).tables.single.columns.single;
+
+      expect(column.typeKind, ColumnTypeKind.range, reason: format);
+      expect(column.boundTypeKind, boundKind, reason: format);
+    }
+  });
+
   test('collects Postgres enums with their schema qualification', () {
     expect(schema.enums, hasLength(1));
     final mood = schema.enums.single;

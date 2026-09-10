@@ -29,6 +29,16 @@ const _textFormats = {
 };
 const _jsonFormats = {'json', 'jsonb'};
 
+/// Range types, keyed to the kind of their bounds.
+const _rangeBoundKinds = {
+  'int4range': ColumnTypeKind.integer,
+  'int8range': ColumnTypeKind.integer,
+  'numrange': ColumnTypeKind.numeric,
+  'daterange': ColumnTypeKind.date,
+  'tsrange': ColumnTypeKind.timestamp,
+  'tstzrange': ColumnTypeKind.timestampWithTimeZone,
+};
+
 /// Derives the [ColumnTypeKind] from the metadata [format] of a column,
 /// for example `int8`, `timestamptz` or `_text` for a `text[]` array. This is
 /// the single place where type names are compared as strings; everything
@@ -43,6 +53,7 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
   if (format == 'date') return ColumnTypeKind.date;
   if (format == 'timestamp') return ColumnTypeKind.timestamp;
   if (format == 'timestamptz') return ColumnTypeKind.timestampWithTimeZone;
+  if (_rangeBoundKinds.containsKey(format)) return ColumnTypeKind.range;
   if (_textFormats.contains(format)) return ColumnTypeKind.text;
   if (_jsonFormats.contains(format)) return ColumnTypeKind.json;
   return ColumnTypeKind.unknown;
@@ -188,6 +199,7 @@ SchemaDescription _parseGeneratorMetadata(
           elementTypeKind: isArray
               ? _elementTypeKind(format.substring(1), isEnum: isEnum)
               : null,
+          boundTypeKind: _rangeBoundKinds[format],
           enumValues: isEnum ? enumValues : null,
           isRequired: !isNullable && !hasDefault,
           hasDefault: hasDefault,
