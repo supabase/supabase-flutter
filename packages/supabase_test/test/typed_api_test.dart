@@ -82,9 +82,9 @@ void main() {
   test('single and maybeSingle are shaped for typed rows', () async {
     httpClient.stubTable('todos', rows: []);
 
-    final none = await supabase.table(Todos.table).select().maybeSingle();
+    final Todo? none = await supabase.table(Todos.table).select().maybeSingle();
 
-    expect(none, isNull);
+    expect(none == null, isTrue);
     await expectLater(
       () => supabase.table(Todos.table).select().single(),
       throwsA(
