@@ -472,4 +472,105 @@ void main() {
       );
     });
   });
+
+  group('path matching', () {
+    test('a stub answers a project served under a path prefix', () async {
+      final prefixed = testSupabaseClient(
+        httpClient: httpClient,
+        url: 'http://localhost:54321/supabase',
+      );
+      addTearDown(prefixed.dispose);
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1},
+        ],
+      );
+
+      final todos = await prefixed.from('todos').select();
+
+      expect(todos, hasLength(1));
+      expect(httpClient.requests.single.url.path, '/supabase/rest/v1/todos');
+    });
+
+    test('a suffix only matches at a segment boundary', () {
+      httpClient.stubTable('todos', rows: []);
+
+      expect(
+        () => httpClient.get(
+          Uri.parse('http://localhost:54321/rest/v1/my_todos'),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
+  group('recorded requests', () {
+    test('headers are looked up case-insensitively', () async {
+      httpClient.stubTable('todos', rows: []);
+      final session = await signInTestUser(supabase.auth);
+
+      await supabase.from('todos').select();
+
+      final request = httpClient.requests.single;
+      expect(request.headers['authorization'], 'Bearer ${session.accessToken}');
+      expect(request.headers['AUTHORIZATION'], 'Bearer ${session.accessToken}');
+    });
+
+    test('requestsTo narrows by path and method', () async {
+      httpClient.stubTable('todos', rows: []);
+      httpClient.stubTable('profiles', rows: []);
+
+      await supabase.from('todos').select();
+      await supabase.from('profiles').select();
+      await supabase.from('todos').insert({'task': 'Write tests'});
+
+      expect(httpClient.requestsTo('/rest/v1/todos'), hasLength(2));
+      final inserts = httpClient.requestsTo('/rest/v1/todos', method: 'POST');
+      expect(inserts.single.jsonBody, {'task': 'Write tests'});
+    });
+
+    test('queryParameters exposes the query of the request', () async {
+      httpClient.stubTable('todos', rows: []);
+
+      await supabase.from('todos').select('id').eq('status', true);
+
+      final query = httpClient.requests.single.queryParameters;
+      expect(query, {'select': 'id', 'status': 'eq.true'});
+    });
+  });
+
+  group('auth shorthands', () {
+    test('stubSignUp lets a sign-up produce a session', () async {
+      httpClient.stubSignUp(user: testUserJson(id: 'new-user'));
+
+      final response = await supabase.auth.signUp(
+        email: 'new@example.com',
+        password: 'password',
+      );
+
+      expect(response.session, isNotNull);
+      expect(supabase.auth.currentUser?.id, 'new-user');
+    });
+
+    test('stubSignOut lets a signed-in client sign out', () async {
+      httpClient.stubSignOut();
+      await signInTestUser(supabase.auth);
+
+      await supabase.auth.signOut();
+
+      expect(supabase.auth.currentSession, isNull);
+      final request = httpClient.requestsTo('/auth/v1/logout').single;
+      expect(request.method, 'POST');
+    });
+
+    test('stubUser answers getUser', () async {
+      httpClient.stubUser(user: testUserJson(email: 'fresh@example.com'));
+      await signInTestUser(supabase.auth);
+
+      final response = await supabase.auth.getUser();
+
+      expect(response.user?.email, 'fresh@example.com');
+    });
+  });
 }
