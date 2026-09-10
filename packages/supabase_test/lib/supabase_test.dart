@@ -11,6 +11,7 @@
 library;
 
 export 'src/mock_http_clients.dart';
+export 'src/mock_realtime_transport.dart';
 export 'src/mock_supabase_http_client.dart';
 export 'src/realtime_frames.dart';
 export 'src/session_fixture.dart';

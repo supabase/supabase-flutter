@@ -2,8 +2,8 @@
 
 Test helpers for apps and packages built on the Supabase Dart and Flutter
 clients. Your tests run against a real `SupabaseClient` whose HTTP layer is
-stubbed per endpoint, so no Supabase stack, network access or hand-rolled
-fakes are needed. The test suites of the Supabase client packages themselves
+stubbed per endpoint and whose realtime socket is served in memory, so no
+Supabase stack, network access or hand-rolled fakes are needed. The test suites of the Supabase client packages themselves
 run on the same primitives.
 
 ## Getting started
@@ -248,10 +248,43 @@ shapes the auth server would return.
 
 ## Testing realtime
 
-Realtime needs a WebSocket rather than an HTTP stub. For unit tests that feed
-frames into a mock socket, `postgresChangesFrame` encodes a
-`postgres_changes` frame the way the server sends it. For anything beyond
-that, run against a real stack (see below).
+Realtime runs over a WebSocket rather than HTTP, so it is answered by a
+`MockRealtimeTransport` instead: a realtime server in memory that joins
+channels, acknowledges pushes and heartbeats, and lets the test push server
+events:
+
+```dart
+final realtime = MockRealtimeTransport();
+final supabase = testSupabaseClient(httpClient: httpClient, realtime: realtime);
+
+final channel = supabase.channel('todos');
+final inserts = channel.onPostgresChanges(
+  event: PostgresChangeEvent.insert,
+  schema: 'public',
+  table: 'todos',
+);
+channel.subscribe();
+await channel.onStatusChange.firstWhere(
+  (change) => change.status == RealtimeSubscribeStatus.subscribed,
+);
+
+realtime.emitPostgresChange(
+  table: 'todos',
+  event: PostgresChangeEvent.insert,
+  newRecord: {'id': 1, 'task': 'Ship it'},
+);
+final payload = await inserts.first;
+expect(payload.newRecord['task'], 'Ship it');
+```
+
+`emitPostgresChange` reaches every joined channel bound to the table and
+event, which includes the channel a `stream()` opens, so a `stream` test
+stubs the initial rows with `stubTable` and then emits the changes it wants
+to see applied. Filters are not evaluated; emit only the changes the code
+under test should see. `emitBroadcast` delivers a broadcast message to a
+channel, `emit` sends any `RealtimeMessage`, and `closeConnection` drops the
+connection so reconnect handling can be exercised. Everything the client sent
+is recorded in `sent`, and `joinedTopics` lists what it subscribed to.
 
 ## Flutter apps
 

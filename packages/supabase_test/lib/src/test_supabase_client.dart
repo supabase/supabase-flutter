@@ -8,6 +8,7 @@ import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
 
+import 'mock_realtime_transport.dart';
 import 'session_fixture.dart';
 import 'test_jwt.dart';
 
@@ -16,7 +17,9 @@ import 'test_jwt.dart';
 /// Compared to constructing one directly, this configures the in-memory
 /// storage the pkce flow requires, turns off the token auto refresh so no
 /// timer outlives the test, and defaults the API key to an unsigned anon JWT.
-/// Answer its requests by passing a `MockSupabaseHttpClient` as [httpClient]:
+/// Answer its requests by passing a `MockSupabaseHttpClient` as [httpClient],
+/// and its realtime traffic by passing a [MockRealtimeTransport] as
+/// [realtime]:
 ///
 /// ```dart
 /// final httpClient = MockSupabaseHttpClient()
@@ -34,6 +37,7 @@ import 'test_jwt.dart';
 @visibleForTesting
 SupabaseClient testSupabaseClient({
   Client? httpClient,
+  MockRealtimeTransport? realtime,
   String url = 'http://localhost:54321',
   String? apiKey,
   bool autoRefreshToken = false,
@@ -46,6 +50,7 @@ SupabaseClient testSupabaseClient({
       autoRefreshToken: autoRefreshToken,
       pkceAsyncStorage: MemoryAuthAsyncStorage(),
     ),
+    realtimeClientOptions: RealtimeClientOptions(transport: realtime?.call),
   );
 }
 
