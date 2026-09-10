@@ -769,6 +769,18 @@ features:
       - TableColumn.TableColumn
       - TableColumn.name
       - TableColumn.toString
+      - PostgrestColumnExpression
+      - PostgrestColumnExpression.expression
+      - PostgrestColumnExpression.toString
+      - PostgrestFilterableExpression
+      - PostgrestOrderableExpression
+      - PostgrestNullableExpression
+      - PostgrestColumn
+      - PostgrestColumn.PostgrestColumn
+      - PostgrestColumn.name
+      - PostgrestColumn.expression
+      - PostgrestNullableColumn
+      - PostgrestNullableColumn.PostgrestNullableColumn
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table
@@ -847,6 +859,7 @@ features:
       - PostgrestFilterBuilder.eq
       - SupabaseStreamFilterBuilder.eq
       - TableColumn.eq
+      - PostgrestFilterableExpression.eq
       - ComparisonFilter
       - ComparisonFilter.column
       - ComparisonFilter.value
@@ -858,6 +871,7 @@ features:
       - PostgrestFilterBuilder.neq
       - SupabaseStreamFilterBuilder.neq
       - TableColumn.neq
+      - PostgrestFilterableExpression.neq
       - NeqFilter
       - NeqFilter.operator
   database.using_filters.gt:
@@ -866,6 +880,7 @@ features:
       - PostgrestFilterBuilder.gt
       - SupabaseStreamFilterBuilder.gt
       - TableColumn.gt
+      - PostgrestFilterableExpression.gt
       - GtFilter
       - GtFilter.operator
   database.using_filters.gte:
@@ -874,6 +889,7 @@ features:
       - PostgrestFilterBuilder.gte
       - SupabaseStreamFilterBuilder.gte
       - TableColumn.gte
+      - PostgrestFilterableExpression.gte
       - GteFilter
       - GteFilter.operator
   database.using_filters.lt:
@@ -882,6 +898,7 @@ features:
       - PostgrestFilterBuilder.lt
       - SupabaseStreamFilterBuilder.lt
       - TableColumn.lt
+      - PostgrestFilterableExpression.lt
       - LtFilter
       - LtFilter.operator
   database.using_filters.lte:
@@ -890,6 +907,7 @@ features:
       - PostgrestFilterBuilder.lte
       - SupabaseStreamFilterBuilder.lte
       - TableColumn.lte
+      - PostgrestFilterableExpression.lte
       - LteFilter
       - LteFilter.operator
   database.using_filters.like:
@@ -953,6 +971,10 @@ features:
       - SupabaseStreamFilterBuilder.isFilter
       - TableColumn.isNull
       - TableColumn.isNotNull
+      - PostgrestBooleanFilters
+      - PostgrestBooleanFilters.isTrue
+      - PostgrestBooleanFilters.isFalse
+      - PostgrestNullableExpression.isNull
       - IsNullFilter
       - IsNullFilter.column
       - IsNullFilter.operator
@@ -963,6 +985,7 @@ features:
       - PostgrestFilterBuilder.isDistinct
       - SupabaseStreamFilterBuilder.isDistinct
       - TableColumn.isDistinctFrom
+      - PostgrestFilterableExpression.isDistinct
       - IsDistinctFilter
       - IsDistinctFilter.column
       - IsDistinctFilter.operator
@@ -1016,6 +1039,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.not
       - ColumnFilter.not
+      - PostgrestFilter.not
       - NegatedFilter
       - NegatedFilter.column
       - NegatedFilter.inner
@@ -1027,6 +1051,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.or
       - PostgrestTypedFilterBuilder.whereAny
+      - PostgrestFilter.|
   database.using_filters.range_gt:
     status: implemented
     symbols:
@@ -1106,6 +1131,13 @@ features:
       - ColumnFilter.column
       - ColumnFilter.operator
       - ColumnFilter.value
+      - PostgrestFilter
+      - PostgrestFilter.raw
+      - PostgrestFilter.&
+      - PostgrestFilterableExpression.raw
+      - PostgrestFilterOperator
+      - PostgrestFilterOperator.token
+      - PostgrestFilterOperator.PostgrestFilterOperator
 
   # database — modifiers
   database.using_modifiers.order:
