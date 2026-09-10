@@ -126,6 +126,16 @@ class PostgrestTable$ {
   static const days = PostgrestNullableColumn<PostgrestTableRow, List<String>>(
     'days',
   );
+
+  /// The `map` row referenced by `mood`.
+  static const map$ByMood = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
+    'map!postgrest_table_mood_fkey',
+  );
+
+  /// The `map` row referenced by `days`.
+  static const map$ByDays = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
+    'map!postgrest_table_days_fkey',
+  );
 }
 
 /// A row of the `map` table.
@@ -249,6 +259,18 @@ class Map$ {
   );
   static const during =
       PostgrestNullableColumn<MapRow, PostgrestRange<DateTime>>('during');
+
+  /// The `postgrest_table` rows referencing this row through `mood`.
+  static const postgrestTableViaMood =
+      PostgrestToManyRelation<MapRow, PostgrestTableRow>(
+        'postgrest_table!postgrest_table_mood_fkey',
+      );
+
+  /// The `postgrest_table` row referencing this row through `days`.
+  static const postgrestTableViaDays =
+      PostgrestToOneRelation<MapRow, PostgrestTableRow>(
+        'postgrest_table!postgrest_table_days_fkey',
+      );
 }
 
 String _dateString(DateTime date) =>

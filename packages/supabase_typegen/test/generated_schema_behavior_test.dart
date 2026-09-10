@@ -74,6 +74,28 @@ void main() {
     expect(book.publishedOn == null, isTrue);
   });
 
+  test('relation members project embedded columns', () async {
+    await client.table(Books.table).select([
+      Books.id,
+      Books.authors(Authors.name),
+    ]);
+
+    expect(
+      httpClient.lastRequest!.url.queryParameters['select'],
+      'id,authors(name)',
+    );
+
+    await client.table(Authors.table).select([
+      Authors.id,
+      Authors.books(Books.id).count(),
+    ]);
+
+    expect(
+      httpClient.lastRequest!.url.queryParameters['select'],
+      'id,books(id.count())',
+    );
+  });
+
   test('enum column tokens filter with the wire name', () async {
     await client.table(Books.table).select().where(Books.mood.eq(Mood.happy));
 

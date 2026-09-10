@@ -13,6 +13,12 @@ For every table the generator emits:
   `PostgrestNullableColumn` so `isNull()` only exists where it can match, and
   range columns typed `PostgrestRange<int>`, `PostgrestRange<num>` or
   `PostgrestRange<DateTime>` so the range operators only exist on them,
+- `PostgrestToOneRelation` and `PostgrestToManyRelation` members for every
+  foreign key between two generated tables of the selected schema, named
+  after the table on the other side and carrying the constraint hint when two
+  keys point at the same table. Keys into another schema and self-referential
+  keys get no member, the latter because PostgREST needs a computed
+  relationship to embed a table into itself,
 - Dart enums for Postgres enums, with wire-name mapping.
 
 ## Usage
@@ -77,5 +83,6 @@ await client.table(Books.table).insert(
 - `timestamptz` values are written back in UTC, naive `timestamp` values as
   local wall time, and `date` values date-only, so calendar dates never
   shift with the client timezone.
-- Foreign key relationship getters and typed functions (rpc) are not
-  generated yet.
+- Foreign keys into another schema get no relation member, since the row type
+  on the other side is not generated. Typed functions (rpc) are not generated
+  yet.

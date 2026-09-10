@@ -233,6 +233,11 @@ SchemaDescription _parseGeneratorMetadata(
     schemaName: schemaName,
     tables: tables,
     enums: enums,
+    relationships: _relationships(
+      document,
+      schemaName,
+      {for (final table in tables) table.name},
+    ),
   );
 }
 
@@ -245,6 +250,32 @@ Iterable<Map<String, dynamic>> _relationsOf(
 ) => (document[collection] as List<dynamic>? ?? const [])
     .cast<Map<String, dynamic>>()
     .where((relation) => relation['schema'] == schemaName);
+
+/// The foreign keys whose both ends are relations of [schemaName] listed in
+/// [relationNames]; a key into another schema has no generated row type to
+/// point at and is left out.
+List<RelationshipDescription> _relationships(
+  Map<String, dynamic> document,
+  String schemaName,
+  Set<String> relationNames,
+) => [
+  for (final relationship
+      in (document['relationships'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>())
+    if (relationship['schema'] == schemaName &&
+        relationship['referenced_schema'] == schemaName &&
+        relationNames.contains(relationship['relation']) &&
+        relationNames.contains(relationship['referenced_relation']))
+      RelationshipDescription(
+        foreignKeyName: relationship['foreign_key_name'] as String,
+        sourceTable: relationship['relation'] as String,
+        sourceColumns: (relationship['columns'] as List<dynamic>).cast(),
+        targetTable: relationship['referenced_relation'] as String,
+        targetColumns: (relationship['referenced_columns'] as List<dynamic>)
+            .cast(),
+        isOneToOne: relationship['is_one_to_one'] as bool? ?? false,
+      ),
+];
 
 /// Maps `(table, column)` pairs of [schemaName] to their foreign key targets,
 /// pairing the source and referenced columns of each relationship by index.

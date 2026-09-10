@@ -54,6 +54,7 @@ class SchemaDescription {
     required this.schemaName,
     required this.tables,
     required this.enums,
+    this.relationships = const [],
   });
 
   /// Name of the database schema, for example `public`.
@@ -64,6 +65,40 @@ class SchemaDescription {
 
   /// Postgres enums referenced by the tables, sorted by name.
   final List<EnumDescription> enums;
+
+  /// Foreign keys between tables of the schema, in database order.
+  final List<RelationshipDescription> relationships;
+}
+
+/// A foreign key from [sourceTable] to [targetTable].
+class RelationshipDescription {
+  const RelationshipDescription({
+    required this.foreignKeyName,
+    required this.sourceTable,
+    required this.sourceColumns,
+    required this.targetTable,
+    required this.targetColumns,
+    this.isOneToOne = false,
+  });
+
+  /// The constraint name, which PostgREST accepts as an embed hint.
+  final String foreignKeyName;
+
+  /// The table holding the foreign key columns.
+  final String sourceTable;
+
+  /// The foreign key columns, in constraint order.
+  final List<String> sourceColumns;
+
+  /// The referenced table.
+  final String targetTable;
+
+  /// The referenced columns, paired with [sourceColumns] by index.
+  final List<String> targetColumns;
+
+  /// Whether the foreign key columns are unique, so each target row has at
+  /// most one source row.
+  final bool isOneToOne;
 }
 
 /// Description of a table or view.
