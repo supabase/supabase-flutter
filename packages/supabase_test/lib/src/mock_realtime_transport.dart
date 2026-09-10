@@ -28,12 +28,13 @@ import 'realtime_frames.dart';
 ///   realtime: realtime,
 /// );
 ///
-/// final changes = supabase.channel('todos').onPostgresChanges(
+/// final channel = supabase.channel('todos');
+/// final changes = channel.onPostgresChanges(
 ///   event: PostgresChangeEvent.insert,
 ///   schema: 'public',
 ///   table: 'todos',
 /// );
-/// supabase.channel('todos').subscribe();
+/// channel.subscribe();
 ///
 /// realtime.emitPostgresChange(
 ///   table: 'todos',
@@ -91,7 +92,8 @@ class MockRealtimeTransport {
   }
 
   /// Sends a `postgres_changes` event for a row of [table] in [schema] to
-  /// every joined channel bound to that table and [event].
+  /// every joined channel bound to that table and [event], including channels
+  /// bound to the whole schema without naming a table.
   ///
   /// [newRecord] is the row after the change and [oldRecord] the row before
   /// it, as the code under test expects them in `newRecord` and `oldRecord`
@@ -131,7 +133,7 @@ class MockRealtimeTransport {
       final ids = [
         for (final binding in bindings)
           if (binding['schema'] == schema &&
-              binding['table'] == table &&
+              (binding['table'] == null || binding['table'] == table) &&
               (binding['event'] == '*' || binding['event'] == type))
             binding['id'] as int,
       ];

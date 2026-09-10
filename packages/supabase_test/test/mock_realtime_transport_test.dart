@@ -128,6 +128,26 @@ void main() {
       expect(unexpected, isEmpty);
     });
 
+    test('reaches a channel bound to the whole schema', () async {
+      final channel = supabase.channel('everything');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+      );
+      await subscribed(channel);
+      final received = changes.first;
+
+      realtime.emitPostgresChange(
+        table: 'todos',
+        event: PostgresChangeEvent.delete,
+        oldRecord: {'id': 1},
+      );
+
+      final payload = await received;
+      expect(payload.table, 'todos');
+      expect(payload.eventType, PostgresChangeEvent.delete);
+    });
+
     test('throws when no joined channel listens to the table', () async {
       await subscribed(supabase.channel('room'));
 
