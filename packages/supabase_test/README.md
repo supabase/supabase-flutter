@@ -38,6 +38,11 @@ void main() {
 }
 ```
 
+The typed table API works the same way, since it runs on the same requests:
+`supabase.table(Todos.table).select().where(Todos.id.eq(1)).single()` is
+answered by the same `stubTable`, and typed streams by the same realtime
+transport.
+
 `testSupabaseClient` is a regular `SupabaseClient` wired for tests: it
 configures the in-memory storage the pkce flow requires, turns off the token
 auto refresh so no timer outlives the test, and defaults the API key to an
