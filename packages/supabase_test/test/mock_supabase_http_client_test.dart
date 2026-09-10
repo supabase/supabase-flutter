@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -444,6 +445,132 @@ void main() {
     });
   });
 
+  group('stubError', () {
+    // Retries off, so a failure surfaces on the first request instead of
+    // being ridden out.
+    late SupabaseClient failing;
+
+    setUp(() {
+      failing = SupabaseClient(
+        'http://localhost:54321',
+        'apikey',
+        httpClient: httpClient,
+        authOptions: AuthClientOptions(
+          pkceAsyncStorage: MemoryAuthAsyncStorage(),
+        ),
+        postgrestOptions: const PostgrestClientOptions(
+          retryOptions: SupabaseRetryOptions(enabled: false),
+        ),
+      );
+      addTearDown(failing.dispose);
+    });
+
+    test('throws the error instead of answering the request', () async {
+      httpClient.stubError(http.ClientException('Offline'));
+
+      await expectLater(
+        () => failing.from('todos').select(),
+        throwsA(isA<http.ClientException>()),
+      );
+    });
+
+    test('times limits the failure to the first requests', () async {
+      httpClient
+        ..stubTable('todos', rows: [])
+        ..stubError(http.ClientException('Offline'), times: 1);
+
+      await expectLater(
+        () => failing.from('todos').select(),
+        throwsA(isA<http.ClientException>()),
+      );
+      expect(await failing.from('todos').select(), isEmpty);
+    });
+
+    test('path narrows the failure to one endpoint', () async {
+      httpClient
+        ..stubTable('todos', rows: [])
+        ..stubError(http.ClientException('Offline'), path: '/rest/v1/profiles');
+
+      expect(await failing.from('todos').select(), isEmpty);
+      await expectLater(
+        () => failing.from('profiles').select(),
+        throwsA(isA<http.ClientException>()),
+      );
+    });
+  });
+
+  group('stubStall', () {
+    test('leaves the request unanswered until it times out', () async {
+      httpClient.stubStall();
+      final stalling = SupabaseClient(
+        'http://localhost:54321',
+        'apikey',
+        httpClient: httpClient,
+        authOptions: AuthClientOptions(
+          pkceAsyncStorage: MemoryAuthAsyncStorage(),
+        ),
+        postgrestOptions: const PostgrestClientOptions(
+          requestTimeout: Duration(milliseconds: 50),
+          retryOptions: SupabaseRetryOptions(count: 0),
+        ),
+      );
+      addTearDown(stalling.dispose);
+
+      await expectLater(
+        () => stalling.from('todos').select(),
+        throwsA(isA<TimeoutException>()),
+      );
+      expect(httpClient.requests, hasLength(1));
+    });
+  });
+
+  group('stubStatuses', () {
+    test('answers with one status per request', () async {
+      httpClient.stubStatuses([503, 503, 200], body: []);
+      final url = Uri.parse('http://localhost:54321/rest/v1/todos');
+
+      final statuses = [
+        for (var request = 0; request < 4; request++)
+          (await httpClient.get(url)).statusCode,
+      ];
+
+      expect(statuses, [503, 503, 200, 200]);
+    });
+
+    test('rejects an empty list of statuses', () {
+      expect(() => httpClient.stubStatuses([]), throwsArgumentError);
+    });
+  });
+
+  group('stubText', () {
+    test('answers with the body verbatim under its reason phrase', () async {
+      httpClient.stubText(
+        '<html><body>502 Bad Gateway</body></html>',
+        statusCode: 502,
+        reasonPhrase: 'Bad Gateway',
+      );
+
+      final response = await httpClient.get(
+        Uri.parse('http://localhost:54321/rest/v1/todos'),
+      );
+
+      expect(response.body, '<html><body>502 Bad Gateway</body></html>');
+      expect(response.statusCode, 502);
+      expect(response.reasonPhrase, 'Bad Gateway');
+      expect(response.headers['content-type'], startsWith('text/plain'));
+    });
+
+    test('decodes a non-ASCII body as UTF-8', () async {
+      httpClient.stubText('こんにちは 👋');
+
+      final response = await httpClient.get(
+        Uri.parse('http://localhost:54321/rest/v1/todos'),
+      );
+
+      expect(response.body, 'こんにちは 👋');
+    });
+  });
+
   group('binary bodies', () {
     test('a Uint8List body reaches the caller as bytes', () async {
       httpClient.stubEdgeFunction(
@@ -530,6 +657,27 @@ void main() {
       expect(inserts.single.jsonBody, {'task': 'Write tests'});
     });
 
+    test('request keeps what the client sent beyond the wire format', () async {
+      httpClient.stub(null);
+      final request =
+          http.MultipartRequest(
+              'POST',
+              Uri.parse('http://localhost:54321/storage/v1/object/avatars/me'),
+            )
+            ..files.add(
+              http.MultipartFile.fromString('', 'binary', filename: 'me.png'),
+            );
+
+      await httpClient.send(request);
+
+      final recorded = httpClient.requests.single.request;
+      expect(recorded, isA<http.MultipartRequest>());
+      expect(
+        (recorded as http.MultipartRequest).files.single.filename,
+        'me.png',
+      );
+    });
+
     test('queryParameters exposes the query of the request', () async {
       httpClient.stubTable('todos', rows: []);
 
@@ -562,6 +710,21 @@ void main() {
       expect(supabase.auth.currentSession, isNull);
       final request = httpClient.requestsTo('/auth/v1/logout').single;
       expect(request.method, 'POST');
+    });
+
+    test('a bare AuthClient reaches the same shorthand', () async {
+      httpClient.stubUser(user: testUserJson(email: 'bare@example.com'));
+      final auth = AuthClient(
+        url: 'http://localhost:9999',
+        httpClient: httpClient,
+        asyncStorage: MemoryAuthAsyncStorage(),
+      );
+      addTearDown(auth.dispose);
+
+      final response = await auth.getUser('access-token');
+
+      expect(response.user?.email, 'bare@example.com');
+      expect(httpClient.requests.single.url.path, '/user');
     });
 
     test('stubUser answers getUser', () async {

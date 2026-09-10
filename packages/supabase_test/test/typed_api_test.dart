@@ -14,9 +14,9 @@ extension type const Todo(Map<String, dynamic> _json)
 
 class Todos {
   static const table = PostgrestTable('todos', Todo.new);
-  static const id = TableColumn<int>('id');
-  static const task = TableColumn<String>('task');
-  static const status = TableColumn<bool>('status');
+  static const id = PostgrestColumn<Todo, int>('id');
+  static const task = PostgrestColumn<Todo, String>('task');
+  static const status = PostgrestColumn<Todo, bool>('status');
 }
 
 void main() {
