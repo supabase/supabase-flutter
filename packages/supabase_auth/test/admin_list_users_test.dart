@@ -9,7 +9,7 @@ void main() {
   MockSupabaseHttpClient listUsersClient({
     String? link,
     String? totalCount,
-    String? audience = 'authenticated',
+    String? audience,
   }) => MockSupabaseHttpClient()
     ..stub(
       {
@@ -36,6 +36,7 @@ void main() {
           '</admin/users?page=3&per_page=1>; rel="next", '
           '</admin/users?page=5&per_page=1>; rel="last"',
       totalCount: '5',
+      audience: 'authenticated',
     );
 
     final response = await clientWith(
@@ -68,9 +69,7 @@ void main() {
   });
 
   test('listUsers() leaves the metadata null when omitted', () async {
-    final response = await clientWith(
-      listUsersClient(audience: null),
-    ).admin.listUsers();
+    final response = await clientWith(listUsersClient()).admin.listUsers();
 
     expect(response.users, hasLength(1));
     expect(response.total, isNull);
