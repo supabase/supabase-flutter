@@ -104,6 +104,17 @@ void main() {
       expect(requestParameters()['select'], 'id,title::text,metadata->>isbn');
     });
 
+    test('selects aggregates', () async {
+      httpClient.responseBody = '[{"count":2,"max":"b"}]';
+
+      await client.table(Books.table).select([
+        PostgrestDerivedExpression.countAll(),
+        Books.title.max(),
+      ]);
+
+      expect(requestParameters()['select'], 'count(),title.max()');
+    });
+
     test('an empty column list throws', () {
       expect(() => client.table(Books.table).select([]), throwsArgumentError);
     });

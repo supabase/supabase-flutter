@@ -809,7 +809,13 @@ features:
       - PostgrestCastTarget.integer
       - PostgrestCastTarget.doublePrecision
       - PostgrestCastTarget.boolean
+      - PostgrestColumnExpression.sum
+      - PostgrestColumnExpression.avg
+      - PostgrestColumnExpression.min
+      - PostgrestColumnExpression.max
+      - PostgrestColumnExpression.count
       - PostgrestDerivedExpression
+      - PostgrestDerivedExpression.countAll
       - PostgrestDerivedExpression.expression
       - PostgrestDerivedExpression.jsonText
       - PostgrestDerivedExpression.jsonObject
