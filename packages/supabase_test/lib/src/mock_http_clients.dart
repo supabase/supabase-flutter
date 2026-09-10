@@ -23,6 +23,21 @@ StreamedResponse jsonStreamedResponse(
   );
 }
 
+/// A [Response] with [body] encoded as UTF-8 JSON and a matching content
+/// type, for a `MockSupabaseHttpClient` handler to return.
+@visibleForTesting
+Response jsonResponse(
+  Object? body, {
+  int statusCode = 200,
+  Map<String, String> headers = const {},
+}) {
+  return Response.bytes(
+    utf8.encode(jsonEncode(body)),
+    statusCode,
+    headers: {'content-type': 'application/json; charset=utf-8', ...headers},
+  );
+}
+
 /// A mock HTTP client that answers every request with the same JSON body.
 @visibleForTesting
 class JsonResponseMockClient extends BaseClient {
