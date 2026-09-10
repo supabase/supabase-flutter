@@ -122,6 +122,17 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
+  /// Merges the rendered sort key [key] into the `order` parameter, which
+  /// PostgREST reads once, adding nothing to [key].
+  @internal
+  PostgrestTransformBuilder<T> appendOrderKey(String key) {
+    final existingOrder = _url.queryParameters['order'];
+    final value = existingOrder == null ? key : '$existingOrder,$key';
+    return PostgrestTransformBuilder(
+      copyWithUrl(_url.overrideSearchParameters('order', value)),
+    );
+  }
+
   /// Limits the result with the specified [count].
   ///
   /// ```dart

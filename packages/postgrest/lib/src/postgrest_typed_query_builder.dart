@@ -22,15 +22,29 @@ class PostgrestTypedQueryBuilder<Row> {
 
   /// Perform a SELECT query on the table or view.
   ///
+  /// Without [columns] every column is selected:
+  ///
   /// ```dart
   /// final List<Book> books = await client.table(Books.table).select();
   /// ```
-  PostgrestTypedFilterBuilder<Row, List<Row>> select([String columns = '*']) =>
-      PostgrestTypedFilterBuilder._(
-        _queryBuilder.select(columns),
-        table,
-        (data) => _rowsFromJson(table, data),
-      );
+  ///
+  /// With [columns], only those are, and each has to belong to this table:
+  ///
+  /// ```dart
+  /// final List<Book> books = await client
+  ///     .table(Books.table)
+  ///     .select([Books.id, Books.title]);
+  /// ```
+  ///
+  /// Rows are still converted into [Row], whose getters for the columns left
+  /// out have nothing to read.
+  PostgrestTypedFilterBuilder<Row, List<Row>> select([
+    List<PostgrestColumnExpression<Row, Object>>? columns,
+  ]) => PostgrestTypedFilterBuilder._(
+    _queryBuilder.select(_selectList(columns)),
+    table,
+    (data) => _rowsFromJson(table, data),
+  );
 
   /// Perform an INSERT into the table or view.
   ///

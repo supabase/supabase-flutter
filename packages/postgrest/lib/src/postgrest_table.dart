@@ -18,14 +18,15 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 ///
 /// class Books {
 ///   static const table = PostgrestTable('books', Book.new);
-///   static const id = TableColumn<int>('id');
-///   static const title = TableColumn<String>('title');
+///   static const id = PostgrestColumn<Book, int>('id');
+///   static const title = PostgrestColumn<Book, String>('title');
 /// }
 ///
 /// final List<Book> books = await client
 ///     .table(Books.table)
 ///     .select()
-///     .where(Books.title.like('%Dart%'));
+///     .where(Books.title.like('%Dart%'))
+///     .order(Books.id.desc());
 /// ```
 ///
 /// Extension types over the decoded JSON map (as above) are the recommended
@@ -191,10 +192,6 @@ sealed class ColumnFilter {
   /// The value the filter compares against.
   Object? get value;
 
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  );
-
   /// Negates this filter.
   ///
   /// Throws a [StateError] when this filter is already negated, including the
@@ -229,11 +226,6 @@ final class EqFilter extends ComparisonFilter {
 
   @override
   String get operator => 'eq';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.eq(column, value);
 }
 
 /// Only rows where the column does not equal [value]; created by
@@ -244,11 +236,6 @@ final class NeqFilter extends ComparisonFilter {
 
   @override
   String get operator => 'neq';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.neq(column, value);
 }
 
 /// Only rows where the column is greater than [value]; created by
@@ -259,11 +246,6 @@ final class GtFilter extends ComparisonFilter {
 
   @override
   String get operator => 'gt';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.gt(column, value);
 }
 
 /// Only rows where the column is greater than or equal to [value]; created
@@ -274,11 +256,6 @@ final class GteFilter extends ComparisonFilter {
 
   @override
   String get operator => 'gte';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.gte(column, value);
 }
 
 /// Only rows where the column is less than [value]; created by
@@ -289,11 +266,6 @@ final class LtFilter extends ComparisonFilter {
 
   @override
   String get operator => 'lt';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.lt(column, value);
 }
 
 /// Only rows where the column is less than or equal to [value]; created by
@@ -304,11 +276,6 @@ final class LteFilter extends ComparisonFilter {
 
   @override
   String get operator => 'lte';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.lte(column, value);
 }
 
 /// A filter matching rows whose column value equals one of [values]; created
@@ -333,11 +300,6 @@ final class InListFilter extends ColumnFilter {
   // The generic accessor intentionally aliases the semantic field.
   // ignore: match-getter-setter-field-names
   Object get value => values;
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.inFilter(column, values);
 }
 
 /// A filter matching rows whose column value is `null`; created by
@@ -354,11 +316,6 @@ final class IsNullFilter extends ColumnFilter {
 
   @override
   Object? get value => null;
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.isFilter(column, null);
 }
 
 /// A filter matching rows whose column value is distinct from [value],
@@ -376,11 +333,6 @@ final class IsDistinctFilter extends ColumnFilter {
 
   @override
   String get operator => 'isdistinct';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.isDistinct(column, value);
 }
 
 /// A containment or overlap filter on a json, array, or range column.
@@ -402,11 +354,6 @@ final class ContainsFilter extends ContainmentFilter {
 
   @override
   String get operator => 'cs';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.contains(column, value);
 }
 
 /// Only rows whose value is contained by [value]; created by
@@ -417,11 +364,6 @@ final class ContainedByFilter extends ContainmentFilter {
 
   @override
   String get operator => 'cd';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.containedBy(column, value);
 }
 
 /// Only rows whose value overlaps with [value]; created by
@@ -432,11 +374,6 @@ final class OverlapsFilter extends ContainmentFilter {
 
   @override
   String get operator => 'ov';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.overlaps(column, value);
 }
 
 /// A filter comparing a range column against the range literal [range].
@@ -464,11 +401,6 @@ final class RangeLtFilter extends RangeFilter {
 
   @override
   String get operator => 'sl';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.rangeLt(column, range);
 }
 
 /// Only rows whose range is strictly to the right of [range]; created by
@@ -479,11 +411,6 @@ final class RangeGtFilter extends RangeFilter {
 
   @override
   String get operator => 'sr';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.rangeGt(column, range);
 }
 
 /// Only rows whose range does not extend to the left of [range]; created by
@@ -494,11 +421,6 @@ final class RangeGteFilter extends RangeFilter {
 
   @override
   String get operator => 'nxl';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.rangeGte(column, range);
 }
 
 /// Only rows whose range does not extend to the right of [range]; created by
@@ -509,11 +431,6 @@ final class RangeLteFilter extends RangeFilter {
 
   @override
   String get operator => 'nxr';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.rangeLte(column, range);
 }
 
 /// Only rows whose range is adjacent to [range]; created by
@@ -524,11 +441,6 @@ final class RangeAdjacentFilter extends RangeFilter {
 
   @override
   String get operator => 'adj';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.rangeAdjacent(column, range);
 }
 
 /// A filter matching a text column against a single [pattern].
@@ -556,11 +468,6 @@ final class LikeFilter extends PatternFilter {
 
   @override
   String get operator => 'like';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.like(column, pattern);
 }
 
 /// Only rows matching [pattern] case-insensitively; created by
@@ -571,11 +478,6 @@ final class IlikeFilter extends PatternFilter {
 
   @override
   String get operator => 'ilike';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.ilike(column, pattern);
 }
 
 /// Only rows matching the regular expression [pattern] case-sensitively;
@@ -586,11 +488,6 @@ final class MatchRegexFilter extends PatternFilter {
 
   @override
   String get operator => 'match';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.matchRegex(column, pattern);
 }
 
 /// Only rows matching the regular expression [pattern] case-insensitively;
@@ -601,11 +498,6 @@ final class ImatchRegexFilter extends PatternFilter {
 
   @override
   String get operator => 'imatch';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.imatchRegex(column, pattern);
 }
 
 /// A filter matching a text column against several [patterns] at once.
@@ -633,11 +525,6 @@ final class LikeAllOfFilter extends PatternListFilter {
 
   @override
   String get operator => 'like(all)';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.likeAllOf(column, patterns);
 }
 
 /// Only rows matching any of [patterns] case-sensitively; created by
@@ -648,11 +535,6 @@ final class LikeAnyOfFilter extends PatternListFilter {
 
   @override
   String get operator => 'like(any)';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.likeAnyOf(column, patterns);
 }
 
 /// Only rows matching all of [patterns] case-insensitively; created by
@@ -663,11 +545,6 @@ final class IlikeAllOfFilter extends PatternListFilter {
 
   @override
   String get operator => 'ilike(all)';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.ilikeAllOf(column, patterns);
 }
 
 /// Only rows matching any of [patterns] case-insensitively; created by
@@ -678,11 +555,6 @@ final class IlikeAnyOfFilter extends PatternListFilter {
 
   @override
   String get operator => 'ilike(any)';
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.ilikeAnyOf(column, patterns);
 }
 
 /// A full text search filter on a text or tsvector column; created by
@@ -720,11 +592,6 @@ final class TextSearchFilter extends ColumnFilter {
   // The generic accessor intentionally aliases the semantic field.
   // ignore: match-getter-setter-field-names
   Object get value => query;
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.textSearch(column, query, config: config, type: type);
 }
 
 /// The negation of another [ColumnFilter], created through
@@ -748,18 +615,4 @@ final class NegatedFilter extends ColumnFilter {
   @override
   NegatedFilter not() =>
       throw StateError('The filter on "$column" is already negated.');
-
-  @override
-  PostgrestFilterBuilder<dynamic> _apply(
-    PostgrestFilterBuilder<dynamic> builder,
-  ) {
-    // The untyped `not` stringifies map values with `Map.toString`, unlike
-    // the json-encoding positive paths such as `contains`, so encode here.
-    final innerValue = inner.value;
-    return builder.not(
-      column,
-      inner.operator,
-      innerValue is Map ? json.encode(innerValue) : innerValue,
-    );
-  }
 }

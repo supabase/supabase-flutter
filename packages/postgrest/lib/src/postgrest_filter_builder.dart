@@ -8,6 +8,11 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder<T> copyWithUrl(Uri url) =>
       PostgrestFilterBuilder(_copyWith(url: url));
 
+  /// Appends [value] as another value of the query parameter [key].
+  @internal
+  PostgrestFilterBuilder<T> appendSearchParameter(String key, String value) =>
+      copyWithUrl(_url.appendSearchParameters(key, value));
+
   /// Finds all rows which doesn't satisfy the filter.
   ///
   /// ```dart

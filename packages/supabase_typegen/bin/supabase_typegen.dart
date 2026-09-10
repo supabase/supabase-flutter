@@ -21,7 +21,7 @@ final _argParser = ArgParser()
     defaultsTo: 'package:postgrest/postgrest.dart',
     help:
         'The import the generated file uses for PostgrestTable and '
-        'TableColumn.',
+        'PostgrestColumn.',
   )
   ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this usage.');
 

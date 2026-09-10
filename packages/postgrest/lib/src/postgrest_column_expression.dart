@@ -209,11 +209,32 @@ base mixin PostgrestFilterableExpression<Row, Value extends Object>
 
 /// A column expression that can be used as an `order` key.
 ///
-/// Stored columns mix this in. Expression kinds PostgREST rejects in `order`
-/// do not, so ordering by one is a compile error.
+/// On its own it is a [PostgrestOrdering] with no direction, so
+/// `order(Books.title)` sends `order=title`. Chain [asc], [desc],
+/// [nullsFirst] or [nullsLast] to say more.
 @experimental
 base mixin PostgrestOrderableExpression<Row, Value extends Object>
-    on PostgrestColumnExpression<Row, Value> {}
+    on PostgrestColumnExpression<Row, Value>
+    implements PostgrestOrdering<Row> {
+  @override
+  String get orderKey => expression;
+
+  @override
+  PostgrestOrdering<Row> asc() =>
+      _Ordering(expression, direction: SortDirection.ascending);
+
+  @override
+  PostgrestOrdering<Row> desc() =>
+      _Ordering(expression, direction: SortDirection.descending);
+
+  @override
+  PostgrestOrdering<Row> nullsFirst() =>
+      _Ordering(expression, nulls: _NullPlacement.first);
+
+  @override
+  PostgrestOrdering<Row> nullsLast() =>
+      _Ordering(expression, nulls: _NullPlacement.last);
+}
 
 /// A filterable expression whose value the database allows to be `NULL`,
 /// which is what makes [isNull] available.

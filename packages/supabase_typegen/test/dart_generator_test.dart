@@ -89,7 +89,7 @@ void main() {
 
     expect(code, contains('AuthorsInsert({required String name})'));
     expect(code, contains('AuthorsUpdate({String? name})'));
-    expect(code, contains("TableColumn<int>('id')"));
+    expect(code, contains("PostgrestColumn<AuthorsRow, int>('id')"));
   });
 
   test('read-only views and materialized views generate no insert or '
@@ -114,7 +114,12 @@ void main() {
     final code = generateDartCode(schema);
 
     expect(code, contains('num? get discountedPrice'));
-    expect(code, contains("TableColumn<num>('discounted_price')"));
+    expect(
+      _normalize(code),
+      contains(
+        "PostgrestNullableColumn<BookPricesRow, num>( 'discounted_price', )",
+      ),
+    );
     expect(
       code,
       contains('BookPricesInsert({int? id, num? price, String? title})'),

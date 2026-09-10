@@ -3,10 +3,12 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_common/supabase_common.dart' show SortDirection;
 
 part 'postgrest_column_expression.dart';
 part 'postgrest_filter.dart';
 part 'postgrest_filter_operators.dart';
+part 'postgrest_ordering.dart';
 part 'postgrest_table.dart';
 part 'postgrest_typed_query_builder.dart';
 part 'postgrest_typed_transform_builder.dart';
@@ -24,6 +26,19 @@ Row? _maybeRowFromJson<Row>(PostgrestTable<Row> table, dynamic data) =>
     data == null ? null : table.rowFromJson(data as Map<String, dynamic>);
 
 void _toVoid(dynamic data) {}
+
+/// The `select` parameter for [columns], or `*` when none are given.
+String _selectList<Row>(List<PostgrestColumnExpression<Row, Object>>? columns) {
+  if (columns == null) return '*';
+  if (columns.isEmpty) {
+    throw ArgumentError.value(
+      columns,
+      'columns',
+      'select needs at least one column',
+    );
+  }
+  return columns.map((column) => column.expression).join(',');
+}
 
 /// A typed PostgREST request that can be awaited.
 ///

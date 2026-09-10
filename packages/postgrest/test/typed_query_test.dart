@@ -10,15 +10,28 @@ extension type const Book(Map<String, dynamic> _json)
   String get title => _json['title'] as String;
 }
 
+extension type const Author(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {}
+
 const bookRows = '[{"id":1,"title":"a"},{"id":2,"title":"b"}]';
 
 class Books {
   static const table = PostgrestTable('books', Book.new);
-  static const id = TableColumn<int>('id');
-  static const title = TableColumn<String>('title');
-  static const tags = TableColumn<List<String>>('tags');
-  static const ageRange = TableColumn<String>('age_range');
-  static const metadata = TableColumn<Map<String, dynamic>>('metadata');
+  static const id = PostgrestColumn<Book, int>('id');
+  static const title = PostgrestColumn<Book, String>('title');
+  static const tags = PostgrestColumn<Book, List<String>>('tags');
+  static const ageRange = PostgrestColumn<Book, String>('age_range');
+  static const metadata = PostgrestColumn<Book, Map<String, dynamic>>(
+    'metadata',
+  );
+  static const publishedOn = PostgrestNullableColumn<Book, DateTime>(
+    'published_on',
+  );
+}
+
+class Authors {
+  static const table = PostgrestTable('authors', Author.new);
+  static const id = PostgrestColumn<Author, int>('id');
 }
 
 class MockHttpClient extends BaseClient {
@@ -69,6 +82,18 @@ void main() {
       expect(httpClient.lastRequest!.url.path, '/rest/v1/books');
       expect(requestParameters()['select'], '*');
       expect(books.map((book) => book.title), ['a', 'b']);
+    });
+
+    test('selects the given columns', () async {
+      httpClient.responseBody = bookRows;
+
+      await client.table(Books.table).select([Books.id, Books.title]);
+
+      expect(requestParameters()['select'], 'id,title');
+    });
+
+    test('an empty column list throws', () {
+      expect(() => client.table(Books.table).select([]), throwsArgumentError);
     });
 
     test('single returns one row converted into the table row type', () async {
@@ -148,6 +173,52 @@ void main() {
       expect(requestParameters()['title'], 'like.%a%');
     });
 
+    test('a top-level AND renders as separate parameters', () async {
+      await client
+          .table(Books.table)
+          .select()
+          .where(Books.id.gt(1) & Books.title.like('%a%'));
+
+      expect(requestParameters()['id'], 'gt.1');
+      expect(requestParameters()['title'], 'like.%a%');
+    });
+
+    test('an OR renders as one or parameter', () async {
+      await client
+          .table(Books.table)
+          .select()
+          .where(Books.id.eq(1) | Books.title.eq('foo'));
+
+      expect(requestParameters()['or'], '(id.eq.1,title.eq.foo)');
+    });
+
+    test('a nested tree renders groups and escapes group operands', () async {
+      await client
+          .table(Books.table)
+          .select()
+          .where(
+            (Books.id.eq(1) & Books.title.eq('foo,bar')) |
+                Books.id.inFilter([2, 3]).not(),
+          );
+
+      expect(
+        requestParameters()['or'],
+        '(and(id.eq.1,title.eq."foo,bar"),id.not.in.(2,3))',
+      );
+    });
+
+    test('the same column filtered twice keeps both parameters', () async {
+      await client
+          .table(Books.table)
+          .select()
+          .where(Books.id.gt(1) & Books.id.lt(10));
+
+      expect(httpClient.lastRequest!.url.queryParametersAll['id'], [
+        'gt.1',
+        'lt.10',
+      ]);
+    });
+
     test('builds the same URLs as the untyped filters', () async {
       final filters = {
         Books.id.eq(1): ('id', 'eq.1'),
@@ -157,13 +228,13 @@ void main() {
         Books.id.lt(1): ('id', 'lt.1'),
         Books.id.lte(1): ('id', 'lte.1'),
         Books.id.eq(1).not(): ('id', 'not.eq.1'),
-        Books.title.isNull(): ('title', 'is.null'),
-        Books.title.isNotNull(): ('title', 'not.is.null'),
+        Books.publishedOn.isNull(): ('published_on', 'is.null'),
+        Books.publishedOn.isNull().not(): ('published_on', 'not.is.null'),
         Books.id.inFilter([1, 2]): ('id', 'in.(1,2)'),
-        Books.id.isDistinctFrom(5): ('id', 'isdistinct.5'),
-        Books.tags.contains(['a', 'b']): ('tags', 'cs.{"a","b"}'),
-        Books.tags.containedBy(['a', 'b']): ('tags', 'cd.{"a","b"}'),
-        Books.ageRange.overlaps('[2,25)'): ('age_range', 'ov.[2,25)'),
+        Books.id.isDistinct(5): ('id', 'isdistinct.5'),
+        Books.tags.contains(['a', 'b']): ('tags', 'cs.{a,b}'),
+        Books.tags.containedBy(['a', 'b']): ('tags', 'cd.{a,b}'),
+        Books.ageRange.overlapsRange('[2,25)'): ('age_range', 'ov.[2,25)'),
         Books.ageRange.rangeLt('[2,25)'): ('age_range', 'sl.[2,25)'),
         Books.ageRange.rangeGt('[2,25)'): ('age_range', 'sr.[2,25)'),
         Books.ageRange.rangeGte('[2,25)'): ('age_range', 'nxl.[2,25)'),
@@ -182,16 +253,18 @@ void main() {
         ),
         Books.title.matchRegex('^a'): ('title', 'match.^a'),
         Books.title.imatchRegex('^a'): ('title', 'imatch.^a'),
-        Books.title.textSearch(
-          "'fat' & 'cat'",
-          config: 'english',
-        ): (
+        Books.title.textSearch("'fat' & 'cat'", config: 'english'): (
           'title',
           "fts(english).'fat' & 'cat'",
         ),
         Books.title.textSearch('fat cat', type: TextSearchType.websearch): (
           'title',
           'wfts.fat cat',
+        ),
+        Books.metadata.containsJson({'a': 1}): ('metadata', 'cs.{"a":1}'),
+        Books.metadata.containsJson({'a': 1}).not(): (
+          'metadata',
+          'not.cs.{"a":1}',
         ),
       };
 
@@ -207,54 +280,21 @@ void main() {
       }
     });
 
-    test('whereAny combines filters with logical OR', () async {
-      await client.table(Books.table).select().whereAny([
-        Books.id.eq(1),
-        Books.title.eq('foo'),
-      ]);
-
-      expect(requestParameters()['or'], '(id.eq.1,title.eq."foo")');
-    });
-
-    test('whereAny quotes values with reserved characters', () async {
-      await client.table(Books.table).select().whereAny([
-        Books.title.eq('foo,bar'),
-        Books.id.inFilter([1, 2]),
-      ]);
-
-      expect(requestParameters()['or'], '(title.eq."foo,bar",id.in.(1,2))');
-    });
-
-    test('negating a filter twice throws', () {
-      expect(() => Books.id.eq(1).not().not(), throwsStateError);
-    });
-
-    test('negated json containment encodes the value as json', () async {
+    test('a raw filter reaches the request untouched', () async {
       await client
           .table(Books.table)
           .select()
-          .where(Books.metadata.contains({'a': 1}).not());
+          .where(PostgrestFilter.raw('cost::text', 'eq.10'));
 
-      expect(requestParameters()['metadata'], 'not.cs.{"a":1}');
+      expect(requestParameters()['cost::text'], 'eq.10');
     });
 
-    test('whereAny encodes json containment values', () async {
-      await client.table(Books.table).select().whereAny([
-        Books.metadata.contains({'a': 1}),
-        Books.id.eq(1),
-      ]);
-
-      expect(
-        requestParameters()['or'],
-        r'(metadata.cs."{\"a\":1}",id.eq.1)',
-      );
-    });
-
-    test('whereAny without filters throws', () {
-      expect(
-        () => client.table(Books.table).select().whereAny([]),
-        throwsArgumentError,
-      );
+    test('a filter carries the row type of its table', () {
+      // `client.table(Books.table).select().where(Authors.id.eq(1))` is a
+      // compile error: the filter is a PostgrestFilter<Author>. The static
+      // types are what the check rests on.
+      expect(Books.id.eq(1), isA<PostgrestFilter<Book>>());
+      expect(Authors.id.eq(1), isA<PostgrestFilter<Author>>());
     });
   });
 
@@ -279,6 +319,44 @@ void main() {
       httpClient.responseBody = bookRows;
     });
 
+    test('order sends only what was asked for', () async {
+      await client.table(Books.table).select().order(Books.title);
+      expect(
+        requestParameters()['order'],
+        'title',
+        reason: 'a bare column leaves the direction to PostgREST',
+      );
+
+      await client.table(Books.table).select().order(Books.title.desc());
+      expect(requestParameters()['order'], 'title.desc');
+
+      await client
+          .table(Books.table)
+          .select()
+          .order(Books.publishedOn.asc().nullsFirst());
+      expect(requestParameters()['order'], 'published_on.asc.nullsfirst');
+
+      await client
+          .table(Books.table)
+          .select()
+          .order(Books.publishedOn.nullsLast());
+      expect(requestParameters()['order'], 'published_on.nullslast');
+    });
+
+    test('repeated order calls merge into one parameter', () async {
+      // PostgREST honours only the first `order` parameter it sees.
+      await client
+          .table(Books.table)
+          .select()
+          .order(Books.title.desc())
+          .order(Books.id);
+
+      expect(requestParameters()['order'], 'title.desc,id');
+      expect(httpClient.lastRequest!.url.queryParametersAll['order'], [
+        'title.desc,id',
+      ]);
+    });
+
     test('order, limit and range keep the row type', () async {
       final List<Book> books = await client
           .table(Books.table)
@@ -287,11 +365,6 @@ void main() {
           .order(Books.title)
           .limit(2);
 
-      expect(
-        requestParameters()['order'],
-        'title.asc.nullslast',
-        reason: 'order defaults to ascending like the untyped builder',
-      );
       expect(requestParameters()['limit'], '2');
       expect(books, hasLength(2));
 
@@ -327,6 +400,16 @@ void main() {
         contains('return=representation'),
       );
       expect(book.id, 3);
+    });
+
+    test('a trailing select takes columns', () async {
+      httpClient.responseBody = '[{"id":3}]';
+
+      await client.table(Books.table).insert({'title': 'foo'}).select([
+        Books.id,
+      ]);
+
+      expect(requestParameters()['select'], 'id');
     });
 
     test('upsert sets the resolution header', () async {

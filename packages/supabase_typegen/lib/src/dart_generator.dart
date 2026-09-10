@@ -16,8 +16,8 @@ class _Binding {
 /// [schema].
 ///
 /// The generated code depends only on the library at [importUri], which must
-/// export the typed table access API of `package:postgrest` (`PostgrestTable`
-/// and `TableColumn`).
+/// export the typed table access API of `package:postgrest` (`PostgrestTable`,
+/// `PostgrestColumn` and `PostgrestNullableColumn`).
 String generateDartCode(
   SchemaDescription schema, {
   String importUri = 'package:postgrest/postgrest.dart',
@@ -90,7 +90,8 @@ class _TypeNameRegistry {
     'num',
     'bool',
     'PostgrestTable',
-    'TableColumn',
+    'PostgrestColumn',
+    'PostgrestNullableColumn',
   };
 
   String claim(String name) {
@@ -341,9 +342,13 @@ void _writeNamespace(
     ..writeln();
   for (final column in table.columns) {
     final binding = bindings[column.name]!;
+    final columnType = column.isNullable
+        ? 'PostgrestNullableColumn'
+        : 'PostgrestColumn';
     buffer.writeln(
       '  static const ${columnNames[column.name]} = '
-      'TableColumn<${binding.dartType}>(${_stringLiteral(column.name)});',
+      '$columnType<$rowType, ${binding.dartType}>'
+      '(${_stringLiteral(column.name)});',
     );
   }
   buffer

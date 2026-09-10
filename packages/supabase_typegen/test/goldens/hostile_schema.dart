@@ -114,10 +114,18 @@ class PostgrestTable$ {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('postgrest_table', PostgrestTableRow.new);
 
-  static const quoteNameTail = TableColumn<String>('quote\'name\u{2029}tail');
-  static const mood = TableColumn<String$>('mood');
-  static const samples = TableColumn<List<double>>('samples');
-  static const days = TableColumn<List<String>>('days');
+  static const quoteNameTail = PostgrestColumn<PostgrestTableRow, String>(
+    'quote\'name\u{2029}tail',
+  );
+  static const mood = PostgrestNullableColumn<PostgrestTableRow, String$>(
+    'mood',
+  );
+  static const samples = PostgrestColumn<PostgrestTableRow, List<double>>(
+    'samples',
+  );
+  static const days = PostgrestNullableColumn<PostgrestTableRow, List<String>>(
+    'days',
+  );
 }
 
 /// A row of the `map` table.
@@ -168,6 +176,8 @@ class Map$ {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('map', MapRow.new);
 
-  static const list = TableColumn<int>('list');
-  static const dateTime = TableColumn<DateTime>('date_time');
+  static const list = PostgrestColumn<MapRow, int>('list');
+  static const dateTime = PostgrestNullableColumn<MapRow, DateTime>(
+    'date_time',
+  );
 }
