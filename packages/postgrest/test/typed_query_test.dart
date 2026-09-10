@@ -92,6 +92,18 @@ void main() {
       expect(requestParameters()['select'], 'id,title');
     });
 
+    test('selects casts and JSON paths', () async {
+      httpClient.responseBody = bookRows;
+
+      await client.table(Books.table).select([
+        Books.id,
+        Books.title.cast(PostgrestCastTarget.text),
+        Books.metadata.jsonText('isbn'),
+      ]);
+
+      expect(requestParameters()['select'], 'id,title::text,metadata->>isbn');
+    });
+
     test('an empty column list throws', () {
       expect(() => client.table(Books.table).select([]), throwsArgumentError);
     });
@@ -341,6 +353,15 @@ void main() {
           .select()
           .order(Books.publishedOn.nullsLast());
       expect(requestParameters()['order'], 'published_on.nullslast');
+    });
+
+    test('order accepts a JSON path', () async {
+      await client
+          .table(Books.table)
+          .select()
+          .order(Books.metadata.jsonText('isbn').asc());
+
+      expect(requestParameters()['order'], 'metadata->>isbn.asc');
     });
 
     test('repeated order calls merge into one parameter', () async {

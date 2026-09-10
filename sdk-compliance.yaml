@@ -796,6 +796,27 @@ features:
       - PostgrestTypedQueryBuilder.count
       - PostgrestTypedTransformBuilder
       - PostgrestTypedTransformBuilder.count
+    supporting_symbols:
+      - PostgrestColumnExpression.cast
+      - PostgrestColumnExpression.jsonText
+      - PostgrestColumnExpression.jsonObject
+      - PostgrestColumn.jsonText
+      - PostgrestColumn.jsonObject
+      - PostgrestCastTarget
+      - PostgrestCastTarget.PostgrestCastTarget
+      - PostgrestCastTarget.sqlType
+      - PostgrestCastTarget.text
+      - PostgrestCastTarget.integer
+      - PostgrestCastTarget.doublePrecision
+      - PostgrestCastTarget.boolean
+      - PostgrestDerivedExpression
+      - PostgrestDerivedExpression.expression
+      - PostgrestDerivedExpression.jsonText
+      - PostgrestDerivedExpression.jsonObject
+      - PostgrestJsonPath
+      - PostgrestJsonPath.expression
+      - PostgrestJsonPath.jsonText
+      - PostgrestJsonPath.jsonObject
   database.query.rpc:
     status: implemented
     note: "head and count are applied via type-safe chaining (.head()/.count()) rather than inline call options, which is the idiomatic Dart builder pattern; inline options cannot preserve the distinct return types."
