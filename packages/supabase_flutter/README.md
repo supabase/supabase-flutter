@@ -61,6 +61,7 @@ final supabase = Supabase.instance.client;
   * [Native Google sign in](#native-google-sign-in)
   * [OAuth login](#oauth-login)
   * [Passkeys](#passkeys)
+  * [Android Restore Credentials](#android-restore-credentials)
 * [Database](#database)
 * [Realtime](#realtime)
   * [Postgres Changes](#postgres-changes)
@@ -317,6 +318,44 @@ await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
 ```
 
 The platform ceremony is handled by whichever plugin you add. Refer to your plugin's documentation, for example the [`passkeys` package documentation](https://pub.dev/packages/passkeys), for its platform requirements, setup, and how to handle ceremony failures such as the user cancelling.
+
+### <a id="android-restore-credentials"></a>Android Restore Credentials
+
+From April 2027 Google Play requires apps with sign-in to restore the signed in state when the user moves to a new Android device, through Credential Manager's [Restore Credentials](https://developer.android.com/identity/sign-in/restore-credentials) API. A restore key is a WebAuthn credential that Android creates silently, backs up with the app data, and hands to the app on the new device. Supabase Auth stores and verifies restore keys as passkeys, so the same BETA passkey feature has to be enabled on the project and Digital Asset Links must be set up for the relying party, exactly as for passkeys.
+
+Signing in with a restore key creates a new session on the new device. Nothing is shared with the refresh token chain of the old device, so the old device keeps working and no refresh token reuse is triggered.
+
+`supabase_flutter` performs the server side of the ceremony and delegates the platform calls to a `RestoreCredentialInterface` you implement on top of a Credential Manager plugin, or on top of your own platform channel to `androidx.credentials`:
+
+```dart
+class MyRestoreCredential implements RestoreCredentialInterface {
+  @override
+  Future<String> createRestoreCredential(String requestJson) {
+    // Wrap `requestJson` in a `CreateRestoreCredentialRequest` and return
+    // the `responseJson` of the `CreateRestoreCredentialResponse`.
+  }
+
+  @override
+  Future<String> getRestoreCredential(String requestJson) {
+    // Wrap `requestJson` in a `GetRestoreCredentialOption` and return the
+    // `authenticationResponseJson` of the `RestoreCredential`.
+  }
+}
+
+final restoreCredential = MyRestoreCredential();
+
+// Right after sign in, create a restore key for the user. Store the id so the
+// key can be deleted when it is replaced or when the user signs out.
+final restoreKey = await supabase.auth.createRestoreKey(restoreCredential);
+
+// On the first launch on a new device, sign in with the restored key.
+await supabase.auth.signInWithRestoreKey(restoreCredential);
+
+// On sign out, delete the key on the server and clear it on the device.
+await supabase.auth.passkey.delete(passkeyId: restoreKey.id);
+```
+
+Restore keys are listed by `supabase.auth.passkey.list()` together with the passkeys the user created. They are named `Android restore key` by default (change it with the `friendlyName` parameter), which lets you hide them from a passkey management screen. Android keeps one restore key per app, so delete the previous key before creating a new one, and clear the device side on sign out with Credential Manager's `clearCredentialState`. Restore Credentials is Android only, guard the calls with `defaultTargetPlatform == TargetPlatform.android`.
 
 ### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 

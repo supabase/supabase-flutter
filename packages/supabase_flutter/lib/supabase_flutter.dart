@@ -12,3 +12,4 @@ export 'src/shared_preferences_auth_async_storage.dart';
 export 'src/supabase.dart';
 export 'src/supabase_auth.dart' hide SupabaseAuth;
 export 'src/supabase_passkey.dart';
+export 'src/supabase_restore_credential.dart';
