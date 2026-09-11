@@ -1,3 +1,18 @@
+## 3.0.0-dev.3
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**(postgrest): remove the TableColumn filter surface ([#1796](https://github.com/supabase/supabase-flutter/issues/1796)). ([c065b446](https://github.com/supabase/supabase-flutter/commit/c065b446690cce75dd72359acbdf1e94b917ac56))
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FEAT**(postgrest): add typed ranges to the column-expression surface ([#1808](https://github.com/supabase/supabase-flutter/issues/1808)). ([5ad78b9e](https://github.com/supabase/supabase-flutter/commit/5ad78b9e42afd618b0a67e0bdc0c3f2f203f8df6))
+ - **FEAT**(postgrest): add embedded relations to the column namespace ([#1799](https://github.com/supabase/supabase-flutter/issues/1799)). ([fc2e77cc](https://github.com/supabase/supabase-flutter/commit/fc2e77cc8b7525cf921ae3e0d9d2539d6f142d2a))
+ - **FEAT**(postgrest): add aggregate functions as select-only expressions ([#1798](https://github.com/supabase/supabase-flutter/issues/1798)). ([4fb306e3](https://github.com/supabase/supabase-flutter/commit/4fb306e3188d6fdb6a776d4534936ca841a37a9e))
+ - **FEAT**(postgrest): add casts and JSON paths as column expressions ([#1797](https://github.com/supabase/supabase-flutter/issues/1797)). ([da48c368](https://github.com/supabase/supabase-flutter/commit/da48c368bf02c4fa1373da0ea16d67d99d59c238))
+ - **FEAT**(postgrest): route where, order and select through column expressions ([#1795](https://github.com/supabase/supabase-flutter/issues/1795)). ([2c350e5d](https://github.com/supabase/supabase-flutter/commit/2c350e5d29cdfc31370f56850d1a61f8ef10316e))
+ - **FEAT**(postgrest): add the remaining filter operators ([#1794](https://github.com/supabase/supabase-flutter/issues/1794)). ([78ddf55f](https://github.com/supabase/supabase-flutter/commit/78ddf55fe5c0ecfff64714a43665d90249d53fcf))
+ - **FEAT**(postgrest): add column expressions and the filter tree ([#1793](https://github.com/supabase/supabase-flutter/issues/1793)). ([93be263b](https://github.com/supabase/supabase-flutter/commit/93be263b80461987579e852db74ecb9fbd0aa88a))
+ - **BREAKING** **REFACTOR**(postgrest): collapse the builder generics and wrapper types ([#1826](https://github.com/supabase/supabase-flutter/issues/1826)). ([81168d7f](https://github.com/supabase/supabase-flutter/commit/81168d7fc6c1e763df2ec0b979536b96d3ed17d1))
+
 ## 3.0.0-dev.2
 
  - **FIX**(postgrest): enforce maybeSingle() client-side for all request methods ([#1779](https://github.com/supabase/supabase-flutter/issues/1779)). ([c360849d](https://github.com/supabase/supabase-flutter/commit/c360849d3790fc7597416e3168e5ad03fc8ec807))

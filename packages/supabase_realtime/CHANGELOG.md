@@ -1,3 +1,8 @@
+## 3.0.0-dev.3
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FIX**(realtime): cancel the pending timeout when a push is resent ([#1822](https://github.com/supabase/supabase-flutter/issues/1822)). ([a0d181de](https://github.com/supabase/supabase-flutter/commit/a0d181debd838c08418cee658d978ceb22afa90b))
+
 ## 3.0.0-dev.2
 
 > Note: This release has breaking changes.
