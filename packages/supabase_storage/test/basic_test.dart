@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -821,24 +822,28 @@ void main() {
       expect(response.fullPath, 'public/a.txt');
     });
 
-    test('aborting upload should throw', () async {
+    test('aborting an upload stops the retries', () async {
       final file = File('a.txt');
       file.writeAsStringSync('File content');
 
-      final retryController = StorageRetryController();
+      final stallingHttpClient = MockSupabaseHttpClient()..stubStall();
+      final stallingClient = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {'Authorization': 'Bearer $supabaseKey'},
+        retryOptions: const SupabaseRetryOptions(count: 5),
+        httpClient: stallingHttpClient,
+      );
+      final abortSignal = Completer<void>();
 
-      final future = client
+      final future = stallingClient
           .from('public')
-          .upload(
-            'a.txt',
-            file,
-            retryController: retryController,
-          );
+          .upload('a.txt', file, abortSignal: abortSignal.future);
 
-      await Future.delayed(Duration(milliseconds: 500));
-      retryController.cancel();
+      await Future.delayed(const Duration(milliseconds: 50));
+      abortSignal.complete();
 
-      await expectLater(future, throwsException);
+      await expectLater(future, throwsA(isA<RequestAbortedException>()));
+      expect(stallingHttpClient.requests, hasLength(1));
     });
 
     test('should upload binary with few network failures', () async {
