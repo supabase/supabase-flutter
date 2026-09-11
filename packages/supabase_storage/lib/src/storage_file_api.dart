@@ -614,11 +614,11 @@ class StorageFileApi {
   /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
   /// a specific file version.
   ///
-  /// [abortSignal] aborts the in-flight request when the provided [Future]
-  /// completes. It must not complete with an error. Before the response
-  /// headers arrive the abort surfaces as a [RequestAbortedException] error on
-  /// the stream; once bytes are flowing, the stream emits the same error and
-  /// closes.
+  /// {@macro storage_abort_signal}
+  ///
+  /// On the stream the abort surfaces as a [RequestAbortedException] error
+  /// event, whether it happens before the response headers arrive or while
+  /// bytes are flowing, and the stream closes.
   Stream<Uint8List> downloadStream(
     String path, {
     TransformOptions? transform,
