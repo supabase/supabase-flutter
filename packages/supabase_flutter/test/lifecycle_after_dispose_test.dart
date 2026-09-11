@@ -17,8 +17,7 @@ void main() {
       url: '',
       publishableKey: '',
       authOptions: FlutterAuthClientOptions(
-        localStorage: const MockEmptyLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        asyncStorage: MockAsyncStorage(),
       ),
     );
   });

@@ -69,7 +69,7 @@ final supabase = Supabase.instance.client;
 * [Storage](#storage)
 * [Edge Functions](#edge-functions)
 * [Deep Links](#deep-links)
-* [Custom LocalStorage](#custom-localstorage)
+* [Custom session storage](#custom-session-storage)
 - [Logging](#logging)
 
 
@@ -496,65 +496,46 @@ Follow the guide to find additional platform specific configs for your OAuth pro
 
 https://supabase.io/docs/guides/auth#third-party-logins
 
-## <a id="custom-localstorage"></a>Custom LocalStorage
+## <a id="custom-session-storage"></a>Custom session storage
 
-By default, `supabase_flutter` uses the `SharedPreferencesAsync` API of [`shared_preferences`](https://pub.dev/packages/shared_preferences) to persist the user session. If your own code still uses the legacy `SharedPreferences` API, [migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache): on Windows and Linux both APIs rewrite the same file from their own cache, so a write through one drops what the other wrote, and a mixed setup can lose your preferences as well as the session.
+By default, `supabase_flutter` uses the `SharedPreferencesAsync` API of [`shared_preferences`](https://pub.dev/packages/shared_preferences) to persist the user session and the code verifiers of pending PKCE flows. If your own code still uses the legacy `SharedPreferences` API, [migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache): on Windows and Linux both APIs rewrite the same file from their own cache, so a write through one drops what the other wrote, and a mixed setup can lose your preferences as well as the session.
 
-However, you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
+You can store them anywhere else by passing an `AuthAsyncStorage` implementation. For example, we can use the [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to keep the user session in a secure storage.
 
-The key the session is stored under is derived from your project URL by `Supabase.initialize`. You only pass it yourself when you construct a `LocalStorage`, as below, and `defaultPersistSessionKey` gives you the same key the default storage uses.
+The session is stored under a key derived from your project URL, which `defaultPersistSessionKey` returns and `storageKey` on the auth options overrides. The code verifiers are stored under keys prefixed with it.
 
 ```dart
-// Define the custom LocalStorage implementation
-class MySecureStorage extends LocalStorage {
-  MySecureStorage({required this.persistSessionKey});
-
-  final String persistSessionKey;
-
+// Define the custom AuthAsyncStorage implementation
+class MySecureStorage extends AuthAsyncStorage {
   final storage = FlutterSecureStorage();
 
   @override
-  Future<void> initialize() async {}
+  Future<String?> getItem(String key) => storage.read(key: key);
 
   @override
-  Future<String?> accessToken() async {
-    return storage.read(key: persistSessionKey);
-  }
+  Future<void> setItem(String key, String value) =>
+      storage.write(key: key, value: value);
 
   @override
-  Future<bool> hasAccessToken() async {
-    return storage.containsKey(key: persistSessionKey);
-  }
-
-  @override
-  Future<void> persistSession(String persistSessionString) async {
-    return storage.write(key: persistSessionKey, value: persistSessionString);
-  }
-
-  @override
-  Future<void> removePersistedSession() async {
-    return storage.delete(key: persistSessionKey);
-  }
+  Future<void> removeItem(String key) => storage.delete(key: key);
 }
 
 // use it when initializing
 Supabase.initialize(
   ...
   authOptions: FlutterAuthClientOptions(
-    localStorage: MySecureStorage(
-      persistSessionKey: defaultPersistSessionKey(supabaseUrl),
-    ),
+    asyncStorage: MySecureStorage(),
   ),
 );
 ```
 
-You can also use `EmptyLocalStorage` to disable session persistence:
+Set `persistSession` to `false` to keep the session in memory only. The code verifiers are still stored, so a sign-in through an email link or an OAuth redirect can complete after the app was closed in between.
 
 ```dart
 Supabase.initialize(
   // ...
   authOptions: FlutterAuthClientOptions(
-    localStorage: const EmptyLocalStorage(),
+    persistSession: false,
   ),
 );
 ```

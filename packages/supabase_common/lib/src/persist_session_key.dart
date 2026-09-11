@@ -1,9 +1,8 @@
 /// The key the user session is persisted under for the project at
 /// [supabaseUrl].
 ///
-/// This is the key `Supabase.initialize` passes to the default `LocalStorage`,
-/// so pass it to your own `LocalStorage` implementation to keep reading and
-/// writing the session the SDK already persisted.
+/// This is what `AuthClient.storageKey` defaults to, so it is the key to read
+/// when you look for the session the SDK persisted in your own storage.
 ///
 /// The other Supabase client libraries derive the key the same way, so a
 /// session written by one of them is found by the others.

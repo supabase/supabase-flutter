@@ -544,7 +544,7 @@ const _warmUpPrefix = 'warm_up_';
 SupabaseClient _createClient() => SupabaseClient(
   localStackUrl,
   localStackServiceRoleKey,
-  authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
+  authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
 );
 
 /// Listens to [stream] and asserts that it emits [expectedSnapshots] in order,

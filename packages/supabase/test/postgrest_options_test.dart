@@ -18,7 +18,7 @@ void main() {
       supabaseKey,
       httpClient: httpClient,
       authOptions: AuthClientOptions(
-        pkceAsyncStorage: MemoryAuthAsyncStorage(),
+        asyncStorage: MemoryAuthAsyncStorage(),
       ),
       postgrestOptions: PostgrestClientOptions(
         retryOptions: retryOptions,

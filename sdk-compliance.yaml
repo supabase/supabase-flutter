@@ -2266,27 +2266,14 @@ features:
     status: implemented
     symbols:
       - AuthAsyncStorage
-      - LocalStorage
+      - AuthClientOptions.asyncStorage
     supporting_symbols:
-      - AuthClientOptions.pkceAsyncStorage
-      - EmptyLocalStorage
-      - EmptyLocalStorage.EmptyLocalStorage
-      - EmptyLocalStorage.accessToken
-      - EmptyLocalStorage.hasAccessToken
-      - EmptyLocalStorage.initialize
-      - EmptyLocalStorage.persistSession
-      - EmptyLocalStorage.removePersistedSession
-      - FlutterAuthClientOptions.localStorage
       - AuthAsyncStorage.AuthAsyncStorage
       - AuthAsyncStorage.getItem
       - AuthAsyncStorage.removeItem
       - AuthAsyncStorage.setItem
-      - LocalStorage.LocalStorage
-      - LocalStorage.accessToken
-      - LocalStorage.hasAccessToken
-      - LocalStorage.initialize
-      - LocalStorage.persistSession
-      - LocalStorage.removePersistedSession
+      - AuthClientOptions.storageKey
+      - AuthClient.storageKey
       - MemoryAuthAsyncStorage
       - MemoryAuthAsyncStorage.getItem
       - MemoryAuthAsyncStorage.removeItem
@@ -2296,21 +2283,14 @@ features:
       - SharedPreferencesAuthAsyncStorage.getItem
       - SharedPreferencesAuthAsyncStorage.removeItem
       - SharedPreferencesAuthAsyncStorage.setItem
-      - SharedPreferencesLocalStorage
-      - SharedPreferencesLocalStorage.SharedPreferencesLocalStorage
-      - SharedPreferencesLocalStorage.accessToken
-      - SharedPreferencesLocalStorage.hasAccessToken
-      - SharedPreferencesLocalStorage.initialize
-      - SharedPreferencesLocalStorage.persistSession
-      - SharedPreferencesLocalStorage.removePersistedSession
   client.session_management.persist_session:
     status: implemented
     symbols:
       - AuthClientOptions.persistSession
+      - AuthClient.initialized
       - AuthClient.recoverSession
       - AuthClient.setInitialSession
     supporting_symbols:
-      - SharedPreferencesLocalStorage.persistSessionKey
       - defaultPersistSessionKey
   client.request_configuration.custom_http_client:
     status: implemented

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'utils.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
@@ -16,8 +17,9 @@ void main() {
         url: supabaseUrl,
         publishableKey: supabaseKey,
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: MockAsyncStorage.withSession(
+            DateTime.now().add(const Duration(hours: 1)),
+          ),
         ),
       );
     });
@@ -35,8 +37,9 @@ void main() {
         url: supabaseUrl,
         publishableKey: supabaseKey,
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: MockAsyncStorage.withSession(
+            DateTime.now().add(const Duration(hours: 1)),
+          ),
         ),
       );
 
@@ -50,8 +53,9 @@ void main() {
       url: supabaseUrl,
       publishableKey: supabaseUrl,
       authOptions: FlutterAuthClientOptions(
-        localStorage: const MockLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        asyncStorage: MockAsyncStorage.withSession(
+          DateTime.now().add(const Duration(hours: 1)),
+        ),
       ),
       accessToken: () async => 'my-access-token',
     );
@@ -66,21 +70,18 @@ void main() {
         url: supabaseUrl,
         publishableKey: supabaseKey,
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockExpiredStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: MockAsyncStorage.withSession(
+            DateTime.now().subtract(const Duration(hours: 1)),
+          ),
           autoRefreshToken: false,
         ),
       );
     });
 
-    test('emits exception when no auto refresh', () async {
-      // The session recovery emits a `signedOut` event before the failure
-      // reaches the stream, and the subject replays only the latest event,
-      // so skip past any data events until the error arrives.
-      await expectLater(
-        Supabase.instance.client.auth.onAuthStateChange,
-        emitsThrough(emitsError(isA<AuthException>())),
-      );
+    test('signs out when no auto refresh', () async {
+      await pumpEventQueue();
+
+      expect(Supabase.instance.client.auth.currentSession, isNull);
     });
   });
 
@@ -91,8 +92,7 @@ void main() {
         url: supabaseUrl,
         publishableKey: supabaseKey,
         authOptions: FlutterAuthClientOptions(
-          localStorage: const MockEmptyLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: MockAsyncStorage(),
         ),
       );
     });
@@ -104,53 +104,47 @@ void main() {
     });
   });
 
-  group('EmptyLocalStorage', () {
-    late EmptyLocalStorage localStorage;
+  group('Without session persistence', () {
+    late MockAsyncStorage storage;
 
     setUp(() async {
       mockAppLink();
-
-      localStorage = const EmptyLocalStorage();
-      // Initialize the Supabase singleton
+      storage = MockAsyncStorage();
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
         authOptions: FlutterAuthClientOptions(
-          localStorage: localStorage,
-          pkceAsyncStorage: MockAsyncStorage(),
+          asyncStorage: storage,
+          persistSession: false,
         ),
       );
     });
 
-    test('all methods work together in a typical flow', () async {
-      // Initialize the storage
-      await localStorage.initialize();
+    test('emits a null initial session', () async {
+      final event = await Supabase.instance.client.auth.onAuthStateChange.first;
+      expect(event.event, AuthChangeEvent.initialSession);
+      expect(event.session, isNull);
+    });
 
-      // Check if there's a token (should be false)
-      final hasToken = await localStorage.hasAccessToken();
-      expect(hasToken, isFalse);
+    test('does not restore a session from the storage', () async {
+      await Supabase.instance.dispose();
+      await storage.setItem(
+        defaultPersistSessionKey(supabaseUrl),
+        getSessionData(
+          DateTime.now().add(const Duration(hours: 1)),
+        ).sessionString,
+      );
 
-      // Get the token (should be null)
-      final token = await localStorage.accessToken();
-      expect(token, isNull);
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: storage,
+          persistSession: false,
+        ),
+      );
 
-      // Try to persist a session
-      await localStorage.persistSession('test-session-data');
-
-      // Check if there's a token after persisting (should still be false)
-      final hasTokenAfterPersist = await localStorage.hasAccessToken();
-      expect(hasTokenAfterPersist, isFalse);
-
-      // Get the token after persisting (should still be null)
-      final tokenAfterPersist = await localStorage.accessToken();
-      expect(tokenAfterPersist, isNull);
-
-      // Try to remove the session
-      await localStorage.removePersistedSession();
-
-      // Check if there's a token after removing (should still be false)
-      final hasTokenAfterRemove = await localStorage.hasAccessToken();
-      expect(hasTokenAfterRemove, isFalse);
+      expect(Supabase.instance.client.auth.currentSession, isNull);
     });
   });
 }

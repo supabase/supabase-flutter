@@ -74,30 +74,37 @@ class SlowAsyncStorage extends AuthAsyncStorage {
   Future<void> get _delay => Future.delayed(Duration.zero);
 
   @override
-  Future<String?> getItem({required String key}) async {
+  Future<String?> getItem(String key) async {
     await _delay;
     return _items[key];
   }
 
   @override
-  Future<void> setItem({required String key, required String value}) async {
+  Future<void> setItem(String key, String value) async {
     await _delay;
     _items[key] = value;
   }
 
   @override
-  Future<void> removeItem({required String key}) async {
+  Future<void> removeItem(String key) async {
     await _delay;
     _items.remove(key);
   }
 }
 
 void main() {
-  const legacyKey = '${AuthConstants.defaultStorageKey}-code-verifier';
-  const indexKey = '${AuthConstants.defaultStorageKey}-flows-code-verifier';
+  const storageKey = 'sb-test-auth-token';
+  const legacyKey = '$storageKey-code-verifier';
+  const indexKey = '$storageKey-flows-code-verifier';
 
-  String slotKey(String flowId) =>
-      '${AuthConstants.defaultStorageKey}-flow-$flowId-code-verifier';
+  String slotKey(String flowId) => '$storageKey-flow-$flowId-code-verifier';
+
+  const legacyPrefixKey = '${AuthConstants.legacyStorageKey}-code-verifier';
+  const legacyPrefixIndexKey =
+      '${AuthConstants.legacyStorageKey}-flows-code-verifier';
+
+  String legacyPrefixSlotKey(String flowId) =>
+      '${AuthConstants.legacyStorageKey}-flow-$flowId-code-verifier';
 
   group('PKCEVerifierStore', () {
     late TestAsyncStorage storage;
@@ -105,7 +112,67 @@ void main() {
 
     setUp(() {
       storage = TestAsyncStorage();
-      store = PKCEVerifierStore(storage);
+      store = PKCEVerifierStore(storage, storageKey: storageKey);
+    });
+
+    test('reads a verifier stored under the prefix used before', () async {
+      await storage.setItem(legacyPrefixKey, 'verifier-old');
+      await storage.setItem(legacyPrefixSlotKey('flow-old'), 'verifier-old');
+
+      expect(await store.retrieve(), 'verifier-old');
+      expect(await store.retrieve(flowId: 'flow-old'), 'verifier-old');
+    });
+
+    test('prefers the verifier under the current prefix', () async {
+      await storage.setItem(legacyPrefixKey, 'verifier-old');
+      await store.store(flowId: 'flow-one', verifier: 'verifier-one');
+
+      expect(await store.retrieve(), 'verifier-one');
+    });
+
+    test('removes a spent verifier from the prefix used before', () async {
+      await storage.setItem(legacyPrefixKey, 'verifier-old');
+      await storage.setItem(legacyPrefixSlotKey('flow-old'), 'verifier-old');
+
+      await store.remove(flowId: 'flow-old');
+
+      expect(await storage.getItem(legacyPrefixSlotKey('flow-old')), isNull);
+      expect(await storage.getItem(legacyPrefixKey), isNull);
+    });
+
+    test('remove without a flow id clears the matching slot of the prefix '
+        'used before', () async {
+      await storage.setItem(legacyPrefixKey, 'verifier-old');
+      await storage.setItem(legacyPrefixIndexKey, '["flow-old","flow-other"]');
+      await storage.setItem(legacyPrefixSlotKey('flow-old'), 'verifier-old');
+      await storage.setItem(
+        legacyPrefixSlotKey('flow-other'),
+        'verifier-other',
+      );
+
+      await store.remove();
+
+      expect(await storage.getItem(legacyPrefixKey), isNull);
+      expect(await storage.getItem(legacyPrefixSlotKey('flow-old')), isNull);
+      expect(
+        await storage.getItem(legacyPrefixSlotKey('flow-other')),
+        'verifier-other',
+      );
+      expect(jsonDecode(await storage.getItem(legacyPrefixIndexKey) ?? ''), [
+        'flow-other',
+      ]);
+    });
+
+    test('removeAll clears the keys of the prefix used before', () async {
+      await storage.setItem(legacyPrefixKey, 'verifier-old');
+      await storage.setItem(legacyPrefixIndexKey, '["flow-old"]');
+      await storage.setItem(legacyPrefixSlotKey('flow-old'), 'verifier-old');
+
+      await store.removeAll();
+
+      expect(await storage.getItem(legacyPrefixKey), isNull);
+      expect(await storage.getItem(legacyPrefixIndexKey), isNull);
+      expect(await storage.getItem(legacyPrefixSlotKey('flow-old')), isNull);
     });
 
     test('keeps concurrent flows in slots of their own', () async {
@@ -123,7 +190,7 @@ void main() {
         await store.store(flowId: 'flow-two', verifier: 'verifier-two');
 
         expect(await store.retrieve(), 'verifier-two');
-        expect(await storage.getItem(key: legacyKey), 'verifier-two');
+        expect(await storage.getItem(legacyKey), 'verifier-two');
       },
     );
 
@@ -186,7 +253,7 @@ void main() {
 
       await store.remove(flowId: 'flow-one');
 
-      expect(await storage.getItem(key: legacyKey), isNull);
+      expect(await storage.getItem(legacyKey), isNull);
     });
 
     test('removing a flow keeps a legacy key of a newer flow', () async {
@@ -195,7 +262,7 @@ void main() {
 
       await store.remove(flowId: 'flow-one');
 
-      expect(await storage.getItem(key: legacyKey), 'verifier-two');
+      expect(await storage.getItem(legacyKey), 'verifier-two');
     });
 
     test('removing without a flow id also clears the owning slot', () async {
@@ -203,9 +270,9 @@ void main() {
 
       await store.remove();
 
-      expect(await storage.getItem(key: legacyKey), isNull);
+      expect(await storage.getItem(legacyKey), isNull);
       expect(await store.retrieve(flowId: 'flow-one'), isNull);
-      expect(await storage.getItem(key: indexKey), isNull);
+      expect(await storage.getItem(indexKey), isNull);
     });
 
     test('removing without a flow id keeps the older flows', () async {
@@ -216,7 +283,7 @@ void main() {
 
       expect(await store.retrieve(flowId: 'flow-two'), isNull);
       expect(await store.retrieve(flowId: 'flow-one'), 'verifier-one');
-      expect(jsonDecode(await storage.getItem(key: indexKey) ?? ''), [
+      expect(jsonDecode(await storage.getItem(indexKey) ?? ''), [
         'flow-one',
       ]);
     });
@@ -227,31 +294,31 @@ void main() {
 
       await store.removeAll();
 
-      expect(await storage.getItem(key: slotKey('flow-one')), isNull);
-      expect(await storage.getItem(key: slotKey('flow-two')), isNull);
-      expect(await storage.getItem(key: indexKey), isNull);
-      expect(await storage.getItem(key: legacyKey), isNull);
+      expect(await storage.getItem(slotKey('flow-one')), isNull);
+      expect(await storage.getItem(slotKey('flow-two')), isNull);
+      expect(await storage.getItem(indexKey), isNull);
+      expect(await storage.getItem(legacyKey), isNull);
     });
 
     test('ignores an index that is not a list of flow ids', () async {
-      await storage.setItem(key: indexKey, value: 'not json at all');
+      await storage.setItem(indexKey, 'not json at all');
       await store.store(flowId: 'flow-one', verifier: 'verifier-one');
 
       expect(await store.retrieve(flowId: 'flow-one'), 'verifier-one');
-      expect(jsonDecode(await storage.getItem(key: indexKey) ?? ''), [
+      expect(jsonDecode(await storage.getItem(indexKey) ?? ''), [
         'flow-one',
       ]);
     });
 
     test('drops index entries that are not shaped like a flow id', () async {
       await storage.setItem(
-        key: indexKey,
-        value: jsonEncode(['../escape', 7, 'flow-one']),
+        indexKey,
+        jsonEncode(['../escape', 7, 'flow-one']),
       );
 
       await store.removeAll();
 
-      expect(await storage.getItem(key: slotKey('flow-one')), isNull);
+      expect(await storage.getItem(slotKey('flow-one')), isNull);
     });
 
     test('rejects a flow id it could never evict again', () async {
@@ -260,21 +327,21 @@ void main() {
         throwsA(isA<ArgumentError>()),
       );
 
-      expect(await storage.getItem(key: indexKey), isNull);
-      expect(await storage.getItem(key: legacyKey), isNull);
-      expect(await storage.getItem(key: slotKey('../escape')), isNull);
+      expect(await storage.getItem(indexKey), isNull);
+      expect(await storage.getItem(legacyKey), isNull);
+      expect(await storage.getItem(slotKey('../escape')), isNull);
     });
 
     test('keeps every concurrently started flow in the index', () async {
       final slowStorage = SlowAsyncStorage();
-      final slowStore = PKCEVerifierStore(slowStorage);
+      final slowStore = PKCEVerifierStore(slowStorage, storageKey: storageKey);
 
       await Future.wait([
         slowStore.store(flowId: 'flow-one', verifier: 'verifier-one'),
         slowStore.store(flowId: 'flow-two', verifier: 'verifier-two'),
       ]);
 
-      expect(jsonDecode(await slowStorage.getItem(key: indexKey) ?? ''), [
+      expect(jsonDecode(await slowStorage.getItem(indexKey) ?? ''), [
         'flow-one',
         'flow-two',
       ]);
@@ -282,8 +349,8 @@ void main() {
       // An untracked slot is one removeAll cannot reach, so a verifier would
       // outlive the sign out that was supposed to clear it.
       await slowStore.removeAll();
-      expect(await slowStorage.getItem(key: slotKey('flow-one')), isNull);
-      expect(await slowStorage.getItem(key: slotKey('flow-two')), isNull);
+      expect(await slowStorage.getItem(slotKey('flow-one')), isNull);
+      expect(await slowStorage.getItem(slotKey('flow-two')), isNull);
     });
 
     group('validateFlowId', () {
@@ -450,7 +517,7 @@ void main() {
         provider: OAuthProvider.github,
       );
 
-      final store = PKCEVerifierStore(storage);
+      final store = PKCEVerifierStore(storage, storageKey: client.storageKey);
       final firstVerifier = await store.retrieve(flowId: first.flowId);
       final secondVerifier = await store.retrieve(flowId: second.flowId);
 
@@ -467,6 +534,7 @@ void main() {
 
       final expectedVerifier = await PKCEVerifierStore(
         storage,
+        storageKey: client.storageKey,
       ).retrieve(flowId: first.flowId);
 
       await client.exchangeCodeForSession(
@@ -485,13 +553,17 @@ void main() {
 
       final expectedVerifier = await PKCEVerifierStore(
         storage,
+        storageKey: client.storageKey,
       ).retrieve(flowId: second.flowId);
 
       await client.exchangeCodeForSession('my-auth-code');
 
       expect(mockClient.submittedCodeVerifiers, [expectedVerifier]);
       expect(
-        await PKCEVerifierStore(storage).retrieve(flowId: second.flowId),
+        await PKCEVerifierStore(
+          storage,
+          storageKey: client.storageKey,
+        ).retrieve(flowId: second.flowId),
         isNull,
       );
     });
@@ -504,7 +576,7 @@ void main() {
         provider: OAuthProvider.github,
       );
 
-      final store = PKCEVerifierStore(storage);
+      final store = PKCEVerifierStore(storage, storageKey: client.storageKey);
       final firstVerifier = await store.retrieve(flowId: first.flowId);
       final secondVerifier = await store.retrieve(flowId: second.flowId);
 
@@ -595,6 +667,7 @@ void main() {
 
       final expectedVerifier = await PKCEVerifierStore(
         storage,
+        storageKey: client.storageKey,
       ).retrieve(flowId: first.flowId);
 
       await client.getSessionFromUrl(
@@ -617,7 +690,7 @@ void main() {
 
       await client.signOut();
 
-      final store = PKCEVerifierStore(storage);
+      final store = PKCEVerifierStore(storage, storageKey: client.storageKey);
       expect(await store.retrieve(flowId: first.flowId), isNull);
       expect(await store.retrieve(flowId: second.flowId), isNull);
       expect(await store.retrieve(), isNull);

@@ -42,9 +42,9 @@ final String testPublishableKey = _unsignedJwt({
 
 /// Initializes [Supabase] for a test and returns the instance.
 ///
-/// Compared to [Supabase.initialize], this keeps the session in memory
-/// through [localStorage], which defaults to [EmptyLocalStorage], stores the
-/// pkce code verifier in memory, turns off the token auto refresh so no timer
+/// Compared to [Supabase.initialize], this keeps the session and the pkce
+/// code verifier in memory through [asyncStorage], which defaults to a fresh
+/// [MemoryAuthAsyncStorage], turns off the token auto refresh so no timer
 /// outlives the test, disables deep link detection so no platform channel is
 /// touched, and defaults [publishableKey] to [testPublishableKey]. Pass a
 /// `MockSupabaseHttpClient` as [httpClient] to answer the requests, and the
@@ -60,7 +60,7 @@ Future<Supabase> initializeTestSupabase({
   String? publishableKey,
   Map<String, String>? headers,
   WebSocketTransport? realtimeTransport,
-  LocalStorage? localStorage,
+  AuthAsyncStorage? asyncStorage,
   bool autoRefreshToken = false,
 }) {
   return Supabase.initialize(
@@ -71,8 +71,7 @@ Future<Supabase> initializeTestSupabase({
     realtimeClientOptions: RealtimeClientOptions(transport: realtimeTransport),
     authOptions: FlutterAuthClientOptions(
       autoRefreshToken: autoRefreshToken,
-      localStorage: localStorage ?? const EmptyLocalStorage(),
-      pkceAsyncStorage: MemoryAuthAsyncStorage(),
+      asyncStorage: asyncStorage ?? MemoryAuthAsyncStorage(),
       detectSessionInUri: false,
     ),
   );

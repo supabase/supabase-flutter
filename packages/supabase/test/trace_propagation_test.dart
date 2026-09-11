@@ -132,7 +132,7 @@ void main() {
       _supabaseUrl,
       'anon-key',
       tracePropagationOptions: optionsWith(() => context),
-      authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
+      authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
       httpClient: httpClient..stubTable('table', rows: []),
     );
     addTearDown(supabase.dispose);
@@ -146,7 +146,7 @@ void main() {
     final supabase = SupabaseClient(
       _supabaseUrl,
       'anon-key',
-      authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
+      authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
       httpClient: httpClient..stubTable('table', rows: []),
     );
     addTearDown(supabase.dispose);

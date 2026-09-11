@@ -53,59 +53,6 @@ class _MockWidgetState extends State<MockWidget> {
   }
 }
 
-/// Local storage that returns an expired session
-class MockExpiredStorage extends LocalStorage {
-  const MockExpiredStorage();
-  @override
-  Future<void> initialize() async {}
-  @override
-  Future<String?> accessToken() async {
-    return getSessionData(
-      DateTime.now().subtract(const Duration(hours: 1)),
-    ).sessionString;
-  }
-
-  @override
-  Future<bool> hasAccessToken() async => true;
-  @override
-  Future<void> persistSession(String persistSessionString) async {}
-  @override
-  Future<void> removePersistedSession() async {}
-}
-
-class MockLocalStorage extends LocalStorage {
-  const MockLocalStorage();
-  @override
-  Future<void> initialize() async {}
-  @override
-  Future<String?> accessToken() async {
-    return getSessionData(
-      DateTime.now().add(const Duration(hours: 1)),
-    ).sessionString;
-  }
-
-  @override
-  Future<bool> hasAccessToken() async => true;
-  @override
-  Future<void> persistSession(String persistSessionString) async {}
-  @override
-  Future<void> removePersistedSession() async {}
-}
-
-class MockEmptyLocalStorage extends LocalStorage {
-  const MockEmptyLocalStorage();
-  @override
-  Future<void> initialize() async {}
-  @override
-  Future<String?> accessToken() async => null;
-  @override
-  Future<bool> hasAccessToken() async => false;
-  @override
-  Future<void> persistSession(String persistSessionString) async {}
-  @override
-  Future<void> removePersistedSession() async {}
-}
-
 /// Registers the mock handler for app_links
 ///
 /// Returns the [EventChannel] used to mock the incoming links.
@@ -147,7 +94,21 @@ void mockAppLink({
 MockSupabaseHttpClient createGetUserHttpClient(String email) =>
     MockSupabaseHttpClient()..stub(testUserJson(email: email));
 
-class MockAsyncStorage extends MemoryAuthAsyncStorage {}
+/// An in-memory storage for the tests, optionally seeded with a session.
+class MockAsyncStorage extends MemoryAuthAsyncStorage {
+  MockAsyncStorage();
+
+  /// Holds a session expiring at [expiresAt] under the key the session is
+  /// stored under for [url].
+  MockAsyncStorage.withSession(DateTime expiresAt, {String url = ''}) {
+    unawaited(
+      setItem(
+        defaultPersistSessionKey(url),
+        getSessionData(expiresAt).sessionString,
+      ),
+    );
+  }
+}
 
 /// Answers the token endpoint of the PKCE flow with a fresh session.
 MockSupabaseHttpClient createPkceHttpClient() =>

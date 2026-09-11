@@ -15,15 +15,13 @@ void main() {
 
   tearDown(() => Supabase.instance.dispose());
 
-  Future<AuthClient> initializeApp({
-    LocalStorage localStorage = const MockEmptyLocalStorage(),
-  }) async {
+  Future<AuthClient> initializeApp({bool persistSession = true}) async {
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: supabaseKey,
       authOptions: FlutterAuthClientOptions(
-        localStorage: localStorage,
-        pkceAsyncStorage: MockAsyncStorage(),
+        asyncStorage: MockAsyncStorage(),
+        persistSession: persistSession,
         detectSessionInUri: false,
       ),
     );
@@ -35,7 +33,7 @@ void main() {
       supabaseUrl,
       key,
       authOptions: AuthClientOptions(
-        pkceAsyncStorage: MockAsyncStorage(),
+        asyncStorage: MockAsyncStorage(),
         persistSession: persistSession,
       ),
     );
@@ -87,9 +85,7 @@ void main() {
   });
 
   test('an app that keeps the session in memory does not broadcast', () async {
-    final appAuth = await initializeApp(
-      localStorage: const EmptyLocalStorage(),
-    );
+    final appAuth = await initializeApp(persistSession: false);
     final otherClient = createClient(supabaseKey, persistSession: true);
 
     final broadcasts = await collectBroadcasts(

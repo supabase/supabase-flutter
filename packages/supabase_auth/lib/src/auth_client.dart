@@ -45,17 +45,26 @@ class _SessionState {
 ///
 /// [httpClient] custom http client.
 ///
-/// [asyncStorage] local storage to store pkce code verifiers. Required when
-/// using the pkce flow. Pass a [MemoryAuthAsyncStorage] when the verifiers
-/// do not need to outlive the process.
+/// [asyncStorage] storage for the session and the pkce code verifiers.
+/// Required when using the pkce flow or persisting the session. Pass a
+/// [MemoryAuthAsyncStorage] when neither needs to outlive the process.
 ///
-/// [persistSession] whether the session is meant to outlive this client. On
-/// web such a session is kept in sync across the tabs of the same project
-/// through a `BroadcastChannel`, so a sign-in or sign-out in one tab reaches
-/// the others. Defaults to false: a client that keeps its own session, such as
-/// one created with the service role key next to the user's client, must not
-/// be signed in by another tab. `supabase_flutter` persists the session and
-/// defaults this to true.
+/// [persistSession] whether the session is written to [asyncStorage] whenever
+/// it changes and restored from there when the client is created, so that it
+/// outlives the process. Await [initialized] to know when the restore is done.
+/// On web a persisted session is also kept in sync across the tabs of the same
+/// project through a `BroadcastChannel`, so a sign-in or sign-out in one tab
+/// reaches the others. Defaults to false: a client that keeps its own session,
+/// such as one created with the service role key next to the user's client,
+/// must not be signed in by another tab. `supabase_flutter` defaults it to
+/// true.
+///
+/// [storageKey] the key the session is stored under in [asyncStorage]. It also
+/// prefixes the keys of the pkce code verifiers and names the channel that
+/// keeps the tabs in sync, so clients for different projects can share one
+/// storage. Defaults to the key the other Supabase client libraries derive
+/// from the project URL, so a session written by one of them is found by the
+/// others.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 ///
@@ -76,6 +85,7 @@ class AuthClient {
     Client? httpClient,
     AuthAsyncStorage? asyncStorage,
     bool persistSession = false,
+    String? storageKey,
     AuthFlowType flowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
@@ -85,14 +95,22 @@ class AuthClient {
          'MemoryAuthAsyncStorage when the code verifiers do not need to '
          'outlive the process.',
        ),
+       assert(
+         !persistSession || asyncStorage != null,
+         'You need to provide asyncStorage to persist the session.',
+       ),
        _url = url ?? AuthConstants.defaultAuthUrl,
        _headers = {...AuthConstants.defaultHeaders, ...?headers},
        _httpClient = httpClient,
-       _pkceVerifierStore = asyncStorage == null
-           ? null
-           : PKCEVerifierStore(asyncStorage),
+       _asyncStorage = asyncStorage,
        _persistSession = persistSession,
+       _storageKey =
+           storageKey ??
+           defaultPersistSessionKey(url ?? AuthConstants.defaultAuthUrl),
        _flowType = flowType {
+    _pkceVerifierStore = asyncStorage == null
+        ? null
+        : PKCEVerifierStore(asyncStorage, storageKey: _storageKey);
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final authUrl = url ?? AuthConstants.defaultAuthUrl;
@@ -118,6 +136,7 @@ class AuthClient {
     }
 
     _mayStartBroadcastChannel();
+    unawaited(_restoreSession());
   }
 
   /// Namespace for the Supabase Auth admin API methods. These can be used for
@@ -165,14 +184,42 @@ class AuthClient {
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
 
-  final _onAuthStateChangeController = ReplaySubject<AuthState>();
-  final _onAuthStateChangeControllerSync = ReplaySubject<AuthState>(
-    sync: true,
-  );
+  final _onAuthStateChangeController = StreamController<AuthState>.broadcast();
+  final _onAuthStateChangeControllerSync =
+      StreamController<AuthState>.broadcast(
+        sync: true,
+      );
 
   /// Keeps one code verifier per pending pkce flow. Null when no
   /// [AuthAsyncStorage] was provided, in which case the pkce flow cannot run.
-  final PKCEVerifierStore? _pkceVerifierStore;
+  late final PKCEVerifierStore? _pkceVerifierStore;
+
+  /// Holds the session while it is persisted and the pkce code verifiers.
+  final AuthAsyncStorage? _asyncStorage;
+
+  /// The key the session is stored under, see [storageKey].
+  final String _storageKey;
+
+  /// The key the session is stored under in the storage.
+  ///
+  /// It also prefixes the keys of the pkce code verifiers and names the
+  /// channel that keeps the tabs of a web app in sync.
+  String get storageKey => _storageKey;
+
+  final _initialized = Completer<void>();
+
+  /// Completes once the session persisted by an earlier run has been restored.
+  ///
+  /// From then on [currentSession] holds the restored session, and
+  /// subscribers of [onAuthStateChange] receive their initial event. A
+  /// restored session that has expired is refreshed in the background, which
+  /// [onAuthStateChange] reports like any other refresh. Completes right away
+  /// when the session is not persisted.
+  Future<void> get initialized => _initialized.future;
+
+  /// The storage writes that have not completed yet, run one after the other
+  /// so a later state cannot be overtaken by an earlier write.
+  Future<void> _storageWrites = Future.value();
 
   /// Whether the reserved `sb_flow_id` query parameter is appended to the
   /// redirect URL of pkce flows, so a callback can be matched to the flow that
@@ -190,6 +237,11 @@ class AuthClient {
   final bool appendPkceFlowIdToRedirects;
 
   /// Receive a notification every time an auth event happens.
+  ///
+  /// Every subscriber first receives an [AuthChangeEvent.initialSession] with
+  /// the session at that moment, or `null` when there is none, once the
+  /// session persisted by an earlier run has been restored. Earlier events are
+  /// not replayed.
   ///
   /// Network errors (e.g. when the device is offline) are emitted as stream
   /// errors. You **must** supply an `onError` handler when calling `.listen()`,
@@ -219,12 +271,70 @@ class AuthClient {
   /// );
   /// ```
   Stream<AuthState> get onAuthStateChange =>
-      _onAuthStateChangeController.stream;
+      _withInitialSession(_onAuthStateChangeController.stream, sync: false);
 
   /// Don't use this, it's for internal use only.
   @internal
   Stream<AuthState> get onAuthStateChangeSync =>
-      _onAuthStateChangeControllerSync.stream;
+      _withInitialSession(_onAuthStateChangeControllerSync.stream, sync: true);
+
+  /// Wraps [events] so that every subscriber first receives an
+  /// [AuthChangeEvent.initialSession] with the session at that moment.
+  ///
+  /// The initial event waits for [initialized], so a subscriber that arrives
+  /// while the persisted session is still being read gets the restored session
+  /// rather than a null that is about to change. Events that fire in the
+  /// meantime are held back until then, so the initial event stays first.
+  Stream<AuthState> _withInitialSession(
+    Stream<AuthState> events, {
+    required bool sync,
+  }) {
+    return Stream.multi((controller) {
+      var initialSent = false;
+      final held = <void Function()>[];
+
+      void forward(void Function() deliver) {
+        if (initialSent) {
+          deliver();
+        } else {
+          held.add(deliver);
+        }
+      }
+
+      final subscription = events.listen(
+        (state) => forward(() => controller.addSync(state)),
+        onError: (Object error, StackTrace stackTrace) =>
+            forward(() => controller.addErrorSync(error, stackTrace)),
+        onDone: () => forward(controller.closeSync),
+      );
+      controller.onCancel = subscription.cancel;
+
+      void sendInitial() {
+        if (controller.isClosed) {
+          return;
+        }
+        initialSent = true;
+        controller.addSync(
+          AuthState(AuthChangeEvent.initialSession, currentSession),
+        );
+        for (final deliver in held) {
+          deliver();
+        }
+        held.clear();
+      }
+
+      // A completed future runs its callbacks in the zone it was created in,
+      // which is not the subscriber's zone under a fake async clock, so the
+      // initial event is scheduled directly once the restore is done.
+      if (!_initialized.isCompleted) {
+        unawaited(_initialized.future.then((_) => sendInitial()));
+      } else if (sync) {
+        sendInitial();
+      } else {
+        scheduleMicrotask(sendInitial);
+      }
+    }, isBroadcast: true);
+  }
 
   final AuthFlowType _flowType;
 
@@ -1111,7 +1221,10 @@ class AuthClient {
     );
     final userResponse = UserResponse.fromJson(response);
 
-    _currentSession = currentSession?.copyWith(user: userResponse.user);
+    final session = currentSession;
+    if (session != null) {
+      _saveSession(session.copyWith(user: userResponse.user));
+    }
     notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
     return userResponse;
@@ -1699,22 +1812,132 @@ class AuthClient {
     return url;
   }
 
-  /// set currentSession and currentUser
+  /// Sets the current session and persists it.
   void _saveSession(Session session) {
     authLogger.fine('Saving session');
     authLogger.finest('Saving session: $session');
     _currentSession = session;
+    _queueStorageWrite(
+      (storage) => storage.setItem(_storageKey, jsonEncode(session.toJson())),
+    );
   }
 
+  /// Clears the current session and removes the persisted one.
   void _removeSession() {
     authLogger.fine('Removing session');
     _currentSession = null;
+    _queueStorageWrite((storage) => storage.removeItem(_storageKey));
+  }
+
+  /// Runs [write] after the storage writes queued before it, when the session
+  /// is persisted.
+  ///
+  /// A failed write is logged rather than thrown: the session change it was
+  /// mirroring has already happened, and the user only loses the session at
+  /// the next start.
+  void _queueStorageWrite(
+    Future<void> Function(AuthAsyncStorage storage) write,
+  ) {
+    final storage = _asyncStorage;
+    if (!_persistSession || storage == null) {
+      return;
+    }
+    _storageWrites = _storageWrites
+        .then((_) => write(storage))
+        .then(
+          (_) {},
+          onError: (Object error, StackTrace stackTrace) {
+            authLogger.warning(
+              'Could not update the persisted session',
+              error,
+              stackTrace,
+            );
+          },
+        );
+  }
+
+  /// Restores the session persisted by an earlier run, when there is one, and
+  /// completes [initialized].
+  ///
+  /// An expired session is refreshed after [initialized] completes, so that
+  /// waiting for the restore never waits for the network.
+  Future<void> _restoreSession() async {
+    final storage = _asyncStorage;
+    if (!_persistSession || storage == null) {
+      _initialized.complete();
+      return;
+    }
+    String? expired;
+    try {
+      expired = await _readPersistedSession(storage);
+    } finally {
+      _initialized.complete();
+    }
+    if (expired == null) {
+      return;
+    }
+    unawaited(
+      recoverSession(expired).then(
+        (_) {},
+        onError: (Object error, StackTrace stackTrace) {
+          // Already reported on the stream by recoverSession itself.
+          authLogger.fine('Could not refresh the restored session', error);
+        },
+      ),
+    );
+  }
+
+  /// Makes the session persisted in [storage] the current one.
+  ///
+  /// A value that does not hold a session is removed from the storage. A
+  /// sign-in or sign-out that happened while the storage was being read is
+  /// newer than what was read, so the current session is kept in that case.
+  ///
+  /// Returns the persisted value when the session it holds has expired, so
+  /// that the caller can refresh it.
+  Future<String?> _readPersistedSession(AuthAsyncStorage storage) async {
+    final versionBeforeRead = _sessionVersion;
+    String? persisted;
+    try {
+      persisted = await storage.getItem(_storageKey);
+    } catch (error, stackTrace) {
+      authLogger.warning(
+        'Could not read the persisted session',
+        error,
+        stackTrace,
+      );
+    }
+    if (_isDisposed) {
+      return null;
+    }
+    if (_sessionVersion != versionBeforeRead) {
+      authLogger.fine('Session changed during restore, keeping it');
+      return null;
+    }
+    Session? session;
+    if (persisted != null) {
+      try {
+        session = Session.fromJson(json.decode(persisted));
+      } catch (error, stackTrace) {
+        authLogger.warning(
+          'Could not restore the persisted session',
+          error,
+          stackTrace,
+        );
+      }
+      if (session == null) {
+        _removeSession();
+      } else {
+        _currentSession = session;
+      }
+    }
+    return session != null && session.isExpired ? persisted : null;
   }
 
   void _mayStartBroadcastChannel() {
     if (_persistSession &&
         const bool.fromEnvironment('dart.library.js_interop')) {
-      final broadcastKey = defaultPersistSessionKey(_url);
+      final broadcastKey = _storageKey;
 
       assert(
         _broadcastChannel == null,
@@ -1737,11 +1960,9 @@ class AuthClient {
             if (messageEvent['session'] != null) {
               session = Session.fromJson(messageEvent['session']);
             }
-            if (session != null) {
-              _saveSession(session);
-            } else {
-              _removeSession();
-            }
+            // The tab that sent the event has already written the session
+            // to the storage both tabs share.
+            _currentSession = session;
             notifyAllSubscribers(event, session: session, broadcast: false);
           }
         });

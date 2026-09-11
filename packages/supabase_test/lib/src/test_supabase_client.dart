@@ -48,7 +48,7 @@ SupabaseClient testSupabaseClient({
     httpClient: httpClient,
     authOptions: AuthClientOptions(
       autoRefreshToken: autoRefreshToken,
-      pkceAsyncStorage: MemoryAuthAsyncStorage(),
+      asyncStorage: MemoryAuthAsyncStorage(),
     ),
     realtimeClientOptions: RealtimeClientOptions(transport: realtime?.call),
   );

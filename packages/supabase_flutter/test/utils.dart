@@ -9,7 +9,7 @@ export 'package:supabase_test/supabase_test.dart';
 /// Replaces both shared_preferences APIs with empty in-memory stores.
 ///
 /// [legacyValues] seeds the store of the legacy [SharedPreferences] API, which
-/// `SharedPreferencesLocalStorage` migrates a v2 session from.
+/// `SharedPreferencesAuthAsyncStorage` migrates a v2 value from.
 void mockSharedPreferences({Map<String, Object> legacyValues = const {}}) {
   SharedPreferences.setMockInitialValues(legacyValues);
   SharedPreferencesAsyncPlatform.instance =

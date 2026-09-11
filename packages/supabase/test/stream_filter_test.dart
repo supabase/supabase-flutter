@@ -39,7 +39,7 @@ void main() {
     supabase = SupabaseClient(
       'http://${InternetAddress.loopbackIPv4.address}:${mockServer.port}',
       localStackServiceRoleKey,
-      authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
+      authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
     );
   });
 

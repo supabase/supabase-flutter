@@ -1,29 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Configuration for the auth client used by `Supabase.instance.client.auth`,
-/// extending [AuthClientOptions] with Flutter-specific session persistence
-/// and deep link handling.
+/// extending [AuthClientOptions] with deep link handling.
+///
+/// The session is persisted by default, to shared preferences unless another
+/// [asyncStorage] is passed.
 class FlutterAuthClientOptions extends AuthClientOptions {
   const FlutterAuthClientOptions({
     super.authFlowType,
     super.autoRefreshToken,
-    super.pkceAsyncStorage,
+    super.asyncStorage,
+    super.persistSession = true,
+    super.storageKey,
     super.appendPkceFlowIdToRedirects,
     super.retryOptions,
-    super.persistSession = true,
-    this.localStorage,
     this.detectSessionInUri = true,
     this.detectSessionInUriPredicate,
   });
-
-  /// Where the session is persisted.
-  ///
-  /// Defaults to shared preferences when [persistSession] is `true`, and to
-  /// an in-memory-only storage otherwise. A custom storage is used regardless
-  /// of [persistSession], and the session then counts as persisted unless the
-  /// storage is an [EmptyLocalStorage], so cross-tab sync on web follows the
-  /// storage that is actually in use.
-  final LocalStorage? localStorage;
 
   /// If true, the client will start the deep link observer and obtain sessions
   /// when a valid URI is detected.
@@ -45,26 +38,26 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   FlutterAuthClientOptions copyWith({
     AuthFlowType? authFlowType,
     bool? autoRefreshToken,
-    LocalStorage? localStorage,
-    AuthAsyncStorage? pkceAsyncStorage,
+    AuthAsyncStorage? asyncStorage,
+    bool? persistSession,
+    String? storageKey,
     bool? appendPkceFlowIdToRedirects,
     SupabaseRetryOptions? retryOptions,
     bool? detectSessionInUri,
     bool Function(Uri uri)? detectSessionInUriPredicate,
-    bool? persistSession,
   }) {
     return FlutterAuthClientOptions(
       authFlowType: authFlowType ?? this.authFlowType,
       autoRefreshToken: autoRefreshToken ?? this.autoRefreshToken,
-      localStorage: localStorage ?? this.localStorage,
-      pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
+      asyncStorage: asyncStorage ?? this.asyncStorage,
+      persistSession: persistSession ?? this.persistSession,
+      storageKey: storageKey ?? this.storageKey,
       appendPkceFlowIdToRedirects:
           appendPkceFlowIdToRedirects ?? this.appendPkceFlowIdToRedirects,
       retryOptions: retryOptions ?? this.retryOptions,
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
       detectSessionInUriPredicate:
           detectSessionInUriPredicate ?? this.detectSessionInUriPredicate,
-      persistSession: persistSession ?? this.persistSession,
     );
   }
 }
