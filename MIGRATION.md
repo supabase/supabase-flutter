@@ -1719,3 +1719,39 @@ supabase.from('users').stream(primaryKey: ['id']).execute().listen(handle);
 // After
 supabase.from('users').stream(primaryKey: ['id']).listen(handle);
 ```
+
+### Storage uploads and downloads take an `abortSignal`
+
+`StorageRetryController` is gone. Its `cancel()` only stopped the upload from being retried
+again, while the attempt already on the wire kept transferring, and downloads had no cancellation
+at all. Every upload method and both download methods on `StorageFileApi` take a
+`Future<void>? abortSignal` instead, the same shape as `PostgrestBuilder.abortSignal` and
+`FunctionsClient.invoke`. Completing the future aborts the in-flight request and stops any
+remaining retries, and the call throws a `RequestAbortedException`, which `supabase_storage`
+re-exports.
+
+```dart
+// Before
+final controller = StorageRetryController();
+final upload = supabase.storage
+    .from('avatars')
+    .upload('avatar.png', file, retryController: controller);
+controller.cancel();
+
+// After
+final abortSignal = Completer<void>();
+final upload = supabase.storage
+    .from('avatars')
+    .upload('avatar.png', file, abortSignal: abortSignal.future);
+abortSignal.complete();
+
+try {
+  await upload;
+} on RequestAbortedException {
+  print('upload aborted');
+}
+```
+
+`uploadToSignedUrl` and `uploadBinaryToSignedUrl` take the signal in the positional slot the
+controller used to occupy. `download` and `downloadStream` gain the parameter; on the stream the
+abort surfaces as a `RequestAbortedException` error.

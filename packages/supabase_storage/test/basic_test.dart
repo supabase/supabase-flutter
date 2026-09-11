@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -821,25 +822,37 @@ void main() {
       expect(response.fullPath, 'public/a.txt');
     });
 
-    test('aborting upload should throw', () async {
-      final file = File('a.txt');
-      file.writeAsStringSync('File content');
+    test(
+      'aborting during the delay before a retry makes no further attempt',
+      () async {
+        final file = File('a.txt');
+        file.writeAsStringSync('File content');
 
-      final retryController = StorageRetryController();
+        final failingHttpClient = MockSupabaseHttpClient()
+          ..stub({'Key': 'public/a.txt'}, statusCode: 201)
+          ..stubError(ClientException('Offline'), times: 1);
+        final retryingClient = SupabaseStorageClient(
+          '$supabaseUrl/storage/v1',
+          {'Authorization': 'Bearer $supabaseKey'},
+          retryOptions: const SupabaseRetryOptions(
+            count: 5,
+            initialDelay: Duration(seconds: 10),
+          ),
+          httpClient: failingHttpClient,
+        );
+        final abortSignal = Completer<void>();
 
-      final future = client
-          .from('public')
-          .upload(
-            'a.txt',
-            file,
-            retryController: retryController,
-          );
+        final future = retryingClient
+            .from('public')
+            .upload('a.txt', file, abortSignal: abortSignal.future);
 
-      await Future.delayed(Duration(milliseconds: 500));
-      retryController.cancel();
+        await Future.delayed(const Duration(milliseconds: 50));
+        abortSignal.complete();
 
-      await expectLater(future, throwsException);
-    });
+        await expectLater(future, throwsA(isA<RequestAbortedException>()));
+        expect(failingHttpClient.requests, hasLength(1));
+      },
+    );
 
     test('should upload binary with few network failures', () async {
       final file = File('a.txt');

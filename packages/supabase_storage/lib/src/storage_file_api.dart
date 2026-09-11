@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:http/http.dart' show RequestAbortedException;
 import 'package:supabase_storage/src/fetch.dart';
 import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -83,8 +84,33 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry
-  /// attempts.
+  /// {@template storage_abort_signal}
+  /// [abortSignal] aborts the in-flight request when the provided [Future]
+  /// completes, and stops any remaining retries. It must not complete with an
+  /// error. On abort, a [RequestAbortedException] is thrown. This is useful
+  /// for cancelling a transfer in response to an event or for setting a
+  /// timeout:
+  ///
+  /// ```dart
+  /// // Event based
+  /// final abortSignal = Completer<void>();
+  /// abortSignal.complete(); // Call in some event handler to abort
+  ///
+  /// try {
+  ///   await supabase.storage
+  ///       .from('avatars')
+  ///       .upload('avatar.png', file, abortSignal: abortSignal.future);
+  /// } on RequestAbortedException catch (error) {
+  ///   print('Upload was aborted: $error');
+  /// }
+  ///
+  /// // Timer based
+  /// await supabase.storage.from('avatars').download(
+  ///   'avatar.png',
+  ///   abortSignal: Future.delayed(Duration(seconds: 30)),
+  /// );
+  /// ```
+  /// {@endtemplate}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
   /// stored object.
@@ -93,7 +119,7 @@ class StorageFileApi {
     File file, {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -103,7 +129,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
-      retryController: retryController,
+      abortSignal: abortSignal,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -122,8 +148,7 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry
-  /// attempts.
+  /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
   /// stored object.
@@ -132,7 +157,7 @@ class StorageFileApi {
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -142,7 +167,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
-      retryController: retryController,
+      abortSignal: abortSignal,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -161,13 +186,18 @@ class StorageFileApi {
   /// Returns an [UploadResponse] with the path and full path of the stored
   /// object. [UploadResponse.id] is `null`, because the server does not
   /// report it for uploads through a signed URL.
+  ///
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
+  ///
+  /// {@macro storage_abort_signal}
   Future<UploadResponse> uploadToSignedUrl(
     String path,
     String token,
     File file, [
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   ]) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -179,7 +209,7 @@ class StorageFileApi {
       file,
       fileOptions,
       retryOptions: retryOptions ?? _retryOptions,
-      retryController: retryController,
+      abortSignal: abortSignal,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -198,13 +228,18 @@ class StorageFileApi {
   /// Returns an [UploadResponse] with the path and full path of the stored
   /// object. [UploadResponse.id] is `null`, because the server does not
   /// report it for uploads through a signed URL.
+  ///
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
+  ///
+  /// {@macro storage_abort_signal}
   Future<UploadResponse> uploadBinaryToSignedUrl(
     String path,
     String token,
     Uint8List data, [
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   ]) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -216,7 +251,7 @@ class StorageFileApi {
       data,
       fileOptions,
       retryOptions: retryOptions ?? _retryOptions,
-      retryController: retryController,
+      abortSignal: abortSignal,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -275,8 +310,7 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry
-  /// attempts.
+  /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
   /// stored object.
@@ -285,7 +319,7 @@ class StorageFileApi {
     File file, {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -295,7 +329,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
-      retryController: retryController,
+      abortSignal: abortSignal,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -315,8 +349,7 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry
-  /// attempts.
+  /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
   /// stored object.
@@ -325,7 +358,7 @@ class StorageFileApi {
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -335,7 +368,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
-      retryController: retryController,
+      abortSignal: abortSignal,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -513,11 +546,14 @@ class StorageFileApi {
   ///
   /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
   /// a specific file version.
+  ///
+  /// {@macro storage_abort_signal}
   Future<Uint8List> download(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
+    Future<void>? abortSignal,
   }) {
     final fetchUrl = _downloadUri(
       path,
@@ -529,6 +565,7 @@ class StorageFileApi {
     return _storageFetch.get(
       fetchUrl.toString(),
       options: FetchOptions(_headers, noResolveJson: true),
+      abortSignal: abortSignal,
     );
   }
 
@@ -576,11 +613,18 @@ class StorageFileApi {
   ///
   /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
   /// a specific file version.
+  ///
+  /// {@macro storage_abort_signal}
+  ///
+  /// On the stream the abort surfaces as a [RequestAbortedException] error
+  /// event, whether it happens before the response headers arrive or while
+  /// bytes are flowing, and the stream closes.
   Stream<Uint8List> downloadStream(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
+    Future<void>? abortSignal,
   }) {
     final fetchUrl = _downloadUri(
       path,
@@ -592,6 +636,7 @@ class StorageFileApi {
     return _storageFetch.getStream(
       fetchUrl.toString(),
       options: FetchOptions(_headers, noResolveJson: true),
+      abortSignal: abortSignal,
     );
   }
 
