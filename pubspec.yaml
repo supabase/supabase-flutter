@@ -16,6 +16,8 @@ workspace:
   - packages/supabase/example
   - packages/supabase_flutter
   - packages/supabase_flutter/example
+  - packages/supabase_flutter_web_auth
+  - packages/supabase_flutter_web_auth/example
   - packages/supabase_common
   - packages/supabase_lints
   - packages/supabase_test

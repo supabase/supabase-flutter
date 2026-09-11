@@ -16,7 +16,17 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     super.retryOptions,
     this.detectSessionInUri = true,
     this.detectSessionInUriPredicate,
+    this.oauthLauncher = const UrlLauncherOAuthLauncher(),
   });
+
+  /// Launches the URL used to complete an OAuth, SSO, or identity-linking
+  /// flow.
+  ///
+  /// Defaults to [UrlLauncherOAuthLauncher], which opens a browser via
+  /// `url_launcher`. Provide a different [OAuthLauncher] to change how the
+  /// flow is presented, for example the one shipped by the
+  /// `supabase_flutter_web_auth` package.
+  final OAuthLauncher oauthLauncher;
 
   /// If true, the client will start the deep link observer and obtain sessions
   /// when a valid URI is detected.
@@ -45,6 +55,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     SupabaseRetryOptions? retryOptions,
     bool? detectSessionInUri,
     bool Function(Uri uri)? detectSessionInUriPredicate,
+    OAuthLauncher? oauthLauncher,
   }) {
     return FlutterAuthClientOptions(
       authFlowType: authFlowType ?? this.authFlowType,
@@ -58,6 +69,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
       detectSessionInUriPredicate:
           detectSessionInUriPredicate ?? this.detectSessionInUriPredicate,
+      oauthLauncher: oauthLauncher ?? this.oauthLauncher,
     );
   }
 }

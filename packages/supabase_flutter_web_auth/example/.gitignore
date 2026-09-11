@@ -1,0 +1,10 @@
+# Platform folders are not checked in for this example. Run `flutter create .`
+# in this directory to generate the ones you want to test on.
+/android/
+/ios/
+/linux/
+/macos/
+/windows/
+/web/
+/.metadata
+/*.iml

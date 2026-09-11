@@ -8,6 +8,7 @@ import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
 import 'package:supabase_flutter/src/shared_preferences_auth_async_storage.dart';
 import 'package:supabase_flutter/src/logger.dart';
+import 'package:supabase_flutter/src/oauth_launcher.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
 import 'hot_restart_cleanup_stub.dart'
@@ -114,6 +115,7 @@ class Supabase {
         asyncStorage: SharedPreferencesAuthAsyncStorage(),
       );
     }
+    _instance._oauthLauncher = authOptions.oauthLauncher;
     _instance._init(
       url,
       publishableKey,
@@ -163,6 +165,25 @@ class Supabase {
     return currentClient;
   }
 
+  OAuthLauncher? _oauthLauncher;
+
+  /// The [OAuthLauncher] configured via
+  /// [FlutterAuthClientOptions.oauthLauncher], used by
+  /// `signInWithOAuth`/`signInWithSSO`/`linkIdentity` to open the sign-in URL.
+  ///
+  /// Throws a [StateError] if [Supabase.initialize] was not called, or if the
+  /// instance has since been disposed.
+  OAuthLauncher get oauthLauncher {
+    final currentLauncher = _oauthLauncher;
+    if (currentLauncher == null) {
+      throw StateError(
+        'You must initialize the supabase instance before calling '
+        'Supabase.instance.oauthLauncher',
+      );
+    }
+    return currentLauncher;
+  }
+
   SupabaseAuth? _supabaseAuth;
 
   // Listener for app lifecycle events to handle Realtime reconnection.
@@ -191,6 +212,7 @@ class Supabase {
 
     _client = null;
     _supabaseAuth = null;
+    _oauthLauncher = null;
     _lifecycleListener = null;
     _isInitialized = false;
 
