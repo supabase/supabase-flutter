@@ -1490,7 +1490,7 @@ for the response, and the decoders compose in call order.
 | --- | --- |
 | `PostgrestBuilder<T, S, R>` | `PostgrestBuilder<T>` |
 | `RawPostgrestBuilder<T, S, R>` and `ResponsePostgrestBuilder<T, S, R>` | `PostgrestBuilder<T>` |
-| `PostgrestBuilder(count: …, converter: …)` | `PostgrestBuilder(…).count(…).withConverter(…)` |
+| `PostgrestBuilder(count: …, converter: …)` | `PostgrestBuilder(…).withConverter(…).count(…)` |
 | `PostgrestTransformBuilder.count()` | `PostgrestBuilder.count()`, so it is also available after `withConverter()` |
 | `geojson()` returned `ResponsePostgrestBuilder<Map<String, dynamic>, …>` | `PostgrestBuilder<Map<String, dynamic>>` |
 
