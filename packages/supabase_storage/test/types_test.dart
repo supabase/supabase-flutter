@@ -433,13 +433,4 @@ void main() {
       );
     });
   });
-
-  group('StorageRetryController', () {
-    test('starts uncancelled and flips after cancel', () {
-      final controller = StorageRetryController();
-      expect(controller.cancelled, isFalse);
-      controller.cancel();
-      expect(controller.cancelled, isTrue);
-    });
-  });
 }

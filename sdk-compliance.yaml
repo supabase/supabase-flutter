@@ -1483,14 +1483,16 @@ features:
     symbols:
       - StorageBucketApi.emptyBucket
   storage.file_buckets.request_cancellation:
-    status: partially_implemented
-    note: "StorageRetryController.cancel only stops the upload from being retried again; the attempt that is already in flight keeps transferring until it completes or fails, and downloads have no cancellation surface at all."
+    status: implemented
     symbols:
-      - StorageRetryController.cancel
-    supporting_symbols:
-      - StorageRetryController
-      - StorageRetryController.StorageRetryController
-      - StorageRetryController.cancelled
+      - StorageFileApi.upload
+      - StorageFileApi.uploadBinary
+      - StorageFileApi.uploadToSignedUrl
+      - StorageFileApi.uploadBinaryToSignedUrl
+      - StorageFileApi.update
+      - StorageFileApi.updateBinary
+      - StorageFileApi.download
+      - StorageFileApi.downloadStream
 
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:

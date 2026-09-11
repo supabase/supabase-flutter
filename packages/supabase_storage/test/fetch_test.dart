@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -157,6 +158,124 @@ void main() {
         expect(request.files.single.contentType.mimeType, 'image/png');
       },
     );
+  });
+
+  group('request cancellation', () {
+    late MockSupabaseHttpClient mockClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      mockClient = MockSupabaseHttpClient();
+      client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+      );
+    });
+
+    test('hands the abort signal to the upload request', () async {
+      mockClient.stub({'Key': 'bucket/a.txt'});
+      final abortSignal = Completer<void>();
+
+      await client
+          .from('bucket')
+          .uploadBinary(
+            'a.txt',
+            Uint8List.fromList([1, 2, 3]),
+            abortSignal: abortSignal.future,
+          );
+
+      final request = mockClient.requests.single.request as Abortable;
+      expect(request.abortTrigger, same(abortSignal.future));
+    });
+
+    test('aborts an in-flight upload', () async {
+      mockClient.stubStall();
+      final abortSignal = Completer<void>();
+      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadBinary(
+              'a.txt',
+              Uint8List.fromList([1, 2, 3]),
+              abortSignal: abortSignal.future,
+            ),
+        throwsA(isA<RequestAbortedException>()),
+      );
+    });
+
+    test('aborts an in-flight signed url upload', () async {
+      mockClient.stubStall();
+      final abortSignal = Completer<void>();
+      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadBinaryToSignedUrl(
+              'a.txt',
+              'signed-token',
+              Uint8List.fromList([1, 2, 3]),
+              const FileOptions(),
+              null,
+              abortSignal.future,
+            ),
+        throwsA(isA<RequestAbortedException>()),
+      );
+    });
+
+    test('aborting an upload does not retry it', () async {
+      mockClient.stubStall();
+      final retryingClient = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+        retryOptions: const SupabaseRetryOptions(count: 3),
+      );
+      final abortSignal = Completer<void>();
+      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+
+      await expectLater(
+        retryingClient
+            .from('bucket')
+            .updateBinary(
+              'a.txt',
+              Uint8List.fromList([1, 2, 3]),
+              abortSignal: abortSignal.future,
+            ),
+        throwsA(isA<RequestAbortedException>()),
+      );
+      expect(mockClient.requests, hasLength(1));
+    });
+
+    test('aborts an in-flight download', () async {
+      mockClient.stubStall();
+      final abortSignal = Completer<void>();
+      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+
+      await expectLater(
+        client
+            .from('bucket')
+            .download('a.txt', abortSignal: abortSignal.future),
+        throwsA(isA<RequestAbortedException>()),
+      );
+    });
+
+    test('aborts an in-flight streamed download', () async {
+      mockClient.stubStall();
+      final abortSignal = Completer<void>();
+      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+
+      await expectLater(
+        client
+            .from('bucket')
+            .downloadStream('a.txt', abortSignal: abortSignal.future)
+            .toList(),
+        throwsA(isA<RequestAbortedException>()),
+      );
+    });
   });
 
   group('path normalization', () {
