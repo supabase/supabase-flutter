@@ -456,7 +456,7 @@ void main() {
         'apikey',
         httpClient: httpClient,
         authOptions: AuthClientOptions(
-          pkceAsyncStorage: MemoryAuthAsyncStorage(),
+          asyncStorage: MemoryAuthAsyncStorage(),
         ),
         postgrestOptions: const PostgrestClientOptions(
           retryOptions: SupabaseRetryOptions(enabled: false),
@@ -507,7 +507,7 @@ void main() {
         'apikey',
         httpClient: httpClient,
         authOptions: AuthClientOptions(
-          pkceAsyncStorage: MemoryAuthAsyncStorage(),
+          asyncStorage: MemoryAuthAsyncStorage(),
         ),
         postgrestOptions: const PostgrestClientOptions(
           requestTimeout: Duration(milliseconds: 50),
