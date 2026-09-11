@@ -1479,43 +1479,30 @@ The per-request `PostgrestBuilder.retry()` override keeps `enabled` and `count`.
 
 ### The PostgREST builder has one type parameter and no wrapper classes
 
-`PostgrestBuilder<T, S, R>` is `PostgrestBuilder<T>`, where `T` is what awaiting the request
-resolves to. The other two parameters only existed to thread a converter through the chain, and
-`RawPostgrestBuilder` and `ResponsePostgrestBuilder` only existed to give `withConverter()` two
-different return types. All three are gone. Every step that changes the result, `select()`,
-`single()`, `maybeSingle()`, `csv()`, `count()` and `withConverter()`, now supplies its own decoder
-for the response, and the decoders compose in call order.
+`PostgrestBuilder<T, S, R>` is now `PostgrestBuilder<T>`, where `T` is the type the request resolves
+to when awaited. `RawPostgrestBuilder` and `ResponsePostgrestBuilder` are gone; `withConverter()` and
+`count()` are methods of `PostgrestBuilder<T>` itself.
 
 | Before | After |
 | --- | --- |
 | `PostgrestBuilder<T, S, R>` | `PostgrestBuilder<T>` |
 | `RawPostgrestBuilder<T, S, R>` and `ResponsePostgrestBuilder<T, S, R>` | `PostgrestBuilder<T>` |
 | `PostgrestBuilder(count: …, converter: …)` | `PostgrestBuilder(…).withConverter(…).count(…)` |
-| `PostgrestTransformBuilder.count()` | `PostgrestBuilder.count()`, so it is also available after `withConverter()` |
 | `geojson()` returned `ResponsePostgrestBuilder<Map<String, dynamic>, …>` | `PostgrestBuilder<Map<String, dynamic>>` |
 
-`withConverter()` is a method on every executable builder and converts whatever the request
-resolves to at that point in the chain. Without `count()` nothing changes:
+`withConverter()` converts whatever the request resolves to at the point where it is called. Without
+`count()` nothing changes. With `count()`, call `withConverter()` first so the converter keeps
+receiving the data:
 
 ```dart
-final List<User> users = await supabase
-    .from('users')
-    .select()
-    .withConverter((rows) => rows.map(User.fromJson).toList());
-```
-
-With `count()`, the order of the two calls decides what the converter receives. Convert first and
-count after to keep converting the data:
-
-```dart
-// Before: the converter always received the data.
+// Before
 final response = await supabase
     .from('users')
     .select()
     .count(CountOption.exact)
     .withConverter((rows) => rows.map(User.fromJson).toList());
 
-// After: convert first, then count.
+// After
 final response = await supabase
     .from('users')
     .select()
@@ -1525,37 +1512,18 @@ final List<User> users = response.data;
 final int count = response.count;
 ```
 
-A converter placed after `count()` receives the whole `PostgrestResponse`, which is what the request
-resolves to at that point. The converter of the old order does not compile there, so the compiler
-points at every call site that has to change.
+A converter placed after `count()` receives the whole `PostgrestResponse`, so the old order no
+longer compiles and the compiler points at every call site to update.
 
-The per-request timeout override has its own method. `retry()` used to take a `requestTimeout`
-parameter even though the timeout bounds a single attempt and applies with retries disabled, so it
-is not part of the retry configuration and `SupabaseRetryOptions` deliberately does not carry it.
+The per-request timeout override is a method of its own instead of a parameter of `retry()`:
 
 | Before | After |
 | --- | --- |
 | `.retry(requestTimeout: Duration(seconds: 5))` | `.requestTimeout(Duration(seconds: 5))` |
-| `.retry(enabled: false, requestTimeout: …)` | `.retry(enabled: false).requestTimeout(…)` |
+| `.retry(count: 5, requestTimeout: Duration(seconds: 5))` | `.retry(count: 5).requestTimeout(Duration(seconds: 5))` |
 
-```dart
-// Before
-await supabase
-    .from('users')
-    .select()
-    .retry(count: 5, requestTimeout: const Duration(seconds: 5));
-
-// After
-await supabase
-    .from('users')
-    .select()
-    .retry(count: 5)
-    .requestTimeout(const Duration(seconds: 5));
-```
-
-`requestTimeout()` is available at the same points as `retry()`: on the query builder before the
-table operation, and on every executable builder after it, where it keeps its place in the chain
-so filters and transforms can follow it.
+`requestTimeout()` is available wherever `retry()` is: on the query builder before the table
+operation, and on every builder after it, where filters and transforms can still follow it.
 
 ### The retry backoff defaults are the same in every client
 
