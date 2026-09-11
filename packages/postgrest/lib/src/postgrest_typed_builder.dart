@@ -52,7 +52,7 @@ String _selectList<Row>(List<PostgrestColumnExpression<Row, Object>>? columns) {
 class PostgrestTypedBuilder<T> implements Future<T> {
   const PostgrestTypedBuilder._(this._rawBuilder, this._convert);
 
-  final PostgrestBuilder<dynamic, dynamic, dynamic> _rawBuilder;
+  final PostgrestBuilder<dynamic> _rawBuilder;
   final T Function(dynamic data) _convert;
 
   Future<T> _execute() async {

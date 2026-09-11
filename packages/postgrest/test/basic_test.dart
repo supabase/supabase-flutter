@@ -520,15 +520,52 @@ void main() {
       expect(response.first, isA<List<dynamic>>());
     });
 
-    test('withConverter and count', () async {
+    test('withConverter before count converts the data', () async {
       final response = await postgrest
           .from('users')
           .select()
-          .count(CountOption.exact)
-          .withConverter((data) => [data]);
+          .withConverter((data) => [data])
+          .count(CountOption.exact);
       expect(response.data.first, isNotEmpty);
       expect(response.data.first, isA<List<dynamic>>());
       expect(response.count, greaterThan(3));
+    });
+
+    test('withConverter after count converts the whole response', () async {
+      final usernames = await postgrest
+          .from('users')
+          .select()
+          .count(CountOption.exact)
+          .withConverter(
+            (response) => (
+              count: response.count,
+              usernames: [
+                for (final user in response.data) user['username'] as String,
+              ],
+            ),
+          );
+      expect(usernames.count, greaterThan(3));
+      expect(usernames.usernames, hasLength(usernames.count));
+    });
+
+    test('withConverter after single converts a single row', () async {
+      final username = await postgrest
+          .from('users')
+          .select()
+          .eq('username', 'supabot')
+          .single()
+          .withConverter((user) => user['username'] as String);
+      expect(username, 'supabot');
+    });
+
+    test('withConverter after maybeSingle receives null for no rows', () async {
+      final user = await postgrest
+          .from('users')
+          .select()
+          .eq('username', 'no-such-user')
+          .maybeSingle()
+          .withConverter((row) => row?['username'] as String?);
+      expect(user, isNull);
     });
 
     test('aborts long-running function call', () async {

@@ -48,11 +48,11 @@ class PostgrestQueryBuilder {
   /// supabase.from('users').select('id, messages');
   /// ```
   ///
+  /// Append [PostgrestBuilder.count] to also receive the total number of rows:
+  ///
   /// ```dart
   /// supabase.from('users').select('id, messages').count(CountOption.exact);
   /// ```
-  /// By appending [count] the return type is [PostgrestResponse]. Otherwise
-  /// it's the data directly without the wrapper.
   PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
@@ -282,23 +282,27 @@ class PostgrestQueryBuilder {
         method: HttpMethod.head,
         count: option,
       ),
+      decode: _rowCountDecoder,
     );
   }
 
   /// Overrides the retry behavior of the requests built by this builder.
   ///
   /// See [PostgrestBuilder.retry] for the parameters.
-  PostgrestQueryBuilder retry({
-    bool enabled = true,
-    int? count,
-    Duration? requestTimeout,
-  }) {
+  PostgrestQueryBuilder retry({bool enabled = true, int? count}) {
     return PostgrestQueryBuilder._(
       _config.copyWith(
         retry: _config.retry.copyWith(enabled: enabled, count: count),
-        requestTimeout: requestTimeout,
       ),
     );
+  }
+
+  /// Bounds how long a single attempt of the requests built by this builder
+  /// may take.
+  ///
+  /// See [PostgrestBuilder.requestTimeout].
+  PostgrestQueryBuilder requestTimeout(Duration timeout) {
+    return PostgrestQueryBuilder._(_config.copyWith(requestTimeout: timeout));
   }
 
   /// Sets a header on the requests built by this builder.

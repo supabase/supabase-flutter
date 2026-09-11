@@ -1563,7 +1563,57 @@ still stops retrying once the next backoff would fall after the next refresh
 tick, so the count only caps how many attempts a short backoff can squeeze into
 that window.
 
-The per-request `PostgrestBuilder.retry()` override is unchanged.
+The per-request `PostgrestBuilder.retry()` override keeps `enabled` and `count`. Its
+`requestTimeout` parameter is now a method of its own, see
+[the builder section](#the-postgrest-builder-has-one-type-parameter-and-no-wrapper-classes).
+
+### The PostgREST builder has one type parameter and no wrapper classes
+
+`PostgrestBuilder<T, S, R>` is now `PostgrestBuilder<T>`, where `T` is the type the request resolves
+to when awaited. `RawPostgrestBuilder` and `ResponsePostgrestBuilder` are gone; `withConverter()` and
+`count()` are methods of `PostgrestBuilder<T>` itself.
+
+| Before | After |
+| --- | --- |
+| `PostgrestBuilder<T, S, R>` | `PostgrestBuilder<T>` |
+| `RawPostgrestBuilder<T, S, R>` and `ResponsePostgrestBuilder<T, S, R>` | `PostgrestBuilder<T>` |
+| `PostgrestBuilder(count: …, converter: …)` | `PostgrestBuilder(…).withConverter(…).count(…)` |
+| `geojson()` returned `ResponsePostgrestBuilder<Map<String, dynamic>, …>` | `PostgrestBuilder<Map<String, dynamic>>` |
+
+`withConverter()` converts whatever the request resolves to at the point where it is called. Without
+`count()` nothing changes. With `count()`, call `withConverter()` first so the converter keeps
+receiving the data:
+
+```dart
+// Before
+final response = await supabase
+    .from('users')
+    .select()
+    .count(CountOption.exact)
+    .withConverter((rows) => rows.map(User.fromJson).toList());
+
+// After
+final response = await supabase
+    .from('users')
+    .select()
+    .withConverter((rows) => rows.map(User.fromJson).toList())
+    .count(CountOption.exact);
+final List<User> users = response.data;
+final int count = response.count;
+```
+
+A converter placed after `count()` receives the whole `PostgrestResponse`, so the old order no
+longer compiles and the compiler points at every call site to update.
+
+The per-request timeout override is a method of its own instead of a parameter of `retry()`:
+
+| Before | After |
+| --- | --- |
+| `.retry(requestTimeout: Duration(seconds: 5))` | `.requestTimeout(Duration(seconds: 5))` |
+| `.retry(count: 5, requestTimeout: Duration(seconds: 5))` | `.retry(count: 5).requestTimeout(Duration(seconds: 5))` |
+
+`requestTimeout()` is available wherever `retry()` is: on the query builder before the table
+operation, and on every builder after it, where filters and transforms can still follow it.
 
 ### The retry backoff defaults are the same in every client
 
@@ -1820,8 +1870,8 @@ through an `isolate:` parameter, which named an implementation rather than a con
 named one that does not spawn an isolate at all on web. They now take an `AsyncJsonCodec`
 through `jsonCodec:`, the interface `YAJsonIsolate` implements. The same rename applies to
 the builders that carry the codec through the chain: `PostgrestBuilder`,
-`PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `RawPostgrestBuilder`,
-`SupabaseQueryBuilder` and `SupabaseQuerySchema`.
+`PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `SupabaseQueryBuilder` and
+`SupabaseQuerySchema`.
 
 ```dart
 // Before

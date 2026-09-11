@@ -13,8 +13,6 @@ part 'postgrest_filter_builder.dart';
 part 'postgrest_query_builder.dart';
 part 'postgrest_rpc_builder.dart';
 part 'postgrest_transform_builder.dart';
-part 'raw_postgrest_builder.dart';
-part 'response_postgrest_builder.dart';
 
 typedef _Nullable<T> = T?;
 
@@ -109,12 +107,51 @@ extension on Uri {
   }
 }
 
+/// Derives the awaited value of a request from its decoded [body] and the row
+/// [count] read from the `Content-Range` header, if there was one.
+///
+/// Every step that changes what a request resolves to, `select()`, `single()`,
+/// `count()`, `withConverter()` and the like, supplies its own decoder. The
+/// decoders compose in call order, so the awaited type is a single type
+/// parameter on the builder instead of one for the wire shape, one for the
+/// converted data and one for the wrapped response.
+typedef _ResultDecoder<T> = T Function(Object? body, int? count);
+
+/// The decoder of a request whose result is the response body as is, narrowed
+/// to [T] the way PostgREST shapes it.
+_ResultDecoder<T> _bodyDecoder<T>() =>
+    (body, _) => _bodyAs<T>(body);
+
+/// Narrows a decoded JSON [body] to [T].
+///
+/// The JSON decoders produce `List<dynamic>` and `Map<String, dynamic>`, so a
+/// request typed as [PostgrestList] or [PostgrestMap] needs its elements
+/// re-typed, which a plain cast cannot do.
+T _bodyAs<T>(Object? body) {
+  if (T == PostgrestList) {
+    return PostgrestList.from(body as Iterable) as T;
+  }
+  if (T == PostgrestMap) {
+    return PostgrestMap.from(body as Map) as T;
+  }
+  if (T == _Nullable<PostgrestMap>) {
+    return (body == null ? null : PostgrestMap.from(body as Map)) as T;
+  }
+  return body as T;
+}
+
+/// The decoder of a `HEAD` request that only asks for the row count.
+int _rowCountDecoder(Object? body, int? count) => count as int;
+
 /// Wraps [config] in the executable filter phase once a table operation or
-/// function call has been chosen.
-PostgrestFilterBuilder<P> _filterBuilder<P>(_RequestConfig config) =>
-    PostgrestFilterBuilder(
-      PostgrestBuilder<P, P, P>._(config: config, converter: null),
-    );
+/// function call has been chosen, decoding the response body as [P] unless
+/// the operation resolves to something else and passes its own [decode].
+PostgrestFilterBuilder<P> _filterBuilder<P>(
+  _RequestConfig config, {
+  _ResultDecoder<P>? decode,
+}) => PostgrestFilterBuilder(
+  PostgrestBuilder._(config: config, decode: decode ?? _bodyDecoder<P>()),
+);
 
 /// Convert list filter to query parameters string
 String _cleanFilterList(List<dynamic> filter) {
@@ -132,14 +169,16 @@ String _cleanFilterList(List<dynamic> filter) {
       .join(',');
 }
 
-/// The base builder class.
+/// An executable PostgREST request that resolves to [T] when awaited.
 ///
-/// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
-///
-/// When using [_converter], [R] is the input and [S] is the output
-/// Otherwise [S] and [R] are the same
+/// The request itself, its URL, headers and body, is fixed by the time a
+/// builder of this type is reached. What remains configurable is how the
+/// request is sent, through [retry], [requestTimeout], [abortSignal] and
+/// [setHeader], and how its result is shaped, through [withConverter] and
+/// [count].
 @immutable
-class PostgrestBuilder<T, S, R> implements Future<T> {
+class PostgrestBuilder<T> implements Future<T> {
+  /// Creates a request that resolves to its decoded response body as [T].
   PostgrestBuilder({
     required Uri url,
     required Headers headers,
@@ -148,13 +187,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Object? body,
     Client? httpClient,
     AsyncJsonCodec? jsonCodec,
-    CountOption? count,
     bool maybeSingle = false,
-    PostgrestConverter<S, R>? converter,
     SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
     Future<void>? abortSignal,
-  }) : _converter = converter,
+  }) : _decode = _bodyDecoder<T>(),
        _config = _RequestConfig(
          url: url,
          headers: headers,
@@ -163,23 +200,22 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
          body: body,
          httpClient: httpClient,
          jsonCodec: jsonCodec,
-         count: count,
          maybeSingle: maybeSingle,
          retry: retryOptions,
          requestTimeout: requestTimeout,
          abortSignal: abortSignal,
        );
 
-  /// Rewraps an existing [config] under a possibly different [converter] (and
-  /// therefore possibly different generic types). This is what lets the typed
+  /// Rewraps an existing [config] under a possibly different [decode] (and
+  /// therefore possibly different awaited type). This is what lets the typed
   /// builders share a single config instance without re-listing its fields.
   const PostgrestBuilder._({
     required _RequestConfig config,
-    required PostgrestConverter<S, R>? converter,
+    required _ResultDecoder<T> decode,
   }) : _config = config,
-       _converter = converter;
+       _decode = decode;
   final _RequestConfig _config;
-  final PostgrestConverter<S, R>? _converter;
+  final _ResultDecoder<T> _decode;
 
   Object? get _body => _config.body;
   Headers get _headers => _config.headers;
@@ -194,7 +230,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Duration? get _requestTimeout => _config.requestTimeout;
   Future<void>? get _abortSignal => _config.abortSignal;
 
-  PostgrestBuilder<T, S, R> _copyWith({
+  PostgrestBuilder<T> _copyWith({
     Uri? url,
     Headers? headers,
     String? schema,
@@ -204,7 +240,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
-    PostgrestConverter<S, R>? converter,
     SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
@@ -223,7 +258,66 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       requestTimeout: requestTimeout,
       abortSignal: abortSignal,
     ),
-    converter: converter ?? _converter,
+    decode: _decode,
+  );
+
+  /// Converts the value this request resolves to into [U].
+  ///
+  /// [converter] runs on the awaited value once the response has been decoded,
+  /// so it receives whatever the request resolved to at this point in the
+  /// chain, and the request resolves to its result from here on:
+  ///
+  /// ```dart
+  /// List<User> users = await postgrest
+  ///     .from('users')
+  ///     .select()
+  ///     .withConverter((users) => users.map(User.fromJson).toList());
+  /// ```
+  ///
+  /// Combined with [count], the order of the two calls decides what the
+  /// converter sees. Converting first and counting after keeps the converter
+  /// on the data:
+  ///
+  /// ```dart
+  /// final response = await postgrest
+  ///     .from('users')
+  ///     .select()
+  ///     .withConverter((users) => users.map(User.fromJson).toList())
+  ///     .count(CountOption.exact);
+  /// List<User> users = response.data;
+  /// int count = response.count;
+  /// ```
+  PostgrestBuilder<U> withConverter<U>(PostgrestConverter<U, T> converter) =>
+      PostgrestBuilder._(
+        config: _config,
+        decode: (body, count) => converter(_decode(body, count)),
+      );
+
+  /// Performs additionally to the query a count query.
+  ///
+  /// It's used to retrieve the total number of rows that satisfy the
+  /// query. The value for count respects any filters (e.g. eq, gt), but ignores
+  /// modifiers (e.g. limit, range).
+  ///
+  /// This wraps what the request resolves to in a [PostgrestResponse] carrying
+  /// both the data and the count.
+  ///
+  /// ```dart
+  /// final response = await postgrest
+  ///    .from('users')
+  ///    .select()
+  ///    .count(CountOption.exact);
+  /// final users = response.data;
+  /// int count = response.count;
+  /// ```
+  PostgrestBuilder<PostgrestResponse<T>> count([
+    CountOption count = CountOption.exact,
+  ]) => PostgrestBuilder._(
+    config: _config.copyWith(count: count),
+    decode: (body, rowCount) => PostgrestResponse(
+      data: _decode(body, rowCount),
+      count: rowCount!,
+    ),
   );
 
   /// Overrides the retry behavior for this specific request.
@@ -234,17 +328,19 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// them.
   ///
   /// [count] overrides the number of retry attempts for this request.
-  ///
-  /// [requestTimeout] overrides the per-attempt timeout for this request. When
-  /// `null`, the timeout configured on [PostgrestClient] is kept.
-  PostgrestBuilder<T, S, R> retry({
-    bool enabled = true,
-    int? count,
-    Duration? requestTimeout,
-  }) => _copyWith(
+  PostgrestBuilder<T> retry({bool enabled = true, int? count}) => _copyWith(
     retry: _retry.copyWith(enabled: enabled, count: count),
-    requestTimeout: requestTimeout,
   );
+
+  /// Bounds how long a single attempt of this request may take, overriding the
+  /// timeout configured on [PostgrestClient].
+  ///
+  /// A timed-out attempt is retried like any other failure, and a
+  /// [TimeoutException] is thrown once the retries are exhausted. Use
+  /// [abortSignal] to cancel the request outright, which stops retrying
+  /// immediately.
+  PostgrestBuilder<T> requestTimeout(Duration timeout) =>
+      _copyWith(requestTimeout: timeout);
 
   /// Allows manually triggering request abortion by completing the provided
   /// [Future].
@@ -286,12 +382,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///  print('Request was aborted: $error');
   /// }
   /// ```
-  PostgrestBuilder<T, S, R> abortSignal(Future<void> abortSignal) {
+  PostgrestBuilder<T> abortSignal(Future<void> abortSignal) {
     return _copyWith(abortSignal: abortSignal);
   }
 
   /// Returns a copy of this request with [key] set to [value] in its headers.
-  PostgrestBuilder<T, S, R> setHeader(String key, String value) {
+  PostgrestBuilder<T> setHeader(String key, String value) {
     return _copyWith(
       headers: {..._headers, key: value},
     );
@@ -516,35 +612,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             : int.parse(contentRange.split('/').last);
       }
 
-      final S converted;
-
-      if (R == PostgrestList) {
-        body = PostgrestList.from(body as Iterable);
-      } else if (R == PostgrestMap) {
-        body = PostgrestMap.from(body as Map);
-      } else if (R == _Nullable<PostgrestMap>) {
-        if (body != null) {
-          body = PostgrestMap.from(body as Map);
-        }
-      } else if (R == int) {
-        if (count != null) body = count;
-      }
-      body as R;
-
-      if (_converter != null) {
-        converted = _converter(body);
-      } else {
-        converted = body as S;
-      }
-
-      if (_count != null && method != HttpMethod.head) {
-        return PostgrestResponse<S>(
-              data: converted,
-              count: count!,
-            )
-            as T;
-      }
-      return converted as T;
+      return _decode(body, count);
     }
     PostgrestApiException error;
     if (response.request!.method != HttpMethod.head.value) {
