@@ -822,29 +822,37 @@ void main() {
       expect(response.fullPath, 'public/a.txt');
     });
 
-    test('aborting an upload stops the retries', () async {
-      final file = File('a.txt');
-      file.writeAsStringSync('File content');
+    test(
+      'aborting during the delay before a retry makes no further attempt',
+      () async {
+        final file = File('a.txt');
+        file.writeAsStringSync('File content');
 
-      final stallingHttpClient = MockSupabaseHttpClient()..stubStall();
-      final stallingClient = SupabaseStorageClient(
-        '$supabaseUrl/storage/v1',
-        {'Authorization': 'Bearer $supabaseKey'},
-        retryOptions: const SupabaseRetryOptions(count: 5),
-        httpClient: stallingHttpClient,
-      );
-      final abortSignal = Completer<void>();
+        final failingHttpClient = MockSupabaseHttpClient()
+          ..stub({'Key': 'public/a.txt'}, statusCode: 201)
+          ..stubError(ClientException('Offline'), times: 1);
+        final retryingClient = SupabaseStorageClient(
+          '$supabaseUrl/storage/v1',
+          {'Authorization': 'Bearer $supabaseKey'},
+          retryOptions: const SupabaseRetryOptions(
+            count: 5,
+            initialDelay: Duration(seconds: 10),
+          ),
+          httpClient: failingHttpClient,
+        );
+        final abortSignal = Completer<void>();
 
-      final future = stallingClient
-          .from('public')
-          .upload('a.txt', file, abortSignal: abortSignal.future);
+        final future = retryingClient
+            .from('public')
+            .upload('a.txt', file, abortSignal: abortSignal.future);
 
-      await Future.delayed(const Duration(milliseconds: 50));
-      abortSignal.complete();
+        await Future.delayed(const Duration(milliseconds: 50));
+        abortSignal.complete();
 
-      await expectLater(future, throwsA(isA<RequestAbortedException>()));
-      expect(stallingHttpClient.requests, hasLength(1));
-    });
+        await expectLater(future, throwsA(isA<RequestAbortedException>()));
+        expect(failingHttpClient.requests, hasLength(1));
+      },
+    );
 
     test('should upload binary with few network failures', () async {
       final file = File('a.txt');

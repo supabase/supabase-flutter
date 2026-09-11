@@ -62,6 +62,19 @@ class Fetch {
     return exception;
   }
 
+  http.AbortableRequest _createRequest(
+    HttpMethod method,
+    String url,
+    FetchOptions? options,
+    Future<void>? abortSignal,
+  ) {
+    return http.AbortableRequest(
+      method.value,
+      Uri.parse(url),
+      abortTrigger: abortSignal,
+    )..headers.addAll({...?options?.headers});
+  }
+
   Future<T> _handleRequest<T>(
     HttpMethod method,
     String url,
@@ -69,11 +82,7 @@ class Fetch {
     FetchOptions? options, {
     Future<void>? abortSignal,
   }) async {
-    final request = http.AbortableRequest(
-      method.value,
-      Uri.parse(url),
-      abortTrigger: abortSignal,
-    )..headers.addAll({...?options?.headers});
+    final request = _createRequest(method, url, options, abortSignal);
     if (method != HttpMethod.get) {
       request.headers.putIfAbsent('Content-Type', () => 'application/json');
     }
@@ -161,16 +170,16 @@ class Fetch {
     // Create a factory function that generates a fresh MultipartRequest for
     // each attempt
     http.MultipartRequest createRequest() {
-      final request =
-          http.AbortableMultipartRequest(
-              method.value,
-              Uri.parse(url),
-              abortTrigger: abortSignal,
-            )
-            ..headers.addAll(headers)
-            ..files.add(createMultipartFile())
-            ..fields['cacheControl'] = fileOptions.cacheControl
-            ..headers['x-upsert'] = fileOptions.upsert.toString();
+      final request = http.AbortableMultipartRequest(
+        method.value,
+        Uri.parse(url),
+        abortTrigger: abortSignal,
+      );
+      request
+        ..headers.addAll(headers)
+        ..files.add(createMultipartFile())
+        ..fields['cacheControl'] = fileOptions.cacheControl
+        ..headers['x-upsert'] = fileOptions.upsert.toString();
       if (fileOptions.metadata != null) {
         request.fields['metadata'] = json.encode(fileOptions.metadata);
       }
@@ -193,10 +202,8 @@ class Fetch {
         return createRequest().sendWith(httpClient);
       },
       options: retryOptions,
-      // An abort is a ClientException too, but it ends the upload for good.
-      retryIf: (error) =>
-          error is! RequestAbortedException &&
-          (error is ClientException || error is TimeoutException),
+      retryIf: (error) => error is ClientException || error is TimeoutException,
+      abortSignal: abortSignal,
     );
 
     return _handleResponse(streamedResponse, options);
@@ -269,11 +276,7 @@ class Fetch {
     FetchOptions? options,
     Future<void>? abortSignal,
   }) async* {
-    final request = http.AbortableRequest(
-      HttpMethod.get.value,
-      Uri.parse(url),
-      abortTrigger: abortSignal,
-    )..headers.addAll({...?options?.headers});
+    final request = _createRequest(HttpMethod.get, url, options, abortSignal);
 
     storageLogger.finest(
       'Request: GET (stream) ${Uri.parse(url).redacted} '

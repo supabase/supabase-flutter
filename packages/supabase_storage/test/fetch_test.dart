@@ -191,8 +191,9 @@ void main() {
 
     test('aborts an in-flight upload', () async {
       mockClient.stubStall();
-      final abortSignal = Completer<void>();
-      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+      final abortSignal = Future<void>.delayed(
+        const Duration(milliseconds: 50),
+      );
 
       await expectLater(
         client
@@ -200,7 +201,7 @@ void main() {
             .uploadBinary(
               'a.txt',
               Uint8List.fromList([1, 2, 3]),
-              abortSignal: abortSignal.future,
+              abortSignal: abortSignal,
             ),
         throwsA(isA<RequestAbortedException>()),
       );
@@ -208,8 +209,9 @@ void main() {
 
     test('aborts an in-flight signed url upload', () async {
       mockClient.stubStall();
-      final abortSignal = Completer<void>();
-      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+      final abortSignal = Future<void>.delayed(
+        const Duration(milliseconds: 50),
+      );
 
       await expectLater(
         client
@@ -220,7 +222,7 @@ void main() {
               Uint8List.fromList([1, 2, 3]),
               const FileOptions(),
               null,
-              abortSignal.future,
+              abortSignal,
             ),
         throwsA(isA<RequestAbortedException>()),
       );
@@ -234,8 +236,9 @@ void main() {
         httpClient: mockClient,
         retryOptions: const SupabaseRetryOptions(count: 3),
       );
-      final abortSignal = Completer<void>();
-      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+      final abortSignal = Future<void>.delayed(
+        const Duration(milliseconds: 50),
+      );
 
       await expectLater(
         retryingClient
@@ -243,7 +246,7 @@ void main() {
             .updateBinary(
               'a.txt',
               Uint8List.fromList([1, 2, 3]),
-              abortSignal: abortSignal.future,
+              abortSignal: abortSignal,
             ),
         throwsA(isA<RequestAbortedException>()),
       );
@@ -252,26 +255,26 @@ void main() {
 
     test('aborts an in-flight download', () async {
       mockClient.stubStall();
-      final abortSignal = Completer<void>();
-      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+      final abortSignal = Future<void>.delayed(
+        const Duration(milliseconds: 50),
+      );
 
       await expectLater(
-        client
-            .from('bucket')
-            .download('a.txt', abortSignal: abortSignal.future),
+        client.from('bucket').download('a.txt', abortSignal: abortSignal),
         throwsA(isA<RequestAbortedException>()),
       );
     });
 
     test('aborts an in-flight streamed download', () async {
       mockClient.stubStall();
-      final abortSignal = Completer<void>();
-      Timer(const Duration(milliseconds: 50), abortSignal.complete);
+      final abortSignal = Future<void>.delayed(
+        const Duration(milliseconds: 50),
+      );
 
       await expectLater(
         client
             .from('bucket')
-            .downloadStream('a.txt', abortSignal: abortSignal.future)
+            .downloadStream('a.txt', abortSignal: abortSignal)
             .toList(),
         throwsA(isA<RequestAbortedException>()),
       );
