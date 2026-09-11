@@ -51,8 +51,7 @@ void main() {
       url: 'https://test.supabase.co',
       publishableKey: '',
       authOptions: FlutterAuthClientOptions(
-        localStorage: const MockEmptyLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        asyncStorage: MockAsyncStorage(),
         oauthLauncher: fakeLauncher,
       ),
     );

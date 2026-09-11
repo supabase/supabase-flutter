@@ -29,9 +29,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_web_auth_2_platform_interface: ^5.0.0
-  http: ^1.6.0
   plugin_platform_interface: ^2.0.0
   supabase_lints: ^0.1.2
-  supabase_testing: 0.1.1
+  supabase_test: 0.1.1
 
 flutter:

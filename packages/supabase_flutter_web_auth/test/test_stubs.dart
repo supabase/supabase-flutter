@@ -1,10 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter_web_auth_2_platform_interface/flutter_web_auth_2_platform_interface.dart';
-import 'package:http/http.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_testing/supabase_testing.dart';
+import 'package:supabase_test/supabase_test.dart';
 
 /// Fake [FlutterWebAuth2Platform] that records the authentication request and
 /// returns a preconfigured callback URL, standing in for the system web auth
@@ -36,48 +33,20 @@ class FakeFlutterWebAuth2 extends FlutterWebAuth2Platform
   Future<void> clearAllDanglingCalls() async {}
 }
 
-class MockEmptyLocalStorage extends LocalStorage {
-  const MockEmptyLocalStorage();
-  @override
-  Future<void> initialize() async {}
-  @override
-  Future<String?> accessToken() async => null;
-  @override
-  Future<bool> hasAccessToken() async => false;
-  @override
-  Future<void> persistSession(String persistSessionString) async {}
-  @override
-  Future<void> removePersistedSession() async {}
-}
-
 class MockAsyncStorage extends MemoryAuthAsyncStorage {}
 
-/// Custom HTTP client just to test the PKCE flow.
-class PkceHttpClient extends BaseClient {
-  int requestCount = 0;
-  Map<String, dynamic> lastRequestBody = {};
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    requestCount++;
-
-    if (request is Request) {
-      lastRequestBody = jsonDecode(request.body);
-    }
-
-    final accessToken = signedTestJwt({
-      'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60,
-      'sub': testUserId,
-    }, secret: '37c304f8-51aa-419a-a1af-06154e63707a');
-
-    return StreamedResponse(
-      Stream.value(
-        utf8.encode(
-          jsonEncode(testSessionResponseJson(accessToken: accessToken)),
+/// A mock HTTP client that answers the PKCE token exchange with a fresh
+/// session, so the code returned by the fake web auth session can be
+/// exchanged.
+MockSupabaseHttpClient createPkceHttpClient() =>
+    MockSupabaseHttpClient()..stubHandler(
+      (_) => jsonResponse(
+        testSessionResponseJson(
+          accessToken: signedTestJwt({
+            'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60,
+            'sub': testUserId,
+          }, secret: '37c304f8-51aa-419a-a1af-06154e63707a'),
         ),
+        statusCode: 201,
       ),
-      201,
-      request: request,
     );
-  }
-}
