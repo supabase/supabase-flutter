@@ -1,3 +1,7 @@
+## 3.0.0-dev.3
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+
 ## 3.0.0-dev.2
 
 > Note: This release has breaking changes.

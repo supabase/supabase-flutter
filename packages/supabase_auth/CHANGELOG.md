@@ -1,3 +1,13 @@
+## 3.0.0-dev.3
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FEAT**(supabase_flutter): pluggable OAuth launcher + opt-in supabase_flutter_web_auth ([#1807](https://github.com/supabase/supabase-flutter/issues/1807)). ([cdee3646](https://github.com/supabase/supabase-flutter/commit/cdee3646fc6c72f98816274270b977f04cb12c05))
+ - **FEAT**(auth): add MFA recovery codes API ([#1800](https://github.com/supabase/supabase-flutter/issues/1800)). ([44252904](https://github.com/supabase/supabase-flutter/commit/4425290426f28ba4cbb1e1d54b8d24e8fb02bcc0))
+ - **BREAKING** **FIX**(auth): only open the broadcast channel when the session is persisted ([#1804](https://github.com/supabase/supabase-flutter/issues/1804)). ([f7b993a8](https://github.com/supabase/supabase-flutter/commit/f7b993a827deb98ab0356f0eef45eba4b7c8b345))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
 ## 3.0.0-dev.2
 
 > Note: This release has breaking changes.

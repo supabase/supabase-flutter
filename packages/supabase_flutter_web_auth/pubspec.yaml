@@ -1,6 +1,6 @@
 name: supabase_flutter_web_auth
 description: Runs supabase_flutter's OAuth, SSO, and identity-linking flows through a system web authentication session instead of a plain browser launch.
-version: 0.1.0
+version: 0.1.1
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_flutter_web_auth'
 issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
@@ -22,7 +22,7 @@ dependencies:
     sdk: flutter
   flutter_web_auth_2: ^5.0.0
   meta: ^1.16.0
-  supabase_flutter: 3.0.0-dev.2
+  supabase_flutter: 3.0.0-dev.3
   web: ^1.0.0
 
 dev_dependencies:
@@ -31,6 +31,6 @@ dev_dependencies:
   flutter_web_auth_2_platform_interface: ^5.0.0
   plugin_platform_interface: ^2.0.0
   supabase_lints: ^0.1.2
-  supabase_test: 0.1.1
+  supabase_test: 0.2.0
 
 flutter:

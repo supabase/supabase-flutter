@@ -1,3 +1,10 @@
+## 3.0.0-dev.2
+
+> Note: This release has breaking changes.
+
+ - **DOCS**(supabase_common): enable public_member_api_docs ([#1770](https://github.com/supabase/supabase-flutter/issues/1770)). ([f0cda0f0](https://github.com/supabase/supabase-flutter/commit/f0cda0f0278a65c30d741d45b6c26bfc90d81a4c))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.

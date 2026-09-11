@@ -3,6 +3,117 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-11
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.3`](#postgrest---v300-dev3)
+ - [`supabase` - `v3.0.0-dev.3`](#supabase---v300-dev3)
+ - [`supabase_auth` - `v3.0.0-dev.3`](#supabase_auth---v300-dev3)
+ - [`supabase_common` - `v3.0.0-dev.2`](#supabase_common---v300-dev2)
+ - [`supabase_flutter` - `v3.0.0-dev.3`](#supabase_flutter---v300-dev3)
+ - [`supabase_test` - `v0.2.0`](#supabase_test---v020)
+
+Packages with other changes:
+
+ - [`iceberg` - `v0.1.1`](#iceberg---v011)
+ - [`supabase_flutter_web_auth` - `v0.1.1`](#supabase_flutter_web_auth---v011)
+ - [`supabase_functions` - `v3.0.0-dev.3`](#supabase_functions---v300-dev3)
+ - [`supabase_realtime` - `v3.0.0-dev.3`](#supabase_realtime---v300-dev3)
+ - [`supabase_storage` - `v3.0.0-dev.3`](#supabase_storage---v300-dev3)
+ - [`supabase_typegen` - `v0.1.3`](#supabase_typegen---v013)
+
+---
+
+#### `postgrest` - `v3.0.0-dev.3`
+
+ - **REFACTOR**(postgrest): remove the TableColumn filter surface ([#1796](https://github.com/supabase/supabase-flutter/issues/1796)). ([c065b446](https://github.com/supabase/supabase-flutter/commit/c065b446690cce75dd72359acbdf1e94b917ac56))
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FEAT**(postgrest): add typed ranges to the column-expression surface ([#1808](https://github.com/supabase/supabase-flutter/issues/1808)). ([5ad78b9e](https://github.com/supabase/supabase-flutter/commit/5ad78b9e42afd618b0a67e0bdc0c3f2f203f8df6))
+ - **FEAT**(postgrest): add embedded relations to the column namespace ([#1799](https://github.com/supabase/supabase-flutter/issues/1799)). ([fc2e77cc](https://github.com/supabase/supabase-flutter/commit/fc2e77cc8b7525cf921ae3e0d9d2539d6f142d2a))
+ - **FEAT**(postgrest): add aggregate functions as select-only expressions ([#1798](https://github.com/supabase/supabase-flutter/issues/1798)). ([4fb306e3](https://github.com/supabase/supabase-flutter/commit/4fb306e3188d6fdb6a776d4534936ca841a37a9e))
+ - **FEAT**(postgrest): add casts and JSON paths as column expressions ([#1797](https://github.com/supabase/supabase-flutter/issues/1797)). ([da48c368](https://github.com/supabase/supabase-flutter/commit/da48c368bf02c4fa1373da0ea16d67d99d59c238))
+ - **FEAT**(postgrest): route where, order and select through column expressions ([#1795](https://github.com/supabase/supabase-flutter/issues/1795)). ([2c350e5d](https://github.com/supabase/supabase-flutter/commit/2c350e5d29cdfc31370f56850d1a61f8ef10316e))
+ - **FEAT**(postgrest): add the remaining filter operators ([#1794](https://github.com/supabase/supabase-flutter/issues/1794)). ([78ddf55f](https://github.com/supabase/supabase-flutter/commit/78ddf55fe5c0ecfff64714a43665d90249d53fcf))
+ - **FEAT**(postgrest): add column expressions and the filter tree ([#1793](https://github.com/supabase/supabase-flutter/issues/1793)). ([93be263b](https://github.com/supabase/supabase-flutter/commit/93be263b80461987579e852db74ecb9fbd0aa88a))
+ - **BREAKING** **REFACTOR**(postgrest): collapse the builder generics and wrapper types ([#1826](https://github.com/supabase/supabase-flutter/issues/1826)). ([81168d7f](https://github.com/supabase/supabase-flutter/commit/81168d7fc6c1e763df2ec0b979536b96d3ed17d1))
+
+#### `supabase` - `v3.0.0-dev.3`
+
+ - **REFACTOR**(postgrest): remove the TableColumn filter surface ([#1796](https://github.com/supabase/supabase-flutter/issues/1796)). ([c065b446](https://github.com/supabase/supabase-flutter/commit/c065b446690cce75dd72359acbdf1e94b917ac56))
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FEAT**(supabase_flutter): pluggable OAuth launcher + opt-in supabase_flutter_web_auth ([#1807](https://github.com/supabase/supabase-flutter/issues/1807)). ([cdee3646](https://github.com/supabase/supabase-flutter/commit/cdee3646fc6c72f98816274270b977f04cb12c05))
+ - **FEAT**(postgrest): add casts and JSON paths as column expressions ([#1797](https://github.com/supabase/supabase-flutter/issues/1797)). ([da48c368](https://github.com/supabase/supabase-flutter/commit/da48c368bf02c4fa1373da0ea16d67d99d59c238))
+ - **FEAT**(postgrest): route where, order and select through column expressions ([#1795](https://github.com/supabase/supabase-flutter/issues/1795)). ([2c350e5d](https://github.com/supabase/supabase-flutter/commit/2c350e5d29cdfc31370f56850d1a61f8ef10316e))
+ - **BREAKING** **FIX**(auth): only open the broadcast channel when the session is persisted ([#1804](https://github.com/supabase/supabase-flutter/issues/1804)). ([f7b993a8](https://github.com/supabase/supabase-flutter/commit/f7b993a827deb98ab0356f0eef45eba4b7c8b345))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
+#### `supabase_auth` - `v3.0.0-dev.3`
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FEAT**(supabase_flutter): pluggable OAuth launcher + opt-in supabase_flutter_web_auth ([#1807](https://github.com/supabase/supabase-flutter/issues/1807)). ([cdee3646](https://github.com/supabase/supabase-flutter/commit/cdee3646fc6c72f98816274270b977f04cb12c05))
+ - **FEAT**(auth): add MFA recovery codes API ([#1800](https://github.com/supabase/supabase-flutter/issues/1800)). ([44252904](https://github.com/supabase/supabase-flutter/commit/4425290426f28ba4cbb1e1d54b8d24e8fb02bcc0))
+ - **BREAKING** **FIX**(auth): only open the broadcast channel when the session is persisted ([#1804](https://github.com/supabase/supabase-flutter/issues/1804)). ([f7b993a8](https://github.com/supabase/supabase-flutter/commit/f7b993a827deb98ab0356f0eef45eba4b7c8b345))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
+#### `supabase_common` - `v3.0.0-dev.2`
+
+ - **DOCS**(supabase_common): enable public_member_api_docs ([#1770](https://github.com/supabase/supabase-flutter/issues/1770)). ([f0cda0f0](https://github.com/supabase/supabase-flutter/commit/f0cda0f0278a65c30d741d45b6c26bfc90d81a4c))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
+#### `supabase_flutter` - `v3.0.0-dev.3`
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FEAT**(supabase_flutter): pluggable OAuth launcher + opt-in supabase_flutter_web_auth ([#1807](https://github.com/supabase/supabase-flutter/issues/1807)). ([cdee3646](https://github.com/supabase/supabase-flutter/commit/cdee3646fc6c72f98816274270b977f04cb12c05))
+ - **FEAT**(supabase_flutter): test initialization helper for widget tests ([#1819](https://github.com/supabase/supabase-flutter/issues/1819)). ([4136f0e4](https://github.com/supabase/supabase-flutter/commit/4136f0e4f765e2ec98fe13e7c8ebe5603407814d))
+ - **BREAKING** **FIX**(auth): only open the broadcast channel when the session is persisted ([#1804](https://github.com/supabase/supabase-flutter/issues/1804)). ([f7b993a8](https://github.com/supabase/supabase-flutter/commit/f7b993a827deb98ab0356f0eef45eba4b7c8b345))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
+#### `supabase_test` - `v0.2.0`
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FIX**(supabase_test): match stub paths behind URL prefixes and widen the auth shorthands ([#1814](https://github.com/supabase/supabase-flutter/issues/1814)). ([83517082](https://github.com/supabase/supabase-flutter/commit/83517082a42bc4d3f3068fa63a1f1909bb165856))
+ - **FEAT**(supabase_test): stub failures, stalls, status sequences and text bodies ([#1825](https://github.com/supabase/supabase-flutter/issues/1825)). ([e16317a6](https://github.com/supabase/supabase-flutter/commit/e16317a679dc0462e3e2a7ea9f540d46116b8952))
+ - **FEAT**(supabase_flutter): test initialization helper for widget tests ([#1819](https://github.com/supabase/supabase-flutter/issues/1819)). ([4136f0e4](https://github.com/supabase/supabase-flutter/commit/4136f0e4f765e2ec98fe13e7c8ebe5603407814d))
+ - **FEAT**(supabase_test): match table and rpc stubs on the schema ([#1820](https://github.com/supabase/supabase-flutter/issues/1820)). ([07583bb4](https://github.com/supabase/supabase-flutter/commit/07583bb4158986cc413867bf4cea7b5876c3fbeb))
+ - **FEAT**(supabase_test): mock realtime transport for testing streams and channels ([#1818](https://github.com/supabase/supabase-flutter/issues/1818)). ([b2e26633](https://github.com/supabase/supabase-flutter/commit/b2e26633d16512a9b7cc594b5b6c257efb4668fc))
+ - **FEAT**(supabase_test): storage endpoint shorthands ([#1817](https://github.com/supabase/supabase-flutter/issues/1817)). ([64cc72a7](https://github.com/supabase/supabase-flutter/commit/64cc72a79f9d8e2eb883a9db0605301c9172bea7))
+ - **FEAT**(supabase_test): match stubs on query parameters ([#1816](https://github.com/supabase/supabase-flutter/issues/1816)). ([7d2a589c](https://github.com/supabase/supabase-flutter/commit/7d2a589ccdf415bdba11e66d34a48f6774085e7c))
+ - **FEAT**(supabase_test): shape PostgREST responses and answer requests from handlers ([#1813](https://github.com/supabase/supabase-flutter/issues/1813)). ([fda7bb56](https://github.com/supabase/supabase-flutter/commit/fda7bb56a72c6c9c4a12c1f260c6fef15c76930a))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
+#### `iceberg` - `v0.1.1`
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+
+#### `supabase_flutter_web_auth` - `v0.1.1`
+
+ - **FEAT**(supabase_flutter): pluggable OAuth launcher + opt-in supabase_flutter_web_auth ([#1807](https://github.com/supabase/supabase-flutter/issues/1807)). ([cdee3646](https://github.com/supabase/supabase-flutter/commit/cdee3646fc6c72f98816274270b977f04cb12c05))
+
+#### `supabase_functions` - `v3.0.0-dev.3`
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+
+#### `supabase_realtime` - `v3.0.0-dev.3`
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FIX**(realtime): cancel the pending timeout when a push is resent ([#1822](https://github.com/supabase/supabase-flutter/issues/1822)). ([a0d181de](https://github.com/supabase/supabase-flutter/commit/a0d181debd838c08418cee658d978ceb22afa90b))
+
+#### `supabase_storage` - `v3.0.0-dev.3`
+
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+
+#### `supabase_typegen` - `v0.1.3`
+
+ - **FEAT**(supabase_typegen): emit relation members from foreign key metadata ([#1809](https://github.com/supabase/supabase-flutter/issues/1809)). ([9efd2d19](https://github.com/supabase/supabase-flutter/commit/9efd2d194012868cb85017f89a0b0a465fd81826))
+ - **FEAT**(postgrest): add typed ranges to the column-expression surface ([#1808](https://github.com/supabase/supabase-flutter/issues/1808)). ([5ad78b9e](https://github.com/supabase/supabase-flutter/commit/5ad78b9e42afd618b0a67e0bdc0c3f2f203f8df6))
+ - **FEAT**(postgrest): route where, order and select through column expressions ([#1795](https://github.com/supabase/supabase-flutter/issues/1795)). ([2c350e5d](https://github.com/supabase/supabase-flutter/commit/2c350e5d29cdfc31370f56850d1a61f8ef10316e))
+
+
 ## 2026-09-01
 
 ### Changes

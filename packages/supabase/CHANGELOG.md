@@ -1,3 +1,15 @@
+## 3.0.0-dev.3
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**(postgrest): remove the TableColumn filter surface ([#1796](https://github.com/supabase/supabase-flutter/issues/1796)). ([c065b446](https://github.com/supabase/supabase-flutter/commit/c065b446690cce75dd72359acbdf1e94b917ac56))
+ - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))
+ - **FEAT**(supabase_flutter): pluggable OAuth launcher + opt-in supabase_flutter_web_auth ([#1807](https://github.com/supabase/supabase-flutter/issues/1807)). ([cdee3646](https://github.com/supabase/supabase-flutter/commit/cdee3646fc6c72f98816274270b977f04cb12c05))
+ - **FEAT**(postgrest): add casts and JSON paths as column expressions ([#1797](https://github.com/supabase/supabase-flutter/issues/1797)). ([da48c368](https://github.com/supabase/supabase-flutter/commit/da48c368bf02c4fa1373da0ea16d67d99d59c238))
+ - **FEAT**(postgrest): route where, order and select through column expressions ([#1795](https://github.com/supabase/supabase-flutter/issues/1795)). ([2c350e5d](https://github.com/supabase/supabase-flutter/commit/2c350e5d29cdfc31370f56850d1a61f8ef10316e))
+ - **BREAKING** **FIX**(auth): only open the broadcast channel when the session is persisted ([#1804](https://github.com/supabase/supabase-flutter/issues/1804)). ([f7b993a8](https://github.com/supabase/supabase-flutter/commit/f7b993a827deb98ab0356f0eef45eba4b7c8b345))
+ - **BREAKING** **FEAT**(auth): let AuthClient own session persistence through one storage ([#1805](https://github.com/supabase/supabase-flutter/issues/1805)). ([a587f5af](https://github.com/supabase/supabase-flutter/commit/a587f5afbeee19ae069722b6b6a39b6c22dfb2c5))
+
 ## 3.0.0-dev.2
 
 > Note: This release has breaking changes.
