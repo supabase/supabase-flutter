@@ -8,13 +8,11 @@ part of 'postgrest_typed_builder.dart';
 class PostgrestTypedFilterBuilder<Row, T>
     extends PostgrestTypedTransformBuilder<Row, T> {
   const PostgrestTypedFilterBuilder._(
-    PostgrestFilterBuilder<dynamic> super.rawBuilder,
-    super.table,
-    super.convert,
-  ) : super._();
+    this._filterBuilder,
+    PostgrestTable<Row> table,
+  ) : super._(_filterBuilder, table);
 
-  PostgrestFilterBuilder<dynamic> get _filterBuilder =>
-      _rawBuilder as PostgrestFilterBuilder<dynamic>;
+  final PostgrestFilterBuilder<T> _filterBuilder;
 
   /// Only rows satisfying [filter].
   ///
@@ -44,6 +42,6 @@ class PostgrestTypedFilterBuilder<Row, T>
     for (final parameter in filter.queryParameters) {
       builder = builder.appendSearchParameter(parameter.key, parameter.value);
     }
-    return PostgrestTypedFilterBuilder._(builder, _table, _convert);
+    return PostgrestTypedFilterBuilder._(builder, _table);
   }
 }

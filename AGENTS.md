@@ -160,7 +160,12 @@ Example: `supabase.from('users').select('id, name').eq('id', 1).limit(10)`
 `PostgrestBuilder<T>` is the executable base: `T` is what awaiting the request resolves to. Steps
 that change the result (`select()`, `single()`, `count()`, `withConverter()`) each supply a decoder
 for the response, and the decoders compose in call order, so the converter always receives whatever
-the chain resolved to right before it.
+the chain resolved to right before it. The typed builders (`PostgrestTypedQueryBuilder` →
+`PostgrestTypedFilterBuilder` → `PostgrestTypedTransformBuilder` → `PostgrestTypedBuilder<T>`) each
+wrap the untyped builder of the same phase. `PostgrestTypedBuilder<T>` and its subclasses hold that
+builder as a `PostgrestBuilder<T>`, while `PostgrestTypedQueryBuilder` holds a plain
+`PostgrestQueryBuilder`. Rows are converted into the table's `Row` type with `withConverter` in that
+same decoder chain.
 
 ### Realtime Architecture
 

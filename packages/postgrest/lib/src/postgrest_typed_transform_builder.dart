@@ -6,16 +6,11 @@ part of 'postgrest_typed_builder.dart';
 /// request resolves to when awaited.
 @experimental
 class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
-  const PostgrestTypedTransformBuilder._(
-    PostgrestTransformBuilder<dynamic> super.rawBuilder,
-    this._table,
-    super.convert,
-  ) : super._();
+  const PostgrestTypedTransformBuilder._(this._transformBuilder, this._table)
+    : super._(_transformBuilder);
 
+  final PostgrestTransformBuilder<T> _transformBuilder;
   final PostgrestTable<Row> _table;
-
-  PostgrestTransformBuilder<dynamic> get _transformBuilder =>
-      _rawBuilder as PostgrestTransformBuilder<dynamic>;
 
   /// Performs horizontal filtering with SELECT, returning the affected rows
   /// typed as [Row].
@@ -30,9 +25,12 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, List<Row>> select([
     List<PostgrestColumnExpression<Row, Object>>? columns,
   ]) => PostgrestTypedTransformBuilder._(
-    _transformBuilder.select(_selectList(columns)),
+    PostgrestTransformBuilder(
+      _transformBuilder
+          .select(_selectList(columns))
+          .withConverter((rows) => _rowsFromJson(_table, rows)),
+    ),
     _table,
-    (data) => _rowsFromJson(_table, data),
   );
 
   /// Sorts the result by [ordering].
@@ -52,7 +50,6 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ) => PostgrestTypedTransformBuilder._(
     _transformBuilder.appendOrderKey(ordering.orderKey),
     _table,
-    _convert,
   );
 
   /// Limits the result with the specified [count].
@@ -62,7 +59,6 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   }) => PostgrestTypedTransformBuilder._(
     _transformBuilder.limit(count, referencedTable: referencedTable),
     _table,
-    _convert,
   );
 
   /// Limits the result to rows within the specified range, inclusive.
@@ -73,7 +69,6 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   }) => PostgrestTypedTransformBuilder._(
     _transformBuilder.range(from, to, referencedTable: referencedTable),
     _table,
-    _convert,
   );
 
   /// Retrieves only one row from the result as [Row].
@@ -90,18 +85,22 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// ```
   PostgrestTypedTransformBuilder<Row, Row> single() =>
       PostgrestTypedTransformBuilder._(
-        _transformBuilder.single(),
+        PostgrestTransformBuilder(
+          _transformBuilder.single().withConverter(_table.rowFromJson),
+        ),
         _table,
-        (data) => _rowFromJson(_table, data),
       );
 
   /// Retrieves at most one row from the result as [Row], or `null` when the
   /// result is empty.
   PostgrestTypedTransformBuilder<Row, Row?> maybeSingle() =>
       PostgrestTypedTransformBuilder._(
-        _transformBuilder.maybeSingle(),
+        PostgrestTransformBuilder(
+          _transformBuilder.maybeSingle().withConverter(
+            (row) => row == null ? null : _table.rowFromJson(row),
+          ),
+        ),
         _table,
-        (data) => _maybeRowFromJson(_table, data),
       );
 
   /// Performs additionally to the query a count query.
@@ -117,11 +116,5 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// ```
   PostgrestTypedBuilder<PostgrestResponse<T>> count([
     CountOption option = CountOption.exact,
-  ]) => PostgrestTypedBuilder._(_transformBuilder.count(option), (data) {
-    final response = data as PostgrestResponse<dynamic>;
-    return PostgrestResponse<T>(
-      data: _convert(response.data),
-      count: response.count,
-    );
-  });
+  ]) => PostgrestTypedBuilder._(_transformBuilder.count(option));
 }
