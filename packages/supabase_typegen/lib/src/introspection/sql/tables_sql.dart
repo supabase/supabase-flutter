@@ -1,13 +1,7 @@
 import 'helpers.dart';
 
 /// `TABLES_SQL` of `@supabase/postgrest-typegen`.
-String tablesSql({
-  String schemaFilter = '',
-  String idsFilter = '',
-  String tableIdentifierFilter = '',
-  int? limit,
-  int? offset,
-}) =>
+String tablesSql({required String schemaFilter}) =>
     '''
 
 SELECT
@@ -34,8 +28,6 @@ FROM
   JOIN pg_class c ON nc.oid = c.relnamespace
 WHERE
   ${when(schemaFilter, 'nc.nspname $schemaFilter AND')}
-  ${when(idsFilter, 'c.oid $idsFilter AND')}
-  ${when(tableIdentifierFilter, "nc.nspname || '.' || c.relname $tableIdentifierFilter AND")}
   c.relkind IN ('r', 'p')
   AND NOT pg_is_other_temp_schema(nc.oid)
   AND (
@@ -46,4 +38,4 @@ WHERE
     )
     OR has_any_column_privilege(c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')
   )
-${limitOffset(limit, offset)}''';
+''';

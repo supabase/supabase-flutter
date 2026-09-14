@@ -1,15 +1,7 @@
 import 'helpers.dart';
 
 /// `COLUMNS_SQL` of `@supabase/postgrest-typegen`.
-String columnsSql({
-  String schemaFilter = '',
-  String tableIdFilter = '',
-  String tableIdentifierFilter = '',
-  String columnNameFilter = '',
-  String idsFilter = '',
-  int? limit,
-  int? offset,
-}) =>
+String columnsSql({required String schemaFilter}) =>
     '''
 
 -- Adapted from information_schema.columns
@@ -48,14 +40,44 @@ SELECT
     WHEN 'd' THEN 'BY DEFAULT'
     ELSE NULL
   END AS identity_generation,
-  a.attgenerated IN ('s') AS is_generated,
+  -- 's' = stored, 'v' = virtual (PostgreSQL 18+); neither accepts writes.
+  a.attgenerated IN ('s', 'v') AS is_generated,
   NOT (
     a.attnotnull
     OR t.typtype = 'd' AND t.typnotnull
   ) AS is_nullable,
   (
     c.relkind IN ('r', 'p')
-    OR c.relkind IN ('v', 'f') AND pg_column_is_updatable(c.oid, a.attnum, FALSE)
+    -- Columns of views made writable by INSTEAD OF triggers or unconditional
+    -- INSTEAD rules can be written through PostgREST even though the view is
+    -- not auto-updatable, so they must not degrade to `?: never` in generated
+    -- Insert/Update types. pg_column_is_updatable cannot express this: it
+    -- requires the relation to support both UPDATE and DELETE, so a view with
+    -- only an INSTEAD OF INSERT or only an INSTEAD OF UPDATE trigger reports
+    -- every column as non-updatable regardless of include_triggers. Triggers
+    -- and rules rewrite whole rows, so their presence makes every column
+    -- writable (tgtype bits: 64 = INSTEAD, 4 = INSERT, 16 = UPDATE;
+    -- pg_rewrite ev_type: '2' = UPDATE, '3' = INSERT; ev_qual is '<>' for
+    -- unconditional rules, and only unconditional INSTEAD rules make a view
+    -- writable). Which events a view accepts is gated per view via
+    -- is_insert_enabled / is_update_enabled.
+    OR c.relkind IN ('v', 'f') AND (
+      pg_column_is_updatable(c.oid, a.attnum, FALSE)
+      OR EXISTS (
+        SELECT 1 FROM pg_trigger tg
+        WHERE tg.tgrelid = c.oid
+          AND tg.tgtype & 64 <> 0
+          AND tg.tgtype & 20 <> 0
+          AND NOT tg.tgisinternal
+      )
+      OR EXISTS (
+        SELECT 1 FROM pg_rewrite rw
+        WHERE rw.ev_class = c.oid
+          AND rw.is_instead
+          AND rw.ev_type IN ('2', '3')
+          AND rw.ev_qual :: text = '<>'
+      )
+    )
   ) AS is_updatable,
   uniques.table_id IS NOT NULL AS is_unique,
   check_constraints.definition AS "check",
@@ -113,10 +135,6 @@ FROM
   ) AS check_constraints ON check_constraints.table_id = c.oid AND check_constraints.ordinal_position = a.attnum
 WHERE
   ${when(schemaFilter, 'nc.nspname $schemaFilter AND')}
-  ${when(idsFilter, "(c.oid || '.' || a.attnum) $idsFilter AND")}
-  ${when(columnNameFilter, "(c.relname || '.' || a.attname) $columnNameFilter AND")}
-  ${when(tableIdFilter, 'c.oid $tableIdFilter AND')}
-  ${when(tableIdentifierFilter, "nc.nspname || '.' || c.relname $tableIdentifierFilter AND")}
   NOT pg_is_other_temp_schema(nc.oid)
   AND a.attnum > 0
   AND NOT a.attisdropped
@@ -129,4 +147,4 @@ WHERE
       'SELECT, INSERT, UPDATE, REFERENCES'
     )
   )
-${limitOffset(limit, offset)}''';
+''';

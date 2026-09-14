@@ -1,5 +1,5 @@
 import 'queryable.dart';
-import 'sql/helpers.dart';
+import 'introspect.dart';
 import 'sql/table_relationships_sql.dart';
 import 'sql/views_key_dependencies_sql.dart';
 
@@ -13,20 +13,15 @@ typedef RelationshipRecord = Map<String, dynamic>;
 typedef ViewKeyDependency = Map<String, dynamic>;
 
 /// Lists the foreign keys between tables and the relationships PostgREST
-/// derives for views from them, for the schemas selected by
-/// [includedSchemas] and [excludedSchemas], with the system schemas excluded.
+/// derives for views from them, for the schemas selected by [schemaFilter],
+/// the `IN (…)` or `NOT IN (…)` fragment [introspect] builds with the system
+/// schemas excluded.
 ///
 /// Port of `listRelationships` of `@supabase/postgrest-typegen`.
 Future<List<RelationshipRecord>> listRelationships(
   Queryable database, {
-  List<String>? includedSchemas,
-  List<String>? excludedSchemas,
+  required String schemaFilter,
 }) async {
-  final schemaFilter = filterByList(
-    include: includedSchemas,
-    exclude: excludedSchemas,
-    defaultExclude: defaultSystemSchemas,
-  );
   final tableRelationships = await database.query(
     tableRelationshipsSql(schemaFilter: schemaFilter),
   );

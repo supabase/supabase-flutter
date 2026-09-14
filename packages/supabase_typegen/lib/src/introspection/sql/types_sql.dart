@@ -1,15 +1,6 @@
-import 'helpers.dart';
-
-/// `TYPES_SQL` of `@supabase/postgrest-typegen`.
-String typesSql({
-  String schemaFilter = '',
-  String idsFilter = '',
-  bool includeTableTypes = false,
-  bool includeArrayTypes = false,
-  int? limit,
-  int? offset,
-}) =>
-    '''
+/// `TYPES_SQL` of `@supabase/postgrest-typegen`: every type of every schema,
+/// including the row types of tables and views and the array types.
+const typesSql = '''
 
 select
   t.oid::int8 as id,
@@ -52,21 +43,11 @@ from
         t.typrelid = 0
         or (
           select
-            c.relkind ${includeTableTypes ? "in ('c', 'r', 'v', 'm', 'p')" : "= 'c'"}
+            c.relkind in ('c', 'r', 'v', 'm', 'p', 'f')
           from
             pg_class c
           where
             c.oid = t.typrelid
         )
       )
-      ${includeArrayTypes ? '' : '''and not exists (
-                 select
-                 from
-                   pg_type el
-                 where
-                   el.oid = t.typelem
-                   and el.typarray = t.oid
-               )'''}
-      ${when(schemaFilter, 'and n.nspname $schemaFilter')}
-      ${when(idsFilter, 'and t.oid $idsFilter')}
-${limitOffset(limit, offset)}''';
+''';

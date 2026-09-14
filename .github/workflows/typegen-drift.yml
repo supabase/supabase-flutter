@@ -6,8 +6,8 @@ on:
       - 'packages/supabase_typegen/**'
       - '.github/workflows/typegen-drift.yml'
   schedule:
-    # Mondays at 06:00 UTC, comparing against the newest postgrest-typegen
-    # release so a change to the upstream introspection SQL gets noticed.
+    # Mondays at 06:00 UTC, comparing against supabase/sdk main so a change to
+    # the upstream introspection SQL gets noticed.
     - cron: '0 6 * * 1'
   workflow_dispatch:
 
@@ -35,12 +35,12 @@ jobs:
       - name: Resolve workspace dependencies
         run: dart pub get
 
-      - name: Check the introspection SQL against the pinned release
+      - name: Check the introspection SQL against the pinned revision
         if: ${{ github.event_name != 'schedule' }}
         working-directory: packages/supabase_typegen
         run: bun tool/check_introspection_drift.ts
 
-      - name: Check the introspection SQL against the newest release
+      - name: Check the introspection SQL against supabase/sdk main
         if: ${{ github.event_name == 'schedule' }}
         working-directory: packages/supabase_typegen
         run: bun tool/check_introspection_drift.ts --latest

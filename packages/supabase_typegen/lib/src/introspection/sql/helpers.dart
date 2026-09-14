@@ -29,8 +29,3 @@ String filterByList({
 /// Renders [clause] when [filter] is set and nothing otherwise, mirroring the
 /// `${props.filter ? `…` : ""}` conditionals of the TypeScript builders.
 String when(String filter, String clause) => filter.isEmpty ? '' : clause;
-
-/// Renders the trailing `limit` and `offset` lines every builder ends with.
-String limitOffset(int? limit, int? offset) =>
-    '${limit == null ? '' : 'limit ${literal(limit)}'}\n'
-    '${offset == null ? '' : 'offset ${literal(offset)}'}\n';

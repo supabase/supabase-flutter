@@ -15,10 +15,11 @@ import 'sql/types_sql.dart';
 import 'sql/views_sql.dart';
 import 'ssl_probe_io.dart';
 
-/// The release of `@supabase/postgrest-typegen` whose introspection this
-/// library ports. `tool/check_introspection_drift.ts` compares the SQL of the
-/// port against this release.
-const postgrestTypegenVersion = '0.2.0';
+/// The supabase/sdk revision of `@supabase/postgrest-typegen` whose
+/// introspection this library ports, a commit or a `postgrest-typegen-v*`
+/// tag. `tool/check_introspection_drift.ts` compares the SQL of the port
+/// against it and `tool/regenerate_fixture.ts` expects a checkout of it.
+const postgrestTypegenRevision = '0472bafa46c3cf95229d4ffeae0e0bf68fdd765a';
 
 /// The `version` field of the emitted `GeneratorMetadata` document.
 const generatorMetadataVersion = 1;
@@ -26,7 +27,7 @@ const generatorMetadataVersion = 1;
 /// Connects to the Postgres database at [connectionUrl], introspects it and
 /// returns the `GeneratorMetadata` document in canonical order, equal to
 /// `sortGeneratorMetadata(await introspect(pool))` of
-/// `@supabase/postgrest-typegen` [postgrestTypegenVersion].
+/// `@supabase/postgrest-typegen` at [postgrestTypegenRevision].
 ///
 /// [connectionUrl] is a `postgresql://` URL. Its `sslmode` parameter is
 /// honoured the way `package:postgres` supports it: `disable`, `require`,
@@ -86,18 +87,18 @@ Future<Map<String, dynamic>> introspect(
   List<String> includedSchemas = const [],
   List<String> excludedSchemas = const [],
 }) async {
-  final included = includedSchemas.isEmpty ? null : includedSchemas;
-  final excluded = excludedSchemas.isEmpty ? null : excludedSchemas;
-
   final systemExcludingFilter = filterByList(
-    include: included,
-    exclude: excluded,
+    include: includedSchemas,
+    exclude: excludedSchemas,
     defaultExclude: defaultSystemSchemas,
   );
-  final plainFilter = filterByList(include: included, exclude: excluded);
+  final plainFilter = filterByList(
+    include: includedSchemas,
+    exclude: excludedSchemas,
+  );
 
   final schemas = await database.query(
-    schemasSql(nameFilter: systemExcludingFilter),
+    schemasSql(schemaFilter: systemExcludingFilter),
   );
   final tables = await database.query(
     tablesSql(schemaFilter: systemExcludingFilter),
@@ -119,25 +120,16 @@ Future<Map<String, dynamic>> introspect(
   );
   final relationships = await listRelationships(
     database,
-    includedSchemas: included,
-    excludedSchemas: excluded,
+    schemaFilter: systemExcludingFilter,
   );
   final functions = await database.query(
     functionsSql(schemaFilter: systemExcludingFilter),
   );
-  final types = await database.query(
-    typesSql(includeTableTypes: true, includeArrayTypes: true),
-  );
+  final types = await database.query(typesSql);
 
   return {
     'version': generatorMetadataVersion,
-    'schemas': [
-      for (final schema in schemas)
-        if (!excludedSchemas.contains(schema['name']) &&
-            (includedSchemas.isEmpty ||
-                includedSchemas.contains(schema['name'])))
-          schema,
-    ],
+    'schemas': schemas,
     'tables': tables,
     'foreignTables': foreignTables,
     'views': views,

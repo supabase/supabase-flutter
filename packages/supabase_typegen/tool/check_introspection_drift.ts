@@ -1,18 +1,19 @@
 // Guards the vendored introspection SQL in lib/src/introspection/sql against
-// drifting from @supabase/postgrest-typegen. It renders every query with the
-// TypeScript builders of the pinned release (or another one) and with the Dart
-// port, for the schema filters introspect() uses, and fails on any difference.
+// drifting from @supabase/postgrest-typegen. It fetches the TypeScript builders
+// of the pinned supabase/sdk revision (or another ref), renders every query
+// with them and with the Dart port for the schema filters introspect() uses,
+// and fails on any difference.
 //
 // Run from the package root:
 //
-//   bun tool/check_introspection_drift.ts             # against the pinned release
-//   bun tool/check_introspection_drift.ts --latest    # against the newest release
-//   bun tool/check_introspection_drift.ts --version 0.2.1
+//   bun tool/check_introspection_drift.ts             # against the pinned revision
+//   bun tool/check_introspection_drift.ts --latest    # against supabase/sdk main
+//   bun tool/check_introspection_drift.ts --ref postgrest-typegen-v0.2.1
 //
-// A diff against a newer release is the list of changes a version bump has to
-// port; a diff against the pinned release means the Dart port was edited.
+// A diff against a newer ref is the list of changes a pin bump has to port; a
+// diff against the pinned revision means the Dart port was edited.
 
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { $ } from "bun";
@@ -25,30 +26,63 @@ const SCENARIOS: Record<string, Scenario> = {
   excluded: { excluded: ["graphql", "extensions"] },
 };
 
+const SOURCE_FILES = [
+  "common.ts",
+  "helpers.ts",
+  "pg-format.ts",
+  "schemas.sql.ts",
+  "table.sql.ts",
+  "foreign_tables.sql.ts",
+  "views.sql.ts",
+  "materialized_views.sql.ts",
+  "columns.sql.ts",
+  "primary_keys.sql.ts",
+  "table_relationships.sql.ts",
+  "views_key_dependencies.sql.ts",
+  "functions.sql.ts",
+  "types.sql.ts",
+];
+
 const dart = JSON.parse(
   await $`dart run tool/dump_introspection_sql.dart`.text(),
-) as { version: string; queries: Record<string, Record<string, string>> };
+) as { revision: string; queries: Record<string, Record<string, string>> };
 
-const version = await resolveVersion(dart.version);
+const ref = resolveRef(dart.revision);
 console.log(
-  `Comparing the Dart port (pinned to ${dart.version}) against @supabase/postgrest-typegen@${version}`,
+  `Comparing the Dart port (pinned to ${dart.revision}) against supabase/sdk@${ref}`,
 );
 
 const workdir = await mkdtemp(join(tmpdir(), "supabase_typegen_drift_"));
 try {
-  await writeFile(
-    join(workdir, "package.json"),
-    JSON.stringify({
-      name: "drift-check",
-      private: true,
-      dependencies: { "@supabase/postgrest-typegen": version },
-    }),
-  );
-  await $`bun install --cwd ${workdir} --silent`.quiet();
-  const sqlDir = join(
-    workdir,
-    "node_modules/@supabase/postgrest-typegen/src/introspection/sql",
-  );
+  const sqlDir = join(workdir, "sql");
+  await mkdir(sqlDir);
+  let needsPgFormatPackage = false;
+  for (const file of SOURCE_FILES) {
+    const response = await fetch(
+      `https://raw.githubusercontent.com/supabase/sdk/${ref}/packages/postgrest-typegen/src/introspection/sql/${file}`,
+    );
+    if (response.status === 404 && file === "pg-format.ts") {
+      // Releases before 0.2.1 used the pg-format npm package instead.
+      needsPgFormatPackage = true;
+      continue;
+    }
+    if (!response.ok) {
+      throw new Error(`Fetching ${file} at ${ref} answered ${response.status}`);
+    }
+    await writeFile(join(sqlDir, file), await response.text());
+  }
+  if (needsPgFormatPackage) {
+    await writeFile(
+      join(workdir, "package.json"),
+      JSON.stringify({
+        name: "drift-check",
+        private: true,
+        dependencies: { "pg-format": "1.0.4" },
+      }),
+    );
+    await $`bun install --cwd ${workdir} --silent`.quiet();
+  }
+
   const load = async (file: string) => import(join(sqlDir, file));
   const helpers = await load("helpers.ts");
   const builders = {
@@ -80,10 +114,7 @@ try {
     );
     const plainFilter = helpers.filterByList(included, excluded);
     const expected: Record<string, string> = {
-      schemas: builders.schemas({
-        includeSystemSchemas: false,
-        nameFilter: systemExcludingFilter,
-      }),
+      schemas: builders.schemas({ schemaFilter: systemExcludingFilter }),
       tables: builders.tables({ schemaFilter: systemExcludingFilter }),
       foreign_tables: builders.foreign_tables({ schemaFilter: plainFilter }),
       views: builders.views({ schemaFilter: systemExcludingFilter }),
@@ -101,11 +132,8 @@ try {
         schemaFilter: systemExcludingFilter,
       }),
       functions: builders.functions({ schemaFilter: systemExcludingFilter }),
-      types: builders.types({
-        schemaFilter: "",
-        includeTableTypes: true,
-        includeArrayTypes: true,
-      }),
+      types:
+        typeof builders.types === "string" ? builders.types : builders.types(),
     };
 
     for (const [query, expectedSql] of Object.entries(expected)) {
@@ -119,33 +147,24 @@ try {
 
   if (differences > 0) {
     console.error(
-      `\n${differences} quer${differences === 1 ? "y" : "ies"} differ from @supabase/postgrest-typegen@${version}.`,
+      `\n${differences} quer${differences === 1 ? "y" : "ies"} differ from supabase/sdk@${ref}.`,
     );
     process.exit(1);
   }
-  console.log(`All queries match @supabase/postgrest-typegen@${version}.`);
+  console.log(`All queries match supabase/sdk@${ref}.`);
 } finally {
   await rm(workdir, { recursive: true, force: true });
 }
 
-async function resolveVersion(pinned: string): Promise<string> {
+function resolveRef(pinned: string): string {
   const args = process.argv.slice(2);
-  const versionIndex = args.indexOf("--version");
-  if (versionIndex !== -1) {
-    const requested = args[versionIndex + 1];
-    if (!requested) throw new Error("--version needs a value");
+  const refIndex = args.indexOf("--ref");
+  if (refIndex !== -1) {
+    const requested = args[refIndex + 1];
+    if (!requested) throw new Error("--ref needs a value");
     return requested;
   }
-  if (args.includes("--latest")) {
-    const response = await fetch(
-      "https://registry.npmjs.org/@supabase/postgrest-typegen/latest",
-    );
-    if (!response.ok) {
-      throw new Error(`npm registry answered ${response.status}`);
-    }
-    return ((await response.json()) as { version: string }).version;
-  }
-  return pinned;
+  return args.includes("--latest") ? "main" : pinned;
 }
 
 /** Prints the lines that differ, with the TypeScript output as `-` and the Dart output as `+`. */

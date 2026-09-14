@@ -63,9 +63,9 @@ FROM public.books
 JOIN public.authors ON authors.id = books.author_id;
 COMMENT ON MATERIALIZED VIEW public.book_summaries IS 'Denormalized book and author names';
 
--- A join view made insertable only through an INSTEAD OF INSERT trigger.
--- postgrest-typegen 0.2.0 reports it as not updatable; the is_insert_enabled
--- flag of the next release will surface the trigger.
+-- A join view made insertable only through an INSTEAD OF INSERT trigger:
+-- not auto-updatable, so is_updatable is false, but is_insert_enabled is true
+-- and its columns are writable.
 CREATE VIEW public.book_submissions AS
 SELECT
   books.title,

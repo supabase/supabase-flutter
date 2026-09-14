@@ -1,13 +1,7 @@
 import 'helpers.dart';
 
 /// `FOREIGN_TABLES_SQL` of `@supabase/postgrest-typegen`.
-String foreignTablesSql({
-  String schemaFilter = '',
-  String idsFilter = '',
-  String tableIdentifierFilter = '',
-  int? limit,
-  int? offset,
-}) =>
+String foreignTablesSql({required String schemaFilter}) =>
     '''
 
 SELECT
@@ -20,7 +14,5 @@ FROM
   JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE
   ${when(schemaFilter, 'n.nspname $schemaFilter AND')}
-  ${when(idsFilter, 'c.oid $idsFilter AND')}
-  ${when(tableIdentifierFilter, "(n.nspname || '.' || c.relname) $tableIdentifierFilter AND")}
   c.relkind = 'f'
-${limitOffset(limit, offset)}''';
+''';

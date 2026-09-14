@@ -1,13 +1,7 @@
 import 'helpers.dart';
 
 /// `SCHEMAS_SQL` of `@supabase/postgrest-typegen`.
-String schemasSql({
-  String nameFilter = '',
-  String idsFilter = '',
-  bool includeSystemSchemas = false,
-  int? limit,
-  int? offset,
-}) =>
+String schemasSql({required String schemaFilter}) =>
     '''
 
 -- Adapted from information_schema.schemata
@@ -20,13 +14,12 @@ from
   pg_roles u
 where
   n.nspowner = u.oid
-  ${when(idsFilter, 'and n.oid $idsFilter')}
-  ${when(nameFilter, 'and n.nspname $nameFilter')}
-  ${includeSystemSchemas ? '' : "and not pg_catalog.starts_with(n.nspname, 'pg_')"}
+  ${when(schemaFilter, 'and n.nspname $schemaFilter')}
+  and not pg_catalog.starts_with(n.nspname, 'pg_')
   and (
     pg_has_role(n.nspowner, 'USAGE')
     or has_schema_privilege(n.oid, 'CREATE, USAGE')
   )
   and not pg_catalog.starts_with(n.nspname, 'pg_temp_')
   and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_')
-${limitOffset(limit, offset)}''';
+''';

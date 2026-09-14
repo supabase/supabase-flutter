@@ -3,7 +3,7 @@
 /// Supabase CLI producing the document.
 ///
 /// This is a port of the introspection of that package, pinned to
-/// [postgrestTypegenVersion]. It exists until `supabase gen types` ships a
+/// [postgrestTypegenRevision]. It exists until `supabase gen types` ships a
 /// Dart path and can be removed as a whole once it does.
 library;
 

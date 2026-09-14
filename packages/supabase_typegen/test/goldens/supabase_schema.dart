@@ -181,6 +181,27 @@ extension type const BookSubmissionsRow(Map<String, dynamic> _json)
   String? get title => _json['title'] as String?;
 }
 
+/// Values for inserting a row into `book_submissions`. Columns that are
+/// nullable, identity, or covered by a database default are optional; passing
+/// `null` omits the column so the database default applies. Columns the
+/// database always generates itself are left out entirely. Use the `set…ToNull`
+/// methods to insert SQL NULL explicitly.
+extension type const BookSubmissionsInsert._(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  BookSubmissionsInsert({String? authorName, String? title})
+    : this._({'author_name': ?authorName, 'title': ?title});
+
+  /// Returns a copy with `author_name` set to SQL NULL, overriding any database
+  /// default.
+  BookSubmissionsInsert setAuthorNameToNull() =>
+      BookSubmissionsInsert._({..._json, 'author_name': null});
+
+  /// Returns a copy with `title` set to SQL NULL, overriding any database
+  /// default.
+  BookSubmissionsInsert setTitleToNull() =>
+      BookSubmissionsInsert._({..._json, 'title': null});
+}
+
 /// Typed access to the `book_submissions` table.
 class BookSubmissions {
   const BookSubmissions._();

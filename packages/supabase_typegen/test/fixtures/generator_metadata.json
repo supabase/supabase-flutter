@@ -42,6 +42,8 @@
       "schema": "public",
       "name": "author_stats",
       "is_updatable": false,
+      "is_insert_enabled": false,
+      "is_update_enabled": false,
       "comment": "Aggregated statistics per author"
     },
     {
@@ -49,6 +51,8 @@
       "schema": "public",
       "name": "book_prices",
       "is_updatable": true,
+      "is_insert_enabled": true,
+      "is_update_enabled": true,
       "comment": "Prices per book, with the standard discount precomputed"
     },
     {
@@ -56,6 +60,8 @@
       "schema": "public",
       "name": "book_submissions",
       "is_updatable": false,
+      "is_insert_enabled": true,
+      "is_update_enabled": false,
       "comment": null
     }
   ],
@@ -252,7 +258,7 @@
       "identity_generation": null,
       "is_generated": false,
       "is_nullable": true,
-      "is_updatable": false,
+      "is_updatable": true,
       "is_unique": false,
       "check": null,
       "enums": [],
@@ -273,7 +279,7 @@
       "identity_generation": null,
       "is_generated": false,
       "is_nullable": true,
-      "is_updatable": false,
+      "is_updatable": true,
       "is_unique": false,
       "check": null,
       "enums": [],

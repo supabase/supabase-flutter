@@ -162,7 +162,7 @@ void main() {
       );
 
       expect(
-        await listRelationships(database, includedSchemas: ['public']),
+        await listRelationships(database, schemaFilter: "IN ('public')"),
         [postsAuthorFk, postsViewToUsers],
       );
       expect(

@@ -50,7 +50,7 @@ void main() {
 
   group('SQL builders', () {
     test('render the schemas query of the generator path', () {
-      expect(schemasSql(nameFilter: schemaFilter), '''
+      expect(schemasSql(schemaFilter: schemaFilter), '''
 
 -- Adapted from information_schema.schemata
 select
@@ -62,7 +62,6 @@ from
   pg_roles u
 where
   n.nspowner = u.oid
-  
   and n.nspname NOT IN ('information_schema','pg_catalog','pg_toast')
   and not pg_catalog.starts_with(n.nspname, 'pg_')
   and (
@@ -71,18 +70,13 @@ where
   )
   and not pg_catalog.starts_with(n.nspname, 'pg_temp_')
   and not pg_catalog.starts_with(n.nspname, 'pg_toast_temp_')
-
-
 ''');
     });
 
-    test('leave the filter lines blank when no filter is set', () {
-      final sql = columnsSql();
+    test('leave the filter line blank when no filter is set', () {
+      final sql = columnsSql(schemaFilter: '');
       expect(sql, isNot(contains('nc.nspname NOT IN')));
-      expect(
-        sql,
-        contains('WHERE\n  \n  \n  \n  \n  \n  NOT pg_is_other_temp_schema'),
-      );
+      expect(sql, contains('WHERE\n  \n  NOT pg_is_other_temp_schema'));
     });
 
     test('interpolate the schema filter into every clause', () {
@@ -120,8 +114,14 @@ where
     });
 
     test('fall back to true where an unfiltered clause needs a predicate', () {
-      expect(tableRelationshipsSql(), contains('WHERE true\n'));
-      expect(viewsKeyDependenciesSql(), contains('where true\n'));
+      expect(
+        tableRelationshipsSql(schemaFilter: ''),
+        contains('WHERE true\n'),
+      );
+      expect(
+        viewsKeyDependenciesSql(schemaFilter: ''),
+        contains('where true\n'),
+      );
     });
 
     test('only join pg_namespace in the functions query when filtering', () {
@@ -130,19 +130,28 @@ where
         contains('join pg_namespace n on p.pronamespace = n.oid'),
       );
       expect(
-        functionsSql(),
+        functionsSql(schemaFilter: ''),
         isNot(contains('join pg_namespace n on p.pronamespace = n.oid')),
       );
     });
 
-    test('render the types query with table and array types included', () {
-      final sql = typesSql(includeTableTypes: true, includeArrayTypes: true);
-      expect(sql, contains("c.relkind in ('c', 'r', 'v', 'm', 'p')"));
-      expect(sql, isNot(contains('and not exists')));
+    test('list every type including table row types and array types', () {
+      expect(typesSql, contains("c.relkind in ('c', 'r', 'v', 'm', 'p', 'f')"));
+      expect(typesSql, isNot(contains('and not exists')));
+      expect(typesSql, isNot(contains('and n.nspname')));
+    });
+
+    test('render the view definition rewrites as nested calls', () {
+      final sql = viewsKeyDependenciesSql(schemaFilter: '');
+      expect(sql, contains('    regexp_replace(\n'));
       expect(
-        typesSql(),
-        allOf(contains("c.relkind = 'c'"), contains('and not exists')),
+        sql,
+        contains("      view_definition::text,\n      '<>', '()'),\n"),
       );
+      expect(sql, contains("      ' :[^}{,]+', ',\"\":', 'g'),\n"));
+      expect(sql, contains("      ' ', ',')::json as view_definition\n"));
+      expect(nodeTreeToJsonRewrites, hasLength(19));
+      expect(nodeTreeToJson('x'), contains(r"E'\\{', ''"));
     });
   });
 }

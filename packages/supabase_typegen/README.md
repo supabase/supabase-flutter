@@ -59,7 +59,7 @@ The tool introspects the database with a Dart port of the introspection of
 into the `GeneratorMetadata` intermediate representation its TypeScript, Go,
 Swift, and Python generators consume, ordered with `sortGeneratorMetadata`,
 and generates the Dart code from that document. The port is pinned to a
-release of the TypeScript package and produces the same document byte for
+revision of the TypeScript package and produces the same document byte for
 byte; `--dump-metadata` prints it instead of the generated code, which helps
 when reporting a generator issue.
 

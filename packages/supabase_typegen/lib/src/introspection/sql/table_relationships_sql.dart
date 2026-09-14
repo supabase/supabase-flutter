@@ -1,7 +1,7 @@
 import 'helpers.dart';
 
 /// `TABLE_RELATIONSHIPS_SQL` of `@supabase/postgrest-typegen`.
-String tableRelationshipsSql({String schemaFilter = ''}) =>
+String tableRelationshipsSql({required String schemaFilter}) =>
     '''
 
 -- Adapted from

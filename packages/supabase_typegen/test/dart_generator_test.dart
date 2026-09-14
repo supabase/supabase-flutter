@@ -193,9 +193,14 @@ void main() {
     expect(code, contains('extension type const BookSummariesRow'));
     expect(code, isNot(contains('BookSummariesInsert')));
     expect(code, isNot(contains('BookSummariesUpdate')));
+  });
+
+  test('a view with an INSTEAD OF INSERT trigger generates only an insert '
+      'surface', () {
+    final code = generateDartCode(schema);
 
     expect(code, contains('extension type const BookSubmissionsRow'));
-    expect(code, isNot(contains('BookSubmissionsInsert')));
+    expect(code, contains('BookSubmissionsInsert({String? authorName'));
     expect(code, isNot(contains('BookSubmissionsUpdate')));
   });
 

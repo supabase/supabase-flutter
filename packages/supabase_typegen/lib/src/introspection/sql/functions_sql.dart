@@ -1,17 +1,7 @@
 import 'helpers.dart';
 
 /// `FUNCTIONS_SQL` of `@supabase/postgrest-typegen`.
-///
-/// [args] is interpolated the way the TypeScript builder interpolates its
-/// `string[]`, comma joined, because that is how postgres-meta wrote it.
-String functionsSql({
-  String schemaFilter = '',
-  String idsFilter = '',
-  String nameFilter = '',
-  List<String>? args,
-  int? limit,
-  int? offset,
-}) =>
+String functionsSql({required String schemaFilter}) =>
     '''
 
 -- CTE with sane arg_modes, arg_names, and arg_types.
@@ -40,9 +30,6 @@ with functions as (
     ${when(schemaFilter, 'join pg_namespace n on p.pronamespace = n.oid')}
   where
     ${when(schemaFilter, 'n.nspname $schemaFilter AND')}
-    ${when(idsFilter, 'p.oid $idsFilter AND')}
-    ${when(nameFilter, 'p.proname $nameFilter AND')}
-    ${_argsFilter(args)}
     p.prokind = 'f'
 )
 select
@@ -130,27 +117,4 @@ from
     group by
       t1.oid
   ) f_args on f_args.oid = f.oid
-${limitOffset(limit, offset)}''';
-
-String _argsFilter(List<String>? args) {
-  if (args == null || args.isEmpty) return '';
-  return '''p.proargtypes::text = (
-          SELECT STRING_AGG(type_oid::text, ' ') FROM (
-            SELECT (
-              split_args.arr[
-                array_length(
-                  split_args.arr,
-                  1
-                )
-              ]::regtype::oid
-            ) AS type_oid FROM (
-              SELECT STRING_TO_ARRAY(
-                UNNEST(
-                  ARRAY[${args.join(',')}]
-                ),
-                ' '
-              ) AS arr
-            ) AS split_args
-          ) args
-    ) AND''';
-}
+''';

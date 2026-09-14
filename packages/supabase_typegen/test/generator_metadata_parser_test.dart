@@ -133,11 +133,19 @@ void main() {
 
   test('read-only views and materialized views are neither insertable nor '
       'updatable', () {
-    for (final name in ['author_stats', 'book_submissions', 'book_summaries']) {
+    for (final name in ['author_stats', 'book_summaries']) {
       final relation = schema.tables.singleWhere((table) => table.name == name);
       expect(relation.isInsertable, isFalse, reason: name);
       expect(relation.isUpdatable, isFalse, reason: name);
     }
+  });
+
+  test('a view with an INSTEAD OF INSERT trigger is insertable only', () {
+    final bookSubmissions = schema.tables.singleWhere(
+      (table) => table.name == 'book_submissions',
+    );
+    expect(bookSubmissions.isInsertable, isTrue);
+    expect(bookSubmissions.isUpdatable, isFalse);
   });
 
   test('automatically updatable views are insertable and updatable', () {

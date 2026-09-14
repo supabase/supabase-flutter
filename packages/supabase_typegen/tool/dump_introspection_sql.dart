@@ -27,7 +27,7 @@ void main() {
 
   print(
     jsonEncode({
-      'version': postgrestTypegenVersion,
+      'revision': postgrestTypegenRevision,
       'queries': {
         for (final MapEntry(key: scenario, value: filter) in scenarios.entries)
           scenario: _queries(
@@ -50,7 +50,7 @@ Map<String, String> _queries({
   );
   final plainFilter = filterByList(include: included, exclude: excluded);
   return {
-    'schemas': schemasSql(nameFilter: systemExcludingFilter),
+    'schemas': schemasSql(schemaFilter: systemExcludingFilter),
     'tables': tablesSql(schemaFilter: systemExcludingFilter),
     'foreign_tables': foreignTablesSql(schemaFilter: plainFilter),
     'views': viewsSql(schemaFilter: systemExcludingFilter),
@@ -64,6 +64,6 @@ Map<String, String> _queries({
       schemaFilter: systemExcludingFilter,
     ),
     'functions': functionsSql(schemaFilter: systemExcludingFilter),
-    'types': typesSql(includeTableTypes: true, includeArrayTypes: true),
+    'types': typesSql,
   };
 }
