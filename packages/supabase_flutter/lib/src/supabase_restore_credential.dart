@@ -25,7 +25,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// The platform calls are delegated to the [RestoreCredentialInterface] you
 /// pass in. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's
-/// `PasskeyAuthenticator` implements it since `passkeys` `2.23.0`, so the same
+/// `PasskeyAuthenticator` implements it since `passkeys` `2.23.1`, so the same
 /// object serves [AuthClientPasskey.registerPasskey] and these methods.
 ///
 /// Restore Credentials only exist on Android. Guard the calls with
