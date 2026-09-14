@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
+import 'package:passkeys_platform_interface/passkeys_platform_interface.dart';
+import 'package:passkeys_platform_interface/types/types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _challengeId = 'f9e16464-9ce8-4eb4-b3b3-456a8e95dfa9';
@@ -107,36 +109,53 @@ class _PasskeyServer extends BaseClient {
 }
 
 class _FakeRestoreCredential implements RestoreCredentialInterface {
-  _FakeRestoreCredential({
-    this.createResponse = _registrationResponse,
-    this.error,
-  });
+  _FakeRestoreCredential({this.error});
 
-  static const _registrationResponse =
-      '{"id":"credential-id","rawId":"credential-id","type":"public-key",'
-      '"response":{"clientDataJSON":"data","attestationObject":"data"}}';
-  static const _authenticationResponse =
-      '{"id":"credential-id","rawId":"credential-id","type":"public-key",'
-      '"response":{"clientDataJSON":"data","authenticatorData":"data",'
-      '"signature":"signature","userHandle":"$_userId"}}';
+  static const registrationResponse = RegisterResponseType(
+    id: 'credential-id',
+    rawId: 'credential-id',
+    clientDataJSON: 'data',
+    attestationObject: 'data',
+    transports: ['internal'],
+  );
+  static const authenticationResponse = AuthenticateResponseType(
+    id: 'credential-id',
+    rawId: 'credential-id',
+    clientDataJSON: 'data',
+    authenticatorData: 'data',
+    signature: 'signature',
+    userHandle: _userId,
+  );
 
-  final String createResponse;
   final Object? error;
-  String? createRequestJson;
-  String? getRequestJson;
+  RegisterRequestType? createRequest;
+  bool? createIsCloudBackupEnabled;
+  AuthenticateRequestType? getRequest;
+  int clearCalls = 0;
 
   @override
-  Future<String> createRestoreCredential(String requestJson) async {
-    createRequestJson = requestJson;
+  Future<RegisterResponseType> createRestoreCredential(
+    RegisterRequestType request, {
+    bool isCloudBackupEnabled = true,
+  }) async {
+    createRequest = request;
+    createIsCloudBackupEnabled = isCloudBackupEnabled;
     if (error != null) throw error!;
-    return createResponse;
+    return registrationResponse;
   }
 
   @override
-  Future<String> getRestoreCredential(String requestJson) async {
-    getRequestJson = requestJson;
+  Future<AuthenticateResponseType> getRestoreCredential(
+    AuthenticateRequestType request,
+  ) async {
+    getRequest = request;
     if (error != null) throw error!;
-    return _authenticationResponse;
+    return authenticationResponse;
+  }
+
+  @override
+  Future<void> clearRestoreCredential() async {
+    clearCalls++;
   }
 }
 
@@ -159,7 +178,7 @@ void main() {
   Future<void> signIn() async {
     await client.passkey.verifyAuthentication(
       challengeId: _challengeId,
-      credential: jsonDecode(_FakeRestoreCredential._authenticationResponse),
+      credential: _FakeRestoreCredential.authenticationResponse.toJson(),
     );
     server.requests.clear();
   }
@@ -176,16 +195,18 @@ void main() {
         '/passkeys/registration/verify',
         '/passkeys/$_passkeyId',
       ]);
-      final options = jsonDecode(restore.createRequestJson!);
-      expect(options['challenge'], 'Y2hhbGxlbmdl');
-      expect(options['rp'], {'id': 'example.com', 'name': 'Example'});
-      expect(options['user']['name'], 'jane@example.com');
+      final request = restore.createRequest!;
+      expect(request.challenge, 'Y2hhbGxlbmdl');
+      expect(request.relyingParty.id, 'example.com');
+      expect(request.relyingParty.name, 'Example');
+      expect(request.user.name, 'jane@example.com');
+      expect(restore.createIsCloudBackupEnabled, isTrue);
 
       final verify = server.bodyOf('/passkeys/registration/verify')!;
       expect(verify['challenge_id'], _challengeId);
       expect(
         verify['credential'],
-        jsonDecode(_FakeRestoreCredential._registrationResponse),
+        _FakeRestoreCredential.registrationResponse.toJson(),
       );
 
       expect(server.bodyOf('/passkeys/$_passkeyId'), {
@@ -205,9 +226,8 @@ void main() {
         friendlyName: 'Pixel restore key',
       );
 
-      final options = jsonDecode(restore.createRequestJson!);
-      expect(options['user']['name'], 'Pixel restore key');
-      expect(options['user']['displayName'], 'Pixel restore key');
+      expect(restore.createRequest?.user.name, 'Pixel restore key');
+      expect(restore.createRequest?.user.displayName, 'Pixel restore key');
       expect(server.bodyOf('/passkeys/$_passkeyId'), {
         'friendly_name': 'Pixel restore key',
       });
@@ -230,18 +250,13 @@ void main() {
       ]);
     });
 
-    test('rejects a credential that is not a JSON object', () async {
+    test('forwards a local-only restore key request', () async {
       await signIn();
-      final restore = _FakeRestoreCredential(createResponse: '"nope"');
+      final restore = _FakeRestoreCredential();
 
-      await expectLater(
-        client.createRestoreKey(restore),
-        throwsA(isA<FormatException>()),
-      );
+      await client.createRestoreKey(restore, isCloudBackupEnabled: false);
 
-      expect(server.requests.map((request) => request.path), [
-        '/passkeys/registration/options',
-      ]);
+      expect(restore.createIsCloudBackupEnabled, isFalse);
     });
   });
 
@@ -264,15 +279,16 @@ void main() {
       expect(server.bodyOf('/passkeys/authentication/options'), {
         'gotrue_meta_security': {'captcha_token': 'captcha-token'},
       });
-      final options = jsonDecode(restore.getRequestJson!);
-      expect(options['challenge'], 'Y2hhbGxlbmdl');
-      expect(options['rpId'], 'example.com');
+      final request = restore.getRequest!;
+      expect(request.challenge, 'Y2hhbGxlbmdl');
+      expect(request.relyingPartyId, 'example.com');
+      expect(request.userVerification, 'preferred');
 
       final verify = server.bodyOf('/passkeys/authentication/verify')!;
       expect(verify['challenge_id'], _challengeId);
       expect(
         verify['credential'],
-        jsonDecode(_FakeRestoreCredential._authenticationResponse),
+        _FakeRestoreCredential.authenticationResponse.toJson(),
       );
 
       expect(response.session?.accessToken, _accessToken);

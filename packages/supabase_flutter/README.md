@@ -321,7 +321,7 @@ The platform ceremony is handled by whichever plugin you add. Refer to your plug
 
 ### <a id="android-restore-credentials"></a>Android Restore Credentials
 
-Android's [Restore Credentials](https://developer.android.com/identity/sign-in/restore-credentials) restore keys are passkeys, so they use the same BETA passkey feature. Implement `RestoreCredentialInterface` on top of a Credential Manager plugin, then call `supabase.auth.createRestoreKey(restoreCredential)` after sign in and `supabase.auth.signInWithRestoreKey(restoreCredential)` on the first launch on a new device. See the API documentation of `AuthClientRestoreCredential` for the details.
+Android's [Restore Credentials](https://developer.android.com/identity/sign-in/restore-credentials) restore keys are passkeys, so they use the same BETA passkey feature and the same authenticator. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's `PasskeyAuthenticator` implements the `RestoreCredentialInterface` these methods expect (since `passkeys` `2.23.0`). Call `supabase.auth.createRestoreKey(authenticator)` after sign in and `supabase.auth.signInWithRestoreKey(authenticator)` on the first launch on a new device. See the API documentation of `AuthClientRestoreCredential` for the details.
 
 ### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 

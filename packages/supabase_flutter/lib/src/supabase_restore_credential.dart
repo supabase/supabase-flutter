@@ -1,39 +1,10 @@
 // This file intentionally builds on supabase_auth's experimental passkey API.
 // ignore_for_file: experimental_member_use
 
-import 'dart:convert';
-
 import 'package:meta/meta.dart';
+import 'package:passkeys_platform_interface/passkeys_platform_interface.dart';
+import 'package:supabase_flutter/src/passkey/passkey_options_mapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-/// The platform half of Android's Restore Credentials feature.
-///
-/// Restore keys are WebAuthn credentials that Android backs up with the user's
-/// device data and hands to the app on a new device, so the user is signed in
-/// without any interaction. `supabase_flutter` does not depend on a Credential
-/// Manager plugin directly. Implement this interface on top of the plugin you
-/// use, for example by forwarding to `androidx.credentials`'
-/// `CreateRestoreCredentialRequest` and `GetRestoreCredentialOption`, and pass
-/// it to [AuthClientRestoreCredential.createRestoreKey] and
-/// [AuthClientRestoreCredential.signInWithRestoreKey].
-///
-/// Both methods exchange JSON strings in the W3C WebAuthn (Level 3) format,
-/// which is the format `androidx.credentials` accepts and produces.
-@experimental
-abstract interface class RestoreCredentialInterface {
-  /// Creates a restore key on the device.
-  ///
-  /// [requestJson] is a `PublicKeyCredentialCreationOptionsJSON`. Returns the
-  /// created credential as a `RegistrationResponseJSON`.
-  Future<String> createRestoreCredential(String requestJson);
-
-  /// Retrieves the restore key from the device and signs the challenge in
-  /// [requestJson] with it.
-  ///
-  /// [requestJson] is a `PublicKeyCredentialRequestOptionsJSON`. Returns the
-  /// assertion as an `AuthenticationResponseJSON`.
-  Future<String> getRestoreCredential(String requestJson);
-}
 
 /// Android Restore Credentials ("zero-tap sign-in") on top of Supabase
 /// passkeys.
@@ -50,6 +21,11 @@ abstract interface class RestoreCredentialInterface {
 /// Supabase Dashboard under Authentication > Configuration > Passkeys. Android
 /// also requires Digital Asset Links for the relying party ID, exactly as for
 /// passkeys.
+///
+/// The platform calls are delegated to the [RestoreCredentialInterface] you
+/// pass in. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's
+/// `PasskeyAuthenticator` implements it since `passkeys` `2.23.0`, so the same
+/// object serves [AuthClientPasskey.registerPasskey] and these methods.
 ///
 /// Restore Credentials only exist on Android. Guard the calls with
 /// `defaultTargetPlatform == TargetPlatform.android`.
@@ -74,20 +50,26 @@ extension AuthClientRestoreCredential on AuthClient {
   /// when the server does not provide a `user.name` in the options, see
   /// [AuthPasskeyApi.startRegistration].
   ///
+  /// [isCloudBackupEnabled] backs the restore key up to the cloud when the
+  /// device has end-to-end encrypted backup and stores it locally otherwise.
+  /// Pass `false` to always keep it local.
+  ///
   /// Requires a signed in (non-anonymous) user.
   Future<Passkey> createRestoreKey(
     RestoreCredentialInterface restoreCredential, {
     String friendlyName = 'Android restore key',
+    bool isCloudBackupEnabled = true,
   }) async {
     final registration = await passkey.startRegistration(
       friendlyName: friendlyName,
     );
-    final credential = await restoreCredential.createRestoreCredential(
-      jsonEncode(registration.options),
+    final response = await restoreCredential.createRestoreCredential(
+      passkeyRegisterRequestFromOptions(registration.options),
+      isCloudBackupEnabled: isCloudBackupEnabled,
     );
     final registered = await passkey.verifyRegistration(
       challengeId: registration.challengeId,
-      credential: _decodeCredential(credential),
+      credential: response.toJson(),
     );
     return passkey.update(
       passkeyId: registered.id,
@@ -107,24 +89,12 @@ extension AuthClientRestoreCredential on AuthClient {
     final authentication = await passkey.startAuthentication(
       captchaToken: captchaToken,
     );
-    final credential = await restoreCredential.getRestoreCredential(
-      jsonEncode(authentication.options),
+    final response = await restoreCredential.getRestoreCredential(
+      passkeyAuthenticateRequestFromOptions(authentication.options),
     );
     return passkey.verifyAuthentication(
       challengeId: authentication.challengeId,
-      credential: _decodeCredential(credential),
+      credential: response.toJson(),
     );
   }
-}
-
-Map<String, dynamic> _decodeCredential(String credentialJson) {
-  final decoded = jsonDecode(credentialJson);
-  if (decoded is! Map) {
-    throw FormatException(
-      'Expected a WebAuthn credential JSON object, '
-      'got ${decoded.runtimeType}',
-      credentialJson,
-    );
-  }
-  return Map<String, dynamic>.from(decoded);
 }
