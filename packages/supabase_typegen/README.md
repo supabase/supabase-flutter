@@ -23,38 +23,64 @@ For every table the generator emits:
 
 ## Usage
 
-The easiest way is through the Supabase CLI, which handles the database
-connection and runs this package for you. Add `supabase_typegen` as a dev
-dependency of your project (until the package is published to
-[pub.dev](https://pub.dev), depend on it with a `git` source pointing at
-`packages/supabase_typegen` in this repository), then:
+Add `supabase_typegen` as a dev dependency of your project, or activate it
+globally with `dart pub global activate supabase_typegen`, then point it at
+your database:
 
 ```sh
-supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+# The database of the running local Supabase stack (`supabase start`).
+dart run supabase_typegen --local
+
+# Any Postgres database, for example a linked project.
+dart run supabase_typegen --db-url 'postgresql://postgres:…@db.…supabase.co:5432/postgres'
 ```
 
-Any of the CLI's connection flags work (`--local`, `--linked`, `--db-url`,
-`--project-id`).
+Both write `lib/supabase_schema.g.dart`; pass `--output` to change the path
+or `--output -` to print the code. The types reflect the current state of the
+database: with `--local` the SQL in your `supabase/` directory stays the
+single source of truth, since the CLI applies your migrations to the local
+database and this tool generates from the result, while `--db-url` generates
+from whatever that database currently contains.
 
-Under the hood the CLI runs the introspection of
-[`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen)
-in-process against the database (the same `GeneratorMetadata` intermediate
-representation its TypeScript, Go, Swift, and Python generators consume,
-ordered with `sortGeneratorMetadata`) and hands the document to this tool
-over stdin. The types reflect the current state of the selected database:
-with `--local` the SQL in your `supabase/` directory stays the single source
-of truth, since the CLI applies your migrations to the local database and
-generates from the result, while `--linked`, `--project-id`, and `--db-url`
-generate from whatever that database currently contains.
+The connection string is a `postgresql://` URL. Its `sslmode` parameter is
+honoured the way [`package:postgres`](https://pub.dev/packages/postgres)
+supports it (`disable`, `require`, `verify-ca` and `verify-full`). Without
+one the tool tries TLS first and falls back to plaintext when the server does
+not offer it, like libpq's `prefer`.
 
 Use `--schema` to generate for a schema other than `public`, and `--import`
 to change which library the generated file imports `PostgrestTable` and
 `PostgrestColumn` from.
 
+### How it works
+
+The tool introspects the database with a Dart port of the introspection of
+[`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen)
+into the `GeneratorMetadata` intermediate representation its TypeScript, Go,
+Swift, and Python generators consume, ordered with `sortGeneratorMetadata`,
+and generates the Dart code from that document. The port is pinned to a
+release of the TypeScript package and produces the same document byte for
+byte; `--dump-metadata` prints it instead of the generated code, which helps
+when reporting a generator issue.
+
 The metadata comes from the database catalog, so nullability, database
 defaults, and identity columns are exact: a `NOT NULL` column with a default
 reads as non-nullable but stays optional on insert, and `GENERATED ALWAYS`
 columns appear in the row type but not in the insert and update types.
+
+### Through the Supabase CLI
+
+Once `supabase gen types` ships a Dart language, the CLI will run the same
+introspection in-process and hand the document to this tool over stdin, and
+the direct connection modes above become unnecessary:
+
+```sh
+supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+```
+
+Reading the document from stdin is what the tool does when neither `--local`
+nor `--db-url` is given, so that path already works with a hand-built
+document.
 
 ## Generated code in action
 

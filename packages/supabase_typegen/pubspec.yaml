@@ -19,7 +19,9 @@ executables:
 
 dependencies:
   args: ^2.7.0
+  collection: ^1.19.0
   dart_style: ^3.1.0
+  postgres: ^3.5.0
 
 dev_dependencies:
   postgrest: 3.0.0-dev.3
