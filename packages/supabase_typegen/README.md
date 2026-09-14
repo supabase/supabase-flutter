@@ -63,6 +63,11 @@ release of the TypeScript package and produces the same document byte for
 byte; `--dump-metadata` prints it instead of the generated code, which helps
 when reporting a generator issue.
 
+The built-in introspection, and with it the `--local`, `--db-url` and
+`--dump-metadata` options, is a stopgap. It will be removed once the Supabase
+CLI ships Dart support for `supabase gen types`, which then becomes the only
+way to run this tool; see the next section.
+
 The metadata comes from the database catalog, so nullability, database
 defaults, and identity columns are exact: a `NOT NULL` column with a default
 reads as non-nullable but stays optional on insert, and `GENERATED ALWAYS`
@@ -71,8 +76,9 @@ columns appear in the row type but not in the insert and update types.
 ### Through the Supabase CLI
 
 Once `supabase gen types` ships a Dart language, the CLI will run the same
-introspection in-process and hand the document to this tool over stdin, and
-the direct connection modes above become unnecessary:
+introspection in-process and hand the document to this tool over stdin. The
+direct connection modes above will be removed in the release that follows, so
+prefer the CLI as soon as it is available:
 
 ```sh
 supabase gen types --lang dart --local > lib/supabase_schema.g.dart
