@@ -33,7 +33,7 @@ void main() {
     try {
       await storage.getBucket(name);
     } catch (error) {
-      await storage.createBucket(name, CreateBucketOptions(public: isPublic));
+      await storage.createBucket(name, BucketOptions(public: isPublic));
     }
     return name;
   }
@@ -93,7 +93,7 @@ void main() {
     const newPublicBucketName = '${_bucketNamespace}public-bucket';
     await storage.createBucket(
       newPublicBucketName,
-      const CreateBucketOptions(public: true),
+      const BucketOptions(public: true),
     );
     final response = await storage.getBucket(newPublicBucketName);
     expect(response.public, isTrue);
@@ -106,7 +106,7 @@ void main() {
 
     final updateResult = await storage.updateBucket(
       newBucketName,
-      const UpdateBucketOptions(
+      const BucketOptions(
         public: true,
         fileSizeLimit: '20mb', // 20 mb
         allowedMimeTypes: ['image/jpeg'],
@@ -125,7 +125,7 @@ void main() {
     final newBucketName = '${_bucketNamespace}bucket-${DateTime.now()}';
     await storage.createBucket(
       newBucketName,
-      const CreateBucketOptions(
+      const BucketOptions(
         public: true,
         fileSizeLimit: '20mb', // 20 mb
         allowedMimeTypes: ['image/jpeg'],
@@ -133,7 +133,7 @@ void main() {
     );
     final updateResult = await storage.updateBucket(
       newBucketName,
-      const UpdateBucketOptions(public: false),
+      const BucketOptions(public: false),
     );
     expect(updateResult, 'Successfully updated');
     final bucket = await storage.getBucket(newBucketName);
@@ -478,7 +478,7 @@ void main() {
       final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
-        const CreateBucketOptions(
+        const BucketOptions(
           public: true,
           fileSizeLimit: '1mb', // 1mb
         ),
@@ -494,7 +494,7 @@ void main() {
       final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
-        const CreateBucketOptions(
+        const BucketOptions(
           public: true,
           fileSizeLimit: '1kb',
         ),
@@ -508,7 +508,7 @@ void main() {
       final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
-        CreateBucketOptions(
+        BucketOptions(
           public: true,
           allowedMimeTypes: ['image/png'],
         ),
@@ -530,7 +530,7 @@ void main() {
       final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
-        const CreateBucketOptions(
+        const BucketOptions(
           public: true,
           allowedMimeTypes: ['image/png'],
         ),
@@ -928,7 +928,7 @@ void main() {
       try {
         await probe.createBucket(
           bucketName,
-          const CreateBucketOptions(
+          const BucketOptions(
             public: false,
             versioningStatus: VersioningStatus.enabled,
           ),
@@ -1140,7 +1140,7 @@ void main() {
     versionedTest('suspends versioning', () async {
       await storage.updateBucket(
         bucketName,
-        const UpdateBucketOptions(
+        const BucketOptions(
           public: false,
           versioningStatus: VersioningStatus.suspended,
         ),

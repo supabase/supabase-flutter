@@ -1515,22 +1515,10 @@ features:
     symbols:
       - Bucket.versioningStatus
       - BucketOptions.versioningStatus
-      - CreateBucketOptions.versioningStatus
-      - UpdateBucketOptions.versioningStatus
       - StorageBucketApi.createBucket
       - StorageBucketApi.updateBucket
     supporting_symbols:
-      - CreatableVersioningStatus
-      - UpdatableVersioningStatus
-      - VersioningDisabled
-      - VersioningEnabled
       - VersioningStatus
-      - VersioningStatus.disabled
-      - VersioningStatus.enabled
-      - VersioningStatus.suspended
-      - VersioningStatus.toString
-      - VersioningStatus.values
-      - VersioningSuspended
   storage.file_buckets.get_bucket_lifecycle:
     status: implemented
     symbols:
@@ -2538,8 +2526,6 @@ supporting_symbols:
   - BucketOptions.allowedMimeTypes
   - BucketOptions.fileSizeLimit
   - BucketOptions.public
-  - CreateBucketOptions
-  - CreateBucketOptions.CreateBucketOptions
   - CountOption
   - ErrorCode
   - ErrorCode.ErrorCode
@@ -2917,8 +2903,6 @@ supporting_symbols:
   - TableSchema.identifierFieldIds
   - TableSchema.schemaId
   - TableSchema.toJson
-  - UpdateBucketOptions
-  - UpdateBucketOptions.UpdateBucketOptions
   - User
   - User.==
   - User.User

@@ -335,43 +335,12 @@ void main() {
       expect(bucket.versioningStatus, isNull);
     });
 
-    test('lists every status in the order a bucket moves through them', () {
-      expect(VersioningStatus.values, [
-        VersioningStatus.disabled,
-        VersioningStatus.enabled,
-        VersioningStatus.suspended,
-      ]);
-      expect(VersioningStatus.enabled.toString(), 'VersioningStatus.enabled');
-    });
-
-    test('splits into the statuses each operation accepts', () {
-      const CreatableVersioningStatus creatable = VersioningStatus.enabled;
-      const UpdatableVersioningStatus updatable = VersioningStatus.enabled;
-
-      final creatableValues = VersioningStatus.values
-          .whereType<CreatableVersioningStatus>()
-          .toList();
-      final updatableValues = VersioningStatus.values
-          .whereType<UpdatableVersioningStatus>()
-          .toList();
-
-      expect(creatable, same(updatable));
-      expect(creatableValues, [
-        VersioningStatus.disabled,
-        VersioningStatus.enabled,
-      ]);
-      expect(updatableValues, [
-        VersioningStatus.enabled,
-        VersioningStatus.suspended,
-      ]);
-    });
-
     test('can be matched exhaustively', () {
       String describe(VersioningStatus status) {
         return switch (status) {
-          VersioningDisabled() => 'off',
-          VersioningEnabled() => 'on',
-          VersioningSuspended() => 'paused',
+          VersioningStatus.disabled => 'off',
+          VersioningStatus.enabled => 'on',
+          VersioningStatus.suspended => 'paused',
         };
       }
 

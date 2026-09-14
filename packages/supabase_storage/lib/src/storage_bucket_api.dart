@@ -45,7 +45,8 @@ class StorageBucketApi {
       'public': bucketOptions.public,
       'file_size_limit': ?bucketOptions.fileSizeLimit,
       'allowed_mime_types': ?bucketOptions.allowedMimeTypes,
-      'versioning_status': ?bucketOptions.versioningStatus?.wireValue,
+      'versioning_status': ?bucketOptions.versioningStatus?.snakeCase
+          .toUpperCase(),
     };
   }
 
@@ -88,7 +89,9 @@ class StorageBucketApi {
   /// [id] is a unique identifier for the bucket you are creating.
   ///
   /// [bucketOptions] optionally makes the bucket public, limits what it
-  /// accepts and turns on object versioning.
+  /// accepts and turns on object versioning. Its
+  /// [BucketOptions.versioningStatus] can only be [VersioningStatus.disabled]
+  /// or [VersioningStatus.enabled] here.
   ///
   /// It returns the ID of the newly created bucket. To get the bucket
   /// reference, use [getBucket]:
@@ -102,9 +105,7 @@ class StorageBucketApi {
   /// ```
   Future<String> createBucket(
     String id, [
-    CreateBucketOptions bucketOptions = const CreateBucketOptions(
-      public: false,
-    ),
+    BucketOptions bucketOptions = const BucketOptions(public: false),
   ]) async {
     final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.post(
@@ -121,11 +122,12 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you are updating.
   ///
   /// [bucketOptions] sets the publicity of the bucket, what it accepts and
-  /// its object versioning. A bucket has to have versioning enabled before it
-  /// can be suspended.
+  /// its object versioning. Its [BucketOptions.versioningStatus] can only be
+  /// [VersioningStatus.enabled] or [VersioningStatus.suspended] here, and a
+  /// bucket has to be enabled before it can be suspended.
   Future<String> updateBucket(
     String id,
-    UpdateBucketOptions bucketOptions,
+    BucketOptions bucketOptions,
   ) async {
     final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.put(
