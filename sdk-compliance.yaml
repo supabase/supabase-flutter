@@ -1348,6 +1348,7 @@ features:
       - PaginatedSearchOptions
       - PaginatedSearchOptions.PaginatedSearchOptions
       - PaginatedSearchOptions.cursor
+      - PaginatedSearchOptions.exactMatch
       - PaginatedSearchOptions.limit
       - PaginatedSearchOptions.prefix
       - PaginatedSearchOptions.sortBy
@@ -1355,6 +1356,7 @@ features:
       - PaginatedSearchOptions.withDelimiter
       - SearchOptions
       - SearchOptions.SearchOptions
+      - SearchOptions.exactMatch
       - SearchOptions.limit
       - SearchOptions.offset
       - SearchOptions.search
@@ -1508,16 +1510,90 @@ features:
       - StorageFileApi.updateBinary
       - StorageFileApi.download
       - StorageFileApi.downloadStream
-  storage.file_buckets.bucket_versioning_status: not_implemented
-  storage.file_buckets.copy_specific_version: not_implemented
-  storage.file_buckets.delete_bucket_lifecycle: not_implemented
-  storage.file_buckets.download_specific_version: not_implemented
-  storage.file_buckets.file_info_specific_version: not_implemented
-  storage.file_buckets.get_bucket_lifecycle: not_implemented
-  storage.file_buckets.list_file_versions: not_implemented
-  storage.file_buckets.move_specific_version: not_implemented
-  storage.file_buckets.remove_specific_version: not_implemented
-  storage.file_buckets.update_bucket_lifecycle: not_implemented
+  storage.file_buckets.bucket_versioning_status:
+    status: implemented
+    symbols:
+      - Bucket.versioningStatus
+      - BucketOptions.versioningStatus
+      - StorageBucketApi.createBucket
+      - StorageBucketApi.updateBucket
+    supporting_symbols:
+      - VersioningStatus
+  storage.file_buckets.get_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - StorageBucketApi.getBucketLifecycle
+    supporting_symbols:
+      - LifecycleRule
+      - LifecycleRule.LifecycleRule
+      - LifecycleRule.fromJson
+      - LifecycleRule.id
+      - LifecycleRule.noncurrentVersionExpiration
+      - LifecycleRule.status
+      - LifecycleRuleStatus
+      - NoncurrentVersionExpiration
+      - NoncurrentVersionExpiration.NoncurrentVersionExpiration
+      - NoncurrentVersionExpiration.fromJson
+      - NoncurrentVersionExpiration.newerNoncurrentVersions
+      - NoncurrentVersionExpiration.noncurrentDays
+  storage.file_buckets.update_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - StorageBucketApi.updateBucketLifecycle
+  storage.file_buckets.delete_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - StorageBucketApi.deleteBucketLifecycle
+  storage.file_buckets.list_file_versions:
+    status: implemented
+    symbols:
+      - SearchOptions.deleteMarkers
+      - SearchOptions.noncurrentVersions
+      - PaginatedSearchOptions.deleteMarkers
+      - PaginatedSearchOptions.noncurrentVersions
+    supporting_symbols:
+      - ListInclusion
+      - FileObject.archivedAt
+      - FileObject.isDeleteMarker
+      - FileObject.isVersioned
+      - FileObject.version
+      - PaginatedFile.archivedAt
+      - PaginatedFile.isDeleteMarker
+      - PaginatedFile.isVersioned
+      - PaginatedFile.version
+  storage.file_buckets.file_info_specific_version:
+    status: implemented
+    symbols:
+      - StorageFileApi.getMetadata
+    supporting_symbols:
+      - FileObjectV2.archivedAt
+      - FileObjectV2.isDeleteMarker
+      - FileObjectV2.isVersioned
+  storage.file_buckets.download_specific_version:
+    status: implemented
+    symbols:
+      - StorageFileApi.download
+      - StorageFileApi.downloadStream
+      - StorageFileApi.createSignedUrl
+      - StorageFileApi.getPublicUrl
+  storage.file_buckets.copy_specific_version:
+    status: implemented
+    symbols:
+      - StorageFileApi.copy
+  storage.file_buckets.move_specific_version:
+    status: implemented
+    symbols:
+      - StorageFileApi.move
+  storage.file_buckets.remove_specific_version:
+    status: implemented
+    note: "Exposed as a dedicated removeVersions method taking FileVersion path and version pairs, rather than widening remove to accept both plain paths and pairs."
+    symbols:
+      - StorageFileApi.removeVersions
+    supporting_symbols:
+      - FileVersion
+      - FileVersion.FileVersion
+      - FileVersion.path
+      - FileVersion.versionId
 
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:

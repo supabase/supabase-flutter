@@ -933,6 +933,75 @@ void main() {
     });
   });
 
+  group('storage versioning shorthands', () {
+    test('storageObjectJson carries the version fields it is given', () async {
+      httpClient.stubStorageList(
+        'avatars',
+        objects: [
+          storageObjectJson(
+            'me.png',
+            version: 'version-1',
+            archivedAt: DateTime.utc(2024, 5, 1, 10),
+            isDeleteMarker: false,
+            isVersioned: true,
+          ),
+          storageObjectJson('you.png'),
+        ],
+      );
+
+      final objects = await supabase.storage
+          .from('avatars')
+          .list(
+            searchOptions: const SearchOptions(
+              noncurrentVersions: ListInclusion.include,
+            ),
+          );
+
+      expect(objects.first.version, 'version-1');
+      expect(objects.first.archivedAt, DateTime.utc(2024, 5, 1, 10));
+      expect(objects.first.isDeleteMarker, isFalse);
+      expect(objects.first.isVersioned, isTrue);
+      expect(objects.last.version, isNull);
+      expect(objects.last.isVersioned, isNull);
+    });
+
+    test(
+      'stubStorageBucketLifecycle answers the lifecycle endpoints',
+      () async {
+        httpClient.stubStorageBucketLifecycle(
+          'avatars',
+          rules: [lifecycleRuleJson(noncurrentDays: 30)],
+        );
+
+        final stored = await supabase.storage.getBucketLifecycle('avatars');
+        final updated = await supabase.storage.updateBucketLifecycle(
+          'avatars',
+          [
+            const LifecycleRule(
+              noncurrentVersionExpiration: NoncurrentVersionExpiration(
+                noncurrentDays: 30,
+              ),
+            ),
+          ],
+        );
+        final message = await supabase.storage.deleteBucketLifecycle('avatars');
+
+        expect(stored.single.id, 'expire-history');
+        expect(stored.single.noncurrentVersionExpiration.noncurrentDays, 30);
+        expect(updated.single.id, 'expire-history');
+        expect(message, 'Successfully deleted');
+        final requests = httpClient.requestsTo(
+          '/storage/v1/bucket/avatars/lifecycle',
+        );
+        expect(requests.map((request) => request.method), [
+          'GET',
+          'PUT',
+          'DELETE',
+        ]);
+      },
+    );
+  });
+
   group('schema matching', () {
     test(
       'tables of the same name in different schemas get their own rows',

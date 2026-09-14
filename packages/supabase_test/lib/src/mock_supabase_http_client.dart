@@ -710,6 +710,35 @@ class MockSupabaseHttpClient extends BaseClient {
     );
   }
 
+  /// Answers the lifecycle policy endpoints of [bucket]: `getBucketLifecycle`
+  /// and `updateBucketLifecycle` with [rules], each in the JSON shape of a
+  /// `LifecycleRule`, which [lifecycleRuleJson] produces, and
+  /// `deleteBucketLifecycle` with the message the storage API reports.
+  void stubStorageBucketLifecycle(
+    String bucket, {
+    required List<Map<String, dynamic>> rules,
+    int statusCode = 200,
+    int? times,
+  }) {
+    final path = '/storage/v1/bucket/$bucket/lifecycle';
+    for (final method in ['GET', 'PUT']) {
+      stub(
+        {'rules': rules},
+        method: method,
+        path: path,
+        statusCode: statusCode,
+        times: times,
+      );
+    }
+    stub(
+      {'message': 'Successfully deleted'},
+      method: 'DELETE',
+      path: path,
+      statusCode: statusCode,
+      times: times,
+    );
+  }
+
   /// The `<bucket>/<path>` the storage client puts in its URLs, with every
   /// path segment percent-encoded the way the client encodes it.
   String _storageObjectPath(String bucket, String path) {

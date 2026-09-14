@@ -1,6 +1,32 @@
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// Whether a bucket keeps previous versions of its objects.
+///
+/// A bucket starts out [disabled]. Once it has been [enabled], it can only be
+/// [suspended]; there is no way back to [disabled].
+enum VersioningStatus {
+  /// Versioning has never been enabled. Writes replace the object in place.
+  disabled,
+
+  /// Every write to a path creates a new version, and the previous versions
+  /// stay addressable until they are deleted.
+  enabled,
+
+  /// Versioning was enabled and then paused. Existing versions are kept, but
+  /// new writes replace the current version instead of adding one.
+  suspended;
+
+  static VersioningStatus? _fromJson(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+    return values.firstWhere(
+      (status) => status.snakeCase.toUpperCase() == value,
+    );
+  }
+}
+
 /// A storage bucket.
 class Bucket {
   const Bucket({
@@ -12,6 +38,7 @@ class Bucket {
     required this.public,
     this.fileSizeLimit,
     this.allowedMimeTypes,
+    this.versioningStatus,
   });
 
   factory Bucket.fromJson(Map<String, dynamic> json) {
@@ -27,6 +54,7 @@ class Bucket {
       allowedMimeTypes: allowedMimeTypes is List
           ? allowedMimeTypes.cast()
           : null,
+      versioningStatus: VersioningStatus._fromJson(json['versioning_status']),
     );
   }
 
@@ -54,6 +82,100 @@ class Bucket {
   /// The MIME types accepted for uploads, or `null` when any type is
   /// accepted.
   final List<String>? allowedMimeTypes;
+
+  /// Whether the bucket keeps previous versions of its objects, or `null`
+  /// when the server does not report it.
+  final VersioningStatus? versioningStatus;
+}
+
+/// Whether a [LifecycleRule] runs.
+enum LifecycleRuleStatus {
+  /// The rule is applied.
+  enabled,
+
+  /// The rule is stored but not applied.
+  disabled;
+
+  String get _json => '${name[0].toUpperCase()}${name.substring(1)}';
+
+  static LifecycleRuleStatus _fromJson(String value) {
+    return values.firstWhere((status) => status._json == value);
+  }
+}
+
+/// When the previous versions of an object expire.
+class NoncurrentVersionExpiration {
+  const NoncurrentVersionExpiration({
+    required this.noncurrentDays,
+    this.newerNoncurrentVersions,
+  });
+
+  factory NoncurrentVersionExpiration.fromJson(Map<String, dynamic> json) {
+    return NoncurrentVersionExpiration(
+      noncurrentDays: json['noncurrentDays'] as int,
+      newerNoncurrentVersions: json['newerNoncurrentVersions'] as int?,
+    );
+  }
+
+  /// How many days a version has to have been noncurrent before it expires.
+  /// At least `1`.
+  final int noncurrentDays;
+
+  /// How many of the newest noncurrent versions are kept regardless of their
+  /// age, between `1` and `100`. When `null` every noncurrent version older
+  /// than [noncurrentDays] expires.
+  final int? newerNoncurrentVersions;
+
+  @internal
+  Map<String, dynamic> toJson() {
+    return {
+      'noncurrentDays': noncurrentDays,
+      'newerNoncurrentVersions': ?newerNoncurrentVersions,
+    };
+  }
+}
+
+/// A rule of a bucket's lifecycle policy.
+///
+/// Rules apply to every object in the bucket. The only action the server
+/// accepts today is [noncurrentVersionExpiration], which has nothing to act on
+/// until the bucket's [VersioningStatus] has been [VersioningStatus.enabled].
+class LifecycleRule {
+  const LifecycleRule({
+    required this.noncurrentVersionExpiration,
+    this.id,
+    this.status = LifecycleRuleStatus.enabled,
+  });
+
+  factory LifecycleRule.fromJson(Map<String, dynamic> json) {
+    return LifecycleRule(
+      id: json['id'] as String?,
+      status: LifecycleRuleStatus._fromJson(json['status'] as String),
+      noncurrentVersionExpiration: NoncurrentVersionExpiration.fromJson(
+        json['noncurrentVersionExpiration'] as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  /// The identifier of the rule, unique within the policy and at most 255
+  /// characters. The server generates one when it is omitted.
+  final String? id;
+
+  /// Whether the rule is applied.
+  final LifecycleRuleStatus status;
+
+  /// When the previous versions of an object expire.
+  final NoncurrentVersionExpiration noncurrentVersionExpiration;
+
+  @internal
+  Map<String, dynamic> toJson() {
+    return {
+      'id': ?id,
+      'status': status._json,
+      'filter': const <String, dynamic>{},
+      'noncurrentVersionExpiration': noncurrentVersionExpiration.toJson(),
+    };
+  }
 }
 
 /// A bucket backed by the Apache Iceberg table format, used for structured
@@ -99,6 +221,10 @@ class FileObject {
     required this.createdAt,
     required this.metadata,
     required this.buckets,
+    this.version,
+    this.archivedAt,
+    this.isDeleteMarker,
+    this.isVersioned,
   });
 
   factory FileObject.fromJson(dynamic json) {
@@ -119,6 +245,10 @@ class FileObject {
       buckets: bucketsJson is Map<String, dynamic>
           ? Bucket.fromJson(bucketsJson)
           : null,
+      version: json['version'] as String?,
+      archivedAt: tryParseIso8601(json, 'archived_at'),
+      isDeleteMarker: json['is_delete_marker'] as bool?,
+      isVersioned: json['is_versioned'] as bool?,
     );
   }
 
@@ -145,6 +275,21 @@ class FileObject {
 
   /// The bucket the object belongs to, when requested.
   final Bucket? buckets;
+
+  /// The version identifier of the object. `null` for a folder and on servers
+  /// without object versioning.
+  final String? version;
+
+  /// When this version stopped being the current one, or `null` while it is.
+  final DateTime? archivedAt;
+
+  /// Whether this entry marks a deletion rather than an object version. `null`
+  /// for a folder and on servers without object versioning.
+  final bool? isDeleteMarker;
+
+  /// Whether this object was written while the bucket had versioning enabled.
+  /// `null` for a folder and on servers without object versioning.
+  final bool? isVersioned;
 }
 
 /// A file entry returned by the storage `v2` object listing API.
@@ -162,6 +307,9 @@ class FileObjectV2 {
     required this.etag,
     required this.lastModified,
     required this.metadata,
+    this.archivedAt,
+    this.isDeleteMarker,
+    this.isVersioned,
   });
 
   factory FileObjectV2.fromJson(Map<String, dynamic> json) {
@@ -178,6 +326,9 @@ class FileObjectV2 {
       etag: json['etag'] as String?,
       lastModified: tryParseIso8601(json, 'last_modified'),
       metadata: json['metadata'] as Map<String, dynamic>?,
+      archivedAt: tryParseIso8601(json, 'archived_at'),
+      isDeleteMarker: json['is_delete_marker'] as bool?,
+      isVersioned: json['is_versioned'] as bool?,
     );
   }
 
@@ -216,6 +367,17 @@ class FileObjectV2 {
 
   /// The file metadata.
   final Map<String, dynamic>? metadata;
+
+  /// When this version stopped being the current one, or `null` while it is.
+  final DateTime? archivedAt;
+
+  /// Whether this entry marks a deletion rather than an object version. `null`
+  /// on servers without object versioning.
+  final bool? isDeleteMarker;
+
+  /// Whether this object was written while the bucket had versioning enabled.
+  /// `null` on servers without object versioning.
+  final bool? isVersioned;
 }
 
 /// [public] The visibility of the bucket. Public buckets don't require an
@@ -233,6 +395,7 @@ class BucketOptions {
     required this.public,
     this.fileSizeLimit,
     this.allowedMimeTypes,
+    this.versioningStatus,
   });
 
   /// The visibility of the bucket.
@@ -243,6 +406,14 @@ class BucketOptions {
 
   /// The allowed mime types that this bucket can accept during upload.
   final List<String>? allowedMimeTypes;
+
+  /// Whether the bucket keeps previous versions of its objects. Left as is
+  /// when `null`.
+  ///
+  /// A bucket is created [VersioningStatus.disabled] or
+  /// [VersioningStatus.enabled], and once created can only move to
+  /// [VersioningStatus.enabled] or [VersioningStatus.suspended].
+  final VersioningStatus? versioningStatus;
 }
 
 /// The column that [StorageBucketApi.listBuckets] can sort its results by.
@@ -334,6 +505,20 @@ class FileOptions {
   final Map<String, String>? headers;
 }
 
+/// Whether a listing includes entries that are not current objects, such as
+/// noncurrent versions or delete markers.
+enum ListInclusion {
+  /// Leaves the entries out. This is what the server does when nothing is
+  /// specified.
+  exclude,
+
+  /// Lists the entries alongside the current objects.
+  include,
+
+  /// Lists nothing but the entries.
+  only,
+}
+
 /// Options for `StorageFileApi.list`.
 class SearchOptions {
   const SearchOptions({
@@ -341,6 +526,9 @@ class SearchOptions {
     this.offset = 0,
     this.sortBy = const SortBy(),
     this.search,
+    this.noncurrentVersions,
+    this.deleteMarkers,
+    this.exactMatch,
   });
 
   /// The number of files you want to be returned.
@@ -355,12 +543,26 @@ class SearchOptions {
   /// The search string to filter files by.
   final String? search;
 
+  /// Whether previous versions of the objects are listed. Requires a bucket
+  /// that has had versioning enabled.
+  final ListInclusion? noncurrentVersions;
+
+  /// Whether the entries marking deleted objects are listed. Requires a
+  /// bucket that has had versioning enabled.
+  final ListInclusion? deleteMarkers;
+
+  /// When `true`, only lists objects whose key is exactly the given path.
+  final bool? exactMatch;
+
   Map<String, dynamic> toMap() {
     return {
       'limit': limit,
       'offset': offset,
       'sortBy': sortBy?.toMap(),
       'search': search,
+      'noncurrentVersions': ?noncurrentVersions?.snakeCase,
+      'deleteMarkers': ?deleteMarkers?.snakeCase,
+      'exactMatch': ?exactMatch,
     };
   }
 }
@@ -428,6 +630,9 @@ class PaginatedSearchOptions {
     this.cursor,
     this.withDelimiter,
     this.sortBy,
+    this.noncurrentVersions,
+    this.deleteMarkers,
+    this.exactMatch,
   });
 
   /// The number of files to return.
@@ -452,6 +657,17 @@ class PaginatedSearchOptions {
   /// The column and direction to sort by.
   final FileSort? sortBy;
 
+  /// Whether previous versions of the objects are listed. Requires a bucket
+  /// that has had versioning enabled.
+  final ListInclusion? noncurrentVersions;
+
+  /// Whether the entries marking deleted objects are listed. Requires a
+  /// bucket that has had versioning enabled.
+  final ListInclusion? deleteMarkers;
+
+  /// When `true`, only lists objects whose key is exactly [prefix].
+  final bool? exactMatch;
+
   Map<String, dynamic> toMap() {
     return {
       'limit': ?limit,
@@ -459,6 +675,9 @@ class PaginatedSearchOptions {
       'cursor': ?cursor,
       'with_delimiter': ?withDelimiter,
       'sortBy': ?sortBy?.toMap(),
+      'noncurrentVersions': ?noncurrentVersions?.snakeCase,
+      'deleteMarkers': ?deleteMarkers?.snakeCase,
+      'exactMatch': ?exactMatch,
     };
   }
 }
@@ -472,6 +691,10 @@ class PaginatedFile {
     required this.updatedAt,
     required this.createdAt,
     required this.metadata,
+    this.version,
+    this.archivedAt,
+    this.isDeleteMarker,
+    this.isVersioned,
   });
 
   factory PaginatedFile.fromJson(Map<String, dynamic> json) {
@@ -482,6 +705,10 @@ class PaginatedFile {
       updatedAt: tryParseIso8601(json, 'updated_at'),
       createdAt: tryParseIso8601(json, 'created_at'),
       metadata: json['metadata'] as Map<String, dynamic>?,
+      version: json['version'] as String?,
+      archivedAt: tryParseIso8601(json, 'archived_at'),
+      isDeleteMarker: json['is_delete_marker'] as bool?,
+      isVersioned: json['is_versioned'] as bool?,
     );
   }
 
@@ -502,6 +729,32 @@ class PaginatedFile {
 
   /// The file metadata, including size and mimetype. `null` when not yet set.
   final Map<String, dynamic>? metadata;
+
+  /// The version identifier of the object. `null` on servers without object
+  /// versioning.
+  final String? version;
+
+  /// When this version stopped being the current one, or `null` while it is.
+  final DateTime? archivedAt;
+
+  /// Whether this entry marks a deletion rather than an object version. `null`
+  /// on servers without object versioning.
+  final bool? isDeleteMarker;
+
+  /// Whether this object was written while the bucket had versioning enabled.
+  /// `null` on servers without object versioning.
+  final bool? isVersioned;
+}
+
+/// A specific version of a file, for `StorageFileApi.removeVersions`.
+class FileVersion {
+  const FileVersion({required this.path, required this.versionId});
+
+  /// The file path, including the file name. For example `folder/image.png`.
+  final String path;
+
+  /// The version identifier, as [FileObject.version] reports it.
+  final String versionId;
 }
 
 /// A folder entry returned by [StorageFileApi.listPaginated] when using a

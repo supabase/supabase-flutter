@@ -781,6 +781,328 @@ void main() {
       expect(response, isA<List<dynamic>>());
       expect(response.length, 2);
     });
+
+    group('object versioning', () {
+      final versionedFileJson = {
+        ...testFileObjectJson,
+        'version': 'version-1',
+        'archived_at': '2024-05-01T10:00:00.000Z',
+        'is_delete_marker': false,
+        'is_versioned': true,
+      };
+
+      Map<String, dynamic> sentBody() {
+        return customHttpClient.requests.single.jsonBody
+            as Map<String, dynamic>;
+      }
+
+      test('createBucket sends the versioning status', () async {
+        customHttpClient.stub({'name': 'test_bucket'});
+
+        await client.createBucket(
+          'test_bucket',
+          const BucketOptions(
+            public: false,
+            versioningStatus: VersioningStatus.enabled,
+          ),
+        );
+
+        expect(sentBody()['versioning_status'], 'ENABLED');
+      });
+
+      test('createBucket omits the versioning status when unset', () async {
+        customHttpClient.stub({'name': 'test_bucket'});
+
+        await client.createBucket('test_bucket');
+
+        expect(sentBody(), isNot(contains('versioning_status')));
+      });
+
+      test('updateBucket sends the versioning status', () async {
+        customHttpClient.stub({'message': 'Successfully updated'});
+
+        await client.updateBucket(
+          'test_bucket',
+          const BucketOptions(
+            public: false,
+            versioningStatus: VersioningStatus.suspended,
+          ),
+        );
+
+        expect(sentBody()['versioning_status'], 'SUSPENDED');
+      });
+
+      test('getBucket reports the versioning status', () async {
+        customHttpClient.stub({
+          ...testBucketJson,
+          'versioning_status': 'ENABLED',
+        });
+
+        final bucket = await client.getBucket('test_bucket');
+
+        expect(bucket.versioningStatus, VersioningStatus.enabled);
+      });
+
+      test('getBucketLifecycle fetches the stored rules', () async {
+        customHttpClient.stub({
+          'rules': [lifecycleRuleJson(newerNoncurrentVersions: 2)],
+        });
+
+        final rules = await client.getBucketLifecycle('test_bucket');
+
+        final request = customHttpClient.requests.single;
+        expect(request.method, 'GET');
+        expect(request.url.path, endsWith('/bucket/test_bucket/lifecycle'));
+        expect(rules.single.id, 'expire-history');
+        expect(rules.single.status, LifecycleRuleStatus.enabled);
+        expect(rules.single.noncurrentVersionExpiration.noncurrentDays, 30);
+        expect(
+          rules.single.noncurrentVersionExpiration.newerNoncurrentVersions,
+          2,
+        );
+      });
+
+      test('updateBucketLifecycle puts the whole policy', () async {
+        customHttpClient.stub({
+          'rules': [lifecycleRuleJson(id: 'generated-id', noncurrentDays: 7)],
+        });
+
+        final rules = await client.updateBucketLifecycle('test_bucket', [
+          const LifecycleRule(
+            noncurrentVersionExpiration: NoncurrentVersionExpiration(
+              noncurrentDays: 7,
+            ),
+          ),
+        ]);
+
+        final request = customHttpClient.requests.single;
+        expect(request.method, 'PUT');
+        expect(request.url.path, endsWith('/bucket/test_bucket/lifecycle'));
+        expect(request.jsonBody, {
+          'rules': [
+            {
+              'status': 'Enabled',
+              'filter': <String, dynamic>{},
+              'noncurrentVersionExpiration': {'noncurrentDays': 7},
+            },
+          ],
+        });
+        expect(rules.single.id, 'generated-id');
+      });
+
+      test('deleteBucketLifecycle deletes the policy', () async {
+        customHttpClient.stub({'message': 'Successfully deleted'});
+
+        final message = await client.deleteBucketLifecycle('test_bucket');
+
+        final request = customHttpClient.requests.single;
+        expect(request.method, 'DELETE');
+        expect(request.url.path, endsWith('/bucket/test_bucket/lifecycle'));
+        expect(message, 'Successfully deleted');
+      });
+
+      test('list sends the version options and parses the fields', () async {
+        customHttpClient.stub([versionedFileJson]);
+
+        final files = await client
+            .from('public')
+            .list(
+              searchOptions: const SearchOptions(
+                noncurrentVersions: ListInclusion.include,
+                deleteMarkers: ListInclusion.only,
+                exactMatch: true,
+              ),
+            );
+
+        final body = sentBody();
+        expect(body['noncurrentVersions'], 'include');
+        expect(body['deleteMarkers'], 'only');
+        expect(body['exactMatch'], isTrue);
+        expect(files.single.version, 'version-1');
+        expect(files.single.archivedAt, DateTime.utc(2024, 5, 1, 10));
+        expect(files.single.isDeleteMarker, isFalse);
+        expect(files.single.isVersioned, isTrue);
+      });
+
+      test('list omits the version options by default', () async {
+        customHttpClient.stub([testFileObjectJson]);
+
+        await client.from('public').list();
+
+        expect(
+          sentBody().keys,
+          isNot(
+            containsAll(['noncurrentVersions', 'deleteMarkers', 'exactMatch']),
+          ),
+        );
+      });
+
+      test('listPaginated sends the version options', () async {
+        customHttpClient.stub({
+          'hasNext': false,
+          'folders': [],
+          'objects': [
+            {'name': 'a.txt', 'version': 'version-1', 'is_versioned': true},
+          ],
+        });
+
+        final result = await client
+            .from('public')
+            .listPaginated(
+              options: const PaginatedSearchOptions(
+                noncurrentVersions: ListInclusion.only,
+                deleteMarkers: ListInclusion.exclude,
+              ),
+            );
+
+        final body = sentBody();
+        expect(body['noncurrentVersions'], 'only');
+        expect(body['deleteMarkers'], 'exclude');
+        expect(result.objects.single.version, 'version-1');
+        expect(result.objects.single.isVersioned, isTrue);
+      });
+
+      test('getMetadata requests a specific version', () async {
+        customHttpClient.stub({
+          'id': 'file-id',
+          'version': 'version-1',
+          'name': 'a.txt',
+          'bucket_id': 'public',
+          'created_at': '2024-01-01T00:00:00.000Z',
+          'archived_at': '2024-05-01T10:00:00.000Z',
+          'is_delete_marker': false,
+          'is_versioned': true,
+        });
+
+        final file = await client
+            .from('public')
+            .getMetadata('a.txt', versionId: 'version-1');
+
+        final request = customHttpClient.requests.single;
+        expect(request.url.path, endsWith('/object/info/public/a.txt'));
+        expect(request.url.queryParameters, {'versionId': 'version-1'});
+        expect(file.version, 'version-1');
+        expect(file.archivedAt, DateTime.utc(2024, 5, 1, 10));
+        expect(file.isDeleteMarker, isFalse);
+        expect(file.isVersioned, isTrue);
+      });
+
+      test('getMetadata sends no query by default', () async {
+        customHttpClient.stub({
+          'id': 'file-id',
+          'version': 'version-1',
+          'name': 'a.txt',
+          'bucket_id': 'public',
+          'created_at': '2024-01-01T00:00:00.000Z',
+        });
+
+        await client.from('public').getMetadata('a.txt');
+
+        final url = customHttpClient.requests.single.url.toString();
+        expect(url, endsWith('/object/info/public/a.txt'));
+      });
+
+      test('download requests a specific version', () async {
+        customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
+
+        await client.from('public').download('a.txt', versionId: 'version-1');
+
+        final request = customHttpClient.requests.single;
+        expect(request.url.path, endsWith('/object/public/a.txt'));
+        expect(request.url.queryParameters, {'versionId': 'version-1'});
+      });
+
+      test('downloadStream requests a specific version', () async {
+        customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
+
+        await client
+            .from('public')
+            .downloadStream('a.txt', versionId: 'version-1')
+            .drain<void>();
+
+        final request = customHttpClient.requests.single;
+        expect(request.url.queryParameters, {'versionId': 'version-1'});
+      });
+
+      test('copy sends the source version', () async {
+        customHttpClient.stub({'Key': 'public/b.txt'});
+
+        await client
+            .from('public')
+            .copy('a.txt', 'b.txt', sourceVersionId: 'version-1');
+
+        expect(sentBody()['sourceVersionId'], 'version-1');
+      });
+
+      test('move sends the source version', () async {
+        customHttpClient.stub({'message': 'Successfully moved'});
+
+        await client
+            .from('public')
+            .move('a.txt', 'a.txt', sourceVersionId: 'version-1');
+
+        final body = sentBody();
+        expect(body['sourceVersionId'], 'version-1');
+        expect(body['sourceKey'], 'a.txt');
+        expect(body['destinationKey'], 'a.txt');
+      });
+
+      test('copy omits the source version by default', () async {
+        customHttpClient.stub({'Key': 'public/b.txt'});
+
+        await client.from('public').copy('a.txt', 'b.txt');
+
+        expect(sentBody(), isNot(contains('sourceVersionId')));
+      });
+
+      test('removeVersions deletes exact path and version pairs', () async {
+        customHttpClient.stub([versionedFileJson]);
+
+        final removed = await client.from('public').removeVersions([
+          const FileVersion(path: '/folder//a.txt', versionId: 'version-1'),
+        ]);
+
+        final request = customHttpClient.requests.single;
+        expect(request.method, 'DELETE');
+        expect(request.url.path, endsWith('/object/public'));
+        expect(request.jsonBody, {
+          'prefixes': [
+            {'path': 'folder/a.txt', 'versionId': 'version-1'},
+          ],
+        });
+        expect(removed.single.version, 'version-1');
+      });
+
+      test('createSignedUrl sends the version in the body', () async {
+        customHttpClient.stub({
+          'signedURL': '/object/sign/public/a.txt?token=t',
+        });
+
+        final url = await client
+            .from('public')
+            .createSignedUrl('a.txt', 60, versionId: 'version-1');
+
+        expect(sentBody()['versionId'], 'version-1');
+        expect(url, endsWith('/object/sign/public/a.txt?token=t'));
+      });
+
+      test('getPublicUrl appends the version after the other options', () {
+        final url = client
+            .from('public')
+            .getPublicUrl(
+              'a.txt',
+              download: DownloadBehavior.withOriginalName,
+              cacheNonce: 'nonce',
+              versionId: 'version-1',
+            );
+
+        expect(
+          url,
+          '$objectUrl/public/public/a.txt?download=&cacheNonce=nonce'
+          '&versionId=version-1',
+        );
+      });
+    });
   });
 
   group('Retry', () {
