@@ -922,25 +922,25 @@ void main() {
     late String firstVersion;
 
     setUpAll(() async {
-      final storage = SupabaseStorageClient(localStackStorageUrl, {
+      final probe = SupabaseStorageClient(localStackStorageUrl, {
         'Authorization': 'Bearer $localStackServiceRoleKey',
       });
       try {
-        await storage.createBucket(
+        await probe.createBucket(
           bucketName,
           const BucketOptions(
             public: false,
             versioningStatus: VersioningStatus.enabled,
           ),
         );
-        final bucket = await storage.getBucket(bucketName);
+        final bucket = await probe.getBucket(bucketName);
         versioningSupported =
             bucket.versioningStatus == VersioningStatus.enabled;
       } on StorageApiException {
         versioningSupported = false;
       }
       try {
-        await storage.getBucketLifecycle(bucketName);
+        await probe.getBucketLifecycle(bucketName);
       } on StorageApiException catch (error) {
         lifecycleSupported = error.errorCode == 'NoSuchLifecycleConfiguration';
       }
@@ -959,7 +959,7 @@ void main() {
     }
 
     List<FileObject> versionsOf(List<FileObject> files) {
-      return files.where((file) => file.name == 'file.txt').toList();
+      return files.where((entry) => entry.name == 'file.txt').toList();
     }
 
     versionedTest('reports the versioning status of the bucket', () async {
@@ -969,7 +969,7 @@ void main() {
       expect(bucket.versioningStatus, VersioningStatus.enabled);
       expect(
         listed
-            .firstWhere((bucket) => bucket.name == bucketName)
+            .firstWhere((candidate) => candidate.name == bucketName)
             .versioningStatus,
         VersioningStatus.enabled,
       );
@@ -1114,7 +1114,7 @@ void main() {
 
       expect(removed.single.name, endsWith('file.txt'));
       expect(
-        versionsOf(remaining).map((file) => file.version),
+        versionsOf(remaining).map((entry) => entry.version),
         isNot(contains(firstVersion)),
       );
       expect(await storage.from(bucketName).download(path), firstBytes);
