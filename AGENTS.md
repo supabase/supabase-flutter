@@ -106,6 +106,17 @@ dart test test/specific_test.dart
 dart test test/specific_test.dart -n "test name pattern"
 ```
 
+### Writing Tests
+
+Build tests on the `supabase_test` package instead of writing mocks by hand:
+
+- Answer HTTP calls with `MockSupabaseHttpClient` and its `stub`, `stubHandler`, `stubError` and `stubTable`/`stubRpc`/`stubStorage*` helpers. Do not subclass `BaseClient` in a test. Match methods with `HttpMethod.post.value` and friends rather than raw strings.
+- Assert on what was sent with `requests` and `requestsTo(path, method:)`.
+- Put a client into a signed-in state with `signInTestUser`, and build server payloads with `testUserJson`, `testSessionResponseJson` and `unsignedTestJwt`. Do not hand-assemble JWTs or session JSON.
+- Construct clients with `testSupabaseClient` where a whole `SupabaseClient` is needed.
+
+Fakes for things `supabase_test` does not cover, such as a platform plugin interface, are written in the test file itself.
+
 ### Package Management
 
 ```bash
