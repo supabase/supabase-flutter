@@ -114,7 +114,7 @@ void main() {
     httpClient.stub({'openapi': '3.0.0'}, path: '/rest/v1/');
 
     await expectLater(
-      postgrest.getOpenApiSpec(),
+      () => postgrest.getOpenApiSpec(),
       throwsA(isA<FormatException>()),
     );
   });
@@ -127,7 +127,7 @@ void main() {
     }, path: '/rest/v1/');
 
     await expectLater(
-      postgrest.getOpenApiSpec(),
+      () => postgrest.getOpenApiSpec(),
       throwsA(isA<FormatException>()),
     );
   });
@@ -140,7 +140,7 @@ void main() {
     );
 
     await expectLater(
-      postgrest.getOpenApiSpec(),
+      () => postgrest.getOpenApiSpec(),
       throwsA(
         isA<PostgrestApiException>()
             .having((exception) => exception.statusCode, 'statusCode', 401)
