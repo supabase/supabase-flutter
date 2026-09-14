@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:http/http.dart' show RequestAbortedException;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
@@ -90,6 +93,42 @@ void main() {
       expect(result, 'ok');
       expect(seenErrors, hasLength(2));
       expect(seenErrors.every((error) => error is FormatException), isTrue);
+    });
+
+    test('never retries a RequestAbortedException', () async {
+      var attempts = 0;
+      await expectLater(
+        retry(
+          () async {
+            attempts++;
+            throw RequestAbortedException();
+          },
+          options: _fast,
+          retryIf: (error) => true,
+        ),
+        throwsA(isA<RequestAbortedException>()),
+      );
+      expect(attempts, 1);
+    });
+
+    test('an abort during the delay before the next attempt ends the loop '
+        'without making that attempt', () async {
+      final abortSignal = Completer<void>();
+      var attempts = 0;
+      final result = retry(
+        () async {
+          attempts++;
+          throw const FormatException('fail');
+        },
+        options: const SupabaseRetryOptions(initialDelay: Duration(hours: 1)),
+        retryIf: (error) => error is FormatException,
+        abortSignal: abortSignal.future,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      abortSignal.complete();
+
+      await expectLater(result, throwsA(isA<RequestAbortedException>()));
+      expect(attempts, 1);
     });
   });
 

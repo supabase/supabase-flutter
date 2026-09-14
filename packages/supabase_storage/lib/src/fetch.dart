@@ -62,14 +62,27 @@ class Fetch {
     return exception;
   }
 
+  http.AbortableRequest _createRequest(
+    HttpMethod method,
+    String url,
+    FetchOptions? options,
+    Future<void>? abortSignal,
+  ) {
+    return http.AbortableRequest(
+      method.value,
+      Uri.parse(url),
+      abortTrigger: abortSignal,
+    )..headers.addAll({...?options?.headers});
+  }
+
   Future<T> _handleRequest<T>(
     HttpMethod method,
     String url,
     Map<String, dynamic>? body,
-    FetchOptions? options,
-  ) async {
-    final request = http.Request(method.value, Uri.parse(url))
-      ..headers.addAll({...?options?.headers});
+    FetchOptions? options, {
+    Future<void>? abortSignal,
+  }) async {
+    final request = _createRequest(method, url, options, abortSignal);
     if (method != HttpMethod.get) {
       request.headers.putIfAbsent('Content-Type', () => 'application/json');
     }
@@ -92,7 +105,7 @@ class Fetch {
     FileOptions fileOptions,
     FetchOptions? options,
     SupabaseRetryOptions retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   ) {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
@@ -110,7 +123,7 @@ class Fetch {
       fileOptions,
       options,
       retryOptions,
-      retryController,
+      abortSignal,
     );
   }
 
@@ -121,7 +134,7 @@ class Fetch {
     FileOptions fileOptions,
     FetchOptions? options,
     SupabaseRetryOptions retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   ) {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
@@ -139,7 +152,7 @@ class Fetch {
       fileOptions,
       options,
       retryOptions,
-      retryController,
+      abortSignal,
     );
   }
 
@@ -150,14 +163,19 @@ class Fetch {
     FileOptions fileOptions,
     FetchOptions? options,
     SupabaseRetryOptions retryOptions,
-    StorageRetryController? retryController,
+    Future<void>? abortSignal,
   ) async {
     final headers = options?.headers ?? {};
 
     // Create a factory function that generates a fresh MultipartRequest for
     // each attempt
     http.MultipartRequest createRequest() {
-      final request = http.MultipartRequest(method.value, Uri.parse(url))
+      final request = http.AbortableMultipartRequest(
+        method.value,
+        Uri.parse(url),
+        abortTrigger: abortSignal,
+      );
+      request
         ..headers.addAll(headers)
         ..files.add(createMultipartFile())
         ..fields['cacheControl'] = fileOptions.cacheControl
@@ -184,9 +202,8 @@ class Fetch {
         return createRequest().sendWith(httpClient);
       },
       options: retryOptions,
-      retryIf: (error) =>
-          retryController?.cancelled != true &&
-          (error is ClientException || error is TimeoutException),
+      retryIf: (error) => error is ClientException || error is TimeoutException,
+      abortSignal: abortSignal,
     );
 
     return _handleResponse(streamedResponse, options);
@@ -233,8 +250,18 @@ class Fetch {
     );
   }
 
-  Future<T> get<T>(String url, {FetchOptions? options}) {
-    return _handleRequest(HttpMethod.get, url, null, options);
+  Future<T> get<T>(
+    String url, {
+    FetchOptions? options,
+    Future<void>? abortSignal,
+  }) {
+    return _handleRequest(
+      HttpMethod.get,
+      url,
+      null,
+      options,
+      abortSignal: abortSignal,
+    );
   }
 
   /// Performs a GET request and yields the response body as a byte stream
@@ -247,9 +274,9 @@ class Fetch {
   Stream<Uint8List> getStream(
     String url, {
     FetchOptions? options,
+    Future<void>? abortSignal,
   }) async* {
-    final request = http.Request(HttpMethod.get.value, Uri.parse(url))
-      ..headers.addAll({...?options?.headers});
+    final request = _createRequest(HttpMethod.get, url, options, abortSignal);
 
     storageLogger.finest(
       'Request: GET (stream) ${Uri.parse(url).redacted} '
@@ -302,7 +329,7 @@ class Fetch {
     FileOptions fileOptions, {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
-    required StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) {
     return _handleFileRequest(
       HttpMethod.post,
@@ -311,7 +338,7 @@ class Fetch {
       fileOptions,
       options,
       retryOptions,
-      retryController,
+      abortSignal,
     );
   }
 
@@ -321,7 +348,7 @@ class Fetch {
     FileOptions fileOptions, {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
-    required StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) {
     return _handleFileRequest(
       HttpMethod.put,
@@ -330,7 +357,7 @@ class Fetch {
       fileOptions,
       options,
       retryOptions,
-      retryController,
+      abortSignal,
     );
   }
 
@@ -340,7 +367,7 @@ class Fetch {
     FileOptions fileOptions, {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
-    required StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) {
     return _handleBinaryFileRequest(
       HttpMethod.post,
@@ -349,7 +376,7 @@ class Fetch {
       fileOptions,
       options,
       retryOptions,
-      retryController,
+      abortSignal,
     );
   }
 
@@ -359,7 +386,7 @@ class Fetch {
     FileOptions fileOptions, {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
-    required StorageRetryController? retryController,
+    Future<void>? abortSignal,
   }) {
     return _handleBinaryFileRequest(
       HttpMethod.put,
@@ -368,7 +395,7 @@ class Fetch {
       fileOptions,
       options,
       retryOptions,
-      retryController,
+      abortSignal,
     );
   }
 }

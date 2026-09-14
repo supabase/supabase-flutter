@@ -731,21 +731,6 @@ class StorageApiException extends StorageException with SupabaseApiException {
   final int statusCode;
 }
 
-/// Allows aborting the retries of an in-flight storage upload.
-class StorageRetryController {
-  /// Creates a controller to abort storage file upload retry operations.
-  StorageRetryController();
-
-  /// Whether the retry operation is aborted
-  bool get cancelled => _cancelled;
-  bool _cancelled = false;
-
-  /// Aborts the next retry operation
-  void cancel() {
-    _cancelled = true;
-  }
-}
-
 /// {@template resize_mode}
 /// Specifies how image cropping should be handled when performing image
 /// transformations.
