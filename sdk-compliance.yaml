@@ -875,6 +875,7 @@ features:
       - SupabaseQuerySchema.rpc
       - SupabaseQuerySchema.schema
       - SupabaseQuerySchema.table
+  database.query.openapi_spec: not_implemented
 
   # database — mutate
   database.mutate.insert:
@@ -1224,6 +1225,7 @@ features:
       - PostgrestFilterBuilder.requestTimeout
       - PostgrestQueryBuilder.requestTimeout
       - PostgrestTransformBuilder.requestTimeout
+  database.configuration.access_token: not_implemented
 
   # storage — file buckets
   storage.file_buckets.access_bucket:
@@ -1491,6 +1493,16 @@ features:
       - StorageRetryController
       - StorageRetryController.StorageRetryController
       - StorageRetryController.cancelled
+  storage.file_buckets.bucket_versioning_status: not_implemented
+  storage.file_buckets.copy_specific_version: not_implemented
+  storage.file_buckets.delete_bucket_lifecycle: not_implemented
+  storage.file_buckets.download_specific_version: not_implemented
+  storage.file_buckets.file_info_specific_version: not_implemented
+  storage.file_buckets.get_bucket_lifecycle: not_implemented
+  storage.file_buckets.list_file_versions: not_implemented
+  storage.file_buckets.move_specific_version: not_implemented
+  storage.file_buckets.remove_specific_version: not_implemented
+  storage.file_buckets.update_bucket_lifecycle: not_implemented
 
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:
