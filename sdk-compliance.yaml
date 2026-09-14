@@ -878,7 +878,24 @@ features:
       - SupabaseQuerySchema.rpc
       - SupabaseQuerySchema.schema
       - SupabaseQuerySchema.table
-  database.query.openapi_spec: not_implemented
+  database.query.openapi_spec:
+    status: implemented
+    symbols:
+      - PostgrestClient.getOpenApiSpec
+      - SupabaseClient.getOpenApiSpec
+    supporting_symbols:
+      - SupabaseQuerySchema.getOpenApiSpec
+      - PostgrestOpenApiSpec
+      - PostgrestOpenApiSpec.fromJson
+      - PostgrestOpenApiSpec.swagger
+      - PostgrestOpenApiSpec.info
+      - PostgrestOpenApiSpec.paths
+      - PostgrestOpenApiSpec.host
+      - PostgrestOpenApiSpec.basePath
+      - PostgrestOpenApiSpec.definitions
+      - PostgrestOpenApiSpec.parameters
+      - PostgrestOpenApiSpec.toJson
+      - PostgrestOpenApiSpec.toString
 
   # database — mutate
   database.mutate.insert:

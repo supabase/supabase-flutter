@@ -66,6 +66,11 @@ class SupabaseQuerySchema {
     );
   }
 
+  /// Fetches the OpenAPI description PostgREST publishes for this schema,
+  /// see [SupabaseClient.getOpenApiSpec].
+  PostgrestBuilder<PostgrestOpenApiSpec> getOpenApiSpec() =>
+      _rest.getOpenApiSpec();
+
   /// Returns a copy of this scoped to [schema] instead.
   SupabaseQuerySchema schema(String schema) {
     final newRest = _rest.schema(schema);

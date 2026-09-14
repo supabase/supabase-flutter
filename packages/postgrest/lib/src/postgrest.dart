@@ -154,6 +154,35 @@ class PostgrestClient {
     );
   }
 
+  /// Fetches the OpenAPI description PostgREST publishes for this client's
+  /// schema.
+  ///
+  /// The document lists only the tables, views and functions the caller's
+  /// role holds privileges on, PostgREST applies that filtering server-side.
+  /// The schema is the one this client was created with, so call [schema]
+  /// first to describe a different one. Like every other read, the request
+  /// carries the client's headers and access token, and is retried and bounded
+  /// according to [retryOptions] and [requestTimeout].
+  ///
+  /// ```dart
+  /// final spec = await postgrest.getOpenApiSpec();
+  /// print(spec.paths.keys);
+  ///
+  /// final billing = await postgrest.schema('billing').getOpenApiSpec();
+  /// ```
+  PostgrestBuilder<PostgrestOpenApiSpec> getOpenApiSpec() {
+    return PostgrestBuilder<PostgrestMap>(
+      url: Uri.parse('$url/'),
+      headers: {...headers, 'Accept': 'application/openapi+json'},
+      schema: _schema,
+      method: HttpMethod.get,
+      httpClient: httpClient,
+      jsonCodec: _jsonCodec,
+      retryOptions: retryOptions,
+      requestTimeout: requestTimeout,
+    ).withConverter(PostgrestOpenApiSpec.fromJson);
+  }
+
   /// {@template postgrest_rpc}
   /// Performs a stored procedure call.
   ///

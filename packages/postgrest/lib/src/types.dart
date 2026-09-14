@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 /// HTTP request or response headers.
@@ -153,4 +154,114 @@ enum TextSearchType {
   /// raise syntax errors, which makes it possible to use raw user-supplied
   /// input for search, and can be used with advanced operators.
   websearch,
+}
+
+/// The OpenAPI description PostgREST publishes for a schema.
+///
+/// PostgREST emits OpenAPI 2.0 (Swagger), so the version of the document is
+/// in [swagger]. OpenAPI 2.0 requires only [swagger], [info] and [paths], and
+/// a PostgREST `db-root-spec` override may leave out any other field. Only
+/// the top level is typed, the contents of [paths], [definitions] and
+/// [parameters] follow the OpenAPI 2.0 specification and vary with the
+/// PostgREST version. The complete document, including the fields that are
+/// not typed here, is available through [toJson].
+///
+/// See https://docs.postgrest.org/en/stable/references/api/openapi.html
+@immutable
+class PostgrestOpenApiSpec {
+  const PostgrestOpenApiSpec._({
+    required Map<String, dynamic> json,
+    required this.swagger,
+    required this.info,
+    required this.paths,
+    required this.host,
+    required this.basePath,
+    required this.definitions,
+    required this.parameters,
+  }) : _json = json;
+
+  /// Builds the description from the decoded document PostgREST answered
+  /// with.
+  ///
+  /// Throws a [FormatException] when [json] lacks one of the fields OpenAPI
+  /// 2.0 requires, or holds it with an unexpected type.
+  factory PostgrestOpenApiSpec.fromJson(Map<String, dynamic> json) {
+    final swagger = json['swagger'];
+    final info = json['info'];
+    if (swagger is! String || info is! Map) {
+      throw FormatException(
+        'Expected an OpenAPI 2.0 document with a swagger version and info',
+        json.toString(),
+      );
+    }
+    final host = json['host'];
+    final basePath = json['basePath'];
+    return PostgrestOpenApiSpec._(
+      json: Map.unmodifiable(json),
+      swagger: swagger,
+      info: Map.unmodifiable(info),
+      paths: _objectMap(json, 'paths') ?? const {},
+      host: host is String ? host : null,
+      basePath: basePath is String ? basePath : null,
+      definitions: _objectMap(json, 'definitions'),
+      parameters: _objectMap(json, 'parameters'),
+    );
+  }
+
+  static Map<String, Map<String, dynamic>>? _objectMap(
+    Map<String, dynamic> json,
+    String field,
+  ) {
+    final objects = json[field];
+    if (objects == null) {
+      return null;
+    }
+    if (objects is! Map || objects.values.any((object) => object is! Map)) {
+      throw FormatException(
+        'Expected $field to be an object of objects',
+        json.toString(),
+      );
+    }
+    return Map.unmodifiable({
+      for (final MapEntry(:key, :value) in objects.entries)
+        '$key': Map<String, dynamic>.unmodifiable(value as Map),
+    });
+  }
+
+  final Map<String, dynamic> _json;
+
+  /// The OpenAPI 2.0 version of the document, `2.0` for PostgREST.
+  final String swagger;
+
+  /// Metadata about the API, the `title`, `description` and `version`
+  /// PostgREST reports.
+  final Map<String, dynamic> info;
+
+  /// The endpoints the caller's role can reach, keyed by path.
+  ///
+  /// Each table and view is listed under its name and each function under
+  /// `/rpc/<name>`, with the operations allowed on it.
+  final Map<String, Map<String, dynamic>> paths;
+
+  /// The host serving the API, if the document reports one.
+  final String? host;
+
+  /// The base path of the API, if the document reports one.
+  final String? basePath;
+
+  /// The JSON schema of each table and view the caller's role can reach,
+  /// keyed by name, if the document reports them.
+  final Map<String, Map<String, dynamic>>? definitions;
+
+  /// The reusable request parameters the paths refer to, if the document
+  /// reports them.
+  final Map<String, Map<String, dynamic>>? parameters;
+
+  /// The complete document as PostgREST answered with it.
+  Map<String, dynamic> toJson() => _json;
+
+  @override
+  String toString() =>
+      'PostgrestOpenApiSpec(swagger: $swagger, info: $info, '
+      'paths: ${paths.keys.toList()})';
 }

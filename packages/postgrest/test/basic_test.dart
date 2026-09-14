@@ -232,6 +232,31 @@ void main() {
       expect(publicData.length, 4);
     });
 
+    test('fetch the OpenAPI spec of the default schema', () async {
+      final spec = await postgrest.getOpenApiSpec();
+
+      expect(spec.swagger, '2.0');
+      expect(spec.info.keys, containsAll(['title', 'version']));
+      expect(spec.paths.keys, containsAll(['/users', '/channels', '/todos']));
+      expect(spec.paths.keys, contains('/rpc/get_username_and_status'));
+      expect(spec.definitions?.keys, containsAll(['users', 'channels']));
+    });
+
+    test('fetch the OpenAPI spec of a selected schema', () async {
+      final spec = await postgrest.schema('personal').getOpenApiSpec();
+
+      expect(spec.swagger, '2.0');
+      expect(
+        spec.paths.keys,
+        unorderedEquals(['/', '/users', '/rpc/get_status']),
+      );
+      expect(spec.definitions?.keys, ['users']);
+      expect(
+        spec.definitions?['users']?['properties'],
+        containsPair('username', containsPair('type', 'string')),
+      );
+    });
+
     test('on_conflict upsert', () async {
       final response = await postgrest.from('users').upsert(
         {'username': 'dragarcia', 'status': 'OFFLINE'},

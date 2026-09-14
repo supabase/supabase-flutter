@@ -265,6 +265,22 @@ class SupabaseClient {
   /// The schema needs to be on the list of exposed schemas inside Supabase.
   SupabaseQuerySchema schema(String schema) => _defaultSchema.schema(schema);
 
+  /// Fetches the OpenAPI description PostgREST publishes for the client's
+  /// schema.
+  ///
+  /// The document lists only the tables, views and functions the caller's
+  /// role holds privileges on. The request carries the same `apikey` and
+  /// `Authorization` headers as every other query, so the description is
+  /// scoped to the signed-in user. Call [schema] first to describe a schema
+  /// other than the client default.
+  ///
+  /// ```dart
+  /// final spec = await supabase.getOpenApiSpec();
+  /// print(spec.paths.keys);
+  /// ```
+  PostgrestBuilder<PostgrestOpenApiSpec> getOpenApiSpec() =>
+      _defaultSchema.getOpenApiSpec();
+
   /// {@macro postgrest_rpc}
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
