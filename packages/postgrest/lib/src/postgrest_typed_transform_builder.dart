@@ -96,7 +96,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, Row?> maybeSingle() =>
       PostgrestTypedTransformBuilder._(
         PostgrestTransformBuilder(
-          _transformBuilder.maybeSingle().withConverter<Row?>(
+          _transformBuilder.maybeSingle().withConverter(
             (row) => row == null ? null : _table.rowFromJson(row),
           ),
         ),

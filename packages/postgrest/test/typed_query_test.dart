@@ -477,16 +477,16 @@ void main() {
       httpClient.stub(bookRows);
 
       Object? caught;
-      final Book? book = await client
+      final Book? fallback = await client
           .table(Books.table)
           .select()
           .maybeSingle()
           .catchError((Object error) {
             caught = error;
-            return null;
+            return const Book({'id': 0, 'title': 'fallback'});
           });
 
-      expect(book == null, isTrue);
+      expect(fallback?.title, 'fallback');
       expect(caught, isA<PostgrestApiException>());
 
       caught = null;
@@ -495,7 +495,7 @@ void main() {
           .select()
           .maybeSingle()
           .then<void>(
-            (book) => fail('resolved to $book'),
+            (row) => fail('resolved to $row'),
             onError: (Object error) {
               caught = error;
             },
