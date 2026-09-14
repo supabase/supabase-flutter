@@ -198,10 +198,13 @@ jobs:
             --env POSTGRES_PASSWORD=postgres --publish 55432:5432 postgres:15
           for _ in $(seq 1 30); do
             if docker exec supabase_typegen_parity pg_isready --host localhost --username postgres; then
-              break
+              exit 0
             fi
             sleep 1
           done
+          echo "Postgres did not become ready in time." >&2
+          docker logs supabase_typegen_parity
+          exit 1
 
       - name: Run tests
         working-directory: packages/${{ matrix.package.name }}

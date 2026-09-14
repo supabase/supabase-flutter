@@ -110,7 +110,13 @@ Future<int> _run(List<String> arguments) async {
       }
       try {
         final contents = await utf8.decodeStream(stdin);
-        document = jsonDecode(contents) as Map<String, dynamic>;
+        final decoded = jsonDecode(contents);
+        if (decoded is! Map<String, dynamic>) {
+          throw const FormatException(
+            'expected a JSON object with the GeneratorMetadata shape.',
+          );
+        }
+        document = decoded;
       } on FormatException catch (error) {
         stderr.writeln(
           'Could not parse the document on stdin: ${error.message}',
