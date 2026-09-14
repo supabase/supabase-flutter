@@ -614,6 +614,30 @@ for (final result in results) {
 }
 ```
 
+### Bucket options are split by operation
+
+`createBucket` takes `CreateBucketOptions` and `updateBucket` takes `UpdateBucketOptions`.
+`BucketOptions` is the base the two share and can no longer be constructed. Each carries the
+bucket's versioning status typed to what its operation accepts, so creating a bucket
+`VersioningStatus.suspended` or moving an existing one back to `VersioningStatus.disabled` does not
+compile instead of being rejected by the server.
+
+```dart
+// Before
+await supabase.storage.createBucket('avatars', const BucketOptions(public: true));
+await supabase.storage.updateBucket('avatars', const BucketOptions(public: false));
+
+// After
+await supabase.storage.createBucket(
+  'avatars',
+  const CreateBucketOptions(public: true, versioningStatus: VersioningStatus.enabled),
+);
+await supabase.storage.updateBucket(
+  'avatars',
+  const UpdateBucketOptions(public: false, versioningStatus: VersioningStatus.suspended),
+);
+```
+
 ### `RealtimeClient.connectionState` is now typed
 
 `connectionState` keeps its name but changes from a `String` getter to `SocketState?`, and the typed

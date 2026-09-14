@@ -45,8 +45,7 @@ class StorageBucketApi {
       'public': bucketOptions.public,
       'file_size_limit': ?bucketOptions.fileSizeLimit,
       'allowed_mime_types': ?bucketOptions.allowedMimeTypes,
-      'versioning_status': ?bucketOptions.versioningStatus?.snakeCase
-          .toUpperCase(),
+      'versioning_status': ?bucketOptions.versioningStatus?.wireValue,
     };
   }
 
@@ -88,9 +87,8 @@ class StorageBucketApi {
   ///
   /// [id] is a unique identifier for the bucket you are creating.
   ///
-  /// [bucketOptions] is a parameter to optionally make the bucket public. Its
-  /// [BucketOptions.versioningStatus] can only be [VersioningStatus.disabled]
-  /// or [VersioningStatus.enabled] here.
+  /// [bucketOptions] optionally makes the bucket public, limits what it
+  /// accepts and turns on object versioning.
   ///
   /// It returns the ID of the newly created bucket. To get the bucket
   /// reference, use [getBucket]:
@@ -104,7 +102,9 @@ class StorageBucketApi {
   /// ```
   Future<String> createBucket(
     String id, [
-    BucketOptions bucketOptions = const BucketOptions(public: false),
+    CreateBucketOptions bucketOptions = const CreateBucketOptions(
+      public: false,
+    ),
   ]) async {
     final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.post(
@@ -120,13 +120,12 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you are updating.
   ///
-  /// [bucketOptions] is a parameter to set the publicity of the bucket. Its
-  /// [BucketOptions.versioningStatus] can only be [VersioningStatus.enabled]
-  /// or [VersioningStatus.suspended] here, and a bucket has to be enabled
-  /// before it can be suspended.
+  /// [bucketOptions] sets the publicity of the bucket, what it accepts and
+  /// its object versioning. A bucket has to have versioning enabled before it
+  /// can be suspended.
   Future<String> updateBucket(
     String id,
-    BucketOptions bucketOptions,
+    UpdateBucketOptions bucketOptions,
   ) async {
     final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.put(
@@ -191,6 +190,10 @@ class StorageBucketApi {
     String id,
     List<LifecycleRule> rules,
   ) async {
+    assert(
+      rules.isNotEmpty && rules.length <= 1000,
+      'A lifecycle policy has between 1 and 1000 rules',
+    );
     final response = await storageFetch.put<Map<String, dynamic>>(
       '$url/bucket/$id/lifecycle',
       {'rules': rules.map((rule) => rule.toJson()).toList()},

@@ -801,7 +801,7 @@ void main() {
 
         await client.createBucket(
           'test_bucket',
-          const BucketOptions(
+          const CreateBucketOptions(
             public: false,
             versioningStatus: VersioningStatus.enabled,
           ),
@@ -823,7 +823,7 @@ void main() {
 
         await client.updateBucket(
           'test_bucket',
-          const BucketOptions(
+          const UpdateBucketOptions(
             public: false,
             versioningStatus: VersioningStatus.suspended,
           ),

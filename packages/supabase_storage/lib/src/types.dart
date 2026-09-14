@@ -4,27 +4,66 @@ import 'package:supabase_common/supabase_common.dart';
 /// Whether a bucket keeps previous versions of its objects.
 ///
 /// A bucket starts out [disabled]. Once it has been [enabled], it can only be
-/// [suspended]; there is no way back to [disabled].
-enum VersioningStatus {
+/// [suspended]; there is no way back to [disabled]. The statuses a bucket can
+/// be created with are the [CreatableVersioningStatus] values and the ones an
+/// existing bucket can move to are the [UpdatableVersioningStatus] values, so
+/// an illegal transition does not compile.
+sealed class VersioningStatus {
+  const VersioningStatus._(this.wireValue);
+
   /// Versioning has never been enabled. Writes replace the object in place.
-  disabled,
+  static const VersioningDisabled disabled = VersioningDisabled._();
 
   /// Every write to a path creates a new version, and the previous versions
   /// stay addressable until they are deleted.
-  enabled,
+  static const VersioningEnabled enabled = VersioningEnabled._();
 
   /// Versioning was enabled and then paused. Existing versions are kept, but
   /// new writes replace the current version instead of adding one.
-  suspended;
+  static const VersioningSuspended suspended = VersioningSuspended._();
+
+  /// Every status, in the order a bucket moves through them.
+  static const List<VersioningStatus> values = [disabled, enabled, suspended];
+
+  /// The value the storage API uses for this status.
+  @internal
+  final String wireValue;
 
   static VersioningStatus? _fromJson(Object? value) {
     if (value is! String) {
       return null;
     }
-    return values.firstWhere(
-      (status) => status.snakeCase.toUpperCase() == value,
-    );
+    return values.firstWhere((status) => status.wireValue == value);
   }
+
+  @override
+  String toString() => 'VersioningStatus.${wireValue.toLowerCase()}';
+}
+
+/// A [VersioningStatus] a bucket can be created with: [VersioningDisabled] or
+/// [VersioningEnabled].
+sealed class CreatableVersioningStatus implements VersioningStatus {}
+
+/// A [VersioningStatus] an existing bucket can be moved to:
+/// [VersioningEnabled] or [VersioningSuspended].
+sealed class UpdatableVersioningStatus implements VersioningStatus {}
+
+/// The type of [VersioningStatus.disabled].
+final class VersioningDisabled extends VersioningStatus
+    implements CreatableVersioningStatus {
+  const VersioningDisabled._() : super._('DISABLED');
+}
+
+/// The type of [VersioningStatus.enabled].
+final class VersioningEnabled extends VersioningStatus
+    implements CreatableVersioningStatus, UpdatableVersioningStatus {
+  const VersioningEnabled._() : super._('ENABLED');
+}
+
+/// The type of [VersioningStatus.suspended].
+final class VersioningSuspended extends VersioningStatus
+    implements UpdatableVersioningStatus {
+  const VersioningSuspended._() : super._('SUSPENDED');
 }
 
 /// A storage bucket.
@@ -108,7 +147,12 @@ class NoncurrentVersionExpiration {
   const NoncurrentVersionExpiration({
     required this.noncurrentDays,
     this.newerNoncurrentVersions,
-  });
+  }) : assert(noncurrentDays >= 1, 'noncurrentDays must be at least 1'),
+       assert(
+         newerNoncurrentVersions == null ||
+             (newerNoncurrentVersions >= 1 && newerNoncurrentVersions <= 100),
+         'newerNoncurrentVersions must be between 1 and 100',
+       );
 
   factory NoncurrentVersionExpiration.fromJson(Map<String, dynamic> json) {
     return NoncurrentVersionExpiration(
@@ -145,7 +189,10 @@ class LifecycleRule {
     required this.noncurrentVersionExpiration,
     this.id,
     this.status = LifecycleRuleStatus.enabled,
-  });
+  }) : assert(
+         id == null || (id.length >= 1 && id.length <= 255),
+         'id must be between 1 and 255 characters',
+       );
 
   factory LifecycleRule.fromJson(Map<String, dynamic> json) {
     return LifecycleRule(
@@ -380,28 +427,21 @@ class FileObjectV2 {
   final bool? isVersioned;
 }
 
-/// [public] The visibility of the bucket. Public buckets don't require an
-/// authorization token to download objects, but still require a valid token for
-/// all other operations. By default, buckets are private.
-///
-/// [fileSizeLimit] specifies the file size limit that this bucket can accept
-/// during upload. It should be in a format such as `20GB`, `20MB`, `30KB`, or
-/// `3B`
-///
-/// [allowedMimeTypes] specifies the allowed mime types that this bucket can
-/// accept during upload
-class BucketOptions {
+/// The settings shared by [CreateBucketOptions] and [UpdateBucketOptions].
+sealed class BucketOptions {
   const BucketOptions({
     required this.public,
     this.fileSizeLimit,
     this.allowedMimeTypes,
-    this.versioningStatus,
   });
 
-  /// The visibility of the bucket.
+  /// The visibility of the bucket. Public buckets don't require an
+  /// authorization token to download objects, but still require a valid token
+  /// for all other operations. By default, buckets are private.
   final bool public;
 
-  /// The file size limit that this bucket can accept during upload.
+  /// The file size limit that this bucket can accept during upload, in a
+  /// format such as `20GB`, `20MB`, `30KB` or `3B`.
   final String? fileSizeLimit;
 
   /// The allowed mime types that this bucket can accept during upload.
@@ -409,11 +449,44 @@ class BucketOptions {
 
   /// Whether the bucket keeps previous versions of its objects. Left as is
   /// when `null`.
+  VersioningStatus? get versioningStatus;
+}
+
+/// Options for [StorageBucketApi.createBucket].
+final class CreateBucketOptions extends BucketOptions {
+  const CreateBucketOptions({
+    required super.public,
+    super.fileSizeLimit,
+    super.allowedMimeTypes,
+    this.versioningStatus,
+  });
+
+  /// Whether the bucket keeps previous versions of its objects.
   ///
-  /// A bucket is created [VersioningStatus.disabled] or
-  /// [VersioningStatus.enabled], and once created can only move to
-  /// [VersioningStatus.enabled] or [VersioningStatus.suspended].
-  final VersioningStatus? versioningStatus;
+  /// A bucket is created [VersioningStatus.disabled], which is what `null`
+  /// amounts to, or [VersioningStatus.enabled]. It cannot start out
+  /// [VersioningStatus.suspended].
+  @override
+  final CreatableVersioningStatus? versioningStatus;
+}
+
+/// Options for [StorageBucketApi.updateBucket].
+final class UpdateBucketOptions extends BucketOptions {
+  const UpdateBucketOptions({
+    required super.public,
+    super.fileSizeLimit,
+    super.allowedMimeTypes,
+    this.versioningStatus,
+  });
+
+  /// Whether the bucket keeps previous versions of its objects. Left as is
+  /// when `null`.
+  ///
+  /// A bucket that has been [VersioningStatus.enabled] can be
+  /// [VersioningStatus.suspended] and enabled again. There is no way back to
+  /// [VersioningStatus.disabled].
+  @override
+  final UpdatableVersioningStatus? versioningStatus;
 }
 
 /// The column that [StorageBucketApi.listBuckets] can sort its results by.

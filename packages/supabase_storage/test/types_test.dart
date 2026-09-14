@@ -334,6 +334,69 @@ void main() {
 
       expect(bucket.versioningStatus, isNull);
     });
+
+    test('lists every status in the order a bucket moves through them', () {
+      expect(VersioningStatus.values, [
+        VersioningStatus.disabled,
+        VersioningStatus.enabled,
+        VersioningStatus.suspended,
+      ]);
+      expect(VersioningStatus.enabled.toString(), 'VersioningStatus.enabled');
+    });
+
+    test('splits into the statuses each operation accepts', () {
+      const CreatableVersioningStatus creatable = VersioningStatus.enabled;
+      const UpdatableVersioningStatus updatable = VersioningStatus.enabled;
+
+      expect(creatable, same(updatable));
+      expect(VersioningStatus.disabled, isA<CreatableVersioningStatus>());
+      expect(
+        VersioningStatus.disabled,
+        isNot(isA<UpdatableVersioningStatus>()),
+      );
+      expect(VersioningStatus.suspended, isA<UpdatableVersioningStatus>());
+      expect(
+        VersioningStatus.suspended,
+        isNot(isA<CreatableVersioningStatus>()),
+      );
+    });
+
+    test('can be matched exhaustively', () {
+      String describe(VersioningStatus status) {
+        return switch (status) {
+          VersioningDisabled() => 'off',
+          VersioningEnabled() => 'on',
+          VersioningSuspended() => 'paused',
+        };
+      }
+
+      expect(VersioningStatus.values.map(describe), ['off', 'on', 'paused']);
+    });
+  });
+
+  group('NoncurrentVersionExpiration', () {
+    test('rejects values outside the ranges the server accepts', () {
+      expect(
+        () => NoncurrentVersionExpiration(noncurrentDays: 0),
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        () => NoncurrentVersionExpiration(
+          noncurrentDays: 1,
+          newerNoncurrentVersions: 101,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        () => LifecycleRule(
+          id: '',
+          noncurrentVersionExpiration: NoncurrentVersionExpiration(
+            noncurrentDays: 1,
+          ),
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
   });
 
   group('LifecycleRule', () {
