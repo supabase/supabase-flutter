@@ -61,6 +61,7 @@ final supabase = Supabase.instance.client;
   * [Native Google sign in](#native-google-sign-in)
   * [OAuth login](#oauth-login)
   * [Passkeys](#passkeys)
+  * [Android Restore Credentials](#android-restore-credentials)
 * [Database](#database)
 * [Realtime](#realtime)
   * [Postgres Changes](#postgres-changes)
@@ -317,6 +318,10 @@ await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
 ```
 
 The platform ceremony is handled by whichever plugin you add. Refer to your plugin's documentation, for example the [`passkeys` package documentation](https://pub.dev/packages/passkeys), for its platform requirements, setup, and how to handle ceremony failures such as the user cancelling.
+
+### <a id="android-restore-credentials"></a>Android Restore Credentials
+
+Android's [Restore Credentials](https://developer.android.com/identity/sign-in/restore-credentials) restore keys are passkeys, so they use the same BETA passkey feature and the same authenticator. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's `PasskeyAuthenticator` implements the `RestoreCredentialInterface` these methods expect (since `passkeys` `2.23.1`). Call `supabase.auth.createRestoreKey(authenticator)` after a non-anonymous sign-in and `supabase.auth.signInWithRestoreKey(authenticator)` on the first launch on a new device. On sign-out, delete the server passkey and call `clearRestoreCredential()` on the authenticator. See the API documentation of `AuthClientRestoreCredential` for the details.
 
 ### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 
