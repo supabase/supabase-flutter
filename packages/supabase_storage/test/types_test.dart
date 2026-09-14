@@ -348,17 +348,22 @@ void main() {
       const CreatableVersioningStatus creatable = VersioningStatus.enabled;
       const UpdatableVersioningStatus updatable = VersioningStatus.enabled;
 
+      final creatableValues = VersioningStatus.values
+          .whereType<CreatableVersioningStatus>()
+          .toList();
+      final updatableValues = VersioningStatus.values
+          .whereType<UpdatableVersioningStatus>()
+          .toList();
+
       expect(creatable, same(updatable));
-      expect(VersioningStatus.disabled, isA<CreatableVersioningStatus>());
-      expect(
+      expect(creatableValues, [
         VersioningStatus.disabled,
-        isNot(isA<UpdatableVersioningStatus>()),
-      );
-      expect(VersioningStatus.suspended, isA<UpdatableVersioningStatus>());
-      expect(
+        VersioningStatus.enabled,
+      ]);
+      expect(updatableValues, [
+        VersioningStatus.enabled,
         VersioningStatus.suspended,
-        isNot(isA<CreatableVersioningStatus>()),
-      );
+      ]);
     });
 
     test('can be matched exhaustively', () {
