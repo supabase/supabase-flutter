@@ -3,6 +3,7 @@
 
 import 'package:meta/meta.dart';
 import 'package:passkeys_platform_interface/passkeys_platform_interface.dart';
+import 'package:supabase_flutter/src/logger.dart';
 import 'package:supabase_flutter/src/passkey/passkey_options_mapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -38,11 +39,21 @@ extension AuthClientRestoreCredential on AuthClient {
   /// Creates a restore key for the signed in user and registers it as a
   /// passkey.
   ///
-  /// Call it right after the user signs in, and on a later launch if the user
-  /// is signed in and no restore key exists yet. Android keeps one restore key
-  /// per app, so remember the returned [Passkey.id] and delete the previous key
-  /// with [AuthPasskeyApi.delete] before creating a new one, and when the user
-  /// signs out.
+  /// Call it right after a non-anonymous user signs in, and on a later launch
+  /// if the user is signed in and no restore key exists yet. Android keeps one
+  /// restore key per app, so remember the returned [Passkey.id] and delete the
+  /// previous key with [AuthPasskeyApi.delete] before creating a new one.
+  ///
+  /// When the user signs out, delete the key on both sides: the server passkey
+  /// with [AuthPasskeyApi.delete] and the key on the device with
+  /// [RestoreCredentialInterface.clearRestoreCredential]. Android does not
+  /// remove the device key on its own, so without the second step the user is
+  /// signed in again on the next launch.
+  ///
+  /// If the server rejects the created credential, the key is removed from the
+  /// device again before the error is rethrown. If only the rename to
+  /// [friendlyName] fails, the registered passkey is returned under the name
+  /// the server gave it and the failure is logged.
   ///
   /// [friendlyName] becomes the passkey's friendly name so restore keys can be
   /// told apart from the passkeys the user created, for example to hide them
@@ -67,14 +78,43 @@ extension AuthClientRestoreCredential on AuthClient {
       passkeyRegisterRequestFromOptions(registration.options),
       isCloudBackupEnabled: isCloudBackupEnabled,
     );
-    final registered = await passkey.verifyRegistration(
-      challengeId: registration.challengeId,
-      credential: response.toJson(),
-    );
-    return passkey.update(
-      passkeyId: registered.id,
-      friendlyName: friendlyName,
-    );
+    final Passkey registered;
+    try {
+      registered = await passkey.verifyRegistration(
+        challengeId: registration.challengeId,
+        credential: response.toJson(),
+      );
+    } catch (_) {
+      await _clearRestoreCredentialQuietly(restoreCredential);
+      rethrow;
+    }
+    try {
+      return await passkey.update(
+        passkeyId: registered.id,
+        friendlyName: friendlyName,
+      );
+    } catch (error, stackTrace) {
+      flutterLogger.warning(
+        'Restore key ${registered.id} was registered but could not be renamed',
+        error,
+        stackTrace,
+      );
+      return registered;
+    }
+  }
+
+  Future<void> _clearRestoreCredentialQuietly(
+    RestoreCredentialInterface restoreCredential,
+  ) async {
+    try {
+      await restoreCredential.clearRestoreCredential();
+    } catch (error, stackTrace) {
+      flutterLogger.warning(
+        'Could not remove the rejected restore key from the device',
+        error,
+        stackTrace,
+      );
+    }
   }
 
   /// Signs the user in with the restore key on the device.

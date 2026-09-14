@@ -31,6 +31,8 @@ class _PasskeyServer extends BaseClient {
   final requests =
       <({String method, String path, Map<String, dynamic>? body})>[];
   bool omitUserName = false;
+  bool rejectRegistration = false;
+  bool rejectUpdate = false;
 
   Map<String, dynamic>? bodyOf(String path) =>
       requests.where((request) => request.path == path).single.body;
@@ -61,11 +63,22 @@ class _PasskeyServer extends BaseClient {
         },
         'expires_at': 1735689900,
       }),
+      ('POST', '/passkeys/registration/verify') when rejectRegistration =>
+        _json({
+          'code': 400,
+          'error_code': 'validation_failed',
+          'msg': 'Invalid credential',
+        }, status: 400),
       ('POST', '/passkeys/registration/verify') => _json({
         'id': _passkeyId,
         'friendly_name': 'Google Password Manager',
         'created_at': '2025-01-01T00:00:00Z',
       }),
+      ('PATCH', '/passkeys/$_passkeyId') when rejectUpdate => _json({
+        'code': 500,
+        'error_code': 'unexpected_failure',
+        'msg': 'Database error',
+      }, status: 500),
       ('PATCH', '/passkeys/$_passkeyId') => _json({
         'id': _passkeyId,
         'friendly_name': body?['friendly_name'],
@@ -248,6 +261,35 @@ void main() {
       expect(server.requests.map((request) => request.path), [
         '/passkeys/registration/options',
       ]);
+    });
+
+    test('removes the device key again when the server rejects it', () async {
+      await signIn();
+      server.rejectRegistration = true;
+      final restore = _FakeRestoreCredential();
+
+      await expectLater(
+        client.createRestoreKey(restore),
+        throwsA(isA<AuthException>()),
+      );
+
+      expect(restore.clearCalls, 1);
+      expect(server.requests.map((request) => request.path), [
+        '/passkeys/registration/options',
+        '/passkeys/registration/verify',
+      ]);
+    });
+
+    test('keeps the registered key when only the rename fails', () async {
+      await signIn();
+      server.rejectUpdate = true;
+      final restore = _FakeRestoreCredential();
+
+      final passkey = await client.createRestoreKey(restore);
+
+      expect(passkey.id, _passkeyId);
+      expect(passkey.friendlyName, 'Google Password Manager');
+      expect(restore.clearCalls, 0);
     });
 
     test('forwards a local-only restore key request', () async {
