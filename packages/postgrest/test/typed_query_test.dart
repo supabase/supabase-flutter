@@ -473,29 +473,31 @@ void main() {
   });
 
   group('errors', () {
-    test('catchError and then receive the error of the request', () async {
-      httpClient.stub(bookRows);
+    setUp(() {
+      httpClient.stub({'message': 'boom', 'code': '42501'}, statusCode: 403);
+    });
 
+    test('catchError receives the error of the request', () async {
       Object? caught;
-      final Book? fallback = await client
+      final List<Book> fallback = await client
           .table(Books.table)
           .select()
-          .maybeSingle()
           .catchError((Object error) {
             caught = error;
-            return const Book({'id': 0, 'title': 'fallback'});
+            return const <Book>[];
           });
 
-      expect(fallback?.title, 'fallback');
+      expect(fallback, isEmpty);
       expect(caught, isA<PostgrestApiException>());
+    });
 
-      caught = null;
+    test('then receives the error of the request', () async {
+      Object? caught;
       await client
           .table(Books.table)
           .select()
-          .maybeSingle()
           .then<void>(
-            (row) => fail('resolved to $row'),
+            (rows) => fail('resolved to $rows'),
             onError: (Object error) {
               caught = error;
             },
