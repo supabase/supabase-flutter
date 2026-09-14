@@ -29,7 +29,7 @@ final _accessToken =
 /// flow touches.
 class _PasskeyServer extends BaseClient {
   final requests =
-      <({String method, String path, Map<String, dynamic>? body})>[];
+      <({HttpMethod method, String path, Map<String, dynamic>? body})>[];
   bool omitUserName = false;
   bool rejectRegistration = false;
   bool rejectUpdate = false;
@@ -44,10 +44,11 @@ class _PasskeyServer extends BaseClient {
       body = jsonDecode(request.body) as Map<String, dynamic>;
     }
     final path = request.url.path;
-    requests.add((method: request.method, path: path, body: body));
+    final method = HttpMethod.values.byName(request.method.toLowerCase());
+    requests.add((method: method, path: path, body: body));
 
-    return switch ((request.method, path)) {
-      ('POST', '/passkeys/registration/options') => _json({
+    return switch ((method, path)) {
+      (HttpMethod.post, '/passkeys/registration/options') => _json({
         'challenge_id': _challengeId,
         'options': {
           'challenge': 'Y2hhbGxlbmdl',
@@ -63,28 +64,29 @@ class _PasskeyServer extends BaseClient {
         },
         'expires_at': 1735689900,
       }),
-      ('POST', '/passkeys/registration/verify') when rejectRegistration =>
+      (HttpMethod.post, '/passkeys/registration/verify')
+          when rejectRegistration =>
         _json({
           'code': 400,
           'error_code': 'validation_failed',
           'msg': 'Invalid credential',
         }, status: 400),
-      ('POST', '/passkeys/registration/verify') => _json({
+      (HttpMethod.post, '/passkeys/registration/verify') => _json({
         'id': _passkeyId,
         'friendly_name': 'Google Password Manager',
         'created_at': '2025-01-01T00:00:00Z',
       }),
-      ('PATCH', '/passkeys/$_passkeyId') when rejectUpdate => _json({
+      (HttpMethod.patch, '/passkeys/$_passkeyId') when rejectUpdate => _json({
         'code': 500,
         'error_code': 'unexpected_failure',
         'msg': 'Database error',
       }, status: 500),
-      ('PATCH', '/passkeys/$_passkeyId') => _json({
+      (HttpMethod.patch, '/passkeys/$_passkeyId') => _json({
         'id': _passkeyId,
         'friendly_name': body?['friendly_name'],
         'created_at': '2025-01-01T00:00:00Z',
       }),
-      ('POST', '/passkeys/authentication/options') => _json({
+      (HttpMethod.post, '/passkeys/authentication/options') => _json({
         'challenge_id': _challengeId,
         'options': {
           'challenge': 'Y2hhbGxlbmdl',
@@ -93,7 +95,7 @@ class _PasskeyServer extends BaseClient {
         },
         'expires_at': 1735689900,
       }),
-      ('POST', '/passkeys/authentication/verify') => _json({
+      (HttpMethod.post, '/passkeys/authentication/verify') => _json({
         'access_token': _accessToken,
         'token_type': 'bearer',
         'expires_in': 3600,
