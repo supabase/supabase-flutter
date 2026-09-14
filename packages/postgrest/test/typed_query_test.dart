@@ -196,6 +196,46 @@ void main() {
       expect(response.data.map((book) => book.id), [1, 2]);
       expect(response.count, 10);
     });
+
+    test('count after single wraps the typed row', () async {
+      httpClient.stub(
+        {'id': 1, 'title': 'a'},
+        headers: {'content-range': '0-0/1'},
+      );
+
+      final PostgrestResponse<Book> response = await client
+          .table(Books.table)
+          .select()
+          .where(Books.id.eq(1))
+          .single()
+          .count(CountOption.exact);
+
+      expect(response.data.title, 'a');
+      expect(response.count, 1);
+    });
+
+    test('count after maybeSingle wraps the missing row', () async {
+      httpClient.stub([], headers: {'content-range': '*/0'});
+
+      final PostgrestResponse<Book?> response = await client
+          .table(Books.table)
+          .select()
+          .where(Books.id.eq(1))
+          .maybeSingle()
+          .count(CountOption.exact);
+
+      expect(response.data == null, isTrue);
+      expect(response.count, 0);
+    });
+
+    test('maybeSingle with more than one row throws', () {
+      httpClient.stub(bookRows);
+
+      expect(
+        () => client.table(Books.table).select().maybeSingle(),
+        throwsA(isA<PostgrestApiException>()),
+      );
+    });
   });
 
   group('where', () {
@@ -421,10 +461,47 @@ void main() {
       expect(requestParameters()['limit'], '2');
       expect(books, hasLength(2));
 
-      await client.table(Books.table).select().range(0, 1);
+      final List<Book> ranged = await client
+          .table(Books.table)
+          .select()
+          .range(0, 1);
 
       expect(requestParameters()['offset'], '0');
       expect(requestParameters()['limit'], '2');
+      expect(ranged.map((book) => book.id), [1, 2]);
+    });
+  });
+
+  group('errors', () {
+    test('catchError and then receive the error of the request', () async {
+      httpClient.stub(bookRows);
+
+      Object? caught;
+      final Book? book = await client
+          .table(Books.table)
+          .select()
+          .maybeSingle()
+          .catchError((Object error) {
+            caught = error;
+            return null;
+          });
+
+      expect(book == null, isTrue);
+      expect(caught, isA<PostgrestApiException>());
+
+      caught = null;
+      await client
+          .table(Books.table)
+          .select()
+          .maybeSingle()
+          .then<void>(
+            (book) => fail('resolved to $book'),
+            onError: (Object error) {
+              caught = error;
+            },
+          );
+
+      expect(caught, isA<PostgrestApiException>());
     });
   });
 
@@ -460,11 +537,13 @@ void main() {
         {'id': 3},
       ]);
 
-      await client.table(Books.table).insert({'title': 'foo'}).select([
-        Books.id,
-      ]);
+      final List<Book> books = await client
+          .table(Books.table)
+          .insert({'title': 'foo'})
+          .select([Books.id]);
 
       expect(requestParameters()['select'], 'id');
+      expect(books.map((book) => book.id), [3]);
     });
 
     test('upsert sets the resolution header', () async {

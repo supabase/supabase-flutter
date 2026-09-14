@@ -41,9 +41,12 @@ class PostgrestTypedQueryBuilder<Row> {
   PostgrestTypedFilterBuilder<Row, List<Row>> select([
     List<PostgrestColumnExpression<Row, Object>>? columns,
   ]) => PostgrestTypedFilterBuilder._(
-    _queryBuilder.select(_selectList(columns)),
+    PostgrestFilterBuilder(
+      _queryBuilder
+          .select(_selectList(columns))
+          .withConverter((rows) => _rowsFromJson(table, rows)),
+    ),
     table,
-    (data) => _rowsFromJson(table, data),
   );
 
   /// Perform an INSERT into the table or view.
@@ -66,7 +69,6 @@ class PostgrestTypedQueryBuilder<Row> {
   }) => PostgrestTypedFilterBuilder._(
     _queryBuilder.insert(values, defaultToNull: defaultToNull),
     table,
-    _toVoid,
   );
 
   /// Perform an UPSERT on the table or view.
@@ -107,7 +109,6 @@ class PostgrestTypedQueryBuilder<Row> {
         defaultToNull: defaultToNull,
       ),
       table,
-      _toVoid,
     );
   }
 
@@ -123,11 +124,7 @@ class PostgrestTypedQueryBuilder<Row> {
   ///     .where(Books.id.eq(1));
   /// ```
   PostgrestTypedFilterBuilder<Row, void> update(Map<String, dynamic> values) =>
-      PostgrestTypedFilterBuilder._(
-        _queryBuilder.update(values),
-        table,
-        _toVoid,
-      );
+      PostgrestTypedFilterBuilder._(_queryBuilder.update(values), table);
 
   /// Perform a DELETE on the table or view.
   ///
@@ -138,7 +135,7 @@ class PostgrestTypedQueryBuilder<Row> {
   /// await client.table(Books.table).delete().where(Books.id.eq(1));
   /// ```
   PostgrestTypedFilterBuilder<Row, void> delete() =>
-      PostgrestTypedFilterBuilder._(_queryBuilder.delete(), table, _toVoid);
+      PostgrestTypedFilterBuilder._(_queryBuilder.delete(), table);
 
   /// Only performs a count query on the table or view.
   ///
@@ -147,9 +144,5 @@ class PostgrestTypedQueryBuilder<Row> {
   /// ```
   PostgrestTypedFilterBuilder<Row, int> count([
     CountOption option = CountOption.exact,
-  ]) => PostgrestTypedFilterBuilder._(
-    _queryBuilder.count(option),
-    table,
-    (data) => data as int,
-  );
+  ]) => PostgrestTypedFilterBuilder._(_queryBuilder.count(option), table);
 }
