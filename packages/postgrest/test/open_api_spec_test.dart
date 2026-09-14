@@ -78,25 +78,6 @@ void main() {
     expect(spec.toJson()['externalDocs'], {'url': 'https://postgrest.org'});
   });
 
-  test('cannot be changed through the document or the typed fields', () async {
-    httpClient.stub(_document, path: '/rest/v1/');
-
-    final spec = await postgrest.getOpenApiSpec();
-
-    expect(() => spec.toJson()['swagger'] = '3.0', throwsUnsupportedError);
-    expect(
-      () => spec.toJson()['info']['title'] = 'changed',
-      throwsUnsupportedError,
-    );
-    expect(() => spec.info['title'] = 'changed', throwsUnsupportedError);
-    expect(() => spec.paths['/users']!['get'] = null, throwsUnsupportedError);
-    expect(
-      () => spec.paths['/users']!['get']['tags'] = ['x'],
-      throwsUnsupportedError,
-    );
-    expect(spec.toJson(), _document);
-  });
-
   test('leaves out the optional fields a root spec override omits', () async {
     httpClient.stub({
       'swagger': '2.0',

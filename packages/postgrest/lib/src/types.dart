@@ -186,45 +186,33 @@ class PostgrestOpenApiSpec {
   /// Throws a [FormatException] when [json] lacks one of the fields OpenAPI
   /// 2.0 requires, or holds it with an unexpected type.
   factory PostgrestOpenApiSpec.fromJson(Map<String, dynamic> json) {
-    final document = _deepUnmodifiable(json) as Map<String, dynamic>;
-    final swagger = document['swagger'];
-    final info = document['info'];
+    final swagger = json['swagger'];
+    final info = json['info'];
     if (swagger is! String || info is! Map<String, dynamic>) {
       throw FormatException(
         'Expected an OpenAPI 2.0 document with a swagger version and info',
         json.toString(),
       );
     }
-    final host = document['host'];
-    final basePath = document['basePath'];
+    final host = json['host'];
+    final basePath = json['basePath'];
     return PostgrestOpenApiSpec._(
-      json: document,
+      json: json,
       swagger: swagger,
       info: info,
-      paths: _objectMap(document, 'paths') ?? const {},
+      paths: _objectMap(json, 'paths') ?? const {},
       host: host is String ? host : null,
       basePath: basePath is String ? basePath : null,
-      definitions: _objectMap(document, 'definitions'),
-      parameters: _objectMap(document, 'parameters'),
+      definitions: _objectMap(json, 'definitions'),
+      parameters: _objectMap(json, 'parameters'),
     );
   }
 
-  /// Copies [value] into unmodifiable maps and lists all the way down, so the
-  /// document cannot be changed through [toJson] or any of the typed fields.
-  static Object? _deepUnmodifiable(Object? value) => switch (value) {
-    Map() => Map<String, dynamic>.unmodifiable({
-      for (final MapEntry(:key, value: nested) in value.entries)
-        '$key': _deepUnmodifiable(nested),
-    }),
-    List() => List<dynamic>.unmodifiable(value.map(_deepUnmodifiable)),
-    _ => value,
-  };
-
   static Map<String, Map<String, dynamic>>? _objectMap(
-    Map<String, dynamic> document,
+    Map<String, dynamic> json,
     String field,
   ) {
-    final objects = document[field];
+    final objects = json[field];
     if (objects == null) {
       return null;
     }
@@ -232,13 +220,10 @@ class PostgrestOpenApiSpec {
         objects.values.any((object) => object is! Map<String, dynamic>)) {
       throw FormatException(
         'Expected $field to be an object of objects',
-        document.toString(),
+        json.toString(),
       );
     }
-    return Map.unmodifiable({
-      for (final MapEntry(:key, :value) in objects.entries)
-        key: value as Map<String, dynamic>,
-    });
+    return objects.cast();
   }
 
   final Map<String, dynamic> _json;
