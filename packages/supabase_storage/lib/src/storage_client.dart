@@ -70,6 +70,24 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// Configures the automatic retry of uploads.
   final SupabaseRetryOptions retryOptions;
 
+  /// The apex domains the storage hostname rewrite applies to, each carrying
+  /// a leading dot so the match has to land on a hostname label boundary.
+  ///
+  /// Without the dot, any host merely ending in the apex matches: a
+  /// caller-owned domain like "mysupabase.co" would be rewritten to
+  /// "mystorage.supabase.co", pointing requests at a domain the caller does
+  /// not control. The bare apex "supabase.co" is excluded for the same
+  /// reason, it is not a project host.
+  static const _legacySupabaseHostSuffixes = [
+    '.supabase.co',
+    '.supabase.in',
+    '.supabase.red',
+  ];
+
+  static bool _isLegacySupabaseHost(String hostname) =>
+      !hostname.contains('storage.supabase.') &&
+      _legacySupabaseHostSuffixes.any(hostname.endsWith);
+
   /// Transforms legacy storage URLs to use the dedicated storage host.
   ///
   /// If legacy URI is used, replace with new storage host (disables request
@@ -79,18 +97,18 @@ class SupabaseStorageClient extends StorageBucketApi {
     final uri = Uri.parse(url);
     final hostname = uri.host;
 
-    // Check if it's a Supabase host (supabase.co, supabase.in, or supabase.red)
-    final isSupabaseHost = RegExp(r'supabase\.(co|in|red)$').hasMatch(hostname);
-
     // If it's a legacy storage URL, transform it
     const legacyStoragePrefix = '/storage';
-    if (isSupabaseHost &&
-        !hostname.contains('storage.supabase.') &&
+    if (_isLegacySupabaseHost(hostname) &&
         uri.path.startsWith(legacyStoragePrefix)) {
       // Remove /storage from pathname
       final newPath = uri.path.substring(legacyStoragePrefix.length);
-      // Replace supabase. with storage.supabase. in hostname
-      final newHostname = hostname.replaceAll('supabase.', 'storage.supabase.');
+      // Replace .supabase. with .storage.supabase. in hostname, on the same
+      // label boundary the check above used.
+      final newHostname = hostname.replaceAll(
+        '.supabase.',
+        '.storage.supabase.',
+      );
 
       // Reconstruct the URI
       return uri
