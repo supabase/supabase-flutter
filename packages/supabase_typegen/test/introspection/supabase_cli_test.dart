@@ -109,7 +109,10 @@ with t as (select 2 as id) select id from t
           isA<SupabaseCliException>().having(
             (error) => error.message,
             'message',
-            contains('not found on PATH'),
+            allOf(
+              contains('could not be started'),
+              contains('supabase-typegen-missing-binary'),
+            ),
           ),
         ),
       );
@@ -193,6 +196,25 @@ with t as (select 2 as id) select id from t
           {'id': 1, 'name': 'public'},
         ],
       });
+    });
+
+    test('rejects a result without one of the collections', () {
+      final cli = fakeCli('echo \'[{"schemas":[]}]\'');
+      final database = SupabaseCliQueryable(
+        const LocalDatabase(),
+        executable: cli.path,
+      );
+
+      expect(
+        () => database.query({'schemas': 'select 1', 'tables': 'select 2'}),
+        throwsA(
+          isA<SupabaseCliException>().having(
+            (error) => error.message,
+            'message',
+            contains('no "tables" collection'),
+          ),
+        ),
+      );
     });
 
     test('rejects an unexpected result shape', () {

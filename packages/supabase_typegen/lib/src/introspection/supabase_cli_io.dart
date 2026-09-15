@@ -97,11 +97,11 @@ class SupabaseCliQueryable implements Queryable {
           '--file',
           file.absolute.path,
         ]);
-      } on ProcessException {
-        throw const SupabaseCliException(
-          'The Supabase CLI was not found on PATH. Install it from '
-          'https://supabase.com/docs/guides/cli/getting-started and try '
-          'again.',
+      } on ProcessException catch (error) {
+        throw SupabaseCliException(
+          'The Supabase CLI could not be started (${error.message}). '
+          'Install it from https://supabase.com/docs/guides/cli/getting-started '
+          'and make sure `$executable` is on PATH.',
         );
       }
       if (result.exitCode != 0) {
@@ -188,7 +188,12 @@ Map<String, List<Map<String, dynamic>>> _rows(
   final row = rows.single as Map<String, dynamic>;
   return {
     for (final name in names)
-      name: (row[name] as List<dynamic>).cast<Map<String, dynamic>>(),
+      name: switch (row[name]) {
+        final List<dynamic> records => records.cast<Map<String, dynamic>>(),
+        _ => throw SupabaseCliException(
+          'supabase db query returned no "$name" collection.',
+        ),
+      },
   };
 }
 
