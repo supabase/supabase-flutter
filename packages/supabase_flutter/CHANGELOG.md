@@ -1,3 +1,7 @@
+## 3.0.0-dev.4
+
+ - **FEAT**(supabase_flutter): Android Restore Credentials on top of passkeys ([#1824](https://github.com/supabase/supabase-flutter/issues/1824)). ([68293591](https://github.com/supabase/supabase-flutter/commit/68293591cfdbbf52d8333302a05f40bff69274ca))
+
 ## 3.0.0-dev.3
 
 > Note: This release has breaking changes.

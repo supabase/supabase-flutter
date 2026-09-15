@@ -1,3 +1,7 @@
+## 3.0.0-dev.4
+
+ - **REFACTOR**(postgrest): build the typed builders on PostgrestBuilder<T> ([#1836](https://github.com/supabase/supabase-flutter/issues/1836)). ([08616c76](https://github.com/supabase/supabase-flutter/commit/08616c76197317ea187ea811746838114a3d95f6))
+
 ## 3.0.0-dev.3
 
 > Note: This release has breaking changes.
