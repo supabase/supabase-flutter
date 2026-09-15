@@ -335,6 +335,19 @@ void main() {
       expect(bucket.versioningStatus, isNull);
     });
 
+    test('is null when the server reports a status this client lacks', () {
+      final bucket = Bucket.fromJson({
+        'id': 'avatars',
+        'name': 'avatars',
+        'created_at': '2021-01-01T00:00:00Z',
+        'updated_at': '2021-01-02T00:00:00Z',
+        'public': false,
+        'versioning_status': 'ARCHIVED',
+      });
+
+      expect(bucket.versioningStatus, isNull);
+    });
+
     test('can be matched exhaustively', () {
       String describe(VersioningStatus status) {
         return switch (status) {

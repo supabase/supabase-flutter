@@ -18,12 +18,12 @@ enum VersioningStatus {
   suspended;
 
   static VersioningStatus? _fromJson(Object? value) {
-    if (value is! String) {
-      return null;
+    for (final status in values) {
+      if (status.snakeCase.toUpperCase() == value) {
+        return status;
+      }
     }
-    return values.firstWhere(
-      (status) => status.snakeCase.toUpperCase() == value,
-    );
+    return null;
   }
 }
 
@@ -84,7 +84,8 @@ class Bucket {
   final List<String>? allowedMimeTypes;
 
   /// Whether the bucket keeps previous versions of its objects, or `null`
-  /// when the server does not report it.
+  /// when the server does not report it or reports a status this version of
+  /// the client does not know.
   final VersioningStatus? versioningStatus;
 }
 
