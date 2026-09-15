@@ -1089,6 +1089,24 @@ void main() {
         expect(client.url, expectedUrl);
       });
 
+      test('should not modify a host merely ending in the apex domain', () {
+        const inputUrl = 'https://mysupabase.co/storage/v1';
+        const expectedUrl = 'https://mysupabase.co/storage/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        }, useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
+
+      test('should not modify the bare apex domain', () {
+        const inputUrl = 'https://supabase.co/storage/v1';
+        const expectedUrl = 'https://supabase.co/storage/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        }, useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
+
       test('should support local host with port without modification', () {
         const inputUrl = 'http://localhost:1234/storage/v1';
         const expectedUrl = 'http://localhost:1234/storage/v1';
