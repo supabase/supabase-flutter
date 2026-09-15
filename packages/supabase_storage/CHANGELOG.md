@@ -1,3 +1,9 @@
+## 3.0.0-dev.4
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(storage): abort in-flight uploads and downloads via abortSignal ([#1831](https://github.com/supabase/supabase-flutter/issues/1831)). ([3c9d92e3](https://github.com/supabase/supabase-flutter/commit/3c9d92e31b29f16eca51b7bb1e1528436367c3eb))
+
 ## 3.0.0-dev.3
 
  - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))

@@ -1,3 +1,9 @@
+## 3.0.0-dev.3
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(storage): abort in-flight uploads and downloads via abortSignal ([#1831](https://github.com/supabase/supabase-flutter/issues/1831)). ([3c9d92e3](https://github.com/supabase/supabase-flutter/commit/3c9d92e31b29f16eca51b7bb1e1528436367c3eb))
+
 ## 3.0.0-dev.2
 
 > Note: This release has breaking changes.

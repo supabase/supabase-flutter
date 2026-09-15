@@ -3,6 +3,65 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`supabase_common` - `v3.0.0-dev.3`](#supabase_common---v300-dev3)
+ - [`supabase_storage` - `v3.0.0-dev.4`](#supabase_storage---v300-dev4)
+
+Packages with other changes:
+
+ - [`postgrest` - `v3.0.0-dev.4`](#postgrest---v300-dev4)
+ - [`supabase_flutter` - `v3.0.0-dev.4`](#supabase_flutter---v300-dev4)
+ - [`supabase_typegen` - `v0.1.4`](#supabase_typegen---v014)
+ - [`supabase` - `v3.0.0-dev.4`](#supabase---v300-dev4)
+ - [`supabase_functions` - `v3.0.0-dev.4`](#supabase_functions---v300-dev4)
+ - [`iceberg` - `v0.1.2`](#iceberg---v012)
+ - [`supabase_auth` - `v3.0.0-dev.4`](#supabase_auth---v300-dev4)
+ - [`supabase_realtime` - `v3.0.0-dev.4`](#supabase_realtime---v300-dev4)
+ - [`supabase_flutter_web_auth` - `v0.1.2`](#supabase_flutter_web_auth---v012)
+ - [`supabase_test` - `v0.2.1`](#supabase_test---v021)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v3.0.0-dev.4`
+ - `supabase_functions` - `v3.0.0-dev.4`
+ - `iceberg` - `v0.1.2`
+ - `supabase_auth` - `v3.0.0-dev.4`
+ - `supabase_realtime` - `v3.0.0-dev.4`
+ - `supabase_flutter_web_auth` - `v0.1.2`
+ - `supabase_test` - `v0.2.1`
+
+---
+
+#### `supabase_common` - `v3.0.0-dev.3`
+
+ - **BREAKING** **FEAT**(storage): abort in-flight uploads and downloads via abortSignal ([#1831](https://github.com/supabase/supabase-flutter/issues/1831)). ([3c9d92e3](https://github.com/supabase/supabase-flutter/commit/3c9d92e31b29f16eca51b7bb1e1528436367c3eb))
+
+#### `supabase_storage` - `v3.0.0-dev.4`
+
+ - **BREAKING** **FEAT**(storage): abort in-flight uploads and downloads via abortSignal ([#1831](https://github.com/supabase/supabase-flutter/issues/1831)). ([3c9d92e3](https://github.com/supabase/supabase-flutter/commit/3c9d92e31b29f16eca51b7bb1e1528436367c3eb))
+
+#### `postgrest` - `v3.0.0-dev.4`
+
+ - **REFACTOR**(postgrest): build the typed builders on PostgrestBuilder<T> ([#1836](https://github.com/supabase/supabase-flutter/issues/1836)). ([08616c76](https://github.com/supabase/supabase-flutter/commit/08616c76197317ea187ea811746838114a3d95f6))
+
+#### `supabase_flutter` - `v3.0.0-dev.4`
+
+ - **FEAT**(supabase_flutter): Android Restore Credentials on top of passkeys ([#1824](https://github.com/supabase/supabase-flutter/issues/1824)). ([68293591](https://github.com/supabase/supabase-flutter/commit/68293591cfdbbf52d8333302a05f40bff69274ca))
+
+#### `supabase_typegen` - `v0.1.4`
+
+ - **FEAT**(supabase_typegen): introspect the database through the Supabase CLI ([#1837](https://github.com/supabase/supabase-flutter/issues/1837)). ([78d0f7aa](https://github.com/supabase/supabase-flutter/commit/78d0f7aae4e35799883bd8a4219b6b2e86d166fc))
+
+
 ## 2026-09-11
 
 ### Changes
