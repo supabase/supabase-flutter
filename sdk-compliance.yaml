@@ -878,7 +878,9 @@ features:
       - SupabaseQuerySchema.rpc
       - SupabaseQuerySchema.schema
       - SupabaseQuerySchema.table
-  database.query.openapi_spec: not_implemented
+  database.query.openapi_spec:
+    status: not_applicable
+    note: "The document is an untyped OpenAPI 2.0 JSON blob that no other part of the SDK consumes, and fetching it is a plain `GET` on the PostgREST root with `Accept: application/openapi+json` that callers can already issue with `package:http`. Dart consumers get typed tables and functions from `supabase_typegen`, which introspects the database through the Supabase CLI, so a client method would only rename that one request."
 
   # database — mutate
   database.mutate.insert:
