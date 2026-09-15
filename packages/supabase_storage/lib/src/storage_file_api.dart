@@ -381,12 +381,17 @@ class StorageFileApi {
   /// [toPath] is the new file path, including the new file name. For example
   /// `folder/image-new.png`.
   ///
-  /// When copying to a different bucket, you have to specify the
+  /// When moving to a different bucket, you have to specify the
   /// [destinationBucket].
+  ///
+  /// [sourceVersionId] moves that version of the file instead of the current
+  /// one. Moving a version onto its own path makes it the current version
+  /// again.
   Future<String> move(
     String fromPath,
     String toPath, {
     String? destinationBucket,
+    String? sourceVersionId,
   }) async {
     final options = _fetchOptions;
     final response = await _storageFetch.post<Map<String, dynamic>>(
@@ -396,6 +401,7 @@ class StorageFileApi {
         'sourceKey': _removeEmptyFolders(fromPath),
         'destinationKey': _removeEmptyFolders(toPath),
         'destinationBucket': ?destinationBucket,
+        'sourceVersionId': ?sourceVersionId,
       },
       options: options,
     );
@@ -412,10 +418,14 @@ class StorageFileApi {
   ///
   /// When copying to a different bucket, you have to specify the
   /// [destinationBucket].
+  ///
+  /// [sourceVersionId] copies that version of the file instead of the current
+  /// one.
   Future<String> copy(
     String fromPath,
     String toPath, {
     String? destinationBucket,
+    String? sourceVersionId,
   }) async {
     final options = _fetchOptions;
     final response = await _storageFetch.post<Map<String, dynamic>>(
@@ -425,6 +435,7 @@ class StorageFileApi {
         'sourceKey': _removeEmptyFolders(fromPath),
         'destinationKey': _removeEmptyFolders(toPath),
         'destinationBucket': ?destinationBucket,
+        'sourceVersionId': ?sourceVersionId,
       },
       options: options,
     );
@@ -449,12 +460,15 @@ class StorageFileApi {
   ///
   /// [cacheNonce] appends a `cacheNonce` query parameter to the URL to bypass
   /// CDN caching for a specific file version.
+  ///
+  /// [versionId] signs that version of the file instead of the current one.
   Future<String> createSignedUrl(
     String path,
     int expiresIn, {
     TransformOptions? transform,
     DownloadBehavior? download,
     String? cacheNonce,
+    String? versionId,
   }) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
@@ -463,6 +477,7 @@ class StorageFileApi {
       {
         'expiresIn': expiresIn,
         'transform': ?transform?.toQueryParameters,
+        'versionId': ?versionId,
       },
       options: options,
     );
@@ -548,18 +563,23 @@ class StorageFileApi {
   /// a specific file version.
   ///
   /// {@macro storage_abort_signal}
+  ///
+  /// [versionId] downloads that version of the file instead of the current
+  /// one.
   Future<Uint8List> download(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
     Future<void>? abortSignal,
+    String? versionId,
   }) {
     final fetchUrl = _downloadUri(
       path,
       transform: transform,
       queryParameters: queryParameters,
       cacheNonce: cacheNonce,
+      versionId: versionId,
     );
 
     return _storageFetch.get(
@@ -571,13 +591,14 @@ class StorageFileApi {
 
   /// Builds the download URL shared by [download] and [downloadStream],
   /// selecting the render endpoint when an image transformation is requested
-  /// and appending transform, [queryParameters] and [cacheNonce] query
-  /// parameters.
+  /// and appending transform, [queryParameters], [cacheNonce] and [versionId]
+  /// query parameters.
   Uri _downloadUri(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
+    String? versionId,
   }) {
     final transformationQuery = transform?.toQueryParameters ?? {};
     final renderPath = transformationQuery.isNotEmpty
@@ -588,6 +609,7 @@ class StorageFileApi {
       ...transformationQuery,
       ...?queryParameters,
       'cacheNonce': ?cacheNonce,
+      'versionId': ?versionId,
     };
 
     return Uri.parse(
@@ -619,18 +641,23 @@ class StorageFileApi {
   /// On the stream the abort surfaces as a [RequestAbortedException] error
   /// event, whether it happens before the response headers arrive or while
   /// bytes are flowing, and the stream closes.
+  ///
+  /// [versionId] downloads that version of the file instead of the current
+  /// one.
   Stream<Uint8List> downloadStream(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
     Future<void>? abortSignal,
+    String? versionId,
   }) {
     final fetchUrl = _downloadUri(
       path,
       transform: transform,
       queryParameters: queryParameters,
       cacheNonce: cacheNonce,
+      versionId: versionId,
     );
 
     return _storageFetch.getStream(
@@ -641,11 +668,20 @@ class StorageFileApi {
   }
 
   /// Retrieves the details of an existing file
-  Future<FileObjectV2> getMetadata(String path) async {
+  ///
+  /// [versionId] describes that version of the file instead of the current
+  /// one.
+  Future<FileObjectV2> getMetadata(String path, {String? versionId}) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
+    var requestUrl = Uri.parse('$url/object/info/$finalPath');
+    if (versionId != null) {
+      requestUrl = requestUrl.replace(
+        queryParameters: {'versionId': versionId},
+      );
+    }
     final response = await _storageFetch.get<Map<String, dynamic>>(
-      '$url/object/info/$finalPath',
+      requestUrl.toString(),
       options: options,
     );
     final fileObjects = FileObjectV2.fromJson(response);
@@ -684,11 +720,15 @@ class StorageFileApi {
   ///
   /// [cacheNonce] appends a `cacheNonce` query parameter to the URL to bypass
   /// CDN caching for a specific file version.
+  ///
+  /// [versionId] points the URL at that version of the file instead of the
+  /// current one.
   String getPublicUrl(
     String path, {
     TransformOptions? transform,
     DownloadBehavior? download,
     String? cacheNonce,
+    String? versionId,
   }) {
     final finalPath = _getFinalPath(path);
 
@@ -707,15 +747,17 @@ class StorageFileApi {
       publicUrl.toString(),
       download: download,
       cacheNonce: cacheNonce,
+      versionId: versionId,
     );
   }
 
-  /// Appends the optional `download` and `cacheNonce` query parameters to
-  /// [urlString], in that order, when they are set.
+  /// Appends the optional `download`, `cacheNonce` and `versionId` query
+  /// parameters to [urlString], in that order, when they are set.
   String _withUrlOptions(
     String urlString, {
     DownloadBehavior? download,
     String? cacheNonce,
+    String? versionId,
   }) {
     var result = urlString;
     if (download != null) {
@@ -723,6 +765,9 @@ class StorageFileApi {
     }
     if (cacheNonce != null) {
       result = _appendQueryParameter(result, 'cacheNonce', cacheNonce);
+    }
+    if (versionId != null) {
+      result = _appendQueryParameter(result, 'versionId', versionId);
     }
     return result;
   }
@@ -736,19 +781,33 @@ class StorageFileApi {
   ///
   /// [paths] is an array of files to be deleted, including the path and file
   /// name. For example: `remove(['folder/image.png'])`.
-  Future<List<FileObject>> remove(List<String> paths) async {
-    final options = _fetchOptions;
+  Future<List<FileObject>> remove(List<String> paths) {
+    return _remove(paths.map(_removeEmptyFolders).toList());
+  }
+
+  /// Deletes specific versions of files within the same bucket.
+  ///
+  /// Unlike [remove], which deletes whatever is currently at a path, this
+  /// deletes exactly the given [versions], whether they are current or
+  /// noncurrent. For example:
+  /// `removeVersions([FileVersion(path: 'folder/image.png', versionId: id)])`.
+  Future<List<FileObject>> removeVersions(List<FileVersion> versions) {
+    return _remove([
+      for (final version in versions)
+        {
+          'path': _removeEmptyFolders(version.path),
+          'versionId': version.versionId,
+        },
+    ]);
+  }
+
+  Future<List<FileObject>> _remove(List<Object> prefixes) async {
     final response = await _storageFetch.delete<List<dynamic>>(
       '$url/object/$bucketId',
-      {'prefixes': paths.map(_removeEmptyFolders).toList()},
-      options: options,
+      {'prefixes': prefixes},
+      options: _fetchOptions,
     );
-    final fileObjects = List<FileObject>.from(
-      response.map(
-        (item) => FileObject.fromJson(item),
-      ),
-    );
-    return fileObjects;
+    return response.map(FileObject.fromJson).toList();
   }
 
   /// Purges the CDN cache for a single object.

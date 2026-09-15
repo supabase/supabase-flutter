@@ -45,6 +45,8 @@ class StorageBucketApi {
       'public': bucketOptions.public,
       'file_size_limit': ?bucketOptions.fileSizeLimit,
       'allowed_mime_types': ?bucketOptions.allowedMimeTypes,
+      'versioning_status': ?bucketOptions.versioningStatus?.snakeCase
+          .toUpperCase(),
     };
   }
 
@@ -86,7 +88,10 @@ class StorageBucketApi {
   ///
   /// [id] is a unique identifier for the bucket you are creating.
   ///
-  /// [bucketOptions] is a parameter to optionally make the bucket public.
+  /// [bucketOptions] optionally makes the bucket public, limits what it
+  /// accepts and turns on object versioning. Its
+  /// [BucketOptions.versioningStatus] can only be [VersioningStatus.disabled]
+  /// or [VersioningStatus.enabled] here.
   ///
   /// It returns the ID of the newly created bucket. To get the bucket
   /// reference, use [getBucket]:
@@ -112,11 +117,14 @@ class StorageBucketApi {
     return bucketId;
   }
 
-  /// Updates a new Storage bucket
+  /// Updates an existing Storage bucket
   ///
-  /// [id] is a unique identifier for the bucket you are creating.
+  /// [id] is the unique identifier of the bucket you are updating.
   ///
-  /// [bucketOptions] is a parameter to set the publicity of the bucket.
+  /// [bucketOptions] sets the publicity of the bucket, what it accepts and
+  /// its object versioning. Its [BucketOptions.versioningStatus] can only be
+  /// [VersioningStatus.enabled] or [VersioningStatus.suspended] here, and a
+  /// bucket has to be enabled before it can be suspended.
   Future<String> updateBucket(
     String id,
     BucketOptions bucketOptions,
@@ -156,6 +164,62 @@ class StorageBucketApi {
       options: options,
     );
     return (response as Map<String, dynamic>)['message'] as String;
+  }
+
+  /// Retrieves the lifecycle policy of the bucket [id].
+  ///
+  /// Throws a [StorageApiException] with the error code
+  /// `NoSuchLifecycleConfiguration` when the bucket has no policy, and
+  /// `FeatureNotEnabled` when the storage server does not have lifecycle
+  /// policies enabled.
+  Future<List<LifecycleRule>> getBucketLifecycle(String id) async {
+    final response = await storageFetch.get<Map<String, dynamic>>(
+      '$url/bucket/$id/lifecycle',
+      options: FetchOptions(_headers),
+    );
+    return _lifecycleRules(response);
+  }
+
+  /// Replaces the lifecycle policy of the bucket [id] with [rules].
+  ///
+  /// [rules] is the whole policy, between 1 and 1000 rules, and overwrites
+  /// whatever was stored before. Use [deleteBucketLifecycle] to remove the
+  /// policy instead.
+  ///
+  /// Returns the stored rules, including the identifiers the server generated
+  /// for the rules without one.
+  Future<List<LifecycleRule>> updateBucketLifecycle(
+    String id,
+    List<LifecycleRule> rules,
+  ) async {
+    assert(
+      rules.isNotEmpty && rules.length <= 1000,
+      'A lifecycle policy has between 1 and 1000 rules',
+    );
+    final response = await storageFetch.put<Map<String, dynamic>>(
+      '$url/bucket/$id/lifecycle',
+      {'rules': rules.map((rule) => rule.toJson()).toList()},
+      options: FetchOptions(_headers),
+    );
+    return _lifecycleRules(response);
+  }
+
+  /// Removes the lifecycle policy of the bucket [id].
+  ///
+  /// Succeeds even when the bucket has no policy.
+  Future<String> deleteBucketLifecycle(String id) async {
+    final response = await storageFetch.delete<Map<String, dynamic>>(
+      '$url/bucket/$id/lifecycle',
+      {},
+      options: FetchOptions(_headers),
+    );
+    return response['message'] as String;
+  }
+
+  List<LifecycleRule> _lifecycleRules(Map<String, dynamic> response) {
+    return (response['rules'] as List)
+        .map((rule) => LifecycleRule.fromJson(rule as Map<String, dynamic>))
+        .toList();
   }
 
   /// Purges the CDN cache for an entire bucket.

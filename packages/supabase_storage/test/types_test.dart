@@ -309,6 +309,224 @@ void main() {
     });
   });
 
+  group('VersioningStatus', () {
+    test('is parsed from the upper case value the server reports', () {
+      final bucket = Bucket.fromJson({
+        'id': 'avatars',
+        'name': 'avatars',
+        'created_at': '2021-01-01T00:00:00Z',
+        'updated_at': '2021-01-02T00:00:00Z',
+        'public': false,
+        'versioning_status': 'SUSPENDED',
+      });
+
+      expect(bucket.versioningStatus, VersioningStatus.suspended);
+    });
+
+    test('is null when the server does not report it', () {
+      final bucket = Bucket.fromJson({
+        'id': 'avatars',
+        'name': 'avatars',
+        'created_at': '2021-01-01T00:00:00Z',
+        'updated_at': '2021-01-02T00:00:00Z',
+        'public': false,
+      });
+
+      expect(bucket.versioningStatus, isNull);
+    });
+
+    test('is null when the server reports a status this client lacks', () {
+      final bucket = Bucket.fromJson({
+        'id': 'avatars',
+        'name': 'avatars',
+        'created_at': '2021-01-01T00:00:00Z',
+        'updated_at': '2021-01-02T00:00:00Z',
+        'public': false,
+        'versioning_status': 'ARCHIVED',
+      });
+
+      expect(bucket.versioningStatus, isNull);
+    });
+
+    test('can be matched exhaustively', () {
+      String describe(VersioningStatus status) {
+        return switch (status) {
+          VersioningStatus.disabled => 'off',
+          VersioningStatus.enabled => 'on',
+          VersioningStatus.suspended => 'paused',
+        };
+      }
+
+      expect(VersioningStatus.values.map(describe), ['off', 'on', 'paused']);
+    });
+  });
+
+  group('NoncurrentVersionExpiration', () {
+    test('rejects values outside the ranges the server accepts', () {
+      expect(
+        () => NoncurrentVersionExpiration(noncurrentDays: 0),
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        () => NoncurrentVersionExpiration(
+          noncurrentDays: 1,
+          newerNoncurrentVersions: 101,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        () => LifecycleRule(
+          id: '',
+          noncurrentVersionExpiration: NoncurrentVersionExpiration(
+            noncurrentDays: 1,
+          ),
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+  });
+
+  group('LifecycleRule', () {
+    test('fromJson parses the stored rule', () {
+      final rule = LifecycleRule.fromJson({
+        'id': 'expire-history',
+        'status': 'Disabled',
+        'filter': <String, dynamic>{},
+        'noncurrentVersionExpiration': {
+          'noncurrentDays': 30,
+          'newerNoncurrentVersions': 2,
+        },
+      });
+
+      expect(rule.id, 'expire-history');
+      expect(rule.status, LifecycleRuleStatus.disabled);
+      expect(rule.noncurrentVersionExpiration.noncurrentDays, 30);
+      expect(rule.noncurrentVersionExpiration.newerNoncurrentVersions, 2);
+    });
+
+    test('toJson sends the empty filter and omits what is unset', () {
+      const rule = LifecycleRule(
+        noncurrentVersionExpiration: NoncurrentVersionExpiration(
+          noncurrentDays: 7,
+        ),
+      );
+
+      expect(rule.toJson(), {
+        'status': 'Enabled',
+        'filter': <String, dynamic>{},
+        'noncurrentVersionExpiration': {'noncurrentDays': 7},
+      });
+    });
+
+    test('toJson includes the id and the kept version count', () {
+      const rule = LifecycleRule(
+        id: 'expire-history',
+        status: LifecycleRuleStatus.disabled,
+        noncurrentVersionExpiration: NoncurrentVersionExpiration(
+          noncurrentDays: 30,
+          newerNoncurrentVersions: 2,
+        ),
+      );
+
+      expect(rule.toJson(), {
+        'id': 'expire-history',
+        'status': 'Disabled',
+        'filter': <String, dynamic>{},
+        'noncurrentVersionExpiration': {
+          'noncurrentDays': 30,
+          'newerNoncurrentVersions': 2,
+        },
+      });
+    });
+  });
+
+  group('version fields', () {
+    const versionJson = {
+      'version': 'version-1',
+      'archived_at': '2024-05-01T10:00:00Z',
+      'is_delete_marker': false,
+      'is_versioned': true,
+    };
+
+    test('FileObject.fromJson parses them and leaves absent ones null', () {
+      final versioned = FileObject.fromJson({'name': 'a.txt', ...versionJson});
+      final plain = FileObject.fromJson({'name': 'a.txt'});
+
+      expect(versioned.version, 'version-1');
+      expect(versioned.archivedAt, DateTime.utc(2024, 5, 1, 10));
+      expect(versioned.isDeleteMarker, isFalse);
+      expect(versioned.isVersioned, isTrue);
+      expect(plain.version, isNull);
+      expect(plain.archivedAt, isNull);
+      expect(plain.isDeleteMarker, isNull);
+      expect(plain.isVersioned, isNull);
+    });
+
+    test('FileObjectV2.fromJson parses them', () {
+      final file = FileObjectV2.fromJson({
+        'id': 'file-id',
+        'name': 'a.txt',
+        'bucket_id': 'avatars',
+        'created_at': '2024-01-01T00:00:00Z',
+        ...versionJson,
+      });
+
+      expect(file.version, 'version-1');
+      expect(file.archivedAt, DateTime.utc(2024, 5, 1, 10));
+      expect(file.isDeleteMarker, isFalse);
+      expect(file.isVersioned, isTrue);
+    });
+
+    test('PaginatedFile.fromJson parses them', () {
+      final file = PaginatedFile.fromJson({'name': 'a.txt', ...versionJson});
+
+      expect(file.version, 'version-1');
+      expect(file.archivedAt, DateTime.utc(2024, 5, 1, 10));
+      expect(file.isDeleteMarker, isFalse);
+      expect(file.isVersioned, isTrue);
+    });
+  });
+
+  group('version listing options', () {
+    test('SearchOptions.toMap serializes them and omits unset ones', () {
+      const options = SearchOptions(
+        noncurrentVersions: ListInclusion.include,
+        deleteMarkers: ListInclusion.only,
+        exactMatch: true,
+      );
+
+      expect(options.toMap(), {
+        'limit': 100,
+        'offset': 0,
+        'sortBy': {'column': 'name', 'order': 'asc'},
+        'search': null,
+        'noncurrentVersions': 'include',
+        'deleteMarkers': 'only',
+        'exactMatch': true,
+      });
+      expect(
+        const SearchOptions().toMap().keys,
+        isNot(
+          containsAll(['noncurrentVersions', 'deleteMarkers', 'exactMatch']),
+        ),
+      );
+    });
+
+    test('PaginatedSearchOptions.toMap serializes them', () {
+      const options = PaginatedSearchOptions(
+        noncurrentVersions: ListInclusion.exclude,
+        deleteMarkers: ListInclusion.include,
+        exactMatch: false,
+      );
+
+      expect(options.toMap(), {
+        'noncurrentVersions': 'exclude',
+        'deleteMarkers': 'include',
+        'exactMatch': false,
+      });
+    });
+  });
+
   group('StorageException', () {
     test('a client raised failure is not a SupabaseApiException', () {
       const SupabaseException exception = StorageException('boom');

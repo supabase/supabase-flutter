@@ -11,6 +11,10 @@ Map<String, dynamic> storageObjectJson(
   Map<String, dynamic>? metadata,
   DateTime? createdAt,
   DateTime? updatedAt,
+  String? version,
+  DateTime? archivedAt,
+  bool? isDeleteMarker,
+  bool? isVersioned,
 }) {
   final created = (createdAt ?? DateTime.utc(2023, 4, 1, 9, 38, 59))
       .toIso8601String();
@@ -31,5 +35,30 @@ Map<String, dynamic> storageObjectJson(
           'mimetype': 'application/octet-stream',
           'cacheControl': 'max-age=3600',
         },
+    'version': ?version,
+    'archived_at': ?archivedAt?.toIso8601String(),
+    'is_delete_marker': ?isDeleteMarker,
+    'is_versioned': ?isVersioned,
+  };
+}
+
+/// The JSON form of a lifecycle rule expiring noncurrent object versions
+/// after [noncurrentDays], as the storage API stores it and as
+/// `LifecycleRule.fromJson` reads it.
+@visibleForTesting
+Map<String, dynamic> lifecycleRuleJson({
+  String id = 'expire-history',
+  String status = 'Enabled',
+  int noncurrentDays = 30,
+  int? newerNoncurrentVersions,
+}) {
+  return {
+    'id': id,
+    'status': status,
+    'filter': <String, dynamic>{},
+    'noncurrentVersionExpiration': {
+      'noncurrentDays': noncurrentDays,
+      'newerNoncurrentVersions': ?newerNoncurrentVersions,
+    },
   };
 }

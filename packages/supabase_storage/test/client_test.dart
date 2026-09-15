@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
@@ -905,6 +907,345 @@ void main() {
         );
       });
     }
+  });
+
+  // Object versioning arrived in storage-api v1.76.0 and lifecycle policies
+  // are behind its STORAGE_LIFECYCLE_ENABLED flag, so these tests find out
+  // what the stack supports and skip themselves when it falls short.
+  group('object versioning', () {
+    final bucketName = '${_bucketNamespace}versioned-$timestamp';
+    const path = 'versioned/file.txt';
+    final firstBytes = Uint8List.fromList(utf8.encode('first'));
+    final secondBytes = Uint8List.fromList(utf8.encode('second'));
+    var versioningSupported = false;
+    var lifecycleSupported = false;
+    late String firstVersion;
+
+    setUpAll(() async {
+      final probe = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
+      });
+      try {
+        await probe.createBucket(
+          bucketName,
+          const BucketOptions(
+            public: false,
+            versioningStatus: VersioningStatus.enabled,
+          ),
+        );
+        final bucket = await probe.getBucket(bucketName);
+        versioningSupported =
+            bucket.versioningStatus == VersioningStatus.enabled;
+      } on StorageApiException {
+        versioningSupported = false;
+      }
+      try {
+        await probe.getBucketLifecycle(bucketName);
+      } on StorageApiException catch (error) {
+        lifecycleSupported = error.errorCode == 'NoSuchLifecycleConfiguration';
+      }
+    });
+
+    void versionedTest(String description, Future<void> Function() body) {
+      test(description, () async {
+        if (!versioningSupported) {
+          markTestSkipped(
+            'The storage API of the local stack predates object versioning.',
+          );
+          return;
+        }
+        await body();
+      });
+    }
+
+    List<FileObject> versionsOf(List<FileObject> files) {
+      return files.where((entry) => entry.name == 'file.txt').toList();
+    }
+
+    versionedTest('reports the versioning status of the bucket', () async {
+      final bucket = await storage.getBucket(bucketName);
+      final listed = await storage.listBuckets();
+
+      expect(bucket.versioningStatus, VersioningStatus.enabled);
+      expect(
+        listed
+            .firstWhere((candidate) => candidate.name == bucketName)
+            .versioningStatus,
+        VersioningStatus.enabled,
+      );
+    });
+
+    versionedTest(
+      'keeps the previous version of an overwritten file',
+      () async {
+        await storage.from(bucketName).uploadBinary(path, firstBytes);
+        firstVersion =
+            (await storage.from(bucketName).getMetadata(path)).version;
+        await storage
+            .from(bucketName)
+            .uploadBinary(
+              path,
+              secondBytes,
+              fileOptions: const FileOptions(upsert: true),
+            );
+
+        final current = await storage.from(bucketName).list(path: 'versioned');
+        final withNoncurrent = await storage
+            .from(bucketName)
+            .list(
+              path: 'versioned',
+              searchOptions: const SearchOptions(
+                noncurrentVersions: ListInclusion.include,
+              ),
+            );
+        final onlyNoncurrent = await storage
+            .from(bucketName)
+            .list(
+              path: 'versioned',
+              searchOptions: const SearchOptions(
+                noncurrentVersions: ListInclusion.only,
+              ),
+            );
+
+        expect(versionsOf(current), hasLength(1));
+        expect(versionsOf(current).single.archivedAt, isNull);
+        expect(versionsOf(withNoncurrent), hasLength(2));
+        final previous = versionsOf(onlyNoncurrent).single;
+        expect(previous.version, firstVersion);
+        expect(previous.archivedAt, isNotNull);
+        expect(previous.isDeleteMarker, isFalse);
+        expect(previous.isVersioned, isTrue);
+      },
+    );
+
+    versionedTest('lists previous versions with pagination', () async {
+      final result = await storage
+          .from(bucketName)
+          .listPaginated(
+            options: const PaginatedSearchOptions(
+              prefix: 'versioned/',
+              noncurrentVersions: ListInclusion.only,
+            ),
+          );
+
+      expect(result.objects.single.version, firstVersion);
+      expect(result.objects.single.archivedAt, isNotNull);
+      expect(result.objects.single.isVersioned, isTrue);
+    });
+
+    versionedTest('describes a specific version', () async {
+      final previous = await storage
+          .from(bucketName)
+          .getMetadata(path, versionId: firstVersion);
+      final current = await storage.from(bucketName).getMetadata(path);
+
+      expect(previous.version, firstVersion);
+      expect(previous.archivedAt, isNotNull);
+      expect(previous.size, firstBytes.length);
+      expect(current.version, isNot(firstVersion));
+      expect(current.archivedAt, isNull);
+    });
+
+    versionedTest('downloads a specific version', () async {
+      final previous = await storage
+          .from(bucketName)
+          .download(path, versionId: firstVersion);
+      final current = await storage.from(bucketName).download(path);
+      final streamed = await storage
+          .from(bucketName)
+          .downloadStream(path, versionId: firstVersion)
+          .expand((chunk) => chunk)
+          .toList();
+
+      expect(previous, firstBytes);
+      expect(current, secondBytes);
+      expect(streamed, firstBytes);
+    });
+
+    versionedTest('signs a specific version', () async {
+      final url = await storage
+          .from(bucketName)
+          .createSignedUrl(path, 60, versionId: firstVersion);
+
+      final response = await http.get(Uri.parse(url));
+
+      expect(response.statusCode, 200);
+      expect(response.bodyBytes, firstBytes);
+    });
+
+    versionedTest('copies a specific version', () async {
+      await storage
+          .from(bucketName)
+          .copy(path, 'versioned/copy.txt', sourceVersionId: firstVersion);
+
+      final copied = await storage
+          .from(bucketName)
+          .download('versioned/copy.txt');
+
+      expect(copied, firstBytes);
+    });
+
+    versionedTest(
+      'restores a version by moving it onto its own path',
+      () async {
+        await storage
+            .from(bucketName)
+            .move(path, path, sourceVersionId: firstVersion);
+
+        final current = await storage.from(bucketName).download(path);
+
+        expect(current, firstBytes);
+      },
+    );
+
+    versionedTest('removes a specific version', () async {
+      final removed = await storage.from(bucketName).removeVersions([
+        FileVersion(path: path, versionId: firstVersion),
+      ]);
+
+      final remaining = await storage
+          .from(bucketName)
+          .list(
+            path: 'versioned',
+            searchOptions: const SearchOptions(
+              noncurrentVersions: ListInclusion.include,
+            ),
+          );
+
+      expect(removed.single.name, endsWith('file.txt'));
+      expect(
+        versionsOf(remaining).map((entry) => entry.version),
+        isNot(contains(firstVersion)),
+      );
+      expect(await storage.from(bucketName).download(path), firstBytes);
+    });
+
+    versionedTest('lists the delete marker of a removed file', () async {
+      await storage.from(bucketName).remove([path]);
+
+      final current = await storage.from(bucketName).list(path: 'versioned');
+      final markers = await storage
+          .from(bucketName)
+          .list(
+            path: 'versioned',
+            searchOptions: const SearchOptions(
+              deleteMarkers: ListInclusion.only,
+            ),
+          );
+
+      expect(versionsOf(current), isEmpty);
+      expect(versionsOf(markers).single.isDeleteMarker, isTrue);
+    });
+
+    versionedTest('suspends versioning', () async {
+      await storage.updateBucket(
+        bucketName,
+        const BucketOptions(
+          public: false,
+          versioningStatus: VersioningStatus.suspended,
+        ),
+      );
+
+      final bucket = await storage.getBucket(bucketName);
+
+      expect(bucket.versioningStatus, VersioningStatus.suspended);
+    });
+
+    group('lifecycle policy', () {
+      void lifecycleTest(String description, Future<void> Function() body) {
+        test(description, () async {
+          if (!lifecycleSupported) {
+            markTestSkipped(
+              'Lifecycle policies are not enabled on the storage API of the '
+              'local stack.',
+            );
+            return;
+          }
+          await body();
+        });
+      }
+
+      final throwsNoSuchLifecycleConfiguration = throwsA(
+        isA<StorageApiException>().having(
+          (error) => error.errorCode,
+          'errorCode',
+          'NoSuchLifecycleConfiguration',
+        ),
+      );
+
+      lifecycleTest('is absent until one is stored', () async {
+        await expectLater(
+          storage.getBucketLifecycle(bucketName),
+          throwsNoSuchLifecycleConfiguration,
+        );
+      });
+
+      lifecycleTest(
+        'is stored, generating ids for rules without one',
+        () async {
+          final stored = await storage.updateBucketLifecycle(bucketName, [
+            const LifecycleRule(
+              id: 'expire-history',
+              noncurrentVersionExpiration: NoncurrentVersionExpiration(
+                noncurrentDays: 30,
+                newerNoncurrentVersions: 2,
+              ),
+            ),
+            const LifecycleRule(
+              status: LifecycleRuleStatus.disabled,
+              noncurrentVersionExpiration: NoncurrentVersionExpiration(
+                noncurrentDays: 7,
+              ),
+            ),
+          ]);
+
+          final fetched = await storage.getBucketLifecycle(bucketName);
+
+          expect(stored, hasLength(2));
+          expect(stored.first.id, 'expire-history');
+          expect(stored.first.status, LifecycleRuleStatus.enabled);
+          expect(stored.first.noncurrentVersionExpiration.noncurrentDays, 30);
+          expect(
+            stored.first.noncurrentVersionExpiration.newerNoncurrentVersions,
+            2,
+          );
+          expect(stored.last.id, isNotNull);
+          expect(stored.last.status, LifecycleRuleStatus.disabled);
+          expect(stored.last.noncurrentVersionExpiration.noncurrentDays, 7);
+          expect(
+            fetched.map((rule) => rule.id),
+            stored.map((rule) => rule.id),
+          );
+        },
+      );
+
+      lifecycleTest('is replaced as a whole', () async {
+        final stored = await storage.updateBucketLifecycle(bucketName, [
+          const LifecycleRule(
+            id: 'only-rule',
+            noncurrentVersionExpiration: NoncurrentVersionExpiration(
+              noncurrentDays: 1,
+            ),
+          ),
+        ]);
+
+        expect(stored.map((rule) => rule.id), ['only-rule']);
+      });
+
+      lifecycleTest('is deleted, even when already absent', () async {
+        final message = await storage.deleteBucketLifecycle(bucketName);
+
+        expect(message, 'Successfully deleted');
+        await expectLater(
+          storage.getBucketLifecycle(bucketName),
+          throwsNoSuchLifecycleConfiguration,
+        );
+        expect(
+          await storage.deleteBucketLifecycle(bucketName),
+          'Successfully deleted',
+        );
+      });
+    });
   });
 
   group('list sortBy defaults', () {
