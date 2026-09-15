@@ -160,7 +160,13 @@ Map<String, List<Map<String, dynamic>>> _rows(
       'supabase db query did not return JSON:\n${stdout.trim()}',
     );
   }
-  final rows = (decoded as Map<String, dynamic>)['rows'] as List<dynamic>?;
+  // Older CLI releases print the rows as a bare array; newer ones wrap them
+  // in an object next to advisories and warnings.
+  final rows = switch (decoded) {
+    final List<dynamic> list => list,
+    {'rows': final List<dynamic> list} => list,
+    _ => null,
+  };
   if (rows == null || rows.length != 1) {
     throw const SupabaseCliException(
       'supabase db query returned an unexpected result shape.',

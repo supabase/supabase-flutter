@@ -152,6 +152,41 @@ with t as (select 2 as id) select id from t
       );
     });
 
+    test('reads rows printed as a bare array by older CLI releases', () async {
+      final cli = fakeCli(
+        'echo \'[{"schemas":[{"id":1,"name":"public"}]}]\'',
+      );
+      final database = SupabaseCliQueryable(
+        const LocalDatabase(),
+        executable: cli.path,
+      );
+
+      expect(await database.query({'schemas': 'select 1 as id'}), {
+        'schemas': [
+          {'id': 1, 'name': 'public'},
+        ],
+      });
+    });
+
+    test('rejects an unexpected result shape', () {
+      final cli = fakeCli('echo \'{"rows":[]}\'');
+      final database = SupabaseCliQueryable(
+        const LocalDatabase(),
+        executable: cli.path,
+      );
+
+      expect(
+        () => database.query({'schemas': 'select 1'}),
+        throwsA(
+          isA<SupabaseCliException>().having(
+            (error) => error.message,
+            'message',
+            contains('unexpected result shape'),
+          ),
+        ),
+      );
+    });
+
     test('rejects output that is not JSON', () {
       final cli = fakeCli('echo "Connecting to local database..."');
       final database = SupabaseCliQueryable(
