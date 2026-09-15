@@ -70,9 +70,10 @@ document with the same records; `--dump-metadata` prints it instead of the
 generated code, which helps when reporting a generator issue.
 
 The built-in introspection, and with it the `--local`, `--linked`,
-`--project-ref`, `--db-url` and `--dump-metadata` options, is a stopgap. It will be removed once the Supabase
-CLI ships Dart support for `supabase gen types`, which then becomes the only
-way to run this tool; see the next section.
+`--project-ref`, `--db-url` and `--dump-metadata` options, is a stopgap. It
+will be removed once the Supabase CLI ships Dart support for
+`supabase gen types`, which then becomes the only way to run this tool; see
+the next section.
 
 The metadata comes from the database catalog, so nullability, database
 defaults, and identity columns are exact: a `NOT NULL` column with a default
@@ -90,9 +91,8 @@ prefer the CLI as soon as it is available:
 supabase gen types --lang dart --local > lib/supabase_schema.g.dart
 ```
 
-Reading the document from stdin is what the tool does when neither `--local`
-nor `--db-url` is given, so that path already works with a hand-built
-document.
+Reading the document from stdin is what the tool does when no connection
+option is given, so that path already works with a hand-built document.
 
 ## Generated code in action
 
