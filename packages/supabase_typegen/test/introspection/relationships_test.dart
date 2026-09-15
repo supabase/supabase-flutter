@@ -1,4 +1,3 @@
-import 'package:supabase_typegen/introspection.dart';
 import 'package:supabase_typegen/src/introspection/relationships.dart';
 import 'package:test/test.dart';
 
@@ -152,36 +151,4 @@ void main() {
       expect(expandViewRelationships([postsAuthorFk], []), isEmpty);
     });
   });
-
-  group('listRelationships', () {
-    test('appends the view derived relationships to the table ones', () async {
-      final database = _FakeQueryable(
-        (sql) => sql.contains('pks_uniques_cols')
-            ? [postsAuthorFk]
-            : [viewToTableDep],
-      );
-
-      expect(
-        await listRelationships(database, schemaFilter: "IN ('public')"),
-        [postsAuthorFk, postsViewToUsers],
-      );
-      expect(
-        database.queries,
-        everyElement(contains("IN ('public')")),
-      );
-    });
-  });
-}
-
-class _FakeQueryable implements Queryable {
-  _FakeQueryable(this.respond);
-
-  final List<Map<String, dynamic>> Function(String sql) respond;
-  final queries = <String>[];
-
-  @override
-  Future<List<Map<String, dynamic>>> query(String sql) async {
-    queries.add(sql);
-    return respond(sql);
-  }
 }

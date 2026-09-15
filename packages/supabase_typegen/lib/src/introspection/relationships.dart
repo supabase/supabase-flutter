@@ -1,8 +1,3 @@
-import 'queryable.dart';
-import 'introspect.dart';
-import 'sql/table_relationships_sql.dart';
-import 'sql/views_key_dependencies_sql.dart';
-
 /// A `relationships` entry of the `GeneratorMetadata` document, as the
 /// JSON object the TypeScript introspection emits.
 typedef RelationshipRecord = Map<String, dynamic>;
@@ -11,28 +6,6 @@ typedef RelationshipRecord = Map<String, dynamic>;
 /// a table whose columns a view selects, with `column_dependencies` mapping
 /// each table column to the view columns that carry it.
 typedef ViewKeyDependency = Map<String, dynamic>;
-
-/// Lists the foreign keys between tables and the relationships PostgREST
-/// derives for views from them, for the schemas selected by [schemaFilter],
-/// the `IN (…)` or `NOT IN (…)` fragment [introspect] builds with the system
-/// schemas excluded.
-///
-/// Port of `listRelationships` of `@supabase/postgrest-typegen`.
-Future<List<RelationshipRecord>> listRelationships(
-  Queryable database, {
-  required String schemaFilter,
-}) async {
-  final tableRelationships = await database.query(
-    tableRelationshipsSql(schemaFilter: schemaFilter),
-  );
-  final viewsKeyDependencies = await database.query(
-    viewsKeyDependenciesSql(schemaFilter: schemaFilter),
-  );
-  return [
-    ...tableRelationships,
-    ...expandViewRelationships(tableRelationships, viewsKeyDependencies),
-  ];
-}
 
 /// Expands the table to table [relationships] into the view to table, table
 /// to view and view to view relationships implied by [viewsKeyDependencies],

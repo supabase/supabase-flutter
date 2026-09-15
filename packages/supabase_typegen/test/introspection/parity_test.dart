@@ -6,7 +6,8 @@ import 'package:supabase_typegen/introspection.dart';
 import 'package:test/test.dart';
 
 /// Connection URL of a fresh `postgres:15` database, the way
-/// `tool/regenerate_fixture.ts` starts one. The test seeds it with
+/// `tool/regenerate_fixture.ts` starts one, with `sslmode=disable` since the
+/// Supabase CLI requires TLS otherwise. The test seeds it with
 /// `test/fixtures/seed.sql` on first use.
 final _databaseUrl =
     Platform.environment['SUPABASE_TYPEGEN_PARITY_DATABASE_URL'] ?? '';
@@ -28,33 +29,35 @@ void main() {
     return;
   }
 
-  late String fixtureText;
   late Map<String, dynamic> fixture;
 
   setUpAll(() async {
-    fixtureText = File(
-      'test/fixtures/generator_metadata.json',
-    ).readAsStringSync();
-    fixture = jsonDecode(fixtureText) as Map<String, dynamic>;
+    fixture =
+        jsonDecode(
+              File(
+                'test/fixtures/generator_metadata.json',
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>;
     await _seedIfEmpty(_databaseUrl);
   });
 
   test('the introspection equals the postgrest-typegen fixture', () async {
-    final document = await introspectDatabase(_databaseUrl);
+    final document = await introspectDatabase(DatabaseUrl(_databaseUrl));
 
     _expectSameDocument(document, fixture);
   });
 
   test('restricting the schemas to public yields the same document', () async {
     final document = await introspectDatabase(
-      _databaseUrl,
+      DatabaseUrl(_databaseUrl),
       includedSchemas: ['public'],
     );
 
     _expectSameDocument(document, fixture);
   });
 
-  test('--dump-metadata writes the fixture byte for byte', () async {
+  test('--dump-metadata writes a document with the fixture records', () async {
     final result = await _runBinary([
       '--db-url',
       _databaseUrl,
@@ -62,7 +65,10 @@ void main() {
     ]);
 
     expect(result.exitCode, 0, reason: result.stderr as String);
-    expect(result.stdout, fixtureText);
+    _expectSameDocument(
+      jsonDecode(result.stdout as String) as Map<String, dynamic>,
+      fixture,
+    );
   }, timeout: _compileTimeout);
 
   test('the binary generates the golden code from the database', () async {
@@ -93,7 +99,9 @@ Future<ProcessResult> _runBinary(List<String> arguments) => Process.run(
 );
 
 /// Compares collection by collection so a mismatch names the record that
-/// differs instead of dumping two documents.
+/// differs instead of dumping two documents. Records are maps, so the order
+/// of their keys does not matter; the order of records within a collection
+/// does, since the document is sorted.
 void _expectSameDocument(
   Map<String, dynamic> document,
   Map<String, dynamic> fixture,
@@ -126,7 +134,9 @@ void _expectSameDocument(
 
 Future<void> _seedIfEmpty(String databaseUrl) async {
   final connection = await Connection.openFromUrl(
-    '$databaseUrl${databaseUrl.contains('?') ? '&' : '?'}sslmode=disable',
+    databaseUrl.contains('sslmode=')
+        ? databaseUrl
+        : '$databaseUrl${databaseUrl.contains('?') ? '&' : '?'}sslmode=disable',
   );
   try {
     final existing = await connection.execute(

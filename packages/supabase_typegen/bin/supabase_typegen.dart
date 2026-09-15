@@ -24,19 +24,29 @@ final _argParser = ArgParser()
         'The import the generated file uses for PostgrestTable and '
         'PostgrestColumn.',
   )
-  ..addOption(
-    'db-url',
-    valueHelp: 'postgresql://…',
-    help:
-        'Connect to this Postgres database and introspect it instead of '
-        'reading a GeneratorMetadata document from stdin.',
-  )
   ..addFlag(
     'local',
     negatable: false,
+    help: 'Introspect the database of the running local Supabase stack.',
+  )
+  ..addFlag(
+    'linked',
+    negatable: false,
     help:
-        'Introspect the database of the running local Supabase stack, '
-        'resolved through `supabase status`.',
+        'Introspect the database of the project linked with `supabase link`, '
+        'through the Management API.',
+  )
+  ..addOption(
+    'project-ref',
+    valueHelp: 'ref',
+    help:
+        'Introspect the database of this Supabase project instead of the '
+        'linked one; implies --linked.',
+  )
+  ..addOption(
+    'db-url',
+    valueHelp: 'postgresql://…',
+    help: 'Introspect the Postgres database at this connection string.',
   )
   ..addFlag(
     'dump-metadata',
@@ -68,12 +78,14 @@ Future<int> _run(List<String> arguments) async {
     stdout
       ..writeln(
         'Generates typed Supabase table definitions from a database, '
-        'either by introspecting it directly (--local or --db-url) or from '
-        'the GeneratorMetadata document that postgrest-typegen emits, read '
-        'from stdin.',
+        'either by introspecting it through the Supabase CLI (--local, '
+        '--linked, --project-ref or --db-url) or from the GeneratorMetadata '
+        'document that postgrest-typegen emits, read from stdin.',
       )
       ..writeln()
       ..writeln('Usage: dart run supabase_typegen --local')
+      ..writeln('       dart run supabase_typegen --linked')
+      ..writeln('       dart run supabase_typegen --project-ref <ref>')
       ..writeln('       dart run supabase_typegen --db-url <connection string>')
       ..writeln('       dart run supabase_typegen < <metadata document>')
       ..writeln(_argParser.usage);
@@ -84,27 +96,33 @@ Future<int> _run(List<String> arguments) async {
   final dumpMetadata = options.flag('dump-metadata');
 
   final Map<String, dynamic> document;
-  switch (await _resolveConnectionUrl(options)) {
+  switch (_resolveTarget(options)) {
     case _Failure(:final message):
       stderr.writeln(message);
       return 64;
-    case _Connection(:final url):
+    case _Introspect(:final target):
       try {
-        document = await introspectDatabase(url, includedSchemas: [schemaName]);
-      } on Exception catch (error) {
-        stderr.writeln('Could not introspect the database: $error');
+        document = await introspectDatabase(
+          target,
+          includedSchemas: [schemaName],
+        );
+      } on SupabaseCliException catch (error) {
+        stderr.writeln(error.message);
         return 69;
       }
     case _Stdin():
       if (dumpMetadata) {
-        stderr.writeln('--dump-metadata requires --local or --db-url.');
+        stderr.writeln(
+          '--dump-metadata requires --local, --linked, --project-ref or '
+          '--db-url.',
+        );
         return 64;
       }
       if (stdin.hasTerminal) {
         stderr.writeln(
           'Expected a GeneratorMetadata document of '
-          '@supabase/postgrest-typegen on stdin. Pass --local or --db-url '
-          'to introspect a database directly.',
+          '@supabase/postgrest-typegen on stdin. Pass --local, --linked, '
+          '--project-ref or --db-url to introspect a database instead.',
         );
         return 64;
       }
@@ -186,10 +204,10 @@ final class _Stdin implements _MetadataSource {
   const _Stdin();
 }
 
-final class _Connection implements _MetadataSource {
-  const _Connection(this.url);
+final class _Introspect implements _MetadataSource {
+  const _Introspect(this.target);
 
-  final String url;
+  final DatabaseTarget target;
 }
 
 final class _Failure implements _MetadataSource {
@@ -198,35 +216,20 @@ final class _Failure implements _MetadataSource {
   final String message;
 }
 
-Future<_MetadataSource> _resolveConnectionUrl(ArgResults options) async {
+_MetadataSource _resolveTarget(ArgResults options) {
   final databaseUrl = options.option('db-url');
-  final local = options.flag('local');
-  if (databaseUrl != null && local) {
-    return const _Failure('Pass either --local or --db-url, not both.');
-  }
-  if (databaseUrl != null) return _Connection(databaseUrl);
-  if (!local) return const _Stdin();
-
-  final ProcessResult status;
-  try {
-    status = await Process.run('supabase', ['status', '-o', 'env']);
-  } on ProcessException catch (error) {
-    return _Failure(
-      'Could not run the Supabase CLI (${error.message}). Install it, or '
-      'pass the connection string with --db-url.',
-    );
-  }
-  if (status.exitCode != 0) {
-    return _Failure(
-      '`supabase status` failed with exit code ${status.exitCode}. Is the '
-      'local stack running (`supabase start`)?\n${status.stderr}',
-    );
-  }
-  final url = databaseUrlFromStatusEnv(status.stdout as String);
-  if (url == null) {
-    return const _Failure(
-      'Could not find DB_URL in the output of `supabase status -o env`.',
-    );
-  }
-  return _Connection(url);
+  final projectRef = options.option('project-ref');
+  final targets = <DatabaseTarget>[
+    if (options.flag('local')) const LocalDatabase(),
+    if (options.flag('linked') || projectRef != null)
+      LinkedProject(projectRef: projectRef),
+    if (databaseUrl != null) DatabaseUrl(databaseUrl),
+  ];
+  return switch (targets) {
+    [] => const _Stdin(),
+    [final target] => _Introspect(target),
+    _ => const _Failure(
+      'Pass only one of --local, --linked (or --project-ref) and --db-url.',
+    ),
+  };
 }

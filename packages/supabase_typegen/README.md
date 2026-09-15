@@ -24,29 +24,34 @@ For every table the generator emits:
 ## Usage
 
 Add `supabase_typegen` as a dev dependency of your project, or activate it
-globally with `dart pub global activate supabase_typegen`, then point it at
-your database:
+globally with `dart pub global activate supabase_typegen`. The tool connects
+through the [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started),
+so have it installed and, for hosted projects, logged in with
+`supabase login`. Then point it at your database:
 
 ```sh
 # The database of the running local Supabase stack (`supabase start`).
 dart run supabase_typegen --local
 
-# Any Postgres database, for example a linked project.
+# The project linked with `supabase link`, or any project by ref.
+dart run supabase_typegen --linked
+dart run supabase_typegen --project-ref abcdefghijklmnopqrst
+
+# Any Postgres database.
 dart run supabase_typegen --db-url 'postgresql://postgres:…@db.…supabase.co:5432/postgres'
 ```
 
-Both write `lib/supabase_schema.g.dart`; pass `--output` to change the path
-or `--output -` to print the code. The types reflect the current state of the
-database: with `--local` the SQL in your `supabase/` directory stays the
-single source of truth, since the CLI applies your migrations to the local
-database and this tool generates from the result, while `--db-url` generates
-from whatever that database currently contains.
+All of them write `lib/supabase_schema.g.dart`; pass `--output` to change the
+path or `--output -` to print the code. The types reflect the current state
+of the database: with `--local` the SQL in your `supabase/` directory stays
+the single source of truth, since the CLI applies your migrations to the
+local database and this tool generates from the result, while the other
+modes generate from whatever that database currently contains.
 
-The connection string is a `postgresql://` URL. Its `sslmode` parameter is
-honoured the way [`package:postgres`](https://pub.dev/packages/postgres)
-supports it (`disable`, `require`, `verify-ca` and `verify-full`). Without
-one the tool tries TLS first and falls back to plaintext when the server does
-not offer it, like libpq's `prefer`.
+`--linked` and `--project-ref` reach the database through the Management API
+with your `supabase login` credentials, so no database password is needed.
+`--db-url` is handed to the CLI as is; it requires TLS unless the connection
+string says `sslmode=disable`.
 
 Use `--schema` to generate for a schema other than `public`, and `--import`
 to change which library the generated file imports `PostgrestTable` and
@@ -58,13 +63,14 @@ The tool introspects the database with a Dart port of the introspection of
 [`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen)
 into the `GeneratorMetadata` intermediate representation its TypeScript, Go,
 Swift, and Python generators consume, ordered with `sortGeneratorMetadata`,
-and generates the Dart code from that document. The port is pinned to a
-revision of the TypeScript package and produces the same document byte for
-byte; `--dump-metadata` prints it instead of the generated code, which helps
-when reporting a generator issue.
+and generates the Dart code from that document. The queries run through
+`supabase db query`, so the CLI resolves and authenticates the connection.
+The port is pinned to a revision of the TypeScript package and produces a
+document with the same records; `--dump-metadata` prints it instead of the
+generated code, which helps when reporting a generator issue.
 
-The built-in introspection, and with it the `--local`, `--db-url` and
-`--dump-metadata` options, is a stopgap. It will be removed once the Supabase
+The built-in introspection, and with it the `--local`, `--linked`,
+`--project-ref`, `--db-url` and `--dump-metadata` options, is a stopgap. It will be removed once the Supabase
 CLI ships Dart support for `supabase gen types`, which then becomes the only
 way to run this tool; see the next section.
 
