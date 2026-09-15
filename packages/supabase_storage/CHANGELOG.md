@@ -1,3 +1,11 @@
+## 3.0.0-dev.4
+
+> Note: This release has breaking changes.
+
+ - **FIX**(storage): require a hostname label boundary before rewriting to the storage host ([#1838](https://github.com/supabase/supabase-flutter/issues/1838)). ([8ecbc4b2](https://github.com/supabase/supabase-flutter/commit/8ecbc4b2b6ee9376d3508d92b5428111d2705a89))
+ - **FEAT**(storage): add file versioning and bucket lifecycle policies ([#1834](https://github.com/supabase/supabase-flutter/issues/1834)). ([564576ad](https://github.com/supabase/supabase-flutter/commit/564576adb75ada73b2f68573a0dfa82b5a91c3f1))
+ - **BREAKING** **FEAT**(storage): abort in-flight uploads and downloads via abortSignal ([#1831](https://github.com/supabase/supabase-flutter/issues/1831)). ([3c9d92e3](https://github.com/supabase/supabase-flutter/commit/3c9d92e31b29f16eca51b7bb1e1528436367c3eb))
+
 ## 3.0.0-dev.3
 
  - **REFACTOR**: rename supabase_testing to supabase_test ([#1812](https://github.com/supabase/supabase-flutter/issues/1812)). ([1e15663d](https://github.com/supabase/supabase-flutter/commit/1e15663dbe8c673866f2e23191e185297dd4ae01))

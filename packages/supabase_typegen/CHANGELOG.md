@@ -1,3 +1,7 @@
+## 0.1.4
+
+ - **FEAT**(supabase_typegen): introspect the database through the Supabase CLI ([#1837](https://github.com/supabase/supabase-flutter/issues/1837)). ([78d0f7aa](https://github.com/supabase/supabase-flutter/commit/78d0f7aae4e35799883bd8a4219b6b2e86d166fc))
+
 ## 0.1.3
 
  - **FEAT**(supabase_typegen): emit relation members from foreign key metadata ([#1809](https://github.com/supabase/supabase-flutter/issues/1809)). ([9efd2d19](https://github.com/supabase/supabase-flutter/commit/9efd2d194012868cb85017f89a0b0a465fd81826))

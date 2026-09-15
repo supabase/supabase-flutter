@@ -1,3 +1,7 @@
+## 0.2.1
+
+ - **FEAT**(storage): add file versioning and bucket lifecycle policies ([#1834](https://github.com/supabase/supabase-flutter/issues/1834)). ([564576ad](https://github.com/supabase/supabase-flutter/commit/564576adb75ada73b2f68573a0dfa82b5a91c3f1))
+
 ## 0.2.0
 
 > Note: This release has breaking changes.
