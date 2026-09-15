@@ -19,6 +19,7 @@ permissions:
 
 env:
   SUPABASE_CLI_VERSION: 2.109.1
+  CLOUDFLARED_VERSION: 2026.9.0
 
 jobs:
   backend:
@@ -51,13 +52,19 @@ jobs:
 
       - name: Install cloudflared
         run: |
+          # Pinned: this suite only runs on release pull requests, which is the
+          # worst place to discover that a new cloudflared behaves differently.
           sudo curl -fsSL \
-            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+            "https://github.com/cloudflare/cloudflared/releases/download/$CLOUDFLARED_VERSION/cloudflared-linux-amd64" \
             -o /usr/local/bin/cloudflared
           sudo chmod +x /usr/local/bin/cloudflared
 
       - name: Expose Supabase through a tunnel
         id: tunnel
+        env:
+          # Fixed so the metrics server below has a known address; cloudflared
+          # otherwise picks a free port on loopback.
+          METRICS_ADDRESS: 127.0.0.1:20241
         run: |
           set -euo pipefail
           supabase status -o env --workdir examples > sb.env
@@ -67,18 +74,55 @@ jobs:
             key=$(grep '^ANON_KEY=' sb.env | cut -d= -f2- | tr -d '"')
           fi
 
-          cloudflared tunnel --no-autoupdate --url "$api_url" > cloudflared.log 2>&1 &
-          public_url=""
-          for _ in $(seq 1 30); do
-            public_url=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' cloudflared.log | head -n1 || true)
-            [ -n "$public_url" ] && break
+          cloudflared tunnel --no-autoupdate --url "$api_url" \
+            --metrics "$METRICS_ADDRESS" > cloudflared.log 2>&1 &
+          tunnel_process=$!
+
+          # Ask cloudflared for the hostname it was assigned instead of reading
+          # it back out of its log: /ready turns 200 once a connection to the
+          # edge is up, and /quicktunnel then answers {"hostname": "..."}.
+          public_hostname=""
+          for _ in $(seq 1 60); do
+            if ! kill -0 "$tunnel_process" 2>/dev/null; then
+              break
+            fi
+            # No -S: a 503 here is the normal answer while it connects.
+            if curl -fs -o /dev/null "http://$METRICS_ADDRESS/ready"; then
+              public_hostname=$(curl -fsS "http://$METRICS_ADDRESS/quicktunnel" \
+                | jq -r '.hostname // empty' || true)
+              if [ -n "$public_hostname" ]; then
+                break
+              fi
+            fi
             sleep 2
           done
-          if [ -z "$public_url" ]; then
+          if [ -z "$public_hostname" ]; then
             echo "Failed to open a cloudflared tunnel." >&2
             cat cloudflared.log >&2
             exit 1
           fi
+          public_url="https://$public_hostname"
+
+          # The tunnel answering is not the same as it reaching Supabase, and a
+          # url that resolves but serves something else turns into six confusing
+          # test failures three quarters of an hour from now.
+          status=""
+          for _ in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "apikey: $key" "$public_url/rest/v1/" || true)
+            case "$status" in
+              2??) break ;;
+            esac
+            sleep 2
+          done
+          case "$status" in
+            2??) ;;
+            *)
+              echo "The tunnel at $public_url answered $status rather than serving Supabase." >&2
+              cat cloudflared.log >&2
+              exit 1
+              ;;
+          esac
           echo "Supabase is reachable at $public_url"
 
           mkdir -p endpoint
