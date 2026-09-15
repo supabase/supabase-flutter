@@ -1,0 +1,49 @@
+name: Typegen introspection drift
+
+on:
+  pull_request:
+    paths:
+      - 'packages/supabase_typegen/**'
+      - '.github/workflows/typegen-drift.yml'
+  schedule:
+    # Mondays at 06:00 UTC, comparing against supabase/sdk main so a change to
+    # the upstream introspection SQL gets noticed.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Compare the vendored SQL with postgrest-typegen
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The drift check executes TypeScript fetched from supabase/sdk.
+          persist-credentials: false
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Check the introspection SQL against the pinned revision
+        if: ${{ github.event_name != 'schedule' }}
+        working-directory: packages/supabase_typegen
+        run: bun tool/check_introspection_drift.ts
+
+      - name: Check the introspection SQL against supabase/sdk main
+        if: ${{ github.event_name == 'schedule' }}
+        working-directory: packages/supabase_typegen
+        run: bun tool/check_introspection_drift.ts --latest

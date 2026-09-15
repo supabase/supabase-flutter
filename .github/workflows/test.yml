@@ -142,7 +142,7 @@ jobs:
         run: dart analyze --fatal-infos .
 
       - name: Setup Supabase CLI
-        if: ${{ matrix.package.backend }}
+        if: ${{ matrix.package.backend || matrix.package.name == 'supabase_typegen' }}
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
           version: 2.109.1
@@ -191,8 +191,25 @@ jobs:
                 docker save "$image" -o "/tmp/supabase-images/${file}.tar"
               done
 
+      - name: Start Postgres for the typegen parity test
+        if: ${{ matrix.package.name == 'supabase_typegen' }}
+        run: |
+          docker run --detach --name supabase_typegen_parity \
+            --env POSTGRES_PASSWORD=postgres --publish 55432:5432 postgres:15
+          for _ in $(seq 1 30); do
+            if docker exec supabase_typegen_parity pg_isready --host localhost --username postgres; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Postgres did not become ready in time." >&2
+          docker logs supabase_typegen_parity
+          exit 1
+
       - name: Run tests
         working-directory: packages/${{ matrix.package.name }}
+        env:
+          SUPABASE_TYPEGEN_PARITY_DATABASE_URL: ${{ matrix.package.name == 'supabase_typegen' && 'postgresql://postgres:postgres@localhost:55432/postgres?sslmode=disable' || '' }}
         run: |
           CONCURRENCY=""
           if [ "${{ matrix.package.concurrency }}" = "1" ]; then
