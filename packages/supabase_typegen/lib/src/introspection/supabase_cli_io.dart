@@ -106,7 +106,10 @@ class SupabaseCliQueryable implements Queryable {
       }
       if (result.exitCode != 0) {
         throw SupabaseCliException(
-          describeFailure(_stripAnsi(result.stderr as String)),
+          describeFailure(
+            _stripAnsi('${result.stderr}\n${result.stdout}'),
+            target: target,
+          ),
         );
       }
       return _rows(result.stdout as String, queries.keys);
@@ -128,15 +131,25 @@ String combineQueries(Map<String, String> queries) => [
   ].join(',\n'),
 ].join('\n');
 
-/// Turns the stderr of a failed `supabase db query` into the message shown
+/// Turns the [output] of a failed `supabase db query` into the message shown
 /// to the user, with dedicated wording for the setup problems the tool can
-/// name.
-String describeFailure(String stderr) {
-  final output = stderr
+/// name. Passwords of connection strings echoed by the CLI are redacted.
+String describeFailure(String rawOutput, {DatabaseTarget? target}) {
+  final output = rawOutput
       .split('\n')
       .where((line) => !line.startsWith('Connecting to '))
       .join('\n')
+      .replaceAllMapped(_connectionStringPassword, (match) => '${match[1]}***@')
       .trim();
+  if (target is LinkedProject &&
+      target.projectRef != null &&
+      output.contains('supabase db query [flags]')) {
+    // CLI releases before 2.116 have no --project-ref on db query and answer
+    // with the usage text.
+    return 'This Supabase CLI does not accept --project-ref for db query. '
+        'Upgrade to 2.116 or newer, or run `supabase link --project-ref '
+        '${target.projectRef}` and pass --linked instead.';
+  }
   if (output.contains('Access token not provided')) {
     return 'The Supabase CLI is not logged in. Run `supabase login`, or set '
         'SUPABASE_ACCESS_TOKEN, and try again.';
@@ -180,5 +193,9 @@ Map<String, List<Map<String, dynamic>>> _rows(
 }
 
 final _ansi = RegExp(r'\x1B\[[0-9;]*m');
+
+/// The `scheme://user:password@` prefix of a connection string, with the
+/// password captured for redaction.
+final _connectionStringPassword = RegExp(r'(\w+://[^:/\s@]*:)[^@\s]*@');
 
 String _stripAnsi(String text) => text.replaceAll(_ansi, '');

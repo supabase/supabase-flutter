@@ -42,6 +42,33 @@ with t as (select 2 as id) select id from t
       );
     });
 
+    test('explains --project-ref on a CLI without it', () {
+      expect(
+        describeFailure(
+          'DESCRIPTION\n  Execute a SQL query against the database.\n'
+          'USAGE\n  supabase db query [flags] [<sql>]\n',
+          target: const LinkedProject(projectRef: 'abcdefghijklmnopqrst'),
+        ),
+        allOf(
+          contains('does not accept --project-ref'),
+          contains('supabase link --project-ref abcdefghijklmnopqrst'),
+        ),
+      );
+    });
+
+    test('redacts passwords of connection strings', () {
+      expect(
+        describeFailure(
+          'failed to connect to postgres: cannot parse '
+          '`postgresql://postgres:s3cret@db.example.com:5432/postgres`',
+        ),
+        allOf(
+          contains('postgresql://postgres:***@db.example.com:5432/postgres'),
+          isNot(contains('s3cret')),
+        ),
+      );
+    });
+
     test('passes other failures through without the progress line', () {
       expect(
         describeFailure(

@@ -23,11 +23,13 @@ For every table the generator emits:
 
 ## Usage
 
-Add `supabase_typegen` as a dev dependency of your project, or activate it
-globally with `dart pub global activate supabase_typegen`. The tool connects
-through the [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started),
-so have it installed and, for hosted projects, logged in with
-`supabase login`. Then point it at your database:
+Add `supabase_typegen` as a dev dependency of your project and run it with
+`dart run supabase_typegen`, or install it globally with
+`dart install supabase_typegen` and run it as `supabase_typegen`. The tool
+connects through the
+[Supabase CLI](https://supabase.com/docs/guides/cli/getting-started), so have
+it installed and, for hosted projects, logged in with `supabase login`. Then
+point it at your database:
 
 ```sh
 # The database of the running local Supabase stack (`supabase start`).
@@ -49,7 +51,9 @@ local database and this tool generates from the result, while the other
 modes generate from whatever that database currently contains.
 
 `--linked` and `--project-ref` reach the database through the Management API
-with your `supabase login` credentials, so no database password is needed.
+with your `supabase login` credentials, so no database password is needed;
+`--project-ref` needs a CLI that accepts it on `db query` (2.116 or newer),
+older ones want `supabase link --project-ref <ref>` followed by `--linked`.
 `--db-url` is handed to the CLI as is; it requires TLS unless the connection
 string says `sslmode=disable`.
 
