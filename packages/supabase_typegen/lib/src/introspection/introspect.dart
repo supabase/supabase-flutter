@@ -19,7 +19,7 @@ import 'ssl_probe_io.dart';
 /// introspection this library ports, a commit or a `postgrest-typegen-v*`
 /// tag. `tool/check_introspection_drift.ts` compares the SQL of the port
 /// against it and `tool/regenerate_fixture.ts` expects a checkout of it.
-const postgrestTypegenRevision = 'af7f8e852590184be777be90e8345529c78fd169';
+const postgrestTypegenRevision = 'postgrest-typegen-v0.2.2';
 
 /// The `version` field of the emitted `GeneratorMetadata` document.
 const generatorMetadataVersion = 1;
