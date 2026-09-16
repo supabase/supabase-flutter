@@ -251,7 +251,7 @@ void main() {
       expect(response.session, isNotNull);
       expect(response.user, isNotNull);
       expect(response.user?.phone, testPhone);
-      expect(response.user?.userMetadata?['name'], 'Test User');
+      expect(response.user?.userMetadata['name'], 'Test User');
 
       // Verify session was set
       expect(client.currentSession, isNotNull);

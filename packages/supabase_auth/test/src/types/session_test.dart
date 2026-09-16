@@ -12,8 +12,6 @@ void main() {
     setUp(() {
       mockUser = User(
         id: '123',
-        appMetadata: {},
-        userMetadata: <String, dynamic>{},
         audience: 'authenticated',
         createdAt: DateTime.utc(2023, 1, 1),
       );
@@ -352,8 +350,6 @@ void main() {
 
         final newUser = User(
           id: '456',
-          appMetadata: {},
-          userMetadata: <String, dynamic>{},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 2),
         );
@@ -377,8 +373,6 @@ void main() {
 
         final newUser = User(
           id: '456',
-          appMetadata: {},
-          userMetadata: <String, dynamic>{},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 2),
         );
@@ -515,16 +509,12 @@ void main() {
       test('returns false for sessions with different users', () {
         final user1 = User(
           id: '123',
-          appMetadata: {},
-          userMetadata: {},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
         final user2 = User(
           id: '456',
-          appMetadata: {},
-          userMetadata: {},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );

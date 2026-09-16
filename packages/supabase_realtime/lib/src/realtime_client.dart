@@ -198,7 +198,7 @@ class RealtimeClient {
     this.decode,
     TimerCalculation? reconnectAfter,
     Map<String, String>? headers,
-    Map<String, dynamic> parameters = const {},
+    Map<String, String> parameters = const {},
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
@@ -274,7 +274,7 @@ class RealtimeClient {
   final Map<String, String> _headers;
 
   /// The query parameters sent when connecting, as an unmodifiable map.
-  final Map<String, dynamic> parameters;
+  final Map<String, String> parameters;
 
   /// The Realtime protocol version used by this client.
   final RealtimeProtocolVersion version;
@@ -898,7 +898,7 @@ class RealtimeClient {
 
   /// Returns the URL of the websocket.
   String get endpointUrl {
-    final queryParameters = Map<String, String>.from(parameters);
+    final queryParameters = Map<String, String>.of(parameters);
     queryParameters['vsn'] = version.wireVersion;
     return _appendParameters(endpoint, queryParameters);
   }

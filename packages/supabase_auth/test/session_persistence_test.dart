@@ -272,7 +272,7 @@ void main() {
 
     final persisted = await storage.getItem(storageKey);
     final session = Session.fromJson(jsonDecode(persisted!));
-    expect(session?.user.userMetadata?['name'], 'Updated');
+    expect(session?.user.userMetadata['name'], 'Updated');
   });
 
   test('a persisted value without an access token only emits an initial '
