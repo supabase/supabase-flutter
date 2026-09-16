@@ -28,6 +28,8 @@ explicitly:
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),
   where writes without a `select()` now resolve to `void`
+- [`User.userMetadata` is never null](#userappmetadata-is-an-appmetadata-and-usermetadata-is-never-null),
+  so a null check on it is dead code that the analyzer only warns about
 
 ### The client packages are renamed
 

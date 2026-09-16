@@ -36,8 +36,8 @@ class User {
   /// directly.
   final AppMetadata appMetadata;
 
-  /// Metadata the signed-in user can update about themselves, as an
-  /// unmodifiable map. Empty when the user has none.
+  /// Metadata the signed-in user can update about themselves. Empty when the
+  /// user has none, and unmodifiable when parsed from the server.
   final Map<String, dynamic> userMetadata;
 
   /// The `aud` claim of the user's JWTs, `'authenticated'` for most users.

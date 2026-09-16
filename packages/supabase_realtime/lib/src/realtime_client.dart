@@ -898,9 +898,10 @@ class RealtimeClient {
 
   /// Returns the URL of the websocket.
   String get endpointUrl {
-    final queryParameters = Map<String, String>.of(parameters);
-    queryParameters['vsn'] = version.wireVersion;
-    return _appendParameters(endpoint, queryParameters);
+    return _appendParameters(endpoint, {
+      ...parameters,
+      'vsn': version.wireVersion,
+    });
   }
 
   /// [endpointUrl] with credential-bearing query parameters replaced by

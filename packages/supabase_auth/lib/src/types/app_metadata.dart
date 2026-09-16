@@ -24,9 +24,7 @@ class AppMetadata {
       providers: List<String>.unmodifiable(
         (json['providers'] as List<dynamic>?)?.cast<String>() ?? const [],
       ),
-      additionalProperties: Map.unmodifiable(
-        additionalProperties,
-      ),
+      additionalProperties: Map.unmodifiable(additionalProperties),
     );
   }
 
