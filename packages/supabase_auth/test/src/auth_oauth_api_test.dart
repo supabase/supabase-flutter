@@ -85,7 +85,7 @@ void main() {
       );
     });
 
-    test('throws FormatException when the user email is missing', () {
+    test('parses a user without an email', () {
       final json = {
         'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
         'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
@@ -94,6 +94,24 @@ void main() {
           'name': 'OAuth test client',
         },
         'user': {'id': '1bee2038-51fe-4f93-8fbb-442df18657ff'},
+        'scope': 'email',
+      };
+
+      final actual = OAuthAuthorizationDetailsResponse.fromJson(json);
+
+      expect(actual.user.id, equals('1bee2038-51fe-4f93-8fbb-442df18657ff'));
+      expect(actual.user.email, isNull);
+    });
+
+    test('throws FormatException when the user email is not a string', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': {'id': '1bee2038-51fe-4f93-8fbb-442df18657ff', 'email': 42},
         'scope': 'email',
       };
 
@@ -206,6 +224,29 @@ void main() {
       expect(details.client.clientName, equals(oauthClient.clientName));
       expect(details.user.id, equals(auth.user?.id));
       expect(details.user.email, equals(email1));
+    });
+
+    test('get authorization details for a user without an email', () async {
+      final client = await fixture.build();
+      final clientParameters = CreateOAuthClientOptions(
+        clientName: 'Test OAuth Client',
+        redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
+      );
+      final oauthClient = await fixture.createOAuthClient(clientParameters);
+      final auth = await fixture.signUpWithPhone(
+        phone: getNewPhone(),
+        password: password,
+      );
+      final authorizationId = await fixture.authorizeClient(oauthClient);
+
+      final response = await client.oauth.getAuthorizationDetails(
+        authorizationId,
+      );
+
+      expect(response, isA<OAuthAuthorizationDetailsResponse>());
+      final details = response as OAuthAuthorizationDetailsResponse;
+      expect(details.user.id, equals(auth.user?.id));
+      expect(details.user.email, isNull);
     });
 
     test('approve authorization request', () async {
@@ -416,6 +457,13 @@ class AuthOauthApiFixture {
     required String password,
   }) {
     return _client.signInWithPassword(password: password, email: email);
+  }
+
+  Future<AuthResponse> signUpWithPhone({
+    required String phone,
+    required String password,
+  }) {
+    return _client.signUp(phone: phone, password: password);
   }
 
   Future<void> _reset() async {
