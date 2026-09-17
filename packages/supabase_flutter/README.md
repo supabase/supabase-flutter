@@ -289,10 +289,9 @@ await supabase.auth.signInWithOAuth(
 );
 
 // Listen to auth state changes in order to detect when the OAuth login is complete.
-supabase.auth.onAuthStateChange.listen((data) {
-  final AuthChangeEvent event = data.event;
-  if(event == AuthChangeEvent.signedIn) {
-    // Do something when user sign in
+supabase.auth.onAuthStateChange.listen((state) {
+  if (state is AuthSignedIn) {
+    // Do something with state.session when the user signs in
   }
 });
 ```

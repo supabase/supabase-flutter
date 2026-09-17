@@ -485,8 +485,8 @@ except `AuthInitialSession`, where it is the session at subscription time or `nu
 null-checks `session` keeps compiling. What changes:
 
 - `AuthState.signOutReason` moved to `AuthSignedOut.reason`.
-- `AuthState` has no public constructor. Construct the subtype instead, for example in a test that
-  feeds a fake stream.
+- `AuthState` itself can no longer be constructed. Construct the subtype instead, for example in a
+  test that feeds a fake stream.
 
 ```dart
 // Before

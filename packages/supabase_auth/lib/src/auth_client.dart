@@ -256,11 +256,14 @@ class AuthClient {
   ///
   /// ```dart
   /// supabase.auth.onAuthStateChange.listen(
-  ///   (data) {
-  ///     final AuthChangeEvent event = data.event;
-  ///     final Session? session = data.session;
-  ///     if (event == AuthChangeEvent.signedIn) {
-  ///       // handle signIn event
+  ///   (state) {
+  ///     switch (state) {
+  ///       case AuthSignedIn(:final session):
+  ///         showHome(session.user);
+  ///       case AuthSignedOut(:final reason):
+  ///         showLogin(expired: reason == SignOutReason.sessionExpired);
+  ///       default:
+  ///         // The other events, see [AuthState] for the full list.
   ///     }
   ///   },
   ///   onError: (error, stackTrace) {
@@ -1203,8 +1206,8 @@ class AuthClient {
     final session = currentSession;
     if (session != null) {
       _saveSession(session.copyWith(user: userResponse.user));
+      notifyAllSubscribers(AuthChangeEvent.userUpdated);
     }
-    notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
     return userResponse;
   }
@@ -2095,12 +2098,6 @@ class AuthClient {
     SignOutReason? signOutReason,
   }) {
     session ??= currentSession;
-    if (broadcast && event != AuthChangeEvent.initialSession) {
-      _broadcastChannel?.postMessage({
-        'event': event.value,
-        'session': session?.toJson(),
-      });
-    }
     final state = _authStateFor(
       event,
       session,
@@ -2108,11 +2105,16 @@ class AuthClient {
       signOutReason: signOutReason,
     );
     if (state == null) {
-      assert(!broadcast, 'A local ${event.name} event needs a session.');
       authLogger.warning(
-        'Ignoring a broadcast ${event.name} event that carries no session',
+        'Ignoring a ${event.name} event that carries no session',
       );
       return;
+    }
+    if (broadcast && event != AuthChangeEvent.initialSession) {
+      _broadcastChannel?.postMessage({
+        'event': event.value,
+        'session': session?.toJson(),
+      });
     }
     authLogger.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
@@ -2120,39 +2122,42 @@ class AuthClient {
   }
 
   /// Builds the [AuthState] for [event], `null` when [event] carries a
-  /// session and [session] is missing.
+  /// session and [sessionOrNull] is missing.
   AuthState? _authStateFor(
     AuthChangeEvent event,
-    Session? session, {
+    Session? sessionOrNull, {
     required bool fromBroadcast,
     SignOutReason? signOutReason,
   }) {
-    return switch (event) {
-      AuthChangeEvent.initialSession => AuthInitialSession(session),
-      AuthChangeEvent.signedOut => AuthSignedOut(
+    return switch ((event, sessionOrNull)) {
+      (AuthChangeEvent.initialSession, _) => AuthInitialSession(sessionOrNull),
+      (AuthChangeEvent.signedOut, _) => AuthSignedOut(
         reason: signOutReason,
         fromBroadcast: fromBroadcast,
       ),
-      AuthChangeEvent.signedIn =>
-        session == null
-            ? null
-            : AuthSignedIn(session, fromBroadcast: fromBroadcast),
-      AuthChangeEvent.tokenRefreshed =>
-        session == null
-            ? null
-            : AuthTokenRefreshed(session, fromBroadcast: fromBroadcast),
-      AuthChangeEvent.userUpdated =>
-        session == null
-            ? null
-            : AuthUserUpdated(session, fromBroadcast: fromBroadcast),
-      AuthChangeEvent.passwordRecovery =>
-        session == null
-            ? null
-            : AuthPasswordRecovery(session, fromBroadcast: fromBroadcast),
-      AuthChangeEvent.mfaChallengeVerified =>
-        session == null
-            ? null
-            : AuthMfaChallengeVerified(session, fromBroadcast: fromBroadcast),
+      (_, null) => null,
+      (AuthChangeEvent.signedIn, final session?) => AuthSignedIn(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      (AuthChangeEvent.tokenRefreshed, final session?) => AuthTokenRefreshed(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      (AuthChangeEvent.userUpdated, final session?) => AuthUserUpdated(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      (AuthChangeEvent.passwordRecovery, final session?) =>
+        AuthPasswordRecovery(
+          session,
+          fromBroadcast: fromBroadcast,
+        ),
+      (
+        AuthChangeEvent.mfaChallengeVerified,
+        final session?,
+      ) =>
+        AuthMfaChallengeVerified(session, fromBroadcast: fromBroadcast),
     };
   }
 

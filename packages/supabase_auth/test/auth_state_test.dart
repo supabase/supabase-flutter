@@ -139,6 +139,34 @@ void main() {
       expect(describe(states.last), 'signed out userInitiated');
     });
 
+    test('a signedIn event without a session is not emitted', () async {
+      client.notifyAllSubscribers(AuthChangeEvent.signedIn, broadcast: false);
+      await pumpEventQueue();
+
+      expect(states, hasLength(1));
+      expect(states.single, isA<AuthInitialSession>());
+    });
+
+    test(
+      'an event received from another tab is marked fromBroadcast',
+      () async {
+        final session = await signIn();
+        client.notifyAllSubscribers(
+          AuthChangeEvent.tokenRefreshed,
+          session: session,
+          broadcast: false,
+        );
+        await pumpEventQueue();
+
+        expect(
+          states.last,
+          isA<AuthTokenRefreshed>()
+              .having((state) => state.session, 'session', session)
+              .having((state) => state.fromBroadcast, 'fromBroadcast', isTrue),
+        );
+      },
+    );
+
     test(
       'a late subscriber gets the current session as AuthInitialSession',
       () async {
