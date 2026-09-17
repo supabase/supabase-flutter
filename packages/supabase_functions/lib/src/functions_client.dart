@@ -169,7 +169,6 @@ class FunctionsClient {
   }) async {
     final effectiveRegion = region ?? _region;
 
-    // Merge query parameters with forceFunctionRegion if region is specified
     final effectiveQueryParameters = <String, dynamic>{
       ...?queryParameters,
       if (effectiveRegion != null && effectiveRegion != 'any')

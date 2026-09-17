@@ -330,7 +330,6 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   PostgrestTransformBuilder<T> maxAffected(int value) {
     final newHeaders = {..._headers};
 
-    // Add handling=strict and max-affected headers
     final existingPrefer = _emptyPreferAsNull(newHeaders['Prefer']);
     final String preferHeader;
     if (existingPrefer != null) {

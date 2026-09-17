@@ -1732,7 +1732,6 @@ class AuthClient {
     final startedAt = DateTime.now();
     var attempt = 0;
     return await retry(
-      // Make a GET request
       () async {
         attempt++;
         authLogger.fine('Attempt $attempt to refresh token');
@@ -2148,7 +2147,6 @@ class AuthClient {
   }
 
   Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
-    // try fetching from the supplied jwks
     final jwk = suppliedJwks.keys.firstWhereOrNull((key) => key.keyId == kid);
     if (jwk != null) {
       return jwk;
@@ -2156,10 +2154,8 @@ class AuthClient {
 
     final now = DateTime.now();
 
-    // try fetching from cache
     final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.keyId == kid);
 
-    // jwks exists and it isn't stale
     if (cachedJwk != null &&
         _jwksCachedAt != null &&
         _jwksCachedAt!.add(AuthConstants.jwksTtl).isAfter(now)) {
@@ -2183,7 +2179,6 @@ class AuthClient {
     _jwks = jwks;
     _jwksCachedAt = now;
 
-    // find the signing key
     return jwks.keys.firstWhereOrNull((key) => key.keyId == kid);
   }
 
@@ -2223,10 +2218,8 @@ class AuthClient {
       token = session.accessToken;
     }
 
-    // Decode the JWT to get the payload
     final decoded = decodeJwt(token);
 
-    // Validate expiration unless allowExpired is true
     if (!(options?.allowExpired ?? false)) {
       validateExpiration(decoded.payload.expiresAt);
     }

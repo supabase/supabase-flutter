@@ -334,13 +334,11 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
       // keep it simple and accept a string
       url = _url.appendSearchParameters(column, 'cs.$value');
     } else if (value is List) {
-      // array
       url = _url.appendSearchParameters(
         column,
         'cs.{${_cleanFilterList(value)}}',
       );
     } else {
-      // json
       url = _url.appendSearchParameters(column, 'cs.${json.encode(value)}');
     }
     return copyWithUrl(url);
@@ -379,13 +377,11 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
       // keep it simple and accept a string
       url = _url.appendSearchParameters(column, 'cd.$value');
     } else if (value is List) {
-      // array
       url = _url.appendSearchParameters(
         column,
         'cd.{${_cleanFilterList(value)}}',
       );
     } else {
-      // json
       url = _url.appendSearchParameters(column, 'cd.${json.encode(value)}');
     }
     return copyWithUrl(url);
@@ -468,7 +464,6 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder<T> overlaps(String column, Object value) {
     final Uri url;
     if (value is List) {
-      // array
       url = _url.appendSearchParameters(
         column,
         'ov.{${_cleanFilterList(value)}}',
