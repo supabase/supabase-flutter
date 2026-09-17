@@ -1944,10 +1944,18 @@ class AuthClient {
             if (messageEvent['session'] != null) {
               session = Session.fromJson(messageEvent['session']);
             }
+            final state = _authStateFor(event, session, fromBroadcast: true);
+            if (state == null) {
+              authLogger.warning(
+                'Ignoring a broadcast ${event.name} event that carries no '
+                'session',
+              );
+              return;
+            }
             // The tab that sent the event has already written the session
             // to the storage both tabs share.
             _currentSession = session;
-            notifyAllSubscribers(event, session: session, broadcast: false);
+            _emit(state, broadcast: false);
           }
         });
       } catch (error, stackTrace) {
@@ -2110,10 +2118,16 @@ class AuthClient {
       );
       return;
     }
-    if (broadcast && event != AuthChangeEvent.initialSession) {
+    _emit(state, broadcast: broadcast);
+  }
+
+  /// Delivers [state] to the subscribers, and to the other tabs when
+  /// [broadcast] is set.
+  void _emit(AuthState state, {required bool broadcast}) {
+    if (broadcast && state is! AuthInitialSession) {
       _broadcastChannel?.postMessage({
-        'event': event.value,
-        'session': session?.toJson(),
+        'event': state.event.value,
+        'session': state.session?.toJson(),
       });
     }
     authLogger.finest('onAuthStateChange: $state');
