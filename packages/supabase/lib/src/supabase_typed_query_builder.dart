@@ -8,13 +8,14 @@ import 'package:supabase/supabase.dart';
 /// [PostgrestTypedQueryBuilder], this builder exposes a typed realtime
 /// [stream].
 @experimental
-class SupabaseTypedQueryBuilder<Row> extends PostgrestTypedQueryBuilder<Row> {
+class SupabaseTypedQueryBuilder<Row, Insert, Update>
+    extends PostgrestTypedQueryBuilder<Row, Insert, Update> {
   // The query builder is also kept as a field to expose [stream], so it
   // cannot become a super parameter.
   // ignore: use_super_parameters
   const SupabaseTypedQueryBuilder(
     SupabaseQueryBuilder queryBuilder,
-    PostgrestTable<Row> table,
+    PostgrestTable<Row, Insert, Update> table,
   ) : _queryBuilder = queryBuilder,
       super(queryBuilder, table);
 
@@ -43,7 +44,7 @@ class SupabaseTypedQueryBuilder<Row> extends PostgrestTypedQueryBuilder<Row> {
         primaryKey: [for (final column in primaryKey) column.name],
         private: private,
       ),
-      table,
+      table.rowFromJson,
     );
   }
 }

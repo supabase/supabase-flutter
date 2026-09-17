@@ -17,9 +17,10 @@ part 'postgrest_typed_query_builder.dart';
 part 'postgrest_typed_transform_builder.dart';
 part 'postgrest_typed_filter_builder.dart';
 
-List<Row> _rowsFromJson<Row>(PostgrestTable<Row> table, PostgrestList rows) => [
-  for (final row in rows) table.rowFromJson(row),
-];
+List<Row> _rowsFromJson<Row>(
+  RowConverter<Row> rowFromJson,
+  PostgrestList rows,
+) => [for (final row in rows) rowFromJson(row)];
 
 /// The `select` parameter for [columns], or `*` when none are given.
 String _selectList<Row>(List<PostgrestColumnExpression<Row, Object>>? columns) {

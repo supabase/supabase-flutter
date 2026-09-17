@@ -889,6 +889,7 @@ features:
     symbols:
       - PostgrestQueryBuilder.insert
       - PostgrestTypedQueryBuilder.insert
+      - PostgrestTypedQueryBuilder.insertAll
   database.mutate.update:
     status: implemented
     symbols:
@@ -899,6 +900,7 @@ features:
     symbols:
       - PostgrestQueryBuilder.upsert
       - PostgrestTypedQueryBuilder.upsert
+      - PostgrestTypedQueryBuilder.upsertAll
   database.mutate.delete:
     status: implemented
     symbols:

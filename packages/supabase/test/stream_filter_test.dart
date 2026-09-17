@@ -279,7 +279,10 @@ extension type const _User(Map<String, dynamic> _json)
 }
 
 class _Users {
-  static const table = PostgrestTable('users', _User.new);
+  static const table = PostgrestTable<_User, Never, Never>(
+    'users',
+    _User.new,
+  );
   static const username = PostgrestColumn<_User, String>('username');
   static const status = PostgrestColumn<_User, String>('status');
   static const age = PostgrestColumn<_User, int>('age');

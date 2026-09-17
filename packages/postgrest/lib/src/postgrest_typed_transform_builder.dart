@@ -6,19 +6,23 @@ part of 'postgrest_typed_builder.dart';
 /// request resolves to when awaited.
 @experimental
 class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
-  const PostgrestTypedTransformBuilder._(this._transformBuilder, this._table)
-    : super._(_transformBuilder);
+  const PostgrestTypedTransformBuilder._(
+    this._transformBuilder,
+    this._rowFromJson,
+  ) : super._(_transformBuilder);
 
   final PostgrestTransformBuilder<T> _transformBuilder;
-  final PostgrestTable<Row> _table;
+  final RowConverter<Row> _rowFromJson;
 
   /// Performs horizontal filtering with SELECT, returning the affected rows
   /// typed as [Row].
   ///
   /// Used after a mutation:
   /// ```dart
-  /// final List<Book> books =
-  ///     await client.table(Books.table).insert({'title': 'foo'}).select();
+  /// final List<Book> books = await client
+  ///     .table(Books.table)
+  ///     .insert(BookInsert(title: 'foo'))
+  ///     .select();
   /// ```
   ///
   /// See [PostgrestTypedQueryBuilder.select] for [columns].
@@ -28,9 +32,9 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     PostgrestTransformBuilder(
       _transformBuilder
           .select(_selectList(columns))
-          .withConverter((rows) => _rowsFromJson(_table, rows)),
+          .withConverter((rows) => _rowsFromJson(_rowFromJson, rows)),
     ),
-    _table,
+    _rowFromJson,
   );
 
   /// Sorts the result by [ordering].
@@ -49,7 +53,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     PostgrestOrdering<Row> ordering,
   ) => PostgrestTypedTransformBuilder._(
     _transformBuilder.appendOrderKey(ordering.orderKey),
-    _table,
+    _rowFromJson,
   );
 
   /// Limits the result with the specified [count].
@@ -58,7 +62,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     String? referencedTable,
   }) => PostgrestTypedTransformBuilder._(
     _transformBuilder.limit(count, referencedTable: referencedTable),
-    _table,
+    _rowFromJson,
   );
 
   /// Limits the result to rows within the specified range, inclusive.
@@ -68,7 +72,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     String? referencedTable,
   }) => PostgrestTypedTransformBuilder._(
     _transformBuilder.range(from, to, referencedTable: referencedTable),
-    _table,
+    _rowFromJson,
   );
 
   /// Retrieves only one row from the result as [Row].
@@ -86,9 +90,9 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, Row> single() =>
       PostgrestTypedTransformBuilder._(
         PostgrestTransformBuilder(
-          _transformBuilder.single().withConverter(_table.rowFromJson),
+          _transformBuilder.single().withConverter(_rowFromJson),
         ),
-        _table,
+        _rowFromJson,
       );
 
   /// Retrieves at most one row from the result as [Row], or `null` when the
@@ -97,10 +101,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
       PostgrestTypedTransformBuilder._(
         PostgrestTransformBuilder(
           _transformBuilder.maybeSingle().withConverter(
-            (row) => row == null ? null : _table.rowFromJson(row),
+            (row) => row == null ? null : _rowFromJson(row),
           ),
         ),
-        _table,
+        _rowFromJson,
       );
 
   /// Omits `null`-valued properties from the response objects.

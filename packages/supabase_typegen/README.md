@@ -7,7 +7,9 @@ For every table the generator emits:
 
 - a zero-cost row extension type over the decoded JSON map with typed getters,
 - `Insert` and `Update` value types that enforce required columns at the
-  construction site,
+  construction site and are the only values the typed `insert`, `upsert` and
+  `update` methods accept. Read-only relations such as materialized views get
+  neither, so those methods cannot be called on them,
 - a `PostgrestTable` definition and `PostgrestColumn` tokens for compile-time
   checked filters and orderings, with nullable columns as
   `PostgrestNullableColumn` so `isNull()` only exists where it can match, and

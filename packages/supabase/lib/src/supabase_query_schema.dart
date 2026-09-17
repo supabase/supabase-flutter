@@ -49,7 +49,9 @@ class SupabaseQuerySchema {
 
   /// Perform a typed table operation, see [SupabaseClient.table].
   @experimental
-  SupabaseTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+  SupabaseTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
+    PostgrestTable<Row, Insert, Update> table,
+  ) {
     return SupabaseTypedQueryBuilder(from(table.name), table);
   }
 
