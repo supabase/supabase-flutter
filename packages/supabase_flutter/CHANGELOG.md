@@ -1,3 +1,10 @@
+## 3.0.0-dev.5
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **REFACTOR**(auth): make AuthState a sealed class with per-event payloads ([#1846](https://github.com/supabase/supabase-flutter/issues/1846)). ([66bc828d](https://github.com/supabase/supabase-flutter/commit/66bc828dae8d134cc97c0f04ef64b6b24eac4722))
+ - **BREAKING** **REFACTOR**(auth): return Session from the auth methods that always issue one ([#1845](https://github.com/supabase/supabase-flutter/issues/1845)). ([b63898ea](https://github.com/supabase/supabase-flutter/commit/b63898ead6223941da0f7bb4b7437092c59377d7))
+
 ## 3.0.0-dev.4
 
  - **FEAT**(supabase_flutter): Android Restore Credentials on top of passkeys ([#1824](https://github.com/supabase/supabase-flutter/issues/1824)). ([68293591](https://github.com/supabase/supabase-flutter/commit/68293591cfdbbf52d8333302a05f40bff69274ca))

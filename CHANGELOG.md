@@ -3,6 +3,70 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.5`](#postgrest---v300-dev5)
+ - [`supabase` - `v3.0.0-dev.5`](#supabase---v300-dev5)
+ - [`supabase_auth` - `v3.0.0-dev.5`](#supabase_auth---v300-dev5)
+ - [`supabase_flutter` - `v3.0.0-dev.5`](#supabase_flutter---v300-dev5)
+ - [`supabase_realtime` - `v3.0.0-dev.5`](#supabase_realtime---v300-dev5)
+ - [`supabase_test` - `v0.3.0`](#supabase_test---v030)
+ - [`supabase_typegen` - `v0.2.0`](#supabase_typegen---v020)
+
+Packages with other changes:
+
+ - [`supabase_flutter_web_auth` - `v0.1.3`](#supabase_flutter_web_auth---v013)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter_web_auth` - `v0.1.3`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.5`
+
+ - **FIX**(postgrest): build the typed transform builder with the row converter ([#1850](https://github.com/supabase/supabase-flutter/issues/1850)). ([b9dee7bf](https://github.com/supabase/supabase-flutter/commit/b9dee7bfdae57826aaa5b6e003af527baab0042b))
+ - **FEAT**(postgrest): add csv, explain, head, dryRun, stripNulls, maxAffected and geojson to the typed transform builder ([#1848](https://github.com/supabase/supabase-flutter/issues/1848)). ([85fd4534](https://github.com/supabase/supabase-flutter/commit/85fd453407695f5841d18f6530f9c8060d9aee32))
+ - **BREAKING** **FEAT**(postgrest): only accept the table's Insert and Update types on the typed builder ([#1849](https://github.com/supabase/supabase-flutter/issues/1849)). ([333cc5c3](https://github.com/supabase/supabase-flutter/commit/333cc5c3df57c76a40530437f8415b7621b761bd))
+
+#### `supabase` - `v3.0.0-dev.5`
+
+ - **BREAKING** **FEAT**(postgrest): only accept the table's Insert and Update types on the typed builder ([#1849](https://github.com/supabase/supabase-flutter/issues/1849)). ([333cc5c3](https://github.com/supabase/supabase-flutter/commit/333cc5c3df57c76a40530437f8415b7621b761bd))
+
+#### `supabase_auth` - `v3.0.0-dev.5`
+
+ - **FIX**(auth): parse OAuth authorization details for users without an email ([#1844](https://github.com/supabase/supabase-flutter/issues/1844)). ([a3a75590](https://github.com/supabase/supabase-flutter/commit/a3a755908f35b2b52bfd05560960ebc596807891))
+ - **BREAKING** **REFACTOR**(auth): make AuthState a sealed class with per-event payloads ([#1846](https://github.com/supabase/supabase-flutter/issues/1846)). ([66bc828d](https://github.com/supabase/supabase-flutter/commit/66bc828dae8d134cc97c0f04ef64b6b24eac4722))
+ - **BREAKING** **REFACTOR**(auth): return Session from the auth methods that always issue one ([#1845](https://github.com/supabase/supabase-flutter/issues/1845)). ([b63898ea](https://github.com/supabase/supabase-flutter/commit/b63898ead6223941da0f7bb4b7437092c59377d7))
+ - **BREAKING** **REFACTOR**: type the user metadata and realtime connection parameters ([#1843](https://github.com/supabase/supabase-flutter/issues/1843)). ([3afb0dfc](https://github.com/supabase/supabase-flutter/commit/3afb0dfc5e1c197fb6bf51e750f997537f9358eb))
+
+#### `supabase_flutter` - `v3.0.0-dev.5`
+
+ - **BREAKING** **REFACTOR**(auth): make AuthState a sealed class with per-event payloads ([#1846](https://github.com/supabase/supabase-flutter/issues/1846)). ([66bc828d](https://github.com/supabase/supabase-flutter/commit/66bc828dae8d134cc97c0f04ef64b6b24eac4722))
+ - **BREAKING** **REFACTOR**(auth): return Session from the auth methods that always issue one ([#1845](https://github.com/supabase/supabase-flutter/issues/1845)). ([b63898ea](https://github.com/supabase/supabase-flutter/commit/b63898ead6223941da0f7bb4b7437092c59377d7))
+
+#### `supabase_realtime` - `v3.0.0-dev.5`
+
+ - **BREAKING** **REFACTOR**: type the user metadata and realtime connection parameters ([#1843](https://github.com/supabase/supabase-flutter/issues/1843)). ([3afb0dfc](https://github.com/supabase/supabase-flutter/commit/3afb0dfc5e1c197fb6bf51e750f997537f9358eb))
+
+#### `supabase_test` - `v0.3.0`
+
+ - **BREAKING** **REFACTOR**(auth): return Session from the auth methods that always issue one ([#1845](https://github.com/supabase/supabase-flutter/issues/1845)). ([b63898ea](https://github.com/supabase/supabase-flutter/commit/b63898ead6223941da0f7bb4b7437092c59377d7))
+ - **BREAKING** **FEAT**(postgrest): only accept the table's Insert and Update types on the typed builder ([#1849](https://github.com/supabase/supabase-flutter/issues/1849)). ([333cc5c3](https://github.com/supabase/supabase-flutter/commit/333cc5c3df57c76a40530437f8415b7621b761bd))
+
+#### `supabase_typegen` - `v0.2.0`
+
+ - **BREAKING** **FEAT**(postgrest): only accept the table's Insert and Update types on the typed builder ([#1849](https://github.com/supabase/supabase-flutter/issues/1849)). ([333cc5c3](https://github.com/supabase/supabase-flutter/commit/333cc5c3df57c76a40530437f8415b7621b761bd))
+
+
 ## 2026-09-15
 
 ### Changes
