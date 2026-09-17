@@ -112,7 +112,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// This uses the `nulls=stripped` variant of the `Accept` header and
   /// requires PostgREST 11.2 or higher.
   PostgrestTypedTransformBuilder<Row, T> stripNulls() =>
-      PostgrestTypedTransformBuilder._(_transformBuilder.stripNulls(), _table);
+      PostgrestTypedTransformBuilder._(
+        _transformBuilder.stripNulls(),
+        _rowFromJson,
+      );
 
   /// Runs the query but rolls back the transaction, so no changes are
   /// persisted.
@@ -121,10 +124,13 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// which is useful for previewing the effect of a mutation.
   ///
   /// ```dart
-  /// await client.table(Books.table).insert({'title': 'foo'}).dryRun();
+  /// await client.table(Books.table).insert(BookInsert(title: 'foo')).dryRun();
   /// ```
   PostgrestTypedTransformBuilder<Row, T> dryRun() =>
-      PostgrestTypedTransformBuilder._(_transformBuilder.dryRun(), _table);
+      PostgrestTypedTransformBuilder._(
+        _transformBuilder.dryRun(),
+        _rowFromJson,
+      );
 
   /// Sets the maximum number of rows that can be affected by the query.
   ///
@@ -141,7 +147,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, T> maxAffected(int value) =>
       PostgrestTypedTransformBuilder._(
         _transformBuilder.maxAffected(value),
-        _table,
+        _rowFromJson,
       );
 
   /// Retrieves the response as CSV.
@@ -152,7 +158,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// final String csv = await client.table(Books.table).select().csv();
   /// ```
   PostgrestTypedTransformBuilder<Row, String> csv() =>
-      PostgrestTypedTransformBuilder._(_transformBuilder.csv(), _table);
+      PostgrestTypedTransformBuilder._(
+        _transformBuilder.csv(),
+        _rowFromJson,
+      );
 
   /// Performs a head request.
   ///

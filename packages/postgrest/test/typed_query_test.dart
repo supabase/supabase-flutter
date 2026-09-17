@@ -562,7 +562,7 @@ void main() {
 
       final Book book = await client
           .table(Books.table)
-          .insert({'title': 'foo'})
+          .insert(BookInsert(title: 'foo'))
           .select()
           .single()
           .dryRun();
@@ -613,7 +613,7 @@ void main() {
 
       final List<Book> books = await client
           .table(Books.table)
-          .update({'title': 'bar'})
+          .update(BookUpdate(title: 'bar'))
           .where(Books.id.eq(1))
           .maxAffected(1)
           .select();
