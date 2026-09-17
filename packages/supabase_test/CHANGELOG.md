@@ -1,3 +1,10 @@
+## 0.3.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **REFACTOR**(auth): return Session from the auth methods that always issue one ([#1845](https://github.com/supabase/supabase-flutter/issues/1845)). ([b63898ea](https://github.com/supabase/supabase-flutter/commit/b63898ead6223941da0f7bb4b7437092c59377d7))
+ - **BREAKING** **FEAT**(postgrest): only accept the table's Insert and Update types on the typed builder ([#1849](https://github.com/supabase/supabase-flutter/issues/1849)). ([333cc5c3](https://github.com/supabase/supabase-flutter/commit/333cc5c3df57c76a40530437f8415b7621b761bd))
+
 ## 0.2.1
 
  - **FEAT**(storage): add file versioning and bucket lifecycle policies ([#1834](https://github.com/supabase/supabase-flutter/issues/1834)). ([564576ad](https://github.com/supabase/supabase-flutter/commit/564576adb75ada73b2f68573a0dfa82b5a91c3f1))

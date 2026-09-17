@@ -1,3 +1,9 @@
+## 3.0.0-dev.5
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(postgrest): only accept the table's Insert and Update types on the typed builder ([#1849](https://github.com/supabase/supabase-flutter/issues/1849)). ([333cc5c3](https://github.com/supabase/supabase-flutter/commit/333cc5c3df57c76a40530437f8415b7621b761bd))
+
 ## 3.0.0-dev.4
 
  - Update a dependency to the latest release.

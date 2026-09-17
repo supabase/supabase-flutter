@@ -14,7 +14,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^3.0.0-dev.4
+  supabase_flutter: ^3.0.0-dev.5
 
 dev_dependencies:
   supabase_lints: ^0.1.2

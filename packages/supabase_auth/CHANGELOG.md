@@ -1,3 +1,11 @@
+## 3.0.0-dev.5
+
+> Note: This release has breaking changes.
+
+ - **FIX**(auth): parse OAuth authorization details for users without an email ([#1844](https://github.com/supabase/supabase-flutter/issues/1844)). ([a3a75590](https://github.com/supabase/supabase-flutter/commit/a3a755908f35b2b52bfd05560960ebc596807891))
+ - **BREAKING** **REFACTOR**(auth): return Session from the auth methods that always issue one ([#1845](https://github.com/supabase/supabase-flutter/issues/1845)). ([b63898ea](https://github.com/supabase/supabase-flutter/commit/b63898ead6223941da0f7bb4b7437092c59377d7))
+ - **BREAKING** **REFACTOR**: type the user metadata and realtime connection parameters ([#1843](https://github.com/supabase/supabase-flutter/issues/1843)). ([3afb0dfc](https://github.com/supabase/supabase-flutter/commit/3afb0dfc5e1c197fb6bf51e750f997537f9358eb))
+
 ## 3.0.0-dev.4
 
  - Update a dependency to the latest release.
