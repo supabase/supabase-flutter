@@ -136,12 +136,12 @@ class PostgrestTable$ {
   );
 
   /// The `map` row referenced by `mood`.
-  static const map$ByMood = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
+  static const mapByMood = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
     'map!postgrest_table_mood_fkey',
   );
 
   /// The `map` row referenced by `days`.
-  static const map$ByDays = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
+  static const mapByDays = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
     'map!postgrest_table_days_fkey',
   );
 }

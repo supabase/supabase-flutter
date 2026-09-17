@@ -43,10 +43,10 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 /// await client.table(Books.table).insert(BookInsert(title: 'Dart'));
 /// ```
 ///
-/// [Insert] and [Update] are sent as the request body, so they have to encode
-/// to a JSON object: an extension type over the map to send (as above), or a
-/// class with a `toJson` method. Both have to be spelled out, since nothing in
-/// the constructor arguments can infer them. A read-only relation, such as a
+/// [Insert] and [Update] are sent as the request body, so a value has to be
+/// the JSON object to send, in practice an extension type over the
+/// `Map<String, dynamic>` as above. Both have to be spelled out, since nothing
+/// in the constructor arguments can infer them. A read-only relation, such as a
 /// materialized view, uses `Never` for the write types it does not support,
 /// which makes the corresponding methods uncallable.
 ///

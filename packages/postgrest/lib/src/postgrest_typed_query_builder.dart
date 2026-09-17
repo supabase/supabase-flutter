@@ -82,12 +82,14 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ]);
   /// ```
   ///
+  /// [rows] needs at least one row.
+  ///
   /// See [insert] and [PostgrestQueryBuilder.insert] for [defaultToNull].
   PostgrestTypedFilterBuilder<Row, void> insertAll(
     List<Insert> rows, {
     bool defaultToNull = true,
   }) => PostgrestTypedFilterBuilder._(
-    _queryBuilder.insert(rows, defaultToNull: defaultToNull),
+    _queryBuilder.insert(_nonEmpty(rows), defaultToNull: defaultToNull),
     table.rowFromJson,
   );
 
@@ -133,6 +135,8 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// );
   /// ```
   ///
+  /// [rows] needs at least one row.
+  ///
   /// See [upsert] for [onConflict] and [PostgrestQueryBuilder.upsert] for
   /// [ignoreDuplicates] and [defaultToNull].
   PostgrestTypedFilterBuilder<Row, void> upsertAll(
@@ -141,11 +145,18 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
   }) => _upsert(
-    rows,
+    _nonEmpty(rows),
     onConflict: onConflict,
     ignoreDuplicates: ignoreDuplicates,
     defaultToNull: defaultToNull,
   );
+
+  List<Insert> _nonEmpty(List<Insert> rows) {
+    if (rows.isEmpty) {
+      throw ArgumentError.value(rows, 'rows', 'rows needs at least one row');
+    }
+    return rows;
+  }
 
   PostgrestTypedFilterBuilder<Row, void> _upsert(
     Object values, {

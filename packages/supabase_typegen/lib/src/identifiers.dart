@@ -68,32 +68,13 @@ const _reservedWords = {
   'yield',
 };
 
-/// Members that already exist on `Map<String, dynamic>`, which generated row
-/// extension types implement, so column getters cannot use these names.
-const _mapMembers = {
-  'addAll',
-  'addEntries',
-  'cast',
-  'clear',
-  'containsKey',
-  'containsValue',
-  'entries',
-  'forEach',
+/// Members every extension type inherits from `Object`, so column getters
+/// cannot use these names.
+const _objectMembers = {
   'hashCode',
-  'isEmpty',
-  'isNotEmpty',
-  'keys',
-  'length',
-  'map',
   'noSuchMethod',
-  'putIfAbsent',
-  'remove',
-  'removeWhere',
   'runtimeType',
   'toString',
-  'update',
-  'updateAll',
-  'values',
 };
 
 final _wordSeparator = RegExp('[^a-zA-Z0-9]+');
@@ -124,11 +105,12 @@ String camelCase(String name) {
 
 /// Converts [name] to a valid Dart member identifier in camelCase.
 ///
-/// Reserved words and members that would collide with `Map<String, dynamic>`
-/// get a `$` suffix, for example `class` becomes `class$`.
+/// Reserved words and members that would collide with `Object` get a `$`
+/// suffix, for example `class` becomes `class$`.
 String memberIdentifier(String name) {
   final identifier = camelCase(name);
-  if (_reservedWords.contains(identifier) || _mapMembers.contains(identifier)) {
+  if (_reservedWords.contains(identifier) ||
+      _objectMembers.contains(identifier)) {
     return '$identifier\$';
   }
   return identifier;

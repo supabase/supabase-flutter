@@ -33,9 +33,14 @@ void main() {
       expect(memberIdentifier('in'), r'in$');
     });
 
-    test('suffixes Map member names', () {
-      expect(memberIdentifier('length'), r'length$');
-      expect(memberIdentifier('keys'), r'keys$');
+    test('suffixes Object member names', () {
+      expect(memberIdentifier('hash_code'), r'hashCode$');
+      expect(memberIdentifier('to_string'), r'toString$');
+    });
+
+    test('keeps Map member names now that rows do not implement Map', () {
+      expect(memberIdentifier('length'), 'length');
+      expect(memberIdentifier('keys'), 'keys');
     });
 
     test('keeps regular names untouched', () {

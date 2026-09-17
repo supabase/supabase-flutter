@@ -554,6 +554,17 @@ void main() {
       );
     });
 
+    test('insertAll and upsertAll without rows throw', () {
+      expect(
+        () => client.table(Books.table).insertAll([]),
+        throwsArgumentError,
+      );
+      expect(
+        () => client.table(Books.table).upsertAll([]),
+        throwsArgumentError,
+      );
+    });
+
     test('insert with a trailing select returns the typed row', () async {
       httpClient.stub({'id': 3, 'title': 'foo'});
 

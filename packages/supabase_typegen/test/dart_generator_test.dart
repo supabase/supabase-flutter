@@ -114,12 +114,11 @@ void main() {
       generateDartCode(hostileSchema),
     ).replaceAll(' ', '');
 
-    // Two keys from postgrest_table to map: both carry the constraint hint,
-    // and `map` itself is renamed like any member that shadows a core name.
+    // Two keys from postgrest_table to map: both carry the constraint hint.
     expect(
       compact,
       contains(
-        r"staticconstmap$ByMood=PostgrestToOneRelation<PostgrestTableRow,"
+        "staticconstmapByMood=PostgrestToOneRelation<PostgrestTableRow,"
         "MapRow>('map!postgrest_table_mood_fkey'",
       ),
     );
@@ -139,7 +138,7 @@ void main() {
     ).replaceAll(' ', '');
 
     expect(compact, isNot(contains('<MapRow,MapRow>')));
-    expect(compact, isNot(contains(r'map$ByList')));
+    expect(compact, isNot(contains('mapByList')));
   });
 
   test('respects a custom import', () {
