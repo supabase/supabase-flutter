@@ -2122,42 +2122,40 @@ class AuthClient {
   }
 
   /// Builds the [AuthState] for [event], `null` when [event] carries a
-  /// session and [sessionOrNull] is missing.
+  /// session and [session] is missing.
   AuthState? _authStateFor(
     AuthChangeEvent event,
-    Session? sessionOrNull, {
+    Session? session, {
     required bool fromBroadcast,
     SignOutReason? signOutReason,
   }) {
-    return switch ((event, sessionOrNull)) {
-      (AuthChangeEvent.initialSession, _) => AuthInitialSession(sessionOrNull),
-      (AuthChangeEvent.signedOut, _) => AuthSignedOut(
+    return switch (event) {
+      AuthChangeEvent.initialSession => AuthInitialSession(session),
+      AuthChangeEvent.signedOut => AuthSignedOut(
         reason: signOutReason,
         fromBroadcast: fromBroadcast,
       ),
-      (_, null) => null,
-      (AuthChangeEvent.signedIn, final session?) => AuthSignedIn(
+      _ when session == null => null,
+      AuthChangeEvent.signedIn => AuthSignedIn(
         session,
         fromBroadcast: fromBroadcast,
       ),
-      (AuthChangeEvent.tokenRefreshed, final session?) => AuthTokenRefreshed(
+      AuthChangeEvent.tokenRefreshed => AuthTokenRefreshed(
         session,
         fromBroadcast: fromBroadcast,
       ),
-      (AuthChangeEvent.userUpdated, final session?) => AuthUserUpdated(
+      AuthChangeEvent.userUpdated => AuthUserUpdated(
         session,
         fromBroadcast: fromBroadcast,
       ),
-      (AuthChangeEvent.passwordRecovery, final session?) =>
-        AuthPasswordRecovery(
-          session,
-          fromBroadcast: fromBroadcast,
-        ),
-      (
-        AuthChangeEvent.mfaChallengeVerified,
-        final session?,
-      ) =>
-        AuthMfaChallengeVerified(session, fromBroadcast: fromBroadcast),
+      AuthChangeEvent.passwordRecovery => AuthPasswordRecovery(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      AuthChangeEvent.mfaChallengeVerified => AuthMfaChallengeVerified(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
     };
   }
 
