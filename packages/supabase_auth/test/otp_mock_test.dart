@@ -271,14 +271,12 @@ void main() {
     });
 
     test('signInWithPassword() with phone number', () async {
-      final response = await client.signInWithPassword(
+      final session = await client.signInWithPassword(
         phone: testPhone,
         password: testPassword,
       );
 
-      expect(response.session, isNotNull);
-      expect(response.user, isNotNull);
-      expect(response.user?.phone, testPhone);
+      expect(session.user.phone, testPhone);
 
       // Verify session was set
       expect(client.currentSession, isNotNull);

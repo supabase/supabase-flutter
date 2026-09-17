@@ -143,12 +143,12 @@ void main() {
     test('stubSignIn lets a password sign-in produce a session', () async {
       httpClient.stubSignIn();
 
-      final response = await supabase.auth.signInWithPassword(
+      final session = await supabase.auth.signInWithPassword(
         email: 'fake1@email.com',
         password: 'password',
       );
 
-      expect(response.session, isNotNull);
+      expect(session.user.id, testUserId);
       expect(supabase.auth.currentUser?.id, testUserId);
     });
 

@@ -174,7 +174,7 @@ class AuthClient {
   /// Tracks all pending (in-flight) refreshes keyed by token.
   /// Concurrent calls with the same token return the existing
   /// [Completer.future] instead of starting a duplicate request.
-  final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
+  final Map<String, Completer<Session>> _pendingRefreshes = {};
 
   /// Set by [dispose] to prevent [_doRefresh] from mutating state
   /// or emitting events on closed stream controllers, and to stop
@@ -421,8 +421,7 @@ class AuthClient {
       // Concurrent callers share a single refresh through the same
       // de-duplication used by [refreshSession], so an expired session's
       // refresh token is only spent once.
-      final response = await _callRefreshToken(refreshToken);
-      return response.session;
+      return await _callRefreshToken(refreshToken);
     } on AuthException {
       final current = _currentSession;
       if (current != null && !current.isExpiredWithoutMargin) {
@@ -434,9 +433,9 @@ class AuthClient {
 
   /// Creates a new anonymous user.
   ///
-  /// Returns An `AuthResponse` with a session where the `is_anonymous` claim
-  /// in the access token JWT is set to true
-  Future<AuthResponse> signInAnonymously({
+  /// Returns the new session, whose access token carries an `is_anonymous`
+  /// claim set to true.
+  Future<Session> signInAnonymously({
     Map<String, dynamic>? data,
     String? captchaToken,
   }) async {
@@ -452,15 +451,10 @@ class AuthClient {
       ),
     );
 
-    final authResponse = AuthResponse.fromJson(response);
-
-    final session = authResponse.session;
-    if (session != null) {
-      _saveSession(session);
-      notifyAllSubscribers(AuthChangeEvent.signedIn);
-    }
-
-    return authResponse;
+    final session = _sessionFromResponse(response);
+    _saveSession(session);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
+    return session;
   }
 
   /// Creates a new user.
@@ -554,7 +548,9 @@ class AuthClient {
   }
 
   /// Log in an existing user with an email and password or phone and password.
-  Future<AuthResponse> signInWithPassword({
+  ///
+  /// Returns the new session.
+  Future<Session> signInWithPassword({
     String? email,
     String? phone,
     required String password,
@@ -597,13 +593,10 @@ class AuthClient {
       );
     }
 
-    final authResponse = AuthResponse.fromJson(response);
-
-    if (authResponse.session?.accessToken != null) {
-      _saveSession(authResponse.session!);
-      notifyAllSubscribers(AuthChangeEvent.signedIn);
-    }
-    return authResponse;
+    final session = _sessionFromResponse(response);
+    _saveSession(session);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
+    return session;
   }
 
   /// Generates a link to log in an user via a third-party provider.
@@ -763,7 +756,7 @@ class AuthClient {
   ///
   /// [captchaToken] is the verification token received when the user
   /// completes the captcha on the app.
-  Future<AuthResponse> signInWithIdToken({
+  Future<Session> signInWithIdToken({
     required OAuthProvider provider,
     required String idToken,
     String? accessToken,
@@ -786,16 +779,10 @@ class AuthClient {
       ),
     );
 
-    final authResponse = AuthResponse.fromJson(response);
-
-    if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
-    }
-
-    _saveSession(authResponse.session!);
+    final session = _sessionFromResponse(response);
+    _saveSession(session);
     notifyAllSubscribers(AuthChangeEvent.signedIn);
-
-    return authResponse;
+    return session;
   }
 
   /// Signs in a user by verifying a message signed with their Web3 wallet.
@@ -812,7 +799,7 @@ class AuthClient {
   /// completes the captcha on the app.
   ///
   /// See also https://eips.ethereum.org/EIPS/eip-4361
-  Future<AuthResponse> signInWithWeb3({
+  Future<Session> signInWithWeb3({
     required Web3Chain chain,
     required String message,
     required String signature,
@@ -834,16 +821,10 @@ class AuthClient {
       ),
     );
 
-    final authResponse = AuthResponse.fromJson(response);
-
-    if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
-    }
-
-    _saveSession(authResponse.session!);
+    final session = _sessionFromResponse(response);
+    _saveSession(session);
     notifyAllSubscribers(AuthChangeEvent.signedIn);
-
-    return authResponse;
+    return session;
   }
 
   /// Log in a user using magiclink or a one-time password (OTP).
@@ -1066,7 +1047,7 @@ class AuthClient {
   /// [refreshToken]. If not provided, then refreshSession() will attempt to
   /// retrieve it from the current session. If no refresh token is available
   /// (neither provided nor in current session), an error will be thrown.
-  Future<AuthResponse> refreshSession([String? refreshToken]) async {
+  Future<Session> refreshSession([String? refreshToken]) async {
     authLogger.info('Refresh session');
 
     final currentSessionRefreshToken =
@@ -1235,7 +1216,7 @@ class AuthClient {
   /// If [accessToken] is provided and not yet expired, the session is restored
   /// directly from the supplied tokens, skipping the `/token` refresh
   /// round-trip.
-  Future<AuthResponse> setSession(
+  Future<Session> setSession(
     String refreshToken, {
     String? accessToken,
   }) async {
@@ -1282,8 +1263,7 @@ class AuthClient {
     _saveSession(session);
     notifyAllSubscribers(AuthChangeEvent.signedIn);
 
-    final response = AuthResponse(session: session);
-    return response;
+    return session;
   }
 
   /// Gets the session data from a magic link or oauth2 callback URL
@@ -1478,7 +1458,7 @@ class AuthClient {
   ///
   /// [captchaToken] is the verification token received when the user
   /// completes the captcha on the app.
-  Future<AuthResponse> linkIdentityWithIdToken({
+  Future<Session> linkIdentityWithIdToken({
     required OAuthProvider provider,
     required String idToken,
     String? accessToken,
@@ -1503,16 +1483,10 @@ class AuthClient {
       ),
     );
 
-    final authResponse = AuthResponse.fromJson(response);
-
-    if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
-    }
-
-    _saveSession(authResponse.session!);
+    final session = _sessionFromResponse(response);
+    _saveSession(session);
     notifyAllSubscribers(AuthChangeEvent.userUpdated);
-
-    return authResponse;
+    return session;
   }
 
   /// Returns the URL to link the user's identity with an OAuth provider.
@@ -1582,7 +1556,7 @@ class AuthClient {
   }
 
   /// Recover session from stringified [Session].
-  Future<AuthResponse> recoverSession(String jsonString) async {
+  Future<Session> recoverSession(String jsonString) async {
     final String refreshToken;
     try {
       final session = Session.fromJson(json.decode(jsonString));
@@ -1612,7 +1586,7 @@ class AuthClient {
           notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
         }
 
-        return AuthResponse(session: session);
+        return session;
       }
 
       authLogger.fine('Session from recovery is expired');
@@ -1624,7 +1598,7 @@ class AuthClient {
         authLogger.fine(
           'Session was already refreshed elsewhere, skipping recovery',
         );
-        return AuthResponse(session: existingSession);
+        return existingSession;
       }
 
       final token = session.refreshToken;
@@ -1728,7 +1702,7 @@ class AuthClient {
 
   /// Generates a new JWT.
   /// [refreshToken] A valid refresh token that was returned on login.
-  Future<AuthResponse> _refreshAccessToken(String refreshToken) async {
+  Future<Session> _refreshAccessToken(String refreshToken) async {
     final startedAt = DateTime.now();
     var attempt = 0;
     return await retry(
@@ -1746,8 +1720,7 @@ class AuthClient {
           HttpMethod.post,
           options: options,
         );
-        final authResponse = AuthResponse.fromJson(response);
-        return authResponse;
+        return _sessionFromResponse(response);
       },
       options: retryOptions,
       retryIf: (e) {
@@ -1810,6 +1783,16 @@ class AuthClient {
       throw AuthException('No url detected.');
     }
     return url;
+  }
+
+  /// Parses the session out of a token response, failing when the server
+  /// answered without one.
+  Session _sessionFromResponse(Map<String, dynamic> response) {
+    final session = Session.fromJson(response);
+    if (session == null) {
+      throw AuthException('The server response did not contain a session.');
+    }
+    return session;
   }
 
   /// Sets the current session and persists it.
@@ -2005,7 +1988,7 @@ class AuthClient {
   /// saved, [AuthChangeEvent.tokenRefreshed] emitted) when
   /// [_sessionVersion] has not changed — meaning no sign-in, sign-out,
   /// or other session mutation occurred while the request was in-flight.
-  Future<AuthResponse> _callRefreshToken(String refreshToken) {
+  Future<Session> _callRefreshToken(String refreshToken) {
     // De-duplicate: return existing future if this token is already
     // in-flight.
     final existing = _pendingRefreshes[refreshToken];
@@ -2017,7 +2000,7 @@ class AuthClient {
     // The completer is kept as an external handle so [dispose] can cancel an
     // in-flight refresh: the network request itself cannot be interrupted, so
     // a hung refresh can only be resolved by completing this completer.
-    final completer = Completer<AuthResponse>();
+    final completer = Completer<Session>();
     completer.future.ignore();
     _pendingRefreshes[refreshToken] = completer;
 
@@ -2042,22 +2025,17 @@ class AuthClient {
   /// Performs a single token refresh, applies the outcome to the local session
   /// and notifies subscribers.
   ///
-  /// Returns the refreshed [AuthResponse] or throws the underlying error. This
+  /// Returns the refreshed [Session] or throws the underlying error. This
   /// is the single place that emits refresh outcomes:
   /// [AuthChangeEvent.tokenRefreshed] on success, [AuthChangeEvent.signedOut]
   /// when the refresh token is invalid, or a stream error ([notifyException])
   /// for a retryable/unexpected failure.
-  Future<AuthResponse> _doRefresh(String refreshToken) async {
+  Future<Session> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
     authLogger.fine('Refresh access token');
 
     try {
-      final data = await _refreshAccessToken(refreshToken);
-
-      final session = data.session;
-      if (session == null) {
-        throw AuthSessionMissingException();
-      }
+      final session = await _refreshAccessToken(refreshToken);
 
       // Discard the result if the client was disposed or the session was
       // mutated (e.g. a concurrent signIn or signOut) while we were awaiting
@@ -2066,12 +2044,12 @@ class AuthClient {
         authLogger.fine(
           'Session changed during refresh, discarding stale result.',
         );
-        return data;
+        return session;
       }
 
       _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      return data;
+      return session;
     } on AuthException catch (error, stack) {
       final existingSession = _currentSession;
       if (error is AuthApiException &&
@@ -2082,7 +2060,7 @@ class AuthClient {
           'Refresh token already used but current session is still valid, '
           'returning it instead of signing out',
         );
-        return AuthResponse(session: existingSession);
+        return existingSession;
       }
 
       if (error is! AuthRetryableFetchException) {

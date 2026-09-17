@@ -73,7 +73,7 @@ void main() {
     final client = createClient();
     await client.initialized;
 
-    final response = await client.signInWithPassword(
+    final session = await client.signInWithPassword(
       email: email1,
       password: password,
     );
@@ -83,7 +83,7 @@ void main() {
     expect(persisted, isNotNull);
     expect(
       Session.fromJson(jsonDecode(persisted!))?.accessToken,
-      response.session?.accessToken,
+      session.accessToken,
     );
 
     await client.signOut();
@@ -95,7 +95,7 @@ void main() {
   test('restores the persisted session in a new client', () async {
     final client = createClient();
     await client.initialized;
-    final response = await client.signInWithPassword(
+    final session = await client.signInWithPassword(
       email: email1,
       password: password,
     );
@@ -106,11 +106,11 @@ void main() {
 
     expect(
       restored.currentSession?.accessToken,
-      response.session?.accessToken,
+      session.accessToken,
     );
     final state = await restored.onAuthStateChange.first;
     expect(state.event, AuthChangeEvent.initialSession);
-    expect(state.session?.accessToken, response.session?.accessToken);
+    expect(state.session?.accessToken, session.accessToken);
   });
 
   test('stores the session under a custom storage key', () async {
@@ -239,18 +239,18 @@ void main() {
     final subscription = client.onAuthStateChange.listen(states.add);
     addTearDown(subscription.cancel);
 
-    final response = await client.signInWithPassword(
+    final session = await client.signInWithPassword(
       email: email1,
       password: password,
     );
     await client.initialized;
     await settle();
 
-    expect(client.currentSession?.accessToken, response.session?.accessToken);
+    expect(client.currentSession?.accessToken, session.accessToken);
     final persisted = await slowStorage.getItem(storageKey);
     expect(
       Session.fromJson(jsonDecode(persisted!))?.accessToken,
-      response.session?.accessToken,
+      session.accessToken,
     );
     expect(states.map((state) => state.event), [
       AuthChangeEvent.initialSession,
@@ -258,7 +258,7 @@ void main() {
     ]);
     expect(
       states.first.session?.accessToken,
-      response.session?.accessToken,
+      session.accessToken,
     );
   });
 
@@ -319,7 +319,7 @@ void main() {
       'event', () async {
     final client = createClient(persistSession: false);
     await client.initialized;
-    final response = await client.signInWithPassword(
+    final session = await client.signInWithPassword(
       email: email1,
       password: password,
     );
@@ -327,7 +327,7 @@ void main() {
     final state = await client.onAuthStateChange.first;
 
     expect(state.event, AuthChangeEvent.initialSession);
-    expect(state.session?.accessToken, response.session?.accessToken);
+    expect(state.session?.accessToken, session.accessToken);
   });
 
   test('every subscriber receives its own initial event', () async {
@@ -353,13 +353,13 @@ void main() {
     addTearDown(client.dispose);
     await client.initialized;
 
-    final response = await client.signInWithPassword(
+    final session = await client.signInWithPassword(
       email: email1,
       password: password,
     );
     await settle();
 
-    expect(client.currentSession?.accessToken, response.session?.accessToken);
+    expect(client.currentSession?.accessToken, session.accessToken);
   });
 }
 

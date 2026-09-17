@@ -31,7 +31,7 @@ part of 'auth_client.dart';
 /// final authentication = await supabase.auth.passkey.startAuthentication();
 /// // Perform the platform ceremony with authentication.options.
 /// final credential = await platformGetPasskey(authentication.options);
-/// final response = await supabase.auth.passkey.verifyAuthentication(
+/// final session = await supabase.auth.passkey.verifyAuthentication(
 ///   challengeId: authentication.challengeId,
 ///   credential: credential,
 /// );
@@ -169,7 +169,7 @@ class AuthPasskeyApi {
   ///
   /// On success the session is persisted and an
   /// [AuthChangeEvent.signedIn] event is fired.
-  Future<AuthResponse> verifyAuthentication({
+  Future<Session> verifyAuthentication({
     required String challengeId,
     required Map<String, dynamic> credential,
   }) async {
@@ -185,14 +185,10 @@ class AuthPasskeyApi {
       ),
     );
 
-    final authResponse = AuthResponse.fromJson(data);
-    final session = authResponse.session;
-    if (session != null) {
-      _client._saveSession(session);
-      _client.notifyAllSubscribers(AuthChangeEvent.signedIn);
-    }
-
-    return authResponse;
+    final session = _client._sessionFromResponse(data);
+    _client._saveSession(session);
+    _client.notifyAllSubscribers(AuthChangeEvent.signedIn);
+    return session;
   }
 
   /// Returns the list of passkeys registered to the signed in user.

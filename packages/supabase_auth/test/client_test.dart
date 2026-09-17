@@ -96,10 +96,10 @@ void main() {
     });
 
     test('anonymous sign-in', () async {
-      final response = await client.signInAnonymously(data: {'Hello': 'World'});
-      expect(response.session?.accessToken, isA<String>());
-      expect(response.user?.isAnonymous, isTrue);
-      expect(response.user?.userMetadata, {'Hello': 'World'});
+      final session = await client.signInAnonymously(data: {'Hello': 'World'});
+      expect(session.accessToken, isA<String>());
+      expect(session.user.isAnonymous, isTrue);
+      expect(session.user.userMetadata, {'Hello': 'World'});
     });
 
     test('signUp() with email', () async {
@@ -237,19 +237,17 @@ void main() {
     });
 
     test('signInWithPassword() with email', () async {
-      final response = await client.signInWithPassword(
+      final session = await client.signInWithPassword(
         email: email1,
         password: password,
       );
-      final data = response.session;
+      expect(session.accessToken, isA<String>());
+      expect(session.refreshToken, isA<String>());
+      expect(session.user.id, isA<String>());
 
-      expect(data?.accessToken, isA<String>());
-      expect(data?.refreshToken, isA<String>());
-      expect(data?.user.id, isA<String>());
-
-      final payload = decodeJwt(data!.accessToken).payload;
+      final payload = decodeJwt(session.accessToken).payload;
       expect(
-        data.expiresAt,
+        session.expiresAt,
         DateTime.fromMillisecondsSinceEpoch(
           payload.expiresAt! * 1000,
           isUtc: true,
@@ -267,19 +265,17 @@ void main() {
     });
 
     test('signInWithPassword() with phone', () async {
-      final response = await client.signInWithPassword(
+      final session = await client.signInWithPassword(
         phone: phone1,
         password: password,
       );
-      final data = response.session;
+      expect(session.accessToken, isA<String>());
+      expect(session.refreshToken, isA<String>());
+      expect(session.user.id, isA<String>());
 
-      expect(data?.accessToken, isA<String>());
-      expect(data?.refreshToken, isA<String>());
-      expect(data?.user.id, isA<String>());
-
-      final payload = decodeJwt(data!.accessToken).payload;
+      final payload = decodeJwt(session.accessToken).payload;
       expect(
-        data.expiresAt,
+        session.expiresAt,
         DateTime.fromMillisecondsSinceEpoch(
           payload.expiresAt! * 1000,
           isUtc: true,
@@ -345,15 +341,13 @@ void main() {
           ]),
         );
 
-        final response = await newClient.setSession(
+        final session = await newClient.setSession(
           refreshToken,
           accessToken: accessToken,
         );
 
-        expect(response.session, isNotNull);
-        expect(response.session?.accessToken, equals(accessToken));
-        expect(response.session?.refreshToken, equals(refreshToken));
-        expect(response.user, isNotNull);
+        expect(session.accessToken, equals(accessToken));
+        expect(session.refreshToken, equals(refreshToken));
         expect(newClient.currentSession?.accessToken, equals(accessToken));
       },
     );
@@ -381,16 +375,12 @@ void main() {
         );
 
         // Should fall back to _callRefreshToken and succeed.
-        final response = await newClient.setSession(
+        final session = await newClient.setSession(
           refreshToken,
           accessToken: expiredAccessToken,
         );
 
-        expect(response.session, isNotNull);
-        expect(
-          response.session?.accessToken,
-          isNot(equals(expiredAccessToken)),
-        );
+        expect(session.accessToken, isNot(equals(expiredAccessToken)));
         expect(newClient.currentSession?.accessToken, isNotEmpty);
       },
     );
@@ -436,9 +426,8 @@ void main() {
 
         // This should work even though there's no current session,
         // because we're providing a refreshToken parameter
-        final response = await newClient.refreshSession(refreshToken);
-        expect(response.session, isNotNull);
-        expect(response.session?.accessToken, isNotEmpty);
+        final session = await newClient.refreshSession(refreshToken);
+        expect(session.accessToken, isNotEmpty);
         expect(newClient.currentSession?.accessToken, isNotEmpty);
       },
     );
@@ -611,16 +600,12 @@ void main() {
 
       // These 3 are bundled and in sum 1 refresh token requests is made,
       // because the first 3 fail in [RetryTestHttpClient]
-      final responses = await Future.wait([
+      final sessions = await Future.wait([
         bundledClient.recoverSession(session),
         bundledClient.recoverSession(session),
       ]);
 
-      expect(responses[0].session?.accessToken, isNotNull);
-      expect(
-        responses[0].session?.accessToken,
-        responses[1].session?.accessToken,
-      );
+      expect(sessions[0].accessToken, sessions[1].accessToken);
 
       expect(httpClient.retryCount, 4);
     });
@@ -951,8 +936,7 @@ void main() {
         // First recovery refreshes the expired session, advancing the in-memory
         // session onto a brand new refresh token.
         final first = await client.recoverSession(expiredSessionString);
-        expect(first.session, isNotNull);
-        expect(first.session!.isExpired, isFalse);
+        expect(first.isExpired, isFalse);
         expect(httpClient.refreshCount, 1);
 
         var signedOut = false;
@@ -968,8 +952,7 @@ void main() {
         // the first refresh completed. It must not resend the already-used
         // refresh token.
         final second = await client.recoverSession(expiredSessionString);
-        expect(second.session, isNotNull);
-        expect(second.session!.isExpired, isFalse);
+        expect(second.isExpired, isFalse);
 
         // No second refresh request was made and the user stays signed in.
         expect(httpClient.refreshCount, 1);

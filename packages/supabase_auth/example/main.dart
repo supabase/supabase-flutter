@@ -22,7 +22,7 @@ Future<void> main() async {
       email: 'email',
       password: '12345',
     );
-    print('Logged in, user id: ${login.session!.user.id}');
+    print('Logged in, user id: ${login.user.id}');
   } on AuthException catch (error) {
     print('Sign in error: ${error.message}');
   }

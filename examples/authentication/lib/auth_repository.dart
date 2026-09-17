@@ -31,7 +31,7 @@ class AuthRepository {
   }
 
   /// Signs an existing user in with their email and password.
-  Future<AuthResponse> signInWithPassword({
+  Future<Session> signInWithPassword({
     required String email,
     required String password,
   }) {
@@ -128,7 +128,7 @@ class AuthRepository {
   // Anonymous ----------------------------------------------------------------
 
   /// Signs in without any credentials, creating a throwaway anonymous user.
-  Future<AuthResponse> signInAnonymously() {
+  Future<Session> signInAnonymously() {
     return _client.auth.signInAnonymously();
   }
 

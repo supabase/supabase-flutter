@@ -75,15 +75,14 @@ void main() {
         'sub': 'mock-user-id',
       });
 
-      final response = await client.setSession(
+      final session = await client.setSession(
         'some-refresh-token',
         accessToken: accessToken,
       );
 
-      expect(response.session, isNotNull);
       // The returned token must be the freshly refreshed one, not our
       // near-expired JWT.
-      expect(response.session?.accessToken, isNot(equals(accessToken)));
+      expect(session.accessToken, isNot(equals(accessToken)));
       expect(mockClient.requestsTo('/user'), isEmpty); // /user was NOT called
     });
 
@@ -95,13 +94,12 @@ void main() {
         'sub': 'mock-user-id',
       });
 
-      final response = await client.setSession(
+      final session = await client.setSession(
         'some-refresh-token',
         accessToken: accessToken,
       );
 
-      expect(response.session, isNotNull);
-      expect(response.session?.accessToken, isNot(equals(accessToken)));
+      expect(session.accessToken, isNot(equals(accessToken)));
       expect(mockClient.requestsTo('/user'), isEmpty);
     });
   });
@@ -118,13 +116,13 @@ void main() {
           'sub': 'mock-user-id',
         });
 
-        final response = await client.setSession(
+        final session = await client.setSession(
           'some-refresh-token',
           accessToken: accessToken,
         );
 
         // expiresIn should be the total token lifetime (exp - iat = 3600).
-        expect(response.session?.expiresIn, equals(expiresAt - issuedAt));
+        expect(session.expiresIn, equals(expiresAt - issuedAt));
       },
     );
 
@@ -136,12 +134,12 @@ void main() {
         'sub': 'mock-user-id',
       });
 
-      final response = await client.setSession(
+      final session = await client.setSession(
         'some-refresh-token',
         accessToken: accessToken,
       );
 
-      expect(response.session?.expiresIn, isNull);
+      expect(session.expiresIn, isNull);
     });
 
     test('expiresAt matches the exp claim in the JWT', () async {
@@ -153,14 +151,14 @@ void main() {
         'sub': 'mock-user-id',
       });
 
-      final response = await client.setSession(
+      final session = await client.setSession(
         'some-refresh-token',
         accessToken: accessToken,
       );
 
       // expiresAt is re-derived from the JWT's own exp, not from expiresIn.
       expect(
-        response.session?.expiresAt,
+        session.expiresAt,
         equals(
           DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000, isUtc: true),
         ),
@@ -179,14 +177,14 @@ void main() {
           'sub': 'mock-user-id',
         });
 
-        final response = await client.setSession(
+        final session = await client.setSession(
           refreshToken,
           accessToken: accessToken,
         );
 
-        expect(response.session?.accessToken, equals(accessToken));
-        expect(response.session?.refreshToken, equals(refreshToken));
-        expect(response.session?.tokenType, equals('bearer'));
+        expect(session.accessToken, equals(accessToken));
+        expect(session.refreshToken, equals(refreshToken));
+        expect(session.tokenType, equals('bearer'));
       },
     );
   });
