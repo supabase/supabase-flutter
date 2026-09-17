@@ -472,6 +472,144 @@ void main() {
     });
   });
 
+  group('result modifiers', () {
+    test('csv returns the body as text', () async {
+      httpClient.stubText('id,title\n1,a\n', contentType: 'text/csv');
+
+      final String csv = await client.table(Books.table).select().csv();
+
+      expect(httpClient.requests.last.headers['Accept'], 'text/csv');
+      expect(csv, 'id,title\n1,a\n');
+    });
+
+    test('csv keeps the other transforms', () async {
+      httpClient.stubText('id,title\n1,a\n', contentType: 'text/csv');
+
+      final String csv = await client
+          .table(Books.table)
+          .select()
+          .where(Books.id.gt(0))
+          .csv()
+          .order(Books.title)
+          .limit(1);
+
+      expect(requestParameters()['id'], 'gt.0');
+      expect(requestParameters()['order'], 'title');
+      expect(requestParameters()['limit'], '1');
+      expect(csv, 'id,title\n1,a\n');
+    });
+
+    test('explain returns the plan as text', () async {
+      httpClient.stubText('Aggregate (cost=0.00..0.00)');
+
+      final String plan = await client
+          .table(Books.table)
+          .select()
+          .explain(analyze: true, format: ExplainFormat.json);
+
+      expect(
+        httpClient.requests.last.headers['Accept'],
+        'application/vnd.pgrst.plan+json; for="application/json"; '
+        'options=analyze;',
+      );
+      expect(plan, 'Aggregate (cost=0.00..0.00)');
+    });
+
+    test('head sends a HEAD request and resolves to nothing', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).select().where(Books.id.eq(1)).head();
+
+      expect(httpClient.requests.last.method, 'HEAD');
+      expect(requestParameters()['id'], 'eq.1');
+    });
+
+    test('geojson returns the feature collection', () async {
+      const collection = {'type': 'FeatureCollection', 'features': []};
+      httpClient.stub(collection);
+
+      final Map<String, dynamic> geojson = await client
+          .table(Books.table)
+          .select()
+          .geojson();
+
+      expect(
+        httpClient.requests.last.headers['Accept'],
+        startsWith('application/geo+json'),
+      );
+      expect(geojson, collection);
+    });
+
+    test('dryRun rolls back and keeps the row type', () async {
+      httpClient.stub({'id': 3, 'title': 'foo'});
+
+      final Book book = await client
+          .table(Books.table)
+          .insert({'title': 'foo'})
+          .select()
+          .single()
+          .dryRun();
+
+      expect(httpClient.requests.last.method, 'POST');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        'return=representation,tx=rollback',
+      );
+      expect(book.id, 3);
+    });
+
+    test('stripNulls asks for stripped nulls and keeps the row type', () async {
+      httpClient.stub(bookRows);
+
+      final List<Book> books = await client
+          .table(Books.table)
+          .select()
+          .stripNulls();
+
+      expect(
+        httpClient.requests.last.headers['Accept'],
+        'application/json;nulls=stripped',
+      );
+      expect(books, hasLength(2));
+    });
+
+    test('maxAffected limits a delete', () async {
+      httpClient.stub(null);
+
+      await client
+          .table(Books.table)
+          .delete()
+          .where(Books.id.gt(0))
+          .maxAffected(10);
+
+      expect(httpClient.requests.last.method, 'DELETE');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        'handling=strict,max-affected=10',
+      );
+    });
+
+    test('maxAffected keeps the row type of an update', () async {
+      httpClient.stub([
+        {'id': 1, 'title': 'bar'},
+      ]);
+
+      final List<Book> books = await client
+          .table(Books.table)
+          .update({'title': 'bar'})
+          .where(Books.id.eq(1))
+          .maxAffected(1)
+          .select();
+
+      expect(httpClient.requests.last.method, 'PATCH');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        'handling=strict,max-affected=1,return=representation',
+      );
+      expect(books.single.title, 'bar');
+    });
+  });
+
   group('errors', () {
     setUp(() {
       httpClient.stub({'message': 'boom', 'code': '42501'}, statusCode: 403);
