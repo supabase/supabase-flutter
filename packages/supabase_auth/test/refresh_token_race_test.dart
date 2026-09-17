@@ -177,11 +177,7 @@ void main() {
         ]);
 
         // Both should succeed with same token (bundled into one request)
-        expect(results[0].session?.accessToken, isNotNull);
-        expect(
-          results[0].session?.accessToken,
-          results[1].session?.accessToken,
-        );
+        expect(results[0].accessToken, results[1].accessToken);
 
         // Only ONE HTTP request should have been made (bundling works)
         expect(
@@ -207,8 +203,7 @@ void main() {
         final expiredSession = createExpiredSessionForUser1();
 
         // First call succeeds and refreshes
-        final result1 = await client.recoverSession(expiredSession);
-        expect(result1.session?.accessToken, isNotNull);
+        await client.recoverSession(expiredSession);
         expect(httpClient.requestCount, 1);
 
         final newRefreshToken = client.currentSession?.refreshToken;
@@ -218,10 +213,8 @@ void main() {
         // FIXED: Should return current valid session without making new request
         final result2 = await client.recoverSession(expiredSession);
 
-        // Should succeed (not throw)
-        expect(result2.session, isNotNull);
         // Should return the CURRENT valid session
-        expect(result2.session?.refreshToken, newRefreshToken);
+        expect(result2.refreshToken, newRefreshToken);
         // Should NOT have made another HTTP request (early return in
         // recoverSession)
         expect(
@@ -266,8 +259,7 @@ void main() {
         holdFirstRequest.complete();
 
         // Wait for recovery to complete
-        final result = await recoverFuture;
-        expect(result.session?.accessToken, isNotNull);
+        await recoverFuture;
 
         // Stop auto-refresh to clean up
         client.stopAutoRefresh();
@@ -308,8 +300,7 @@ void main() {
         await Future.delayed(Duration(milliseconds: 100));
 
         // FIXED: Should succeed without throwing
-        final result = await recoverFuture;
-        expect(result.session, isNotNull);
+        await recoverFuture;
 
         client.stopAutoRefresh();
 
@@ -356,8 +347,7 @@ void main() {
 
         // 5. Attempt refresh - this will get "already_used" error from server
         // The error handler should detect we have a valid session and return it
-        final response = await client.refreshSession();
-        expect(response.session, isNotNull);
+        await client.refreshSession();
 
         // Session should still be valid (the error handler returned current
         // session)
@@ -396,10 +386,7 @@ void main() {
 
         // Second call with stale token (same user) - should return current
         // session
-        final result2 = await client.recoverSession(expiredSession);
-
-        // Should succeed
-        expect(result2.session, isNotNull);
+        await client.recoverSession(expiredSession);
 
         // Wait for any events
         await Future.delayed(Duration(milliseconds: 50));
@@ -447,8 +434,7 @@ void main() {
         await Future.delayed(Duration(milliseconds: 10));
 
         // FIXED: Both should succeed
-        final result = await recoverFuture;
-        expect(result.session, isNotNull);
+        await recoverFuture;
 
         client.stopAutoRefresh();
 
@@ -486,8 +472,7 @@ void main() {
         // FIXED: Should return current session without new request
         final result2 = await client.recoverSession(expiredSession);
 
-        expect(result2.session, isNotNull);
-        expect(result2.session?.refreshToken, currentToken);
+        expect(result2.refreshToken, currentToken);
         expect(
           httpClient.requestCount,
           1,

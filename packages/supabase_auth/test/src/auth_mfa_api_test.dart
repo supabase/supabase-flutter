@@ -251,9 +251,8 @@ void main() {
     test('Session object can be properly json serialized', () async {
       await client.signInWithPassword(password: password, email: email2);
       await client.mfa.challengeAndVerify(factorId: factorId2, code: getTOTP());
-      final response = await client.refreshSession();
-      final session = response.session;
-      final deserializedSession = Session.fromJson(session!.toJson());
+      final session = await client.refreshSession();
+      final deserializedSession = Session.fromJson(session.toJson());
       expect(session, deserializedSession);
     });
   });

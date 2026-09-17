@@ -140,6 +140,40 @@ final Uri url = response.url;
 Use `response.url.toString()` if you need the string, and drop any `Uri.parse()` you were doing
 yourself.
 
+### Sign-in methods that always issue a session return the `Session`
+
+The auth methods that cannot complete without a session return it directly instead of an
+`AuthResponse` with a nullable `session`:
+
+- `signInAnonymously()`
+- `signInWithPassword()`
+- `signInWithIdToken()`
+- `signInWithWeb3()`
+- `linkIdentityWithIdToken()`
+- `refreshSession()`
+- `setSession()`
+- `recoverSession()`
+- `passkey.verifyAuthentication()`, and with it `signInWithPasskey()` and `signInWithRestoreKey()`
+
+```dart
+// Before
+final response = await supabase.auth.signInWithPassword(email: email, password: password);
+final session = response.session!;
+final user = response.user!;
+
+// After
+final session = await supabase.auth.signInWithPassword(email: email, password: password);
+final user = session.user;
+```
+
+`signInAnonymously()`, `signInWithPassword()` and `passkey.verifyAuthentication()` used to resolve
+with `session` set to `null` when the response carried no session. They now throw an
+`AuthException` in that case, as the other methods in the list already did.
+
+`signUp()` and `verifyOTP()` keep returning an `AuthResponse`, since both can legitimately complete
+without a session: a sign-up that needs email confirmation first, and the first step of a secure
+email or phone change.
+
 ### `admin.listUsers()` returns pagination metadata
 
 `listUsers()` returns a `ListUsersResponse` instead of a `List<User>`. The users are under `users`,

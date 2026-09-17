@@ -64,7 +64,7 @@ extension AuthClientPasskey on AuthClient {
   ///
   /// Does not require an existing session. On success the session is persisted
   /// and an [AuthChangeEvent.signedIn] event is fired.
-  Future<AuthResponse> signInWithPasskey(
+  Future<Session> signInWithPasskey(
     PasskeyAuthenticatorInterface authenticator, {
     String? captchaToken,
   }) async {

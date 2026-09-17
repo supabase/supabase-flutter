@@ -81,7 +81,7 @@ Future<Session> signInTestUser(
   String role = 'authenticated',
   Map<String, dynamic> claims = const {},
   DateTime? expiresAt,
-}) async {
+}) {
   final expiry = expiresAt ?? DateTime.now().add(const Duration(hours: 1));
   final accessToken = unsignedTestJwt({
     'exp': expiry.millisecondsSinceEpoch ~/ 1000,
@@ -90,7 +90,7 @@ Future<Session> signInTestUser(
     'email': email,
     ...claims,
   });
-  final response = await auth.recoverSession(
+  return auth.recoverSession(
     jsonEncode(
       testSessionResponseJson(
         accessToken: accessToken,
@@ -98,5 +98,4 @@ Future<Session> signInTestUser(
       ),
     ),
   );
-  return response.session!;
 }

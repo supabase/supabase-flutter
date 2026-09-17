@@ -222,7 +222,7 @@ void main() {
       expect(details.redirectUri, equals(clientParameters.redirectUris.first));
       expect(details.client.clientId, equals(oauthClient.clientId));
       expect(details.client.clientName, equals(oauthClient.clientName));
-      expect(details.user.id, equals(auth.user?.id));
+      expect(details.user.id, equals(auth.user.id));
       expect(details.user.email, equals(email1));
     });
 
@@ -452,7 +452,7 @@ class AuthOauthApiFixture {
     return Uri.parse(location).queryParameters['authorization_id']!;
   }
 
-  Future<AuthResponse> logIn({
+  Future<Session> logIn({
     required String email,
     required String password,
   }) {

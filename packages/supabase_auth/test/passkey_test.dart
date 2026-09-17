@@ -24,7 +24,7 @@ void main() {
       client.dispose();
     });
 
-    Future<AuthResponse> signInWithPasskey() {
+    Future<Session> signInWithPasskey() {
       return client.passkey.verifyAuthentication(
         challengeId: PasskeyMockClient.challengeId,
         credential: {
@@ -80,7 +80,7 @@ void main() {
         onError: (_) {},
       );
 
-      final response = await signInWithPasskey();
+      final session = await signInWithPasskey();
 
       expect(mockClient.lastUrl?.path, '/passkeys/authentication/verify');
       expect(
@@ -91,9 +91,8 @@ void main() {
         mockClient.lastRequestBody?['credential'],
         isA<Map<dynamic, dynamic>>(),
       );
-      expect(response.session, isNotNull);
-      expect(response.session?.accessToken, 'mock-access-token');
-      expect(response.user?.id, PasskeyMockClient.userId);
+      expect(session.accessToken, 'mock-access-token');
+      expect(session.user.id, PasskeyMockClient.userId);
       expect(client.currentSession?.accessToken, 'mock-access-token');
       await Future<void>.delayed(Duration.zero);
       expect(events, contains(AuthChangeEvent.signedIn));

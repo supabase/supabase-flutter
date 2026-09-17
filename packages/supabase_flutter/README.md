@@ -114,7 +114,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Performs Apple sign in on iOS or macOS
-Future<AuthResponse> signInWithApple() async {
+Future<Session> signInWithApple() async {
   final rawNonce = supabase.auth.generateRawNonce();
   final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
@@ -163,7 +163,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 ...
 
-Future<AuthResponse> _googleSignIn() async {
+Future<Session> _googleSignIn() async {
   /// TODO: update the Web client ID with your own.
   ///
   /// Web Client ID that you registered with Google Cloud.
@@ -215,7 +215,7 @@ import 'dart:io';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Future<AuthResponse> _facebookSignIn() async {
+Future<Session> _facebookSignIn() async {
   late final LoginResult result;
 
   if (Platform.isIOS) {

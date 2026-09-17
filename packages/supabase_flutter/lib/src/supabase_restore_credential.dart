@@ -122,7 +122,7 @@ extension AuthClientRestoreCredential on AuthClient {
   /// Call it on the first launch after the app has been restored on a new
   /// device. Does not require an existing session. On success the session is
   /// persisted and an [AuthChangeEvent.signedIn] event is fired.
-  Future<AuthResponse> signInWithRestoreKey(
+  Future<Session> signInWithRestoreKey(
     RestoreCredentialInterface restoreCredential, {
     String? captchaToken,
   }) async {

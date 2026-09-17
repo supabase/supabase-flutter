@@ -30,7 +30,7 @@ void main() {
         onError: (_) {},
       );
 
-      final response = await client.signInWithWeb3(
+      final session = await client.signInWithWeb3(
         chain: Web3Chain.ethereum,
         message: 'example.com wants you to sign in',
         signature: '0xdeadbeef',
@@ -49,9 +49,8 @@ void main() {
         isFalse,
       );
 
-      expect(response.session, isNotNull);
-      expect(response.session?.accessToken, 'mock-access-token');
-      expect(response.user?.id, 'mock-user-id-web3');
+      expect(session.accessToken, 'mock-access-token');
+      expect(session.user.id, 'mock-user-id-web3');
       expect(client.currentSession?.accessToken, 'mock-access-token');
 
       await Future<void>.delayed(Duration.zero);
@@ -59,7 +58,7 @@ void main() {
     });
 
     test('exchanges a Solana signature for a session', () async {
-      final response = await client.signInWithWeb3(
+      final session = await client.signInWithWeb3(
         chain: Web3Chain.solana,
         message: 'example.com wants you to sign in',
         signature: 'base64url-signature',
@@ -67,7 +66,7 @@ void main() {
 
       expect(mockClient.lastRequestBody?['chain'], 'solana');
       expect(mockClient.lastRequestBody?['signature'], 'base64url-signature');
-      expect(response.session, isNotNull);
+      expect(client.currentSession, session);
     });
 
     test('includes the captcha token when provided', () async {

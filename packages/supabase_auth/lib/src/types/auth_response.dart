@@ -1,6 +1,7 @@
 import 'package:supabase_auth/supabase_auth.dart';
 
-/// Response which might or might not contain session and/or user
+/// Response of `AuthClient.signUp` and `AuthClient.verifyOTP`, the two calls
+/// that can complete without issuing a session.
 class AuthResponse {
   AuthResponse({
     this.session,

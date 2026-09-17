@@ -278,7 +278,7 @@ void main() {
       );
       final restore = _FakeRestoreCredential();
 
-      final response = await client.signInWithRestoreKey(
+      final session = await client.signInWithRestoreKey(
         restore,
         captchaToken: 'captcha-token',
       );
@@ -304,13 +304,9 @@ void main() {
         'credential': _FakeRestoreCredential.authenticationResponse.toJson(),
       });
 
-      expect(response.session, isNotNull);
-      expect(client.currentSession?.accessToken, response.session?.accessToken);
+      expect(client.currentSession?.accessToken, session.accessToken);
       expect(client.currentUser?.id, testUserId);
-      expect(
-        (await signedIn).session?.accessToken,
-        response.session?.accessToken,
-      );
+      expect((await signedIn).session?.accessToken, session.accessToken);
     });
 
     test('rethrows platform errors without verifying', () async {

@@ -83,16 +83,15 @@ void main() {
         onError: (_) {},
       );
 
-      final response = await client.signInWithWeb3(
+      final session = await client.signInWithWeb3(
         chain: Web3Chain.solana,
         message: signed.message,
         signature: signed.signature,
       );
 
-      expect(response.session, isNotNull);
-      expect(response.session?.accessToken, isNotEmpty);
-      expect(response.user?.appMetadata['provider'], 'web3');
-      expect(client.currentSession?.accessToken, response.session?.accessToken);
+      expect(session.accessToken, isNotEmpty);
+      expect(session.user.appMetadata['provider'], 'web3');
+      expect(client.currentSession?.accessToken, session.accessToken);
 
       await Future<void>.delayed(Duration.zero);
       expect(events, contains(AuthChangeEvent.signedIn));

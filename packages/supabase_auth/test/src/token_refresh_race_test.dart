@@ -200,11 +200,7 @@ void main() {
       ]);
 
       // Both should return the same access token (same network request).
-      expect(results[0].session?.accessToken, isNotNull);
-      expect(
-        results[0].session?.accessToken,
-        results[1].session?.accessToken,
-      );
+      expect(results[0].accessToken, results[1].accessToken);
 
       // Only one /token request should have been made.
       expect(mockClient.tokenRequestCount, 1);
@@ -240,10 +236,7 @@ void main() {
       final results = await Future.wait([futureA1, futureB, futureA2]);
 
       // Both A calls get the same access token
-      expect(
-        results[0].session?.accessToken,
-        results[2].session?.accessToken,
-      );
+      expect(results[0].accessToken, results[2].accessToken);
 
       // Only 2 HTTP requests: one for A, one for B
       expect(mockClient.tokenRequestCount, 2);
