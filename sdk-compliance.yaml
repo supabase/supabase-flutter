@@ -865,6 +865,7 @@ features:
       - PostgrestRpcBuilder.rpc
       - PostgrestBuilder.count
       - PostgrestTransformBuilder.head
+      - PostgrestTypedTransformBuilder.head
   database.query.schema_selection:
     status: implemented
     symbols:
@@ -1149,14 +1150,17 @@ features:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.maxAffected
+      - PostgrestTypedTransformBuilder.maxAffected
   database.using_modifiers.format_csv:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.csv
+      - PostgrestTypedTransformBuilder.csv
   database.using_modifiers.format_geojson:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.geojson
+      - PostgrestTypedTransformBuilder.geojson
   database.using_modifiers.relationship_embed:
     status: implemented
     note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server). Filtering inside an embed is not on the typed surface; embeddedFilterName is the form it will use."
@@ -1182,14 +1186,17 @@ features:
     symbols:
       - ExplainFormat
       - PostgrestTransformBuilder.explain
+      - PostgrestTypedTransformBuilder.explain
   database.using_modifiers.dry_run:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.dryRun
+      - PostgrestTypedTransformBuilder.dryRun
   database.using_modifiers.strip_nulls:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.stripNulls
+      - PostgrestTypedTransformBuilder.stripNulls
   database.using_modifiers.request_cancellation:
     status: implemented
     symbols:

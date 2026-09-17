@@ -103,6 +103,99 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
         _table,
       );
 
+  /// Omits `null`-valued properties from the response objects.
+  ///
+  /// This uses the `nulls=stripped` variant of the `Accept` header and
+  /// requires PostgREST 11.2 or higher.
+  PostgrestTypedTransformBuilder<Row, T> stripNulls() =>
+      PostgrestTypedTransformBuilder._(_transformBuilder.stripNulls(), _table);
+
+  /// Runs the query but rolls back the transaction, so no changes are
+  /// persisted.
+  ///
+  /// The data that would have resulted from the query is still returned,
+  /// which is useful for previewing the effect of a mutation.
+  ///
+  /// ```dart
+  /// await client.table(Books.table).insert({'title': 'foo'}).dryRun();
+  /// ```
+  PostgrestTypedTransformBuilder<Row, T> dryRun() =>
+      PostgrestTypedTransformBuilder._(_transformBuilder.dryRun(), _table);
+
+  /// Sets the maximum number of rows that can be affected by the query.
+  ///
+  /// Only available with PATCH and DELETE operations. Requires PostgREST v13 or
+  /// higher. When the limit is exceeded, the query will fail with an error.
+  ///
+  /// ```dart
+  /// await client
+  ///     .table(Books.table)
+  ///     .delete()
+  ///     .where(Books.isDone.eq(true))
+  ///     .maxAffected(10);
+  /// ```
+  PostgrestTypedTransformBuilder<Row, T> maxAffected(int value) =>
+      PostgrestTypedTransformBuilder._(
+        _transformBuilder.maxAffected(value),
+        _table,
+      );
+
+  /// Retrieves the response as CSV.
+  ///
+  /// This will skip object parsing.
+  ///
+  /// ```dart
+  /// final String csv = await client.table(Books.table).select().csv();
+  /// ```
+  PostgrestTypedTransformBuilder<Row, String> csv() =>
+      PostgrestTypedTransformBuilder._(_transformBuilder.csv(), _table);
+
+  /// Performs a head request.
+  ///
+  /// This will not return any data.
+  ///
+  /// ```dart
+  /// await client.table(Books.table).select().head();
+  /// ```
+  PostgrestTypedBuilder<void> head() =>
+      PostgrestTypedBuilder._(_transformBuilder.head());
+
+  /// Enables support for GeoJSON for use with PostGIS data types.
+  ///
+  /// Used when you need the complete response to be in GeoJSON format. You
+  /// will need to enable the PostGIS extension for this to work.
+  ///
+  /// https://supabase.com/docs/guides/database/extensions/postgis
+  PostgrestTypedBuilder<Map<String, dynamic>> geojson() =>
+      PostgrestTypedBuilder._(_transformBuilder.geojson());
+
+  /// Obtains the EXPLAIN plan for this request.
+  ///
+  /// Before using this method, you need to enable `explain()` on your
+  /// Supabase instance by following the guide below. Note that `explain()`
+  /// should only be enabled on a development environment.
+  ///
+  /// https://supabase.com/docs/guides/api/rest/debugging-performance#enabling-explain
+  ///
+  /// See [PostgrestTransformBuilder.explain] for the options.
+  PostgrestTypedBuilder<String> explain({
+    bool analyze = false,
+    bool verbose = false,
+    bool settings = false,
+    bool buffers = false,
+    bool wal = false,
+    ExplainFormat format = ExplainFormat.text,
+  }) => PostgrestTypedBuilder._(
+    _transformBuilder.explain(
+      analyze: analyze,
+      verbose: verbose,
+      settings: settings,
+      buffers: buffers,
+      wal: wal,
+      format: format,
+    ),
+  );
+
   /// Performs additionally to the query a count query.
   ///
   /// This changes the awaited type to a [PostgrestResponse] carrying both the
