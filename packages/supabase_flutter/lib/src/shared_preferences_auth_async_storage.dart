@@ -88,9 +88,9 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
 
   /// Reads [key] from `window.localStorage`.
   ///
-  /// Code verifiers used to be written through [SharedPreferencesAsync], which
-  /// on web JSON encodes the value under the very same key. Such a value is
-  /// decoded and written back as is, so the flow it belongs to can complete.
+  /// Some values are written through [SharedPreferencesAsync], which on web
+  /// JSON encodes the value under the very same key. Such a value is decoded
+  /// and written back as is, so the flow it belongs to can complete.
   String? _webItem(String key) {
     final value = web.getItem(key);
     if (value == null || !value.startsWith('"')) {
