@@ -41,15 +41,15 @@ class OAuthAuthorizedClient {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizingUser {
-  const OAuthAuthorizingUser({required this.id, required this.email});
+  const OAuthAuthorizingUser({required this.id, this.email});
 
   factory OAuthAuthorizingUser.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
     final email = json['email'];
-    if (id is! String || email is! String) {
+    if (id is! String || email is! String?) {
       throw FormatException(
-        'Expected the user id and email to be strings, got '
-        '${id.runtimeType} and ${email.runtimeType}',
+        'Expected the user id to be a string and the email to be a string or '
+        'null, got ${id.runtimeType} and ${email.runtimeType}',
       );
     }
     return OAuthAuthorizingUser(id: id, email: email);
@@ -58,8 +58,8 @@ class OAuthAuthorizingUser {
   /// Unique identifier of the user.
   final String id;
 
-  /// Email address of the user.
-  final String email;
+  /// Email address of the user, if they have one.
+  final String? email;
 }
 
 /// An OAuth grant representing a user's authorization of an OAuth client.
