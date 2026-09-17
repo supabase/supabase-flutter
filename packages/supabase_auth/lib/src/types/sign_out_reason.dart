@@ -1,6 +1,6 @@
 /// The reason why an [AuthChangeEvent.signedOut] event was emitted.
 ///
-/// Available on [AuthState.signOutReason] and lets listeners distinguish an
+/// Available on [AuthSignedOut.reason] and lets listeners distinguish an
 /// explicit sign out from an involuntary one, such as an expired session,
 /// without inspecting error messages.
 enum SignOutReason {

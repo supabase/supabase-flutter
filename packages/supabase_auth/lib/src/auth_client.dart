@@ -250,17 +250,20 @@ class AuthClient {
   ///
   /// When the user is signed out because the session could not be recovered
   /// (e.g. an invalid or expired refresh token), an [AuthChangeEvent.signedOut]
-  /// event is emitted with [AuthState.signOutReason] set to the matching
+  /// event is emitted as an [AuthSignedOut] whose `reason` is the matching
   /// [SignOutReason], so you can tell it apart from an explicit [signOut]
   /// without relying on the `onError` handler.
   ///
   /// ```dart
   /// supabase.auth.onAuthStateChange.listen(
-  ///   (data) {
-  ///     final AuthChangeEvent event = data.event;
-  ///     final Session? session = data.session;
-  ///     if (event == AuthChangeEvent.signedIn) {
-  ///       // handle signIn event
+  ///   (state) {
+  ///     switch (state) {
+  ///       case AuthSignedIn(:final session):
+  ///         showHome(session.user);
+  ///       case AuthSignedOut(:final reason):
+  ///         showLogin(expired: reason == SignOutReason.sessionExpired);
+  ///       default:
+  ///         // The other events, see [AuthState] for the full list.
   ///     }
   ///   },
   ///   onError: (error, stackTrace) {
@@ -314,9 +317,7 @@ class AuthClient {
           return;
         }
         initialSent = true;
-        controller.addSync(
-          AuthState(AuthChangeEvent.initialSession, currentSession),
-        );
+        controller.addSync(AuthInitialSession(currentSession));
         for (final deliver in held) {
           deliver();
         }
@@ -1205,8 +1206,8 @@ class AuthClient {
     final session = currentSession;
     if (session != null) {
       _saveSession(session.copyWith(user: userResponse.user));
+      notifyAllSubscribers(AuthChangeEvent.userUpdated);
     }
-    notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
     return userResponse;
   }
@@ -1943,10 +1944,18 @@ class AuthClient {
             if (messageEvent['session'] != null) {
               session = Session.fromJson(messageEvent['session']);
             }
+            final state = _authStateFor(event, session, fromBroadcast: true);
+            if (state == null) {
+              authLogger.warning(
+                'Ignoring a broadcast ${event.name} event that carries no '
+                'session',
+              );
+              return;
+            }
             // The tab that sent the event has already written the session
             // to the storage both tabs share.
             _currentSession = session;
-            notifyAllSubscribers(event, session: session, broadcast: false);
+            _emit(state, broadcast: false);
           }
         });
       } catch (error, stackTrace) {
@@ -2097,21 +2106,71 @@ class AuthClient {
     SignOutReason? signOutReason,
   }) {
     session ??= currentSession;
-    if (broadcast && event != AuthChangeEvent.initialSession) {
-      _broadcastChannel?.postMessage({
-        'event': event.value,
-        'session': session?.toJson(),
-      });
-    }
-    final state = AuthState(
+    final state = _authStateFor(
       event,
       session,
       fromBroadcast: !broadcast,
       signOutReason: signOutReason,
     );
+    if (state == null) {
+      authLogger.warning(
+        'Ignoring a ${event.name} event that carries no session',
+      );
+      return;
+    }
+    _emit(state, broadcast: broadcast);
+  }
+
+  /// Delivers [state] to the subscribers, and to the other tabs when
+  /// [broadcast] is set.
+  void _emit(AuthState state, {required bool broadcast}) {
+    if (broadcast && state is! AuthInitialSession) {
+      _broadcastChannel?.postMessage({
+        'event': state.event.value,
+        'session': state.session?.toJson(),
+      });
+    }
     authLogger.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
+  }
+
+  /// Builds the [AuthState] for [event], `null` when [event] carries a
+  /// session and [session] is missing.
+  AuthState? _authStateFor(
+    AuthChangeEvent event,
+    Session? session, {
+    required bool fromBroadcast,
+    SignOutReason? signOutReason,
+  }) {
+    return switch (event) {
+      AuthChangeEvent.initialSession => AuthInitialSession(session),
+      AuthChangeEvent.signedOut => AuthSignedOut(
+        reason: signOutReason,
+        fromBroadcast: fromBroadcast,
+      ),
+      _ when session == null => null,
+      AuthChangeEvent.signedIn => AuthSignedIn(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      AuthChangeEvent.tokenRefreshed => AuthTokenRefreshed(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      AuthChangeEvent.userUpdated => AuthUserUpdated(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      AuthChangeEvent.passwordRecovery => AuthPasswordRecovery(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+      AuthChangeEvent.mfaChallengeVerified => AuthMfaChallengeVerified(
+        session,
+        fromBroadcast: fromBroadcast,
+      ),
+    };
   }
 
   /// For internal use only.
