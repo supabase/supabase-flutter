@@ -9,8 +9,8 @@ class PostgrestTypedFilterBuilder<Row, T>
     extends PostgrestTypedTransformBuilder<Row, T> {
   const PostgrestTypedFilterBuilder._(
     this._filterBuilder,
-    PostgrestTable<Row> table,
-  ) : super._(_filterBuilder, table);
+    RowConverter<Row> rowFromJson,
+  ) : super._(_filterBuilder, rowFromJson);
 
   final PostgrestFilterBuilder<T> _filterBuilder;
 
@@ -42,6 +42,6 @@ class PostgrestTypedFilterBuilder<Row, T>
     for (final parameter in filter.queryParameters) {
       builder = builder.appendSearchParameter(parameter.key, parameter.value);
     }
-    return PostgrestTypedFilterBuilder._(builder, _table);
+    return PostgrestTypedFilterBuilder._(builder, _rowFromJson);
   }
 }

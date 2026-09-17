@@ -8,6 +8,17 @@ extension type const Book(Map<String, dynamic> _json)
   String get title => _json['title'] as String;
 }
 
+extension type const BookInsert._(Map<String, dynamic> _json)
+    implements Object {
+  BookInsert({required String title, int? id})
+    : this._({'title': title, 'id': ?id});
+}
+
+extension type const BookUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  BookUpdate({String? title}) : this._({'title': ?title});
+}
+
 extension type const Author(Map<String, dynamic> _json)
     implements Map<String, dynamic> {}
 
@@ -17,7 +28,10 @@ const bookRows = [
 ];
 
 class Books {
-  static const table = PostgrestTable('books', Book.new);
+  static const table = PostgrestTable<Book, BookInsert, BookUpdate>(
+    'books',
+    Book.new,
+  );
   static const id = PostgrestColumn<Book, int>('id');
   static const title = PostgrestColumn<Book, String>('title');
   static const tags = PostgrestColumn<Book, List<String>>('tags');
@@ -34,7 +48,10 @@ class Books {
 }
 
 class Authors {
-  static const table = PostgrestTable('authors', Author.new);
+  static const table = PostgrestTable<Author, Never, Never>(
+    'authors',
+    Author.new,
+  );
   static const id = PostgrestColumn<Author, int>('id');
   static const name = PostgrestColumn<Author, String>('name');
   static const books = PostgrestToManyRelation<Author, Book>('books');
@@ -511,10 +528,30 @@ void main() {
     test('insert posts the values', () async {
       httpClient.stub(null);
 
-      await client.table(Books.table).insert({'title': 'foo'});
+      await client.table(Books.table).insert(BookInsert(title: 'foo'));
 
       expect(httpClient.requests.last.method, 'POST');
       expect(httpClient.requests.last.body, '{"title":"foo"}');
+    });
+
+    test('insertAll posts every row and names the columns', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).insertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(id: 2, title: 'bar'),
+      ], defaultToNull: false);
+
+      expect(httpClient.requests.last.method, 'POST');
+      expect(
+        httpClient.requests.last.body,
+        '[{"title":"foo"},{"title":"bar","id":2}]',
+      );
+      expect(requestParameters()['columns'], '"title","id"');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        contains('missing=default'),
+      );
     });
 
     test('insert with a trailing select returns the typed row', () async {
@@ -522,7 +559,7 @@ void main() {
 
       final Book book = await client
           .table(Books.table)
-          .insert({'title': 'foo'})
+          .insert(BookInsert(title: 'foo'))
           .select()
           .single();
 
@@ -541,7 +578,7 @@ void main() {
 
       final List<Book> books = await client
           .table(Books.table)
-          .insert({'title': 'foo'})
+          .insert(BookInsert(title: 'foo'))
           .select([Books.id]);
 
       expect(requestParameters()['select'], 'id');
@@ -551,7 +588,7 @@ void main() {
     test('upsert sets the resolution header', () async {
       httpClient.stub(null);
 
-      await client.table(Books.table).upsert({'id': 1, 'title': 'foo'});
+      await client.table(Books.table).upsert(BookInsert(id: 1, title: 'foo'));
 
       expect(
         httpClient.requests.last.headers['Prefer'],
@@ -565,16 +602,40 @@ void main() {
       await client
           .table(Books.table)
           .upsert(
-            {'id': 1, 'title': 'foo'},
+            BookInsert(id: 1, title: 'foo'),
             onConflict: [Books.id, Books.title],
           );
 
       expect(requestParameters()['on_conflict'], 'id,title');
     });
 
+    test('upsertAll posts every row with the resolution header', () async {
+      httpClient.stub(null);
+
+      await client
+          .table(Books.table)
+          .upsertAll(
+            [BookInsert(id: 1, title: 'foo'), BookInsert(id: 2, title: 'bar')],
+            onConflict: [Books.id],
+            ignoreDuplicates: true,
+          );
+
+      expect(
+        httpClient.requests.last.body,
+        '[{"title":"foo","id":1},{"title":"bar","id":2}]',
+      );
+      expect(requestParameters()['on_conflict'], 'id');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        contains('resolution=ignore-duplicates'),
+      );
+    });
+
     test('an empty conflict target throws', () {
       expect(
-        () => client.table(Books.table).upsert({'id': 1}, onConflict: []),
+        () => client
+            .table(Books.table)
+            .upsert(BookInsert(id: 1, title: 'foo'), onConflict: []),
         throwsArgumentError,
       );
     });
@@ -584,7 +645,7 @@ void main() {
 
       await client
           .table(Books.table)
-          .update({'title': 'bar'})
+          .update(BookUpdate(title: 'bar'))
           .where(Books.id.eq(1));
 
       expect(httpClient.requests.last.method, 'PATCH');

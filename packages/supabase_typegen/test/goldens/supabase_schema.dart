@@ -35,9 +35,12 @@ enum Mood {
 /// A row of the `author_stats` table.
 /// Aggregated statistics per author
 extension type const AuthorStatsRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   int? get authorId => _json['author_id'] as int?;
   int? get bookCount => _json['book_count'] as int?;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Typed access to the `author_stats` table.
@@ -45,7 +48,10 @@ class AuthorStats {
   const AuthorStats._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable('author_stats', AuthorStatsRow.new);
+  static const table = PostgrestTable<AuthorStatsRow, Never, Never>(
+    'author_stats',
+    AuthorStatsRow.new,
+  );
 
   static const authorId = PostgrestNullableColumn<AuthorStatsRow, int>(
     'author_id',
@@ -61,10 +67,12 @@ class AuthorStats {
 }
 
 /// A row of the `authors` table.
-extension type const AuthorsRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const AuthorsRow(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
   String get name => _json['name'] as String;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Values for inserting a row into `authors`. Columns that are nullable,
@@ -73,7 +81,7 @@ extension type const AuthorsRow(Map<String, dynamic> _json)
 /// always generates itself are left out entirely. Use the `set…ToNull` methods
 /// to insert SQL NULL explicitly.
 extension type const AuthorsInsert._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   AuthorsInsert({required String name}) : this._({'name': name});
 }
 
@@ -81,7 +89,7 @@ extension type const AuthorsInsert._(Map<String, dynamic> _json)
 /// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
 /// to write SQL NULL explicitly.
 extension type const AuthorsUpdate._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   AuthorsUpdate({String? name}) : this._({'name': ?name});
 }
 
@@ -90,7 +98,10 @@ class Authors {
   const Authors._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable('authors', AuthorsRow.new);
+  static const table = PostgrestTable<AuthorsRow, AuthorsInsert, AuthorsUpdate>(
+    'authors',
+    AuthorsRow.new,
+  );
 
   static const id = PostgrestColumn<AuthorsRow, int>('id');
   static const name = PostgrestColumn<AuthorsRow, String>('name');
@@ -106,11 +117,14 @@ class Authors {
 /// A row of the `book_prices` table.
 /// Prices per book, with the standard discount precomputed
 extension type const BookPricesRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   num? get discountedPrice => _json['discounted_price'] as num?;
   int? get id => _json['id'] as int?;
   num? get price => _json['price'] as num?;
   String? get title => _json['title'] as String?;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Values for inserting a row into `book_prices`. Columns that are nullable,
@@ -119,7 +133,7 @@ extension type const BookPricesRow(Map<String, dynamic> _json)
 /// always generates itself are left out entirely. Use the `set…ToNull` methods
 /// to insert SQL NULL explicitly.
 extension type const BookPricesInsert._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   BookPricesInsert({int? id, num? price, String? title})
     : this._({'id': ?id, 'price': ?price, 'title': ?title});
 
@@ -141,7 +155,7 @@ extension type const BookPricesInsert._(Map<String, dynamic> _json)
 /// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
 /// to write SQL NULL explicitly.
 extension type const BookPricesUpdate._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   BookPricesUpdate({int? id, num? price, String? title})
     : this._({'id': ?id, 'price': ?price, 'title': ?title});
 
@@ -164,7 +178,11 @@ class BookPrices {
   const BookPrices._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable('book_prices', BookPricesRow.new);
+  static const table =
+      PostgrestTable<BookPricesRow, BookPricesInsert, BookPricesUpdate>(
+        'book_prices',
+        BookPricesRow.new,
+      );
 
   static const discountedPrice = PostgrestNullableColumn<BookPricesRow, num>(
     'discounted_price',
@@ -176,9 +194,12 @@ class BookPrices {
 
 /// A row of the `book_submissions` table.
 extension type const BookSubmissionsRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   String? get authorName => _json['author_name'] as String?;
   String? get title => _json['title'] as String?;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Values for inserting a row into `book_submissions`. Columns that are
@@ -187,7 +208,7 @@ extension type const BookSubmissionsRow(Map<String, dynamic> _json)
 /// database always generates itself are left out entirely. Use the `set…ToNull`
 /// methods to insert SQL NULL explicitly.
 extension type const BookSubmissionsInsert._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   BookSubmissionsInsert({String? authorName, String? title})
     : this._({'author_name': ?authorName, 'title': ?title});
 
@@ -207,10 +228,11 @@ class BookSubmissions {
   const BookSubmissions._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable(
-    'book_submissions',
-    BookSubmissionsRow.new,
-  );
+  static const table =
+      PostgrestTable<BookSubmissionsRow, BookSubmissionsInsert, Never>(
+        'book_submissions',
+        BookSubmissionsRow.new,
+      );
 
   static const authorName = PostgrestNullableColumn<BookSubmissionsRow, String>(
     'author_name',
@@ -223,10 +245,13 @@ class BookSubmissions {
 /// A row of the `book_summaries` table.
 /// Denormalized book and author names
 extension type const BookSummariesRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   String? get authorName => _json['author_name'] as String?;
   int? get id => _json['id'] as int?;
   String? get title => _json['title'] as String?;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Typed access to the `book_summaries` table.
@@ -234,7 +259,10 @@ class BookSummaries {
   const BookSummaries._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable('book_summaries', BookSummariesRow.new);
+  static const table = PostgrestTable<BookSummariesRow, Never, Never>(
+    'book_summaries',
+    BookSummariesRow.new,
+  );
 
   static const authorName = PostgrestNullableColumn<BookSummariesRow, String>(
     'author_name',
@@ -247,8 +275,7 @@ class BookSummaries {
 
 /// A row of the `books` table.
 /// Books available in the library
-extension type const BooksRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   int get authorId => _json['author_id'] as int;
   String? get coverUuid => _json['cover_uuid'] as String?;
 
@@ -274,6 +301,9 @@ extension type const BooksRow(Map<String, dynamic> _json)
     null => null,
     final Object value => DateTime.parse(value as String),
   };
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Values for inserting a row into `books`. Columns that are nullable,
@@ -282,7 +312,7 @@ extension type const BooksRow(Map<String, dynamic> _json)
 /// always generates itself are left out entirely. Use the `set…ToNull` methods
 /// to insert SQL NULL explicitly.
 extension type const BooksInsert._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   BooksInsert({
     required int authorId,
     String? coverUuid,
@@ -364,7 +394,7 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
 /// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
 /// to write SQL NULL explicitly.
 extension type const BooksUpdate._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   BooksUpdate({
     int? authorId,
     String? coverUuid,
@@ -447,7 +477,10 @@ class Books {
   const Books._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable('books', BooksRow.new);
+  static const table = PostgrestTable<BooksRow, BooksInsert, BooksUpdate>(
+    'books',
+    BooksRow.new,
+  );
 
   static const authorId = PostgrestColumn<BooksRow, int>('author_id');
   static const coverUuid = PostgrestNullableColumn<BooksRow, String>(

@@ -36,7 +36,7 @@ enum String$ {
 /// second
 /// third $interpolation "quoted"
 extension type const PostgrestTableRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   /// says "hi" \ and $more
   String get quoteNameTail => _json['quote\'name\u{2029}tail'] as String;
   String$? get mood => switch (_json['mood']) {
@@ -47,6 +47,9 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
       .map((element) => (element as num).toDouble())
       .toList();
   List<String>? get days => (_json['days'] as List<dynamic>?)?.cast();
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Values for inserting a row into `postgrest_table`. Columns that are
@@ -55,7 +58,7 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
 /// database always generates itself are left out entirely. Use the `set…ToNull`
 /// methods to insert SQL NULL explicitly.
 extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   PostgrestTableInsert({
     required String quoteNameTail,
     String$? mood,
@@ -83,7 +86,7 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
 /// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
 /// methods to write SQL NULL explicitly.
 extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+    implements Object {
   PostgrestTableUpdate({
     String? quoteNameTail,
     String$? mood,
@@ -112,7 +115,12 @@ class PostgrestTable$ {
   const PostgrestTable$._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable('postgrest_table', PostgrestTableRow.new);
+  static const table =
+      PostgrestTable<
+        PostgrestTableRow,
+        PostgrestTableInsert,
+        PostgrestTableUpdate
+      >('postgrest_table', PostgrestTableRow.new);
 
   static const quoteNameTail = PostgrestColumn<PostgrestTableRow, String>(
     'quote\'name\u{2029}tail',
@@ -139,8 +147,7 @@ class PostgrestTable$ {
 }
 
 /// A row of the `map` table.
-extension type const MapRow(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const MapRow(Map<String, dynamic> _json) implements Object {
   int get list => _json['list'] as int;
   DateTime? get dateTime => switch (_json['date_time']) {
     null => null,
@@ -160,6 +167,9 @@ extension type const MapRow(Map<String, dynamic> _json)
     null => null,
     final Object value => PostgrestRange.parse(value as String, DateTime.parse),
   };
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
 }
 
 /// Values for inserting a row into `map`. Columns that are nullable, identity,
@@ -167,8 +177,7 @@ extension type const MapRow(Map<String, dynamic> _json)
 /// column so the database default applies. Columns the database always
 /// generates itself are left out entirely. Use the `set…ToNull` methods to
 /// insert SQL NULL explicitly.
-extension type const MapInsert._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   MapInsert({
     required int list,
     DateTime? dateTime,
@@ -203,8 +212,7 @@ extension type const MapInsert._(Map<String, dynamic> _json)
 /// Values for updating rows of `map`. All columns are optional; passing `null`
 /// omits the column, leaving it unchanged. Use the `set…ToNull` methods to
 /// write SQL NULL explicitly.
-extension type const MapUpdate._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   MapUpdate({
     int? list,
     DateTime? dateTime,
@@ -241,7 +249,10 @@ class Map$ {
   const Map$._();
 
   /// Table definition for [PostgrestClient.table].
-  static const table = PostgrestTable('map', MapRow.new);
+  static const table = PostgrestTable<MapRow, MapInsert, MapUpdate>(
+    'map',
+    MapRow.new,
+  );
 
   static const list = PostgrestColumn<MapRow, int>('list');
   static const dateTime = PostgrestNullableColumn<MapRow, DateTime>(

@@ -220,7 +220,7 @@ class PostgrestQueryBuilder {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<void> update(Map<dynamic, dynamic> values) {
+  PostgrestFilterBuilder<void> update(Object values) {
     final newHeaders = {..._config.headers}..remove('Prefer');
 
     return _filterBuilder(

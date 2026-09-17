@@ -135,7 +135,9 @@ class PostgrestClient {
   ///     .where(Books.id.gt(10));
   /// ```
   @experimental
-  PostgrestTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+  PostgrestTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
+    PostgrestTable<Row, Insert, Update> table,
+  ) {
     return PostgrestTypedQueryBuilder(from(table.name), table);
   }
 

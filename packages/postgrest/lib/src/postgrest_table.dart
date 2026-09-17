@@ -4,20 +4,32 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 
-/// Describes a database table (or view) together with the Dart type its rows
-/// are converted into.
+/// Describes a database table (or view) together with the Dart types its rows
+/// are read as and written with.
 ///
 /// Passing a [PostgrestTable] to [PostgrestClient.table] gives fully typed
-/// query results, so no raw `Map<String, dynamic>` needs to be handled:
+/// query results, so no raw `Map<String, dynamic>` needs to be handled, and
+/// only accepts [Insert] and [Update] values on the write methods:
 ///
 /// ```dart
-/// extension type Book(Map<String, dynamic> json) {
+/// extension type Book(Map<String, dynamic> json) implements Object {
 ///   int get id => json['id'] as int;
 ///   String get title => json['title'] as String;
 /// }
 ///
+/// extension type BookInsert._(Map<String, dynamic> json) implements Object {
+///   BookInsert({required String title}) : this._({'title': title});
+/// }
+///
+/// extension type BookUpdate._(Map<String, dynamic> json) implements Object {
+///   BookUpdate({String? title}) : this._({'title': ?title});
+/// }
+///
 /// class Books {
-///   static const table = PostgrestTable('books', Book.new);
+///   static const table = PostgrestTable<Book, BookInsert, BookUpdate>(
+///     'books',
+///     Book.new,
+///   );
 ///   static const id = PostgrestColumn<Book, int>('id');
 ///   static const title = PostgrestColumn<Book, String>('title');
 /// }
@@ -27,14 +39,25 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 ///     .select()
 ///     .where(Books.title.like('%Dart%'))
 ///     .order(Books.id.desc());
+///
+/// await client.table(Books.table).insert(BookInsert(title: 'Dart'));
 /// ```
+///
+/// [Insert] and [Update] are sent as the request body, so they have to encode
+/// to a JSON object: an extension type over the map to send (as above), or a
+/// class with a `toJson` method. Both have to be spelled out, since nothing in
+/// the constructor arguments can infer them. A read-only relation, such as a
+/// materialized view, uses `Never` for the write types it does not support,
+/// which makes the corresponding methods uncallable.
 ///
 /// Extension types over the decoded JSON map (as above) are the recommended
 /// row representation since they carry no conversion cost and tolerate
 /// partial selects, but any converter works, for example `Book.fromJson` on a
-/// regular data class.
+/// regular data class. `package:supabase_typegen` generates all three types
+/// and the table definition from the database schema.
 @experimental
-class PostgrestTable<Row> {
+// ignore: avoid-unused-generics
+class PostgrestTable<Row, Insert, Update> {
   const PostgrestTable(this.name, this.rowFromJson);
 
   /// Name of the table in the database.

@@ -9,11 +9,11 @@ import 'package:supabase/supabase.dart';
 class SupabaseTypedStreamBuilder<Row> extends Stream<List<Row>> {
   const SupabaseTypedStreamBuilder(
     SupabaseStreamBuilder streamBuilder,
-    this._table,
+    this._rowFromJson,
   ) : _streamBuilder = streamBuilder;
 
   final SupabaseStreamBuilder _streamBuilder;
-  final PostgrestTable<Row> _table;
+  final RowConverter<Row> _rowFromJson;
 
   /// Orders the result with the specified [column].
   ///
@@ -52,7 +52,7 @@ class SupabaseTypedStreamBuilder<Row> extends Stream<List<Row>> {
   }) {
     return _streamBuilder
         .map(
-          (rows) => [for (final row in rows) _table.rowFromJson(row)],
+          (rows) => [for (final row in rows) _rowFromJson(row)],
         )
         .listen(
           onData,
@@ -69,7 +69,7 @@ class SupabaseTypedStreamFilterBuilder<Row>
     extends SupabaseTypedStreamBuilder<Row> {
   const SupabaseTypedStreamFilterBuilder(
     SupabaseStreamFilterBuilder super.streamBuilder,
-    super.table,
+    super.rowFromJson,
   );
 
   SupabaseStreamFilterBuilder get _streamFilterBuilder =>

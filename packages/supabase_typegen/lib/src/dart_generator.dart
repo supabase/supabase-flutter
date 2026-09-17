@@ -108,6 +108,7 @@ class _TypeNameRegistry {
     'double',
     'num',
     'bool',
+    'Never',
     'PostgrestTable',
     'PostgrestColumn',
     'PostgrestNullableColumn',
@@ -319,11 +320,11 @@ void _writeTable(
   List<_RelationMember> relations,
   Map<String, String> enumTypeNames,
 ) {
-  final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
+  final _TableNames(:rowType, :insertType, :updateType) = names;
 
   final memberNames = _uniqueMemberNames(
     [for (final column in table.columns) column.name],
-    reserved: {rowType, ?insertType, ?updateType},
+    reserved: {rowType, ?insertType, ?updateType, 'toJson'},
   );
   final bindings = {
     for (final column in table.columns)
@@ -365,8 +366,7 @@ void _writeTable(
   _writeNamespace(
     buffer,
     table,
-    namespaceType,
-    rowType,
+    names,
     memberNames,
     bindings,
     relations,
@@ -384,7 +384,7 @@ void _writeRow(
   _writeDocComment(buffer, table.comment);
   buffer
     ..writeln('extension type const $rowType(Map<String, dynamic> _json)')
-    ..writeln('    implements Map<String, dynamic> {');
+    ..writeln('    implements Object {');
   for (final column in table.columns) {
     final binding = bindings[column.name]!;
     _writeDocComment(buffer, column.comment, indent: '  ');
@@ -394,6 +394,9 @@ void _writeRow(
     );
   }
   buffer
+    ..writeln()
+    ..writeln('  /// The row as decoded from the response.')
+    ..writeln('  Map<String, dynamic> toJson() => _json;')
     ..writeln('}')
     ..writeln();
 }
@@ -417,7 +420,7 @@ void _writeValues(
   _writeDocComment(buffer, docLine);
   buffer
     ..writeln('extension type const $typeName._(Map<String, dynamic> _json)')
-    ..writeln('    implements Map<String, dynamic> {');
+    ..writeln('    implements Object {');
   if (writableColumns.isEmpty) {
     // A named parameter list cannot be empty, so a table whose columns are
     // all read-only gets a parameterless constructor.
@@ -474,12 +477,12 @@ void _writeValues(
 void _writeNamespace(
   StringBuffer buffer,
   TableDescription table,
-  String namespaceType,
-  String rowType,
+  _TableNames names,
   Map<String, String> memberNames,
   Map<String, _Binding> bindings,
   List<_RelationMember> relations,
 ) {
+  final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
   final columnNames = _uniqueMemberNames(
     [for (final column in table.columns) column.name],
     reserved: {'table', namespaceType},
@@ -512,7 +515,8 @@ void _writeNamespace(
     ..writeln()
     ..writeln('  /// Table definition for [PostgrestClient.table].')
     ..writeln(
-      '  static const table = PostgrestTable'
+      '  static const table = PostgrestTable<$rowType, '
+      '${insertType ?? 'Never'}, ${updateType ?? 'Never'}>'
       '(${_stringLiteral(table.name)}, $rowType.new);',
     )
     ..writeln();

@@ -172,9 +172,10 @@ void main() {
       'price': null,
       'mood': null,
     });
+    await client.table(Books.table).update(update).where(Books.id.eq(1));
     expect(
-      update.containsKey('price'),
-      isFalse,
+      httpClient.requests.last.jsonBody,
+      {'in_print': false},
       reason: 'setPriceToNull returns a copy and must not mutate',
     );
 

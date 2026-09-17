@@ -12,8 +12,23 @@ extension type const Todo(Map<String, dynamic> _json)
   bool get status => _json['status'] as bool;
 }
 
+extension type const TodoInsert._(Map<String, dynamic> _json)
+    implements Object {
+  TodoInsert({required String task, bool? status})
+    : this._({'task': task, 'status': ?status});
+}
+
+extension type const TodoUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  TodoUpdate({String? task, bool? status})
+    : this._({'task': ?task, 'status': ?status});
+}
+
 class Todos {
-  static const table = PostgrestTable('todos', Todo.new);
+  static const table = PostgrestTable<Todo, TodoInsert, TodoUpdate>(
+    'todos',
+    Todo.new,
+  );
   static const id = PostgrestColumn<Todo, int>('id');
   static const task = PostgrestColumn<Todo, String>('task');
   static const status = PostgrestColumn<Todo, bool>('status');
@@ -130,7 +145,7 @@ void main() {
 
     final Todo inserted = await supabase
         .table(Todos.table)
-        .insert({'task': 'Write tests', 'status': false})
+        .insert(TodoInsert(task: 'Write tests', status: false))
         .select()
         .single();
 
