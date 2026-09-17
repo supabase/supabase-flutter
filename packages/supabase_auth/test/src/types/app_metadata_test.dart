@@ -27,7 +27,13 @@ void main() {
 
       expect(metadata.provider, isNull);
       expect(metadata.providers, isEmpty);
-      expect(metadata.toJson(), isEmpty);
+      expect(metadata.toJson(), {'providers': <String>[]});
+    });
+
+    test('round-trips a user without identities', () {
+      final json = {'providers': <String>[]};
+
+      expect(AppMetadata.fromJson(json).toJson(), json);
     });
 
     test('is unmodifiable after parsing', () {
@@ -54,10 +60,13 @@ void main() {
       expect(restored, AppMetadata.fromJson(json));
     });
 
-    test('omits the provider keys the server did not send', () {
+    test('omits a null provider', () {
       const metadata = AppMetadata(additionalProperties: {'tenant': 'acme'});
 
-      expect(metadata.toJson(), {'tenant': 'acme'});
+      expect(metadata.toJson(), {
+        'providers': <String>[],
+        'tenant': 'acme',
+      });
     });
 
     test('compares by value', () {
@@ -85,7 +94,10 @@ void main() {
     test('toString includes the serialized map', () {
       const metadata = AppMetadata(provider: 'email');
 
-      expect(metadata.toString(), 'AppMetadata({provider: email})');
+      expect(
+        metadata.toString(),
+        'AppMetadata({provider: email, providers: []})',
+      );
     });
   });
 }

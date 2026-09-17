@@ -48,10 +48,13 @@ class AppMetadata {
   };
 
   /// Converts this to a JSON-encodable map with every key the server sent.
+  ///
+  /// [providers] is always emitted, matching the server, while [provider] is
+  /// omitted when null.
   Map<String, dynamic> toJson() {
     return {
       'provider': ?provider,
-      if (providers.isNotEmpty) 'providers': providers,
+      'providers': providers,
       ..._additionalProperties,
     };
   }

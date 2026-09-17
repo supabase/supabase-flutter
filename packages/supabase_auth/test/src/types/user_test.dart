@@ -320,7 +320,10 @@ void main() {
         final json = user.toJson();
 
         expect(json['id'], equals('123'));
-        expect(json['app_metadata'], equals({'provider': 'email'}));
+        expect(
+          json['app_metadata'],
+          equals({'provider': 'email', 'providers': <String>[]}),
+        );
         expect(json['user_metadata'], equals({'name': 'John Doe'}));
         expect(json['aud'], equals('authenticated'));
         expect(
