@@ -266,10 +266,39 @@ features:
       - AuthState.fromBroadcast
       - AuthState.session
       - AuthState.toString
+      - AuthInitialSession
+      - AuthInitialSession.AuthInitialSession
+      - AuthInitialSession.event
+      - AuthInitialSession.session
+      - AuthSignedIn
+      - AuthSignedIn.AuthSignedIn
+      - AuthSignedIn.event
+      - AuthSignedIn.session
+      - AuthSignedOut
+      - AuthSignedOut.AuthSignedOut
+      - AuthSignedOut.event
+      - AuthSignedOut.session
+      - AuthSignedOut.toString
+      - AuthTokenRefreshed
+      - AuthTokenRefreshed.AuthTokenRefreshed
+      - AuthTokenRefreshed.event
+      - AuthTokenRefreshed.session
+      - AuthUserUpdated
+      - AuthUserUpdated.AuthUserUpdated
+      - AuthUserUpdated.event
+      - AuthUserUpdated.session
+      - AuthPasswordRecovery
+      - AuthPasswordRecovery.AuthPasswordRecovery
+      - AuthPasswordRecovery.event
+      - AuthPasswordRecovery.session
+      - AuthMfaChallengeVerified
+      - AuthMfaChallengeVerified.AuthMfaChallengeVerified
+      - AuthMfaChallengeVerified.event
+      - AuthMfaChallengeVerified.session
   auth.session.sign_out_reason:
     status: implemented
     symbols:
-      - AuthState.signOutReason
+      - AuthSignedOut.reason
       - SignOutReason
 
   # auth — identities

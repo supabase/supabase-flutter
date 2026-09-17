@@ -173,7 +173,14 @@ void main() {
     expect(states.first.event, AuthChangeEvent.initialSession);
     expect(states.first.session?.accessToken, expired.accessToken);
     expect(states.last.event, AuthChangeEvent.signedOut);
-    expect(states.last.signOutReason, SignOutReason.sessionExpired);
+    expect(
+      states.last,
+      isA<AuthSignedOut>().having(
+        (state) => state.reason,
+        'reason',
+        SignOutReason.sessionExpired,
+      ),
+    );
     await settle();
     expect(await storage.getItem(storageKey), isNull);
   });

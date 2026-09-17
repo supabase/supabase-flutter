@@ -473,6 +473,54 @@ supabase.auth.onAuthStateChange.listen((data) {
 A client you construct yourself emits the event too. Earlier events and errors are no longer
 replayed.
 
+### `AuthState` is a sealed class
+
+Each `AuthChangeEvent` has its own `AuthState` subtype carrying the data that event produces:
+`AuthInitialSession`, `AuthSignedIn`, `AuthSignedOut`, `AuthTokenRefreshed`, `AuthUserUpdated`,
+`AuthPasswordRecovery` and `AuthMfaChallengeVerified`. `session` is non-nullable on every subtype
+except `AuthInitialSession`, where it is the session at subscription time or `null`, and
+`AuthSignedOut`, where it is always `null`.
+
+`AuthState.event` and `AuthState.session` are still there, so a listener that compares `event` and
+null-checks `session` keeps compiling. What changes:
+
+- `AuthState.signOutReason` moved to `AuthSignedOut.reason`.
+- `AuthState` has no public constructor. Construct the subtype instead, for example in a test that
+  feeds a fake stream.
+
+```dart
+// Before
+supabase.auth.onAuthStateChange.listen((state) {
+  if (state.event == AuthChangeEvent.signedOut) {
+    if (state.signOutReason == SignOutReason.sessionExpired) {
+      showSessionExpired();
+    }
+    showLogin();
+  } else if (state.session != null) {
+    showHome(state.session!.user);
+  }
+});
+
+// After
+supabase.auth.onAuthStateChange.listen((state) {
+  switch (state) {
+    case AuthSignedOut(reason: SignOutReason.sessionExpired):
+      showSessionExpired();
+      showLogin();
+    case AuthSignedOut():
+    case AuthInitialSession(session: null):
+      showLogin();
+    case AuthInitialSession(session: final session?):
+    case AuthSignedIn(:final session):
+    case AuthTokenRefreshed(:final session):
+    case AuthUserUpdated(:final session):
+    case AuthPasswordRecovery(:final session):
+    case AuthMfaChallengeVerified(:final session):
+      showHome(session.user);
+  }
+});
+```
+
 ### The session is persisted with `SharedPreferencesAsync`
 
 `SharedPreferencesAuthAsyncStorage`, the storage `Supabase.initialize` uses by default, now writes

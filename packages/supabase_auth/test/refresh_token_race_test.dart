@@ -515,8 +515,12 @@ void main() {
         reason: 'An invalid refresh token should sign the user out',
       );
       expect(
-        signedOutState!.signOutReason,
-        SignOutReason.sessionExpired,
+        signedOutState,
+        isA<AuthSignedOut>().having(
+          (state) => state.reason,
+          'reason',
+          SignOutReason.sessionExpired,
+        ),
         reason: 'The signedOut event should report why the session ended',
       );
       expect(signedOutState!.session, isNull);
@@ -552,8 +556,12 @@ void main() {
 
       expect(signedOutState, isNotNull);
       expect(
-        signedOutState!.signOutReason,
-        SignOutReason.userInitiated,
+        signedOutState,
+        isA<AuthSignedOut>().having(
+          (state) => state.reason,
+          'reason',
+          SignOutReason.userInitiated,
+        ),
         reason: 'An explicit signOut should report a userInitiated reason',
       );
 

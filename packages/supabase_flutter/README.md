@@ -95,10 +95,15 @@ await supabase.auth.signInWithPassword(
 await supabase.auth.signInWithOtp(email: 'my_email@example.com');
 
 // Listen to auth state changes
-supabase.auth.onAuthStateChange.listen((data) {
-  final AuthChangeEvent event = data.event;
-  final Session? session = data.session;
-  // Do something when there is an auth event
+supabase.auth.onAuthStateChange.listen((state) {
+  switch (state) {
+    case AuthSignedIn(:final session):
+      print('Signed in as ${session.user.email}');
+    case AuthSignedOut(:final reason):
+      print('Signed out, reason: ${reason?.name}');
+    default:
+      print('Auth event: ${state.event.name}');
+  }
 });
 ```
 

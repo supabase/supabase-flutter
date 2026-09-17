@@ -250,7 +250,7 @@ class AuthClient {
   ///
   /// When the user is signed out because the session could not be recovered
   /// (e.g. an invalid or expired refresh token), an [AuthChangeEvent.signedOut]
-  /// event is emitted with [AuthState.signOutReason] set to the matching
+  /// event is emitted as an [AuthSignedOut] whose `reason` is the matching
   /// [SignOutReason], so you can tell it apart from an explicit [signOut]
   /// without relying on the `onError` handler.
   ///
@@ -314,9 +314,7 @@ class AuthClient {
           return;
         }
         initialSent = true;
-        controller.addSync(
-          AuthState(AuthChangeEvent.initialSession, currentSession),
-        );
+        controller.addSync(AuthInitialSession(currentSession));
         for (final deliver in held) {
           deliver();
         }
@@ -2103,15 +2101,59 @@ class AuthClient {
         'session': session?.toJson(),
       });
     }
-    final state = AuthState(
+    final state = _authStateFor(
       event,
       session,
       fromBroadcast: !broadcast,
       signOutReason: signOutReason,
     );
+    if (state == null) {
+      assert(!broadcast, 'A local ${event.name} event needs a session.');
+      authLogger.warning(
+        'Ignoring a broadcast ${event.name} event that carries no session',
+      );
+      return;
+    }
     authLogger.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
+  }
+
+  /// Builds the [AuthState] for [event], `null` when [event] carries a
+  /// session and [session] is missing.
+  AuthState? _authStateFor(
+    AuthChangeEvent event,
+    Session? session, {
+    required bool fromBroadcast,
+    SignOutReason? signOutReason,
+  }) {
+    return switch (event) {
+      AuthChangeEvent.initialSession => AuthInitialSession(session),
+      AuthChangeEvent.signedOut => AuthSignedOut(
+        reason: signOutReason,
+        fromBroadcast: fromBroadcast,
+      ),
+      AuthChangeEvent.signedIn =>
+        session == null
+            ? null
+            : AuthSignedIn(session, fromBroadcast: fromBroadcast),
+      AuthChangeEvent.tokenRefreshed =>
+        session == null
+            ? null
+            : AuthTokenRefreshed(session, fromBroadcast: fromBroadcast),
+      AuthChangeEvent.userUpdated =>
+        session == null
+            ? null
+            : AuthUserUpdated(session, fromBroadcast: fromBroadcast),
+      AuthChangeEvent.passwordRecovery =>
+        session == null
+            ? null
+            : AuthPasswordRecovery(session, fromBroadcast: fromBroadcast),
+      AuthChangeEvent.mfaChallengeVerified =>
+        session == null
+            ? null
+            : AuthMfaChallengeVerified(session, fromBroadcast: fromBroadcast),
+    };
   }
 
   /// For internal use only.
