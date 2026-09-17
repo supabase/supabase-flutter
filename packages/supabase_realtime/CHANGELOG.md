@@ -1,3 +1,9 @@
+## 3.0.0-dev.5
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **REFACTOR**: type the user metadata and realtime connection parameters ([#1843](https://github.com/supabase/supabase-flutter/issues/1843)). ([3afb0dfc](https://github.com/supabase/supabase-flutter/commit/3afb0dfc5e1c197fb6bf51e750f997537f9358eb))
+
 ## 3.0.0-dev.4
 
  - Update a dependency to the latest release.

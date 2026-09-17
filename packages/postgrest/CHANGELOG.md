@@ -1,3 +1,11 @@
+## 3.0.0-dev.5
+
+> Note: This release has breaking changes.
+
+ - **FIX**(postgrest): build the typed transform builder with the row converter ([#1850](https://github.com/supabase/supabase-flutter/issues/1850)). ([b9dee7bf](https://github.com/supabase/supabase-flutter/commit/b9dee7bfdae57826aaa5b6e003af527baab0042b))
+ - **FEAT**(postgrest): add csv, explain, head, dryRun, stripNulls, maxAffected and geojson to the typed transform builder ([#1848](https://github.com/supabase/supabase-flutter/issues/1848)). ([85fd4534](https://github.com/supabase/supabase-flutter/commit/85fd453407695f5841d18f6530f9c8060d9aee32))
+ - **BREAKING** **FEAT**(postgrest): only accept the table's Insert and Update types on the typed builder ([#1849](https://github.com/supabase/supabase-flutter/issues/1849)). ([333cc5c3](https://github.com/supabase/supabase-flutter/commit/333cc5c3df57c76a40530437f8415b7621b761bd))
+
 ## 3.0.0-dev.4
 
  - **REFACTOR**(postgrest): build the typed builders on PostgrestBuilder<T> ([#1836](https://github.com/supabase/supabase-flutter/issues/1836)). ([08616c76](https://github.com/supabase/supabase-flutter/commit/08616c76197317ea187ea811746838114a3d95f6))
