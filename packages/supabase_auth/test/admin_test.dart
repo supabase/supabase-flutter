@@ -88,7 +88,7 @@ void main() {
           userMetadata: {'username': 'newUserName'},
         ),
       );
-      expect(response.user!.userMetadata!['username'], 'newUserName');
+      expect(response.user!.userMetadata['username'], 'newUserName');
     });
   });
 

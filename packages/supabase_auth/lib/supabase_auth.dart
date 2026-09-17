@@ -12,6 +12,7 @@ export 'src/constants.dart';
 export 'src/auth_admin_api.dart';
 export 'src/auth_client.dart';
 export 'src/helper.dart' show decodeJwt, validateExpiration;
+export 'src/types/app_metadata.dart';
 export 'src/types/auth_exception.dart';
 export 'src/types/auth_response.dart';
 export 'src/types/auth_state.dart';

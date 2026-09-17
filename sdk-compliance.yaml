@@ -2476,6 +2476,16 @@ supporting_symbols:
   - AdminUserAttributes.phoneConfirm
   - AdminUserAttributes.toJson
   - AdminUserAttributes.userMetadata
+  - AppMetadata
+  - AppMetadata.==
+  - AppMetadata.AppMetadata
+  - AppMetadata.[]
+  - AppMetadata.fromJson
+  - AppMetadata.hashCode
+  - AppMetadata.provider
+  - AppMetadata.providers
+  - AppMetadata.toJson
+  - AppMetadata.toString
   - AsyncJsonCodec
   - AsyncJsonCodec.decode
   - AsyncJsonCodec.decodeBytes

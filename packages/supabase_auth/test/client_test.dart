@@ -113,7 +113,7 @@ void main() {
       expect(data?.accessToken, isA<String>());
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
-      expect(data?.user.userMetadata!['Hello'], 'World');
+      expect(data?.user.userMetadata['Hello'], 'World');
     });
     test(
       'signUp() with weak password throws AuthWeakPasswordException',
@@ -198,7 +198,7 @@ void main() {
       expect(data?.accessToken, isA<String>());
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
-      expect(data?.user.userMetadata!['Hello'], 'World');
+      expect(data?.user.userMetadata['Hello'], 'World');
     });
 
     test('signUp() with autoConfirm off with email', () async {
@@ -459,10 +459,10 @@ void main() {
       final user = response.user;
       expect(user, client.currentUser);
       expect(user?.id, isA<String>());
-      expect(user?.userMetadata?['hello'], 'world');
-      expect(user?.userMetadata?['japanese'], '日本語');
-      expect(user?.userMetadata?['korean'], '한국어');
-      expect(user?.userMetadata?['arabic'], 'عربى');
+      expect(user?.userMetadata['hello'], 'world');
+      expect(user?.userMetadata['japanese'], '日本語');
+      expect(user?.userMetadata['korean'], '한국어');
+      expect(user?.userMetadata['arabic'], 'عربى');
     });
 
     test('Update user with the same password throws AuthException', () async {

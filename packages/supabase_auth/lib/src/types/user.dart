@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:supabase_auth/src/types/app_metadata.dart';
 import 'package:supabase_auth/src/types/mfa.dart';
 import 'package:supabase_common/supabase_common.dart';
 
@@ -6,8 +7,8 @@ import 'package:supabase_common/supabase_common.dart';
 class User {
   const User({
     required this.id,
-    required this.appMetadata,
-    required this.userMetadata,
+    this.appMetadata = const AppMetadata(),
+    this.userMetadata = const {},
     required this.audience,
     this.confirmationSentAt,
     this.recoverySentAt,
@@ -33,10 +34,11 @@ class User {
 
   /// Metadata the server or an admin controls; the client cannot modify it
   /// directly.
-  final Map<String, dynamic> appMetadata;
+  final AppMetadata appMetadata;
 
-  /// Metadata the signed-in user can update about themselves.
-  final Map<String, dynamic>? userMetadata;
+  /// Metadata the signed-in user can update about themselves. Empty when the
+  /// user has none, and unmodifiable when parsed from the server.
+  final Map<String, dynamic> userMetadata;
 
   /// The `aud` claim of the user's JWTs, `'authenticated'` for most users.
   final String audience;
@@ -103,8 +105,12 @@ class User {
 
     return User(
       id: json['id'] ?? '',
-      appMetadata: json['app_metadata'] as Map<String, dynamic>? ?? {},
-      userMetadata: json['user_metadata'] as Map<String, dynamic>?,
+      appMetadata: AppMetadata.fromJson(
+        json['app_metadata'] as Map<String, dynamic>? ?? const {},
+      ),
+      userMetadata: Map.unmodifiable(
+        json['user_metadata'] as Map<String, dynamic>? ?? const {},
+      ),
       audience: json['aud'] ?? '',
       confirmationSentAt: tryParseIso8601(json, 'confirmation_sent_at'),
       recoverySentAt: tryParseIso8601(json, 'recovery_sent_at'),
@@ -135,7 +141,7 @@ class User {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'app_metadata': appMetadata,
+      'app_metadata': appMetadata.toJson(),
       'user_metadata': userMetadata,
       'aud': audience,
       'confirmation_sent_at': confirmationSentAt?.toIso8601String(),
@@ -179,7 +185,7 @@ class User {
 
     return other is User &&
         other.id == id &&
-        collectionEquals(other.appMetadata, appMetadata) &&
+        other.appMetadata == appMetadata &&
         collectionEquals(other.userMetadata, userMetadata) &&
         other.audience == audience &&
         other.confirmationSentAt == confirmationSentAt &&
@@ -206,7 +212,7 @@ class User {
     final collectionHash = const DeepCollectionEquality().hash;
 
     return id.hashCode ^
-        collectionHash(appMetadata) ^
+        appMetadata.hashCode ^
         collectionHash(userMetadata) ^
         audience.hashCode ^
         confirmationSentAt.hashCode ^

@@ -28,6 +28,8 @@ explicitly:
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),
   where writes without a `select()` now resolve to `void`
+- [`User.userMetadata` is never null](#userappmetadata-is-an-appmetadata-and-usermetadata-is-never-null),
+  so a null check on it is dead code that the analyzer only warns about
 
 ### The client packages are renamed
 
@@ -181,6 +183,60 @@ final OAuthAuthorizingUser user = details.user;
 
 `OAuthAuthorizingUser` carries `id` and `email`, which keep their names, so code that only reads
 those needs no change.
+
+### `User.appMetadata` is an `AppMetadata` and `userMetadata` is never null
+
+`User.appMetadata` changes from a `Map<String, dynamic>` to an `AppMetadata` value object with
+typed `provider` and `providers` fields. Every other key the server sent, such as a claim added by
+an auth hook or an admin update, is still read with `[]`, so `user.appMetadata['provider']` keeps
+compiling. Iterating the map or passing it where a `Map` is expected does not; use `toJson()` for
+the full map.
+
+`User.userMetadata` is no longer nullable. A user without metadata has an empty map, matching
+supabase-js and supabase-swift. Both metadata objects are unmodifiable when parsed from the server.
+
+```dart
+// Before
+final provider = user.appMetadata['provider'] as String?;
+final providers = (user.appMetadata['providers'] as List?)?.cast<String>() ?? [];
+final name = user.userMetadata?['name'] as String?;
+for (final entry in user.appMetadata.entries) {
+  // ...
+}
+
+// After
+final provider = user.appMetadata.provider;
+final providers = user.appMetadata.providers;
+final name = user.userMetadata['name'] as String?;
+for (final entry in user.appMetadata.toJson().entries) {
+  // ...
+}
+```
+
+The `User` constructor takes an `AppMetadata` for `appMetadata`, and both metadata arguments are
+optional:
+
+```dart
+// Before
+final user = User(
+  id: id,
+  appMetadata: {'provider': 'email'},
+  userMetadata: null,
+  audience: 'authenticated',
+  createdAt: createdAt,
+);
+
+// After
+final user = User(
+  id: id,
+  appMetadata: const AppMetadata(provider: 'email', providers: ['email']),
+  audience: 'authenticated',
+  createdAt: createdAt,
+);
+```
+
+The input side is unchanged: `UserAttributes.data` and the `AdminUserAttributes` metadata fields are
+still plain maps, because the values you send are free-form.
 
 ### Confirming an email or phone change emits `userUpdated`
 
@@ -693,6 +749,22 @@ final supabase = SupabaseClient(
     heartbeatInterval: Duration(seconds: 60),
   ),
 );
+```
+
+### `RealtimeClient.parameters` is a `Map<String, String>`
+
+The connection query parameters were declared as `Map<String, dynamic>` but every value was
+stringified into the socket URL. The constructor argument and the `parameters` field are now
+`Map<String, String>`, so a non-string value is a compile error instead of a runtime cast.
+
+```dart
+// Before
+final Map<String, dynamic> parameters = {'apikey': key};
+final client = RealtimeClient(realtimeUrl, parameters: parameters);
+
+// After
+final Map<String, String> parameters = {'apikey': key};
+final client = RealtimeClient(realtimeUrl, parameters: parameters);
 ```
 
 ### The mutable internals of `RealtimeChannel` are private

@@ -1,3 +1,4 @@
+import 'package:supabase_auth/src/types/app_metadata.dart';
 import 'package:supabase_auth/src/types/user.dart';
 import 'package:test/test.dart';
 
@@ -44,8 +45,8 @@ void main() {
 
         expect(user, isNotNull);
         expect(user!.id, equals('123'));
-        expect(user.appMetadata, equals(<String, dynamic>{}));
-        expect(user.userMetadata, equals(<String, dynamic>{}));
+        expect(user.appMetadata, equals(const AppMetadata()));
+        expect(user.userMetadata, isEmpty);
         expect(user.audience, equals('authenticated'));
         expect(user.createdAt, equals(DateTime.utc(2023, 1, 1)));
         expect(user.isAnonymous, isFalse);
@@ -78,10 +79,7 @@ void main() {
 
         expect(user, isNotNull);
         expect(user!.id, equals('123'));
-        expect(
-          user.appMetadata,
-          equals(<String, dynamic>{'provider': 'email'}),
-        );
+        expect(user.appMetadata, equals(const AppMetadata(provider: 'email')));
         expect(
           user.userMetadata,
           equals(<String, dynamic>{'name': 'John Doe'}),
@@ -104,7 +102,7 @@ void main() {
         expect(user.isAnonymous, isTrue);
       });
 
-      test('handles null user_metadata', () {
+      test('handles null user_metadata by defaulting to empty map', () {
         final json = <String, dynamic>{
           'id': '123',
           'app_metadata': <String, dynamic>{},
@@ -116,7 +114,11 @@ void main() {
         final user = User.fromJson(json);
 
         expect(user, isNotNull);
-        expect(user!.userMetadata, isNull);
+        expect(user!.userMetadata, isEmpty);
+        expect(
+          () => user.userMetadata['key'] = 'value',
+          throwsUnsupportedError,
+        );
       });
 
       test('handles null app_metadata by defaulting to empty map', () {
@@ -131,7 +133,7 @@ void main() {
         final user = User.fromJson(json);
 
         expect(user, isNotNull);
-        expect(user!.appMetadata, equals({}));
+        expect(user!.appMetadata, equals(const AppMetadata()));
       });
 
       test('handles missing app_metadata by defaulting to empty map', () {
@@ -145,7 +147,7 @@ void main() {
         final user = User.fromJson(json);
 
         expect(user, isNotNull);
-        expect(user!.appMetadata, equals({}));
+        expect(user!.appMetadata, equals(const AppMetadata()));
       });
 
       test('returns null when id is null, before parsing any timestamp', () {
@@ -295,8 +297,8 @@ void main() {
       test('serializes user correctly', () {
         final user = User(
           id: '123',
-          appMetadata: {'provider': 'email'},
-          userMetadata: <String, dynamic>{'name': 'John Doe'},
+          appMetadata: const AppMetadata(provider: 'email'),
+          userMetadata: {'name': 'John Doe'},
           audience: 'authenticated',
           confirmationSentAt: DateTime.utc(2023, 1, 1),
           recoverySentAt: DateTime.utc(2023, 1, 1, 1),
@@ -318,7 +320,10 @@ void main() {
         final json = user.toJson();
 
         expect(json['id'], equals('123'));
-        expect(json['app_metadata'], equals({'provider': 'email'}));
+        expect(
+          json['app_metadata'],
+          equals({'provider': 'email', 'providers': <String>[]}),
+        );
         expect(json['user_metadata'], equals({'name': 'John Doe'}));
         expect(json['aud'], equals('authenticated'));
         expect(
@@ -357,8 +362,6 @@ void main() {
 
         final user = User(
           id: '123',
-          appMetadata: {},
-          userMetadata: <String, dynamic>{},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
           identities: [identity],
@@ -374,8 +377,6 @@ void main() {
       test('handles null identities and factors', () {
         final user = User(
           id: '123',
-          appMetadata: {},
-          userMetadata: <String, dynamic>{},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
           identities: null,
@@ -393,8 +394,8 @@ void main() {
       test('includes all user properties', () {
         final user = User(
           id: '123',
-          appMetadata: {'provider': 'email'},
-          userMetadata: <String, dynamic>{'name': 'John Doe'},
+          appMetadata: const AppMetadata(provider: 'email'),
+          userMetadata: {'name': 'John Doe'},
           audience: 'authenticated',
           email: 'test@example.com',
           createdAt: DateTime.utc(2023, 1, 1),
@@ -414,8 +415,8 @@ void main() {
       test('returns true for identical users', () {
         final user1 = User(
           id: '123',
-          appMetadata: {'provider': 'email'},
-          userMetadata: <String, dynamic>{'name': 'John Doe'},
+          appMetadata: const AppMetadata(provider: 'email'),
+          userMetadata: {'name': 'John Doe'},
           audience: 'authenticated',
           email: 'test@example.com',
           createdAt: DateTime.utc(2023, 1, 1),
@@ -424,8 +425,8 @@ void main() {
 
         final user2 = User(
           id: '123',
-          appMetadata: {'provider': 'email'},
-          userMetadata: <String, dynamic>{'name': 'John Doe'},
+          appMetadata: const AppMetadata(provider: 'email'),
+          userMetadata: {'name': 'John Doe'},
           audience: 'authenticated',
           email: 'test@example.com',
           createdAt: DateTime.utc(2023, 1, 1),
@@ -439,16 +440,12 @@ void main() {
       test('returns false for users with different ids', () {
         final user1 = User(
           id: '123',
-          appMetadata: {},
-          userMetadata: <String, dynamic>{},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
         final user2 = User(
           id: '456',
-          appMetadata: {},
-          userMetadata: <String, dynamic>{},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
@@ -459,7 +456,7 @@ void main() {
       test('returns false for users with different metadata', () {
         final user1 = User(
           id: '123',
-          appMetadata: {'provider': 'email'},
+          appMetadata: const AppMetadata(provider: 'email'),
           userMetadata: {},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
@@ -467,7 +464,7 @@ void main() {
 
         final user2 = User(
           id: '123',
-          appMetadata: {'provider': 'oauth'},
+          appMetadata: const AppMetadata(provider: 'oauth'),
           userMetadata: {},
           audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
@@ -479,10 +476,12 @@ void main() {
       test('handles deep collection equality correctly', () {
         final user1 = User(
           id: '123',
-          appMetadata: {
-            'nested': <String, dynamic>{'key': 'value'},
-          },
-          userMetadata: <String, dynamic>{
+          appMetadata: const AppMetadata(
+            additionalProperties: {
+              'nested': {'key': 'value'},
+            },
+          ),
+          userMetadata: {
             'list': [1, 2, 3],
           },
           audience: 'authenticated',
@@ -491,10 +490,12 @@ void main() {
 
         final user2 = User(
           id: '123',
-          appMetadata: {
-            'nested': <String, dynamic>{'key': 'value'},
-          },
-          userMetadata: <String, dynamic>{
+          appMetadata: const AppMetadata(
+            additionalProperties: {
+              'nested': {'key': 'value'},
+            },
+          ),
+          userMetadata: {
             'list': [1, 2, 3],
           },
           audience: 'authenticated',
@@ -509,8 +510,8 @@ void main() {
       test('preserves all data through JSON roundtrip', () {
         final original = User(
           id: '123',
-          appMetadata: {'provider': 'email'},
-          userMetadata: <String, dynamic>{'name': 'John Doe'},
+          appMetadata: const AppMetadata(provider: 'email'),
+          userMetadata: {'name': 'John Doe'},
           audience: 'authenticated',
           email: 'test@example.com',
           phone: '+1234567890',
@@ -527,12 +528,14 @@ void main() {
       test('preserves complex nested data', () {
         final original = User(
           id: '123',
-          appMetadata: {
-            'provider': 'oauth',
-            'providers': ['google', 'facebook'],
-            'nested': <String, dynamic>{'deep': 'value'},
-          },
-          userMetadata: <String, dynamic>{
+          appMetadata: const AppMetadata(
+            provider: 'oauth',
+            providers: ['google', 'facebook'],
+            additionalProperties: {
+              'nested': {'deep': 'value'},
+            },
+          ),
+          userMetadata: {
             'profile': <String, dynamic>{'name': 'John', 'age': 30},
             'preferences': ['dark_mode', 'notifications'],
           },
