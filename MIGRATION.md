@@ -166,8 +166,9 @@ final session = await supabase.auth.signInWithPassword(email: email, password: p
 final user = session.user;
 ```
 
-A response without a session throws an `AuthException` where it used to resolve with `session` set
-to `null`.
+`signInAnonymously()`, `signInWithPassword()` and `passkey.verifyAuthentication()` used to resolve
+with `session` set to `null` when the response carried no session. They now throw an
+`AuthException` in that case, as the other methods in the list already did.
 
 `signUp()` and `verifyOTP()` keep returning an `AuthResponse`, since both can legitimately complete
 without a session: a sign-up that needs email confirmation first, and the first step of a secure
