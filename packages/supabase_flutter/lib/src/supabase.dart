@@ -1,3 +1,6 @@
+// The plugin seam is @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -85,6 +88,10 @@ class Supabase {
   /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
+  /// [plugins] extend the client from the outside, see
+  /// [SupabaseClientPlugin]. Each plugin is resumed when the app returns to
+  /// the foreground and disposed together with the client.
+  ///
   /// All Supabase packages log through `package:logging` using loggers under
   /// the `supabase` hierarchy (for example `supabase.auth` or
   /// `supabase.realtime`). Nothing is printed by default; attach a listener
@@ -103,6 +110,7 @@ class Supabase {
         const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
+    List<SupabaseClientPlugin> plugins = const [],
   }) async {
     if (_instance._isInitialized) {
       flutterLogger.info(
@@ -131,6 +139,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      plugins: plugins,
     );
 
     if (accessToken == null) {
@@ -267,6 +276,7 @@ class Supabase {
     required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
+    required List<SupabaseClientPlugin> plugins,
   }) {
     final headers = {
       ...SupabaseFlutterConstants.defaultHeaders,
@@ -284,6 +294,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      plugins: plugins,
     );
 
     // Close any previous realtime client that may still be connected due to
@@ -325,9 +336,23 @@ class Supabase {
   Future<void> _processLifecycle(AppLifecycleState captured) async {
     if (captured != _targetLifecycleState) return;
 
-    final realtime = Supabase.instance.client.realtime;
+    final currentClient = _client;
+    if (currentClient == null) return;
+    final realtime = currentClient.realtime;
 
     if (captured == AppLifecycleState.resumed) {
+      for (final plugin in currentClient.plugins) {
+        unawaited(
+          plugin.resume().catchError((Object error, StackTrace stackTrace) {
+            flutterLogger.warning(
+              'Plugin ${plugin.runtimeType} failed to resume',
+              error,
+              stackTrace,
+            );
+          }),
+        );
+      }
+
       // No channels subscribed — nothing to reconnect.
       if (realtime.channels.isEmpty) return;
 

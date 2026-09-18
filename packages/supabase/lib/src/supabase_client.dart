@@ -1,3 +1,6 @@
+// The typed table executor this client hands its plugins is @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 
 import 'package:http/http.dart';
@@ -53,6 +56,10 @@ import 'trace_http_client.dart';
 /// parser. A codec passed here is owned by the caller, so [dispose] leaves it
 /// alone, and it can be shared with other clients.
 ///
+/// [plugins] extend the client from the outside, see [SupabaseClientPlugin].
+/// They wrap the executor the typed table API runs through, in the order
+/// given, and are disposed together with the client.
+///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `asyncStorage` field of [authOptions].
 /// Pass a persistent implementation whenever the flow can leave the process
@@ -77,7 +84,11 @@ class SupabaseClient {
     Map<String, String>? headers,
     Client? httpClient,
     AsyncJsonCodec? jsonCodec,
+    List<SupabaseClientPlugin> plugins = const [],
   }) : _supabaseKey = supabaseKey,
+       // Disposed one by one from dispose, which the rule cannot see.
+       // ignore: dispose-class-fields
+       plugins = List.unmodifiable(plugins),
        _functionsOptions = functionsOptions,
        _restUrl = '$supabaseUrl/rest/v1',
        _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
@@ -115,6 +126,10 @@ class SupabaseClient {
     );
     warnOnUnrecognizedApiKey(_supabaseKey);
     _rest = _initRestClient();
+    _tableExecutor = plugins.fold<PostgrestTableExecutor>(
+      _RestTableExecutor(this),
+      (executor, plugin) => plugin.wrapTableExecutor(executor),
+    );
     functions = _initFunctionsClient();
     storage = _initStorageClient(
       storageOptions.retryOptions,
@@ -130,6 +145,9 @@ class SupabaseClient {
       clientLogger.config(
         'Initialize SupabaseClient v$version with custom access token',
       );
+    }
+    for (final plugin in plugins) {
+      plugin.attach(this);
     }
   }
   final String _supabaseKey;
@@ -160,6 +178,13 @@ class SupabaseClient {
   /// broadcast messages between clients.
   late final RealtimeClient realtime;
   late PostgrestClient _rest;
+  late final PostgrestTableExecutor _tableExecutor;
+
+  /// The plugins given to the constructor, in the order they wrap the typed
+  /// table executor.
+  ///
+  /// Each plugin is disposed from [dispose].
+  final List<SupabaseClientPlugin> plugins;
   StreamSubscription<AuthState>? _authStateSubscription;
   final AsyncJsonCodec _jsonCodec;
   final bool _ownsJsonCodec;
@@ -244,6 +269,7 @@ class SupabaseClient {
     authHttpClient: _authHttpClient,
     realtime: realtime,
     rest: rest,
+    tableExecutor: _tableExecutor,
   );
 
   /// Perform a table operation.
@@ -264,9 +290,7 @@ class SupabaseClient {
   @experimental
   SupabaseTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
     PostgrestTable<Row, Insert, Update> table,
-  ) {
-    return SupabaseTypedQueryBuilder(from(table.name), table);
-  }
+  ) => _defaultSchema.table(table);
 
   /// Select a schema to query or perform an function (rpc) call.
   ///
@@ -330,6 +354,17 @@ class SupabaseClient {
   /// the functions, PostgREST, and its internally owned JSON codec.
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
+    for (final plugin in plugins.reversed) {
+      try {
+        await plugin.dispose();
+      } catch (error, stackTrace) {
+        clientLogger.warning(
+          'Plugin ${plugin.runtimeType} failed to dispose',
+          error,
+          stackTrace,
+        );
+      }
+    }
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
     await functions.dispose();
@@ -468,4 +503,17 @@ class SupabaseClient {
       await realtime.setAccessToken(_supabaseKey);
     }
   }
+}
+
+/// Sends typed table requests through whichever rest client the
+/// [SupabaseClient] currently holds, so a header change that replaces the
+/// rest client does not require the plugin chain to be rebuilt.
+class _RestTableExecutor implements PostgrestTableExecutor {
+  const _RestTableExecutor(this._client);
+
+  final SupabaseClient _client;
+
+  @override
+  Future<PostgrestTableResult> execute(PostgrestTableRequest request) =>
+      PostgrestHttpTableExecutor(_client._rest).execute(request);
 }

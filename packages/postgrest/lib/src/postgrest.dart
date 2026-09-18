@@ -109,12 +109,17 @@ class PostgrestClient {
   final Duration? requestTimeout;
 
   /// Perform a table operation.
-  PostgrestQueryBuilder from(String table) {
+  PostgrestQueryBuilder from(String table) => fromInSchema(table, _schema);
+
+  /// Like [from], but with the request scoped to [schema] instead of the
+  /// schema this client was created with.
+  @internal
+  PostgrestQueryBuilder fromInSchema(String table, String? schema) {
     final requestUrl = '$url/$table';
     return PostgrestQueryBuilder(
       url: Uri.parse(requestUrl),
       headers: headers,
-      schema: _schema,
+      schema: schema,
       httpClient: httpClient,
       jsonCodec: _jsonCodec,
       retryOptions: retryOptions,
@@ -134,11 +139,20 @@ class PostgrestClient {
   ///     .select()
   ///     .where(Books.id.gt(10));
   /// ```
+  ///
+  /// The builder collects a [PostgrestTableRequest] and hands it to
+  /// [executor] when awaited; without one the request is sent to PostgREST
+  /// through this client by an [PostgrestHttpTableExecutor].
   @experimental
   PostgrestTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
-    PostgrestTable<Row, Insert, Update> table,
-  ) {
-    return PostgrestTypedQueryBuilder(from(table.name), table);
+    PostgrestTable<Row, Insert, Update> table, {
+    PostgrestTableExecutor? executor,
+  }) {
+    return PostgrestTypedQueryBuilder(
+      table,
+      executor: executor ?? PostgrestHttpTableExecutor(this),
+      schema: _schema,
+    );
   }
 
   /// Select a schema to query or perform an function (rpc) call.
