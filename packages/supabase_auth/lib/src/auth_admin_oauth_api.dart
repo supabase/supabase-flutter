@@ -33,7 +33,7 @@ class OAuthClientListResponse {
 
   factory OAuthClientListResponse.fromJson(Map<String, dynamic> json) {
     return OAuthClientListResponse(
-      clients: (json['clients'] as List)
+      clients: (json['clients'] as List? ?? const [])
           .map((e) => OAuthClient.fromJson(e as Map<String, dynamic>))
           .toList(),
       audience: json['aud'] as String?,
