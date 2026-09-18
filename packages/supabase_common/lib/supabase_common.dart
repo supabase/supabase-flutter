@@ -16,6 +16,7 @@ export 'src/http_method.dart';
 export 'src/http_status.dart';
 export 'src/persist_session_key.dart';
 export 'src/pkce.dart';
+export 'src/platform/default_http_client.dart';
 export 'src/platform/platform_info.dart';
 export 'src/random.dart';
 export 'src/redaction.dart';

@@ -30,6 +30,8 @@ explicitly:
   where writes without a `select()` now resolve to `void`
 - [`User.userMetadata` is never null](#userappmetadata-is-an-appmetadata-and-usermetadata-is-never-null),
   so a null check on it is dead code that the analyzer only warns about
+- [`SupabaseClient` builds its own default HTTP client](#supabaseclient-builds-its-own-default-http-client),
+  so a client installed with `runWithClient` is no longer picked up
 
 ### The client packages are renamed
 
@@ -1661,6 +1663,31 @@ headers to every sub-client at once.
 `SupabaseStorageClient.vectors` is a getter that builds a client on each access instead of a cached
 instance, so it always carries the current headers. Hold on to the returned client only for as long
 as its headers should stay fixed.
+
+### `SupabaseClient` builds its own default HTTP client
+
+On `dart:io` platforms a `SupabaseClient` created without an `httpClient` now builds an `IOClient`
+that keeps idle connections open for 60 seconds instead of the 15 seconds `dart:io` defaults to, so
+a request after a pause in traffic reuses a connection instead of opening a new one. Because the
+client is built directly, it no longer goes through the `Client()` factory of `package:http`, and a
+client installed with `runWithClient` is not picked up. Pass it as `httpClient` instead:
+
+```dart
+// Before
+runWithClient(() {
+  final supabase = SupabaseClient(supabaseUrl, supabaseKey);
+}, () => MockClient(handler));
+
+// After
+final supabase = SupabaseClient(
+  supabaseUrl,
+  supabaseKey,
+  httpClient: MockClient(handler),
+);
+```
+
+Open connections keep a Dart program alive until the idle timeout passes, so a script that does not
+call `dispose()` on its `SupabaseClient` now waits a minute before exiting instead of 15 seconds.
 
 ### The SDK no longer prints logs
 
