@@ -97,11 +97,9 @@ class SupabaseStorageClient extends StorageBucketApi {
     final uri = Uri.parse(url);
     final hostname = uri.host;
 
-    // If it's a legacy storage URL, transform it
     const legacyStoragePrefix = '/storage';
     if (_isLegacySupabaseHost(hostname) &&
         uri.path.startsWith(legacyStoragePrefix)) {
-      // Remove /storage from pathname
       final newPath = uri.path.substring(legacyStoragePrefix.length);
       // Replace .supabase. with .storage.supabase. in hostname, on the same
       // label boundary the check above used.
@@ -110,7 +108,6 @@ class SupabaseStorageClient extends StorageBucketApi {
         '.storage.supabase.',
       );
 
-      // Reconstruct the URI
       return uri
           .replace(
             host: newHostname,

@@ -320,7 +320,6 @@ class Supabase {
   /// [captured] is the lifecycle state at the time the event was enqueued.
   /// If a newer event has arrived since, this one is skipped (stale).
   Future<void> _processLifecycle(AppLifecycleState captured) async {
-    // Skip if a newer lifecycle event has superseded this one.
     if (captured != _targetLifecycleState) return;
 
     final realtime = Supabase.instance.client.realtime;

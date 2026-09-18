@@ -23,15 +23,12 @@ DecodedJwt decodeJwt(String token) {
   final rawSignature = parts[2];
 
   try {
-    // Decode header
     final headerJson = Base64Url.decodeToString(rawHeader);
     final header = JwtHeader.fromJson(json.decode(headerJson));
 
-    // Decode payload
     final payloadJson = Base64Url.decodeToString(rawPayload);
     final payload = JwtPayload.fromJson(json.decode(payloadJson));
 
-    // Decode signature
     final signature = Base64Url.decodeToBytes(rawSignature);
 
     return DecodedJwt(

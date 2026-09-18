@@ -167,8 +167,6 @@ class Fetch {
   ) async {
     final headers = options?.headers ?? {};
 
-    // Create a factory function that generates a fresh MultipartRequest for
-    // each attempt
     http.MultipartRequest createRequest() {
       final request = http.AbortableMultipartRequest(
         method.value,
@@ -198,7 +196,6 @@ class Fetch {
           '${Uri.parse(url).redacted} ${headers.redacted}',
         );
 
-        // Create a fresh request for each retry attempt
         return createRequest().sendWith(httpClient);
       },
       options: retryOptions,
