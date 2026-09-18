@@ -746,6 +746,7 @@ features:
       - CreateOAuthClientOptions.clientName
       - CreateOAuthClientOptions.clientUri
       - CreateOAuthClientOptions.grantTypes
+      - CreateOAuthClientOptions.logoUri
       - CreateOAuthClientOptions.redirectUris
       - CreateOAuthClientOptions.responseTypes
       - CreateOAuthClientOptions.scope
@@ -764,6 +765,7 @@ features:
       - UpdateOAuthClientOptions.clientName
       - UpdateOAuthClientOptions.clientUri
       - UpdateOAuthClientOptions.grantTypes
+      - UpdateOAuthClientOptions.logoUri
       - UpdateOAuthClientOptions.redirectUris
       - UpdateOAuthClientOptions.responseTypes
       - UpdateOAuthClientOptions.scope
@@ -2696,6 +2698,7 @@ supporting_symbols:
   - OAuthClient.createdAt
   - OAuthClient.fromJson
   - OAuthClient.grantTypes
+  - OAuthClient.logoUri
   - OAuthClient.redirectUris
   - OAuthClient.registrationType
   - OAuthClient.responseTypes
