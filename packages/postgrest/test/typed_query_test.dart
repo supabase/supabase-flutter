@@ -635,8 +635,12 @@ void main() {
 
       expect(httpClient.requests.last.method, 'PATCH');
       expect(
-        httpClient.requests.last.headers['Prefer'],
-        'handling=strict,max-affected=1,return=representation',
+        httpClient.requests.last.headers['Prefer']!.split(','),
+        unorderedEquals([
+          'handling=strict',
+          'max-affected=1',
+          'return=representation',
+        ]),
       );
       expect(books.single.title, 'bar');
     });

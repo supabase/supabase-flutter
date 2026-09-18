@@ -12,14 +12,33 @@ part of 'postgrest_typed_builder.dart';
 class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// {@macro postgrest_typed_query_builder}
   const PostgrestTypedQueryBuilder(
-    PostgrestQueryBuilder queryBuilder,
-    this.table,
-  ) : _queryBuilder = queryBuilder;
+    this.table, {
+    required PostgrestTableExecutor executor,
+    String? schema,
+  }) : _executor = executor,
+       _schema = schema;
 
-  final PostgrestQueryBuilder _queryBuilder;
+  final PostgrestTableExecutor _executor;
+  final String? _schema;
 
   /// The table this builder queries.
   final PostgrestTable<Row, Insert, Update> table;
+
+  PostgrestTableRequest _request(PostgrestTableOperation operation) =>
+      PostgrestTableRequest(
+        table: table,
+        operation: operation,
+        schema: _schema,
+      );
+
+  PostgrestTypedFilterBuilder<Row, void> _mutation(
+    PostgrestTableRequest request,
+  ) => PostgrestTypedFilterBuilder._(
+    request.copyWith(shape: PostgrestResultShape.none),
+    _executor,
+    _noResult,
+    table.rowFromJson,
+  );
 
   /// Perform a SELECT query on the table or view.
   ///
@@ -42,11 +61,11 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   PostgrestTypedFilterBuilder<Row, List<Row>> select([
     List<PostgrestColumnExpression<Row, Object>>? columns,
   ]) => PostgrestTypedFilterBuilder._(
-    PostgrestFilterBuilder(
-      _queryBuilder
-          .select(_selectList(columns))
-          .withConverter((rows) => _rowsFromJson(table.rowFromJson, rows)),
+    _request(PostgrestTableOperation.select).copyWith(
+      columns: columns == null ? null : _checkedColumns(columns),
     ),
+    _executor,
+    _rowsConverter(table.rowFromJson),
     table.rowFromJson,
   );
 
@@ -68,9 +87,11 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   PostgrestTypedFilterBuilder<Row, void> insert(
     Insert row, {
     bool defaultToNull = true,
-  }) => PostgrestTypedFilterBuilder._(
-    _queryBuilder.insert(row as Object, defaultToNull: defaultToNull),
-    table.rowFromJson,
+  }) => _mutation(
+    _request(PostgrestTableOperation.insert).copyWith(
+      payload: row as Object,
+      defaultToNull: defaultToNull,
+    ),
   );
 
   /// Perform an INSERT of every row in [rows] into the table or view.
@@ -88,9 +109,11 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   PostgrestTypedFilterBuilder<Row, void> insertAll(
     List<Insert> rows, {
     bool defaultToNull = true,
-  }) => PostgrestTypedFilterBuilder._(
-    _queryBuilder.insert(_nonEmpty(rows), defaultToNull: defaultToNull),
-    table.rowFromJson,
+  }) => _mutation(
+    _request(PostgrestTableOperation.insert).copyWith(
+      payload: _nonEmpty(rows),
+      defaultToNull: defaultToNull,
+    ),
   );
 
   /// Perform an UPSERT of a single [row] on the table or view.
@@ -171,14 +194,13 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
         'onConflict needs at least one column',
       );
     }
-    return PostgrestTypedFilterBuilder._(
-      _queryBuilder.upsert(
-        values,
-        onConflict: onConflict?.map((column) => column.name).join(','),
+    return _mutation(
+      _request(PostgrestTableOperation.upsert).copyWith(
+        payload: values,
+        onConflict: onConflict,
         ignoreDuplicates: ignoreDuplicates,
         defaultToNull: defaultToNull,
       ),
-      table.rowFromJson,
     );
   }
 
@@ -193,11 +215,11 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///     .update(BookUpdate(title: 'bar'))
   ///     .where(Books.id.eq(1));
   /// ```
-  PostgrestTypedFilterBuilder<Row, void> update(Update values) =>
-      PostgrestTypedFilterBuilder._(
-        _queryBuilder.update(values as Object),
-        table.rowFromJson,
-      );
+  PostgrestTypedFilterBuilder<Row, void> update(Update values) => _mutation(
+    _request(
+      PostgrestTableOperation.update,
+    ).copyWith(payload: values as Object),
+  );
 
   /// Perform a DELETE on the table or view.
   ///
@@ -208,7 +230,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// await client.table(Books.table).delete().where(Books.id.eq(1));
   /// ```
   PostgrestTypedFilterBuilder<Row, void> delete() =>
-      PostgrestTypedFilterBuilder._(_queryBuilder.delete(), table.rowFromJson);
+      _mutation(_request(PostgrestTableOperation.delete));
 
   /// Only performs a count query on the table or view.
   ///
@@ -218,7 +240,12 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   PostgrestTypedFilterBuilder<Row, int> count([
     CountOption option = CountOption.exact,
   ]) => PostgrestTypedFilterBuilder._(
-    _queryBuilder.count(option),
+    _request(PostgrestTableOperation.count).copyWith(
+      countOption: option,
+      shape: PostgrestResultShape.none,
+    ),
+    _executor,
+    (result) => result.count!,
     table.rowFromJson,
   );
 }
