@@ -208,6 +208,7 @@ class OAuthClient {
     required this.tokenEndpointAuthenticationMethod,
     required this.registrationType,
     this.clientUri,
+    this.logoUri,
     required this.redirectUris,
     required this.grantTypes,
     required this.responseTypes,
@@ -228,6 +229,7 @@ class OAuthClient {
         json['registration_type'] as String,
       ),
       clientUri: json['client_uri'] as String?,
+      logoUri: json['logo_uri'] as String?,
       redirectUris: (json['redirect_uris'] as List).cast(),
       grantTypes: (json['grant_types'] as List)
           .map(
@@ -270,6 +272,9 @@ class OAuthClient {
   /// URI of the OAuth client
   final String? clientUri;
 
+  /// URI of the OAuth client's logo
+  final String? logoUri;
+
   /// Array of allowed redirect URIs
   final List<String> redirectUris;
 
@@ -295,6 +300,7 @@ class CreateOAuthClientOptions {
   const CreateOAuthClientOptions({
     required this.clientName,
     this.clientUri,
+    this.logoUri,
     required this.redirectUris,
     this.grantTypes,
     this.responseTypes,
@@ -306,6 +312,9 @@ class CreateOAuthClientOptions {
 
   /// URI of the OAuth client
   final String? clientUri;
+
+  /// URI of the OAuth client's logo
+  final String? logoUri;
 
   /// Array of allowed redirect URIs
   final List<String> redirectUris;
@@ -324,6 +333,7 @@ class CreateOAuthClientOptions {
     return {
       'client_name': clientName,
       'client_uri': ?clientUri,
+      'logo_uri': ?logoUri,
       'redirect_uris': redirectUris,
       'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
       'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
@@ -338,6 +348,7 @@ class UpdateOAuthClientOptions {
   const UpdateOAuthClientOptions({
     this.clientName,
     this.clientUri,
+    this.logoUri,
     this.redirectUris,
     this.grantTypes,
     this.responseTypes,
@@ -349,6 +360,9 @@ class UpdateOAuthClientOptions {
 
   /// URI of the OAuth client
   final String? clientUri;
+
+  /// URI of the OAuth client's logo
+  final String? logoUri;
 
   /// Array of allowed redirect URIs
   final List<String>? redirectUris;
@@ -366,6 +380,7 @@ class UpdateOAuthClientOptions {
     return {
       'client_name': ?clientName,
       'client_uri': ?clientUri,
+      'logo_uri': ?logoUri,
       'redirect_uris': ?redirectUris,
       'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
       'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
