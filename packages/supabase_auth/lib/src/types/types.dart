@@ -202,7 +202,7 @@ enum OAuthClientRegistrationType {
 class OAuthClient {
   const OAuthClient({
     required this.clientId,
-    required this.clientName,
+    this.clientName,
     this.clientSecret,
     required this.clientType,
     required this.tokenEndpointAuthenticationMethod,
@@ -219,7 +219,7 @@ class OAuthClient {
   factory OAuthClient.fromJson(Map<String, dynamic> json) {
     return OAuthClient(
       clientId: json['client_id'] as String,
-      clientName: json['client_name'] as String,
+      clientName: json['client_name'] as String?,
       clientSecret: json['client_secret'] as String?,
       clientType: OAuthClientType.fromValue(json['client_type'] as String),
       tokenEndpointAuthenticationMethod:
@@ -252,8 +252,8 @@ class OAuthClient {
   /// Unique identifier for the OAuth client
   final String clientId;
 
-  /// Human-readable name of the OAuth client
-  final String clientName;
+  /// Human-readable name of the OAuth client, if it has one
+  final String? clientName;
 
   /// Client secret (only returned on registration and regeneration)
   final String? clientSecret;

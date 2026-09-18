@@ -220,6 +220,23 @@ final OAuthAuthorizingUser user = details.user;
 `OAuthAuthorizingUser` carries `id` and `email`, which keep their names, so code that only reads
 those needs no change.
 
+### `OAuthClient.clientName` is nullable
+
+A client name is optional in Auth, and a client registered without one comes back with no
+`client_name` at all, so `OAuthClient.clientName` is a `String?`.
+
+```dart
+// Before
+final String name = client.clientName;
+
+// After
+final String name = client.clientName ?? client.clientId;
+```
+
+`CreateOAuthClientOptions.clientName` is still required, so clients you create through
+`admin.oauth.createClient` always have one. Clients that register themselves through the dynamic
+client registration API, where the name is optional, may not.
+
 ### `User.appMetadata` is an `AppMetadata` and `userMetadata` is never null
 
 `User.appMetadata` changes from a `Map<String, dynamic>` to an `AppMetadata` value object with
