@@ -31,7 +31,7 @@ explicitly:
 - [`User.userMetadata` is never null](#userappmetadata-is-an-appmetadata-and-usermetadata-is-never-null),
   so a null check on it is dead code that the analyzer only warns about
 - [`SupabaseClient` builds its own default HTTP client](#supabaseclient-builds-its-own-default-http-client),
-  so a client installed with `runWithClient` is no longer picked up
+  so on `dart:io` platforms a client installed with `runWithClient` is no longer picked up
 
 ### The client packages are renamed
 
@@ -1668,9 +1668,10 @@ as its headers should stay fixed.
 
 On `dart:io` platforms a `SupabaseClient` created without an `httpClient` now builds an `IOClient`
 that keeps idle connections open for 60 seconds instead of the 15 seconds `dart:io` defaults to, so
-a request after a pause in traffic reuses a connection instead of opening a new one. Because the
-client is built directly, it no longer goes through the `Client()` factory of `package:http`, and a
-client installed with `runWithClient` is not picked up. Pass it as `httpClient` instead:
+a request after a pause in traffic reuses a connection instead of opening a new one. Because that
+client is built directly, it no longer goes through the `Client()` factory of `package:http`, so a
+client installed with `runWithClient` is not picked up there. The web build still goes through the
+factory. Pass the client as `httpClient` instead, which every platform honors:
 
 ```dart
 // Before

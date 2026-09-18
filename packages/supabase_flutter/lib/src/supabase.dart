@@ -60,7 +60,10 @@ class Supabase {
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
-  /// Custom http client can be used by passing [httpClient] parameter.
+  /// Custom http client can be used by passing [httpClient] parameter. Without
+  /// one the client creates its own transport, which on `dart:io` platforms
+  /// keeps idle connections open for 60 seconds, and closes it when the client
+  /// is disposed.
   ///
   /// Pass [jsonCodec] to encode and decode the JSON of the rest and functions
   /// clients some other way, for example through a native parser. A codec

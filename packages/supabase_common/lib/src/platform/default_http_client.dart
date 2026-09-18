@@ -4,7 +4,8 @@
 // open for [defaultHttpIdleTimeout]. On web the browser owns the connections,
 // so it is the plain default `Client`.
 export 'default_http_client_stub.dart'
-    if (dart.library.io) 'default_http_client_io.dart';
+    if (dart.library.io) 'default_http_client_io.dart'
+    show createDefaultHttpClient;
 
 /// How long the default transport keeps an idle connection open on `dart:io`
 /// platforms before closing it.

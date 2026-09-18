@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:http/http.dart';
 import 'package:http/io_client.dart';
+import 'package:meta/meta.dart';
 
 import 'default_http_client.dart';
 
 /// The `dart:io` client behind [createDefaultHttpClient], with its idle
 /// timeout raised to [defaultHttpIdleTimeout].
+@visibleForTesting
 HttpClient createDefaultIoHttpClient() =>
     HttpClient()..idleTimeout = defaultHttpIdleTimeout;
 

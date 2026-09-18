@@ -3,8 +3,6 @@ library;
 
 import 'package:http/io_client.dart';
 import 'package:supabase_common/src/platform/default_http_client_io.dart';
-import 'package:supabase_common/supabase_common.dart'
-    hide createDefaultHttpClient;
 import 'package:test/test.dart';
 
 void main() {
@@ -12,8 +10,7 @@ void main() {
     final httpClient = createDefaultIoHttpClient();
     addTearDown(httpClient.close);
 
-    expect(httpClient.idleTimeout, defaultHttpIdleTimeout);
-    expect(defaultHttpIdleTimeout, const Duration(seconds: 60));
+    expect(httpClient.idleTimeout, const Duration(seconds: 60));
   });
 
   test('the default transport is an io client', () {
