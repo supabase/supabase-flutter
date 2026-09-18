@@ -120,7 +120,12 @@ class PostgrestTable$ {
         PostgrestTableRow,
         PostgrestTableInsert,
         PostgrestTableUpdate
-      >('postgrest_table', PostgrestTableRow.new);
+      >(
+        'postgrest_table',
+        PostgrestTableRow.new,
+        primaryKey: [quoteNameTail, days],
+        relations: [mapByMood, mapByDays],
+      );
 
   static const quoteNameTail = PostgrestColumn<PostgrestTableRow, String>(
     'quote\'name\u{2029}tail',
@@ -138,11 +143,17 @@ class PostgrestTable$ {
   /// The `map` row referenced by `mood`.
   static const mapByMood = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
     'map!postgrest_table_mood_fkey',
+    columns: [mood],
+    referencedTable: 'map',
+    referencedColumns: [Map$.list],
   );
 
   /// The `map` row referenced by `days`.
   static const mapByDays = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
     'map!postgrest_table_days_fkey',
+    columns: [days],
+    referencedTable: 'map',
+    referencedColumns: [Map$.list],
   );
 }
 
@@ -252,6 +263,8 @@ class Map$ {
   static const table = PostgrestTable<MapRow, MapInsert, MapUpdate>(
     'map',
     MapRow.new,
+    primaryKey: [],
+    relations: [postgrestTableViaMood, postgrestTableViaDays],
   );
 
   static const list = PostgrestColumn<MapRow, int>('list');
@@ -275,12 +288,18 @@ class Map$ {
   static const postgrestTableViaMood =
       PostgrestToManyRelation<MapRow, PostgrestTableRow>(
         'postgrest_table!postgrest_table_mood_fkey',
+        columns: [list],
+        referencedTable: 'postgrest_table',
+        referencedColumns: [PostgrestTable$.mood],
       );
 
   /// The `postgrest_table` row referencing this row through `days`.
   static const postgrestTableViaDays =
       PostgrestToOneRelation<MapRow, PostgrestTableRow>(
         'postgrest_table!postgrest_table_days_fkey',
+        columns: [list],
+        referencedTable: 'postgrest_table',
+        referencedColumns: [PostgrestTable$.days],
       );
 }
 

@@ -51,6 +51,8 @@ class AuthorStats {
   static const table = PostgrestTable<AuthorStatsRow, Never, Never>(
     'author_stats',
     AuthorStatsRow.new,
+    primaryKey: [],
+    relations: [authors],
   );
 
   static const authorId = PostgrestNullableColumn<AuthorStatsRow, int>(
@@ -63,6 +65,9 @@ class AuthorStats {
   /// The `authors` row referenced by `author_id`.
   static const authors = PostgrestToOneRelation<AuthorStatsRow, AuthorsRow>(
     'authors',
+    columns: [authorId],
+    referencedTable: 'authors',
+    referencedColumns: [Authors.id],
   );
 }
 
@@ -101,17 +106,29 @@ class Authors {
   static const table = PostgrestTable<AuthorsRow, AuthorsInsert, AuthorsUpdate>(
     'authors',
     AuthorsRow.new,
+    primaryKey: [id],
+    relations: [books, authorStats],
   );
 
   static const id = PostgrestColumn<AuthorsRow, int>('id');
   static const name = PostgrestColumn<AuthorsRow, String>('name');
 
   /// The `books` rows referencing this row through `author_id`.
-  static const books = PostgrestToManyRelation<AuthorsRow, BooksRow>('books');
+  static const books = PostgrestToManyRelation<AuthorsRow, BooksRow>(
+    'books',
+    columns: [id],
+    referencedTable: 'books',
+    referencedColumns: [Books.authorId],
+  );
 
   /// The `author_stats` rows referencing this row through `author_id`.
   static const authorStats =
-      PostgrestToManyRelation<AuthorsRow, AuthorStatsRow>('author_stats');
+      PostgrestToManyRelation<AuthorsRow, AuthorStatsRow>(
+        'author_stats',
+        columns: [id],
+        referencedTable: 'author_stats',
+        referencedColumns: [AuthorStats.authorId],
+      );
 }
 
 /// A row of the `book_prices` table.
@@ -182,6 +199,7 @@ class BookPrices {
       PostgrestTable<BookPricesRow, BookPricesInsert, BookPricesUpdate>(
         'book_prices',
         BookPricesRow.new,
+        primaryKey: [],
       );
 
   static const discountedPrice = PostgrestNullableColumn<BookPricesRow, num>(
@@ -232,6 +250,7 @@ class BookSubmissions {
       PostgrestTable<BookSubmissionsRow, BookSubmissionsInsert, Never>(
         'book_submissions',
         BookSubmissionsRow.new,
+        primaryKey: [],
       );
 
   static const authorName = PostgrestNullableColumn<BookSubmissionsRow, String>(
@@ -262,6 +281,7 @@ class BookSummaries {
   static const table = PostgrestTable<BookSummariesRow, Never, Never>(
     'book_summaries',
     BookSummariesRow.new,
+    primaryKey: [],
   );
 
   static const authorName = PostgrestNullableColumn<BookSummariesRow, String>(
@@ -480,6 +500,8 @@ class Books {
   static const table = PostgrestTable<BooksRow, BooksInsert, BooksUpdate>(
     'books',
     BooksRow.new,
+    primaryKey: [id],
+    relations: [authors],
   );
 
   static const authorId = PostgrestColumn<BooksRow, int>('author_id');
@@ -508,6 +530,9 @@ class Books {
   /// The `authors` row referenced by `author_id`.
   static const authors = PostgrestToOneRelation<BooksRow, AuthorsRow>(
     'authors',
+    columns: [authorId],
+    referencedTable: 'authors',
+    referencedColumns: [Authors.id],
   );
 }
 

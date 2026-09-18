@@ -14,6 +14,7 @@ const SchemaDescription hostileSchema = SchemaDescription(
     TableDescription(
       name: 'postgrest_table',
       comment: 'first\rsecond\u2028third \$interpolation "quoted"',
+      primaryKey: ["quote'name tail", 'days'],
       columns: [
         ColumnDescription(
           name: "quote'name tail",
