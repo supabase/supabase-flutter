@@ -108,8 +108,9 @@ final class PostgrestExplainOptions {
 /// [PostgrestTableExecutor].
 ///
 /// The value is immutable: every builder method returns a copy through
-/// [copyWith]. [HttpTableExecutor] renders it into the PostgREST request the
-/// untyped builders would have sent; another executor can run it anywhere
+/// [copyWith]. [PostgrestHttpTableExecutor] renders it into the PostgREST
+/// request the untyped builders would have sent; another executor can run it
+/// anywhere
 /// else, against a local store for example, because the filters, orderings
 /// and payload are still structured values rather than URL text.
 @experimental
@@ -215,6 +216,9 @@ final class PostgrestTableRequest {
 
   /// A copy with the given fields replaced.
   PostgrestTableRequest copyWith({
+    PostgrestTable<Object?, Object?, Object?>? table,
+    PostgrestTableOperation? operation,
+    String? schema,
     List<PostgrestColumnExpression<Object?, Object>>? columns,
     PostgrestFilter<Object?>? filter,
     List<PostgrestOrdering<Object?>>? orderings,
@@ -232,9 +236,9 @@ final class PostgrestTableRequest {
     bool? dryRun,
     PostgrestExplainOptions? explainOptions,
   }) => PostgrestTableRequest(
-    table: table,
-    operation: operation,
-    schema: schema,
+    table: table ?? this.table,
+    operation: operation ?? this.operation,
+    schema: schema ?? this.schema,
     columns: columns ?? this.columns,
     filter: filter ?? this.filter,
     orderings: orderings ?? this.orderings,

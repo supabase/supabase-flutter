@@ -1,3 +1,6 @@
+// The plugin seam is @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -84,6 +87,10 @@ class Supabase {
   /// Set [AuthClientOptions.authFlowType] on [authOptions] to
   /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
+  ///
+  /// [plugins] extend the client from the outside, see
+  /// [SupabaseClientPlugin]. Each plugin is resumed when the app returns to
+  /// the foreground and disposed together with the client.
   ///
   /// All Supabase packages log through `package:logging` using loggers under
   /// the `supabase` hierarchy (for example `supabase.auth` or
@@ -335,8 +342,15 @@ class Supabase {
 
     if (captured == AppLifecycleState.resumed) {
       for (final plugin in currentClient.plugins) {
-        await plugin.resume();
-        if (_targetLifecycleState != AppLifecycleState.resumed) return;
+        unawaited(
+          plugin.resume().catchError((Object error, StackTrace stackTrace) {
+            flutterLogger.warning(
+              'Plugin ${plugin.runtimeType} failed to resume',
+              error,
+              stackTrace,
+            );
+          }),
+        );
       }
 
       // No channels subscribed — nothing to reconnect.

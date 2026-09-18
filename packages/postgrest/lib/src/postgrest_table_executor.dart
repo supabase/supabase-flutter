@@ -2,8 +2,8 @@ part of 'postgrest_typed_builder.dart';
 
 /// Runs the requests of the typed table API.
 ///
-/// [PostgrestClient.table] uses an [HttpTableExecutor] unless another one is
-/// given. An executor that decorates another, to cache, queue or log
+/// [PostgrestClient.table] uses a [PostgrestHttpTableExecutor] unless another
+/// one is given. An executor that decorates another, to cache, queue or log
 /// requests, holds the inner executor and forwards to it:
 ///
 /// ```dart
@@ -30,8 +30,8 @@ abstract interface class PostgrestTableExecutor {
 /// parameters and headers on the wire are the ones [PostgrestClient.from]
 /// would have produced for the same query.
 @experimental
-final class HttpTableExecutor implements PostgrestTableExecutor {
-  const HttpTableExecutor(this.client);
+final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
+  const PostgrestHttpTableExecutor(this.client);
 
   /// The client whose transport, headers and options the request uses.
   final PostgrestClient client;
