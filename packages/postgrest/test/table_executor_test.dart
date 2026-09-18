@@ -43,13 +43,21 @@ class RecordingExecutor implements PostgrestTableExecutor {
   final PostgrestTableResult result;
   final requests = <PostgrestTableRequest>[];
 
-  PostgrestTableRequest get request => requests.single;
+  PostgrestTableRequest get onlyRequest => requests.single;
 
   @override
   Future<PostgrestTableResult> execute(PostgrestTableRequest request) async {
     requests.add(request);
     return result;
   }
+}
+
+class _FailingExecutor implements PostgrestTableExecutor {
+  const _FailingExecutor();
+
+  @override
+  Future<PostgrestTableResult> execute(PostgrestTableRequest request) async =>
+      throw StateError('offline');
 }
 
 void main() {
@@ -84,7 +92,7 @@ void main() {
             .order(Books.title.desc())
             .range(10, 19);
 
-        final request = executor.request;
+        final request = executor.onlyRequest;
         expect(request.table.name, 'books');
         expect(request.schema, isNull);
         expect(request.operation, PostgrestTableOperation.select);
@@ -115,7 +123,7 @@ void main() {
           .table(Books.table, executor: executor)
           .select();
 
-      expect(executor.request.schema, 'library');
+      expect(executor.onlyRequest.schema, 'library');
     });
 
     test('an embedded limit is kept apart from the table page', () async {
@@ -129,7 +137,7 @@ void main() {
           .limit(5)
           .limit(2, referencedTable: 'authors');
 
-      final request = executor.request;
+      final request = executor.onlyRequest;
       expect(request.limit, 5);
       expect(request.embeddedPages.single.referencedTable, 'authors');
       expect(request.embeddedPages.single.limit, 2);
@@ -145,7 +153,7 @@ void main() {
           .select()
           .single();
 
-      expect(executor.request.shape, PostgrestResultShape.single);
+      expect(executor.onlyRequest.shape, PostgrestResultShape.single);
       expect(book.title, 'a');
     });
 
@@ -157,8 +165,8 @@ void main() {
           .select()
           .maybeSingle();
 
-      expect(executor.request.shape, PostgrestResultShape.maybeSingle);
-      expect(book, isNull);
+      expect(executor.onlyRequest.shape, PostgrestResultShape.maybeSingle);
+      expect(book == null, isTrue);
     });
 
     test('a mutation carries its payload and asks nothing back', () async {
@@ -169,7 +177,7 @@ void main() {
           .update(BookUpdate(title: 'b'))
           .where(Books.id.eq(1));
 
-      final request = executor.request;
+      final request = executor.onlyRequest;
       expect(request.operation, PostgrestTableOperation.update);
       expect(request.payload, {'title': 'b'});
       expect(request.shape, PostgrestResultShape.none);
@@ -186,7 +194,7 @@ void main() {
           .insertAll([BookInsert(title: 'a'), BookInsert(title: 'b')])
           .select([Books.id]);
 
-      final request = executor.request;
+      final request = executor.onlyRequest;
       expect(request.operation, PostgrestTableOperation.insert);
       expect(request.payload, [
         {'title': 'a'},
@@ -209,7 +217,7 @@ void main() {
             defaultToNull: false,
           );
 
-      final request = executor.request;
+      final request = executor.onlyRequest;
       expect(request.operation, PostgrestTableOperation.upsert);
       expect(request.onConflict!.single.name, 'title');
       expect(request.ignoreDuplicates, isTrue);
@@ -225,8 +233,8 @@ void main() {
           .table(Books.table, executor: executor)
           .count(CountOption.estimated);
 
-      expect(executor.request.operation, PostgrestTableOperation.count);
-      expect(executor.request.countOption, CountOption.estimated);
+      expect(executor.onlyRequest.operation, PostgrestTableOperation.count);
+      expect(executor.onlyRequest.countOption, CountOption.estimated);
       expect(count, 7);
     });
 
@@ -240,7 +248,7 @@ void main() {
           .select()
           .count();
 
-      expect(executor.request.countOption, CountOption.exact);
+      expect(executor.onlyRequest.countOption, CountOption.exact);
       expect(response.count, 12);
       expect(response.data.map((book) => book.id), [1, 2]);
     });
@@ -271,6 +279,15 @@ void main() {
       );
     });
 
+    test('asStream forwards an executor failure', () async {
+      final stream = client
+          .table(Books.table, executor: const _FailingExecutor())
+          .select()
+          .asStream();
+
+      await expectLater(stream, emitsError(isA<StateError>()));
+    });
+
     test('a builder is a value: reuse does not leak steps', () async {
       final executor = RecordingExecutor(
         const PostgrestTableResult(data: <Map<String, dynamic>>[]),
@@ -287,7 +304,7 @@ void main() {
     });
   });
 
-  group('HttpTableExecutor', () {
+  group('PostgrestHttpTableExecutor', () {
     test('sends what the untyped builder sends for the same query', () async {
       await client
           .table(Books.table)

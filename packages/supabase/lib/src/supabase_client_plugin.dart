@@ -37,9 +37,14 @@ abstract class SupabaseClientPlugin {
 
   /// Called when the host application returns to the foreground, for
   /// example on `AppLifecycleState.resumed` in Flutter.
+  ///
+  /// The host does not wait for the returned future, so a long running
+  /// reaction, a synchronization for example, does not delay anything else
+  /// the host does on resume. An error the future completes with is logged.
   Future<void> resume() async {}
 
   /// Called from [SupabaseClient.dispose] before the service clients are
-  /// disposed.
+  /// disposed. An error thrown here is logged and does not stop the other
+  /// plugins or the client from being disposed.
   Future<void> dispose() async {}
 }

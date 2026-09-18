@@ -12,6 +12,7 @@ class CountingPlugin extends SupabaseClientPlugin {
   SupabaseClient? attachedClient;
   int resumes = 0;
   int disposals = 0;
+  bool failNextResume = false;
 
   @override
   void attach(SupabaseClient client) {
@@ -21,6 +22,10 @@ class CountingPlugin extends SupabaseClientPlugin {
   @override
   Future<void> resume() async {
     resumes++;
+    if (failNextResume) {
+      failNextResume = false;
+      throw StateError('resume failed');
+    }
   }
 
   @override
@@ -74,6 +79,15 @@ void main() {
     await cycleToResumed();
 
     expect(plugin.resumes, 1);
+  });
+
+  test('a failing resume is logged and later resumes still run', () async {
+    plugin.failNextResume = true;
+
+    await cycleToResumed();
+    await cycleToResumed();
+
+    expect(plugin.resumes, 2);
   });
 
   test('dispose runs the plugin and stops resume events', () async {

@@ -859,10 +859,10 @@ features:
       - PostgrestTableResult.count
       - PostgrestTableExecutor
       - PostgrestTableExecutor.execute
-      - HttpTableExecutor
-      - HttpTableExecutor.HttpTableExecutor
-      - HttpTableExecutor.client
-      - HttpTableExecutor.execute
+      - PostgrestHttpTableExecutor
+      - PostgrestHttpTableExecutor.PostgrestHttpTableExecutor
+      - PostgrestHttpTableExecutor.client
+      - PostgrestHttpTableExecutor.execute
       - PostgrestColumnExpression
       - PostgrestColumnExpression.expression
       - PostgrestColumnExpression.toString

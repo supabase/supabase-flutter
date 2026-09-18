@@ -56,6 +56,10 @@ import 'trace_http_client.dart';
 /// parser. A codec passed here is owned by the caller, so [dispose] leaves it
 /// alone, and it can be shared with other clients.
 ///
+/// [plugins] extend the client from the outside, see [SupabaseClientPlugin].
+/// They wrap the executor the typed table API runs through, in the order
+/// given, and are disposed together with the client.
+///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `asyncStorage` field of [authOptions].
 /// Pass a persistent implementation whenever the flow can leave the process
@@ -362,7 +366,15 @@ class SupabaseClient {
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
     for (final plugin in plugins.reversed) {
-      await plugin.dispose();
+      try {
+        await plugin.dispose();
+      } catch (error, stackTrace) {
+        clientLogger.warning(
+          'Plugin ${plugin.runtimeType} failed to dispose',
+          error,
+          stackTrace,
+        );
+      }
     }
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
@@ -514,5 +526,5 @@ class _RestTableExecutor implements PostgrestTableExecutor {
 
   @override
   Future<PostgrestTableResult> execute(PostgrestTableRequest request) =>
-      HttpTableExecutor(_client._rest).execute(request);
+      PostgrestHttpTableExecutor(_client._rest).execute(request);
 }

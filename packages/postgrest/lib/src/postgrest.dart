@@ -166,7 +166,7 @@ class PostgrestClient {
   ///
   /// The builder collects a [PostgrestTableRequest] and hands it to
   /// [executor] when awaited; without one the request is sent to PostgREST
-  /// through this client by an [HttpTableExecutor].
+  /// through this client by a [PostgrestHttpTableExecutor].
   @experimental
   PostgrestTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
     PostgrestTable<Row, Insert, Update> table, {
@@ -175,7 +175,7 @@ class PostgrestClient {
     final schema = _schemaIsExplicit ? _schema : (table.schema ?? _schema);
     return PostgrestTypedQueryBuilder(
       table,
-      executor: executor ?? HttpTableExecutor(this),
+      executor: executor ?? PostgrestHttpTableExecutor(this),
       schema: schema,
     );
   }
