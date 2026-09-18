@@ -47,6 +47,46 @@ The docs can be found on the official Supabase website.
 - [Dart reference](https://supabase.com/docs/reference/dart/introduction)
 - [Supabase docs](https://supabase.com/docs)
 
+## Server-side usage
+
+Create one `SupabaseClient` when the process starts and reuse it for as long as the process lives.
+The client keeps a pool of HTTP connections, and a request on a warm connection skips the TCP
+handshake and, over HTTPS, the TLS handshake, which on a server talking to a remote Supabase
+project take longer than the request itself. A client created per request throws that pool away
+every time.
+
+To act on behalf of the user of an incoming request, keep the shared client and pass the access
+token of that request as the `Authorization` header of the call. The client only adds its own
+`Authorization` header when the request has none:
+
+```dart
+final todos = await supabase
+    .from('todos')
+    .select()
+    .setHeader('Authorization', 'Bearer $userAccessToken');
+```
+
+Storage and functions calls accept a header the same way, through `setHeader()` on a bucket and
+the `headers` parameter of `invoke()`.
+
+The transport a `SupabaseClient` creates for itself closes a connection that has been unused for
+60 seconds, which is below the point where the Supabase gateway closes it from its side. Open
+connections keep a Dart program alive until then, so call `dispose()` when the process shuts down.
+
+If you do need more than one `SupabaseClient`, pass the same `http.Client` to each of them so they
+share one pool. Disposing a `SupabaseClient` leaves a client you passed in open, so close it
+yourself at shutdown. `dart:io` defaults to a 15 second idle timeout, so raise it:
+
+```dart
+import 'dart:io';
+
+import 'package:http/io_client.dart';
+
+final httpClient = IOClient(
+  HttpClient()..idleTimeout = const Duration(seconds: 60),
+);
+```
+
 ## License
 
 This repo is licensed under MIT.
