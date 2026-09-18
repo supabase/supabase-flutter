@@ -282,6 +282,7 @@ class _Users {
   static const table = PostgrestTable<_User, Never, Never>(
     'users',
     _User.new,
+    primaryKey: [username],
   );
   static const username = PostgrestColumn<_User, String>('username');
   static const status = PostgrestColumn<_User, String>('status');

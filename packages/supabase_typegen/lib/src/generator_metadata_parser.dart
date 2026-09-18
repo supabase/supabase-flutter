@@ -74,7 +74,7 @@ ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
 /// semantically sorted collections produced by `sortGeneratorMetadata`:
 /// `tables`, `foreignTables`, `views`, `materializedViews`, `columns`,
 /// `primaryKeys`, `relationships`, `functions` and `types`. Collections and
-/// fields the generator does not need, such as `primaryKeys`, are ignored.
+/// fields the generator does not need, such as `functions`, are ignored.
 ///
 /// Tables and foreign tables are always insertable and updatable. Views use
 /// the `is_insert_enabled` and `is_update_enabled` flags, falling back to
@@ -147,6 +147,7 @@ SchemaDescription _parseGeneratorMetadata(
   }
 
   final foreignKeysByColumn = _foreignKeysByColumn(document, schemaName);
+  final primaryKeysByTable = _primaryKeysByTable(document, schemaName);
   final enumTypes = _enumTypes(document);
 
   final tables = <TableDescription>[];
@@ -219,6 +220,7 @@ SchemaDescription _parseGeneratorMetadata(
         name: relationName,
         comment: relation['comment'] as String?,
         columns: columns,
+        primaryKey: primaryKeysByTable[relationName] ?? const [],
         isInsertable: isInsertable,
         isUpdatable: isUpdatable,
       ),
@@ -276,6 +278,24 @@ List<RelationshipDescription> _relationships(
         isOneToOne: relationship['is_one_to_one'] as bool? ?? false,
       ),
 ];
+
+/// Maps each table of [schemaName] to the names of its primary key columns,
+/// in the order the document lists them, which is key order.
+Map<String, List<String>> _primaryKeysByTable(
+  Map<String, dynamic> document,
+  String schemaName,
+) {
+  final primaryKeys = <String, List<String>>{};
+  for (final primaryKey
+      in (document['primaryKeys'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()) {
+    if (primaryKey['schema'] != schemaName) continue;
+    primaryKeys
+        .putIfAbsent(primaryKey['table_name'] as String, () => [])
+        .add(primaryKey['name'] as String);
+  }
+  return primaryKeys;
+}
 
 /// Maps `(table, column)` pairs of [schemaName] to their foreign key targets,
 /// pairing the source and referenced columns of each relationship by index.

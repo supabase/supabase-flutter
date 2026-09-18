@@ -106,6 +106,7 @@ class TableDescription {
   const TableDescription({
     required this.name,
     required this.columns,
+    this.primaryKey = const [],
     this.comment,
     this.isInsertable = true,
     this.isUpdatable = true,
@@ -119,6 +120,10 @@ class TableDescription {
 
   /// Columns of the table, in database order.
   final List<ColumnDescription> columns;
+
+  /// The names of the primary key columns in key order; empty for a view
+  /// or a table without one.
+  final List<String> primaryKey;
 
   /// Whether rows can be inserted through the relation. Tables and foreign
   /// tables always are; views only when the database reports that INSERT

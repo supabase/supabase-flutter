@@ -807,6 +807,8 @@ features:
       - PostgrestTable.PostgrestTable
       - PostgrestTable.name
       - PostgrestTable.rowFromJson
+      - PostgrestTable.primaryKey
+      - PostgrestTable.relations
       - RowConverter
       - PostgrestColumnExpression
       - PostgrestColumnExpression.expression
@@ -1202,10 +1204,14 @@ features:
     supporting_symbols:
       - PostgrestToOneRelation
       - PostgrestToOneRelation.PostgrestToOneRelation
-      - PostgrestToOneRelation.name
+      - PostgrestRelation
+      - PostgrestRelation.PostgrestRelation
+      - PostgrestRelation.name
+      - PostgrestRelation.columns
+      - PostgrestRelation.referencedTable
+      - PostgrestRelation.referencedColumns
       - PostgrestToManyRelation
       - PostgrestToManyRelation.PostgrestToManyRelation
-      - PostgrestToManyRelation.name
       - PostgrestToOneColumn
       - PostgrestToOneColumn.jsonText
       - PostgrestToOneColumn.jsonObject

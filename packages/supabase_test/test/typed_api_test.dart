@@ -28,6 +28,7 @@ class Todos {
   static const table = PostgrestTable<Todo, TodoInsert, TodoUpdate>(
     'todos',
     Todo.new,
+    primaryKey: [id],
   );
   static const id = PostgrestColumn<Todo, int>('id');
   static const task = PostgrestColumn<Todo, String>('task');

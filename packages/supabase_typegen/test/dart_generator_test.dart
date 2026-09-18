@@ -98,15 +98,44 @@ void main() {
       compact,
       contains(
         "staticconstauthors=PostgrestToOneRelation<BooksRow,AuthorsRow>"
-        "('authors'",
+        "('authors',columns:[authorId],referencedTable:'authors',"
+        "referencedColumns:[Authors.id],);",
       ),
     );
     expect(
       compact,
       contains(
-        "staticconstbooks=PostgrestToManyRelation<AuthorsRow,BooksRow>('books'",
+        "staticconstbooks=PostgrestToManyRelation<AuthorsRow,BooksRow>('books',"
+        "columns:[id],referencedTable:'books',"
+        "referencedColumns:[Books.authorId],);",
       ),
     );
+  });
+
+  test('the table definition lists its primary key and relations', () {
+    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconsttable=PostgrestTable<BooksRow,BooksInsert,BooksUpdate>("
+        "'books',BooksRow.new,primaryKey:[id],relations:[authors],);",
+      ),
+    );
+  });
+
+  test('a view has an empty primary key and a sanitized key keeps its '
+      'column constant', () {
+    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
+    final hostile = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains("('author_stats',AuthorStatsRow.new,primaryKey:[],"),
+    );
+    expect(hostile, contains('primaryKey:[quoteNameTail,days]'));
   });
 
   test('relation members are disambiguated by hint and column', () {

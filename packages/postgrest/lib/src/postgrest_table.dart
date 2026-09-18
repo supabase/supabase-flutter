@@ -29,6 +29,7 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 ///   static const table = PostgrestTable<Book, BookInsert, BookUpdate>(
 ///     'books',
 ///     Book.new,
+///     primaryKey: [id],
 ///   );
 ///   static const id = PostgrestColumn<Book, int>('id');
 ///   static const title = PostgrestColumn<Book, String>('title');
@@ -54,15 +55,31 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 /// row representation since they carry no conversion cost and tolerate
 /// partial selects, but any converter works, for example `Book.fromJson` on a
 /// regular data class. `package:supabase_typegen` generates all three types
-/// and the table definition from the database schema.
+/// and the table definition, including [primaryKey] and [relations], from the
+/// database schema.
 @experimental
 // ignore: avoid-unused-generics
 class PostgrestTable<Row, Insert, Update> {
-  const PostgrestTable(this.name, this.rowFromJson);
+  const PostgrestTable(
+    this.name,
+    this.rowFromJson, {
+    required this.primaryKey,
+    this.relations = const [],
+  });
 
   /// Name of the table in the database.
   final String name;
 
   /// Converts a decoded row into [Row].
   final RowConverter<Row> rowFromJson;
+
+  /// The columns that identify a row, in key order.
+  ///
+  /// Empty for a view or a table without a primary key, where nothing on
+  /// the client can tell two rows apart.
+  final List<PostgrestColumn<Row, Object>> primaryKey;
+
+  /// The foreign keys this table holds and the ones pointing at it, each as
+  /// the relation an embedded select addresses it by.
+  final List<PostgrestRelation<Row, Object?>> relations;
 }
