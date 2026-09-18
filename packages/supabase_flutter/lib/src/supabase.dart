@@ -103,6 +103,7 @@ class Supabase {
         const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
+    List<SupabaseClientPlugin> plugins = const [],
   }) async {
     if (_instance._isInitialized) {
       flutterLogger.info(
@@ -131,6 +132,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      plugins: plugins,
     );
 
     if (accessToken == null) {
@@ -267,6 +269,7 @@ class Supabase {
     required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
+    required List<SupabaseClientPlugin> plugins,
   }) {
     final headers = {
       ...SupabaseFlutterConstants.defaultHeaders,
@@ -284,6 +287,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      plugins: plugins,
     );
 
     // Close any previous realtime client that may still be connected due to
@@ -325,9 +329,16 @@ class Supabase {
   Future<void> _processLifecycle(AppLifecycleState captured) async {
     if (captured != _targetLifecycleState) return;
 
-    final realtime = Supabase.instance.client.realtime;
+    final currentClient = _client;
+    if (currentClient == null) return;
+    final realtime = currentClient.realtime;
 
     if (captured == AppLifecycleState.resumed) {
+      for (final plugin in currentClient.plugins) {
+        await plugin.resume();
+        if (_targetLifecycleState != AppLifecycleState.resumed) return;
+      }
+
       // No channels subscribed — nothing to reconnect.
       if (realtime.channels.isEmpty) return;
 
