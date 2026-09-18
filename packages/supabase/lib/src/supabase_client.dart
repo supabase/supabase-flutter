@@ -29,10 +29,9 @@ import 'trace_http_client.dart';
 /// Custom http client can be used by passing [httpClient] parameter. Without
 /// one the client creates its own transport, which on `dart:io` platforms
 /// keeps idle connections open for [defaultHttpIdleTimeout] so that a request
-/// after a pause in traffic still skips the connection handshake. Pass a
-/// shared [httpClient] when you create a client per request, for example on a
-/// server that scopes each client to the session of the incoming request, so
-/// that every client reuses the same connections.
+/// after a pause in traffic still skips the connection handshake. Create one
+/// client and reuse it for the life of the process. To act on behalf of a user
+/// from that client, set the `Authorization` header on the individual call.
 ///
 /// Set the `retryOptions` field of [storageOptions] to configure how an upload
 /// to Supabase storage that failed due to a network interruption is retried.
