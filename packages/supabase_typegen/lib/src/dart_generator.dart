@@ -303,14 +303,16 @@ List<_RelationMember> _relationMembers(
     if (relationship.sourceTable == relationship.targetTable) continue;
     final sourceColumns = _columnConstants(
       relationship.sourceColumns,
-      tableMembers[relationship.sourceTable]!,
+      relationship.sourceTable,
+      tableMembers[relationship.sourceTable]!.columnMembers,
+      keyDescription: 'the foreign key "${relationship.foreignKeyName}"',
     );
     final targetColumns = _columnConstants(
       relationship.targetColumns,
-      tableMembers[relationship.targetTable]!,
+      relationship.targetTable,
+      tableMembers[relationship.targetTable]!.columnMembers,
+      keyDescription: 'the foreign key "${relationship.foreignKeyName}"',
     );
-    // A key over a column the document does not list cannot be spelled out.
-    if (sourceColumns == null || targetColumns == null) continue;
     final columns = relationship.sourceColumns.join('_');
     // `By` names the key this table holds, `Via` the key the other table
     // holds.
@@ -383,20 +385,25 @@ List<_RelationMember> _relationMembers(
   return members;
 }
 
-/// The column constants of [columns] in [members], or `null` when one of
-/// them is not a column of the table.
-List<String>? _columnConstants(
+/// The column constants of [columns] in the namespace of [table].
+///
+/// A key over a column the document does not list for its table is a
+/// malformed document rather than something to generate around: dropping the
+/// column would silently change which rows the key identifies.
+List<String> _columnConstants(
   List<String> columns,
-  _TableMembers members,
-) {
-  final constants = <String>[];
-  for (final column in columns) {
-    final constant = members.columnMembers[column];
-    if (constant == null) return null;
-    constants.add(constant);
-  }
-  return constants;
-}
+  String table,
+  Map<String, String> columnNames, {
+  required String keyDescription,
+}) => [
+  for (final column in columns)
+    columnNames[column] ??
+        (throw FormatException(
+          'Not a GeneratorMetadata document: $keyDescription names the '
+          'column "$column", which the document does not list for the '
+          'table "$table".',
+        )),
+];
 
 void _writeTable(
   StringBuffer buffer,
@@ -586,9 +593,12 @@ void _writeNamespace(
       ),
   ];
 
-  final primaryKey = [
-    for (final column in table.primaryKey) ?columnNames[column],
-  ];
+  final primaryKey = _columnConstants(
+    table.primaryKey,
+    table.name,
+    columnNames,
+    keyDescription: 'the primary key',
+  );
   buffer
     ..writeln('/// Typed access to the `${table.name}` table.')
     ..writeln('class $namespaceType {')

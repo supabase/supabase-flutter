@@ -124,6 +124,43 @@ void main() {
     );
   });
 
+  test(
+    'a primary key over a column the document does not list is rejected',
+    () {
+      const malformed = SchemaDescription(
+        schemaName: 'public',
+        tables: [
+          TableDescription(
+            name: 'todos',
+            primaryKey: ['id', 'missing'],
+            columns: [
+              ColumnDescription(
+                name: 'id',
+                postgresFormat: 'int8',
+                typeKind: ColumnTypeKind.integer,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: [],
+      );
+
+      expect(
+        () => generateDartCode(malformed),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('primary key'), contains('"missing"')),
+          ),
+        ),
+      );
+    },
+  );
+
   test('a view has an empty primary key and a sanitized key keeps its '
       'column constant', () {
     final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
