@@ -1340,6 +1340,10 @@ class AuthClient {
     if (tokenType == null) {
       throw AuthException('No token_type detected.');
     }
+    final expiresInSeconds = int.tryParse(expiresIn);
+    if (expiresInSeconds == null) {
+      throw AuthException('Invalid expires_in detected.');
+    }
 
     final user = (await getUser(accessToken)).user;
     if (user == null) {
@@ -1350,7 +1354,7 @@ class AuthClient {
       providerToken: providerToken,
       providerRefreshToken: providerRefreshToken,
       accessToken: accessToken,
-      expiresIn: int.parse(expiresIn),
+      expiresIn: expiresInSeconds,
       refreshToken: refreshToken,
       tokenType: tokenType,
       user: user,
