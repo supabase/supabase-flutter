@@ -400,6 +400,23 @@ void main() {
     expect(code, isNot(contains('BookCorrectionsInsert')));
   });
 
+  test('enum names keep periods in the schema and type name apart', () {
+    final code = generateDartCode(
+      const DatabaseDescription(
+        schemaNames: ['public', 'tenant.v1'],
+        tables: [],
+        enums: [
+          EnumDescription(schema: 'tenant.v1', name: 'status', values: ['a']),
+          EnumDescription(schema: 'tenant', name: 'v1.status', values: ['b']),
+        ],
+      ),
+    );
+
+    expect(code, contains('/// Postgres enum `tenant.v1.status`.'));
+    expect(code, contains('enum TenantV1Status {'));
+    expect(code, contains('enum TenantV1Status\$ {'));
+  });
+
   test('encodes hostile schema names and import URIs in the header', () {
     final code = generateDartCode(
       DatabaseDescription(
@@ -442,7 +459,7 @@ void main() {
           ),
         ],
         enums: const [
-          EnumDescription(qualifiedName: 'public.string', values: ['a']),
+          EnumDescription(schema: 'public', name: 'string', values: ['a']),
         ],
       ),
     );

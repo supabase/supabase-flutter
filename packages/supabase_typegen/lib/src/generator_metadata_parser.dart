@@ -402,16 +402,16 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
   return foreignKeys;
 }
 
-/// Maps schema-qualified enum type names, for example `public.mood`, to
-/// their values in declaration order.
-Map<String, List<String>> _enumTypes(Map<String, dynamic> document) {
-  final enumTypes = <String, List<String>>{};
+/// Maps `(schema, name)` pairs of enum types to their values in declaration
+/// order.
+Map<(String, String), List<String>> _enumTypes(Map<String, dynamic> document) {
+  final enumTypes = <(String, String), List<String>>{};
   for (final type
       in (document['types'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()) {
     final values = (type['enums'] as List<dynamic>? ?? const []).cast<String>();
     if (values.isEmpty) continue;
-    enumTypes['${type['schema']}.${type['name']}'] = values;
+    enumTypes[(type['schema'] as String, type['name'] as String)] = values;
   }
   return enumTypes;
 }
@@ -423,11 +423,9 @@ EnumDescription _enumDescription(
   String format,
   String typeSchema,
   List<String> columnEnumValues,
-  Map<String, List<String>> enumTypes,
-) {
-  final qualifiedName = '$typeSchema.$format';
-  return EnumDescription(
-    qualifiedName: qualifiedName,
-    values: enumTypes[qualifiedName] ?? columnEnumValues,
-  );
-}
+  Map<(String, String), List<String>> enumTypes,
+) => EnumDescription(
+  schema: typeSchema,
+  name: format,
+  values: enumTypes[(typeSchema, format)] ?? columnEnumValues,
+);

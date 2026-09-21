@@ -183,7 +183,8 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
   ],
   enums: [
     EnumDescription(
-      qualifiedName: 'public.string',
+      schema: 'public',
+      name: 'string',
       values: ["it's \$a\u2028trap", 'plain'],
     ),
   ],

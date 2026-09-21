@@ -578,10 +578,49 @@ void main() {
       final mood = parsed.tables.single.columns.single;
       expect(mood.postgresFormat, 'internal.mood');
       final enumDescription = parsed.enums.single;
+      expect(enumDescription.schema, 'internal');
+      expect(enumDescription.name, 'mood');
       expect(enumDescription.qualifiedName, 'internal.mood');
       expect(enumDescription.values, ['up', 'down']);
     },
   );
+
+  test('keeps periods in enum schema and type names apart', () {
+    final parsed = parseGeneratorMetadata({
+      'version': 1,
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'reviews', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'reviews', name: 'status'),
+          'data_type': 'USER-DEFINED',
+          'format': 'v1.status',
+          'type_schema': 'tenant',
+          'enums': ['up', 'down'],
+        },
+      ],
+      'types': [
+        {
+          'id': 10,
+          'schema': 'tenant.v1',
+          'name': 'status',
+          'enums': ['happy', 'sad'],
+        },
+        {
+          'id': 11,
+          'schema': 'tenant',
+          'name': 'v1.status',
+          'enums': ['up', 'down'],
+        },
+      ],
+    });
+
+    final enumDescription = parsed.enums.single;
+    expect(enumDescription.schema, 'tenant');
+    expect(enumDescription.name, 'v1.status');
+    expect(enumDescription.values, ['up', 'down']);
+  });
 
   test('parses array columns', () {
     final books = publicTable(schema, 'books');

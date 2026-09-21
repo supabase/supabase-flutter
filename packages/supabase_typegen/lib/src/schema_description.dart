@@ -233,20 +233,21 @@ class ForeignKeyDescription {
 
 /// Description of a Postgres enum type.
 class EnumDescription {
-  const EnumDescription({required this.qualifiedName, required this.values});
+  const EnumDescription({
+    required this.schema,
+    required this.name,
+    required this.values,
+  });
 
-  /// The schema-qualified name of the enum, for example `public.mood`.
-  final String qualifiedName;
+  /// The schema of the enum, for example `public`.
+  final String schema;
+
+  /// The enum name without the schema qualifier, for example `mood`.
+  final String name;
 
   /// The values of the enum, in declaration order.
   final List<String> values;
 
-  /// The enum name without the schema qualifier.
-  String get name => qualifiedName.contains('.')
-      ? qualifiedName.split('.').last
-      : qualifiedName;
-
-  /// The schema of the enum, `public` when [qualifiedName] carries none.
-  String get schema =>
-      qualifiedName.contains('.') ? qualifiedName.split('.').first : 'public';
+  /// The schema-qualified name, for example `public.mood`.
+  String get qualifiedName => '$schema.$name';
 }
