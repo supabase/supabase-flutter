@@ -108,10 +108,23 @@ void main() {
     expect(enumDescription.values, ['happy', 'sad']);
   });
 
-  test('tolerates the version and primaryKeys fields of the document', () {
-    expect(document['version'], 1);
+  test('tolerates the primaryKeys field of the document', () {
     expect(document['primaryKeys'], isA<List<dynamic>>());
     expect(schema.tables, isNotEmpty);
+  });
+
+  test('carries the version of the document', () {
+    expect(document['version'], 1);
+    expect(schema.metadataVersion, 1);
+  });
+
+  test('assumes version 1 for a document without one', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': <dynamic>[],
+      'columns': <dynamic>[],
+    });
+
+    expect(parsed.metadataVersion, 1);
   });
 
   test('describes every schema of the document by default', () {
