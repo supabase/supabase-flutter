@@ -15,9 +15,11 @@ class SupabaseTypedQueryBuilder<Row, Insert, Update>
   // ignore: use_super_parameters
   const SupabaseTypedQueryBuilder(
     SupabaseQueryBuilder queryBuilder,
-    PostgrestTable<Row, Insert, Update> table,
-  ) : _queryBuilder = queryBuilder,
-      super(queryBuilder, table);
+    PostgrestTable<Row, Insert, Update> table, {
+    required PostgrestTableExecutor executor,
+    String? schema,
+  }) : _queryBuilder = queryBuilder,
+       super(table, executor: executor, schema: schema);
 
   final SupabaseQueryBuilder _queryBuilder;
 

@@ -1,3 +1,6 @@
+// The typed table executor is @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
@@ -7,7 +10,7 @@ import 'counter.dart';
 /// Used to perform [rpc] and [from] operations with a different schema than in
 /// [SupabaseClient].
 class SupabaseQuerySchema {
-  const SupabaseQuerySchema({
+  SupabaseQuerySchema({
     required Counter counter,
     required String restUrl,
     required String schema,
@@ -15,13 +18,15 @@ class SupabaseQuerySchema {
     required Client? authHttpClient,
     required RealtimeClient realtime,
     required PostgrestClient rest,
+    PostgrestTableExecutor? tableExecutor,
   }) : _counter = counter,
        _restUrl = restUrl,
        _schema = schema,
        _jsonCodec = jsonCodec,
        _authHttpClient = authHttpClient,
        _realtime = realtime,
-       _rest = rest;
+       _rest = rest,
+       _tableExecutor = tableExecutor ?? PostgrestHttpTableExecutor(rest);
   final Counter _counter;
   final String _restUrl;
   final String _schema;
@@ -29,6 +34,7 @@ class SupabaseQuerySchema {
   final Client? _authHttpClient;
   final RealtimeClient _realtime;
   final PostgrestClient _rest;
+  final PostgrestTableExecutor _tableExecutor;
 
   /// Perform a table operation.
   SupabaseQueryBuilder from(String table) {
@@ -54,7 +60,12 @@ class SupabaseQuerySchema {
   SupabaseTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
     PostgrestTable<Row, Insert, Update> table,
   ) {
-    return SupabaseTypedQueryBuilder(from(table.name), table);
+    return SupabaseTypedQueryBuilder(
+      from(table.name),
+      table,
+      executor: _tableExecutor,
+      schema: _schema,
+    );
   }
 
   /// {@macro postgrest_rpc}
@@ -81,6 +92,7 @@ class SupabaseQuerySchema {
       authHttpClient: _authHttpClient,
       realtime: _realtime,
       rest: newRest,
+      tableExecutor: _tableExecutor,
     );
   }
 }

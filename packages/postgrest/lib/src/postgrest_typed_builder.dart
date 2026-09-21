@@ -16,6 +16,8 @@ part 'postgrest_filter_operators.dart';
 part 'postgrest_ordering.dart';
 part 'postgrest_range.dart';
 part 'postgrest_table.dart';
+part 'postgrest_table_executor.dart';
+part 'postgrest_table_request.dart';
 part 'postgrest_typed_query_builder.dart';
 part 'postgrest_typed_transform_builder.dart';
 part 'postgrest_typed_filter_builder.dart';
@@ -26,8 +28,18 @@ List<Row> _rowsFromJson<Row>(
 ) => [for (final row in rows) rowFromJson(row)];
 
 /// The `select` parameter for [columns], or `*` when none are given.
-String _selectList<Row>(List<PostgrestColumnExpression<Row, Object>>? columns) {
-  if (columns == null) return '*';
+String _selectList(List<PostgrestColumnExpression<Object?, Object>> columns) {
+  if (columns.isEmpty) return '*';
+  return columns.map((column) => column.expression).join(',');
+}
+
+/// [columns] as the request stores them: every column when none are given.
+/// An empty list is rejected up front so the error surfaces where `select`
+/// is called rather than when awaited.
+List<PostgrestColumnExpression<Object?, Object>> _checkedColumns<Row>(
+  List<PostgrestColumnExpression<Row, Object>>? columns,
+) {
+  if (columns == null) return const [];
   if (columns.isEmpty) {
     throw ArgumentError.value(
       columns,
@@ -35,37 +47,60 @@ String _selectList<Row>(List<PostgrestColumnExpression<Row, Object>>? columns) {
       'select needs at least one column',
     );
   }
-  return columns.map((column) => column.expression).join(',');
+  return columns;
 }
+
+/// Converts the result of a [PostgrestTableRequest] into [T].
+typedef _ResultConverter<T> = T Function(PostgrestTableResult result);
+
+_ResultConverter<List<Row>> _rowsConverter<Row>(
+  RowConverter<Row> rowFromJson,
+) =>
+    (result) => _rowsFromJson(rowFromJson, result.data! as PostgrestList);
+
+void _noResult(PostgrestTableResult result) {}
 
 /// A typed PostgREST request that can be awaited.
 ///
-/// Wraps a [PostgrestBuilder] whose decoder already produces [T], so awaiting
-/// it never exposes raw `Map<String, dynamic>` data.
+/// Holds the [request] the builder methods have collected so far and the
+/// [PostgrestTableExecutor] that runs it. Awaiting the builder executes the
+/// request and converts the result into [T], so awaiting it never exposes raw
+/// `Map<String, dynamic>` data.
 @experimental
 class PostgrestTypedBuilder<T> implements Future<T> {
-  const PostgrestTypedBuilder._(this._builder);
+  const PostgrestTypedBuilder._(this.request, this._executor, this._convert);
 
-  final PostgrestBuilder<T> _builder;
+  /// The request awaiting this builder executes.
+  final PostgrestTableRequest request;
 
+  final PostgrestTableExecutor _executor;
+  final _ResultConverter<T> _convert;
+
+  /// Runs [request] on the executor, routing a synchronous throw into the
+  /// returned future so the [Future] contract holds for every executor.
+  Future<T> _execute() =>
+      Future.sync(() => _executor.execute(request)).then(_convert);
+
+  /// A broadcast stream of the one result. The request runs when the first
+  /// listener subscribes, so a listener added later still receives it.
   @override
-  Stream<T> asStream() => _builder.asStream();
+  Stream<T> asStream() => _execute().asStream().asBroadcastStream();
 
   @override
   Future<T> catchError(Function onError, {bool Function(Object error)? test}) =>
-      _builder.catchError(onError, test: test);
+      _execute().catchError(onError, test: test);
 
   @override
   Future<U> then<U>(
     FutureOr<U> Function(T value) onValue, {
     Function? onError,
-  }) => _builder.then(onValue, onError: onError);
+  }) => _execute().then(onValue, onError: onError);
 
   @override
   Future<T> timeout(Duration timeLimit, {FutureOr<T> Function()? onTimeout}) =>
-      _builder.timeout(timeLimit, onTimeout: onTimeout);
+      _execute().timeout(timeLimit, onTimeout: onTimeout);
 
   @override
   Future<T> whenComplete(FutureOr<void> Function() action) =>
-      _builder.whenComplete(action);
+      _execute().whenComplete(action);
 }

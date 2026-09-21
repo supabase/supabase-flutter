@@ -813,6 +813,56 @@ features:
       - PostgrestTable.primaryKey
       - PostgrestTable.relations
       - RowConverter
+      - PostgrestTypedBuilder.request
+      - PostgrestTableRequest
+      - PostgrestTableRequest.PostgrestTableRequest
+      - PostgrestTableRequest.table
+      - PostgrestTableRequest.operation
+      - PostgrestTableRequest.schema
+      - PostgrestTableRequest.columns
+      - PostgrestTableRequest.filter
+      - PostgrestTableRequest.orderings
+      - PostgrestTableRequest.limit
+      - PostgrestTableRequest.offset
+      - PostgrestTableRequest.embeddedPages
+      - PostgrestTableRequest.shape
+      - PostgrestTableRequest.countOption
+      - PostgrestTableRequest.payload
+      - PostgrestTableRequest.onConflict
+      - PostgrestTableRequest.ignoreDuplicates
+      - PostgrestTableRequest.defaultToNull
+      - PostgrestTableRequest.maxAffected
+      - PostgrestTableRequest.stripNulls
+      - PostgrestTableRequest.dryRun
+      - PostgrestTableRequest.explainOptions
+      - PostgrestTableRequest.returning
+      - PostgrestTableRequest.copyWith
+      - PostgrestTableOperation
+      - PostgrestTableOperation.isMutation
+      - PostgrestResultShape
+      - PostgrestEmbeddedPage
+      - PostgrestEmbeddedPage.PostgrestEmbeddedPage
+      - PostgrestEmbeddedPage.referencedTable
+      - PostgrestEmbeddedPage.limit
+      - PostgrestEmbeddedPage.offset
+      - PostgrestExplainOptions
+      - PostgrestExplainOptions.PostgrestExplainOptions
+      - PostgrestExplainOptions.analyze
+      - PostgrestExplainOptions.verbose
+      - PostgrestExplainOptions.settings
+      - PostgrestExplainOptions.buffers
+      - PostgrestExplainOptions.wal
+      - PostgrestExplainOptions.format
+      - PostgrestTableResult
+      - PostgrestTableResult.PostgrestTableResult
+      - PostgrestTableResult.data
+      - PostgrestTableResult.count
+      - PostgrestTableExecutor
+      - PostgrestTableExecutor.execute
+      - PostgrestHttpTableExecutor
+      - PostgrestHttpTableExecutor.PostgrestHttpTableExecutor
+      - PostgrestHttpTableExecutor.client
+      - PostgrestHttpTableExecutor.execute
       - PostgrestColumnExpression
       - PostgrestColumnExpression.expression
       - PostgrestColumnExpression.toString
@@ -2470,6 +2520,14 @@ features:
     symbols:
       - PostgrestClient.httpClient
       - RealtimeClient.httpClient
+    supporting_symbols:
+      - SupabaseClient.plugins
+      - SupabaseClientPlugin
+      - SupabaseClientPlugin.SupabaseClientPlugin
+      - SupabaseClientPlugin.wrapTableExecutor
+      - SupabaseClientPlugin.attach
+      - SupabaseClientPlugin.resume
+      - SupabaseClientPlugin.dispose
   client.request_configuration.global_headers:
     status: implemented
     symbols:

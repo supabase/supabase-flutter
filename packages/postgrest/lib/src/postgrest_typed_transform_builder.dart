@@ -7,12 +7,31 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   const PostgrestTypedTransformBuilder._(
-    this._transformBuilder,
+    super.request,
+    super.executor,
+    super.convert,
     this._rowFromJson,
-  ) : super._(_transformBuilder);
+  ) : super._();
 
-  final PostgrestTransformBuilder<T> _transformBuilder;
   final RowConverter<Row> _rowFromJson;
+
+  PostgrestTypedTransformBuilder<Row, T> _with(PostgrestTableRequest request) =>
+      PostgrestTypedTransformBuilder._(
+        request,
+        _executor,
+        _convert,
+        _rowFromJson,
+      );
+
+  PostgrestTypedTransformBuilder<Row, U> _shaped<U>(
+    PostgrestResultShape shape,
+    _ResultConverter<U> convert,
+  ) => PostgrestTypedTransformBuilder._(
+    request.copyWith(shape: shape),
+    _executor,
+    convert,
+    _rowFromJson,
+  );
 
   /// Performs horizontal filtering with SELECT, returning the affected rows
   /// typed as [Row].
@@ -29,11 +48,13 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, List<Row>> select([
     List<PostgrestColumnExpression<Row, Object>>? columns,
   ]) => PostgrestTypedTransformBuilder._(
-    PostgrestTransformBuilder(
-      _transformBuilder
-          .select(_selectList(columns))
-          .withConverter((rows) => _rowsFromJson(_rowFromJson, rows)),
+    request.copyWith(
+      columns: _checkedColumns(columns),
+      shape: PostgrestResultShape.rows,
+      returning: true,
     ),
+    _executor,
+    _rowsConverter(_rowFromJson),
     _rowFromJson,
   );
 
@@ -51,18 +72,21 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// Repeated calls append, so the second key breaks ties in the first.
   PostgrestTypedTransformBuilder<Row, T> order(
     PostgrestOrdering<Row> ordering,
-  ) => PostgrestTypedTransformBuilder._(
-    _transformBuilder.appendOrderKey(ordering.orderKey),
-    _rowFromJson,
-  );
+  ) => _with(request.copyWith(orderings: [...request.orderings, ordering]));
 
   /// Limits the result with the specified [count].
   PostgrestTypedTransformBuilder<Row, T> limit(
     int count, {
     String? referencedTable,
-  }) => PostgrestTypedTransformBuilder._(
-    _transformBuilder.limit(count, referencedTable: referencedTable),
-    _rowFromJson,
+  }) => _with(
+    referencedTable == null
+        ? request.copyWith(limit: count)
+        : request.copyWith(
+            embeddedPages: [
+              ...request.embeddedPages,
+              PostgrestEmbeddedPage(referencedTable, limit: count),
+            ],
+          ),
   );
 
   /// Limits the result to rows within the specified range, inclusive.
@@ -70,9 +94,19 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     int from,
     int to, {
     String? referencedTable,
-  }) => PostgrestTypedTransformBuilder._(
-    _transformBuilder.range(from, to, referencedTable: referencedTable),
-    _rowFromJson,
+  }) => _with(
+    referencedTable == null
+        ? request.copyWith(offset: from, limit: to - from + 1)
+        : request.copyWith(
+            embeddedPages: [
+              ...request.embeddedPages,
+              PostgrestEmbeddedPage(
+                referencedTable,
+                limit: to - from + 1,
+                offset: from,
+              ),
+            ],
+          ),
   );
 
   /// Retrieves only one row from the result as [Row].
@@ -87,35 +121,27 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ///     .where(Books.id.eq(1))
   ///     .single();
   /// ```
-  PostgrestTypedTransformBuilder<Row, Row> single() =>
-      PostgrestTypedTransformBuilder._(
-        PostgrestTransformBuilder(
-          _transformBuilder.single().withConverter(_rowFromJson),
-        ),
-        _rowFromJson,
-      );
+  PostgrestTypedTransformBuilder<Row, Row> single() => _shaped(
+    PostgrestResultShape.single,
+    (result) => _rowFromJson(result.data! as PostgrestMap),
+  );
 
   /// Retrieves at most one row from the result as [Row], or `null` when the
   /// result is empty.
-  PostgrestTypedTransformBuilder<Row, Row?> maybeSingle() =>
-      PostgrestTypedTransformBuilder._(
-        PostgrestTransformBuilder(
-          _transformBuilder.maybeSingle().withConverter(
-            (row) => row == null ? null : _rowFromJson(row),
-          ),
-        ),
-        _rowFromJson,
-      );
+  PostgrestTypedTransformBuilder<Row, Row?> maybeSingle() => _shaped(
+    PostgrestResultShape.maybeSingle,
+    (result) {
+      final row = result.data;
+      return row == null ? null : _rowFromJson(row as PostgrestMap);
+    },
+  );
 
   /// Omits `null`-valued properties from the response objects.
   ///
   /// This uses the `nulls=stripped` variant of the `Accept` header and
   /// requires PostgREST 11.2 or higher.
   PostgrestTypedTransformBuilder<Row, T> stripNulls() =>
-      PostgrestTypedTransformBuilder._(
-        _transformBuilder.stripNulls(),
-        _rowFromJson,
-      );
+      _with(request.copyWith(stripNulls: true));
 
   /// Runs the query but rolls back the transaction, so no changes are
   /// persisted.
@@ -127,10 +153,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// await client.table(Books.table).insert(BookInsert(title: 'foo')).dryRun();
   /// ```
   PostgrestTypedTransformBuilder<Row, T> dryRun() =>
-      PostgrestTypedTransformBuilder._(
-        _transformBuilder.dryRun(),
-        _rowFromJson,
-      );
+      _with(request.copyWith(dryRun: true));
 
   /// Sets the maximum number of rows that can be affected by the query.
   ///
@@ -145,10 +168,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ///     .maxAffected(10);
   /// ```
   PostgrestTypedTransformBuilder<Row, T> maxAffected(int value) =>
-      PostgrestTypedTransformBuilder._(
-        _transformBuilder.maxAffected(value),
-        _rowFromJson,
-      );
+      _with(request.copyWith(maxAffected: value));
 
   /// Retrieves the response as CSV.
   ///
@@ -158,10 +178,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// final String csv = await client.table(Books.table).select().csv();
   /// ```
   PostgrestTypedTransformBuilder<Row, String> csv() =>
-      PostgrestTypedTransformBuilder._(
-        _transformBuilder.csv(),
-        _rowFromJson,
-      );
+      _shaped(PostgrestResultShape.csv, (result) => result.data! as String);
 
   /// Performs a head request.
   ///
@@ -170,8 +187,11 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// ```dart
   /// await client.table(Books.table).select().head();
   /// ```
-  PostgrestTypedBuilder<void> head() =>
-      PostgrestTypedBuilder._(_transformBuilder.head());
+  PostgrestTypedBuilder<void> head() => PostgrestTypedBuilder._(
+    request.copyWith(shape: PostgrestResultShape.head),
+    _executor,
+    _noResult,
+  );
 
   /// Enables support for GeoJSON for use with PostGIS data types.
   ///
@@ -180,7 +200,11 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ///
   /// https://supabase.com/docs/guides/database/extensions/postgis
   PostgrestTypedBuilder<Map<String, dynamic>> geojson() =>
-      PostgrestTypedBuilder._(_transformBuilder.geojson());
+      PostgrestTypedBuilder._(
+        request.copyWith(shape: PostgrestResultShape.geojson),
+        _executor,
+        (result) => result.data! as Map<String, dynamic>,
+      );
 
   /// Obtains the EXPLAIN plan for this request.
   ///
@@ -199,14 +223,19 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     bool wal = false,
     ExplainFormat format = ExplainFormat.text,
   }) => PostgrestTypedBuilder._(
-    _transformBuilder.explain(
-      analyze: analyze,
-      verbose: verbose,
-      settings: settings,
-      buffers: buffers,
-      wal: wal,
-      format: format,
+    request.copyWith(
+      shape: PostgrestResultShape.explain,
+      explainOptions: PostgrestExplainOptions(
+        analyze: analyze,
+        verbose: verbose,
+        settings: settings,
+        buffers: buffers,
+        wal: wal,
+        format: format,
+      ),
     ),
+    _executor,
+    (result) => result.data! as String,
   );
 
   /// Performs additionally to the query a count query.
@@ -222,5 +251,12 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// ```
   PostgrestTypedBuilder<PostgrestResponse<T>> count([
     CountOption option = CountOption.exact,
-  ]) => PostgrestTypedBuilder._(_transformBuilder.count(option));
+  ]) => PostgrestTypedBuilder._(
+    request.copyWith(countOption: option),
+    _executor,
+    (result) => PostgrestResponse(
+      data: _convert(result),
+      count: result.count!,
+    ),
+  );
 }

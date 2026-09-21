@@ -8,11 +8,11 @@ part of 'postgrest_typed_builder.dart';
 class PostgrestTypedFilterBuilder<Row, T>
     extends PostgrestTypedTransformBuilder<Row, T> {
   const PostgrestTypedFilterBuilder._(
-    this._filterBuilder,
-    RowConverter<Row> rowFromJson,
-  ) : super._(_filterBuilder, rowFromJson);
-
-  final PostgrestFilterBuilder<T> _filterBuilder;
+    super.request,
+    super.executor,
+    super.convert,
+    super.rowFromJson,
+  ) : super._();
 
   /// Only rows satisfying [filter].
   ///
@@ -38,10 +38,12 @@ class PostgrestTypedFilterBuilder<Row, T>
   ///
   /// Repeated [where] calls combine with logical AND.
   PostgrestTypedFilterBuilder<Row, T> where(PostgrestFilter<Row> filter) {
-    var builder = _filterBuilder;
-    for (final parameter in filter.queryParameters) {
-      builder = builder.appendSearchParameter(parameter.key, parameter.value);
-    }
-    return PostgrestTypedFilterBuilder._(builder, _rowFromJson);
+    final current = request.filter;
+    return PostgrestTypedFilterBuilder._(
+      request.copyWith(filter: current == null ? filter : current & filter),
+      _executor,
+      _convert,
+      _rowFromJson,
+    );
   }
 }

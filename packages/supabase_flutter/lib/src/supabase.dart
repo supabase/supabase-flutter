@@ -1,3 +1,6 @@
+// The plugin seam is @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -85,6 +88,10 @@ class Supabase {
   /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
+  /// [plugins] extend the client from the outside, see
+  /// [SupabaseClientPlugin]. Each plugin is resumed when the app returns to
+  /// the foreground and disposed together with the client.
+  ///
   /// All Supabase packages log through `package:logging` using loggers under
   /// the `supabase` hierarchy (for example `supabase.auth` or
   /// `supabase.realtime`). Nothing is printed by default; attach a listener
@@ -103,6 +110,7 @@ class Supabase {
         const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
+    List<SupabaseClientPlugin> plugins = const [],
   }) async {
     if (_instance._isInitialized) {
       flutterLogger.info(
@@ -131,6 +139,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      plugins: plugins,
     );
 
     if (accessToken == null) {
@@ -196,6 +205,11 @@ class Supabase {
   /// appends via `.then()` so operations never overlap.
   Future<void> _pendingLifecycleOperation = Future.value();
 
+  /// The resume work of each plugin, one chain per plugin so a resume never
+  /// overlaps the previous one of the same plugin. [dispose] waits for the
+  /// chains before disposing the client.
+  final _pluginResumes = <SupabaseClientPlugin, Future<void>>{};
+
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
   /// (e.g. abort a reconnect if the app went back to background).
@@ -212,6 +226,8 @@ class Supabase {
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
     final pendingLifecycleOperation = _pendingLifecycleOperation;
+    final pluginResumes = _pluginResumes.values.toList();
+    _pluginResumes.clear();
 
     _client = null;
     _supabaseAuth = null;
@@ -227,6 +243,7 @@ class Supabase {
     await _disposeAll([
       () => supabaseAuth?.dispose(),
       () => pendingLifecycleOperation,
+      () => Future.wait(pluginResumes),
       currentClient.dispose,
     ]);
   }
@@ -267,6 +284,7 @@ class Supabase {
     required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
+    required List<SupabaseClientPlugin> plugins,
   }) {
     final headers = {
       ...SupabaseFlutterConstants.defaultHeaders,
@@ -284,6 +302,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      plugins: plugins,
     );
 
     // Close any previous realtime client that may still be connected due to
@@ -325,9 +344,24 @@ class Supabase {
   Future<void> _processLifecycle(AppLifecycleState captured) async {
     if (captured != _targetLifecycleState) return;
 
-    final realtime = Supabase.instance.client.realtime;
+    final currentClient = _client;
+    if (currentClient == null) return;
+    final realtime = currentClient.realtime;
 
     if (captured == AppLifecycleState.resumed) {
+      for (final plugin in currentClient.plugins) {
+        final previous = _pluginResumes[plugin] ?? Future<void>.value();
+        _pluginResumes[plugin] = previous
+            .then((_) => Future.sync(plugin.resume))
+            .catchError((Object error, StackTrace stackTrace) {
+              flutterLogger.warning(
+                'Plugin ${plugin.runtimeType} failed to resume',
+                error,
+                stackTrace,
+              );
+            });
+      }
+
       // No channels subscribed — nothing to reconnect.
       if (realtime.channels.isEmpty) return;
 
