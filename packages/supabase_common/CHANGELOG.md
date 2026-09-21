@@ -1,3 +1,9 @@
+## 3.0.0-dev.4
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(supabase): keep idle connections open for 60 seconds by default ([#1855](https://github.com/supabase/supabase-flutter/issues/1855)). ([db7f5cc9](https://github.com/supabase/supabase-flutter/commit/db7f5cc954fed323da10ec13030f8d5c26581fe8))
+
 ## 3.0.0-dev.3
 
 > Note: This release has breaking changes.

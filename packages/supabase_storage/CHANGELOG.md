@@ -1,3 +1,7 @@
+## 3.0.0-dev.5
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+
 ## 3.0.0-dev.4
 
 > Note: This release has breaking changes.

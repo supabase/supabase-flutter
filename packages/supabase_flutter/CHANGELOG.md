@@ -1,3 +1,11 @@
+## 3.0.0-dev.6
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+ - **BREAKING** **FEAT**(postgrest): execute typed table builders through a PostgrestTableExecutor and add SupabaseClientPlugin ([#1857](https://github.com/supabase/supabase-flutter/issues/1857)). ([3ecb09b1](https://github.com/supabase/supabase-flutter/commit/3ecb09b1ad2013277282b5f0c694f2272132a355))
+ - **BREAKING** **FEAT**(supabase): keep idle connections open for 60 seconds by default ([#1855](https://github.com/supabase/supabase-flutter/issues/1855)). ([db7f5cc9](https://github.com/supabase/supabase-flutter/commit/db7f5cc954fed323da10ec13030f8d5c26581fe8))
+
 ## 3.0.0-dev.5
 
 > Note: This release has breaking changes.

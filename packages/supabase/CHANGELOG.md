@@ -1,3 +1,12 @@
+## 3.0.0-dev.6
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(postgrest): execute typed table builders through a PostgrestTableExecutor and add SupabaseClientPlugin ([#1857](https://github.com/supabase/supabase-flutter/issues/1857)). ([3ecb09b1](https://github.com/supabase/supabase-flutter/commit/3ecb09b1ad2013277282b5f0c694f2272132a355))
+ - **BREAKING** **FEAT**(typegen): generate types for every exposed schema and route typed tables to their schema ([#1861](https://github.com/supabase/supabase-flutter/issues/1861)). ([6f9e716b](https://github.com/supabase/supabase-flutter/commit/6f9e716b9a55d8bf64ccad1829ee77bdbfc87caa))
+ - **BREAKING** **FEAT**(postgrest): carry primary keys and relation columns on PostgrestTable and emit them from typegen ([#1859](https://github.com/supabase/supabase-flutter/issues/1859)). ([04ce54cf](https://github.com/supabase/supabase-flutter/commit/04ce54cfb96f64d69e1670522f2ef68183a7feb9))
+ - **BREAKING** **FEAT**(supabase): keep idle connections open for 60 seconds by default ([#1855](https://github.com/supabase/supabase-flutter/issues/1855)). ([db7f5cc9](https://github.com/supabase/supabase-flutter/commit/db7f5cc954fed323da10ec13030f8d5c26581fe8))
+
 ## 3.0.0-dev.5
 
 > Note: This release has breaking changes.
