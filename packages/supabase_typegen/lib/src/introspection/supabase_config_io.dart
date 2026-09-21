@@ -6,23 +6,38 @@ import 'package:toml/toml.dart';
 /// `api.schemas` of the project's `supabase/config.toml`, always including
 /// `public`.
 ///
-/// The configuration is looked up the way the Supabase CLI does, in
-/// `supabase/config.toml` under `SUPABASE_WORKDIR` or, when that variable is
-/// unset, under the current directory. Without a configuration file only
-/// `public` is returned, sorted like every other schema list.
+/// The configuration is looked up the way the Supabase CLI does: under
+/// `SUPABASE_WORKDIR` when that variable is set, otherwise in the current
+/// directory or the nearest parent holding a `supabase/config.toml`. Without
+/// a configuration file only `public` is returned, sorted like every other
+/// schema list.
 ///
 /// Throws a [FormatException] when the file exists but is not valid TOML or
 /// `api.schemas` is not a list of strings.
 List<String> defaultSchemas({Map<String, String>? environment}) {
   final workingDirectory =
-      (environment ?? Platform.environment)['SUPABASE_WORKDIR'] ??
-      Directory.current.path;
-  final configFile = File('$workingDirectory/supabase/config.toml');
+      (environment ?? Platform.environment)['SUPABASE_WORKDIR'];
+  final configFile = workingDirectory == null
+      ? _nearestConfigFile(Directory.current)
+      : File('$workingDirectory/supabase/config.toml');
   final schemas = {'public'};
-  if (configFile.existsSync()) {
+  if (configFile != null && configFile.existsSync()) {
     schemas.addAll(_exposedSchemas(configFile));
   }
   return schemas.toList()..sort();
+}
+
+/// The `supabase/config.toml` of [directory] or of its nearest ancestor,
+/// `null` when none of them holds one.
+File? _nearestConfigFile(Directory directory) {
+  var current = directory.absolute;
+  while (true) {
+    final configFile = File('${current.path}/supabase/config.toml');
+    if (configFile.existsSync()) return configFile;
+    final parent = current.parent;
+    if (parent.path == current.path) return null;
+    current = parent;
+  }
 }
 
 List<String> _exposedSchemas(File configFile) {

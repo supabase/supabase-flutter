@@ -69,9 +69,9 @@ older ones want `supabase link --project-ref <ref>` followed by `--linked`.
 string says `sslmode=disable`.
 
 The schemas are chosen the way `supabase gen types` chooses them: `public`
-plus the `api.schemas` of `supabase/config.toml` in the working directory
-(or under `SUPABASE_WORKDIR`), so with `--local` the exposed schemas of the
-project are generated. Pass `--schema` to name the schemas yourself, repeated
+plus the `api.schemas` of the project's `supabase/config.toml`, found under
+`SUPABASE_WORKDIR` or by walking up from the working directory, so the
+exposed schemas of the project are generated. Pass `--schema` to name the schemas yourself, repeated
 or comma separated (`--schema public,inventory`). Only schemas exposed through
 the Data API can be queried at runtime. Use `--import` to change which
 library the generated file imports `PostgrestTable` and `PostgrestColumn`

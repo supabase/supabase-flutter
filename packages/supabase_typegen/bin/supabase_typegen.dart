@@ -12,7 +12,7 @@ final _argParser = ArgParser()
     help:
         'A database schema to generate types for; repeat the option or '
         'separate names with commas for several. Defaults to public and the '
-        'api.schemas of supabase/config.toml in the working directory, like '
+        'api.schemas of the nearest supabase/config.toml, like '
         '`supabase gen types`.',
   )
   ..addOption(
@@ -184,7 +184,9 @@ Future<int> _run(List<String> arguments) async {
     stderr.writeln('Could not parse the document: ${error.message}');
     return 65;
   }
-  for (final schema in requestedSchemas) {
+  // Only schemas named on the command line are worth a warning; a default
+  // taken from the configuration may well be absent from the database.
+  for (final schema in namedSchemas) {
     if (!database.schemaNames.contains(schema)) {
       stderr.writeln('The database has no schema "$schema".');
     }

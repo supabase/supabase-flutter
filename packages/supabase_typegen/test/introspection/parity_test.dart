@@ -83,14 +83,23 @@ void main() {
   }, timeout: _compileTimeout);
 
   test('the binary generates public alone without a configuration', () async {
-    // The package directory holds no supabase/config.toml, so the default
-    // schema set is public, the way `supabase gen types` behaves.
-    final result = await _runBinary([
-      '--db-url',
-      _databaseUrl,
-      '--output',
-      '-',
-    ]);
+    // The repository holds a supabase/config.toml above the package, so the
+    // lookup is pointed at an empty directory to stand in for a project
+    // without one; the default schema set is then public, the way
+    // `supabase gen types` behaves.
+    final workingDirectory = Directory.systemTemp.createTempSync(
+      'supabase_typegen_no_config',
+    );
+    addTearDown(() => workingDirectory.deleteSync(recursive: true));
+    final result = await _runBinary(
+      [
+        '--db-url',
+        _databaseUrl,
+        '--output',
+        '-',
+      ],
+      environment: {'SUPABASE_WORKDIR': workingDirectory.path},
+    );
 
     expect(result.exitCode, 0, reason: result.stderr as String);
     expect(result.stdout, contains('// Source schemas: public'));
@@ -102,6 +111,24 @@ void main() {
         'Generated stdout with 6 tables and 1 enums from schema "public".',
       ),
     );
+  }, timeout: _compileTimeout);
+
+  test('the binary follows api.schemas of the repository configuration '
+      'found above the package', () async {
+    // supabase/config.toml at the repository root exposes public,
+    // graphql_public and personal; the fixture database only has public and
+    // inventory, so public alone is generated and, since nothing was named
+    // on the command line, nothing is reported as missing.
+    final result = await _runBinary([
+      '--db-url',
+      _databaseUrl,
+      '--output',
+      '-',
+    ]);
+
+    expect(result.exitCode, 0, reason: result.stderr as String);
+    expect(result.stdout, contains('// Source schemas: public'));
+    expect(result.stderr, isNot(contains('has no schema')));
   }, timeout: _compileTimeout);
 
   test('the binary follows api.schemas of supabase/config.toml', () async {
