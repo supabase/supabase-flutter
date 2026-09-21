@@ -170,6 +170,7 @@ class ColumnDescription {
     this.elementTypeKind,
     this.boundTypeKind,
     this.enumValues,
+    this.enumType,
     this.foreignKey,
     this.comment,
   });
@@ -192,6 +193,10 @@ class ColumnDescription {
 
   /// The values of the Postgres enum for enum columns.
   final List<String>? enumValues;
+
+  /// The Postgres enum of enum columns and of arrays of an enum, which the
+  /// generated column types are resolved through; `null` for other columns.
+  final EnumDescription? enumType;
 
   /// Whether the column is `NOT NULL` without a database default, which makes
   /// it required on insert.

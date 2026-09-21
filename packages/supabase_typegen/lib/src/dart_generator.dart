@@ -61,13 +61,13 @@ String generateDartCode(
     ..writeln();
 
   final typeNames = _TypeNameRegistry();
-  final enumTypeNames = <String, String>{};
+  final enumTypeNames = <(String, String), String>{};
 
   for (final enumDescription in database.enums) {
     final typeName = typeNames.claim(
       _typeBaseName(enumDescription.schema, enumDescription.name),
     );
-    enumTypeNames[enumDescription.qualifiedName] = typeName;
+    enumTypeNames[(enumDescription.schema, enumDescription.name)] = typeName;
     _writeEnum(buffer, enumDescription, typeName);
   }
 
@@ -439,7 +439,7 @@ void _writeTable(
   _TableNames names,
   _TableMembers members,
   List<_RelationMember> relations,
-  Map<String, String> enumTypeNames,
+  Map<(String, String), String> enumTypeNames,
 ) {
   final _TableNames(:insertType, :updateType) = names;
 
@@ -685,10 +685,10 @@ void _writeNamespace(
 
 _Binding _bindingFor(
   ColumnDescription column,
-  Map<String, String> enumTypeNames,
+  Map<(String, String), String> enumTypeNames,
 ) => switch (column.typeKind) {
   ColumnTypeKind.enumType => _Binding(
-    enumTypeNames[column.postgresFormat]!,
+    _enumTypeName(column, enumTypeNames),
     ColumnTypeKind.enumType,
   ),
   ColumnTypeKind.array => _Binding(
@@ -717,6 +717,29 @@ _Binding _bindingFor(
   ColumnTypeKind.json ||
   ColumnTypeKind.unknown => const _Binding('Object', ColumnTypeKind.json),
 };
+
+/// The generated Dart enum of an enum [column], resolved by the schema and
+/// name of its Postgres enum rather than by a qualified string, which could
+/// not tell `tenant.v1`.`status` from `tenant`.`v1.status`.
+String _enumTypeName(
+  ColumnDescription column,
+  Map<(String, String), String> enumTypeNames,
+) {
+  final enumType = column.enumType;
+  if (enumType == null) {
+    throw ArgumentError.value(
+      column,
+      'column',
+      'An enum column has to name its enum type.',
+    );
+  }
+  return enumTypeNames[(enumType.schema, enumType.name)] ??
+      (throw ArgumentError.value(
+        column,
+        'column',
+        'The enum ${enumType.qualifiedName} is not among the described enums.',
+      ));
+}
 
 String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.integer => 'int',

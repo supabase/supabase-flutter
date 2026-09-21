@@ -165,7 +165,7 @@ DatabaseDescription _parseGeneratorMetadata(
   final enumTypes = _enumTypes(document);
 
   final tables = <TableDescription>[];
-  final enumsByQualifiedName = <String, EnumDescription>{};
+  final enumsByType = <(String, String), EnumDescription>{};
 
   for (final (:relation, :isInsertable, :isUpdatable) in relations) {
     final relationSchema = relation['schema'] as String;
@@ -183,22 +183,24 @@ DatabaseDescription _parseGeneratorMetadata(
       final isArray = typeKind == ColumnTypeKind.array;
 
       var postgresFormat = format;
+      EnumDescription? enumDescription;
       if (isEnum) {
-        final enumDescription = _enumDescription(
+        final described = _enumDescription(
           isArray ? format.substring(1) : format,
           column['type_schema'] as String,
           enumValues,
           enumTypes,
+        );
+        // Every column of one enum shares the description registered first.
+        enumDescription = enumsByType.putIfAbsent(
+          (described.schema, described.name),
+          () => described,
         );
         // Array elements stay in their wire representation, but the enum the
         // elements belong to is still emitted for manual conversion.
         if (!isArray) {
           postgresFormat = enumDescription.qualifiedName;
         }
-        enumsByQualifiedName.putIfAbsent(
-          enumDescription.qualifiedName,
-          () => enumDescription,
-        );
       }
 
       final hasDefault =
@@ -217,6 +219,7 @@ DatabaseDescription _parseGeneratorMetadata(
               : null,
           boundTypeKind: _rangeBoundKinds[format],
           enumValues: isEnum ? enumValues : null,
+          enumType: enumDescription,
           isRequired: !isNullable && !hasDefault,
           hasDefault: hasDefault,
           isNullable: isNullable,
@@ -249,8 +252,12 @@ DatabaseDescription _parseGeneratorMetadata(
         ? a.name.compareTo(b.name)
         : a.schema.compareTo(b.schema),
   );
-  final enums = enumsByQualifiedName.values.toList()
-    ..sort((a, b) => a.qualifiedName.compareTo(b.qualifiedName));
+  final enums = enumsByType.values.toList()
+    ..sort(
+      (a, b) => a.schema == b.schema
+          ? a.name.compareTo(b.name)
+          : a.schema.compareTo(b.schema),
+    );
 
   return DatabaseDescription(
     metadataVersion: document['version'] as int? ?? 1,

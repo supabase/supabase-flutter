@@ -33,6 +33,11 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           isRequired: false,
           hasDefault: false,
           isNullable: true,
+          enumType: EnumDescription(
+            schema: 'public',
+            name: 'string',
+            values: ["it's \$a\u2028trap", 'plain'],
+          ),
         ),
         ColumnDescription(
           name: 'samples',

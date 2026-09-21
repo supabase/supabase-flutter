@@ -612,6 +612,15 @@ void main() {
           'type_schema': 'tenant',
           'enums': ['up', 'down'],
         },
+        {
+          ..._column(tableId: 1, table: 'reviews', name: 'mood'),
+          'id': '1.2',
+          'ordinal_position': 2,
+          'data_type': 'USER-DEFINED',
+          'format': 'status',
+          'type_schema': 'tenant.v1',
+          'enums': ['happy', 'sad'],
+        },
       ],
       'types': [
         {
@@ -629,10 +638,17 @@ void main() {
       ],
     });
 
-    final enumDescription = parsed.enums.single;
-    expect(enumDescription.schema, 'tenant');
-    expect(enumDescription.name, 'v1.status');
-    expect(enumDescription.values, ['up', 'down']);
+    // Both enums share the qualified string `tenant.v1.status`, so identity
+    // has to be the (schema, name) pair.
+    expect(parsed.enums, hasLength(2));
+    final [dotted, nested] = parsed.enums;
+    expect((dotted.schema, dotted.name), ('tenant', 'v1.status'));
+    expect(dotted.values, ['up', 'down']);
+    expect((nested.schema, nested.name), ('tenant.v1', 'status'));
+    expect(nested.values, ['happy', 'sad']);
+    final [status, mood] = parsed.tables.single.columns;
+    expect(status.enumType, same(dotted));
+    expect(mood.enumType, same(nested));
   });
 
   test('parses array columns', () {

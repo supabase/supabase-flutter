@@ -408,20 +408,72 @@ void main() {
   });
 
   test('enum names keep periods in the schema and type name apart', () {
+    const nested = EnumDescription(
+      schema: 'tenant.v1',
+      name: 'status',
+      values: ['a'],
+    );
+    const dotted = EnumDescription(
+      schema: 'tenant',
+      name: 'v1.status',
+      values: ['b'],
+    );
+    ColumnDescription enumColumn(String name, EnumDescription enumType) =>
+        ColumnDescription(
+          name: name,
+          postgresFormat: enumType.qualifiedName,
+          typeKind: ColumnTypeKind.enumType,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+          enumType: enumType,
+        );
     final code = generateDartCode(
-      const DatabaseDescription(
-        schemaNames: ['public', 'tenant.v1'],
-        tables: [],
-        enums: [
-          EnumDescription(schema: 'tenant.v1', name: 'status', values: ['a']),
-          EnumDescription(schema: 'tenant', name: 'v1.status', values: ['b']),
+      DatabaseDescription(
+        schemaNames: const ['public', 'tenant.v1'],
+        tables: [
+          TableDescription(
+            schema: 'public',
+            name: 'reviews',
+            columns: [enumColumn('mood', nested), enumColumn('status', dotted)],
+          ),
         ],
+        enums: const [nested, dotted],
       ),
     );
 
     expect(code, contains('/// Postgres enum `tenant.v1.status`.'));
     expect(code, contains('enum TenantV1Status {'));
     expect(code, contains('enum TenantV1Status\$ {'));
+    // Each column resolves to the Dart enum of its own Postgres enum even
+    // though both share the qualified string.
+    expect(code, contains('TenantV1Status get mood'));
+    expect(code, contains('TenantV1Status\$ get status'));
+  });
+
+  test('an enum column without its enum type is rejected', () {
+    const database = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'reviews',
+          columns: [
+            ColumnDescription(
+              name: 'mood',
+              postgresFormat: 'public.mood',
+              typeKind: ColumnTypeKind.enumType,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+          ],
+        ),
+      ],
+      enums: [],
+    );
+
+    expect(() => generateDartCode(database), throwsArgumentError);
   });
 
   test('the header records the metadata version of the document', () {
