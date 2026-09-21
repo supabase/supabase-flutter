@@ -54,6 +54,73 @@ void main() {
     expect(book.publishedOn == null, isTrue);
   });
 
+  test('tables outside public are queried in their schema', () async {
+    httpClient.stubTable(
+      'stock',
+      rows: [
+        {
+          'id': 1,
+          'book_id': 1,
+          'copy_id': 2,
+          'condition': 'used',
+          'quantity': 3,
+        },
+      ],
+      schema: 'inventory',
+    );
+
+    final List<InventoryStockRow> stock = await client
+        .table(InventoryStock.table)
+        .select();
+
+    expect(stock.single.condition, InventoryCondition.used);
+    expect(stock.single.quantity, 3);
+    expect(httpClient.requests.last.url.path, '/rest/v1/stock');
+    expect(httpClient.requests.last.headers['Accept-Profile'], 'inventory');
+  });
+
+  test(
+    'public tables are queried in public whatever the client default',
+    () async {
+      final personal = PostgrestClient(
+        'http://localhost/rest/v1',
+        schema: 'personal',
+        httpClient: httpClient,
+      );
+      httpClient.stubTable('books', rows: [], schema: 'public');
+
+      await personal.table(Books.table).select();
+      await personal.dispose();
+
+      expect(httpClient.requests.last.headers['Accept-Profile'], 'public');
+    },
+  );
+
+  test('an explicitly selected schema wins over the table schema', () async {
+    httpClient.stubTable('stock', rows: [], schema: 'archive');
+
+    await client.schema('archive').table(InventoryStock.table).select();
+
+    expect(httpClient.requests.last.headers['Accept-Profile'], 'archive');
+  });
+
+  test(
+    'relation members of tables outside public project embedded columns',
+    () async {
+      httpClient.stubTable('stock', rows: [], schema: 'inventory');
+
+      await client.table(InventoryStock.table).select([
+        InventoryStock.id,
+        InventoryStock.books(InventoryBooks.isbn),
+      ]);
+
+      expect(
+        httpClient.requests.last.queryParameters['select'],
+        'id,books(isbn)',
+      );
+    },
+  );
+
   test('relation members project embedded columns', () async {
     await client.table(Books.table).select([
       Books.id,

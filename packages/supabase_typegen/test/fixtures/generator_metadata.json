@@ -2,12 +2,43 @@
   "version": 1,
   "schemas": [
     {
+      "id": 16434,
+      "name": "inventory",
+      "owner": "postgres"
+    },
+    {
       "id": 2200,
       "name": "public",
       "owner": "pg_database_owner"
     }
   ],
   "tables": [
+    {
+      "id": 16442,
+      "schema": "inventory",
+      "name": "books",
+      "rls_enabled": false,
+      "rls_forced": false,
+      "replica_identity": "DEFAULT",
+      "bytes": 16384,
+      "size": "16 kB",
+      "live_rows_estimate": 0,
+      "dead_rows_estimate": 0,
+      "comment": null
+    },
+    {
+      "id": 16450,
+      "schema": "inventory",
+      "name": "stock",
+      "rls_enabled": false,
+      "rls_forced": false,
+      "replica_identity": "DEFAULT",
+      "bytes": 8192,
+      "size": "8192 bytes",
+      "live_rows_estimate": 0,
+      "dead_rows_estimate": 0,
+      "comment": "Copies held per book"
+    },
     {
       "id": 16392,
       "schema": "public",
@@ -75,6 +106,156 @@
     }
   ],
   "columns": [
+    {
+      "table_id": 16442,
+      "schema": "inventory",
+      "table": "books",
+      "id": "16442.1",
+      "ordinal_position": 1,
+      "name": "id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": true,
+      "identity_generation": "ALWAYS",
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16442,
+      "schema": "inventory",
+      "table": "books",
+      "id": "16442.2",
+      "ordinal_position": 2,
+      "name": "isbn",
+      "default_value": null,
+      "data_type": "text",
+      "format": "text",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16450,
+      "schema": "inventory",
+      "table": "stock",
+      "id": "16450.2",
+      "ordinal_position": 2,
+      "name": "book_id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16450,
+      "schema": "inventory",
+      "table": "stock",
+      "id": "16450.4",
+      "ordinal_position": 4,
+      "name": "condition",
+      "default_value": "'new'::inventory.condition",
+      "data_type": "USER-DEFINED",
+      "format": "condition",
+      "type_schema": "inventory",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [
+        "new",
+        "used"
+      ],
+      "comment": null
+    },
+    {
+      "table_id": 16450,
+      "schema": "inventory",
+      "table": "stock",
+      "id": "16450.3",
+      "ordinal_position": 3,
+      "name": "copy_id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16450,
+      "schema": "inventory",
+      "table": "stock",
+      "id": "16450.1",
+      "ordinal_position": 1,
+      "name": "id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": true,
+      "identity_generation": "ALWAYS",
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16450,
+      "schema": "inventory",
+      "table": "stock",
+      "id": "16450.5",
+      "ordinal_position": 5,
+      "name": "quantity",
+      "default_value": "0",
+      "data_type": "integer",
+      "format": "int4",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
     {
       "table_id": 16414,
       "schema": "public",
@@ -649,6 +830,18 @@
   ],
   "primaryKeys": [
     {
+      "table_id": 16442,
+      "schema": "inventory",
+      "table_name": "books",
+      "name": "id"
+    },
+    {
+      "table_id": 16450,
+      "schema": "inventory",
+      "table_name": "stock",
+      "name": "id"
+    },
+    {
       "table_id": 16392,
       "schema": "public",
       "table_name": "authors",
@@ -689,6 +882,62 @@
       "referenced_columns": [
         "id"
       ]
+    },
+    {
+      "foreign_key_name": "stock_book_id_fkey",
+      "schema": "inventory",
+      "relation": "stock",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "book_prices",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "stock_book_id_fkey",
+      "schema": "inventory",
+      "relation": "stock",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "book_summaries",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "stock_book_id_fkey",
+      "schema": "inventory",
+      "relation": "stock",
+      "columns": [
+        "book_id"
+      ],
+      "referenced_schema": "public",
+      "referenced_relation": "books",
+      "referenced_columns": [
+        "id"
+      ],
+      "is_one_to_one": false
+    },
+    {
+      "foreign_key_name": "stock_copy_id_fkey",
+      "schema": "inventory",
+      "relation": "stock",
+      "columns": [
+        "copy_id"
+      ],
+      "referenced_schema": "inventory",
+      "referenced_relation": "books",
+      "referenced_columns": [
+        "id"
+      ],
+      "is_one_to_one": false
     }
   ],
   "functions": [],
@@ -2172,6 +2421,69 @@
       "attributes": [],
       "comment": null,
       "type_relation_id": null
+    },
+    {
+      "id": 16443,
+      "name": "_books",
+      "schema": "inventory",
+      "format": "inventory.books[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16435,
+      "name": "_condition",
+      "schema": "inventory",
+      "format": "inventory.condition[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16451,
+      "name": "_stock",
+      "schema": "inventory",
+      "format": "inventory.stock[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16444,
+      "name": "books",
+      "schema": "inventory",
+      "format": "inventory.books",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16442
+    },
+    {
+      "id": 16436,
+      "name": "condition",
+      "schema": "inventory",
+      "format": "inventory.condition",
+      "enums": [
+        "new",
+        "used"
+      ],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16452,
+      "name": "stock",
+      "schema": "inventory",
+      "format": "inventory.stock",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16450
     },
     {
       "id": 1034,

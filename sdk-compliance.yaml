@@ -808,6 +808,7 @@ features:
       - PostgrestTable
       - PostgrestTable.PostgrestTable
       - PostgrestTable.name
+      - PostgrestTable.schema
       - PostgrestTable.rowFromJson
       - PostgrestTable.primaryKey
       - PostgrestTable.relations

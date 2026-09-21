@@ -47,7 +47,9 @@ class SupabaseQuerySchema {
     );
   }
 
-  /// Perform a typed table operation, see [SupabaseClient.table].
+  /// Perform a typed table operation in this schema, see
+  /// [SupabaseClient.table]. The schema of this object wins over
+  /// [PostgrestTable.schema].
   @experimental
   SupabaseTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
     PostgrestTable<Row, Insert, Update> table,

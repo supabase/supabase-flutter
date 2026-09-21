@@ -48,25 +48,26 @@ enum ColumnTypeKind {
   unknown,
 }
 
-/// Description of a single database schema, the input to the code generator.
-class SchemaDescription {
-  const SchemaDescription({
-    required this.schemaName,
+/// Description of the schemas of a database that types are generated for,
+/// the input to the code generator.
+class DatabaseDescription {
+  const DatabaseDescription({
+    required this.schemaNames,
     required this.tables,
     required this.enums,
     this.relationships = const [],
   });
 
-  /// Name of the database schema, for example `public`.
-  final String schemaName;
+  /// Names of the described schemas, sorted, for example `['public']`.
+  final List<String> schemaNames;
 
-  /// Tables and views of the schema, sorted by name.
+  /// Tables and views of the schemas, sorted by schema and name.
   final List<TableDescription> tables;
 
-  /// Postgres enums referenced by the tables, sorted by name.
+  /// Postgres enums referenced by the tables, sorted by qualified name.
   final List<EnumDescription> enums;
 
-  /// Foreign keys between tables of the schema, in database order.
+  /// Foreign keys between the tables, in database order.
   final List<RelationshipDescription> relationships;
 }
 
@@ -74,8 +75,10 @@ class SchemaDescription {
 class RelationshipDescription {
   const RelationshipDescription({
     required this.foreignKeyName,
+    required this.sourceSchema,
     required this.sourceTable,
     required this.sourceColumns,
+    required this.targetSchema,
     required this.targetTable,
     required this.targetColumns,
     this.isOneToOne = false,
@@ -84,11 +87,17 @@ class RelationshipDescription {
   /// The constraint name, which PostgREST accepts as an embed hint.
   final String foreignKeyName;
 
+  /// The schema of [sourceTable].
+  final String sourceSchema;
+
   /// The table holding the foreign key columns.
   final String sourceTable;
 
   /// The foreign key columns, in constraint order.
   final List<String> sourceColumns;
+
+  /// The schema of [targetTable].
+  final String targetSchema;
 
   /// The referenced table.
   final String targetTable;
@@ -104,6 +113,7 @@ class RelationshipDescription {
 /// Description of a table or view.
 class TableDescription {
   const TableDescription({
+    required this.schema,
     required this.name,
     required this.columns,
     this.primaryKey = const [],
@@ -112,8 +122,14 @@ class TableDescription {
     this.isUpdatable = true,
   });
 
+  /// Name of the schema the table lives in, for example `public`.
+  final String schema;
+
   /// Name of the table in the database.
   final String name;
+
+  /// The schema-qualified name, for example `public.books`.
+  String get qualifiedName => '$schema.$name';
 
   /// The table comment, when one is set.
   final String? comment;
@@ -199,7 +215,14 @@ class ColumnDescription {
 
 /// The target of a foreign key column.
 class ForeignKeyDescription {
-  const ForeignKeyDescription({required this.table, required this.column});
+  const ForeignKeyDescription({
+    required this.schema,
+    required this.table,
+    required this.column,
+  });
+
+  /// The schema of the referenced [table].
+  final String schema;
 
   /// The referenced table.
   final String table;
@@ -222,4 +245,8 @@ class EnumDescription {
   String get name => qualifiedName.contains('.')
       ? qualifiedName.split('.').last
       : qualifiedName;
+
+  /// The schema of the enum, `public` when [qualifiedName] carries none.
+  String get schema =>
+      qualifiedName.contains('.') ? qualifiedName.split('.').first : 'public';
 }

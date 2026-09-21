@@ -10,4 +10,5 @@ library;
 export 'src/introspection/introspect.dart';
 export 'src/introspection/queryable.dart';
 export 'src/introspection/sort.dart';
+export 'src/introspection/supabase_config_io.dart';
 export 'src/introspection/supabase_cli_io.dart';

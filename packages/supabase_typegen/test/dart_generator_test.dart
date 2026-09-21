@@ -13,7 +13,7 @@ final _whitespace = RegExp(r'\s+');
 String _normalize(String code) => code.replaceAll(_whitespace, ' ').trim();
 
 void main() {
-  late SchemaDescription schema;
+  late DatabaseDescription schema;
 
   setUpAll(() {
     final document =
@@ -58,12 +58,16 @@ void main() {
 
     expect(
       compact,
-      contains("PostgrestColumn<MapRow,PostgrestRange<int>>('pages')"),
+      contains(
+        "PostgrestColumn<MapRow,PostgrestRange<int>>"
+        "('pages'",
+      ),
     );
     expect(
       compact,
       contains(
-        "PostgrestNullableColumn<MapRow,PostgrestRange<DateTime>>('during')",
+        "PostgrestNullableColumn<MapRow,"
+        "PostgrestRange<DateTime>>('during'",
       ),
     );
     expect(
@@ -88,6 +92,59 @@ void main() {
       contains(
         "'during':?during?.render((bound)=>bound.toUtc().toIso8601String()),",
       ),
+    );
+  });
+
+  test('names objects outside public after their schema and emits the '
+      'schema of every table', () {
+    final code = generateDartCode(schema);
+
+    expect(code, contains('// Source schemas: inventory, public'));
+    expect(code, contains('enum InventoryCondition {'));
+    expect(code, contains('enum Mood {'));
+    expect(code, contains('extension type const InventoryBooksRow('));
+    expect(code, contains('extension type const BooksRow('));
+    expect(code, contains('class InventoryStock {'));
+    expect(code, contains("/// Typed access to the `inventory.stock` table."));
+    expect(code, contains("/// Typed access to the `books` table."));
+    final compact = _normalize(code).replaceAll(' ', '');
+    expect(
+      compact,
+      contains(
+        "PostgrestTable<InventoryStockRow,InventoryStockInsert,"
+        "InventoryStockUpdate>('stock',InventoryStockRow.new,"
+        "schema:'inventory'",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestTable<BooksRow,BooksInsert,BooksUpdate>('books',BooksRow.new,"
+        "schema:'public'",
+      ),
+    );
+  });
+
+  test('keys into another schema produce no relation member', () {
+    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
+
+    // inventory.stock references inventory.books and public.books; only the
+    // key within the schema is embeddable through PostgREST.
+    expect(
+      compact,
+      contains(
+        "staticconstbooks=PostgrestToOneRelation<InventoryStockRow,"
+        "InventoryBooksRow>('books'",
+      ),
+    );
+    expect(compact, isNot(contains('<InventoryStockRow,BooksRow>')));
+    expect(compact, isNot(contains('<BooksRow,InventoryStockRow>')));
+
+    final hostile = _normalize(generateDartCode(hostileSchema));
+    expect(hostile, contains('class EvilMultilineSchemaNamePostgrestColumn {'));
+    expect(
+      hostile,
+      isNot(contains('EvilMultilineSchemaNamePostgrestColumnRow>')),
     );
   });
 
@@ -119,7 +176,8 @@ void main() {
       compact,
       contains(
         "staticconsttable=PostgrestTable<BooksRow,BooksInsert,BooksUpdate>("
-        "'books',BooksRow.new,primaryKey:[id],relations:[authors],);",
+        "'books',BooksRow.new,schema:'public',primaryKey:[id],"
+        "relations:[authors],);",
       ),
     );
   });
@@ -127,10 +185,11 @@ void main() {
   test(
     'a primary key over a column the document does not list is rejected',
     () {
-      const malformed = SchemaDescription(
-        schemaName: 'public',
+      const malformed = DatabaseDescription(
+        schemaNames: ['public'],
         tables: [
           TableDescription(
+            schema: 'public',
             name: 'todos',
             primaryKey: ['id', 'missing'],
             columns: [
@@ -170,7 +229,9 @@ void main() {
 
     expect(
       compact,
-      contains("('author_stats',AuthorStatsRow.new,primaryKey:[],"),
+      contains(
+        "('author_stats',AuthorStatsRow.new,schema:'public',primaryKey:[],",
+      ),
     );
     expect(hostile, contains('primaryKey:[quoteNameTail,days]'));
   });
@@ -184,15 +245,17 @@ void main() {
     expect(
       compact,
       contains(
-        "staticconstmapByMood=PostgrestToOneRelation<PostgrestTableRow,"
-        "MapRow>('map!postgrest_table_mood_fkey'",
+        "staticconstmapByMood=PostgrestToOneRelation<"
+        "PostgrestTableRow,MapRow>"
+        "('map!postgrest_table_mood_fkey'",
       ),
     );
     expect(
       compact,
       contains(
-        "staticconstpostgrestTableViaDays=PostgrestToOneRelation<MapRow,"
-        "PostgrestTableRow>('postgrest_table!postgrest_table_days_fkey'",
+        "staticconstpostgrestTableViaDays=PostgrestToOneRelation<"
+        "MapRow,PostgrestTableRow>"
+        "('postgrest_table!postgrest_table_days_fkey'",
       ),
     );
   });
@@ -203,7 +266,14 @@ void main() {
       generateDartCode(hostileSchema),
     ).replaceAll(' ', '');
 
-    expect(compact, isNot(contains('<MapRow,MapRow>')));
+    expect(
+      compact,
+      isNot(
+        contains(
+          '<MapRow,MapRow>',
+        ),
+      ),
+    );
     expect(compact, isNot(contains('mapByList')));
   });
 
@@ -301,16 +371,18 @@ void main() {
       isNullable: true,
     );
     final code = generateDartCode(
-      SchemaDescription(
-        schemaName: 'public',
+      DatabaseDescription(
+        schemaNames: const ['public'],
         tables: [
           TableDescription(
+            schema: 'public',
             name: 'book_submissions',
             columns: [titleColumn()],
             isInsertable: true,
             isUpdatable: false,
           ),
           TableDescription(
+            schema: 'public',
             name: 'book_corrections',
             columns: [titleColumn()],
             isInsertable: false,
@@ -330,8 +402,8 @@ void main() {
 
   test('encodes hostile schema names and import URIs in the header', () {
     final code = generateDartCode(
-      SchemaDescription(
-        schemaName: 'evil\nimport "dart:io";',
+      DatabaseDescription(
+        schemaNames: const ['evil\nimport "dart:io";', 'public'],
         tables: const [],
         enums: const [],
       ),
@@ -339,7 +411,7 @@ void main() {
     );
 
     expect(code, isNot(contains('evil\nimport')));
-    expect(code, contains('// Source schema: evil import "dart:io";'));
+    expect(code, contains('// Source schemas: evil import "dart:io";, public'));
     expect(
       code,
       contains(
@@ -351,10 +423,11 @@ void main() {
 
   test('schema names shadowing core or imported types are suffixed', () {
     final code = generateDartCode(
-      SchemaDescription(
-        schemaName: 'public',
+      DatabaseDescription(
+        schemaNames: const ['public'],
         tables: const [
           TableDescription(
+            schema: 'public',
             name: 'postgrest_table',
             columns: [
               ColumnDescription(
@@ -381,10 +454,11 @@ void main() {
 
   test('floating array elements convert through num', () {
     final code = generateDartCode(
-      SchemaDescription(
-        schemaName: 'public',
+      DatabaseDescription(
+        schemaNames: const ['public'],
         tables: const [
           TableDescription(
+            schema: 'public',
             name: 'metrics',
             columns: [
               ColumnDescription(
@@ -409,10 +483,11 @@ void main() {
 
   test('database comments cannot escape generated doc comments', () {
     final code = generateDartCode(
-      SchemaDescription(
-        schemaName: 'public',
+      DatabaseDescription(
+        schemaNames: const ['public'],
         tables: const [
           TableDescription(
+            schema: 'public',
             name: 'books',
             comment: 'first\rimport "dart:io";\u2028second',
             columns: [
@@ -438,10 +513,11 @@ void main() {
 
   test('string literals escape unicode line separators', () {
     final code = generateDartCode(
-      SchemaDescription(
-        schemaName: 'public',
+      DatabaseDescription(
+        schemaNames: const ['public'],
         tables: const [
           TableDescription(
+            schema: 'public',
             name: 'books',
             columns: [
               ColumnDescription(
@@ -465,10 +541,11 @@ void main() {
 
   test('temporal and enum array elements read as wire strings', () {
     final code = generateDartCode(
-      SchemaDescription(
-        schemaName: 'public',
+      DatabaseDescription(
+        schemaNames: const ['public'],
         tables: const [
           TableDescription(
+            schema: 'public',
             name: 'events',
             columns: [
               ColumnDescription(
@@ -493,6 +570,7 @@ void main() {
   test('tables whose columns are all read-only get parameterless '
       'insert and update constructors', () {
     final table = TableDescription(
+      schema: 'public',
       name: 'counters',
       comment: null,
       columns: [
@@ -508,7 +586,11 @@ void main() {
       ],
     );
     final code = generateDartCode(
-      SchemaDescription(schemaName: 'public', tables: [table], enums: []),
+      DatabaseDescription(
+        schemaNames: const ['public'],
+        tables: [table],
+        enums: const [],
+      ),
     );
 
     expect(code, contains('CountersInsert() : this._({});'));

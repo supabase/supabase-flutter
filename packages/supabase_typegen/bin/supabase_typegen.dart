@@ -6,10 +6,14 @@ import 'package:supabase_typegen/introspection.dart';
 import 'package:supabase_typegen/supabase_typegen.dart';
 
 final _argParser = ArgParser()
-  ..addOption(
+  ..addMultiOption(
     'schema',
-    defaultsTo: 'public',
-    help: 'The database schema to generate types for.',
+    valueHelp: 'name',
+    help:
+        'A database schema to generate types for; repeat the option or '
+        'separate names with commas for several. Defaults to public and the '
+        'api.schemas of supabase/config.toml in the working directory, like '
+        '`supabase gen types`.',
   )
   ..addOption(
     'output',
@@ -92,19 +96,30 @@ Future<int> _run(List<String> arguments) async {
     return 0;
   }
 
-  final schemaName = options.option('schema')!;
+  final namedSchemas = options.multiOption('schema');
   final dumpMetadata = options.flag('dump-metadata');
 
   final Map<String, dynamic> document;
+  // The schemas to describe: the named ones, or for a database the default
+  // set; a document on stdin already holds the schemas its producer chose.
+  var requestedSchemas = namedSchemas;
   switch (_resolveTarget(options)) {
     case _Failure(:final message):
       stderr.writeln(message);
       return 64;
     case _Introspect(:final target):
+      final List<String> schemaNames;
+      try {
+        schemaNames = namedSchemas.isEmpty ? defaultSchemas() : namedSchemas;
+      } on FormatException catch (error) {
+        stderr.writeln(error.message);
+        return 78;
+      }
+      requestedSchemas = schemaNames;
       try {
         document = await introspectDatabase(
           target,
-          includedSchemas: [schemaName],
+          includedSchemas: schemaNames,
         );
       } on SupabaseCliException catch (error) {
         stderr.writeln(error.message);
@@ -159,26 +174,36 @@ Future<int> _run(List<String> arguments) async {
     return 0;
   }
 
-  final SchemaDescription schema;
+  final DatabaseDescription database;
   try {
-    schema = parseGeneratorMetadata(document, schemaName: schemaName);
+    database = parseGeneratorMetadata(
+      document,
+      schemaNames: requestedSchemas.isEmpty ? null : requestedSchemas,
+    );
   } on FormatException catch (error) {
     stderr.writeln('Could not parse the document: ${error.message}');
     return 65;
   }
+  for (final schema in requestedSchemas) {
+    if (!database.schemaNames.contains(schema)) {
+      stderr.writeln('The database has no schema "$schema".');
+    }
+  }
 
   final generatedInto = _write(
     output,
-    generateDartCode(schema, importUri: options.option('import')!),
+    generateDartCode(database, importUri: options.option('import')!),
   );
 
-  final emittedTables = schema.tables
+  final emittedTables = database.tables
       .where((table) => table.columns.isNotEmpty)
       .length;
-  final skippedTables = schema.tables.length - emittedTables;
+  final skippedTables = database.tables.length - emittedTables;
+  final schemaList = database.schemaNames.map((name) => '"$name"').join(', ');
   summarySink.writeln(
     'Generated $generatedInto with $emittedTables tables and '
-    '${schema.enums.length} enums from schema "$schemaName".'
+    '${database.enums.length} enums from '
+    '${database.schemaNames.length == 1 ? 'schema' : 'schemas'} $schemaList.'
     '${skippedTables == 0 ? '' : ' Skipped $skippedTables tables '
               'without columns.'}',
   );

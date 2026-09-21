@@ -88,3 +88,24 @@ $$;
 CREATE TRIGGER book_submissions_insert
 INSTEAD OF INSERT ON public.book_submissions
 FOR EACH ROW EXECUTE FUNCTION public.insert_book_submission();
+
+-- A second schema: its objects are generated with the schema as a name
+-- prefix, a table named like public.books proves the prefixing, and the keys
+-- of inventory.stock relate tables within the schema and across schemas.
+CREATE SCHEMA inventory;
+
+CREATE TYPE inventory.condition AS ENUM ('new', 'used');
+
+CREATE TABLE inventory.books (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  isbn text NOT NULL
+);
+
+CREATE TABLE inventory.stock (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  book_id bigint NOT NULL REFERENCES public.books (id),
+  copy_id bigint NOT NULL REFERENCES inventory.books (id),
+  condition inventory.condition NOT NULL DEFAULT 'new',
+  quantity integer NOT NULL DEFAULT 0
+);
+COMMENT ON TABLE inventory.stock IS 'Copies held per book';
