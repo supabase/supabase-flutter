@@ -35,6 +35,9 @@ dev_dependencies:
   melos: ^8.2.1
 
 melos:
+  ide:
+    intellij: false
+
   command:
     version:
       linkToCommits: true
