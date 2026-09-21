@@ -39,4 +39,58 @@ void main() {
 
     expect(httpClient.requests.last.queryParameters['id'], 'not.in.(1,2,3)');
   });
+
+  test('escapes a comma in a likeAllOf pattern', () async {
+    await client.from('t').select().likeAllOf('name', ['a,b']);
+
+    // Unquoted, the comma would split the array literal into the two patterns
+    // `a` and `b`, which no row matches under `all`.
+    expect(
+      httpClient.requests.last.queryParameters['name'],
+      'like(all).{"a,b"}',
+    );
+  });
+
+  test('escapes a backslash in a likeAnyOf pattern', () async {
+    await client.from('t').select().likeAnyOf('name', [r'50\%']);
+
+    // The array literal consumes the backslash, so unescaped this reaches LIKE
+    // as `50%` and the pattern matches any string starting with 50 rather than
+    // the literal `50%`.
+    expect(
+      httpClient.requests.last.queryParameters['name'],
+      r'like(any).{"50\\%"}',
+    );
+  });
+
+  test('escapes a double quote in an ilikeAllOf pattern', () async {
+    await client.from('t').select().ilikeAllOf('name', [r'a"b']);
+
+    expect(
+      httpClient.requests.last.queryParameters['name'],
+      r'ilike(all).{"a\"b"}',
+    );
+  });
+
+  test('escapes a closing brace in an ilikeAnyOf pattern', () async {
+    await client.from('t').select().ilikeAnyOf('name', ['a}b']);
+
+    expect(
+      httpClient.requests.last.queryParameters['name'],
+      'ilike(any).{"a}b"}',
+    );
+  });
+
+  test(
+    'matches the array literal the not() spelling already produces',
+    () async {
+      await client.from('t').select().likeAllOf('name', ['a,b']);
+      final direct = httpClient.requests.last.queryParameters['name'];
+
+      await client.from('t').select().not('name', 'like(all)', ['a,b']);
+      final negated = httpClient.requests.last.queryParameters['name'];
+
+      expect(negated, 'not.$direct');
+    },
+  );
 }

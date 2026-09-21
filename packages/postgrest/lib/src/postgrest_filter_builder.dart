@@ -176,7 +176,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> likeAllOf(String column, List<String> patterns) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'like(all).{${patterns.join(',')}}'),
+      _url.appendSearchParameters(
+        column,
+        'like(all).{${_cleanFilterList(patterns)}}',
+      ),
     );
   }
 
@@ -190,7 +193,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> likeAnyOf(String column, List<String> patterns) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'like(any).{${patterns.join(',')}}'),
+      _url.appendSearchParameters(
+        column,
+        'like(any).{${_cleanFilterList(patterns)}}',
+      ),
     );
   }
 
@@ -218,7 +224,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> ilikeAllOf(String column, List<String> patterns) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'ilike(all).{${patterns.join(',')}}'),
+      _url.appendSearchParameters(
+        column,
+        'ilike(all).{${_cleanFilterList(patterns)}}',
+      ),
     );
   }
 
@@ -233,7 +242,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> ilikeAnyOf(String column, List<String> patterns) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'ilike(any).{${patterns.join(',')}}'),
+      _url.appendSearchParameters(
+        column,
+        'ilike(any).{${_cleanFilterList(patterns)}}',
+      ),
     );
   }
 
