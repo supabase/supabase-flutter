@@ -835,7 +835,7 @@ features:
       - PostgrestTableRequest.stripNulls
       - PostgrestTableRequest.dryRun
       - PostgrestTableRequest.explainOptions
-      - PostgrestTableRequest.returnsRows
+      - PostgrestTableRequest.returning
       - PostgrestTableRequest.copyWith
       - PostgrestTableOperation
       - PostgrestTableOperation.isMutation
