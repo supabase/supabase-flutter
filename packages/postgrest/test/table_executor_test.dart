@@ -372,6 +372,31 @@ void main() {
       expect(parameters.containsKey('limit'), isFalse);
     });
 
+    test('renders an embedded offset without a limit', () async {
+      await PostgrestHttpTableExecutor(client).execute(
+        PostgrestTableRequest(
+          table: Books.table,
+          operation: PostgrestTableOperation.select,
+          embeddedPages: const [PostgrestEmbeddedPage('authors', offset: 3)],
+        ),
+      );
+
+      final parameters = httpClient.requests.single.queryParameters;
+      expect(parameters['authors.offset'], '3');
+      expect(parameters.containsKey('authors.limit'), isFalse);
+    });
+
+    test('a request without a schema keeps the schema of the client', () async {
+      await PostgrestHttpTableExecutor(client.schema('library')).execute(
+        PostgrestTableRequest(
+          table: Books.table,
+          operation: PostgrestTableOperation.select,
+        ),
+      );
+
+      expect(httpClient.requests.single.headers['Accept-Profile'], 'library');
+    });
+
     test('rejects a filter on an insert instead of dropping it', () {
       final request = PostgrestTableRequest(
         table: Books.table,

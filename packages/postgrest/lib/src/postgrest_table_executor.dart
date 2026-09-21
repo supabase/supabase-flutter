@@ -116,8 +116,9 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     }
   }
 
-  /// Applies the filter of [request] and, when it pages with an offset but
-  /// no limit, the offset the transforms have no method for.
+  /// Applies the filter of [request] and every offset that comes without a
+  /// limit, on the table or on an embedded relation, which the transforms
+  /// have no method for.
   static PostgrestFilterBuilder<T> _applyFilter<T>(
     PostgrestFilterBuilder<T> builder,
     PostgrestTableRequest request,
@@ -129,6 +130,15 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     final offset = request.offset;
     if (offset != null && request.limit == null) {
       filtered = filtered.appendSearchParameter('offset', '$offset');
+    }
+    for (final page in request.embeddedPages) {
+      final pageOffset = page.offset;
+      if (pageOffset != null && page.limit == null) {
+        filtered = filtered.appendSearchParameter(
+          '${page.referencedTable}.offset',
+          '$pageOffset',
+        );
+      }
     }
     return filtered;
   }

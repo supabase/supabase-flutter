@@ -132,14 +132,14 @@ class PostgrestClient {
   PostgrestQueryBuilder from(String table) => fromInSchema(table, _schema);
 
   /// Like [from], but with the request scoped to [schema] instead of the
-  /// schema this client was created with.
+  /// schema this client was created with; `null` keeps the client's schema.
   @internal
   PostgrestQueryBuilder fromInSchema(String table, String? schema) {
     final requestUrl = '$url/$table';
     return PostgrestQueryBuilder(
       url: Uri.parse(requestUrl),
       headers: headers,
-      schema: schema,
+      schema: schema ?? _schema,
       httpClient: httpClient,
       jsonCodec: _jsonCodec,
       retryOptions: retryOptions,
