@@ -1,3 +1,13 @@
+## 3.0.0-dev.6
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+ - **FIX**(auth): report a malformed expires_in as an AuthException ([#1863](https://github.com/supabase/supabase-flutter/issues/1863)). ([530afa43](https://github.com/supabase/supabase-flutter/commit/530afa438499ad2dfef23f34a0b5e1129498d871))
+ - **FIX**(auth): list OAuth clients when the project has none ([#1860](https://github.com/supabase/supabase-flutter/issues/1860)). ([0955f37d](https://github.com/supabase/supabase-flutter/commit/0955f37d00c9789452ac51a263a57bfd405cbe1d))
+ - **FEAT**(auth): expose logoUri on the admin OAuth client types ([#1856](https://github.com/supabase/supabase-flutter/issues/1856)). ([85046a44](https://github.com/supabase/supabase-flutter/commit/85046a4456f52fade2d5ad42a731f6b27d6d6df0))
+ - **BREAKING** **FIX**(auth): parse OAuth clients without a name ([#1854](https://github.com/supabase/supabase-flutter/issues/1854)). ([8d7754c0](https://github.com/supabase/supabase-flutter/commit/8d7754c0a66a8e6f9a2e38a5bf37eda8a3b6c227))
+
 ## 3.0.0-dev.5
 
 > Note: This release has breaking changes.

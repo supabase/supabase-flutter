@@ -1,3 +1,12 @@
+## 0.3.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_typegen): look up the configuration from an explicit directory ([#1867](https://github.com/supabase/supabase-flutter/issues/1867)). ([d0cee6c0](https://github.com/supabase/supabase-flutter/commit/d0cee6c0878ea43170982e6a505f7a422feac5f7))
+ - **BREAKING** **FIX**(typegen): map bytea columns to Uint8List instead of String ([#1866](https://github.com/supabase/supabase-flutter/issues/1866)). ([2bb3ff02](https://github.com/supabase/supabase-flutter/commit/2bb3ff027968c4a590182876da03822a4104a375))
+ - **BREAKING** **FEAT**(typegen): generate types for every exposed schema and route typed tables to their schema ([#1861](https://github.com/supabase/supabase-flutter/issues/1861)). ([6f9e716b](https://github.com/supabase/supabase-flutter/commit/6f9e716b9a55d8bf64ccad1829ee77bdbfc87caa))
+ - **BREAKING** **FEAT**(postgrest): carry primary keys and relation columns on PostgrestTable and emit them from typegen ([#1859](https://github.com/supabase/supabase-flutter/issues/1859)). ([04ce54cf](https://github.com/supabase/supabase-flutter/commit/04ce54cfb96f64d69e1670522f2ef68183a7feb9))
+
 ## 0.2.0
 
 > Note: This release has breaking changes.

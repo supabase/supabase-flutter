@@ -3,6 +3,98 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-21
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.6`](#postgrest---v300-dev6)
+ - [`supabase` - `v3.0.0-dev.6`](#supabase---v300-dev6)
+ - [`supabase_auth` - `v3.0.0-dev.6`](#supabase_auth---v300-dev6)
+ - [`supabase_common` - `v3.0.0-dev.4`](#supabase_common---v300-dev4)
+ - [`supabase_flutter` - `v3.0.0-dev.6`](#supabase_flutter---v300-dev6)
+ - [`supabase_test` - `v0.4.0`](#supabase_test---v040)
+ - [`supabase_typegen` - `v0.3.0`](#supabase_typegen---v030)
+
+Packages with other changes:
+
+ - [`supabase_functions` - `v3.0.0-dev.5`](#supabase_functions---v300-dev5)
+ - [`supabase_realtime` - `v3.0.0-dev.6`](#supabase_realtime---v300-dev6)
+ - [`supabase_storage` - `v3.0.0-dev.5`](#supabase_storage---v300-dev5)
+ - [`iceberg` - `v0.1.3`](#iceberg---v013)
+ - [`supabase_flutter_web_auth` - `v0.1.4`](#supabase_flutter_web_auth---v014)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `iceberg` - `v0.1.3`
+ - `supabase_flutter_web_auth` - `v0.1.4`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.6`
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+ - **BREAKING** **FIX**(typegen): map bytea columns to Uint8List instead of String ([#1866](https://github.com/supabase/supabase-flutter/issues/1866)). ([2bb3ff02](https://github.com/supabase/supabase-flutter/commit/2bb3ff027968c4a590182876da03822a4104a375))
+ - **BREAKING** **FIX**(postgrest): disallow filters chained after insert() and upsert() ([#1865](https://github.com/supabase/supabase-flutter/issues/1865)). ([86621a3f](https://github.com/supabase/supabase-flutter/commit/86621a3f76f84f01a9bb718667ee6e9b75093470))
+ - **BREAKING** **FEAT**(postgrest): execute typed table builders through a PostgrestTableExecutor and add SupabaseClientPlugin ([#1857](https://github.com/supabase/supabase-flutter/issues/1857)). ([3ecb09b1](https://github.com/supabase/supabase-flutter/commit/3ecb09b1ad2013277282b5f0c694f2272132a355))
+ - **BREAKING** **FEAT**(typegen): generate types for every exposed schema and route typed tables to their schema ([#1861](https://github.com/supabase/supabase-flutter/issues/1861)). ([6f9e716b](https://github.com/supabase/supabase-flutter/commit/6f9e716b9a55d8bf64ccad1829ee77bdbfc87caa))
+ - **BREAKING** **FEAT**(postgrest): carry primary keys and relation columns on PostgrestTable and emit them from typegen ([#1859](https://github.com/supabase/supabase-flutter/issues/1859)). ([04ce54cf](https://github.com/supabase/supabase-flutter/commit/04ce54cfb96f64d69e1670522f2ef68183a7feb9))
+
+#### `supabase` - `v3.0.0-dev.6`
+
+ - **BREAKING** **FEAT**(postgrest): execute typed table builders through a PostgrestTableExecutor and add SupabaseClientPlugin ([#1857](https://github.com/supabase/supabase-flutter/issues/1857)). ([3ecb09b1](https://github.com/supabase/supabase-flutter/commit/3ecb09b1ad2013277282b5f0c694f2272132a355))
+ - **BREAKING** **FEAT**(typegen): generate types for every exposed schema and route typed tables to their schema ([#1861](https://github.com/supabase/supabase-flutter/issues/1861)). ([6f9e716b](https://github.com/supabase/supabase-flutter/commit/6f9e716b9a55d8bf64ccad1829ee77bdbfc87caa))
+ - **BREAKING** **FEAT**(postgrest): carry primary keys and relation columns on PostgrestTable and emit them from typegen ([#1859](https://github.com/supabase/supabase-flutter/issues/1859)). ([04ce54cf](https://github.com/supabase/supabase-flutter/commit/04ce54cfb96f64d69e1670522f2ef68183a7feb9))
+ - **BREAKING** **FEAT**(supabase): keep idle connections open for 60 seconds by default ([#1855](https://github.com/supabase/supabase-flutter/issues/1855)). ([db7f5cc9](https://github.com/supabase/supabase-flutter/commit/db7f5cc954fed323da10ec13030f8d5c26581fe8))
+
+#### `supabase_auth` - `v3.0.0-dev.6`
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+ - **FIX**(auth): report a malformed expires_in as an AuthException ([#1863](https://github.com/supabase/supabase-flutter/issues/1863)). ([530afa43](https://github.com/supabase/supabase-flutter/commit/530afa438499ad2dfef23f34a0b5e1129498d871))
+ - **FIX**(auth): list OAuth clients when the project has none ([#1860](https://github.com/supabase/supabase-flutter/issues/1860)). ([0955f37d](https://github.com/supabase/supabase-flutter/commit/0955f37d00c9789452ac51a263a57bfd405cbe1d))
+ - **FEAT**(auth): expose logoUri on the admin OAuth client types ([#1856](https://github.com/supabase/supabase-flutter/issues/1856)). ([85046a44](https://github.com/supabase/supabase-flutter/commit/85046a4456f52fade2d5ad42a731f6b27d6d6df0))
+ - **BREAKING** **FIX**(auth): parse OAuth clients without a name ([#1854](https://github.com/supabase/supabase-flutter/issues/1854)). ([8d7754c0](https://github.com/supabase/supabase-flutter/commit/8d7754c0a66a8e6f9a2e38a5bf37eda8a3b6c227))
+
+#### `supabase_common` - `v3.0.0-dev.4`
+
+ - **BREAKING** **FEAT**(supabase): keep idle connections open for 60 seconds by default ([#1855](https://github.com/supabase/supabase-flutter/issues/1855)). ([db7f5cc9](https://github.com/supabase/supabase-flutter/commit/db7f5cc954fed323da10ec13030f8d5c26581fe8))
+
+#### `supabase_flutter` - `v3.0.0-dev.6`
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+ - **BREAKING** **FEAT**(postgrest): execute typed table builders through a PostgrestTableExecutor and add SupabaseClientPlugin ([#1857](https://github.com/supabase/supabase-flutter/issues/1857)). ([3ecb09b1](https://github.com/supabase/supabase-flutter/commit/3ecb09b1ad2013277282b5f0c694f2272132a355))
+ - **BREAKING** **FEAT**(supabase): keep idle connections open for 60 seconds by default ([#1855](https://github.com/supabase/supabase-flutter/issues/1855)). ([db7f5cc9](https://github.com/supabase/supabase-flutter/commit/db7f5cc954fed323da10ec13030f8d5c26581fe8))
+
+#### `supabase_test` - `v0.4.0`
+
+ - **BREAKING** **FEAT**(postgrest): execute typed table builders through a PostgrestTableExecutor and add SupabaseClientPlugin ([#1857](https://github.com/supabase/supabase-flutter/issues/1857)). ([3ecb09b1](https://github.com/supabase/supabase-flutter/commit/3ecb09b1ad2013277282b5f0c694f2272132a355))
+ - **BREAKING** **FEAT**(postgrest): carry primary keys and relation columns on PostgrestTable and emit them from typegen ([#1859](https://github.com/supabase/supabase-flutter/issues/1859)). ([04ce54cf](https://github.com/supabase/supabase-flutter/commit/04ce54cfb96f64d69e1670522f2ef68183a7feb9))
+
+#### `supabase_typegen` - `v0.3.0`
+
+ - **FIX**(supabase_typegen): look up the configuration from an explicit directory ([#1867](https://github.com/supabase/supabase-flutter/issues/1867)). ([d0cee6c0](https://github.com/supabase/supabase-flutter/commit/d0cee6c0878ea43170982e6a505f7a422feac5f7))
+ - **BREAKING** **FIX**(typegen): map bytea columns to Uint8List instead of String ([#1866](https://github.com/supabase/supabase-flutter/issues/1866)). ([2bb3ff02](https://github.com/supabase/supabase-flutter/commit/2bb3ff027968c4a590182876da03822a4104a375))
+ - **BREAKING** **FEAT**(typegen): generate types for every exposed schema and route typed tables to their schema ([#1861](https://github.com/supabase/supabase-flutter/issues/1861)). ([6f9e716b](https://github.com/supabase/supabase-flutter/commit/6f9e716b9a55d8bf64ccad1829ee77bdbfc87caa))
+ - **BREAKING** **FEAT**(postgrest): carry primary keys and relation columns on PostgrestTable and emit them from typegen ([#1859](https://github.com/supabase/supabase-flutter/issues/1859)). ([04ce54cf](https://github.com/supabase/supabase-flutter/commit/04ce54cfb96f64d69e1670522f2ef68183a7feb9))
+
+#### `supabase_functions` - `v3.0.0-dev.5`
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+
+#### `supabase_realtime` - `v3.0.0-dev.6`
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+
+#### `supabase_storage` - `v3.0.0-dev.5`
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+
+
 ## 2026-09-17
 
 ### Changes

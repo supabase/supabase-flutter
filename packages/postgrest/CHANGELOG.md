@@ -1,3 +1,14 @@
+## 3.0.0-dev.6
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: prune redundant comments that restate the code below them ([#1852](https://github.com/supabase/supabase-flutter/issues/1852)). ([465b18ea](https://github.com/supabase/supabase-flutter/commit/465b18ea11bd6128e548cb9a55c35757feb6f041))
+ - **BREAKING** **FIX**(typegen): map bytea columns to Uint8List instead of String ([#1866](https://github.com/supabase/supabase-flutter/issues/1866)). ([2bb3ff02](https://github.com/supabase/supabase-flutter/commit/2bb3ff027968c4a590182876da03822a4104a375))
+ - **BREAKING** **FIX**(postgrest): disallow filters chained after insert() and upsert() ([#1865](https://github.com/supabase/supabase-flutter/issues/1865)). ([86621a3f](https://github.com/supabase/supabase-flutter/commit/86621a3f76f84f01a9bb718667ee6e9b75093470))
+ - **BREAKING** **FEAT**(postgrest): execute typed table builders through a PostgrestTableExecutor and add SupabaseClientPlugin ([#1857](https://github.com/supabase/supabase-flutter/issues/1857)). ([3ecb09b1](https://github.com/supabase/supabase-flutter/commit/3ecb09b1ad2013277282b5f0c694f2272132a355))
+ - **BREAKING** **FEAT**(typegen): generate types for every exposed schema and route typed tables to their schema ([#1861](https://github.com/supabase/supabase-flutter/issues/1861)). ([6f9e716b](https://github.com/supabase/supabase-flutter/commit/6f9e716b9a55d8bf64ccad1829ee77bdbfc87caa))
+ - **BREAKING** **FEAT**(postgrest): carry primary keys and relation columns on PostgrestTable and emit them from typegen ([#1859](https://github.com/supabase/supabase-flutter/issues/1859)). ([04ce54cf](https://github.com/supabase/supabase-flutter/commit/04ce54cfb96f64d69e1670522f2ef68183a7feb9))
+
 ## 3.0.0-dev.5
 
 > Note: This release has breaking changes.
