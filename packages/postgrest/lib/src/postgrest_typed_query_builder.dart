@@ -65,10 +65,10 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///
   /// See [insertAll] to insert several rows in one request and
   /// [PostgrestQueryBuilder.insert] for [defaultToNull].
-  PostgrestTypedFilterBuilder<Row, void> insert(
+  PostgrestTypedTransformBuilder<Row, void> insert(
     Insert row, {
     bool defaultToNull = true,
-  }) => PostgrestTypedFilterBuilder._(
+  }) => PostgrestTypedTransformBuilder._(
     _queryBuilder.insert(row as Object, defaultToNull: defaultToNull),
     table.rowFromJson,
   );
@@ -85,10 +85,10 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// [rows] needs at least one row.
   ///
   /// See [insert] and [PostgrestQueryBuilder.insert] for [defaultToNull].
-  PostgrestTypedFilterBuilder<Row, void> insertAll(
+  PostgrestTypedTransformBuilder<Row, void> insertAll(
     List<Insert> rows, {
     bool defaultToNull = true,
-  }) => PostgrestTypedFilterBuilder._(
+  }) => PostgrestTypedTransformBuilder._(
     _queryBuilder.insert(_nonEmpty(rows), defaultToNull: defaultToNull),
     table.rowFromJson,
   );
@@ -111,7 +111,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// See [upsertAll] to upsert several rows in one request and
   /// [PostgrestQueryBuilder.upsert] for [ignoreDuplicates] and
   /// [defaultToNull].
-  PostgrestTypedFilterBuilder<Row, void> upsert(
+  PostgrestTypedTransformBuilder<Row, void> upsert(
     Insert row, {
     List<PostgrestColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
@@ -139,7 +139,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///
   /// See [upsert] for [onConflict] and [PostgrestQueryBuilder.upsert] for
   /// [ignoreDuplicates] and [defaultToNull].
-  PostgrestTypedFilterBuilder<Row, void> upsertAll(
+  PostgrestTypedTransformBuilder<Row, void> upsertAll(
     List<Insert> rows, {
     List<PostgrestColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
@@ -158,7 +158,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     return rows;
   }
 
-  PostgrestTypedFilterBuilder<Row, void> _upsert(
+  PostgrestTypedTransformBuilder<Row, void> _upsert(
     Object values, {
     required List<PostgrestColumn<Row, Object>>? onConflict,
     required bool ignoreDuplicates,
@@ -171,7 +171,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
         'onConflict needs at least one column',
       );
     }
-    return PostgrestTypedFilterBuilder._(
+    return PostgrestTypedTransformBuilder._(
       _queryBuilder.upsert(
         values,
         onConflict: onConflict?.map((column) => column.name).join(','),

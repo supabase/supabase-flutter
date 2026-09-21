@@ -742,6 +742,27 @@ await supabase.from('countries');
 await supabase.from('countries').select();
 ```
 
+### `insert()` and `upsert()` no longer take filters
+
+`insert()` and `upsert()` return a `PostgrestTransformBuilder` instead of a
+`PostgrestFilterBuilder`, and the typed `insert()`, `insertAll()`, `upsert()` and `upsertAll()`
+return a `PostgrestTypedTransformBuilder` instead of a `PostgrestTypedFilterBuilder`. An insert has
+no existing rows to filter, so PostgREST always ignored a filter on one, and a filter chained after
+`insert()` or `upsert()` no longer compiles. `select()`, `order()`, `limit()` and the other
+transforms, which shape the rows the insert returns, are still available.
+
+```dart
+// Before: compiled, but the filter was ignored by the server.
+await supabase.from('messages').insert({'message': 'foo'}).eq('id', 1);
+
+// After: does not compile. Drop the filter, or use update() to change existing rows.
+await supabase.from('messages').insert({'message': 'foo'});
+await supabase.from('messages').update({'message': 'foo'}).eq('id', 1);
+```
+
+Code that stores one of these builders in a variable typed as `PostgrestFilterBuilder<void>` or
+`PostgrestTypedFilterBuilder<Row, void>` needs the `Transform` type instead.
+
 ### `createSignedUrls` reports per-path failures
 
 `createSignedUrls` returns a list of `SignedUrlSuccess` and `SignedUrlFailure` instead of
