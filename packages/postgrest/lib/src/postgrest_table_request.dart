@@ -108,27 +108,29 @@ final class PostgrestExplainOptions {
 /// [PostgrestTableExecutor].
 ///
 /// The value is immutable: every builder method returns a copy through
-/// [copyWith], and every collection it holds is unmodifiable.
+/// [copyWith], and the constructor copies every collection it is given into
+/// an unmodifiable list, so a list mutated afterwards does not change the
+/// request.
 /// [PostgrestHttpTableExecutor] renders it into the PostgREST request the
 /// untyped builders would have sent; another executor can run it anywhere
 /// else, against a local store for example, because the filters, orderings
 /// and payload are still structured values rather than URL text.
 @experimental
 final class PostgrestTableRequest {
-  const PostgrestTableRequest({
+  PostgrestTableRequest({
     required this.table,
     required this.operation,
     this.schema,
-    this.columns = const [],
+    List<PostgrestColumnExpression<Object?, Object>> columns = const [],
     this.filter,
-    this.orderings = const [],
+    List<PostgrestOrdering<Object?>> orderings = const [],
     this.limit,
     this.offset,
-    this.embeddedPages = const [],
+    List<PostgrestEmbeddedPage> embeddedPages = const [],
     this.shape = PostgrestResultShape.rows,
     this.countOption,
     this.payload,
-    this.onConflict,
+    List<PostgrestColumn<Object?, Object>>? onConflict,
     this.ignoreDuplicates = false,
     this.defaultToNull = true,
     this.returning = false,
@@ -136,7 +138,10 @@ final class PostgrestTableRequest {
     this.stripNulls = false,
     this.dryRun = false,
     this.explainOptions,
-  });
+  }) : columns = List.unmodifiable(columns),
+       orderings = List.unmodifiable(orderings),
+       embeddedPages = List.unmodifiable(embeddedPages),
+       onConflict = onConflict == null ? null : List.unmodifiable(onConflict);
 
   /// The table the request addresses.
   final PostgrestTable<Object?, Object?, Object?> table;

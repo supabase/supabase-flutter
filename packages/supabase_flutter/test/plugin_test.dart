@@ -1,6 +1,8 @@
 // The plugin seam is @experimental.
 // ignore_for_file: experimental_member_use
 
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,6 +15,8 @@ class CountingPlugin extends SupabaseClientPlugin {
   int resumes = 0;
   int disposals = 0;
   bool failNextResume = false;
+  Completer<void>? gate;
+  int finishedResumes = 0;
 
   @override
   void attach(SupabaseClient client) {
@@ -26,6 +30,8 @@ class CountingPlugin extends SupabaseClientPlugin {
       failNextResume = false;
       throw StateError('resume failed');
     }
+    await gate?.future;
+    finishedResumes++;
   }
 
   @override
@@ -88,6 +94,42 @@ void main() {
     await cycleToResumed();
 
     expect(plugin.resumes, 2);
+  });
+
+  test('resumes of one plugin run one at a time', () async {
+    final gate = Completer<void>();
+    plugin.gate = gate;
+
+    await cycleToResumed();
+    await cycleToResumed();
+
+    expect(plugin.resumes, 1);
+
+    gate.complete();
+    plugin.gate = null;
+    await pumpEventQueue();
+
+    expect(plugin.resumes, 2);
+    expect(plugin.finishedResumes, 2);
+  });
+
+  test('dispose waits for a running resume', () async {
+    final gate = Completer<void>();
+    plugin.gate = gate;
+    await cycleToResumed();
+
+    var disposed = false;
+    final disposing = Supabase.instance.dispose().then((_) => disposed = true);
+    await pumpEventQueue();
+
+    expect(disposed, isFalse);
+    expect(plugin.disposals, 0);
+
+    gate.complete();
+    await disposing;
+
+    expect(plugin.finishedResumes, 1);
+    expect(plugin.disposals, 1);
   });
 
   test('dispose runs the plugin and stops resume events', () async {

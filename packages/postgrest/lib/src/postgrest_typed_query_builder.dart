@@ -206,7 +206,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     return _insertion(
       _request(PostgrestTableOperation.upsert).copyWith(
         payload: values,
-        onConflict: onConflict == null ? null : List.unmodifiable(onConflict),
+        onConflict: onConflict,
         ignoreDuplicates: ignoreDuplicates,
         defaultToNull: defaultToNull,
       ),

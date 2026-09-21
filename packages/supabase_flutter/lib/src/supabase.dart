@@ -205,6 +205,11 @@ class Supabase {
   /// appends via `.then()` so operations never overlap.
   Future<void> _pendingLifecycleOperation = Future.value();
 
+  /// The resume work of each plugin, one chain per plugin so a resume never
+  /// overlaps the previous one of the same plugin. [dispose] waits for the
+  /// chains before disposing the client.
+  final _pluginResumes = <SupabaseClientPlugin, Future<void>>{};
+
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
   /// (e.g. abort a reconnect if the app went back to background).
@@ -221,6 +226,8 @@ class Supabase {
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
     final pendingLifecycleOperation = _pendingLifecycleOperation;
+    final pluginResumes = _pluginResumes.values.toList();
+    _pluginResumes.clear();
 
     _client = null;
     _supabaseAuth = null;
@@ -236,6 +243,7 @@ class Supabase {
     await _disposeAll([
       () => supabaseAuth?.dispose(),
       () => pendingLifecycleOperation,
+      () => Future.wait(pluginResumes),
       currentClient.dispose,
     ]);
   }
@@ -342,18 +350,16 @@ class Supabase {
 
     if (captured == AppLifecycleState.resumed) {
       for (final plugin in currentClient.plugins) {
-        unawaited(
-          Future.sync(plugin.resume).catchError((
-            Object error,
-            StackTrace stackTrace,
-          ) {
-            flutterLogger.warning(
-              'Plugin ${plugin.runtimeType} failed to resume',
-              error,
-              stackTrace,
-            );
-          }),
-        );
+        final previous = _pluginResumes[plugin] ?? Future<void>.value();
+        _pluginResumes[plugin] = previous
+            .then((_) => Future.sync(plugin.resume))
+            .catchError((Object error, StackTrace stackTrace) {
+              flutterLogger.warning(
+                'Plugin ${plugin.runtimeType} failed to resume',
+                error,
+                stackTrace,
+              );
+            });
       }
 
       // No channels subscribed — nothing to reconnect.

@@ -75,6 +75,13 @@ class LoggingPlugin extends SupabaseClientPlugin {
   }
 }
 
+class FailingAttachPlugin extends SupabaseClientPlugin {
+  const FailingAttachPlugin();
+
+  @override
+  void attach(SupabaseClient client) => throw StateError('no attach');
+}
+
 void main() {
   late MockSupabaseHttpClient httpClient;
   late List<String> log;
@@ -172,6 +179,16 @@ void main() {
     final sent = httpClient.requestsTo('/rest/v1/todos').single;
     expect(sent.headers['Accept-Profile'], 'library');
     expect(log, ['a attached', 'a select todos']);
+  });
+
+  test('a plugin that fails to attach fails the constructor', () {
+    expect(
+      () => testSupabaseClient(
+        httpClient: httpClient,
+        plugins: const [FailingAttachPlugin()],
+      ),
+      throwsStateError,
+    );
   });
 
   test('dispose runs each plugin once', () async {

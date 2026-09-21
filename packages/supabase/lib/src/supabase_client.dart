@@ -126,10 +126,6 @@ class SupabaseClient {
     );
     warnOnUnrecognizedApiKey(_supabaseKey);
     _rest = _initRestClient();
-    _tableExecutor = plugins.fold<PostgrestTableExecutor>(
-      _RestTableExecutor(this),
-      (executor, plugin) => plugin.wrapTableExecutor(executor),
-    );
     functions = _initFunctionsClient();
     storage = _initStorageClient(
       storageOptions.retryOptions,
@@ -146,8 +142,19 @@ class SupabaseClient {
         'Initialize SupabaseClient v$version with custom access token',
       );
     }
-    for (final plugin in plugins) {
-      plugin.attach(this);
+    try {
+      _tableExecutor = plugins.fold<PostgrestTableExecutor>(
+        _RestTableExecutor(this),
+        (executor, plugin) => plugin.wrapTableExecutor(executor),
+      );
+      for (final plugin in plugins) {
+        plugin.attach(this);
+      }
+    } catch (_) {
+      // The caller never receives the client, so nothing else can free what
+      // the constructor already opened.
+      unawaited(_disposeOwnResources());
+      rethrow;
     }
   }
   final String _supabaseKey;
@@ -376,6 +383,10 @@ class SupabaseClient {
         );
       }
     }
+    await _disposeOwnResources();
+  }
+
+  Future<void> _disposeOwnResources() async {
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
     await functions.dispose();

@@ -33,9 +33,9 @@ String _selectList(List<PostgrestColumnExpression<Object?, Object>> columns) {
   return columns.map((column) => column.expression).join(',');
 }
 
-/// [columns] as the request stores them: every column when none are given,
-/// otherwise an unmodifiable copy. An empty list is rejected up front so the
-/// error surfaces where `select` is called rather than when awaited.
+/// [columns] as the request stores them: every column when none are given.
+/// An empty list is rejected up front so the error surfaces where `select`
+/// is called rather than when awaited.
 List<PostgrestColumnExpression<Object?, Object>> _checkedColumns<Row>(
   List<PostgrestColumnExpression<Row, Object>>? columns,
 ) {
@@ -47,7 +47,7 @@ List<PostgrestColumnExpression<Object?, Object>> _checkedColumns<Row>(
       'select needs at least one column',
     );
   }
-  return List.unmodifiable(columns);
+  return columns;
 }
 
 /// Converts the result of a [PostgrestTableRequest] into [T].
@@ -81,17 +81,10 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   Future<T> _execute() =>
       Future.sync(() => _executor.execute(request)).then(_convert);
 
+  /// A broadcast stream of the one result. The request runs when the first
+  /// listener subscribes, so a listener added later still receives it.
   @override
-  Stream<T> asStream() {
-    final controller = StreamController<T>.broadcast();
-    unawaited(
-      _execute()
-          .then(controller.add)
-          .catchError(controller.addError)
-          .whenComplete(controller.close),
-    );
-    return controller.stream;
-  }
+  Stream<T> asStream() => _execute().asStream().asBroadcastStream();
 
   @override
   Future<T> catchError(Function onError, {bool Function(Object error)? test}) =>

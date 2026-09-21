@@ -44,7 +44,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     if (request.operation == PostgrestTableOperation.count) {
       final counted = _applyFilter(
         query.count(request.countOption ?? CountOption.exact),
-        request.filter,
+        request,
       );
       return PostgrestTableResult(count: await counted);
     }
@@ -74,11 +74,14 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     final filter = request.filter;
     switch (request.operation) {
       case PostgrestTableOperation.select:
-        return _applyFilter(query.select(_selectList(request.columns)), filter);
+        return _applyFilter(
+          query.select(_selectList(request.columns)),
+          request,
+        );
       case PostgrestTableOperation.update:
-        return _applyFilter(query.update(request.payload!), filter);
+        return _applyFilter(query.update(request.payload!), request);
       case PostgrestTableOperation.delete:
-        return _applyFilter(query.delete(), filter);
+        return _applyFilter(query.delete(), request);
       case PostgrestTableOperation.insert:
         _rejectFilter(filter, request.operation);
         return query.insert(
@@ -113,23 +116,28 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     }
   }
 
+  /// Applies the filter of [request] and, when it pages with an offset but
+  /// no limit, the offset the transforms have no method for.
   static PostgrestFilterBuilder<T> _applyFilter<T>(
     PostgrestFilterBuilder<T> builder,
-    PostgrestFilter<Object?>? filter,
+    PostgrestTableRequest request,
   ) {
-    if (filter == null) return builder;
     var filtered = builder;
-    for (final parameter in filter.queryParameters) {
+    for (final parameter in request.filter?.queryParameters ?? const []) {
       filtered = filtered.appendSearchParameter(parameter.key, parameter.value);
+    }
+    final offset = request.offset;
+    if (offset != null && request.limit == null) {
+      filtered = filtered.appendSearchParameter('offset', '$offset');
     }
     return filtered;
   }
 
   static PostgrestTransformBuilder<Object?> _transforms(
-    PostgrestFilterBuilder<Object?> filtered,
+    PostgrestTransformBuilder<Object?> operation,
     PostgrestTableRequest request,
   ) {
-    PostgrestTransformBuilder<Object?> transformed = filtered;
+    var transformed = operation;
     if (request.operation.isMutation && request.returning) {
       transformed = transformed.select(_selectList(request.columns));
     }

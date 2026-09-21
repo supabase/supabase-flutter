@@ -281,6 +281,37 @@ void main() {
       );
     });
 
+    test('the request copies the collections it is given', () {
+      final columns = <PostgrestColumnExpression<Object?, Object>>[Books.id];
+      final request = PostgrestTableRequest(
+        table: Books.table,
+        operation: PostgrestTableOperation.select,
+        columns: columns,
+      );
+
+      columns.clear();
+
+      expect(request.columns, hasLength(1));
+      expect(() => request.columns.clear(), throwsUnsupportedError);
+      expect(() => request.orderings.clear(), throwsUnsupportedError);
+    });
+
+    test('asStream delivers the result to a listener added later', () async {
+      final stream = client
+          .table(
+            Books.table,
+            executor: RecordingExecutor(
+              const PostgrestTableResult(data: bookRows),
+            ),
+          )
+          .select()
+          .asStream();
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(await stream.first, hasLength(2));
+    });
+
     test('asStream forwards an executor failure', () async {
       final stream = client
           .table(Books.table, executor: const _FailingExecutor())
@@ -325,6 +356,35 @@ void main() {
       final untyped = httpClient.requests[1];
       expect(typed.url.queryParameters, untyped.url.queryParameters);
       expect(typed.method, untyped.method);
+    });
+
+    test('renders an offset without a limit', () async {
+      await PostgrestHttpTableExecutor(client).execute(
+        PostgrestTableRequest(
+          table: Books.table,
+          operation: PostgrestTableOperation.select,
+          offset: 5,
+        ),
+      );
+
+      final parameters = httpClient.requests.single.queryParameters;
+      expect(parameters['offset'], '5');
+      expect(parameters.containsKey('limit'), isFalse);
+    });
+
+    test('rejects a filter on an insert instead of dropping it', () {
+      final request = PostgrestTableRequest(
+        table: Books.table,
+        operation: PostgrestTableOperation.insert,
+        payload: const {'title': 'c'},
+        filter: Books.id.eq(1),
+      );
+
+      expect(
+        () => PostgrestHttpTableExecutor(client).execute(request),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
     });
 
     test('renders a returning select on a mutation', () async {

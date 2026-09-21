@@ -72,11 +72,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// Repeated calls append, so the second key breaks ties in the first.
   PostgrestTypedTransformBuilder<Row, T> order(
     PostgrestOrdering<Row> ordering,
-  ) => _with(
-    request.copyWith(
-      orderings: List.unmodifiable([...request.orderings, ordering]),
-    ),
-  );
+  ) => _with(request.copyWith(orderings: [...request.orderings, ordering]));
 
   /// Limits the result with the specified [count].
   PostgrestTypedTransformBuilder<Row, T> limit(
@@ -86,10 +82,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     referencedTable == null
         ? request.copyWith(limit: count)
         : request.copyWith(
-            embeddedPages: List.unmodifiable([
+            embeddedPages: [
               ...request.embeddedPages,
               PostgrestEmbeddedPage(referencedTable, limit: count),
-            ]),
+            ],
           ),
   );
 
@@ -102,14 +98,14 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     referencedTable == null
         ? request.copyWith(offset: from, limit: to - from + 1)
         : request.copyWith(
-            embeddedPages: List.unmodifiable([
+            embeddedPages: [
               ...request.embeddedPages,
               PostgrestEmbeddedPage(
                 referencedTable,
                 limit: to - from + 1,
                 offset: from,
               ),
-            ]),
+            ],
           ),
   );
 
