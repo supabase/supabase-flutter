@@ -12,7 +12,9 @@ part of 'postgrest_builder.dart';
 /// * delete() - "delete"
 /// * count() - "head"
 /// first. Each of these returns a filter builder that allows the user to
-/// stack filter functions before the request is sent.
+/// stack filter functions before the request is sent, except insert() and
+/// upsert(), which have no existing rows to filter and so return a transform
+/// builder that only shapes the rows they create.
 ///
 /// The query builder itself is not executable: a request without one of the
 /// table operations above is meaningless, so awaiting it is a compile-time
@@ -101,7 +103,7 @@ class PostgrestQueryBuilder {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<void> insert(
+  PostgrestTransformBuilder<void> insert(
     Object values, {
     bool defaultToNull = true,
   }) {
@@ -117,7 +119,7 @@ class PostgrestQueryBuilder {
       url = _setColumnsSearchParam(values);
     }
 
-    return _filterBuilder(
+    return _transformBuilder(
       _config.copyWith(
         method: HttpMethod.post,
         headers: newHeaders,
@@ -161,7 +163,7 @@ class PostgrestQueryBuilder {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<void> upsert(
+  PostgrestTransformBuilder<void> upsert(
     Object values, {
     String? onConflict,
     bool ignoreDuplicates = false,
@@ -190,7 +192,7 @@ class PostgrestQueryBuilder {
       );
     }
 
-    return _filterBuilder(
+    return _transformBuilder(
       _config.copyWith(
         method: HttpMethod.post,
         headers: newHeaders,

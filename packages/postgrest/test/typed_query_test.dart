@@ -749,6 +749,20 @@ void main() {
       expect(books.map((book) => book.id), [3]);
     });
 
+    test('insert and upsert return builders without filters', () {
+      final inserts = [
+        client.table(Books.table).insert(BookInsert(title: 'foo')),
+        client.table(Books.table).insertAll([BookInsert(title: 'foo')]),
+        client.table(Books.table).upsert(BookInsert(id: 1, title: 'foo')),
+        client.table(Books.table).upsertAll([BookInsert(id: 1, title: 'foo')]),
+      ];
+
+      for (final insert in inserts) {
+        expect(insert, isA<PostgrestTypedTransformBuilder<Book, void>>());
+        expect(insert, isNot(isA<PostgrestTypedFilterBuilder<Book, void>>()));
+      }
+    });
+
     test('upsert sets the resolution header', () async {
       httpClient.stub(null);
 

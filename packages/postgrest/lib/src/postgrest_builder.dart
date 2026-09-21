@@ -143,6 +143,14 @@ T _bodyAs<T>(Object? body) {
 /// The decoder of a `HEAD` request that only asks for the row count.
 int _rowCountDecoder(Object? body, int? count) => count as int;
 
+/// Wraps [config] in the executable transform phase once a table operation
+/// that has no rows to filter, such as an insert, has been chosen, decoding
+/// the response body as [P].
+PostgrestTransformBuilder<P> _transformBuilder<P>(_RequestConfig config) =>
+    PostgrestTransformBuilder(
+      PostgrestBuilder._(config: config, decode: _bodyDecoder<P>()),
+    );
+
 /// Wraps [config] in the executable filter phase once a table operation or
 /// function call has been chosen, decoding the response body as [P] unless
 /// the operation resolves to something else and passes its own [decode].
