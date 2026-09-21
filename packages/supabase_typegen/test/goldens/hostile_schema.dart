@@ -6,6 +6,8 @@
 // The typed table access API is still experimental.
 // ignore_for_file: experimental_member_use
 
+import 'dart:typed_data';
+
 import 'package:postgrest/postgrest.dart';
 
 /// Postgres enum `public.string`.
@@ -48,6 +50,13 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
       .map((element) => (element as num).toDouble())
       .toList();
   List<String>? get days => (_json['days'] as List<dynamic>?)?.cast();
+  Uint8List get postgrestBytea$ =>
+      postgrestBytea.decode(_json['postgrest_bytea'] as String);
+  Uint8List? get uint8List => switch (_json['uint8_list']) {
+    null => null,
+    final Object value => postgrestBytea.decode(value as String),
+  };
+  List<String>? get blobs => (_json['blobs'] as List<dynamic>?)?.cast();
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -65,11 +74,20 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     String$? mood,
     required List<double> samples,
     List<String>? days,
+    required Uint8List postgrestBytea$,
+    Uint8List? uint8List,
+    List<String>? blobs,
   }) : this._({
          'quote\'name\u{2029}tail': quoteNameTail,
          'mood': ?mood?.wireName,
          'samples': samples,
          'days': ?days,
+         'postgrest_bytea': postgrestBytea.encode(postgrestBytea$),
+         'uint8_list': ?switch (uint8List) {
+           null => null,
+           final value => postgrestBytea.encode(value),
+         },
+         'blobs': ?blobs,
        });
 
   /// Returns a copy with `mood` set to SQL NULL, overriding any database
@@ -81,6 +99,16 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
   /// default.
   PostgrestTableInsert setDaysToNull() =>
       PostgrestTableInsert._({..._json, 'days': null});
+
+  /// Returns a copy with `uint8_list` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setUint8ListToNull() =>
+      PostgrestTableInsert._({..._json, 'uint8_list': null});
+
+  /// Returns a copy with `blobs` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setBlobsToNull() =>
+      PostgrestTableInsert._({..._json, 'blobs': null});
 }
 
 /// Values for updating rows of `postgrest_table`. All columns are optional;
@@ -93,11 +121,23 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
     String$? mood,
     List<double>? samples,
     List<String>? days,
+    Uint8List? postgrestBytea$,
+    Uint8List? uint8List,
+    List<String>? blobs,
   }) : this._({
          'quote\'name\u{2029}tail': ?quoteNameTail,
          'mood': ?mood?.wireName,
          'samples': ?samples,
          'days': ?days,
+         'postgrest_bytea': ?switch (postgrestBytea$) {
+           null => null,
+           final value => postgrestBytea.encode(value),
+         },
+         'uint8_list': ?switch (uint8List) {
+           null => null,
+           final value => postgrestBytea.encode(value),
+         },
+         'blobs': ?blobs,
        });
 
   /// Returns a copy with `mood` set to SQL NULL, overriding any database
@@ -109,6 +149,16 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
   /// default.
   PostgrestTableUpdate setDaysToNull() =>
       PostgrestTableUpdate._({..._json, 'days': null});
+
+  /// Returns a copy with `uint8_list` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setUint8ListToNull() =>
+      PostgrestTableUpdate._({..._json, 'uint8_list': null});
+
+  /// Returns a copy with `blobs` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setBlobsToNull() =>
+      PostgrestTableUpdate._({..._json, 'blobs': null});
 }
 
 /// Typed access to the `postgrest_table` table.
@@ -140,6 +190,14 @@ class PostgrestTable$ {
   );
   static const days = PostgrestNullableColumn<PostgrestTableRow, List<String>>(
     'days',
+  );
+  static const postgrestBytea$ = PostgrestColumn<PostgrestTableRow, Uint8List>(
+    'postgrest_bytea',
+  );
+  static const uint8List =
+      PostgrestNullableColumn<PostgrestTableRow, Uint8List>('uint8_list');
+  static const blobs = PostgrestNullableColumn<PostgrestTableRow, List<String>>(
+    'blobs',
   );
 
   /// The `map` row referenced by `mood`.

@@ -842,6 +842,12 @@ features:
       - PostgrestRange.toString
       - PostgrestRange.==
       - PostgrestRange.hashCode
+      - PostgrestByteaCodec
+      - PostgrestByteaCodec.PostgrestByteaCodec
+      - PostgrestByteaCodec.encoder
+      - PostgrestByteaCodec.decoder
+      - PostgrestByteaCodec.decode
+      - postgrestBytea
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table

@@ -15,7 +15,6 @@ const _textFormats = {
   'time',
   'timetz',
   'interval',
-  'bytea',
   'inet',
   'cidr',
   'macaddr',
@@ -50,6 +49,7 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
   if (_floatingFormats.contains(format)) return ColumnTypeKind.floating;
   if (format == 'numeric') return ColumnTypeKind.numeric;
   if (format == 'bool') return ColumnTypeKind.boolean;
+  if (format == 'bytea') return ColumnTypeKind.binary;
   if (format == 'date') return ColumnTypeKind.date;
   if (format == 'timestamp') return ColumnTypeKind.timestamp;
   if (format == 'timestamptz') return ColumnTypeKind.timestampWithTimeZone;

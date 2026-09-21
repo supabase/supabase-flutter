@@ -57,6 +57,32 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           hasDefault: false,
           isNullable: true,
         ),
+        // Named like the codec the generated conversions call.
+        ColumnDescription(
+          name: 'postgrest_bytea',
+          postgresFormat: 'bytea',
+          typeKind: ColumnTypeKind.binary,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'uint8_list',
+          postgresFormat: 'bytea',
+          typeKind: ColumnTypeKind.binary,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'blobs',
+          postgresFormat: '_bytea',
+          typeKind: ColumnTypeKind.array,
+          elementTypeKind: ColumnTypeKind.binary,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
       ],
     ),
     TableDescription(

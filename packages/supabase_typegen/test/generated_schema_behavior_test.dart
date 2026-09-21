@@ -1,6 +1,8 @@
 // The typed table access API under test is annotated @experimental.
 // ignore_for_file: experimental_member_use
 
+import 'dart:typed_data';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -37,6 +39,7 @@ void main() {
         'metadata': {'reprint': true},
         'created_at': '2026-07-23T10:00:00Z',
         'published_on': null,
+        'cover_image': r'\x89504e47',
       },
     ]);
 
@@ -52,6 +55,29 @@ void main() {
     expect(book.metadata, {'reprint': true});
     expect(book.createdAt, DateTime.utc(2026, 7, 23, 10));
     expect(book.publishedOn == null, isTrue);
+    expect(book.coverImage, [0x89, 0x50, 0x4e, 0x47]);
+  });
+
+  test('bytea columns are sent as hex literals', () async {
+    httpClient.stub(null);
+    final cover = Uint8List.fromList([0x89, 0x50, 0x4e, 0x47]);
+
+    await client
+        .table(Books.table)
+        .insert(
+          BooksInsert(title: 'A typed row', authorId: 7, coverImage: cover),
+        );
+
+    final sent = httpClient.requests.last.jsonBody as Map<String, dynamic>;
+    expect(sent['cover_image'], r'\x89504e47');
+
+    httpClient.stub([]);
+    await client.table(Books.table).select().where(Books.coverImage.eq(cover));
+
+    expect(
+      httpClient.requests.last.queryParameters['cover_image'],
+      r'eq.\x89504e47',
+    );
   });
 
   test('tables outside public are queried in their schema', () async {

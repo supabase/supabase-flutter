@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart' show SortDirection;
 
+part 'postgrest_bytea.dart';
 part 'postgrest_column_expression.dart';
 part 'postgrest_derived_expression.dart';
 part 'postgrest_embedded_relation.dart';

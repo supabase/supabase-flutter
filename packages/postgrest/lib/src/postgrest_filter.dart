@@ -354,6 +354,7 @@ String _group<Row>(_FilterNode<Row> node) => switch (node) {
 /// - `null` is `NULL`, for the `is` check.
 /// - A [String] is sent as is.
 /// - A [DateTime] is sent in ISO 8601, so a UTC instant carries its `Z`.
+/// - A [Uint8List] is sent as a hex `bytea` literal, `\x48656c6c6f`.
 /// - A [List] becomes a Postgres array literal, `{a,b}`, with each element
 ///   escaped as the literal requires.
 /// - A [Map] is encoded as JSON, for `json`/`jsonb` columns.
@@ -364,6 +365,7 @@ String _renderFilterValue(Object? value) => switch (value) {
   null => 'null',
   String() => value,
   DateTime() => value.toIso8601String(),
+  Uint8List() => postgrestBytea.encode(value),
   List() => _renderArrayLiteral(value),
   Map() => json.encode(value),
   PostgrestRange() => value.literal,

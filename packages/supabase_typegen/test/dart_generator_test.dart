@@ -155,6 +155,75 @@ void main() {
     );
   });
 
+  test('bytea columns read and write through the bytea codec', () {
+    final code = _normalize(generateDartCode(hostileSchema));
+    final compact = code.replaceAll(' ', '');
+
+    expect(code, contains("import 'dart:typed_data';"));
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<PostgrestTableRow,Uint8List>('uint8_list')",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "Uint8List?getuint8List=>switch(_json['uint8_list']){null=>null,"
+        "finalObjectvalue=>postgrestBytea.decode(valueasString),};",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "'uint8_list':?switch(uint8List){null=>null,"
+        "finalvalue=>postgrestBytea.encode(value),},",
+      ),
+    );
+    // A column named like the codec cannot shadow it in the conversions.
+    expect(
+      compact,
+      contains(
+        "Uint8ListgetpostgrestBytea\$=>"
+        "postgrestBytea.decode(_json['postgrest_bytea']asString);",
+      ),
+    );
+    expect(
+      compact,
+      contains("'postgrest_bytea':postgrestBytea.encode(postgrestBytea\$),"),
+    );
+    // Array elements stay in their wire representation.
+    expect(compact, contains("List<String>?getblobs=>"));
+  });
+
+  test('the typed_data import is only emitted for bytea columns', () {
+    const textOnlySchema = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'notes',
+          columns: [
+            ColumnDescription(
+              name: 'body',
+              postgresFormat: 'text',
+              typeKind: ColumnTypeKind.text,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+          ],
+        ),
+      ],
+      enums: [],
+    );
+
+    expect(
+      generateDartCode(textOnlySchema),
+      isNot(contains('dart:typed_data')),
+    );
+  });
+
   test('emits a relation member for each side of a foreign key', () {
     final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
 

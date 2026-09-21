@@ -29,6 +29,10 @@ enum ColumnTypeKind {
   /// Types carried as text, such as `text`, `uuid` and `character varying`.
   text,
 
+  /// The `bytea` type, mapped to `Uint8List` and carried over the wire as a
+  /// `bytea` literal, hex by default.
+  binary,
+
   /// The `json` and `jsonb` types, mapped to `Object?`.
   json,
 

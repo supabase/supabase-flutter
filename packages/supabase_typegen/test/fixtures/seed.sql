@@ -24,6 +24,7 @@ CREATE TABLE public.books (
   page_counts integer[],
   metadata jsonb,
   cover_uuid uuid,
+  cover_image bytea,
   published_on date,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamp

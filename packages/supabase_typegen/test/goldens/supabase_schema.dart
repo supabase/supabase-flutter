@@ -6,6 +6,8 @@
 // The typed table access API is still experimental.
 // ignore_for_file: experimental_member_use
 
+import 'dart:typed_data';
+
 import 'package:postgrest/postgrest.dart';
 
 /// Postgres enum `inventory.condition`.
@@ -474,6 +476,10 @@ class BookSummaries {
 /// Books available in the library
 extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   int get authorId => _json['author_id'] as int;
+  Uint8List? get coverImage => switch (_json['cover_image']) {
+    null => null,
+    final Object value => postgrestBytea.decode(value as String),
+  };
   String? get coverUuid => _json['cover_uuid'] as String?;
 
   /// When the row was created
@@ -512,6 +518,7 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
     implements Object {
   BooksInsert({
     required int authorId,
+    Uint8List? coverImage,
     String? coverUuid,
     DateTime? createdAt,
     int? id,
@@ -527,6 +534,10 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
     DateTime? updatedAt,
   }) : this._({
          'author_id': authorId,
+         'cover_image': ?switch (coverImage) {
+           null => null,
+           final value => postgrestBytea.encode(value),
+         },
          'cover_uuid': ?coverUuid,
          'created_at': ?createdAt?.toUtc().toIso8601String(),
          'id': ?id,
@@ -544,6 +555,11 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
          'title': title,
          'updated_at': ?updatedAt?.toIso8601String(),
        });
+
+  /// Returns a copy with `cover_image` set to SQL NULL, overriding any database
+  /// default.
+  BooksInsert setCoverImageToNull() =>
+      BooksInsert._({..._json, 'cover_image': null});
 
   /// Returns a copy with `cover_uuid` set to SQL NULL, overriding any database
   /// default.
@@ -594,6 +610,7 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
     implements Object {
   BooksUpdate({
     int? authorId,
+    Uint8List? coverImage,
     String? coverUuid,
     DateTime? createdAt,
     int? id,
@@ -609,6 +626,10 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
     DateTime? updatedAt,
   }) : this._({
          'author_id': ?authorId,
+         'cover_image': ?switch (coverImage) {
+           null => null,
+           final value => postgrestBytea.encode(value),
+         },
          'cover_uuid': ?coverUuid,
          'created_at': ?createdAt?.toUtc().toIso8601String(),
          'id': ?id,
@@ -626,6 +647,11 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
          'title': ?title,
          'updated_at': ?updatedAt?.toIso8601String(),
        });
+
+  /// Returns a copy with `cover_image` set to SQL NULL, overriding any database
+  /// default.
+  BooksUpdate setCoverImageToNull() =>
+      BooksUpdate._({..._json, 'cover_image': null});
 
   /// Returns a copy with `cover_uuid` set to SQL NULL, overriding any database
   /// default.
@@ -683,6 +709,9 @@ class Books {
   );
 
   static const authorId = PostgrestColumn<BooksRow, int>('author_id');
+  static const coverImage = PostgrestNullableColumn<BooksRow, Uint8List>(
+    'cover_image',
+  );
   static const coverUuid = PostgrestNullableColumn<BooksRow, String>(
     'cover_uuid',
   );
