@@ -67,12 +67,17 @@ String generateDartCode(
   final tableNames = {
     for (final table in tables) table.name: _TableNames.claim(table, typeNames),
   };
+  final tableMembers = {
+    for (final table in tables)
+      table.name: _TableMembers.claim(table, tableNames[table.name]!),
+  };
   for (final table in tables) {
     _writeTable(
       buffer,
       table,
       tableNames[table.name]!,
-      _relationMembers(table, schema, tableNames),
+      tableMembers[table.name]!,
+      _relationMembers(table, schema, tableNames, tableMembers),
       enumTypeNames,
     );
   }
@@ -113,6 +118,7 @@ class _TypeNameRegistry {
     'PostgrestColumn',
     'PostgrestNullableColumn',
     'PostgrestRange',
+    'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
   };
@@ -209,12 +215,43 @@ class _TableNames {
 
 /// One relation member of a namespace class, before its Dart name is settled
 /// against the table's columns.
+/// The member identifiers of one table: [rowMembers] for the getters of the
+/// row and value types, [columnMembers] for the column constants of the
+/// namespace class, both keyed by column name.
+class _TableMembers {
+  const _TableMembers({required this.rowMembers, required this.columnMembers});
+
+  factory _TableMembers.claim(TableDescription table, _TableNames names) {
+    final _TableNames(:rowType, :insertType, :updateType, :namespaceType) =
+        names;
+    final columns = [for (final column in table.columns) column.name];
+    final rowMembers = _uniqueMemberNames(
+      columns,
+      reserved: {rowType, ?insertType, ?updateType, 'toJson'},
+    );
+    return _TableMembers(
+      rowMembers: rowMembers,
+      columnMembers: _uniqueMemberNames(
+        columns,
+        reserved: {'table', namespaceType},
+        existing: rowMembers,
+      ),
+    );
+  }
+
+  final Map<String, String> rowMembers;
+  final Map<String, String> columnMembers;
+}
+
 class _RelationMember {
   const _RelationMember({
     required this.baseName,
     required this.disambiguatedName,
     required this.type,
     required this.embedName,
+    required this.columns,
+    required this.referencedTable,
+    required this.referencedColumns,
     required this.docLine,
   });
 
@@ -232,6 +269,16 @@ class _RelationMember {
   /// the plain table name would be ambiguous.
   final String embedName;
 
+  /// The column constants of this table the relation joins on.
+  final List<String> columns;
+
+  /// The name of the table the relation points at.
+  final String referencedTable;
+
+  /// The column constants of the referenced table, qualified with its
+  /// namespace class.
+  final List<String> referencedColumns;
+
   final String docLine;
 }
 
@@ -246,6 +293,7 @@ List<_RelationMember> _relationMembers(
   TableDescription table,
   SchemaDescription schema,
   Map<String, _TableNames> tableNames,
+  Map<String, _TableMembers> tableMembers,
 ) {
   final members = <_RelationMember>[];
   for (final relationship in schema.relationships) {
@@ -253,6 +301,18 @@ List<_RelationMember> _relationMembers(
     final target = tableNames[relationship.targetTable];
     if (source == null || target == null) continue;
     if (relationship.sourceTable == relationship.targetTable) continue;
+    final sourceColumns = _columnConstants(
+      relationship.sourceColumns,
+      relationship.sourceTable,
+      tableMembers[relationship.sourceTable]!.columnMembers,
+      keyDescription: 'the foreign key "${relationship.foreignKeyName}"',
+    );
+    final targetColumns = _columnConstants(
+      relationship.targetColumns,
+      relationship.targetTable,
+      tableMembers[relationship.targetTable]!.columnMembers,
+      keyDescription: 'the foreign key "${relationship.foreignKeyName}"',
+    );
     final columns = relationship.sourceColumns.join('_');
     // `By` names the key this table holds, `Via` the key the other table
     // holds.
@@ -277,6 +337,12 @@ List<_RelationMember> _relationMembers(
           embedName: ambiguous
               ? '${relationship.targetTable}!${relationship.foreignKeyName}'
               : relationship.targetTable,
+          columns: sourceColumns,
+          referencedTable: relationship.targetTable,
+          referencedColumns: [
+            for (final column in targetColumns)
+              '${target.namespaceType}.$column',
+          ],
           docLine:
               'The `${relationship.targetTable}` row referenced by '
               '`$columns`.',
@@ -302,6 +368,12 @@ List<_RelationMember> _relationMembers(
           embedName: ambiguous
               ? '${relationship.sourceTable}!${relationship.foreignKeyName}'
               : relationship.sourceTable,
+          columns: targetColumns,
+          referencedTable: relationship.sourceTable,
+          referencedColumns: [
+            for (final column in sourceColumns)
+              '${source.namespaceType}.$column',
+          ],
           docLine:
               'The `${relationship.sourceTable}` '
               '${relationship.isOneToOne ? 'row' : 'rows'} referencing this '
@@ -313,19 +385,37 @@ List<_RelationMember> _relationMembers(
   return members;
 }
 
+/// The column constants of [columns] in the namespace of [table].
+///
+/// A key over a column the document does not list for its table is a
+/// malformed document rather than something to generate around: dropping the
+/// column would silently change which rows the key identifies.
+List<String> _columnConstants(
+  List<String> columns,
+  String table,
+  Map<String, String> columnNames, {
+  required String keyDescription,
+}) => [
+  for (final column in columns)
+    columnNames[column] ??
+        (throw FormatException(
+          'Not a GeneratorMetadata document: $keyDescription names the '
+          'column "$column", which the document does not list for the '
+          'table "$table".',
+        )),
+];
+
 void _writeTable(
   StringBuffer buffer,
   TableDescription table,
   _TableNames names,
+  _TableMembers members,
   List<_RelationMember> relations,
   Map<String, String> enumTypeNames,
 ) {
   final _TableNames(:rowType, :insertType, :updateType) = names;
 
-  final memberNames = _uniqueMemberNames(
-    [for (final column in table.columns) column.name],
-    reserved: {rowType, ?insertType, ?updateType, 'toJson'},
-  );
+  final memberNames = members.rowMembers;
   final bindings = {
     for (final column in table.columns)
       column.name: _bindingFor(column, enumTypeNames),
@@ -367,7 +457,7 @@ void _writeTable(
     buffer,
     table,
     names,
-    memberNames,
+    members.columnMembers,
     bindings,
     relations,
   );
@@ -478,16 +568,11 @@ void _writeNamespace(
   StringBuffer buffer,
   TableDescription table,
   _TableNames names,
-  Map<String, String> memberNames,
+  Map<String, String> columnNames,
   Map<String, _Binding> bindings,
   List<_RelationMember> relations,
 ) {
   final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
-  final columnNames = _uniqueMemberNames(
-    [for (final column in table.columns) column.name],
-    reserved: {'table', namespaceType},
-    existing: memberNames,
-  );
   final used = {'table', namespaceType, ...columnNames.values};
   final baseNameCounts = <String, int>{};
   for (final relation in relations) {
@@ -508,6 +593,12 @@ void _writeNamespace(
       ),
   ];
 
+  final primaryKey = _columnConstants(
+    table.primaryKey,
+    table.name,
+    columnNames,
+    keyDescription: 'the primary key',
+  );
   buffer
     ..writeln('/// Typed access to the `${table.name}` table.')
     ..writeln('class $namespaceType {')
@@ -516,9 +607,16 @@ void _writeNamespace(
     ..writeln('  /// Table definition for [PostgrestClient.table].')
     ..writeln(
       '  static const table = PostgrestTable<$rowType, '
-      '${insertType ?? 'Never'}, ${updateType ?? 'Never'}>'
-      '(${_stringLiteral(table.name)}, $rowType.new);',
+      '${insertType ?? 'Never'}, ${updateType ?? 'Never'}>(',
     )
+    ..writeln('    ${_stringLiteral(table.name)},')
+    ..writeln('    $rowType.new,')
+    ..writeln('    primaryKey: [${primaryKey.join(', ')}],');
+  if (relations.isNotEmpty) {
+    buffer.writeln('    relations: [${relationNames.join(', ')}],');
+  }
+  buffer
+    ..writeln('  );')
     ..writeln();
   for (final column in table.columns) {
     final binding = bindings[column.name]!;
@@ -534,10 +632,19 @@ void _writeNamespace(
   for (final (index, relation) in relations.indexed) {
     buffer.writeln();
     _writeDocComment(buffer, relation.docLine, indent: '  ');
-    buffer.writeln(
-      '  static const ${relationNames[index]} = '
-      '${relation.type}(${_stringLiteral(relation.embedName)});',
-    );
+    buffer
+      ..writeln(
+        '  static const ${relationNames[index]} = ${relation.type}(',
+      )
+      ..writeln('    ${_stringLiteral(relation.embedName)},')
+      ..writeln('    columns: [${relation.columns.join(', ')}],')
+      ..writeln(
+        '    referencedTable: ${_stringLiteral(relation.referencedTable)},',
+      )
+      ..writeln(
+        '    referencedColumns: [${relation.referencedColumns.join(', ')}],',
+      )
+      ..writeln('  );');
   }
   buffer
     ..writeln('}')

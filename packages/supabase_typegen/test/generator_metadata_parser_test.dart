@@ -225,6 +225,38 @@ void main() {
     expect(id.isNullable, isFalse);
   });
 
+  test('parses the primary key columns of tables in key order', () {
+    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final authors = schema.tables.singleWhere(
+      (table) => table.name == 'authors',
+    );
+
+    expect(books.primaryKey, ['id']);
+    expect(authors.primaryKey, ['id']);
+  });
+
+  test('views have no primary key', () {
+    final view = schema.tables.singleWhere(
+      (table) => table.name == 'author_stats',
+    );
+
+    expect(view.primaryKey, isEmpty);
+  });
+
+  test('keeps a composite primary key in key order', () {
+    final parsed = parseGeneratorMetadata({
+      ...document,
+      'primaryKeys': [
+        {'schema': 'public', 'table_name': 'books', 'name': 'author_id'},
+        {'schema': 'public', 'table_name': 'books', 'name': 'id'},
+        {'schema': 'other', 'table_name': 'books', 'name': 'other'},
+      ],
+    });
+
+    final books = parsed.tables.singleWhere((table) => table.name == 'books');
+    expect(books.primaryKey, ['author_id', 'id']);
+  });
+
   test('parses foreign keys from the relationships', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     final authorId = books.columns.singleWhere(

@@ -13,17 +13,41 @@ class Orders {
   static const shippedAt = PostgrestNullableColumn<Order, DateTime>(
     'shipped_at',
   );
-  static const todo = PostgrestToOneRelation<Order, Todo>('todo');
+  static const todoId = PostgrestColumn<Order, int>('todo_id');
+  static const todo = PostgrestToOneRelation<Order, Todo>(
+    'todo',
+    columns: [todoId],
+    referencedTable: 'todos',
+    referencedColumns: [Todos.id],
+  );
 }
 
 class Todos {
   static const id = PostgrestColumn<Todo, int>('id');
   static const title = PostgrestColumn<Todo, String>('title');
   static const amount = PostgrestColumn<Todo, double>('amount');
-  static const orders = PostgrestToManyRelation<Todo, Order>('orders');
+  static const orders = PostgrestToManyRelation<Todo, Order>(
+    'orders',
+    columns: [id],
+    referencedTable: 'orders',
+    referencedColumns: [Orders.todoId],
+  );
 }
 
 void main() {
+  test('a relation knows the columns of both sides of its key', () {
+    expect(Orders.todo.columns, [Orders.todoId]);
+    expect(Orders.todo.referencedTable, 'todos');
+    expect(Orders.todo.referencedColumns, [Todos.id]);
+    expect(Todos.orders.columns, [Todos.id]);
+    expect(Todos.orders.referencedColumns, [Orders.todoId]);
+  });
+
+  test('a projected column keeps its relation', () {
+    expect(Todos.orders(Orders.amount).relation, same(Todos.orders));
+    expect(Orders.todo(Todos.title).jsonText('k').relation, same(Orders.todo));
+  });
+
   test('a projected column wraps in the embed name', () {
     expect(Todos.orders(Orders.amount).expression, 'orders(amount)');
     expect(Orders.todo(Todos.title).expression, 'todo(title)');

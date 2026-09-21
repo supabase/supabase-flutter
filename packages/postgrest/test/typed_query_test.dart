@@ -31,8 +31,11 @@ class Books {
   static const table = PostgrestTable<Book, BookInsert, BookUpdate>(
     'books',
     Book.new,
+    primaryKey: [id],
+    relations: [author],
   );
   static const id = PostgrestColumn<Book, int>('id');
+  static const authorId = PostgrestColumn<Book, int>('author_id');
   static const title = PostgrestColumn<Book, String>('title');
   static const tags = PostgrestColumn<Book, List<String>>('tags');
   static const ageRange = PostgrestColumn<Book, PostgrestRange<int>>(
@@ -44,17 +47,29 @@ class Books {
   static const publishedOn = PostgrestNullableColumn<Book, DateTime>(
     'published_on',
   );
-  static const author = PostgrestToOneRelation<Book, Author>('author');
+  static const author = PostgrestToOneRelation<Book, Author>(
+    'author',
+    columns: [authorId],
+    referencedTable: 'authors',
+    referencedColumns: [Authors.id],
+  );
 }
 
 class Authors {
   static const table = PostgrestTable<Author, Never, Never>(
     'authors',
     Author.new,
+    primaryKey: [id],
+    relations: [books],
   );
   static const id = PostgrestColumn<Author, int>('id');
   static const name = PostgrestColumn<Author, String>('name');
-  static const books = PostgrestToManyRelation<Author, Book>('books');
+  static const books = PostgrestToManyRelation<Author, Book>(
+    'books',
+    columns: [id],
+    referencedTable: 'books',
+    referencedColumns: [Books.authorId],
+  );
 }
 
 class BookClass {
