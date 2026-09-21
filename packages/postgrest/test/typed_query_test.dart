@@ -837,4 +837,55 @@ void main() {
       expect(count, 42);
     });
   });
+
+  group('schema', () {
+    const inventoryBooks = PostgrestTable<Book, BookInsert, BookUpdate>(
+      'books',
+      Book.new,
+      primaryKey: [Books.id],
+      schema: 'inventory',
+    );
+
+    test(
+      'a table without a schema is read in the schema of the client',
+      () async {
+        httpClient.stub(bookRows);
+        final scoped = PostgrestClient(
+          'http://localhost/rest/v1',
+          schema: 'personal',
+          httpClient: httpClient,
+        );
+
+        await scoped.table(Books.table).select();
+        await scoped.dispose();
+
+        expect(httpClient.requests.last.headers['Accept-Profile'], 'personal');
+      },
+    );
+
+    test('a table carrying a schema is read in that schema', () async {
+      httpClient.stubTable('books', rows: bookRows, schema: 'inventory');
+
+      final List<Book> books = await client.table(inventoryBooks).select();
+
+      expect(books, hasLength(2));
+      expect(httpClient.requests.last.headers['Accept-Profile'], 'inventory');
+    });
+
+    test('a table carrying a schema is written in that schema', () async {
+      httpClient.stub(null);
+
+      await client.table(inventoryBooks).insert(BookInsert(title: 'foo'));
+
+      expect(httpClient.requests.last.headers['Content-Profile'], 'inventory');
+    });
+
+    test('an explicitly selected schema wins over the table schema', () async {
+      httpClient.stub(bookRows);
+
+      await client.schema('tenant_a').table(inventoryBooks).select();
+
+      expect(httpClient.requests.last.headers['Accept-Profile'], 'tenant_a');
+    });
+  });
 }

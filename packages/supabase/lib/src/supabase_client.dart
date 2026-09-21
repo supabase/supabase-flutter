@@ -255,6 +255,11 @@ class SupabaseClient {
   /// instead of raw `Map<String, dynamic>` data, and filters are built from
   /// [PostgrestColumn]s, which makes them compile-time checked.
   ///
+  /// The request, and a realtime `stream` on it, address
+  /// [PostgrestTable.schema] when the table carries one and the default schema
+  /// of the client otherwise; [schema] selects a schema explicitly for both
+  /// kinds of table.
+  ///
   /// ```dart
   /// final List<Book> books = await supabase
   ///     .table(Books.table)
@@ -265,7 +270,11 @@ class SupabaseClient {
   SupabaseTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
     PostgrestTable<Row, Insert, Update> table,
   ) {
-    return SupabaseTypedQueryBuilder(from(table.name), table);
+    final tableSchema = table.schema;
+    final querySchema = tableSchema == null
+        ? _defaultSchema
+        : _defaultSchema.schema(tableSchema);
+    return querySchema.table(table);
   }
 
   /// Select a schema to query or perform an function (rpc) call.

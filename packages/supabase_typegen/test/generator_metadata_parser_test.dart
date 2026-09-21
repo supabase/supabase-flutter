@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   late Map<String, dynamic> document;
-  late SchemaDescription schema;
+  late DatabaseDescription schema;
 
   setUpAll(() {
     document =
@@ -108,25 +108,89 @@ void main() {
     expect(enumDescription.values, ['happy', 'sad']);
   });
 
-  test('tolerates the version and primaryKeys fields of the document', () {
-    expect(document['version'], 1);
+  test('tolerates the primaryKeys field of the document', () {
     expect(document['primaryKeys'], isA<List<dynamic>>());
     expect(schema.tables, isNotEmpty);
   });
 
-  test('parses tables and views sorted by name', () {
-    expect(schema.tables.map((table) => table.name), [
-      'author_stats',
-      'authors',
-      'book_prices',
-      'book_submissions',
-      'book_summaries',
-      'books',
+  test('carries the version of the document', () {
+    expect(document['version'], 1);
+    expect(schema.metadataVersion, 1);
+  });
+
+  test('assumes version 1 for a document without one', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': <dynamic>[],
+      'columns': <dynamic>[],
+    });
+
+    expect(parsed.metadataVersion, 1);
+  });
+
+  test('describes every schema of the document by default', () {
+    expect(schema.schemaNames, ['inventory', 'public']);
+  });
+
+  test('parses tables and views sorted by schema and name', () {
+    expect(schema.tables.map((table) => table.qualifiedName), [
+      'inventory.books',
+      'inventory.stock',
+      'public.author_stats',
+      'public.authors',
+      'public.book_prices',
+      'public.book_submissions',
+      'public.book_summaries',
+      'public.books',
     ]);
   });
 
+  test('restricts to the named schemas', () {
+    final parsed = parseGeneratorMetadata(document, schemaNames: ['public']);
+
+    expect(parsed.schemaNames, ['public']);
+    expect(parsed.tables.map((table) => table.schema).toSet(), {'public'});
+    expect(
+      parsed.relationships.map((relationship) => relationship.sourceSchema),
+      everyElement('public'),
+    );
+    expect(parsed.enums.map((enumType) => enumType.qualifiedName), [
+      'public.mood',
+    ]);
+  });
+
+  test('leaves out a named schema the document does not list', () {
+    final parsed = parseGeneratorMetadata(
+      document,
+      schemaNames: ['public', 'missing'],
+    );
+
+    expect(parsed.schemaNames, ['public']);
+    expect(parsed.tables.map((table) => table.schema).toSet(), {'public'});
+  });
+
+  test('keeps every named schema when the document lists none', () {
+    final parsed = parseGeneratorMetadata(
+      {'tables': <dynamic>[], 'columns': <dynamic>[]},
+      schemaNames: ['public', 'inventory'],
+    );
+
+    expect(parsed.schemaNames, ['inventory', 'public']);
+  });
+
+  test('falls back to the schemas of the relations without a schemas list', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        {'id': 2, 'schema': 'inventory', 'name': 'stock', 'comment': null},
+      ],
+      'columns': <dynamic>[],
+    });
+
+    expect(parsed.schemaNames, ['inventory', 'public']);
+  });
+
   test('tables are insertable and updatable', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     expect(books.isInsertable, isTrue);
     expect(books.isUpdatable, isTrue);
   });
@@ -172,7 +236,7 @@ void main() {
   });
 
   test('parses table and view comments', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     expect(books.comment, 'Books available in the library');
 
     final authorStats = schema.tables.singleWhere(
@@ -182,7 +246,7 @@ void main() {
   });
 
   test('parses requiredness, defaults and nullability', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     final id = books.columns.singleWhere((column) => column.name == 'id');
     expect(id.isRequired, isFalse);
     expect(id.hasDefault, isTrue);
@@ -200,7 +264,7 @@ void main() {
 
   test('not null columns with a database default are non-nullable reads '
       'but optional writes', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     final inPrint = books.columns.singleWhere(
       (column) => column.name == 'in_print',
     );
@@ -226,13 +290,19 @@ void main() {
   });
 
   test('parses the primary key columns of tables in key order', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
-    final authors = schema.tables.singleWhere(
-      (table) => table.name == 'authors',
-    );
+    final books = publicTable(schema, 'books');
+    final authors = publicTable(schema, 'authors');
 
     expect(books.primaryKey, ['id']);
     expect(authors.primaryKey, ['id']);
+  });
+
+  test('primary keys are kept apart per schema', () {
+    final stock = schema.tables.singleWhere(
+      (table) => table.qualifiedName == 'inventory.stock',
+    );
+
+    expect(stock.primaryKey, ['id']);
   });
 
   test('views have no primary key', () {
@@ -253,32 +323,75 @@ void main() {
       ],
     });
 
-    final books = parsed.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(parsed, 'books');
     expect(books.primaryKey, ['author_id', 'id']);
   });
 
   test('parses foreign keys from the relationships', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     final authorId = books.columns.singleWhere(
       (column) => column.name == 'author_id',
     );
+    expect(authorId.foreignKey?.schema, 'public');
     expect(authorId.foreignKey?.table, 'authors');
     expect(authorId.foreignKey?.column, 'id');
   });
 
+  test('foreign key columns point at the table, not at a view over it', () {
+    final authorStats = publicTable(schema, 'author_stats');
+    final authorId = authorStats.columns.singleWhere(
+      (column) => column.name == 'author_id',
+    );
+
+    expect(authorId.foreignKey?.table, 'authors');
+  });
+
+  test('foreign keys into another schema name that schema', () {
+    final stock = schema.tables.singleWhere(
+      (table) => table.qualifiedName == 'inventory.stock',
+    );
+    final bookId = stock.columns.singleWhere(
+      (column) => column.name == 'book_id',
+    );
+    final copyId = stock.columns.singleWhere(
+      (column) => column.name == 'copy_id',
+    );
+
+    expect(bookId.foreignKey?.schema, 'public');
+    expect(bookId.foreignKey?.table, 'books');
+    expect(copyId.foreignKey?.schema, 'inventory');
+    expect(copyId.foreignKey?.table, 'books');
+  });
+
   test('collects the relationships between tables of the schema', () {
     final books = schema.relationships.singleWhere(
-      (relationship) => relationship.sourceTable == 'books',
+      (relationship) =>
+          relationship.sourceSchema == 'public' &&
+          relationship.sourceTable == 'books',
     );
 
     expect(books.foreignKeyName, 'books_author_id_fkey');
     expect(books.sourceColumns, ['author_id']);
+    expect(books.targetSchema, 'public');
     expect(books.targetTable, 'authors');
     expect(books.targetColumns, ['id']);
     expect(books.isOneToOne, isFalse);
   });
 
-  test('leaves out relationships into another schema', () {
+  test('keeps relationships into another generated schema', () {
+    final stockBook = schema.relationships.singleWhere(
+      (relationship) =>
+          relationship.foreignKeyName == 'stock_book_id_fkey' &&
+          relationship.targetTable == 'books',
+    );
+
+    expect(stockBook.sourceSchema, 'inventory');
+    expect(stockBook.sourceTable, 'stock');
+    expect(stockBook.targetSchema, 'public');
+    expect(stockBook.targetTable, 'books');
+  });
+
+  test('leaves out relationships into a schema that is not generated', () {
     final parsed = parseGeneratorMetadata({
       'tables': [
         {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
@@ -298,10 +411,36 @@ void main() {
     });
 
     expect(parsed.relationships, isEmpty);
+    final authorId = parsed.tables.single.columns.single;
+    expect(authorId.foreignKey?.schema, 'private');
+    expect(authorId.foreignKey?.table, 'authors');
+  });
+
+  test('tables of the same name in different schemas stay apart', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        {'id': 2, 'schema': 'inventory', 'name': 'books', 'comment': null},
+      ],
+      'columns': [
+        _column(tableId: 1, table: 'books', name: 'title'),
+        {
+          ..._column(tableId: 2, table: 'books', name: 'isbn'),
+          'schema': 'inventory',
+        },
+      ],
+    });
+
+    expect(parsed.tables.map((table) => table.qualifiedName), [
+      'inventory.books',
+      'public.books',
+    ]);
+    expect(parsed.tables.first.columns.single.name, 'isbn');
+    expect(parsed.tables.last.columns.single.name, 'title');
   });
 
   test('derives type kinds from formats', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     ColumnTypeKind kindOf(String name) =>
         books.columns.singleWhere((column) => column.name == name).typeKind;
 
@@ -399,13 +538,17 @@ void main() {
   });
 
   test('collects Postgres enums with their schema qualification', () {
-    expect(schema.enums, hasLength(1));
-    final mood = schema.enums.single;
+    expect(schema.enums.map((enumType) => enumType.qualifiedName), [
+      'inventory.condition',
+      'public.mood',
+    ]);
+    final mood = schema.enums.last;
     expect(mood.qualifiedName, 'public.mood');
+    expect(mood.schema, 'public');
     expect(mood.name, 'mood');
     expect(mood.values, ['happy', 'very happy', 'sad']);
 
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     final moodColumn = books.columns.singleWhere(
       (column) => column.name == 'mood',
     );
@@ -448,13 +591,68 @@ void main() {
       final mood = parsed.tables.single.columns.single;
       expect(mood.postgresFormat, 'internal.mood');
       final enumDescription = parsed.enums.single;
+      expect(enumDescription.schema, 'internal');
+      expect(enumDescription.name, 'mood');
       expect(enumDescription.qualifiedName, 'internal.mood');
       expect(enumDescription.values, ['up', 'down']);
     },
   );
 
+  test('keeps periods in enum schema and type names apart', () {
+    final parsed = parseGeneratorMetadata({
+      'version': 1,
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'reviews', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'reviews', name: 'status'),
+          'data_type': 'USER-DEFINED',
+          'format': 'v1.status',
+          'type_schema': 'tenant',
+          'enums': ['up', 'down'],
+        },
+        {
+          ..._column(tableId: 1, table: 'reviews', name: 'mood'),
+          'id': '1.2',
+          'ordinal_position': 2,
+          'data_type': 'USER-DEFINED',
+          'format': 'status',
+          'type_schema': 'tenant.v1',
+          'enums': ['happy', 'sad'],
+        },
+      ],
+      'types': [
+        {
+          'id': 10,
+          'schema': 'tenant.v1',
+          'name': 'status',
+          'enums': ['happy', 'sad'],
+        },
+        {
+          'id': 11,
+          'schema': 'tenant',
+          'name': 'v1.status',
+          'enums': ['up', 'down'],
+        },
+      ],
+    });
+
+    // Both enums share the qualified string `tenant.v1.status`, so identity
+    // has to be the (schema, name) pair.
+    expect(parsed.enums, hasLength(2));
+    final [dotted, nested] = parsed.enums;
+    expect((dotted.schema, dotted.name), ('tenant', 'v1.status'));
+    expect(dotted.values, ['up', 'down']);
+    expect((nested.schema, nested.name), ('tenant.v1', 'status'));
+    expect(nested.values, ['happy', 'sad']);
+    final [status, mood] = parsed.tables.single.columns;
+    expect(status.enumType, same(dotted));
+    expect(mood.enumType, same(nested));
+  });
+
   test('parses array columns', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     final tags = books.columns.singleWhere((column) => column.name == 'tags');
     expect(tags.postgresFormat, '_text');
     expect(tags.typeKind, ColumnTypeKind.array);
@@ -467,7 +665,7 @@ void main() {
   });
 
   test('keeps column comments', () {
-    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final books = publicTable(schema, 'books');
     final id = books.columns.singleWhere((column) => column.name == 'id');
     expect(id.comment, isNull);
 
@@ -505,7 +703,7 @@ void main() {
   });
 
   group('view writability flags', () {
-    SchemaDescription parseView(Map<String, dynamic> view) =>
+    DatabaseDescription parseView(Map<String, dynamic> view) =>
         parseGeneratorMetadata({
           'version': 1,
           'tables': <dynamic>[],
@@ -569,6 +767,12 @@ void main() {
     });
   });
 }
+
+/// The table [name] of the `public` schema.
+TableDescription publicTable(DatabaseDescription database, String name) =>
+    database.tables.singleWhere(
+      (table) => table.schema == 'public' && table.name == name,
+    );
 
 /// A minimal column document of the GeneratorMetadata contract.
 Map<String, dynamic> _column({

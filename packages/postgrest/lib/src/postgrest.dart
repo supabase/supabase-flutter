@@ -63,6 +63,7 @@ class PostgrestClient {
            ? httpClient
            : AccessTokenClient(accessToken, httpClient),
        _schema = schema,
+       _schemaIsExplicit = false,
        headers = Map.unmodifiable({...defaultHeaders, ...?headers}),
        _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
        _ownsJsonCodec = jsonCodec == null {
@@ -75,6 +76,21 @@ class PostgrestClient {
       () => 'Initialize with headers: ${this.headers.redacted}',
     );
   }
+
+  /// The copy [schema] returns: shares the transport and codec of the client
+  /// it was scoped from and never disposes the codec.
+  const PostgrestClient._scoped(
+    this.url, {
+    required this.headers,
+    required String schema,
+    required this.httpClient,
+    required AsyncJsonCodec jsonCodec,
+    required this.retryOptions,
+    required this.requestTimeout,
+  }) : _schema = schema,
+       _schemaIsExplicit = true,
+       _jsonCodec = jsonCodec,
+       _ownsJsonCodec = false;
 
   /// The HTTP status codes that trigger a retry.
   ///
@@ -95,6 +111,10 @@ class PostgrestClient {
   final Map<String, String> headers;
   final String? _schema;
 
+  /// Whether [_schema] was chosen with [schema], in which case it also applies
+  /// to tables that carry a schema of their own.
+  final bool _schemaIsExplicit;
+
   /// The HTTP client used to send requests, or `null` to use a one-off
   /// client per request.
   final Client? httpClient;
@@ -109,12 +129,14 @@ class PostgrestClient {
   final Duration? requestTimeout;
 
   /// Perform a table operation.
-  PostgrestQueryBuilder from(String table) {
+  PostgrestQueryBuilder from(String table) => _from(table, _schema);
+
+  PostgrestQueryBuilder _from(String table, String? schema) {
     final requestUrl = '$url/$table';
     return PostgrestQueryBuilder(
       url: Uri.parse(requestUrl),
       headers: headers,
-      schema: _schema,
+      schema: schema,
       httpClient: httpClient,
       jsonCodec: _jsonCodec,
       retryOptions: retryOptions,
@@ -128,6 +150,10 @@ class PostgrestClient {
   /// instead of raw `Map<String, dynamic>` data, and filters are built from
   /// [PostgrestColumn]s, which makes them compile-time checked.
   ///
+  /// The request addresses the schema chosen with [schema] when this client
+  /// was scoped with it, otherwise [PostgrestTable.schema] when the table
+  /// carries one, and otherwise the schema of the client.
+  ///
   /// ```dart
   /// final List<Book> books = await client
   ///     .table(Books.table)
@@ -138,14 +164,17 @@ class PostgrestClient {
   PostgrestTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
     PostgrestTable<Row, Insert, Update> table,
   ) {
-    return PostgrestTypedQueryBuilder(from(table.name), table);
+    final schema = _schemaIsExplicit ? _schema : (table.schema ?? _schema);
+    return PostgrestTypedQueryBuilder(_from(table.name, schema), table);
   }
 
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
+  /// It also applies to [table] calls on the returned client, even for tables
+  /// that carry a [PostgrestTable.schema] of their own.
   PostgrestClient schema(String schema) {
-    return PostgrestClient(
+    return PostgrestClient._scoped(
       url,
       headers: headers,
       schema: schema,

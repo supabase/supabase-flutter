@@ -67,8 +67,9 @@ ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
 }
 
 /// Parses a `GeneratorMetadata` document, the introspection contract of
-/// `@supabase/postgrest-typegen`, into a [SchemaDescription] for
-/// [schemaName].
+/// `@supabase/postgrest-typegen`, into a [DatabaseDescription] of the
+/// schemas named in [schemaNames], or of every schema the document lists when
+/// none are given. Named schemas the document does not list are left out.
 ///
 /// The document carries a `version` field, currently 1, and the
 /// semantically sorted collections produced by `sortGeneratorMetadata`:
@@ -83,12 +84,12 @@ ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
 ///
 /// Throws a [FormatException] when the document does not have the
 /// `GeneratorMetadata` shape.
-SchemaDescription parseGeneratorMetadata(
+DatabaseDescription parseGeneratorMetadata(
   Map<String, dynamic> document, {
-  String schemaName = 'public',
+  List<String>? schemaNames,
 }) {
   try {
-    return _parseGeneratorMetadata(document, schemaName: schemaName);
+    return _parseGeneratorMetadata(document, schemaNames: schemaNames);
   } on TypeError catch (error) {
     throw FormatException(
       'Not a GeneratorMetadata document: a record does not have the '
@@ -97,9 +98,16 @@ SchemaDescription parseGeneratorMetadata(
   }
 }
 
-SchemaDescription _parseGeneratorMetadata(
+const _relationCollections = [
+  'tables',
+  'foreignTables',
+  'views',
+  'materializedViews',
+];
+
+DatabaseDescription _parseGeneratorMetadata(
   Map<String, dynamic> document, {
-  required String schemaName,
+  required List<String>? schemaNames,
 }) {
   if (document['tables'] is! List<dynamic> ||
       document['columns'] is! List<dynamic>) {
@@ -109,16 +117,22 @@ SchemaDescription _parseGeneratorMetadata(
     );
   }
 
+  final documentSchemas = _documentSchemas(document);
+  final schemas = {
+    for (final schema in schemaNames ?? documentSchemas)
+      if (documentSchemas.isEmpty || documentSchemas.contains(schema)) schema,
+  };
+
   final relations = [
-    for (final table in _relationsOf(document, 'tables', schemaName))
+    for (final table in _relationsOf(document, 'tables', schemas))
       (relation: table, isInsertable: true, isUpdatable: true),
     for (final foreignTable in _relationsOf(
       document,
       'foreignTables',
-      schemaName,
+      schemas,
     ))
       (relation: foreignTable, isInsertable: true, isUpdatable: true),
-    for (final view in _relationsOf(document, 'views', schemaName))
+    for (final view in _relationsOf(document, 'views', schemas))
       (
         relation: view,
         isInsertable:
@@ -129,7 +143,7 @@ SchemaDescription _parseGeneratorMetadata(
     for (final materializedView in _relationsOf(
       document,
       'materializedViews',
-      schemaName,
+      schemas,
     ))
       (relation: materializedView, isInsertable: false, isUpdatable: false),
   ];
@@ -146,14 +160,15 @@ SchemaDescription _parseGeneratorMetadata(
         .add(column);
   }
 
-  final foreignKeysByColumn = _foreignKeysByColumn(document, schemaName);
-  final primaryKeysByTable = _primaryKeysByTable(document, schemaName);
+  final foreignKeysByColumn = _foreignKeysByColumn(document, schemas);
+  final primaryKeysByTable = _primaryKeysByTable(document, schemas);
   final enumTypes = _enumTypes(document);
 
   final tables = <TableDescription>[];
-  final enumsByQualifiedName = <String, EnumDescription>{};
+  final enumsByType = <(String, String), EnumDescription>{};
 
   for (final (:relation, :isInsertable, :isUpdatable) in relations) {
+    final relationSchema = relation['schema'] as String;
     final relationName = relation['name'] as String;
 
     final columns = <ColumnDescription>[];
@@ -168,22 +183,24 @@ SchemaDescription _parseGeneratorMetadata(
       final isArray = typeKind == ColumnTypeKind.array;
 
       var postgresFormat = format;
+      EnumDescription? enumDescription;
       if (isEnum) {
-        final enumDescription = _enumDescription(
+        final described = _enumDescription(
           isArray ? format.substring(1) : format,
           column['type_schema'] as String,
           enumValues,
           enumTypes,
+        );
+        // Every column of one enum shares the description registered first.
+        enumDescription = enumsByType.putIfAbsent(
+          (described.schema, described.name),
+          () => described,
         );
         // Array elements stay in their wire representation, but the enum the
         // elements belong to is still emitted for manual conversion.
         if (!isArray) {
           postgresFormat = enumDescription.qualifiedName;
         }
-        enumsByQualifiedName.putIfAbsent(
-          enumDescription.qualifiedName,
-          () => enumDescription,
-        );
       }
 
       final hasDefault =
@@ -202,6 +219,7 @@ SchemaDescription _parseGeneratorMetadata(
               : null,
           boundTypeKind: _rangeBoundKinds[format],
           enumValues: isEnum ? enumValues : null,
+          enumType: enumDescription,
           isRequired: !isNullable && !hasDefault,
           hasDefault: hasDefault,
           isNullable: isNullable,
@@ -210,68 +228,98 @@ SchemaDescription _parseGeneratorMetadata(
               column['is_generated'] as bool ||
               !(column['is_updatable'] as bool),
           comment: column['comment'] as String?,
-          foreignKey: foreignKeysByColumn[(relationName, name)],
+          foreignKey: foreignKeysByColumn[(relationSchema, relationName, name)],
         ),
       );
     }
 
     tables.add(
       TableDescription(
+        schema: relationSchema,
         name: relationName,
         comment: relation['comment'] as String?,
         columns: columns,
-        primaryKey: primaryKeysByTable[relationName] ?? const [],
+        primaryKey:
+            primaryKeysByTable[(relationSchema, relationName)] ?? const [],
         isInsertable: isInsertable,
         isUpdatable: isUpdatable,
       ),
     );
   }
 
-  tables.sort((a, b) => a.name.compareTo(b.name));
-  final enums = enumsByQualifiedName.values.toList()
-    ..sort((a, b) => a.qualifiedName.compareTo(b.qualifiedName));
+  tables.sort(
+    (a, b) => a.schema == b.schema
+        ? a.name.compareTo(b.name)
+        : a.schema.compareTo(b.schema),
+  );
+  final enums = enumsByType.values.toList()
+    ..sort(
+      (a, b) => a.schema == b.schema
+          ? a.name.compareTo(b.name)
+          : a.schema.compareTo(b.schema),
+    );
 
-  return SchemaDescription(
-    schemaName: schemaName,
+  return DatabaseDescription(
+    metadataVersion: document['version'] as int? ?? 1,
+    schemaNames: schemas.toList()..sort(),
     tables: tables,
     enums: enums,
-    relationships: _relationships(
-      document,
-      schemaName,
-      {for (final table in tables) table.name},
-    ),
+    relationships: _relationships(document, {
+      for (final table in tables) (table.schema, table.name),
+    }),
   );
 }
 
+/// The schemas the document describes: its `schemas` collection, or the
+/// schemas of its relations for documents that carry none.
+Set<String> _documentSchemas(Map<String, dynamic> document) {
+  final listed = (document['schemas'] as List<dynamic>? ?? const [])
+      .cast<Map<String, dynamic>>()
+      .map((schema) => schema['name'] as String);
+  if (listed.isNotEmpty) return listed.toSet();
+  return {
+    for (final collection in _relationCollections)
+      for (final relation
+          in (document[collection] as List<dynamic>? ?? const [])
+              .cast<Map<String, dynamic>>())
+        relation['schema'] as String,
+  };
+}
+
 /// The relations of one document collection, such as `views`, that belong to
-/// [schemaName].
+/// one of [schemas].
 Iterable<Map<String, dynamic>> _relationsOf(
   Map<String, dynamic> document,
   String collection,
-  String schemaName,
+  Set<String> schemas,
 ) => (document[collection] as List<dynamic>? ?? const [])
     .cast<Map<String, dynamic>>()
-    .where((relation) => relation['schema'] == schemaName);
+    .where((relation) => schemas.contains(relation['schema']));
 
-/// The foreign keys whose both ends are relations of [schemaName] listed in
-/// [relationNames]; a key into another schema has no generated row type to
-/// point at and is left out.
+/// The foreign keys whose both ends are among the generated [relations],
+/// whatever their schemas; a key into a schema that is not generated has no
+/// row type to point at and is left out.
 List<RelationshipDescription> _relationships(
   Map<String, dynamic> document,
-  String schemaName,
-  Set<String> relationNames,
+  Set<(String, String)> relations,
 ) => [
   for (final relationship
       in (document['relationships'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>())
-    if (relationship['schema'] == schemaName &&
-        relationship['referenced_schema'] == schemaName &&
-        relationNames.contains(relationship['relation']) &&
-        relationNames.contains(relationship['referenced_relation']))
+    if (relations.contains((
+          relationship['schema'] as String,
+          relationship['relation'] as String,
+        )) &&
+        relations.contains((
+          relationship['referenced_schema'] as String,
+          relationship['referenced_relation'] as String,
+        )))
       RelationshipDescription(
         foreignKeyName: relationship['foreign_key_name'] as String,
+        sourceSchema: relationship['schema'] as String,
         sourceTable: relationship['relation'] as String,
         sourceColumns: (relationship['columns'] as List<dynamic>).cast(),
+        targetSchema: relationship['referenced_schema'] as String,
         targetTable: relationship['referenced_relation'] as String,
         targetColumns: (relationship['referenced_columns'] as List<dynamic>)
             .cast(),
@@ -279,35 +327,64 @@ List<RelationshipDescription> _relationships(
       ),
 ];
 
-/// Maps each table of [schemaName] to the names of its primary key columns,
-/// in the order the document lists them, which is key order.
-Map<String, List<String>> _primaryKeysByTable(
+/// Maps each `(schema, table)` of [schemas] to the names of its primary key
+/// columns, in the order the document lists them, which is key order.
+Map<(String, String), List<String>> _primaryKeysByTable(
   Map<String, dynamic> document,
-  String schemaName,
+  Set<String> schemas,
 ) {
-  final primaryKeys = <String, List<String>>{};
+  final primaryKeys = <(String, String), List<String>>{};
   for (final primaryKey
       in (document['primaryKeys'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()) {
-    if (primaryKey['schema'] != schemaName) continue;
+    final schema = primaryKey['schema'] as String;
+    if (!schemas.contains(schema)) continue;
     primaryKeys
-        .putIfAbsent(primaryKey['table_name'] as String, () => [])
+        .putIfAbsent((schema, primaryKey['table_name'] as String), () => [])
         .add(primaryKey['name'] as String);
   }
   return primaryKeys;
 }
 
-/// Maps `(table, column)` pairs of [schemaName] to their foreign key targets,
-/// pairing the source and referenced columns of each relationship by index.
-Map<(String, String), ForeignKeyDescription> _foreignKeysByColumn(
+/// Maps `(schema, table, column)` triples of [schemas] to their foreign key
+/// targets, pairing the source and referenced columns of each relationship by
+/// index.
+///
+/// The document also lists a relationship for every view that exposes the
+/// referenced key column, so the target of a column is the referenced table
+/// itself, and one of those views only when the table is not in the document.
+Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
   Map<String, dynamic> document,
-  String schemaName,
+  Set<String> schemas,
 ) {
-  final foreignKeys = <(String, String), ForeignKeyDescription>{};
-  for (final relationship
-      in (document['relationships'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()) {
-    if (relationship['schema'] != schemaName) continue;
+  final tables = {
+    for (final collection in const ['tables', 'foreignTables'])
+      for (final table
+          in (document[collection] as List<dynamic>? ?? const [])
+              .cast<Map<String, dynamic>>())
+        (table['schema'] as String, table['name'] as String),
+  };
+  final relationships =
+      (document['relationships'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .toList()
+        ..sort((a, b) {
+          final aIsTable = tables.contains((
+            a['referenced_schema'] as String,
+            a['referenced_relation'] as String,
+          ));
+          final bIsTable = tables.contains((
+            b['referenced_schema'] as String,
+            b['referenced_relation'] as String,
+          ));
+          if (aIsTable == bIsTable) return 0;
+          return aIsTable ? -1 : 1;
+        });
+
+  final foreignKeys = <(String, String, String), ForeignKeyDescription>{};
+  for (final relationship in relationships) {
+    final schema = relationship['schema'] as String;
+    if (!schemas.contains(schema)) continue;
     final table = relationship['relation'] as String;
     final columns = (relationship['columns'] as List<dynamic>).cast<String>();
     final referencedColumns =
@@ -321,8 +398,9 @@ Map<(String, String), ForeignKeyDescription> _foreignKeysByColumn(
     }
     for (var i = 0; i < columns.length; i++) {
       foreignKeys.putIfAbsent(
-        (table, columns[i]),
+        (schema, table, columns[i]),
         () => ForeignKeyDescription(
+          schema: relationship['referenced_schema'] as String,
           table: relationship['referenced_relation'] as String,
           column: referencedColumns[i],
         ),
@@ -332,16 +410,16 @@ Map<(String, String), ForeignKeyDescription> _foreignKeysByColumn(
   return foreignKeys;
 }
 
-/// Maps schema-qualified enum type names, for example `public.mood`, to
-/// their values in declaration order.
-Map<String, List<String>> _enumTypes(Map<String, dynamic> document) {
-  final enumTypes = <String, List<String>>{};
+/// Maps `(schema, name)` pairs of enum types to their values in declaration
+/// order.
+Map<(String, String), List<String>> _enumTypes(Map<String, dynamic> document) {
+  final enumTypes = <(String, String), List<String>>{};
   for (final type
       in (document['types'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()) {
     final values = (type['enums'] as List<dynamic>? ?? const []).cast<String>();
     if (values.isEmpty) continue;
-    enumTypes['${type['schema']}.${type['name']}'] = values;
+    enumTypes[(type['schema'] as String, type['name'] as String)] = values;
   }
   return enumTypes;
 }
@@ -353,11 +431,9 @@ EnumDescription _enumDescription(
   String format,
   String typeSchema,
   List<String> columnEnumValues,
-  Map<String, List<String>> enumTypes,
-) {
-  final qualifiedName = '$typeSchema.$format';
-  return EnumDescription(
-    qualifiedName: qualifiedName,
-    values: enumTypes[qualifiedName] ?? columnEnumValues,
-  );
-}
+  Map<(String, String), List<String>> enumTypes,
+) => EnumDescription(
+  schema: typeSchema,
+  name: format,
+  values: enumTypes[(typeSchema, format)] ?? columnEnumValues,
+);

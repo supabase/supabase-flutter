@@ -8,10 +8,11 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 /// The golden generated from it, `hostile_schema.dart`, is checked in so the
 /// package's own `dart analyze` run proves the generated code stays valid,
 /// not merely parseable, for schemas like these.
-const SchemaDescription hostileSchema = SchemaDescription(
-  schemaName: 'evil\nmultiline "schema" name',
+const DatabaseDescription hostileSchema = DatabaseDescription(
+  schemaNames: ['evil\nmultiline "schema" name', 'public'],
   tables: [
     TableDescription(
+      schema: 'public',
       name: 'postgrest_table',
       comment: 'first\rsecond\u2028third \$interpolation "quoted"',
       primaryKey: ["quote'name tail", 'days'],
@@ -32,6 +33,11 @@ const SchemaDescription hostileSchema = SchemaDescription(
           isRequired: false,
           hasDefault: false,
           isNullable: true,
+          enumType: EnumDescription(
+            schema: 'public',
+            name: 'string',
+            values: ["it's \$a\u2028trap", 'plain'],
+          ),
         ),
         ColumnDescription(
           name: 'samples',
@@ -54,6 +60,7 @@ const SchemaDescription hostileSchema = SchemaDescription(
       ],
     ),
     TableDescription(
+      schema: 'public',
       name: 'map',
       columns: [
         ColumnDescription(
@@ -119,28 +126,61 @@ const SchemaDescription hostileSchema = SchemaDescription(
         ),
       ],
     ),
+    // A table outside public: its type names carry the schema, and the key
+    // from public.map into it gets no relation member.
+    TableDescription(
+      schema: 'evil\nmultiline "schema" name',
+      name: 'postgrest_column',
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
   ],
   relationships: [
     // A self reference: PostgREST cannot embed it, so no member is generated.
     RelationshipDescription(
       foreignKeyName: 'map_list_fkey',
+      sourceSchema: 'public',
       sourceTable: 'map',
       sourceColumns: ['list'],
+      targetSchema: 'public',
       targetTable: 'map',
       targetColumns: ['list'],
+    ),
+    // A key into another schema: PostgREST cannot embed across schemas, so no
+    // member is generated.
+    RelationshipDescription(
+      foreignKeyName: 'map_list_postgrest_column_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'map',
+      sourceColumns: ['list'],
+      targetSchema: 'evil\nmultiline "schema" name',
+      targetTable: 'postgrest_column',
+      targetColumns: ['id'],
     ),
     // Two keys to the same target: the plain table name is ambiguous.
     RelationshipDescription(
       foreignKeyName: 'postgrest_table_mood_fkey',
+      sourceSchema: 'public',
       sourceTable: 'postgrest_table',
       sourceColumns: ['mood'],
+      targetSchema: 'public',
       targetTable: 'map',
       targetColumns: ['list'],
     ),
     RelationshipDescription(
       foreignKeyName: 'postgrest_table_days_fkey',
+      sourceSchema: 'public',
       sourceTable: 'postgrest_table',
       sourceColumns: ['days'],
+      targetSchema: 'public',
       targetTable: 'map',
       targetColumns: ['list'],
       isOneToOne: true,
@@ -148,7 +188,8 @@ const SchemaDescription hostileSchema = SchemaDescription(
   ],
   enums: [
     EnumDescription(
-      qualifiedName: 'public.string',
+      schema: 'public',
+      name: 'string',
       values: ["it's \$a\u2028trap", 'plain'],
     ),
   ],

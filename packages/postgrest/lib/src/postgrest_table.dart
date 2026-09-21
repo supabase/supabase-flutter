@@ -30,6 +30,7 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 ///     'books',
 ///     Book.new,
 ///     primaryKey: [id],
+///     schema: 'public',
 ///   );
 ///   static const id = PostgrestColumn<Book, int>('id');
 ///   static const title = PostgrestColumn<Book, String>('title');
@@ -57,6 +58,10 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 /// regular data class. `package:supabase_typegen` generates all three types
 /// and the table definition, including [primaryKey] and [relations], from the
 /// database schema.
+///
+/// A table that carries its [schema] is queried in that schema by
+/// [PostgrestClient.table] without a [PostgrestClient.schema] call, so tables
+/// from several schemas can be used side by side on one client.
 @experimental
 // ignore: avoid-unused-generics
 class PostgrestTable<Row, Insert, Update> {
@@ -65,10 +70,15 @@ class PostgrestTable<Row, Insert, Update> {
     this.rowFromJson, {
     required this.primaryKey,
     this.relations = const [],
+    this.schema,
   });
 
   /// Name of the table in the database.
   final String name;
+
+  /// The schema the table lives in, or `null` to query it in the schema of
+  /// the client.
+  final String? schema;
 
   /// Converts a decoded row into [Row].
   final RowConverter<Row> rowFromJson;
