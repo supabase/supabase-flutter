@@ -436,7 +436,7 @@ void _writeTable(
   List<_RelationMember> relations,
   Map<String, String> enumTypeNames,
 ) {
-  final _TableNames(:rowType, :insertType, :updateType) = names;
+  final _TableNames(:insertType, :updateType) = names;
 
   final memberNames = members.rowMembers;
   final bindings = {
