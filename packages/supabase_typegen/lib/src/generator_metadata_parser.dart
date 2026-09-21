@@ -253,7 +253,6 @@ DatabaseDescription _parseGeneratorMetadata(
     ..sort((a, b) => a.qualifiedName.compareTo(b.qualifiedName));
 
   return DatabaseDescription(
-    metadataVersion: document['version'] as int? ?? 1,
     schemaNames: schemas.toList()..sort(),
     tables: tables,
     enums: enums,

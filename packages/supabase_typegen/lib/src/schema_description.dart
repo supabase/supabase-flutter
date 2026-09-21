@@ -56,14 +56,10 @@ class DatabaseDescription {
     required this.tables,
     required this.enums,
     this.relationships = const [],
-    this.metadataVersion = 1,
   });
 
   /// Names of the described schemas, sorted, for example `['public']`.
   final List<String> schemaNames;
-
-  /// The `version` of the `GeneratorMetadata` document this was parsed from.
-  final int metadataVersion;
 
   /// Tables and views of the schemas, sorted by schema and name.
   final List<TableDescription> tables;
