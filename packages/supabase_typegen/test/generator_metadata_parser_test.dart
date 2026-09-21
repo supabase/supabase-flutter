@@ -455,6 +455,41 @@ void main() {
     expect(kindOf('updated_at'), ColumnTypeKind.timestamp);
     expect(kindOf('published_on'), ColumnTypeKind.date);
     expect(kindOf('cover_uuid'), ColumnTypeKind.text);
+    expect(kindOf('cover_image'), ColumnTypeKind.binary);
+  });
+
+  test('bytea arrays carry binary elements', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'files', 'comment': null},
+      ],
+      'columns': [
+        {
+          'table_id': 1,
+          'schema': 'public',
+          'table': 'files',
+          'id': '1.1',
+          'ordinal_position': 1,
+          'name': 'chunks',
+          'default_value': null,
+          'data_type': 'ARRAY',
+          'format': '_bytea',
+          'is_identity': false,
+          'identity_generation': null,
+          'is_generated': false,
+          'is_nullable': true,
+          'is_updatable': true,
+          'is_unique': false,
+          'enums': <String>[],
+          'check': null,
+          'comment': null,
+        },
+      ],
+    });
+
+    final chunks = parsed.tables.single.columns.single;
+    expect(chunks.typeKind, ColumnTypeKind.array);
+    expect(chunks.elementTypeKind, ColumnTypeKind.binary);
   });
 
   test('types that PostgREST serializes as strings read as text', () {

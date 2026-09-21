@@ -144,12 +144,16 @@ final archived = await client
   nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; arrays containing SQL NULL
-  elements throw when the element is read. Enum, date, timestamp, and range
-  array elements stay in their wire representation (`List<String>`); the
-  Dart enum for enum array elements is still generated for manual conversion.
+  elements throw when the element is read. Enum, date, timestamp, range and
+  `bytea` array elements stay in their wire representation (`List<String>`);
+  the Dart enum for enum array elements is still generated for manual
+  conversion, and `postgrestBytea` decodes `bytea` elements.
 - `timestamptz` values are written back in UTC, naive `timestamp` values as
   local wall time, and `date` values date-only, so calendar dates never
   shift with the client timezone.
+- `bytea` columns map to `Uint8List` and are written back as hex literals,
+  the format Postgres emits by default; the escape output format is decoded
+  as well.
 - Foreign keys into another schema get no relation member, since PostgREST
   only embeds tables of the schema a request addresses. The foreign key
   itself is still described, so the column is typed like any other.
