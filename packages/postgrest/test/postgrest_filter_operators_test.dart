@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
@@ -19,6 +21,7 @@ class Posts {
     'metadata',
   );
   static const search = PostgrestColumn<Post, Object>('search');
+  static const cover = PostgrestColumn<Post, Uint8List>('cover');
 }
 
 String rendered(PostgrestFilter<Post> filter) => [
@@ -262,6 +265,22 @@ void main() {
 
     test('is available on a tsvector column typed as Object', () {
       expect(rendered(Posts.search.textSearch('dart')), 'search=fts.dart');
+    });
+  });
+
+  group('bytea', () {
+    final bytes = Uint8List.fromList([72, 105]);
+
+    test('renders a Uint8List as a hex literal, not an array', () {
+      expect(rendered(Posts.cover.eq(bytes)), r'cover=eq.\x4869');
+    });
+
+    test('quotes the literal where the grammar reserves the backslash', () {
+      expect(rendered(Posts.cover.inFilter([bytes])), r'cover=in.("\\x4869")');
+      expect(
+        rendered(Posts.cover.eq(bytes) | Posts.id.eq(1)),
+        r'or=(cover.eq."\\x4869",id.eq.1)',
+      );
     });
   });
 }

@@ -27,7 +27,7 @@ class _Binding {
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestRange`,
-/// `PostgrestToOneRelation` and `PostgrestToManyRelation`).
+/// `PostgrestToOneRelation`, `PostgrestToManyRelation` and `postgrestBytea`).
 String generateDartCode(
   DatabaseDescription database, {
   String importUri = 'package:postgrest/postgrest.dart',
@@ -37,6 +37,11 @@ String generateDartCode(
       (column) =>
           column.typeKind == ColumnTypeKind.date ||
           column.boundTypeKind == ColumnTypeKind.date,
+    ),
+  );
+  final usesBinaryColumns = database.tables.any(
+    (table) => table.columns.any(
+      (column) => column.typeKind == ColumnTypeKind.binary,
     ),
   );
   // Caller-provided values are encoded before they are written into source:
@@ -56,7 +61,13 @@ String generateDartCode(
     ..writeln()
     ..writeln('// The typed table access API is still experimental.')
     ..writeln('// ignore_for_file: experimental_member_use')
-    ..writeln()
+    ..writeln();
+  if (usesBinaryColumns) {
+    buffer
+      ..writeln("import 'dart:typed_data';")
+      ..writeln();
+  }
+  buffer
     ..writeln('import ${_stringLiteral(importUri)};')
     ..writeln();
 
@@ -134,6 +145,7 @@ class _TypeNameRegistry {
     'MapEntry',
     'List',
     'DateTime',
+    'Uint8List',
     'int',
     'double',
     'num',
@@ -254,9 +266,12 @@ class _TableMembers {
     final _TableNames(:rowType, :insertType, :updateType, :namespaceType) =
         names;
     final columns = [for (final column in table.columns) column.name];
+    // The row getters and the value constructor parameters share their
+    // names, and both are in scope where the generated conversions call
+    // `postgrestBytea`, so a column of that name may not claim it.
     final rowMembers = _uniqueMemberNames(
       columns,
-      reserved: {rowType, ?insertType, ?updateType, 'toJson'},
+      reserved: {rowType, ?insertType, ?updateType, 'toJson', 'postgrestBytea'},
     );
     return _TableMembers(
       rowMembers: rowMembers,
@@ -709,6 +724,7 @@ _Binding _bindingFor(
     ColumnTypeKind.timestampWithTimeZone,
   ),
   ColumnTypeKind.text => const _Binding('String', ColumnTypeKind.text),
+  ColumnTypeKind.binary => const _Binding('Uint8List', ColumnTypeKind.binary),
   ColumnTypeKind.range => _Binding(
     'PostgrestRange<${_boundDartType(column.boundTypeKind)}>',
     ColumnTypeKind.range,
@@ -750,6 +766,7 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
+  ColumnTypeKind.binary ||
   ColumnTypeKind.json ||
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
@@ -768,6 +785,7 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
+  ColumnTypeKind.binary ||
   ColumnTypeKind.json ||
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
@@ -782,9 +800,10 @@ String _elementDartType(ColumnTypeKind? elementTypeKind) =>
       ColumnTypeKind.floating => 'double',
       ColumnTypeKind.numeric => 'num',
       ColumnTypeKind.boolean => 'bool',
-      // Temporal, enum and range elements stay in their wire representation,
-      // a documented limitation of array columns.
+      // Temporal, enum, range and binary elements stay in their wire
+      // representation, a documented limitation of array columns.
       ColumnTypeKind.text ||
+      ColumnTypeKind.binary ||
       ColumnTypeKind.date ||
       ColumnTypeKind.timestamp ||
       ColumnTypeKind.timestampWithTimeZone ||
@@ -841,6 +860,10 @@ String _readExpression(ColumnDescription column, _Binding binding) {
               '${binding.dartType}.fromWire(value as String)',
             )
           : '${binding.dartType}.fromWire($access as String)',
+    ColumnTypeKind.binary =>
+      nullable
+          ? _nullableSwitch(access, 'postgrestBytea.decode(value as String)')
+          : 'postgrestBytea.decode($access as String)',
     ColumnTypeKind.range =>
       nullable
           ? _nullableSwitch(
@@ -875,6 +898,11 @@ String _writeExpression(
           ? '$access.toUtc().toIso8601String()'
           : '$parameterName.toUtc().toIso8601String()',
     ColumnTypeKind.enumType => '$access.wireName',
+    ColumnTypeKind.binary =>
+      nullable
+          ? 'switch ($parameterName) '
+                '{ null => null, final value => postgrestBytea.encode(value) }'
+          : 'postgrestBytea.encode($parameterName)',
     ColumnTypeKind.range => switch (binding.boundKind) {
       ColumnTypeKind.date => '$access.render(_dateString)',
       ColumnTypeKind.timestamp =>
@@ -886,6 +914,7 @@ String _writeExpression(
       ColumnTypeKind.floating ||
       ColumnTypeKind.boolean ||
       ColumnTypeKind.text ||
+      ColumnTypeKind.binary ||
       ColumnTypeKind.json ||
       ColumnTypeKind.enumType ||
       ColumnTypeKind.array ||
