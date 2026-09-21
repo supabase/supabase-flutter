@@ -130,7 +130,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     PostgrestTableRequest request,
   ) {
     PostgrestTransformBuilder<Object?> transformed = filtered;
-    if (request.operation.isMutation && request.returnsRows) {
+    if (request.operation.isMutation && request.returning) {
       transformed = transformed.select(_selectList(request.columns));
     }
     for (final ordering in request.orderings) {

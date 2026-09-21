@@ -343,7 +343,10 @@ class Supabase {
     if (captured == AppLifecycleState.resumed) {
       for (final plugin in currentClient.plugins) {
         unawaited(
-          plugin.resume().catchError((Object error, StackTrace stackTrace) {
+          Future.sync(plugin.resume).catchError((
+            Object error,
+            StackTrace stackTrace,
+          ) {
             flutterLogger.warning(
               'Plugin ${plugin.runtimeType} failed to resume',
               error,

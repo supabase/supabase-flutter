@@ -49,8 +49,9 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     List<PostgrestColumnExpression<Row, Object>>? columns,
   ]) => PostgrestTypedTransformBuilder._(
     request.copyWith(
-      columns: columns == null ? null : _checkedColumns(columns),
+      columns: _checkedColumns(columns),
       shape: PostgrestResultShape.rows,
+      returning: true,
     ),
     _executor,
     _rowsConverter(_rowFromJson),
@@ -71,7 +72,11 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// Repeated calls append, so the second key breaks ties in the first.
   PostgrestTypedTransformBuilder<Row, T> order(
     PostgrestOrdering<Row> ordering,
-  ) => _with(request.copyWith(orderings: [...request.orderings, ordering]));
+  ) => _with(
+    request.copyWith(
+      orderings: List.unmodifiable([...request.orderings, ordering]),
+    ),
+  );
 
   /// Limits the result with the specified [count].
   PostgrestTypedTransformBuilder<Row, T> limit(
@@ -81,10 +86,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     referencedTable == null
         ? request.copyWith(limit: count)
         : request.copyWith(
-            embeddedPages: [
+            embeddedPages: List.unmodifiable([
               ...request.embeddedPages,
               PostgrestEmbeddedPage(referencedTable, limit: count),
-            ],
+            ]),
           ),
   );
 
@@ -97,14 +102,14 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     referencedTable == null
         ? request.copyWith(offset: from, limit: to - from + 1)
         : request.copyWith(
-            embeddedPages: [
+            embeddedPages: List.unmodifiable([
               ...request.embeddedPages,
               PostgrestEmbeddedPage(
                 referencedTable,
                 limit: to - from + 1,
                 offset: from,
               ),
-            ],
+            ]),
           ),
   );
 

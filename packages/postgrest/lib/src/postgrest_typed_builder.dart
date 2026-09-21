@@ -28,16 +28,18 @@ List<Row> _rowsFromJson<Row>(
 ) => [for (final row in rows) rowFromJson(row)];
 
 /// The `select` parameter for [columns], or `*` when none are given.
-String _selectList(List<PostgrestColumnExpression<Object?, Object>>? columns) {
-  if (columns == null) return '*';
+String _selectList(List<PostgrestColumnExpression<Object?, Object>> columns) {
+  if (columns.isEmpty) return '*';
   return columns.map((column) => column.expression).join(',');
 }
 
-/// [columns] as the request stores them, rejecting an empty list up front so
-/// the error surfaces where `select` is called rather than when awaited.
+/// [columns] as the request stores them: every column when none are given,
+/// otherwise an unmodifiable copy. An empty list is rejected up front so the
+/// error surfaces where `select` is called rather than when awaited.
 List<PostgrestColumnExpression<Object?, Object>> _checkedColumns<Row>(
-  List<PostgrestColumnExpression<Row, Object>> columns,
+  List<PostgrestColumnExpression<Row, Object>>? columns,
 ) {
+  if (columns == null) return const [];
   if (columns.isEmpty) {
     throw ArgumentError.value(
       columns,
@@ -74,7 +76,10 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   final PostgrestTableExecutor _executor;
   final _ResultConverter<T> _convert;
 
-  Future<T> _execute() => _executor.execute(request).then(_convert);
+  /// Runs [request] on the executor, routing a synchronous throw into the
+  /// returned future so the [Future] contract holds for every executor.
+  Future<T> _execute() =>
+      Future.sync(() => _executor.execute(request)).then(_convert);
 
   @override
   Stream<T> asStream() {

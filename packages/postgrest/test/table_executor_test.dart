@@ -97,7 +97,7 @@ void main() {
         expect(request.schema, isNull);
         expect(request.operation, PostgrestTableOperation.select);
         expect(request.shape, PostgrestResultShape.rows);
-        expect(request.columns!.map((column) => column.expression), [
+        expect(request.columns.map((column) => column.expression), [
           'id',
           'title',
         ]);
@@ -181,6 +181,7 @@ void main() {
       expect(request.operation, PostgrestTableOperation.update);
       expect(request.payload, {'title': 'b'});
       expect(request.shape, PostgrestResultShape.none);
+      expect(request.returning, isFalse);
       expect(request.filter!.comparison!.operator, PostgrestFilterOperator.eq);
     });
 
@@ -201,7 +202,8 @@ void main() {
         {'title': 'b'},
       ]);
       expect(request.shape, PostgrestResultShape.rows);
-      expect(request.columns!.single.expression, 'id');
+      expect(request.returning, isTrue);
+      expect(request.columns.single.expression, 'id');
       expect(books.length, 2);
     });
 

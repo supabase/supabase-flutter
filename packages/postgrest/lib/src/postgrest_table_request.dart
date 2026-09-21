@@ -108,9 +108,9 @@ final class PostgrestExplainOptions {
 /// [PostgrestTableExecutor].
 ///
 /// The value is immutable: every builder method returns a copy through
-/// [copyWith]. [PostgrestHttpTableExecutor] renders it into the PostgREST
-/// request the untyped builders would have sent; another executor can run it
-/// anywhere
+/// [copyWith], and every collection it holds is unmodifiable.
+/// [PostgrestHttpTableExecutor] renders it into the PostgREST request the
+/// untyped builders would have sent; another executor can run it anywhere
 /// else, against a local store for example, because the filters, orderings
 /// and payload are still structured values rather than URL text.
 @experimental
@@ -119,7 +119,7 @@ final class PostgrestTableRequest {
     required this.table,
     required this.operation,
     this.schema,
-    this.columns,
+    this.columns = const [],
     this.filter,
     this.orderings = const [],
     this.limit,
@@ -131,6 +131,7 @@ final class PostgrestTableRequest {
     this.onConflict,
     this.ignoreDuplicates = false,
     this.defaultToNull = true,
+    this.returning = false,
     this.maxAffected,
     this.stripNulls = false,
     this.dryRun = false,
@@ -146,11 +147,11 @@ final class PostgrestTableRequest {
   /// The database schema of [table], or `null` for the client default.
   final String? schema;
 
-  /// The expressions to read back, or `null` for every column.
+  /// The expressions to read back; empty for every column.
   ///
   /// For a mutation these are the columns of the returned rows, and only
-  /// apply when [shape] is not [PostgrestResultShape.none].
-  final List<PostgrestColumnExpression<Object?, Object>>? columns;
+  /// apply when [returning] is set.
+  final List<PostgrestColumnExpression<Object?, Object>> columns;
 
   /// The rows to act on, or `null` for every row.
   final PostgrestFilter<Object?>? filter;
@@ -177,6 +178,10 @@ final class PostgrestTableRequest {
   final CountOption? countOption;
 
   /// The rows a mutation sends: one JSON object, or a list of them.
+  ///
+  /// Kept as the caller passed it, not copied: the builders never modify it
+  /// and an executor must not either. An executor that stores a request for
+  /// later, an outbox for example, serializes the payload when it takes it.
   final Object? payload;
 
   /// The columns of the unique constraint an upsert merges on, or `null` for
@@ -190,6 +195,11 @@ final class PostgrestTableRequest {
   /// than their database default.
   final bool defaultToNull;
 
+  /// Whether a mutation returns the rows it affected, which a trailing
+  /// `select` asks for. Without it the response body is empty whatever
+  /// [shape] says.
+  final bool returning;
+
   /// The maximum number of rows a mutation may affect.
   final int? maxAffected;
 
@@ -202,19 +212,10 @@ final class PostgrestTableRequest {
   /// The options of an explain request.
   final PostgrestExplainOptions? explainOptions;
 
-  /// Whether the request returns rows.
-  bool get returnsRows => switch (shape) {
-    PostgrestResultShape.rows ||
-    PostgrestResultShape.single ||
-    PostgrestResultShape.maybeSingle => true,
-    PostgrestResultShape.none ||
-    PostgrestResultShape.head ||
-    PostgrestResultShape.csv ||
-    PostgrestResultShape.geojson ||
-    PostgrestResultShape.explain => false,
-  };
-
   /// A copy with the given fields replaced.
+  ///
+  /// A field that is not given keeps its value, so a nullable field cannot
+  /// be cleared here; build a new request for that.
   PostgrestTableRequest copyWith({
     PostgrestTable<Object?, Object?, Object?>? table,
     PostgrestTableOperation? operation,
@@ -231,6 +232,7 @@ final class PostgrestTableRequest {
     List<PostgrestColumn<Object?, Object>>? onConflict,
     bool? ignoreDuplicates,
     bool? defaultToNull,
+    bool? returning,
     int? maxAffected,
     bool? stripNulls,
     bool? dryRun,
@@ -251,6 +253,7 @@ final class PostgrestTableRequest {
     onConflict: onConflict ?? this.onConflict,
     ignoreDuplicates: ignoreDuplicates ?? this.ignoreDuplicates,
     defaultToNull: defaultToNull ?? this.defaultToNull,
+    returning: returning ?? this.returning,
     maxAffected: maxAffected ?? this.maxAffected,
     stripNulls: stripNulls ?? this.stripNulls,
     dryRun: dryRun ?? this.dryRun,

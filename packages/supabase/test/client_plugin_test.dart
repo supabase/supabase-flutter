@@ -104,9 +104,11 @@ void main() {
   test('rpc, storage and functions bypass the plugin', () async {
     httpClient
       ..stubRpc('ping', body: 'pong')
+      ..stubStorageList('avatars', objects: [])
       ..stubEdgeFunction('hello', body: {'ok': true});
 
     await supabase.rpc<String>('ping');
+    await supabase.storage.from('avatars').list();
     await supabase.functions.invoke('hello');
 
     expect(log, ['a attached']);

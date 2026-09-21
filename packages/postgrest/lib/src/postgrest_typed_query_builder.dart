@@ -70,9 +70,9 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   PostgrestTypedFilterBuilder<Row, List<Row>> select([
     List<PostgrestColumnExpression<Row, Object>>? columns,
   ]) => PostgrestTypedFilterBuilder._(
-    _request(PostgrestTableOperation.select).copyWith(
-      columns: columns == null ? null : _checkedColumns(columns),
-    ),
+    _request(
+      PostgrestTableOperation.select,
+    ).copyWith(columns: _checkedColumns(columns)),
     _executor,
     _rowsConverter(table.rowFromJson),
     table.rowFromJson,
@@ -206,7 +206,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     return _insertion(
       _request(PostgrestTableOperation.upsert).copyWith(
         payload: values,
-        onConflict: onConflict,
+        onConflict: onConflict == null ? null : List.unmodifiable(onConflict),
         ignoreDuplicates: ignoreDuplicates,
         defaultToNull: defaultToNull,
       ),
