@@ -32,25 +32,22 @@ void main() {
     writeConfig('[api]\nschemas = ["public", "inventory"]\n');
     final nested = Directory('${workingDirectory.path}/packages/app')
       ..createSync(recursive: true);
-    final previous = Directory.current;
-    Directory.current = nested;
-    addTearDown(() => Directory.current = previous);
 
-    expect(defaultSchemas(environment: {}), ['inventory', 'public']);
+    expect(defaultSchemas(environment: {}, startDirectory: nested), [
+      'inventory',
+      'public',
+    ]);
   });
 
-  test('SUPABASE_WORKDIR wins over the current directory', () {
+  test('SUPABASE_WORKDIR wins over the start directory', () {
     writeConfig('[api]\nschemas = ["public", "inventory"]\n');
     final other = Directory.systemTemp.createTempSync('supabase_typegen_other');
     addTearDown(() => other.deleteSync(recursive: true));
     File('${other.path}/supabase/config.toml')
       ..createSync(recursive: true)
       ..writeAsStringSync('[api]\nschemas = ["public", "archive"]\n');
-    final previous = Directory.current;
-    Directory.current = other;
-    addTearDown(() => Directory.current = previous);
 
-    expect(defaultSchemas(environment: environment()), [
+    expect(defaultSchemas(environment: environment(), startDirectory: other), [
       'inventory',
       'public',
     ]);

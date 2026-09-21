@@ -7,18 +7,21 @@ import 'package:toml/toml.dart';
 /// `public`.
 ///
 /// The configuration is looked up the way the Supabase CLI does: under
-/// `SUPABASE_WORKDIR` when that variable is set, otherwise in the current
-/// directory or the nearest parent holding a `supabase/config.toml`. Without
-/// a configuration file only `public` is returned, sorted like every other
-/// schema list.
+/// `SUPABASE_WORKDIR` when that variable is set, otherwise in
+/// [startDirectory], which defaults to the current directory, or the nearest
+/// parent of it holding a `supabase/config.toml`. Without a configuration file
+/// only `public` is returned, sorted like every other schema list.
 ///
 /// Throws a [FormatException] when the file exists but is not valid TOML or
 /// `api.schemas` is not a list of strings.
-List<String> defaultSchemas({Map<String, String>? environment}) {
+List<String> defaultSchemas({
+  Map<String, String>? environment,
+  Directory? startDirectory,
+}) {
   final workingDirectory =
       (environment ?? Platform.environment)['SUPABASE_WORKDIR'];
   final configFile = workingDirectory == null
-      ? _nearestConfigFile(Directory.current)
+      ? _nearestConfigFile(startDirectory ?? Directory.current)
       : File('$workingDirectory/supabase/config.toml');
   final schemas = {'public'};
   if (configFile != null && configFile.existsSync()) {
