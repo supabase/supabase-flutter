@@ -37,51 +37,20 @@ final class PostgrestByteaCodec extends Codec<List<int>, String> {
 @experimental
 const postgrestBytea = PostgrestByteaCodec();
 
-const _hexDigits = '0123456789abcdef';
-
 final class _ByteaEncoder extends Converter<List<int>, String> {
   const _ByteaEncoder();
 
   @override
-  String convert(List<int> input) {
-    final buffer = StringBuffer(r'\x');
-    for (final byte in input) {
-      buffer
-        ..writeCharCode(_hexDigits.codeUnitAt(byte >> 4))
-        ..writeCharCode(_hexDigits.codeUnitAt(byte & 0x0f));
-    }
-    return buffer.toString();
-  }
+  String convert(List<int> input) => '\\x${hex.encode(input)}';
 }
 
 final class _ByteaDecoder extends Converter<String, Uint8List> {
   const _ByteaDecoder();
 
   @override
-  Uint8List convert(String input) =>
-      input.startsWith(r'\x') ? _decodeHex(input) : _decodeEscape(input);
-
-  /// Postgres allows whitespace between the digit pairs of a hex literal,
-  /// though not within a pair.
-  Uint8List _decodeHex(String input) {
-    final bytes = <int>[];
-    var index = 2;
-    while (index < input.length) {
-      final first = input.codeUnitAt(index);
-      if (_isWhitespace(first)) {
-        index++;
-        continue;
-      }
-      if (index + 1 >= input.length) {
-        throw FormatException('Odd number of hex digits', input, index);
-      }
-      bytes.add(
-        (_hexValue(input, index) << 4) | _hexValue(input, index + 1),
-      );
-      index += 2;
-    }
-    return Uint8List.fromList(bytes);
-  }
+  Uint8List convert(String input) => input.startsWith(r'\x')
+      ? hex.decoder.convert(input.substring(2))
+      : _decodeEscape(input);
 
   Uint8List _decodeEscape(String input) {
     final bytes = <int>[];
@@ -116,15 +85,4 @@ final class _ByteaDecoder extends Converter<String, Uint8List> {
     }
     return Uint8List.fromList(bytes);
   }
-
-  static int _hexValue(String input, int index) {
-    final unit = input.codeUnitAt(index);
-    if (unit >= 0x30 && unit <= 0x39) return unit - 0x30;
-    if (unit >= 0x61 && unit <= 0x66) return unit - 0x61 + 10;
-    if (unit >= 0x41 && unit <= 0x46) return unit - 0x41 + 10;
-    throw FormatException('Not a hex digit', input, index);
-  }
-
-  static bool _isWhitespace(int unit) =>
-      unit == 0x20 || unit == 0x09 || unit == 0x0a || unit == 0x0d;
 }

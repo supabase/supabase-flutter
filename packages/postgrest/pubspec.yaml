@@ -18,6 +18,7 @@ environment:
 resolution: workspace
 
 dependencies:
+  convert: ^3.1.1
   http: ^1.6.0
   yet_another_json_isolate: 3.0.0-dev.2
   meta: ^1.16.0

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:convert/convert.dart' show hex;
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart' show SortDirection;

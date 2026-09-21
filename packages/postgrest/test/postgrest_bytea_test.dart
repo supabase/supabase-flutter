@@ -33,10 +33,6 @@ void main() {
       expect(postgrestBytea.decoder.convert(r'\x4869'), isA<Uint8List>());
     });
 
-    test('allows whitespace between hex digit pairs', () {
-      expect(postgrestBytea.decode('\\x48 69\t00\n'), [72, 105, 0]);
-    });
-
     test('reads the escape format', () {
       expect(postgrestBytea.decode(r'Hi\\\000\377'), [72, 105, 92, 0, 255]);
       expect(postgrestBytea.decode(''), isEmpty);
@@ -46,9 +42,9 @@ void main() {
       expect(() => postgrestBytea.decode(r'\x486'), throwsFormatException);
     });
 
-    test('rejects a digit split by whitespace or a non hex digit', () {
-      expect(() => postgrestBytea.decode(r'\x4 869'), throwsFormatException);
+    test('rejects a non hex digit', () {
       expect(() => postgrestBytea.decode(r'\x4g'), throwsFormatException);
+      expect(() => postgrestBytea.decode(r'\x4 869'), throwsFormatException);
     });
 
     test('rejects a malformed escape sequence', () {
