@@ -1,6 +1,7 @@
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 
+import 'trace_context_format.dart';
 import 'trace_propagation.dart';
 
 @internal
@@ -59,7 +60,8 @@ class TracePropagationClient extends BaseClient {
     String traceparent,
   ) {
     headers.putIfAbsent('traceparent', () => traceparent);
-    if (_options.respectSamplingDecision && !_isSampled(traceparent)) {
+    if (_options.respectSamplingDecision &&
+        !isSampledTraceparent(traceparent)) {
       return;
     }
     final tracestate = context.tracestate;
@@ -74,35 +76,4 @@ class TracePropagationClient extends BaseClient {
 
   @override
   void close() => _inner.close();
-}
-
-/// Reports whether a W3C `traceparent` carries the sampled flag.
-///
-/// Malformed headers are treated as sampled so that propagation is not silently
-/// suppressed by an unparseable value, matching supabase-js.
-bool _isSampled(String traceparent) {
-  final parts = traceparent.split('-');
-  if (parts.length != 4) {
-    return true;
-  }
-  final [version, traceId, parentId, traceFlags] = parts;
-  if (version.length != 2 ||
-      traceId.length != 32 ||
-      parentId.length != 16 ||
-      traceFlags.length != 2) {
-    return true;
-  }
-  final hexadecimal = RegExp(r'^[0-9a-f]+$', caseSensitive: false);
-  if (!hexadecimal.hasMatch(version) ||
-      !hexadecimal.hasMatch(traceId) ||
-      !hexadecimal.hasMatch(parentId) ||
-      !hexadecimal.hasMatch(traceFlags)) {
-    return true;
-  }
-  if (traceId == '00000000000000000000000000000000' ||
-      parentId == '0000000000000000') {
-    return true;
-  }
-  final flags = int.parse(traceFlags, radix: 16);
-  return flags & 0x01 == 0x01;
 }

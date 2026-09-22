@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'trace_context_format.dart';
+
 /// Supplies the current W3C trace context for outgoing Supabase requests.
 ///
 /// Return `null` when there is no active trace. This is the idiomatic Dart
@@ -12,6 +14,75 @@ typedef TraceContextProvider = FutureOr<TraceContext?> Function();
 /// See https://www.w3.org/TR/trace-context/
 class TraceContext {
   const TraceContext({this.traceparent, this.tracestate, this.baggage});
+
+  /// Reads the trace headers out of [carrier], the map an OpenTelemetry
+  /// propagator injects the active context into.
+  ///
+  /// Header names are matched case-insensitively and empty values are read as
+  /// absent, so a carrier an inactive propagator left untouched produces a
+  /// context that propagates nothing.
+  ///
+  /// ```dart
+  /// final carrier = <String, String>{};
+  /// W3CTraceContextPropagator().inject(Context.current, carrier, setter);
+  /// return TraceContext.fromCarrier(carrier);
+  /// ```
+  factory TraceContext.fromCarrier(Map<String, String> carrier) {
+    final lowercased = {
+      for (final entry in carrier.entries) entry.key.toLowerCase(): entry.value,
+    };
+    String? read(String name) {
+      final value = lowercased[name];
+      return value == null || value.isEmpty ? null : value;
+    }
+
+    return TraceContext(
+      traceparent: read('traceparent'),
+      tracestate: read('tracestate'),
+      baggage: read('baggage'),
+    );
+  }
+
+  /// Formats [traceparent] from the parts of the active span, for tracing
+  /// clients that expose ids rather than a W3C header.
+  ///
+  /// Throws an [ArgumentError] when [traceId] is not 32 hexadecimal digits or
+  /// [spanId] is not 16, both excluding the all-zero value the specification
+  /// forbids.
+  ///
+  /// Sentry needs none of this: `formatAsW3CHeader` from `package:sentry`
+  /// converts a `SentryTraceHeader` already.
+  factory TraceContext.w3c({
+    required String traceId,
+    required String spanId,
+    bool sampled = true,
+    String? tracestate,
+    String? baggage,
+  }) {
+    if (!isValidTraceId(traceId)) {
+      throw ArgumentError.value(
+        traceId,
+        'traceId',
+        'Must be 32 hexadecimal digits and not all zeros',
+      );
+    }
+    if (!isValidParentId(spanId)) {
+      throw ArgumentError.value(
+        spanId,
+        'spanId',
+        'Must be 16 hexadecimal digits and not all zeros',
+      );
+    }
+    return TraceContext(
+      traceparent: formatTraceparent(
+        traceId: traceId,
+        spanId: spanId,
+        sampled: sampled,
+      ),
+      tracestate: tracestate,
+      baggage: baggage,
+    );
+  }
 
   /// The `traceparent` header, formatted as
   /// `version-traceid-parentid-traceflags`.
