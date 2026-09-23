@@ -227,12 +227,20 @@ base class _Comparison<Row> extends _FilterNode<Row> {
   String get operand {
     if (operator == PostgrestFilterOperator.inFilter) {
       final members = (value! as List<Object?>).map(
-        (member) => _escapeFilterValue(_renderFilterValue(member)),
+        (member) => _escapeFilterValue(_render(member)),
       );
       return '(${members.join(',')})';
     }
-    return _renderFilterValue(value);
+    return _render(value);
   }
+
+  String _render(Object? given) => switch (given) {
+    final List<double> vector
+        when column is PostgrestVectorColumn<Row> ||
+            column is PostgrestNullableVectorColumn<Row> =>
+      postgrestVector.encode(vector),
+    _ => _renderFilterValue(given),
+  };
 
   /// The operand as sent inside a group, escaped. The parentheses of an `in`
   /// list stay literal there; its members are escaped already.

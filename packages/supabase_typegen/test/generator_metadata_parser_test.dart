@@ -492,6 +492,41 @@ void main() {
     expect(chunks.elementTypeKind, ColumnTypeKind.binary);
   });
 
+  test('pgvector types written as brackets read as vectors', () {
+    Map<String, dynamic> columnOf(String format) => {
+      'table_id': 1,
+      'schema': 'public',
+      'table': 'documents',
+      'id': '1.1',
+      'ordinal_position': 1,
+      'name': 'embedding',
+      'default_value': null,
+      'data_type': 'USER-DEFINED',
+      'format': format,
+      'is_identity': false,
+      'identity_generation': null,
+      'is_generated': false,
+      'is_nullable': true,
+      'is_updatable': true,
+      'is_unique': false,
+      'enums': <String>[],
+      'check': null,
+      'comment': null,
+    };
+    ColumnDescription parse(String format) => parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'documents', 'comment': null},
+      ],
+      'columns': [columnOf(format)],
+    }).tables.single.columns.single;
+
+    expect(parse('vector').typeKind, ColumnTypeKind.vector);
+    expect(parse('halfvec').typeKind, ColumnTypeKind.vector);
+    expect(parse('sparsevec').typeKind, ColumnTypeKind.unknown);
+    expect(parse('_vector').typeKind, ColumnTypeKind.array);
+    expect(parse('_vector').elementTypeKind, ColumnTypeKind.vector);
+  });
+
   test('types that PostgREST serializes as strings read as text', () {
     Map<String, dynamic> columnOf(String format) => {
       'table_id': 1,

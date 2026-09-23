@@ -898,6 +898,15 @@ features:
       - PostgrestByteaCodec.decoder
       - PostgrestByteaCodec.decode
       - postgrestBytea
+      - PostgrestVectorCodec
+      - PostgrestVectorCodec.PostgrestVectorCodec
+      - PostgrestVectorCodec.encoder
+      - PostgrestVectorCodec.decoder
+      - postgrestVector
+      - PostgrestVectorColumn
+      - PostgrestVectorColumn.PostgrestVectorColumn
+      - PostgrestNullableVectorColumn
+      - PostgrestNullableVectorColumn.PostgrestNullableVectorColumn
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table

@@ -21,6 +21,7 @@ part 'postgrest_table_request.dart';
 part 'postgrest_typed_query_builder.dart';
 part 'postgrest_typed_transform_builder.dart';
 part 'postgrest_typed_filter_builder.dart';
+part 'postgrest_vector.dart';
 
 List<Row> _rowsFromJson<Row>(
   RowConverter<Row> rowFromJson,
