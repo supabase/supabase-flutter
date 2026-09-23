@@ -222,8 +222,20 @@ void main() {
       compact,
       contains("'postgrest_bytea':postgrestBytea.encode(postgrestBytea\$),"),
     );
-    // Array elements stay in their wire representation.
-    expect(compact, contains("List<String>?getblobs=>"));
+    expect(
+      compact,
+      contains(
+        "List<Uint8List>?getblobs=>(_json['blobs']asList<dynamic>?)"
+        "?.map((element)=>postgrestBytea.decode(elementasString)).toList();",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "'blobs':?blobs?.map((element)=>postgrestBytea.encode(element))"
+        ".toList(),",
+      ),
+    );
   });
 
   test('vector columns read and write through the vector codec', () {
@@ -820,7 +832,90 @@ void main() {
     expect(code, isNot(contains('line\u2028break')));
   });
 
-  test('temporal and enum array elements read as wire strings', () {
+  test('array elements convert like a column of their kind', () {
+    final code = _normalize(generateDartCode(hostileSchema));
+    final compact = code.replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "List<PostgrestDate>?getdays=>(_json['days']asList<dynamic>?)"
+        "?.map((element)=>PostgrestDate.parse(elementasString)).toList();",
+      ),
+    );
+    expect(
+      compact,
+      contains("'days':?days?.map((element)=>element.literal).toList(),"),
+    );
+    expect(
+      compact,
+      contains(
+        "List<String\$>?getmoods=>(_json['moods']asList<dynamic>?)"
+        "?.map((element)=>String\$.fromWire(elementasString)).toList();",
+      ),
+    );
+    expect(
+      compact,
+      contains("'moods':?moods?.map((element)=>element.wireName).toList(),"),
+    );
+    expect(
+      compact,
+      contains(
+        "List<PostgrestRange<int>>?getspans=>(_json['spans']asList<dynamic>?)"
+        "?.map((element)=>PostgrestRange.parse(elementasString,int.parse))"
+        ".toList();",
+      ),
+    );
+    expect(
+      compact,
+      contains("'spans':?spans?.map((element)=>element.literal).toList(),"),
+    );
+    expect(
+      compact,
+      contains(
+        "List<DateTime>?getstamps=>(_json['stamps']asList<dynamic>?)"
+        "?.map((element)=>DateTime.parse(elementasString)).toList();",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "'stamps':?stamps?.map((element)=>element.toUtc().toIso8601String())"
+        ".toList(),",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "'shifts':?shifts?.map((element)=>element.render((bound)=>"
+        "bound.toIso8601String()),).toList(),",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<PostgrestTableRow,List<PostgrestDate>>"
+        "('days')",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<PostgrestTableRow,List<PostgrestRange<int>>>"
+        "('spans'",
+      ),
+    );
+    // Elements without a conversion keep the lazy cast.
+    expect(
+      compact,
+      contains(
+        "List<String>?getembeddings=>(_json['embeddings']asList<dynamic>?)"
+        "?.cast();",
+      ),
+    );
+  });
+
+  test('pgvector array elements stay wire strings', () {
     final code = generateDartCode(
       DatabaseDescription(
         schemaNames: const ['public'],
@@ -830,10 +925,10 @@ void main() {
             name: 'events',
             columns: [
               ColumnDescription(
-                name: 'days',
-                postgresFormat: '_date',
+                name: 'embeddings',
+                postgresFormat: '_vector',
                 typeKind: ColumnTypeKind.array,
-                elementTypeKind: ColumnTypeKind.date,
+                elementTypeKind: ColumnTypeKind.vector,
                 isRequired: true,
                 hasDefault: false,
                 isNullable: false,
@@ -845,7 +940,8 @@ void main() {
       ),
     );
 
-    expect(code, contains('List<String> get days'));
+    expect(code, contains('List<String> get embeddings'));
+    expect(code, contains("'embeddings': embeddings"));
   });
 
   test('tables whose columns are all read-only get parameterless '

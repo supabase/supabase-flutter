@@ -153,11 +153,11 @@ final archived = await client
   nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; arrays containing SQL NULL
-  elements throw when the element is read. Enum, date, time, interval,
-  timestamp, range, `bytea` and pgvector array elements stay in their wire
-  representation (`List<String>`); the Dart enum for enum array elements is
-  still generated for manual conversion, `postgrestBytea` decodes `bytea`
-  elements and `postgrestVector` decodes pgvector elements.
+  elements throw when the element is read. Elements convert like a column of
+  their type, so `date[]` is `List<PostgrestDate>` and `mood[]` a list of the
+  generated enum, except for pgvector elements, which stay in their wire
+  representation (`List<String>`) because a filter could not tell a vector
+  element from a nested array; `postgrestVector` decodes them.
 - `timestamptz` values are written back in UTC and naive `timestamp` values
   as local wall time. `date`, `time`, `timetz` and `interval` columns map to
   `PostgrestDate`, `PostgrestTime` and `PostgrestInterval`, which parse what

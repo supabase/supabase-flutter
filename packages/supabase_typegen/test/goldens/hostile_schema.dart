@@ -49,14 +49,18 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
   List<double> get samples => (_json['samples'] as List<dynamic>)
       .map((element) => (element as num).toDouble())
       .toList();
-  List<String>? get days => (_json['days'] as List<dynamic>?)?.cast();
+  List<PostgrestDate>? get days => (_json['days'] as List<dynamic>?)
+      ?.map((element) => PostgrestDate.parse(element as String))
+      .toList();
   Uint8List get postgrestBytea$ =>
       postgrestBytea.decode(_json['postgrest_bytea'] as String);
   Uint8List? get uint8List => switch (_json['uint8_list']) {
     null => null,
     final Object value => postgrestBytea.decode(value as String),
   };
-  List<String>? get blobs => (_json['blobs'] as List<dynamic>?)?.cast();
+  List<Uint8List>? get blobs => (_json['blobs'] as List<dynamic>?)
+      ?.map((element) => postgrestBytea.decode(element as String))
+      .toList();
   List<double> get postgrestVector$ =>
       postgrestVector.decode(_json['postgrest_vector'] as String);
   List<double>? get halfEmbedding => switch (_json['half_embedding']) {
@@ -65,6 +69,22 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
   };
   List<String>? get embeddings =>
       (_json['embeddings'] as List<dynamic>?)?.cast();
+  List<String$>? get moods => (_json['moods'] as List<dynamic>?)
+      ?.map((element) => String$.fromWire(element as String))
+      .toList();
+  List<PostgrestRange<int>>? get spans => (_json['spans'] as List<dynamic>?)
+      ?.map((element) => PostgrestRange.parse(element as String, int.parse))
+      .toList();
+  List<DateTime>? get stamps => (_json['stamps'] as List<dynamic>?)
+      ?.map((element) => DateTime.parse(element as String))
+      .toList();
+  List<PostgrestRange<DateTime>>? get shifts =>
+      (_json['shifts'] as List<dynamic>?)
+          ?.map(
+            (element) =>
+                PostgrestRange.parse(element as String, DateTime.parse),
+          )
+          .toList();
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -81,30 +101,46 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     required String quoteNameTail,
     String$? mood,
     required List<double> samples,
-    List<String>? days,
+    List<PostgrestDate>? days,
     required Uint8List postgrestBytea$,
     Uint8List? uint8List,
-    List<String>? blobs,
+    List<Uint8List>? blobs,
     required List<double> postgrestVector$,
     List<double>? halfEmbedding,
     List<String>? embeddings,
+    List<String$>? moods,
+    List<PostgrestRange<int>>? spans,
+    List<DateTime>? stamps,
+    List<PostgrestRange<DateTime>>? shifts,
   }) : this._({
          'quote\'name\u{2029}tail': quoteNameTail,
          'mood': ?mood?.wireName,
          'samples': samples,
-         'days': ?days,
+         'days': ?days?.map((element) => element.literal).toList(),
          'postgrest_bytea': postgrestBytea.encode(postgrestBytea$),
          'uint8_list': ?switch (uint8List) {
            null => null,
            final value => postgrestBytea.encode(value),
          },
-         'blobs': ?blobs,
+         'blobs': ?blobs
+             ?.map((element) => postgrestBytea.encode(element))
+             .toList(),
          'postgrest_vector': postgrestVector.encode(postgrestVector$),
          'half_embedding': ?switch (halfEmbedding) {
            null => null,
            final value => postgrestVector.encode(value),
          },
          'embeddings': ?embeddings,
+         'moods': ?moods?.map((element) => element.wireName).toList(),
+         'spans': ?spans?.map((element) => element.literal).toList(),
+         'stamps': ?stamps
+             ?.map((element) => element.toUtc().toIso8601String())
+             .toList(),
+         'shifts': ?shifts
+             ?.map(
+               (element) => element.render((bound) => bound.toIso8601String()),
+             )
+             .toList(),
        });
 
   /// Returns a copy with `mood` set to SQL NULL, overriding any database
@@ -136,6 +172,26 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
   /// default.
   PostgrestTableInsert setEmbeddingsToNull() =>
       PostgrestTableInsert._({..._json, 'embeddings': null});
+
+  /// Returns a copy with `moods` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setMoodsToNull() =>
+      PostgrestTableInsert._({..._json, 'moods': null});
+
+  /// Returns a copy with `spans` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setSpansToNull() =>
+      PostgrestTableInsert._({..._json, 'spans': null});
+
+  /// Returns a copy with `stamps` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setStampsToNull() =>
+      PostgrestTableInsert._({..._json, 'stamps': null});
+
+  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setShiftsToNull() =>
+      PostgrestTableInsert._({..._json, 'shifts': null});
 }
 
 /// Values for updating rows of `postgrest_table`. All columns are optional;
@@ -147,18 +203,22 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
     String? quoteNameTail,
     String$? mood,
     List<double>? samples,
-    List<String>? days,
+    List<PostgrestDate>? days,
     Uint8List? postgrestBytea$,
     Uint8List? uint8List,
-    List<String>? blobs,
+    List<Uint8List>? blobs,
     List<double>? postgrestVector$,
     List<double>? halfEmbedding,
     List<String>? embeddings,
+    List<String$>? moods,
+    List<PostgrestRange<int>>? spans,
+    List<DateTime>? stamps,
+    List<PostgrestRange<DateTime>>? shifts,
   }) : this._({
          'quote\'name\u{2029}tail': ?quoteNameTail,
          'mood': ?mood?.wireName,
          'samples': ?samples,
-         'days': ?days,
+         'days': ?days?.map((element) => element.literal).toList(),
          'postgrest_bytea': ?switch (postgrestBytea$) {
            null => null,
            final value => postgrestBytea.encode(value),
@@ -167,7 +227,9 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
            null => null,
            final value => postgrestBytea.encode(value),
          },
-         'blobs': ?blobs,
+         'blobs': ?blobs
+             ?.map((element) => postgrestBytea.encode(element))
+             .toList(),
          'postgrest_vector': ?switch (postgrestVector$) {
            null => null,
            final value => postgrestVector.encode(value),
@@ -177,6 +239,16 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
            final value => postgrestVector.encode(value),
          },
          'embeddings': ?embeddings,
+         'moods': ?moods?.map((element) => element.wireName).toList(),
+         'spans': ?spans?.map((element) => element.literal).toList(),
+         'stamps': ?stamps
+             ?.map((element) => element.toUtc().toIso8601String())
+             .toList(),
+         'shifts': ?shifts
+             ?.map(
+               (element) => element.render((bound) => bound.toIso8601String()),
+             )
+             .toList(),
        });
 
   /// Returns a copy with `mood` set to SQL NULL, overriding any database
@@ -208,6 +280,26 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
   /// default.
   PostgrestTableUpdate setEmbeddingsToNull() =>
       PostgrestTableUpdate._({..._json, 'embeddings': null});
+
+  /// Returns a copy with `moods` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setMoodsToNull() =>
+      PostgrestTableUpdate._({..._json, 'moods': null});
+
+  /// Returns a copy with `spans` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setSpansToNull() =>
+      PostgrestTableUpdate._({..._json, 'spans': null});
+
+  /// Returns a copy with `stamps` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setStampsToNull() =>
+      PostgrestTableUpdate._({..._json, 'stamps': null});
+
+  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setShiftsToNull() =>
+      PostgrestTableUpdate._({..._json, 'shifts': null});
 }
 
 /// Typed access to the `postgrest_table` table.
@@ -237,17 +329,15 @@ class PostgrestTable$ {
   static const samples = PostgrestColumn<PostgrestTableRow, List<double>>(
     'samples',
   );
-  static const days = PostgrestNullableColumn<PostgrestTableRow, List<String>>(
-    'days',
-  );
+  static const days =
+      PostgrestNullableColumn<PostgrestTableRow, List<PostgrestDate>>('days');
   static const postgrestBytea$ = PostgrestColumn<PostgrestTableRow, Uint8List>(
     'postgrest_bytea',
   );
   static const uint8List =
       PostgrestNullableColumn<PostgrestTableRow, Uint8List>('uint8_list');
-  static const blobs = PostgrestNullableColumn<PostgrestTableRow, List<String>>(
-    'blobs',
-  );
+  static const blobs =
+      PostgrestNullableColumn<PostgrestTableRow, List<Uint8List>>('blobs');
   static const postgrestVector$ = PostgrestVectorColumn<PostgrestTableRow>(
     'postgrest_vector',
   );
@@ -256,6 +346,19 @@ class PostgrestTable$ {
   );
   static const embeddings =
       PostgrestNullableColumn<PostgrestTableRow, List<String>>('embeddings');
+  static const moods =
+      PostgrestNullableColumn<PostgrestTableRow, List<String$>>('moods');
+  static const spans =
+      PostgrestNullableColumn<PostgrestTableRow, List<PostgrestRange<int>>>(
+        'spans',
+      );
+  static const stamps =
+      PostgrestNullableColumn<PostgrestTableRow, List<DateTime>>('stamps');
+  static const shifts =
+      PostgrestNullableColumn<
+        PostgrestTableRow,
+        List<PostgrestRange<DateTime>>
+      >('shifts');
 
   /// The `map` row referenced by `mood`.
   static const mapByMood = PostgrestToOneRelation<PostgrestTableRow, MapRow>(

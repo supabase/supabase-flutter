@@ -8,7 +8,7 @@ import 'schema_description.dart';
 import 'version.dart';
 
 class _Binding {
-  const _Binding(this.dartType, this.kind, {this.boundKind});
+  const _Binding(this.dartType, this.kind, {this.boundKind, this.element});
 
   /// The non-nullable Dart type of the column.
   final String dartType;
@@ -16,6 +16,9 @@ class _Binding {
 
   /// The kind of the bounds of a [ColumnTypeKind.range] column.
   final ColumnTypeKind? boundKind;
+
+  /// The binding of the elements of a [ColumnTypeKind.array] column.
+  final _Binding? element;
 }
 
 /// The lowest language version the generated code is valid for: the value
@@ -56,7 +59,9 @@ String generateDartCode(
       : languageVersion;
   final usesBinaryColumns = database.tables.any(
     (table) => table.columns.any(
-      (column) => column.typeKind == ColumnTypeKind.binary,
+      (column) =>
+          column.typeKind == ColumnTypeKind.binary ||
+          column.elementTypeKind == ColumnTypeKind.binary,
     ),
   );
   // Caller-provided values are encoded before they are written into source:
@@ -722,14 +727,28 @@ void _writeNamespace(
 _Binding _bindingFor(
   ColumnDescription column,
   Map<(String, String), String> enumTypeNames,
-) => switch (column.typeKind) {
+) {
+  if (column.typeKind == ColumnTypeKind.array) {
+    final element = _elementBindingFor(column, enumTypeNames);
+    return _Binding(
+      'List<${element.dartType}>',
+      ColumnTypeKind.array,
+      element: element,
+    );
+  }
+  return _scalarBindingFor(column.typeKind, column, enumTypeNames);
+}
+
+/// The binding of a scalar of [kind], resolving an enum or the range bounds
+/// through [column].
+_Binding _scalarBindingFor(
+  ColumnTypeKind kind,
+  ColumnDescription column,
+  Map<(String, String), String> enumTypeNames,
+) => switch (kind) {
   ColumnTypeKind.enumType => _Binding(
     _enumTypeName(column, enumTypeNames),
     ColumnTypeKind.enumType,
-  ),
-  ColumnTypeKind.array => _Binding(
-    'List<${_elementDartType(column.elementTypeKind)}>',
-    ColumnTypeKind.array,
   ),
   ColumnTypeKind.integer => const _Binding('int', ColumnTypeKind.integer),
   ColumnTypeKind.floating => const _Binding('double', ColumnTypeKind.floating),
@@ -761,7 +780,23 @@ _Binding _bindingFor(
     boundKind: column.boundTypeKind,
   ),
   ColumnTypeKind.json ||
+  ColumnTypeKind.array ||
   ColumnTypeKind.unknown => const _Binding('Object', ColumnTypeKind.json),
+};
+
+/// The binding of the elements of the array [column], which convert like a
+/// scalar of the same kind.
+///
+/// pgvector elements stay in their wire representation: the filter renderer
+/// could not tell a `List<double>` element from a nested array. Nested arrays
+/// and JSON elements are `Object`.
+_Binding _elementBindingFor(
+  ColumnDescription column,
+  Map<(String, String), String> enumTypeNames,
+) => switch (column.elementTypeKind) {
+  ColumnTypeKind.vector => const _Binding('String', ColumnTypeKind.text),
+  null => const _Binding('Object', ColumnTypeKind.json),
+  final kind => _scalarBindingFor(kind, column, enumTypeNames),
 };
 
 /// The generated Dart enum of an enum [column], resolved by the schema and
@@ -831,30 +866,6 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   null => '(bound) => bound',
 };
 
-String _elementDartType(ColumnTypeKind? elementTypeKind) =>
-    switch (elementTypeKind) {
-      ColumnTypeKind.integer => 'int',
-      ColumnTypeKind.floating => 'double',
-      ColumnTypeKind.numeric => 'num',
-      ColumnTypeKind.boolean => 'bool',
-      // Temporal, enum, range, binary and vector elements stay in their wire
-      // representation, a documented limitation of array columns.
-      ColumnTypeKind.text ||
-      ColumnTypeKind.binary ||
-      ColumnTypeKind.vector ||
-      ColumnTypeKind.date ||
-      ColumnTypeKind.time ||
-      ColumnTypeKind.interval ||
-      ColumnTypeKind.timestamp ||
-      ColumnTypeKind.timestampWithTimeZone ||
-      ColumnTypeKind.enumType ||
-      ColumnTypeKind.range => 'String',
-      ColumnTypeKind.json ||
-      ColumnTypeKind.array ||
-      ColumnTypeKind.unknown ||
-      null => 'Object',
-    };
-
 String _getterType(ColumnDescription column, _Binding binding) {
   if (binding.kind == ColumnTypeKind.json) return 'Object?';
   return column.isNullable ? '${binding.dartType}?' : binding.dartType;
@@ -862,131 +873,123 @@ String _getterType(ColumnDescription column, _Binding binding) {
 
 String _readExpression(ColumnDescription column, _Binding binding) {
   final access = "_json[${_stringLiteral(column.name)}]";
-  final nullable = column.isNullable;
-  return switch (binding.kind) {
-    ColumnTypeKind.integer ||
-    ColumnTypeKind.numeric ||
-    ColumnTypeKind.boolean ||
-    ColumnTypeKind.text =>
-      '$access as ${binding.dartType}${nullable ? '?' : ''}',
-    ColumnTypeKind.floating =>
-      nullable
-          ? '($access as num?)?.toDouble()'
-          : '($access as num).toDouble()',
-    // PostgREST encodes integral elements of floating point arrays as JSON
-    // integers, so floating elements convert through num like the scalars
-    // instead of a lazy cast that would throw on access.
-    ColumnTypeKind.array
-        when column.elementTypeKind == ColumnTypeKind.floating =>
-      nullable
-          ? '($access as List<dynamic>?)'
-                '?.map((element) => (element as num).toDouble()).toList()'
-          : '($access as List<dynamic>)'
-                '.map((element) => (element as num).toDouble()).toList()',
-    ColumnTypeKind.array =>
-      nullable
-          ? '($access as List<dynamic>?)?.cast()'
-          : '($access as List<dynamic>).cast()',
-    ColumnTypeKind.timestamp || ColumnTypeKind.timestampWithTimeZone =>
-      nullable
-          ? _nullableSwitch(access, 'DateTime.parse(value as String)')
-          : 'DateTime.parse($access as String)',
-    ColumnTypeKind.date || ColumnTypeKind.time || ColumnTypeKind.interval =>
-      nullable
-          ? _nullableSwitch(
-              access,
-              '${binding.dartType}.parse(value as String)',
-            )
-          : '${binding.dartType}.parse($access as String)',
-    ColumnTypeKind.enumType =>
-      nullable
-          ? _nullableSwitch(
-              access,
-              '${binding.dartType}.fromWire(value as String)',
-            )
-          : '${binding.dartType}.fromWire($access as String)',
-    ColumnTypeKind.binary =>
-      nullable
-          ? _nullableSwitch(access, 'postgrestBytea.decode(value as String)')
-          : 'postgrestBytea.decode($access as String)',
-    ColumnTypeKind.vector =>
-      nullable
-          ? _nullableSwitch(access, 'postgrestVector.decode(value as String)')
-          : 'postgrestVector.decode($access as String)',
-    ColumnTypeKind.range =>
-      nullable
-          ? _nullableSwitch(
-              access,
-              'PostgrestRange.parse(value as String, '
-              '${_boundParser(binding.boundKind)})',
-            )
-          : 'PostgrestRange.parse($access as String, '
-                '${_boundParser(binding.boundKind)})',
-    ColumnTypeKind.json || ColumnTypeKind.unknown => '$access as Object?',
-  };
+  final suffix = column.isNullable ? '?' : '';
+  switch (binding.kind) {
+    case ColumnTypeKind.json:
+      return '$access as Object?';
+    case ColumnTypeKind.floating:
+      return '($access as num$suffix)$suffix.toDouble()';
+    case ColumnTypeKind.array:
+      // PostgREST encodes integral elements of floating point arrays as JSON
+      // integers, so converted elements go through the same conversion as
+      // the scalars instead of a lazy cast that would throw on access.
+      final conversion = _readConversion(binding.element!, 'element');
+      final list = '($access as List<dynamic>$suffix)$suffix';
+      return conversion == null
+          ? '$list.cast()'
+          : '$list.map((element) => $conversion).toList()';
+    default:
+      final conversion = _readConversion(binding, 'value');
+      if (conversion == null) return '$access as ${binding.dartType}$suffix';
+      if (!column.isNullable) return _readConversion(binding, access)!;
+      return 'switch ($access) { null => null, final Object value => '
+          '$conversion }';
+  }
 }
 
-String _nullableSwitch(String access, String conversion) =>
-    'switch ($access) { null => null, final Object value => $conversion }';
+/// The expression converting [value], one decoded JSON value bound to
+/// [binding], into its Dart type, or `null` when the decoded value is used
+/// as it is.
+String? _readConversion(_Binding binding, String value) =>
+    switch (binding.kind) {
+      ColumnTypeKind.floating => '($value as num).toDouble()',
+      ColumnTypeKind.timestamp || ColumnTypeKind.timestampWithTimeZone =>
+        'DateTime.parse($value as String)',
+      ColumnTypeKind.date ||
+      ColumnTypeKind.time ||
+      ColumnTypeKind.interval => '${binding.dartType}.parse($value as String)',
+      ColumnTypeKind.enumType =>
+        '${binding.dartType}.fromWire($value as String)',
+      ColumnTypeKind.binary => 'postgrestBytea.decode($value as String)',
+      ColumnTypeKind.vector => 'postgrestVector.decode($value as String)',
+      ColumnTypeKind.range =>
+        'PostgrestRange.parse($value as String, '
+            '${_boundParser(binding.boundKind)})',
+      ColumnTypeKind.integer ||
+      ColumnTypeKind.numeric ||
+      ColumnTypeKind.boolean ||
+      ColumnTypeKind.text ||
+      ColumnTypeKind.array ||
+      ColumnTypeKind.json ||
+      ColumnTypeKind.unknown => null,
+    };
 
 String _writeExpression(
   String parameterName,
   _Binding binding, {
   required bool nullable,
 }) {
-  final access = nullable ? '$parameterName?' : parameterName;
-  return switch (binding.kind) {
-    ColumnTypeKind.date ||
-    ColumnTypeKind.time ||
-    ColumnTypeKind.interval => '$access.literal',
-    ColumnTypeKind.timestamp => '$access.toIso8601String()',
-    ColumnTypeKind.timestampWithTimeZone =>
-      nullable
-          ? '$access.toUtc().toIso8601String()'
-          : '$parameterName.toUtc().toIso8601String()',
-    ColumnTypeKind.enumType => '$access.wireName',
-    ColumnTypeKind.binary =>
-      nullable
-          ? 'switch ($parameterName) '
-                '{ null => null, final value => postgrestBytea.encode(value) }'
-          : 'postgrestBytea.encode($parameterName)',
-    ColumnTypeKind.vector =>
-      nullable
-          ? 'switch ($parameterName) '
-                '{ null => null, final value => postgrestVector.encode(value) }'
-          : 'postgrestVector.encode($parameterName)',
-    ColumnTypeKind.range => switch (binding.boundKind) {
-      ColumnTypeKind.timestamp =>
-        '$access.render((bound) => bound.toIso8601String())',
-      ColumnTypeKind.timestampWithTimeZone =>
-        '$access.render((bound) => bound.toUtc().toIso8601String())',
+  final conversion = _writeConversion(binding, 'value');
+  if (conversion == null) return parameterName;
+  if (!nullable) return _writeConversion(binding, parameterName)!;
+  if (conversion.startsWith('value.')) {
+    return '$parameterName?${conversion.substring('value'.length)}';
+  }
+  return 'switch ($parameterName) { null => null, final value => $conversion }';
+}
+
+/// The expression rendering [value], a Dart value bound to [binding], into
+/// what the column takes on the wire, or `null` when the value is sent as it
+/// is. A conversion that is a member access on [value] starts with `value.`,
+/// so a nullable value can reach it through `?.`.
+String? _writeConversion(_Binding binding, String value) =>
+    switch (binding.kind) {
       ColumnTypeKind.date ||
       ColumnTypeKind.time ||
-      ColumnTypeKind.interval ||
+      ColumnTypeKind.interval => '$value.literal',
+      ColumnTypeKind.timestamp => '$value.toIso8601String()',
+      ColumnTypeKind.timestampWithTimeZone =>
+        '$value.toUtc().toIso8601String()',
+      ColumnTypeKind.enumType => '$value.wireName',
+      ColumnTypeKind.binary => 'postgrestBytea.encode($value)',
+      ColumnTypeKind.vector => 'postgrestVector.encode($value)',
+      ColumnTypeKind.range => switch (binding.boundKind) {
+        ColumnTypeKind.timestamp =>
+          '$value.render((bound) => bound.toIso8601String())',
+        ColumnTypeKind.timestampWithTimeZone =>
+          '$value.render((bound) => bound.toUtc().toIso8601String())',
+        ColumnTypeKind.date ||
+        ColumnTypeKind.time ||
+        ColumnTypeKind.interval ||
+        ColumnTypeKind.integer ||
+        ColumnTypeKind.numeric ||
+        ColumnTypeKind.floating ||
+        ColumnTypeKind.boolean ||
+        ColumnTypeKind.text ||
+        ColumnTypeKind.binary ||
+        ColumnTypeKind.vector ||
+        ColumnTypeKind.json ||
+        ColumnTypeKind.enumType ||
+        ColumnTypeKind.array ||
+        ColumnTypeKind.range ||
+        ColumnTypeKind.unknown ||
+        null => '$value.literal',
+      },
+      ColumnTypeKind.array => switch (_writeConversion(
+        binding.element!,
+        'element',
+      )) {
+        null => null,
+        final conversion => '$value.map((element) => $conversion).toList()',
+      },
       ColumnTypeKind.integer ||
-      ColumnTypeKind.numeric ||
       ColumnTypeKind.floating ||
+      ColumnTypeKind.numeric ||
       ColumnTypeKind.boolean ||
       ColumnTypeKind.text ||
-      ColumnTypeKind.binary ||
-      ColumnTypeKind.vector ||
       ColumnTypeKind.json ||
-      ColumnTypeKind.enumType ||
-      ColumnTypeKind.array ||
-      ColumnTypeKind.range ||
-      ColumnTypeKind.unknown ||
-      null => '$access.literal',
-    },
-    ColumnTypeKind.integer ||
-    ColumnTypeKind.floating ||
-    ColumnTypeKind.numeric ||
-    ColumnTypeKind.boolean ||
-    ColumnTypeKind.text ||
-    ColumnTypeKind.array ||
-    ColumnTypeKind.json ||
-    ColumnTypeKind.unknown => parameterName,
-  };
-}
+      ColumnTypeKind.unknown => null,
+    };
 
 /// Maps raw database names to unique Dart member identifiers.
 ///
