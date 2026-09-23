@@ -287,13 +287,23 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => PostgrestRange.parse(value as String, num.parse),
   };
-  PostgrestRange<DateTime> get season =>
-      PostgrestRange.parse(_json['season'] as String, DateTime.parse);
+  PostgrestRange<PostgrestDate> get season =>
+      PostgrestRange.parse(_json['season'] as String, PostgrestDate.parse);
   PostgrestRange<DateTime> get shift =>
       PostgrestRange.parse(_json['shift'] as String, DateTime.parse);
   PostgrestRange<DateTime>? get during => switch (_json['during']) {
     null => null,
     final Object value => PostgrestRange.parse(value as String, DateTime.parse),
+  };
+  PostgrestDate get since => PostgrestDate.parse(_json['since'] as String);
+  PostgrestTime get opensAt => PostgrestTime.parse(_json['opens_at'] as String);
+  PostgrestTime? get closesAt => switch (_json['closes_at']) {
+    null => null,
+    final Object value => PostgrestTime.parse(value as String),
+  };
+  PostgrestInterval? get ttl => switch (_json['ttl']) {
+    null => null,
+    final Object value => PostgrestInterval.parse(value as String),
   };
 
   /// The row as decoded from the response.
@@ -311,17 +321,25 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     DateTime? dateTime,
     required PostgrestRange<int> pages,
     PostgrestRange<num>? prices,
-    PostgrestRange<DateTime>? season,
+    PostgrestRange<PostgrestDate>? season,
     required PostgrestRange<DateTime> shift,
     PostgrestRange<DateTime>? during,
+    required PostgrestDate since,
+    required PostgrestTime opensAt,
+    PostgrestTime? closesAt,
+    PostgrestInterval? ttl,
   }) : this._({
          'list': list,
          'date_time': ?dateTime?.toUtc().toIso8601String(),
          'pages': pages.literal,
          'prices': ?prices?.literal,
-         'season': ?season?.render(_dateString),
+         'season': ?season?.literal,
          'shift': shift.render((bound) => bound.toIso8601String()),
          'during': ?during?.render((bound) => bound.toUtc().toIso8601String()),
+         'since': since.literal,
+         'opens_at': opensAt.literal,
+         'closes_at': ?closesAt?.literal,
+         'ttl': ?ttl?.literal,
        });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
@@ -335,6 +353,14 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   /// Returns a copy with `during` set to SQL NULL, overriding any database
   /// default.
   MapInsert setDuringToNull() => MapInsert._({..._json, 'during': null});
+
+  /// Returns a copy with `closes_at` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setClosesAtToNull() => MapInsert._({..._json, 'closes_at': null});
+
+  /// Returns a copy with `ttl` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setTtlToNull() => MapInsert._({..._json, 'ttl': null});
 }
 
 /// Values for updating rows of `map`. All columns are optional; passing `null`
@@ -346,17 +372,25 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     DateTime? dateTime,
     PostgrestRange<int>? pages,
     PostgrestRange<num>? prices,
-    PostgrestRange<DateTime>? season,
+    PostgrestRange<PostgrestDate>? season,
     PostgrestRange<DateTime>? shift,
     PostgrestRange<DateTime>? during,
+    PostgrestDate? since,
+    PostgrestTime? opensAt,
+    PostgrestTime? closesAt,
+    PostgrestInterval? ttl,
   }) : this._({
          'list': ?list,
          'date_time': ?dateTime?.toUtc().toIso8601String(),
          'pages': ?pages?.literal,
          'prices': ?prices?.literal,
-         'season': ?season?.render(_dateString),
+         'season': ?season?.literal,
          'shift': ?shift?.render((bound) => bound.toIso8601String()),
          'during': ?during?.render((bound) => bound.toUtc().toIso8601String()),
+         'since': ?since?.literal,
+         'opens_at': ?opensAt?.literal,
+         'closes_at': ?closesAt?.literal,
+         'ttl': ?ttl?.literal,
        });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
@@ -370,6 +404,14 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// Returns a copy with `during` set to SQL NULL, overriding any database
   /// default.
   MapUpdate setDuringToNull() => MapUpdate._({..._json, 'during': null});
+
+  /// Returns a copy with `closes_at` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setClosesAtToNull() => MapUpdate._({..._json, 'closes_at': null});
+
+  /// Returns a copy with `ttl` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setTtlToNull() => MapUpdate._({..._json, 'ttl': null});
 }
 
 /// Typed access to the `map` table.
@@ -393,7 +435,7 @@ class Map$ {
   static const prices = PostgrestNullableColumn<MapRow, PostgrestRange<num>>(
     'prices',
   );
-  static const season = PostgrestColumn<MapRow, PostgrestRange<DateTime>>(
+  static const season = PostgrestColumn<MapRow, PostgrestRange<PostgrestDate>>(
     'season',
   );
   static const shift = PostgrestColumn<MapRow, PostgrestRange<DateTime>>(
@@ -401,6 +443,12 @@ class Map$ {
   );
   static const during =
       PostgrestNullableColumn<MapRow, PostgrestRange<DateTime>>('during');
+  static const since = PostgrestColumn<MapRow, PostgrestDate>('since');
+  static const opensAt = PostgrestColumn<MapRow, PostgrestTime>('opens_at');
+  static const closesAt = PostgrestNullableColumn<MapRow, PostgrestTime>(
+    'closes_at',
+  );
+  static const ttl = PostgrestNullableColumn<MapRow, PostgrestInterval>('ttl');
 
   /// The `postgrest_table` rows referencing this row through `mood`.
   static const postgrestTableViaMood =
@@ -539,8 +587,3 @@ class PrivateAchievementItemProgressTbl {
   static const name =
       PostgrestColumn<PrivateAchievementItemProgressTblRow, String>('name');
 }
-
-String _dateString(DateTime date) =>
-    '${date.year.toString().padLeft(4, '0')}-'
-    '${date.month.toString().padLeft(2, '0')}-'
-    '${date.day.toString().padLeft(2, '0')}';

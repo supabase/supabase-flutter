@@ -15,8 +15,12 @@ For every table the generator emits:
   call, and `PostgrestColumn` tokens for compile-time checked filters and
   orderings, with nullable columns as `PostgrestNullableColumn` so `isNull()`
   only exists where it can match, and range columns typed
-  `PostgrestRange<int>`, `PostgrestRange<num>` or `PostgrestRange<DateTime>`
-  so the range operators only exist on them,
+  `PostgrestRange<int>`, `PostgrestRange<num>`, `PostgrestRange<PostgrestDate>`
+  or `PostgrestRange<DateTime>` so the range operators only exist on them,
+- `PostgrestDate`, `PostgrestTime` and `PostgrestInterval` for `date`, `time`
+  and `timetz`, and `interval` columns, value types that keep what a `DateTime`
+  or `Duration` cannot: a calendar date without a time of day, a time of day
+  with its UTC offset, and months, days and clock time kept apart,
 - `PostgrestToOneRelation` and `PostgrestToManyRelation` members for every
   foreign key between two generated tables of one schema, named after the
   table on the other side and carrying the constraint hint when two keys
@@ -149,14 +153,16 @@ final archived = await client
   nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; arrays containing SQL NULL
-  elements throw when the element is read. Enum, date, timestamp, range,
-  `bytea` and pgvector array elements stay in their wire representation
-  (`List<String>`); the Dart enum for enum array elements is still generated
-  for manual conversion, `postgrestBytea` decodes `bytea` elements and
-  `postgrestVector` decodes pgvector elements.
-- `timestamptz` values are written back in UTC, naive `timestamp` values as
-  local wall time, and `date` values date-only, so calendar dates never
-  shift with the client timezone.
+  elements throw when the element is read. Enum, date, time, interval,
+  timestamp, range, `bytea` and pgvector array elements stay in their wire
+  representation (`List<String>`); the Dart enum for enum array elements is
+  still generated for manual conversion, `postgrestBytea` decodes `bytea`
+  elements and `postgrestVector` decodes pgvector elements.
+- `timestamptz` values are written back in UTC and naive `timestamp` values
+  as local wall time. `date`, `time`, `timetz` and `interval` columns map to
+  `PostgrestDate`, `PostgrestTime` and `PostgrestInterval`, which parse what
+  Postgres emits, including `infinity` dates and every `IntervalStyle`, and
+  write themselves back as the literal Postgres accepts.
 - `bytea` columns map to `Uint8List` and are written back as hex literals,
   the format Postgres emits by default; the escape output format is decoded
   as well.

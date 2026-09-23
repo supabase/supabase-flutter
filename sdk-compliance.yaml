@@ -907,6 +907,50 @@ features:
       - PostgrestVectorColumn.PostgrestVectorColumn
       - PostgrestNullableVectorColumn
       - PostgrestNullableVectorColumn.PostgrestNullableVectorColumn
+      - PostgrestDate
+      - PostgrestDate.PostgrestDate
+      - PostgrestDate.fromDateTime
+      - PostgrestDate.parse
+      - PostgrestDate.infinity
+      - PostgrestDate.negativeInfinity
+      - PostgrestDate.year
+      - PostgrestDate.month
+      - PostgrestDate.day
+      - PostgrestDate.isFinite
+      - PostgrestDate.isInfinite
+      - PostgrestDate.toDateTime
+      - PostgrestDate.literal
+      - PostgrestDate.compareTo
+      - PostgrestDate.toString
+      - PostgrestDate.==
+      - PostgrestDate.hashCode
+      - PostgrestTime
+      - PostgrestTime.PostgrestTime
+      - PostgrestTime.fromDateTime
+      - PostgrestTime.parse
+      - PostgrestTime.hour
+      - PostgrestTime.minute
+      - PostgrestTime.second
+      - PostgrestTime.microsecond
+      - PostgrestTime.offset
+      - PostgrestTime.literal
+      - PostgrestTime.compareTo
+      - PostgrestTime.toString
+      - PostgrestTime.==
+      - PostgrestTime.hashCode
+      - PostgrestInterval
+      - PostgrestInterval.PostgrestInterval
+      - PostgrestInterval.fromDuration
+      - PostgrestInterval.parse
+      - PostgrestInterval.zero
+      - PostgrestInterval.months
+      - PostgrestInterval.days
+      - PostgrestInterval.microseconds
+      - PostgrestInterval.toDuration
+      - PostgrestInterval.literal
+      - PostgrestInterval.toString
+      - PostgrestInterval.==
+      - PostgrestInterval.hashCode
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table

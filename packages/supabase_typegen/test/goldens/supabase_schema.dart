@@ -493,9 +493,9 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   };
   List<int>? get pageCounts => (_json['page_counts'] as List<dynamic>?)?.cast();
   num? get price => _json['price'] as num?;
-  DateTime? get publishedOn => switch (_json['published_on']) {
+  PostgrestDate? get publishedOn => switch (_json['published_on']) {
     null => null,
-    final Object value => DateTime.parse(value as String),
+    final Object value => PostgrestDate.parse(value as String),
   };
   double? get rating => (_json['rating'] as num?)?.toDouble();
   List<String>? get tags => (_json['tags'] as List<dynamic>?)?.cast();
@@ -527,7 +527,7 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
     Mood? mood,
     List<int>? pageCounts,
     num? price,
-    DateTime? publishedOn,
+    PostgrestDate? publishedOn,
     double? rating,
     List<String>? tags,
     required String title,
@@ -546,10 +546,7 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
          'mood': ?mood?.wireName,
          'page_counts': ?pageCounts,
          'price': ?price,
-         'published_on': ?switch (publishedOn) {
-           null => null,
-           final value => _dateString(value),
-         },
+         'published_on': ?publishedOn?.literal,
          'rating': ?rating,
          'tags': ?tags,
          'title': title,
@@ -619,7 +616,7 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
     Mood? mood,
     List<int>? pageCounts,
     num? price,
-    DateTime? publishedOn,
+    PostgrestDate? publishedOn,
     double? rating,
     List<String>? tags,
     String? title,
@@ -638,10 +635,7 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
          'mood': ?mood?.wireName,
          'page_counts': ?pageCounts,
          'price': ?price,
-         'published_on': ?switch (publishedOn) {
-           null => null,
-           final value => _dateString(value),
-         },
+         'published_on': ?publishedOn?.literal,
          'rating': ?rating,
          'tags': ?tags,
          'title': ?title,
@@ -724,7 +718,7 @@ class Books {
     'page_counts',
   );
   static const price = PostgrestNullableColumn<BooksRow, num>('price');
-  static const publishedOn = PostgrestNullableColumn<BooksRow, DateTime>(
+  static const publishedOn = PostgrestNullableColumn<BooksRow, PostgrestDate>(
     'published_on',
   );
   static const rating = PostgrestNullableColumn<BooksRow, double>('rating');
@@ -742,8 +736,3 @@ class Books {
     referencedColumns: [Authors.id],
   );
 }
-
-String _dateString(DateTime date) =>
-    '${date.year.toString().padLeft(4, '0')}-'
-    '${date.month.toString().padLeft(2, '0')}-'
-    '${date.day.toString().padLeft(2, '0')}';

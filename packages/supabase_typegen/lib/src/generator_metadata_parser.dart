@@ -12,9 +12,6 @@ const _textFormats = {
   'char',
   'name',
   'uuid',
-  'time',
-  'timetz',
-  'interval',
   'inet',
   'cidr',
   'macaddr',
@@ -57,6 +54,8 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
   if (format == 'date') return ColumnTypeKind.date;
   if (format == 'timestamp') return ColumnTypeKind.timestamp;
   if (format == 'timestamptz') return ColumnTypeKind.timestampWithTimeZone;
+  if (format == 'time' || format == 'timetz') return ColumnTypeKind.time;
+  if (format == 'interval') return ColumnTypeKind.interval;
   if (_rangeBoundKinds.containsKey(format)) return ColumnTypeKind.range;
   if (_textFormats.contains(format)) return ColumnTypeKind.text;
   if (_jsonFormats.contains(format)) return ColumnTypeKind.json;

@@ -35,9 +35,9 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
-/// `PostgrestNullableVectorColumn`, `PostgrestRange`,
-/// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `postgrestBytea` and
-/// `postgrestVector`).
+/// `PostgrestNullableVectorColumn`, `PostgrestRange`, `PostgrestDate`,
+/// `PostgrestTime`, `PostgrestInterval`, `PostgrestToOneRelation`,
+/// `PostgrestToManyRelation`, `postgrestBytea` and `postgrestVector`).
 ///
 /// The code is formatted for [languageVersion], so it uses no syntax a
 /// project on that language version rejects; pass the version
@@ -54,13 +54,6 @@ String generateDartCode(
       languageVersion == null || languageVersion < minimumLanguageVersion
       ? minimumLanguageVersion
       : languageVersion;
-  final usesDateColumns = database.tables.any(
-    (table) => table.columns.any(
-      (column) =>
-          column.typeKind == ColumnTypeKind.date ||
-          column.boundTypeKind == ColumnTypeKind.date,
-    ),
-  );
   final usesBinaryColumns = database.tables.any(
     (table) => table.columns.any(
       (column) => column.typeKind == ColumnTypeKind.binary,
@@ -130,15 +123,6 @@ String generateDartCode(
     );
   }
 
-  if (usesDateColumns) {
-    buffer
-      ..writeln('String _dateString(DateTime date) =>')
-      ..writeln("    '\${date.year.toString().padLeft(4, '0')}-'")
-      ..writeln("    '\${date.month.toString().padLeft(2, '0')}-'")
-      ..writeln("    '\${date.day.toString().padLeft(2, '0')}';")
-      ..writeln();
-  }
-
   return DartFormatter(
     languageVersion: formatVersion,
   ).format(buffer.toString());
@@ -179,6 +163,9 @@ class _TypeNameRegistry {
     'PostgrestVectorColumn',
     'PostgrestNullableVectorColumn',
     'PostgrestRange',
+    'PostgrestDate',
+    'PostgrestTime',
+    'PostgrestInterval',
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
@@ -748,7 +735,12 @@ _Binding _bindingFor(
   ColumnTypeKind.floating => const _Binding('double', ColumnTypeKind.floating),
   ColumnTypeKind.numeric => const _Binding('num', ColumnTypeKind.numeric),
   ColumnTypeKind.boolean => const _Binding('bool', ColumnTypeKind.boolean),
-  ColumnTypeKind.date => const _Binding('DateTime', ColumnTypeKind.date),
+  ColumnTypeKind.date => const _Binding('PostgrestDate', ColumnTypeKind.date),
+  ColumnTypeKind.time => const _Binding('PostgrestTime', ColumnTypeKind.time),
+  ColumnTypeKind.interval => const _Binding(
+    'PostgrestInterval',
+    ColumnTypeKind.interval,
+  ),
   ColumnTypeKind.timestamp => const _Binding(
     'DateTime',
     ColumnTypeKind.timestamp,
@@ -798,9 +790,11 @@ String _enumTypeName(
 String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.integer => 'int',
   ColumnTypeKind.numeric => 'num',
-  ColumnTypeKind.date ||
+  ColumnTypeKind.date => 'PostgrestDate',
   ColumnTypeKind.timestamp ||
   ColumnTypeKind.timestampWithTimeZone => 'DateTime',
+  ColumnTypeKind.time ||
+  ColumnTypeKind.interval ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -818,9 +812,11 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
 String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.integer => 'int.parse',
   ColumnTypeKind.numeric => 'num.parse',
-  ColumnTypeKind.date ||
+  ColumnTypeKind.date => 'PostgrestDate.parse',
   ColumnTypeKind.timestamp ||
   ColumnTypeKind.timestampWithTimeZone => 'DateTime.parse',
+  ColumnTypeKind.time ||
+  ColumnTypeKind.interval ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -846,6 +842,8 @@ String _elementDartType(ColumnTypeKind? elementTypeKind) =>
       ColumnTypeKind.binary ||
       ColumnTypeKind.vector ||
       ColumnTypeKind.date ||
+      ColumnTypeKind.time ||
+      ColumnTypeKind.interval ||
       ColumnTypeKind.timestamp ||
       ColumnTypeKind.timestampWithTimeZone ||
       ColumnTypeKind.enumType ||
@@ -888,12 +886,17 @@ String _readExpression(ColumnDescription column, _Binding binding) {
       nullable
           ? '($access as List<dynamic>?)?.cast()'
           : '($access as List<dynamic>).cast()',
-    ColumnTypeKind.date ||
-    ColumnTypeKind.timestamp ||
-    ColumnTypeKind.timestampWithTimeZone =>
+    ColumnTypeKind.timestamp || ColumnTypeKind.timestampWithTimeZone =>
       nullable
           ? _nullableSwitch(access, 'DateTime.parse(value as String)')
           : 'DateTime.parse($access as String)',
+    ColumnTypeKind.date || ColumnTypeKind.time || ColumnTypeKind.interval =>
+      nullable
+          ? _nullableSwitch(
+              access,
+              '${binding.dartType}.parse(value as String)',
+            )
+          : '${binding.dartType}.parse($access as String)',
     ColumnTypeKind.enumType =>
       nullable
           ? _nullableSwitch(
@@ -932,11 +935,9 @@ String _writeExpression(
 }) {
   final access = nullable ? '$parameterName?' : parameterName;
   return switch (binding.kind) {
-    ColumnTypeKind.date =>
-      nullable
-          ? 'switch ($parameterName) '
-                '{ null => null, final value => _dateString(value) }'
-          : '_dateString($parameterName)',
+    ColumnTypeKind.date ||
+    ColumnTypeKind.time ||
+    ColumnTypeKind.interval => '$access.literal',
     ColumnTypeKind.timestamp => '$access.toIso8601String()',
     ColumnTypeKind.timestampWithTimeZone =>
       nullable
@@ -954,11 +955,13 @@ String _writeExpression(
                 '{ null => null, final value => postgrestVector.encode(value) }'
           : 'postgrestVector.encode($parameterName)',
     ColumnTypeKind.range => switch (binding.boundKind) {
-      ColumnTypeKind.date => '$access.render(_dateString)',
       ColumnTypeKind.timestamp =>
         '$access.render((bound) => bound.toIso8601String())',
       ColumnTypeKind.timestampWithTimeZone =>
         '$access.render((bound) => bound.toUtc().toIso8601String())',
+      ColumnTypeKind.date ||
+      ColumnTypeKind.time ||
+      ColumnTypeKind.interval ||
       ColumnTypeKind.integer ||
       ColumnTypeKind.numeric ||
       ColumnTypeKind.floating ||
