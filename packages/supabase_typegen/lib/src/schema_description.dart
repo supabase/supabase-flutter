@@ -33,6 +33,10 @@ enum ColumnTypeKind {
   /// `bytea` literal, hex by default.
   binary,
 
+  /// The pgvector `vector` and `halfvec` types, mapped to `List<double>` and
+  /// carried over the wire as a vector literal, `[0.1,0.2]`.
+  vector,
+
   /// The `json` and `jsonb` types, mapped to `Object?`.
   json,
 

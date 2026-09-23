@@ -28,6 +28,9 @@ const _textFormats = {
 };
 const _jsonFormats = {'json', 'jsonb'};
 
+/// The pgvector types written as `[…]`; `sparsevec` has a literal of its own.
+const _vectorFormats = {'vector', 'halfvec'};
+
 /// Range types, keyed to the kind of their bounds.
 const _rangeBoundKinds = {
   'int4range': ColumnTypeKind.integer,
@@ -50,6 +53,7 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
   if (format == 'numeric') return ColumnTypeKind.numeric;
   if (format == 'bool') return ColumnTypeKind.boolean;
   if (format == 'bytea') return ColumnTypeKind.binary;
+  if (_vectorFormats.contains(format)) return ColumnTypeKind.vector;
   if (format == 'date') return ColumnTypeKind.date;
   if (format == 'timestamp') return ColumnTypeKind.timestamp;
   if (format == 'timestamptz') return ColumnTypeKind.timestampWithTimeZone;

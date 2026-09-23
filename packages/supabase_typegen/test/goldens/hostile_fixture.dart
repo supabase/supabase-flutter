@@ -2,8 +2,9 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 
 /// A schema built from valid but pathological database names: identifiers
 /// that shadow core and imported types, comments and values carrying every
-/// line terminator and Dart string metacharacter, and array element kinds
-/// with dedicated conversions.
+/// line terminator and Dart string metacharacter, array element kinds with
+/// dedicated conversions, and pgvector columns, which the fixture database
+/// cannot load.
 ///
 /// The golden generated from it, `hostile_schema.dart`, is checked in so the
 /// package's own `dart analyze` run proves the generated code stays valid,
@@ -79,6 +80,32 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           postgresFormat: '_bytea',
           typeKind: ColumnTypeKind.array,
           elementTypeKind: ColumnTypeKind.binary,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        // Named like the codec the generated conversions call.
+        ColumnDescription(
+          name: 'postgrest_vector',
+          postgresFormat: 'vector',
+          typeKind: ColumnTypeKind.vector,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'half_embedding',
+          postgresFormat: 'halfvec',
+          typeKind: ColumnTypeKind.vector,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'embeddings',
+          postgresFormat: '_vector',
+          typeKind: ColumnTypeKind.array,
+          elementTypeKind: ColumnTypeKind.vector,
           isRequired: false,
           hasDefault: false,
           isNullable: true,

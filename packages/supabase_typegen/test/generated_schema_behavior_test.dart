@@ -7,6 +7,7 @@ import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
+import 'goldens/hostile_schema.dart' as hostile;
 import 'goldens/supabase_schema.dart';
 
 void main() {
@@ -77,6 +78,53 @@ void main() {
     expect(
       httpClient.requests.last.queryParameters['cover_image'],
       r'eq.\x89504e47',
+    );
+  });
+
+  test('vector columns are read and sent as vector literals', () async {
+    httpClient.stub([
+      {
+        "quote'name\u2029tail": 'key',
+        'samples': <double>[],
+        'postgrest_bytea': r'\x',
+        'postgrest_vector': '[0.5,-2.25,1]',
+        'half_embedding': null,
+      },
+    ]);
+
+    final List<hostile.PostgrestTableRow> rows = await client
+        .table(hostile.PostgrestTable$.table)
+        .select();
+
+    expect(rows.single.postgrestVector$, [0.5, -2.25, 1.0]);
+    expect(rows.single.halfEmbedding, isNull);
+
+    httpClient.stub(null);
+    await client
+        .table(hostile.PostgrestTable$.table)
+        .insert(
+          hostile.PostgrestTableInsert(
+            quoteNameTail: 'key',
+            samples: [],
+            postgrestBytea$: Uint8List(0),
+            postgrestVector$: [0.5, -2.25],
+            halfEmbedding: [0.75],
+          ),
+        );
+
+    final sent = httpClient.requests.last.jsonBody as Map<String, dynamic>;
+    expect(sent['postgrest_vector'], '[0.5,-2.25]');
+    expect(sent['half_embedding'], '[0.75]');
+
+    httpClient.stub([]);
+    await client
+        .table(hostile.PostgrestTable$.table)
+        .select()
+        .where(hostile.PostgrestTable$.postgrestVector$.eq([0.5, -2.25]));
+
+    expect(
+      httpClient.requests.last.queryParameters['postgrest_vector'],
+      'eq.[0.5,-2.25]',
     );
   });
 
