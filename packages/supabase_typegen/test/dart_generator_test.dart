@@ -89,6 +89,18 @@ void main() {
       ),
     );
     expect(
+      compact,
+      contains(
+        "PostgrestColumn<MapRow,PostgrestRange<PostgrestDate>>('season'",
+      ),
+    );
+    expect(
+      code,
+      contains(
+        "PostgrestRange.parse(_json['season'] as String, PostgrestDate.parse)",
+      ),
+    );
+    expect(
       code,
       contains("PostgrestRange.parse(_json['pages'] as String, int.parse)"),
     );
@@ -100,7 +112,7 @@ void main() {
       ),
     );
     expect(code, contains("'pages': pages.literal,"));
-    expect(code, contains("'season': ?season?.render(_dateString),"));
+    expect(code, contains("'season': ?season?.literal,"));
     expect(
       code,
       contains("'shift': shift.render((bound) => bound.toIso8601String()),"),
@@ -259,6 +271,52 @@ void main() {
     );
     // Array elements stay in their wire representation.
     expect(compact, contains('List<String>?getembeddings=>'));
+  });
+
+  test('date, time and interval columns read and write through their value '
+      'types', () {
+    final code = _normalize(generateDartCode(hostileSchema));
+    final compact = code.replaceAll(' ', '');
+
+    expect(compact, contains("PostgrestColumn<MapRow,PostgrestDate>('since')"));
+    expect(
+      compact,
+      contains("PostgrestColumn<MapRow,PostgrestTime>('opens_at')"),
+    );
+    expect(
+      compact,
+      contains("PostgrestNullableColumn<MapRow,PostgrestTime>('closes_at'"),
+    );
+    expect(
+      compact,
+      contains("PostgrestNullableColumn<MapRow,PostgrestInterval>('ttl')"),
+    );
+    expect(
+      code,
+      contains(
+        "PostgrestDate get since => PostgrestDate.parse(_json['since'] "
+        "as String);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestTime?getclosesAt=>switch(_json['closes_at']){null=>null,"
+        "finalObjectvalue=>PostgrestTime.parse(valueasString),};",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestInterval?getttl=>switch(_json['ttl']){null=>null,"
+        "finalObjectvalue=>PostgrestInterval.parse(valueasString),};",
+      ),
+    );
+    expect(code, contains("'since': since.literal,"));
+    expect(code, contains("'opens_at': opensAt.literal,"));
+    expect(code, contains("'closes_at': ?closesAt?.literal,"));
+    expect(code, contains("'ttl': ?ttl?.literal,"));
+    expect(code, isNot(contains('_dateString')));
   });
 
   test('the typed_data import is only emitted for bytea columns', () {

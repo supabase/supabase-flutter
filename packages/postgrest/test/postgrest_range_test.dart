@@ -127,7 +127,28 @@ void main() {
       expect(range.upper, 'd,e');
     });
 
-    test('an unquoted infinity bound is unbounded', () {
+    test(
+      'an infinity bound is kept when the bound type has a value for it',
+      () {
+        final range = PostgrestRange.parse(
+          '[2024-01-01,infinity)',
+          PostgrestDate.parse,
+        );
+
+        expect(range.upper, PostgrestDate.infinity);
+        expect(range.literal, '[2024-01-01,"infinity")');
+        expect(PostgrestRange.parse(range.literal, PostgrestDate.parse), range);
+        expect(
+          PostgrestRange.parse(
+            '(-infinity,2024-01-01]',
+            PostgrestDate.parse,
+          ).lower,
+          PostgrestDate.negativeInfinity,
+        );
+      },
+    );
+
+    test('an infinity bound the bound type rejects is unbounded', () {
       expect(
         PostgrestRange.parse('[2024-01-01T00:00:00Z,infinity)', DateTime.parse),
         PostgrestRange.closedOpen(DateTime.utc(2024), null),
@@ -140,8 +161,15 @@ void main() {
         PostgrestRange.openClosed(null, DateTime.utc(2024)),
       );
       expect(
-        PostgrestRange.parse('[Infinity,+Infinity]', double.parse),
-        const PostgrestRange<double>.closed(null, null),
+        PostgrestRange.parse('[2,infinity)', int.parse),
+        const PostgrestRange.closedOpen(2, null),
+      );
+    });
+
+    test('a numeric infinity bound is the infinite number', () {
+      expect(
+        PostgrestRange.parse('[1,Infinity)', num.parse),
+        const PostgrestRange<num>.closedOpen(1, double.infinity),
       );
       expect(
         PostgrestRange.parse('["infinity",x)', (bound) => bound).lower,

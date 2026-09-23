@@ -14,9 +14,14 @@ enum ColumnTypeKind {
   /// The `boolean` type.
   boolean,
 
-  /// The `date` type, mapped to `DateTime` and written back date-only so
-  /// the calendar date never shifts with the client timezone.
+  /// The `date` type, mapped to `PostgrestDate`.
   date,
+
+  /// The `time` and `timetz` types, mapped to `PostgrestTime`.
+  time,
+
+  /// The `interval` type, mapped to `PostgrestInterval`.
+  interval,
 
   /// Timestamps without a timezone, mapped to `DateTime` and written back as
   /// the local wall time.

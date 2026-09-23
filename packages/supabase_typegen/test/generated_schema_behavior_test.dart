@@ -39,7 +39,8 @@ void main() {
         'tags': ['dart', 'types'],
         'metadata': {'reprint': true},
         'created_at': '2026-07-23T10:00:00Z',
-        'published_on': null,
+        'published_on': '2026-07-23',
+        'updated_at': null,
         'cover_image': r'\x89504e47',
       },
     ]);
@@ -55,7 +56,8 @@ void main() {
     expect(book.tags, ['dart', 'types']);
     expect(book.metadata, {'reprint': true});
     expect(book.createdAt, DateTime.utc(2026, 7, 23, 10));
-    expect(book.publishedOn == null, isTrue);
+    expect(book.publishedOn, PostgrestDate(2026, 7, 23));
+    expect(book.updatedAt == null, isTrue);
     expect(book.coverImage, [0x89, 0x50, 0x4e, 0x47]);
   });
 
@@ -250,7 +252,7 @@ void main() {
   });
 
   test(
-    'timestamps are sent as UTC instants and dates keep their day',
+    'timestamps are sent as UTC instants and dates as their literal',
     () async {
       httpClient.stub(null);
 
@@ -261,7 +263,7 @@ void main() {
               title: 'A typed row',
               authorId: 7,
               createdAt: DateTime(2026, 7, 23, 10), // local wall time
-              publishedOn: DateTime(2026, 7, 23, 23, 30),
+              publishedOn: PostgrestDate(2026, 7, 23),
             ),
           );
 
@@ -271,6 +273,84 @@ void main() {
         DateTime(2026, 7, 23, 10).toUtc().toIso8601String(),
       );
       expect(sent['published_on'], '2026-07-23');
+    },
+  );
+
+  test('date column tokens filter with the date literal', () async {
+    await client
+        .table(Books.table)
+        .select()
+        .where(Books.publishedOn.gte(PostgrestDate(2026, 1, 1)));
+
+    expect(
+      httpClient.requests.last.queryParameters['published_on'],
+      'gte.2026-01-01',
+    );
+  });
+
+  test(
+    'time and interval columns round trip through their value types',
+    () async {
+      final row = hostile.MapRow({
+        'list': 1,
+        'pages': '[1,10)',
+        'shift': '["2026-07-23 09:00:00","2026-07-23 17:00:00")',
+        'season': '[2026-06-01,2026-09-01)',
+        'since': '2026-07-23',
+        'opens_at': '09:30:00',
+        'closes_at': '17:00:00+02',
+        'ttl': '1 mon 3 days 04:05:06',
+      });
+
+      expect(
+        row.season,
+        PostgrestRange.closedOpen(
+          PostgrestDate(2026, 6, 1),
+          PostgrestDate(2026, 9, 1),
+        ),
+      );
+      expect(row.since, PostgrestDate(2026, 7, 23));
+      expect(row.opensAt, PostgrestTime(hour: 9, minute: 30));
+      expect(
+        row.closesAt,
+        PostgrestTime(hour: 17, offset: const Duration(hours: 2)),
+      );
+      expect(
+        row.ttl,
+        const PostgrestInterval(
+          months: 1,
+          days: 3,
+          hours: 4,
+          minutes: 5,
+          seconds: 6,
+        ),
+      );
+
+      httpClient.stub(null);
+      await client
+          .table(hostile.Map$.table)
+          .insert(
+            hostile.MapInsert(
+              list: 1,
+              pages: const PostgrestRange.closedOpen(1, 10),
+              shift: PostgrestRange.closedOpen(
+                DateTime(2026, 7, 23, 9),
+                DateTime(2026, 7, 23, 17),
+              ),
+              season: row.season,
+              since: row.since,
+              opensAt: row.opensAt,
+              closesAt: row.closesAt,
+              ttl: row.ttl,
+            ),
+          );
+
+      final sent = httpClient.requests.last.jsonBody as Map<String, dynamic>;
+      expect(sent['season'], '[2026-06-01,2026-09-01)');
+      expect(sent['since'], '2026-07-23');
+      expect(sent['opens_at'], '09:30:00');
+      expect(sent['closes_at'], '17:00:00+02');
+      expect(sent['ttl'], '1 mon 3 days 04:05:06');
     },
   );
 

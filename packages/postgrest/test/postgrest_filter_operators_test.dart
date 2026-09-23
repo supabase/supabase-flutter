@@ -25,6 +25,14 @@ class Posts {
   static const samples = PostgrestColumn<Post, List<double>>('samples');
   static const embedding = PostgrestVectorColumn<Post>('embedding');
   static const draft = PostgrestNullableVectorColumn<Post>('draft');
+  static const publishedOn = PostgrestColumn<Post, PostgrestDate>(
+    'published_on',
+  );
+  static const opensAt = PostgrestColumn<Post, PostgrestTime>('opens_at');
+  static const ttl = PostgrestColumn<Post, PostgrestInterval>('ttl');
+  static const season = PostgrestColumn<Post, PostgrestRange<PostgrestDate>>(
+    'season',
+  );
 }
 
 String rendered(PostgrestFilter<Post> filter) => [
@@ -286,6 +294,78 @@ void main() {
       );
     });
   });
+  group('date, time and interval', () {
+    test('render their literal', () {
+      expect(
+        rendered(Posts.publishedOn.eq(PostgrestDate(2024, 2, 29))),
+        'published_on=eq.2024-02-29',
+      );
+      expect(
+        rendered(Posts.publishedOn.lt(PostgrestDate.infinity)),
+        'published_on=lt.infinity',
+      );
+      expect(
+        rendered(
+          Posts.opensAt.gte(
+            PostgrestTime(
+              hour: 9,
+              minute: 30,
+              offset: const Duration(hours: 2),
+            ),
+          ),
+        ),
+        'opens_at=gte.09:30:00+02',
+      );
+      expect(
+        rendered(Posts.ttl.eq(const PostgrestInterval(months: 1, days: 3))),
+        'ttl=eq.1 mon 3 days',
+      );
+    });
+
+    test('are escaped where the grammar needs it', () {
+      expect(
+        rendered(
+          Posts.publishedOn.inFilter([
+            PostgrestDate(2024, 2, 29),
+            PostgrestDate(-43, 3, 15),
+          ]),
+        ),
+        'published_on=in.(2024-02-29,0044-03-15 BC)',
+      );
+      expect(
+        rendered(
+          Posts.ttl.eq(const PostgrestInterval(days: 2)) | Posts.id.eq(1),
+        ),
+        'or=(ttl.eq.2 days,id.eq.1)',
+      );
+    });
+
+    test('a date range renders its bounds as dates', () {
+      expect(
+        rendered(
+          Posts.season.overlaps(
+            PostgrestRange.closedOpen(
+              PostgrestDate(2024, 1, 1),
+              PostgrestDate(2024, 2, 1),
+            ),
+          ),
+        ),
+        'season=ov.[2024-01-01,2024-02-01)',
+      );
+      expect(
+        rendered(Posts.season.containsElement(PostgrestDate(2024, 1, 15))),
+        'season=cs.2024-01-15',
+      );
+      expect(
+        PostgrestRange.parse(
+          '[2024-01-01,2024-02-01)',
+          PostgrestDate.parse,
+        ).literal,
+        '[2024-01-01,2024-02-01)',
+      );
+    });
+  });
+
   group('vector', () {
     test('renders a list as a vector literal, not an array', () {
       expect(
