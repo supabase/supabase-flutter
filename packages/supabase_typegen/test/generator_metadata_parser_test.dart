@@ -102,10 +102,33 @@ void main() {
 
     final moods = parsed.tables.single.columns.single;
     expect(moods.typeKind, ColumnTypeKind.array);
+    expect(moods.elementTypeKind, ColumnTypeKind.enumType);
     expect(moods.postgresFormat, '_mood');
     final enumDescription = parsed.enums.single;
+    expect(moods.enumType, same(enumDescription));
     expect(enumDescription.qualifiedName, 'public.mood');
     expect(enumDescription.values, ['happy', 'sad']);
+  });
+
+  test('range arrays carry the kind of their bounds', () {
+    final parsed = parseGeneratorMetadata({
+      'version': 1,
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'shifts', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'shifts', name: 'spans'),
+          'data_type': 'ARRAY',
+          'format': '_tstzrange',
+        },
+      ],
+    });
+
+    final spans = parsed.tables.single.columns.single;
+    expect(spans.typeKind, ColumnTypeKind.array);
+    expect(spans.elementTypeKind, ColumnTypeKind.range);
+    expect(spans.boundTypeKind, ColumnTypeKind.timestampWithTimeZone);
   });
 
   test('tolerates the primaryKeys field of the document', () {

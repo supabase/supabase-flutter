@@ -62,13 +62,6 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
   return ColumnTypeKind.unknown;
 }
 
-/// The kind of the elements of an array column, where enum elements are
-/// carried as their wire strings.
-ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
-  final kind = _typeKind(elementFormat, isEnum: isEnum);
-  return kind == ColumnTypeKind.enumType ? ColumnTypeKind.text : kind;
-}
-
 /// Parses a `GeneratorMetadata` document, the introspection contract of
 /// `@supabase/postgrest-typegen`, into a [DatabaseDescription] of the
 /// schemas named in [schemaNames], or of every schema the document lists when
@@ -199,8 +192,8 @@ DatabaseDescription _parseGeneratorMetadata(
           (described.schema, described.name),
           () => described,
         );
-        // Array elements stay in their wire representation, but the enum the
-        // elements belong to is still emitted for manual conversion.
+        // An array column keeps its array format; the enum of its elements
+        // is reached through enumType.
         if (!isArray) {
           postgresFormat = enumDescription.qualifiedName;
         }
@@ -218,9 +211,10 @@ DatabaseDescription _parseGeneratorMetadata(
           postgresFormat: postgresFormat,
           typeKind: typeKind,
           elementTypeKind: isArray
-              ? _elementTypeKind(format.substring(1), isEnum: isEnum)
+              ? _typeKind(format.substring(1), isEnum: isEnum)
               : null,
-          boundTypeKind: _rangeBoundKinds[format],
+          boundTypeKind:
+              _rangeBoundKinds[isArray ? format.substring(1) : format],
           enumValues: isEnum ? enumValues : null,
           enumType: enumDescription,
           isRequired: !isNullable && !hasDefault,

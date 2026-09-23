@@ -48,8 +48,8 @@ enum ColumnTypeKind {
   /// A Postgres enum type.
   enumType,
 
-  /// An array type; the element type is in
-  /// [ColumnDescription.elementTypeKind].
+  /// An array type, mapped to a `List` of the Dart type of its elements; the
+  /// element type is in [ColumnDescription.elementTypeKind].
   array,
 
   /// A range type such as `int4range` or `tstzrange`, mapped to
@@ -201,7 +201,8 @@ class ColumnDescription {
   /// columns.
   final ColumnTypeKind? elementTypeKind;
 
-  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] columns.
+  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] columns
+  /// and for arrays of a range type.
   final ColumnTypeKind? boundTypeKind;
 
   /// The values of the Postgres enum for enum columns.

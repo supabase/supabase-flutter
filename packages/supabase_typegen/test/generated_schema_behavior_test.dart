@@ -354,6 +354,69 @@ void main() {
     },
   );
 
+  test(
+    'array elements read, write and filter through their conversions',
+    () async {
+      final row = hostile.PostgrestTableRow({
+        'days': ['2026-01-01', '2028-02-29'],
+        'blobs': [r'\x4869'],
+        'moods': ['plain'],
+        'spans': ['[1,3)', 'empty'],
+        'stamps': ['2026-07-23T10:00:00+00:00'],
+      });
+
+      expect(row.days, [PostgrestDate(2026, 1, 1), PostgrestDate(2028, 2, 29)]);
+      expect(row.blobs, [
+        [72, 105],
+      ]);
+      expect(row.moods, [hostile.String$.plain]);
+      expect(row.spans, [
+        const PostgrestRange.closedOpen(1, 3),
+        const PostgrestRange<int>.empty(),
+      ]);
+      expect(row.stamps, [DateTime.utc(2026, 7, 23, 10)]);
+
+      httpClient.stub(null);
+      await client
+          .table(hostile.PostgrestTable$.table)
+          .insert(
+            hostile.PostgrestTableInsert(
+              quoteNameTail: 'row',
+              samples: [1.5],
+              postgrestBytea$: Uint8List.fromList([1]),
+              postgrestVector$: [0.5],
+              spans: row.spans,
+              days: row.days,
+              blobs: row.blobs,
+              moods: row.moods,
+              stamps: [DateTime(2026, 7, 23, 12)],
+            ),
+          );
+
+      final sent = httpClient.requests.last.jsonBody as Map<String, dynamic>;
+      expect(sent['days'], ['2026-01-01', '2028-02-29']);
+      expect(sent['blobs'], [r'\x4869']);
+      expect(sent['moods'], ['plain']);
+      expect(sent['spans'], ['[1,3)', 'empty']);
+      expect(sent['stamps'], [
+        DateTime(2026, 7, 23, 12).toUtc().toIso8601String(),
+      ]);
+
+      httpClient.stub([]);
+      await client
+          .table(hostile.PostgrestTable$.table)
+          .select()
+          .where(
+            hostile.PostgrestTable$.days.contains([PostgrestDate(2026, 1, 1)]) &
+                hostile.PostgrestTable$.moods.overlaps([hostile.String$.plain]),
+          );
+
+      final parameters = httpClient.requests.last.queryParameters;
+      expect(parameters['days'], 'cs.{2026-01-01}');
+      expect(parameters['moods'], 'ov.{plain}');
+    },
+  );
+
   test('unknown enum wire values throw a descriptive error', () {
     expect(
       () => Mood.fromWire('grumpy'),
