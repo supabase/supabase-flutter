@@ -137,6 +137,15 @@ void main() {
     expect(captured().headers['traceparent'], 'not-a-traceparent');
   });
 
+  test('rejects an uppercase traceparent, the grammar is lowercase', () {
+    expect(isValidTraceparent('00-$_traceId-$_spanId-01'), isTrue);
+    expect(
+      isValidTraceparent('00-${_traceId.toUpperCase()}-$_spanId-01'),
+      isFalse,
+    );
+    expect(isValidTraceparent('00-$_traceId-$_spanId-0A'), isFalse);
+  });
+
   test('reads the sampled flag of a future version, not its last field', () {
     expect(isSampledTraceparent('01-$_traceId-$_spanId-00-01'), isFalse);
     expect(isSampledTraceparent('01-$_traceId-$_spanId-01-00'), isTrue);

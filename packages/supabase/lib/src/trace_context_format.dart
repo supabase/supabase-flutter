@@ -14,14 +14,19 @@ const invalidParentId = '0000000000000000';
 ///
 /// A version above `00` may append fields the specification requires
 /// receivers to parse past rather than reject, so only version `00` is held
-/// to exactly four fields. Version `ff` is invalid.
+/// to exactly four fields. Version `ff` is invalid, and the grammar admits
+/// lowercase hexadecimal only, so an uppercase field is not well-formed
+/// either.
 @internal
 bool isValidTraceparent(String traceparent) {
   final parts = traceparent.split('-');
   if (parts.length < 4) {
     return false;
   }
-  final version = parts[0].toLowerCase();
+  if (parts.take(4).any((part) => part != part.toLowerCase())) {
+    return false;
+  }
+  final version = parts[0];
   if (version.length != 2 ||
       !_hexadecimal.hasMatch(version) ||
       version == 'ff' ||
