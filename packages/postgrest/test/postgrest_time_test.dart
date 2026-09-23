@@ -172,6 +172,20 @@ void main() {
   });
 
   group('ordering', () {
+    test('the same instant sorts east of UTC first, like Postgres', () {
+      final times = [
+        PostgrestTime(hour: 7, offset: const Duration(hours: -1)),
+        PostgrestTime(hour: 8, offset: Duration.zero),
+        PostgrestTime(hour: 9, offset: const Duration(hours: 1)),
+      ]..sort();
+
+      expect(times.map((time) => time.literal), [
+        '09:00:00+01',
+        '08:00:00+00',
+        '07:00:00-01',
+      ]);
+    });
+
     test('compares by the UTC instant of the day', () {
       final nineAtPlusOne = PostgrestTime(
         hour: 9,
@@ -180,8 +194,8 @@ void main() {
       final eightUtc = PostgrestTime(hour: 8, offset: Duration.zero);
       final tenUtc = PostgrestTime(hour: 10, offset: Duration.zero);
 
-      expect(nineAtPlusOne.compareTo(eightUtc), greaterThan(0));
-      expect(eightUtc.compareTo(nineAtPlusOne), lessThan(0));
+      expect(nineAtPlusOne.compareTo(eightUtc), lessThan(0));
+      expect(eightUtc.compareTo(nineAtPlusOne), greaterThan(0));
       expect(nineAtPlusOne.compareTo(tenUtc), lessThan(0));
       expect(tenUtc.compareTo(nineAtPlusOne), greaterThan(0));
       expect(

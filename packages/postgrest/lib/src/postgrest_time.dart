@@ -15,8 +15,9 @@ part of 'postgrest_typed_builder.dart';
 /// Two times are equal when all their components are, including the
 /// [offset]. [compareTo] orders them the way Postgres orders `timetz`
 /// values: by the UTC instant of the day they name, and by [offset] when
-/// those coincide, so `09:00:00+01` sorts right after `08:00:00+00` without
-/// being equal to it.
+/// those coincide, east of UTC first, so `09:00:00+01` sorts right before
+/// `08:00:00+00` without being equal to it. A plain `time` sorts before a
+/// `timetz` at the same instant.
 @experimental
 final class PostgrestTime implements Comparable<PostgrestTime> {
   /// The time [hour]:[minute]:[second].[microsecond], at the UTC [offset]
@@ -175,8 +176,10 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
       (null, null) => 0,
       (null, _) => -1,
       (_, null) => 1,
-      (final ownOffset?, final otherOffset?) => ownOffset.compareTo(
-        otherOffset,
+      // Postgres stores the zone as seconds west of UTC and sorts it
+      // ascending, so the larger east offset comes first.
+      (final ownOffset?, final otherOffset?) => otherOffset.compareTo(
+        ownOffset,
       ),
     };
   }
