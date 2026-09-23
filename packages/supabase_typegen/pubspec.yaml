@@ -24,6 +24,7 @@ dependencies:
   meta: ^1.16.0
   pub_semver: ^2.2.0
   toml: ^0.18.0
+  yaml: ^3.1.0
 
 dev_dependencies:
   postgres: ^3.5.9
