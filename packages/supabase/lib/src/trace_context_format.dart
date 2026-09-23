@@ -54,15 +54,12 @@ bool isValidParentId(String parentId) =>
     parentId != invalidParentId &&
     _hexadecimal.hasMatch(parentId);
 
-/// Reports whether a W3C `traceparent` carries the sampled flag.
+/// Reports whether a well-formed W3C `traceparent` carries the sampled flag.
 ///
-/// Malformed headers are treated as sampled so that propagation is not
-/// silently suppressed by an unparseable value, matching supabase-js.
+/// Check [isValidTraceparent] first, this parses the trace flags without
+/// validating them.
 @internal
 bool isSampledTraceparent(String traceparent) {
-  if (!isValidTraceparent(traceparent)) {
-    return true;
-  }
   final flags = int.parse(traceparent.split('-')[3], radix: 16);
   return flags & 0x01 == 0x01;
 }

@@ -1,3 +1,4 @@
+import 'package:logging/logging.dart';
 import 'package:supabase/src/trace_context_format.dart';
 import 'package:supabase/src/trace_http_client.dart';
 import 'package:supabase/supabase.dart';
@@ -10,6 +11,17 @@ const _spanId = 'b7ad6b7169203331';
 const _sampledTraceparent = '00-$_traceId-$_spanId-01';
 const _unsampledTraceparent = '00-$_traceId-$_spanId-00';
 const _supabaseUrl = 'https://project.supabase.co';
+
+Future<List<LogRecord>> recordLogs(Future<void> Function() body) async {
+  final records = <LogRecord>[];
+  final subscription = Logger.root.onRecord.listen(records.add);
+  try {
+    await body();
+  } finally {
+    await subscription.cancel();
+  }
+  return records;
+}
 
 void main() {
   late MockSupabaseHttpClient httpClient;
@@ -129,12 +141,37 @@ void main() {
     expect(captured().headers.containsKey('baggage'), isFalse);
   });
 
-  test('propagates malformed traceparent without suppressing it', () async {
+  test('drops a malformed traceparent', () async {
     await client(
-      optionsWith(() => const TraceContext(traceparent: 'not-a-traceparent')),
+      optionsWith(
+        () => const TraceContext(
+          traceparent: 'not-a-traceparent',
+          baggage: 'key=value',
+        ),
+      ),
     ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-    expect(captured().headers['traceparent'], 'not-a-traceparent');
+    expect(captured().headers.containsKey('traceparent'), isFalse);
+    expect(captured().headers.containsKey('baggage'), isFalse);
+  });
+
+  test('propagates a future version that appends fields', () async {
+    const traceparent = '01-$_traceId-$_spanId-01-extra';
+    await client(
+      optionsWith(() => const TraceContext(traceparent: traceparent)),
+    ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+    expect(captured().headers['traceparent'], traceparent);
+  });
+
+  test('drops the invalid ff version', () async {
+    await client(
+      optionsWith(
+        () => const TraceContext(traceparent: 'ff-$_traceId-$_spanId-01'),
+      ),
+    ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+    expect(captured().headers.containsKey('traceparent'), isFalse);
   });
 
   test('rejects an uppercase traceparent, the grammar is lowercase', () {
@@ -149,6 +186,57 @@ void main() {
   test('reads the sampled flag of a future version, not its last field', () {
     expect(isSampledTraceparent('01-$_traceId-$_spanId-00-01'), isFalse);
     expect(isSampledTraceparent('01-$_traceId-$_spanId-01-00'), isTrue);
+  });
+
+  test('warns once per client about a malformed traceparent', () async {
+    final records = await recordLogs(() async {
+      final traced = client(
+        optionsWith(() => const TraceContext(traceparent: 'not-a-traceparent')),
+      );
+      await traced.get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+      await traced.get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+    });
+
+    expect(records, hasLength(1));
+    expect(records.single.level, Level.WARNING);
+    expect(records.single.message, contains('not valid W3C trace context'));
+  });
+
+  test('points a sentry-trace value at the Sentry conversion', () async {
+    final records = await recordLogs(() async {
+      await client(
+        optionsWith(
+          () => const TraceContext(traceparent: '$_traceId-$_spanId-1'),
+        ),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+    });
+
+    expect(records.single.message, contains('formatAsW3CHeader'));
+  });
+
+  test('gives the generic hint for a W3C header missing its flags', () async {
+    final records = await recordLogs(() async {
+      await client(
+        optionsWith(
+          () => const TraceContext(traceparent: '00-$_traceId-$_spanId'),
+        ),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+    });
+
+    expect(records.single.message, isNot(contains('formatAsW3CHeader')));
+    expect(records.single.message, contains('TraceContext.w3c'));
+  });
+
+  test('warns when enabled without a traceContextProvider', () async {
+    final records = await recordLogs(() async {
+      await client(
+        const TracePropagationOptions(enabled: true),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+    });
+
+    expect(records, hasLength(1));
+    expect(records.single.level, Level.WARNING);
+    expect(records.single.message, contains('no traceContextProvider'));
   });
 
   test('does not overwrite an existing trace header', () async {
