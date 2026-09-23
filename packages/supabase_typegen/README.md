@@ -152,8 +152,8 @@ final archived = await client
   `BooksUpdate(inPrint: false).setPriceToNull()`; they only exist for
   nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
-  matching the supabase-js type generator; arrays containing SQL NULL
-  elements throw when the element is read. Elements convert like a column of
+  matching the supabase-js type generator; an array containing SQL NULL
+  elements throws when the column is read. Elements convert like a column of
   their type, so `date[]` is `List<PostgrestDate>` and `mood[]` a list of the
   generated enum, except for pgvector elements, which stay in their wire
   representation (`List<String>`) because a filter could not tell a vector

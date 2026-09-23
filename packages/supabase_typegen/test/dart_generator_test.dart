@@ -915,6 +915,50 @@ void main() {
     );
   });
 
+  test('a required converted array renders its elements without a null '
+      'check', () {
+    final code = _normalize(
+      generateDartCode(
+        DatabaseDescription(
+          schemaNames: const ['public'],
+          tables: const [
+            TableDescription(
+              schema: 'public',
+              name: 'events',
+              columns: [
+                ColumnDescription(
+                  name: 'days',
+                  postgresFormat: '_date',
+                  typeKind: ColumnTypeKind.array,
+                  elementTypeKind: ColumnTypeKind.date,
+                  isRequired: true,
+                  hasDefault: false,
+                  isNullable: false,
+                ),
+              ],
+            ),
+          ],
+          enums: const [],
+        ),
+      ),
+    );
+
+    final compact = code.replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "List<PostgrestDate>getdays=>(_json['days']asList<dynamic>)"
+        ".map((element)=>PostgrestDate.parse(elementasString)).toList();",
+      ),
+    );
+    expect(compact, contains('requiredList<PostgrestDate>days'));
+    expect(
+      compact,
+      contains("'days':days.map((element)=>element.literal).toList()"),
+    );
+  });
+
   test('pgvector array elements stay wire strings', () {
     final code = generateDartCode(
       DatabaseDescription(
