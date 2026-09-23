@@ -22,6 +22,7 @@ dependencies:
   collection: ^1.19.0
   dart_style: ^3.1.0
   meta: ^1.16.0
+  pub_semver: ^2.2.0
   toml: ^0.18.0
 
 dev_dependencies:
