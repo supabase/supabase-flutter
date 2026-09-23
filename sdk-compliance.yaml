@@ -2562,6 +2562,8 @@ features:
     symbols:
       - TraceContext
       - TraceContext.TraceContext
+      - TraceContext.fromCarrier
+      - TraceContext.w3c
       - TraceContext.traceparent
       - TraceContext.tracestate
       - TraceContext.baggage
