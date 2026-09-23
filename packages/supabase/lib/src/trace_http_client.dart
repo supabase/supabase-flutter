@@ -1,16 +1,26 @@
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 
+import 'logger.dart';
 import 'trace_context_format.dart';
 import 'trace_propagation.dart';
 
 @internal
 class TracePropagationClient extends BaseClient {
   TracePropagationClient(this._inner, this._options, String supabaseUrl)
-    : _exactHosts = _defaultExactHosts(supabaseUrl);
+    : _exactHosts = _defaultExactHosts(supabaseUrl) {
+    if (_options.traceContextProvider == null) {
+      clientLogger.warning(
+        'Trace propagation is enabled but no traceContextProvider was given, '
+        'so no trace headers are sent. Pass a provider that returns the '
+        'active trace context of your tracing client.',
+      );
+    }
+  }
   final Client _inner;
   final TracePropagationOptions _options;
   final Set<String> _exactHosts;
+  bool _warnedOnMalformedTraceparent = false;
 
   static const _wildcardDomains = ['supabase.co', 'supabase.in'];
 
@@ -50,15 +60,21 @@ class TracePropagationClient extends BaseClient {
 
   /// Writes the headers of [context] onto [headers].
   ///
-  /// An unsampled trace keeps its `traceparent`, so the Supabase logs still
-  /// get a trace id to correlate on, and, when
-  /// [TracePropagationOptions.respectSamplingDecision] is set, withholds
-  /// `tracestate` and `baggage`, the vendor and application data channels.
+  /// A `traceparent` that is not well-formed is dropped rather than sent, as
+  /// it correlates with nothing on the server. An unsampled trace keeps its
+  /// `traceparent`, so the Supabase logs still get a trace id to correlate
+  /// on, and, when [TracePropagationOptions.respectSamplingDecision] is set,
+  /// withholds `tracestate` and `baggage`, the vendor and application data
+  /// channels.
   void _applyHeaders(
     Map<String, String> headers,
     TraceContext context,
     String traceparent,
   ) {
+    if (!isValidTraceparent(traceparent)) {
+      _warnOnMalformedTraceparent(traceparent);
+      return;
+    }
     headers.putIfAbsent('traceparent', () => traceparent);
     if (_options.respectSamplingDecision &&
         !isSampledTraceparent(traceparent)) {
@@ -72,6 +88,33 @@ class TracePropagationClient extends BaseClient {
     if (baggage != null) {
       headers.putIfAbsent('baggage', () => baggage);
     }
+  }
+
+  void _warnOnMalformedTraceparent(String traceparent) {
+    if (_warnedOnMalformedTraceparent) {
+      return;
+    }
+    _warnedOnMalformedTraceparent = true;
+    final hint = _looksLikeSentryTrace(traceparent)
+        ? 'It looks like a sentry-trace header, which formatAsW3CHeader from '
+              'package:sentry converts.'
+        : 'Build it with TraceContext.w3c or TraceContext.fromCarrier.';
+    clientLogger.warning(
+      'The traceContextProvider returned a traceparent that is not valid '
+      'W3C trace context, so no trace headers are sent. $hint',
+    );
+  }
+
+  /// Reports whether [traceparent] carries the shape of a `sentry-trace`
+  /// header, `<trace id>-<span id>` with an optional sampled digit.
+  ///
+  /// A W3C header missing its flags field also has three segments, so the
+  /// field lengths, not the segment count, tell the two apart.
+  bool _looksLikeSentryTrace(String traceparent) {
+    final parts = traceparent.split('-');
+    return (parts.length == 2 || parts.length == 3) &&
+        isValidTraceId(parts[0]) &&
+        isValidParentId(parts[1]);
   }
 
   @override
