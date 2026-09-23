@@ -95,7 +95,7 @@ class TracePropagationClient extends BaseClient {
       return;
     }
     _warnedOnMalformedTraceparent = true;
-    final hint = traceparent.split('-').length == 3
+    final hint = _looksLikeSentryTrace(traceparent)
         ? 'It looks like a sentry-trace header, which formatAsW3CHeader from '
               'package:sentry converts.'
         : 'Build it with TraceContext.w3c or TraceContext.fromCarrier.';
@@ -103,6 +103,18 @@ class TracePropagationClient extends BaseClient {
       'The traceContextProvider returned a traceparent that is not valid '
       'W3C trace context, so no trace headers are sent. $hint',
     );
+  }
+
+  /// Reports whether [traceparent] carries the shape of a `sentry-trace`
+  /// header, `<trace id>-<span id>` with an optional sampled digit.
+  ///
+  /// A W3C header missing its flags field also has three segments, so the
+  /// field lengths, not the segment count, tell the two apart.
+  bool _looksLikeSentryTrace(String traceparent) {
+    final parts = traceparent.split('-');
+    return (parts.length == 2 || parts.length == 3) &&
+        isValidTraceId(parts[0]) &&
+        isValidParentId(parts[1]);
   }
 
   @override

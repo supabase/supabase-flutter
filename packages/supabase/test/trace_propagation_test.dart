@@ -214,6 +214,19 @@ void main() {
     expect(records.single.message, contains('formatAsW3CHeader'));
   });
 
+  test('gives the generic hint for a W3C header missing its flags', () async {
+    final records = await recordLogs(() async {
+      await client(
+        optionsWith(
+          () => const TraceContext(traceparent: '00-$_traceId-$_spanId'),
+        ),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+    });
+
+    expect(records.single.message, isNot(contains('formatAsW3CHeader')));
+    expect(records.single.message, contains('TraceContext.w3c'));
+  });
+
   test('warns when enabled without a traceContextProvider', () async {
     final records = await recordLogs(() async {
       await client(
