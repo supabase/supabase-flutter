@@ -61,6 +61,15 @@ void main() {
     );
   });
 
+  test('split representation clauses carry no trailing comma', () {
+    final code = generateDartCode(hostileSchema);
+
+    // The name is long enough that the formatter has to split the clause.
+    expect(code, contains('PrivateAchievementItemProgressTblInsert._(\n'));
+    // Language versions before 3.13 reject a trailing comma there.
+    expect(code, isNot(matches(RegExp(r'_json,\s*\)'))));
+  });
+
   test('range columns parse their literal and render it back', () {
     final code = _normalize(generateDartCode(hostileSchema));
     final compact = code.replaceAll(' ', '');

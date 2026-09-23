@@ -59,7 +59,12 @@ path or `--output -` to print the code. The types reflect the current state
 of the database: with `--local` the SQL in your `supabase/` directory stays
 the single source of truth, since the CLI applies your migrations to the
 local database and this tool generates from the result, while the other
-modes generate from whatever that database currently contains.
+modes generate from whatever that database currently contains. The code is
+formatted with the `dart format` of the SDK running the tool, for the language
+version of the project it is written into (the lower bound of the
+`environment.sdk` constraint of the nearest `pubspec.yaml`), so `dart format`
+in that project leaves it unchanged; with `--output -` the project of the
+current directory decides.
 
 `--linked` and `--project-ref` reach the database through the Management API
 with your `supabase login` credentials, so no database password is needed;

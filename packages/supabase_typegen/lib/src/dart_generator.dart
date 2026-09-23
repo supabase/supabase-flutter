@@ -1,6 +1,9 @@
 import 'package:dart_style/dart_style.dart';
+import 'package:pub_semver/pub_semver.dart';
 
 import 'identifiers.dart';
+import 'language_version_io.dart';
+import 'sdk_formatter_io.dart';
 import 'schema_description.dart';
 import 'version.dart';
 
@@ -15,6 +18,11 @@ class _Binding {
   final ColumnTypeKind? boundKind;
 }
 
+/// The lowest language version the generated code is valid for: the value
+/// types omit unset columns with null-aware map elements, which need Dart
+/// 3.8.
+final minimumLanguageVersion = Version(3, 8, 0);
+
 /// Generates a Dart source file with typed table definitions, row extension
 /// types, insert and update value types, column tokens and Postgres enums for
 /// the schemas of [database].
@@ -28,10 +36,22 @@ class _Binding {
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestRange`,
 /// `PostgrestToOneRelation`, `PostgrestToManyRelation` and `postgrestBytea`).
+///
+/// The code is formatted for [languageVersion], so it uses no syntax a
+/// project on that language version rejects; pass the version
+/// [packageLanguageVersion] finds for the project the file is written into.
+/// It defaults to, and is never lower than, [minimumLanguageVersion]. To
+/// match the formatter of a project exactly, pass the result through
+/// [formatWithSdk] as well.
 String generateDartCode(
   DatabaseDescription database, {
   String importUri = 'package:postgrest/postgrest.dart',
+  Version? languageVersion,
 }) {
+  final formatVersion =
+      languageVersion == null || languageVersion < minimumLanguageVersion
+      ? minimumLanguageVersion
+      : languageVersion;
   final usesDateColumns = database.tables.any(
     (table) => table.columns.any(
       (column) =>
@@ -118,7 +138,7 @@ String generateDartCode(
   }
 
   return DartFormatter(
-    languageVersion: DartFormatter.latestLanguageVersion,
+    languageVersion: formatVersion,
   ).format(buffer.toString());
 }
 

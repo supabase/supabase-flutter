@@ -9,7 +9,7 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 /// package's own `dart analyze` run proves the generated code stays valid,
 /// not merely parseable, for schemas like these.
 const DatabaseDescription hostileSchema = DatabaseDescription(
-  schemaNames: ['evil\nmultiline "schema" name', 'public'],
+  schemaNames: ['evil\nmultiline "schema" name', 'private', 'public'],
   tables: [
     TableDescription(
       schema: 'public',
@@ -162,6 +162,31 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           name: 'id',
           postgresFormat: 'int8',
           typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
+    // A schema-qualified name long enough that the formatter has to split
+    // the representation clause of every extension type generated for it.
+    TableDescription(
+      schema: 'private',
+      name: 'achievement_item_progress_tbl',
+      primaryKey: ['id'],
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: true,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'name',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
           isRequired: true,
           hasDefault: false,
           isNullable: false,
