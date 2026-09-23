@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:pub_semver/pub_semver.dart';
 import 'package:supabase_typegen/introspection.dart';
 import 'package:supabase_typegen/supabase_typegen.dart';
 
@@ -192,10 +193,48 @@ Future<int> _run(List<String> arguments) async {
     }
   }
 
-  final generatedInto = _write(
-    output,
-    generateDartCode(database, importUri: options.option('import')!),
+  // Formatted by the formatter of the running SDK for the language version
+  // of the project the file lands in, so `dart format` there leaves it
+  // unchanged.
+  final Version languageVersion;
+  try {
+    languageVersion =
+        packageLanguageVersion(
+          startDirectory: output == '-'
+              ? Directory.current
+              : File(output).parent,
+        ) ??
+        minimumLanguageVersion;
+  } on FormatException catch (error) {
+    stderr.writeln(error.message);
+    return 78;
+  }
+  if (languageVersion < minimumLanguageVersion) {
+    stderr.writeln(
+      'The project is on Dart $languageVersion, but the generated code needs '
+      'Dart $minimumLanguageVersion or newer. Raise the lower bound of '
+      'environment.sdk in its pubspec.yaml.',
+    );
+    return 78;
+  }
+  final code = generateDartCode(
+    database,
+    importUri: options.option('import')!,
+    languageVersion: languageVersion,
   );
+  final formatted = await formatWithSdk(
+    code,
+    languageVersion,
+    path: output == '-' ? null : output,
+  );
+  if (formatted == null) {
+    stderr.writeln(
+      'Could not run `dart format` of the Dart SDK; the code is formatted '
+      'with the dart_style package of this tool instead.',
+    );
+  }
+
+  final generatedInto = _write(output, formatted ?? code);
 
   final emittedTables = database.tables
       .where((table) => table.columns.isNotEmpty)

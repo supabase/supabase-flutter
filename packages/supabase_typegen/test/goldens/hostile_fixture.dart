@@ -2,14 +2,15 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 
 /// A schema built from valid but pathological database names: identifiers
 /// that shadow core and imported types, comments and values carrying every
-/// line terminator and Dart string metacharacter, and array element kinds
-/// with dedicated conversions.
+/// line terminator and Dart string metacharacter, array element kinds with
+/// dedicated conversions, and pgvector columns, which the fixture database
+/// cannot load.
 ///
 /// The golden generated from it, `hostile_schema.dart`, is checked in so the
 /// package's own `dart analyze` run proves the generated code stays valid,
 /// not merely parseable, for schemas like these.
 const DatabaseDescription hostileSchema = DatabaseDescription(
-  schemaNames: ['evil\nmultiline "schema" name', 'public'],
+  schemaNames: ['evil\nmultiline "schema" name', 'private', 'public'],
   tables: [
     TableDescription(
       schema: 'public',
@@ -79,6 +80,32 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           postgresFormat: '_bytea',
           typeKind: ColumnTypeKind.array,
           elementTypeKind: ColumnTypeKind.binary,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        // Named like the codec the generated conversions call.
+        ColumnDescription(
+          name: 'postgrest_vector',
+          postgresFormat: 'vector',
+          typeKind: ColumnTypeKind.vector,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'half_embedding',
+          postgresFormat: 'halfvec',
+          typeKind: ColumnTypeKind.vector,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'embeddings',
+          postgresFormat: '_vector',
+          typeKind: ColumnTypeKind.array,
+          elementTypeKind: ColumnTypeKind.vector,
           isRequired: false,
           hasDefault: false,
           isNullable: true,
@@ -162,6 +189,31 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           name: 'id',
           postgresFormat: 'int8',
           typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
+    // A schema-qualified name long enough that the formatter has to split
+    // the representation clause of every extension type generated for it.
+    TableDescription(
+      schema: 'private',
+      name: 'achievement_item_progress_tbl',
+      primaryKey: ['id'],
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: true,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'name',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
           isRequired: true,
           hasDefault: false,
           isNullable: false,

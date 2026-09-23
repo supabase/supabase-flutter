@@ -59,7 +59,12 @@ path or `--output -` to print the code. The types reflect the current state
 of the database: with `--local` the SQL in your `supabase/` directory stays
 the single source of truth, since the CLI applies your migrations to the
 local database and this tool generates from the result, while the other
-modes generate from whatever that database currently contains.
+modes generate from whatever that database currently contains. The code is
+formatted with the `dart format` of the SDK running the tool, for the language
+version of the project it is written into (the lower bound of the
+`environment.sdk` constraint of the nearest `pubspec.yaml`), so `dart format`
+in that project leaves it unchanged; with `--output -` the project of the
+current directory decides.
 
 `--linked` and `--project-ref` reach the database through the Management API
 with your `supabase login` credentials, so no database password is needed;
@@ -144,16 +149,20 @@ final archived = await client
   nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; arrays containing SQL NULL
-  elements throw when the element is read. Enum, date, timestamp, range and
-  `bytea` array elements stay in their wire representation (`List<String>`);
-  the Dart enum for enum array elements is still generated for manual
-  conversion, and `postgrestBytea` decodes `bytea` elements.
+  elements throw when the element is read. Enum, date, timestamp, range,
+  `bytea` and pgvector array elements stay in their wire representation
+  (`List<String>`); the Dart enum for enum array elements is still generated
+  for manual conversion, `postgrestBytea` decodes `bytea` elements and
+  `postgrestVector` decodes pgvector elements.
 - `timestamptz` values are written back in UTC, naive `timestamp` values as
   local wall time, and `date` values date-only, so calendar dates never
   shift with the client timezone.
 - `bytea` columns map to `Uint8List` and are written back as hex literals,
   the format Postgres emits by default; the escape output format is decoded
   as well.
+- pgvector `vector` and `halfvec` columns map to `List<double>`, carried as
+  the `[0.1,0.2]` literal PostgREST sends, and their column tokens compare
+  against vector literals. `sparsevec` columns stay `Object?`.
 - Foreign keys into another schema get no relation member, since PostgREST
   only embeds tables of the schema a request addresses. The foreign key
   itself is still described, so the column is typed like any other.

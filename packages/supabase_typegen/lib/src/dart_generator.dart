@@ -1,6 +1,9 @@
 import 'package:dart_style/dart_style.dart';
+import 'package:pub_semver/pub_semver.dart';
 
 import 'identifiers.dart';
+import 'language_version_io.dart';
+import 'sdk_formatter_io.dart';
 import 'schema_description.dart';
 import 'version.dart';
 
@@ -15,6 +18,11 @@ class _Binding {
   final ColumnTypeKind? boundKind;
 }
 
+/// The lowest language version the generated code is valid for: the value
+/// types omit unset columns with null-aware map elements, which need Dart
+/// 3.8.
+final minimumLanguageVersion = Version(3, 8, 0);
+
 /// Generates a Dart source file with typed table definitions, row extension
 /// types, insert and update value types, column tokens and Postgres enums for
 /// the schemas of [database].
@@ -26,12 +34,26 @@ class _Binding {
 ///
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
-/// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestRange`,
-/// `PostgrestToOneRelation`, `PostgrestToManyRelation` and `postgrestBytea`).
+/// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
+/// `PostgrestNullableVectorColumn`, `PostgrestRange`,
+/// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `postgrestBytea` and
+/// `postgrestVector`).
+///
+/// The code is formatted for [languageVersion], so it uses no syntax a
+/// project on that language version rejects; pass the version
+/// [packageLanguageVersion] finds for the project the file is written into.
+/// It defaults to, and is never lower than, [minimumLanguageVersion]. To
+/// match the formatter of a project exactly, pass the result through
+/// [formatWithSdk] as well.
 String generateDartCode(
   DatabaseDescription database, {
   String importUri = 'package:postgrest/postgrest.dart',
+  Version? languageVersion,
 }) {
+  final formatVersion =
+      languageVersion == null || languageVersion < minimumLanguageVersion
+      ? minimumLanguageVersion
+      : languageVersion;
   final usesDateColumns = database.tables.any(
     (table) => table.columns.any(
       (column) =>
@@ -118,7 +140,7 @@ String generateDartCode(
   }
 
   return DartFormatter(
-    languageVersion: DartFormatter.latestLanguageVersion,
+    languageVersion: formatVersion,
   ).format(buffer.toString());
 }
 
@@ -154,6 +176,8 @@ class _TypeNameRegistry {
     'PostgrestTable',
     'PostgrestColumn',
     'PostgrestNullableColumn',
+    'PostgrestVectorColumn',
+    'PostgrestNullableVectorColumn',
     'PostgrestRange',
     'PostgrestRelation',
     'PostgrestToOneRelation',
@@ -268,10 +292,17 @@ class _TableMembers {
     final columns = [for (final column in table.columns) column.name];
     // The row getters and the value constructor parameters share their
     // names, and both are in scope where the generated conversions call
-    // `postgrestBytea`, so a column of that name may not claim it.
+    // the codecs, so a column of such a name may not claim it.
     final rowMembers = _uniqueMemberNames(
       columns,
-      reserved: {rowType, ?insertType, ?updateType, 'toJson', 'postgrestBytea'},
+      reserved: {
+        rowType,
+        ?insertType,
+        ?updateType,
+        'toJson',
+        'postgrestBytea',
+        'postgrestVector',
+      },
     );
     return _TableMembers(
       rowMembers: rowMembers,
@@ -667,13 +698,16 @@ void _writeNamespace(
     ..writeln();
   for (final column in table.columns) {
     final binding = bindings[column.name]!;
-    final columnType = column.isNullable
-        ? 'PostgrestNullableColumn'
-        : 'PostgrestColumn';
+    final columnType = switch ((binding.kind, column.isNullable)) {
+      (ColumnTypeKind.vector, true) =>
+        'PostgrestNullableVectorColumn<$rowType>',
+      (ColumnTypeKind.vector, false) => 'PostgrestVectorColumn<$rowType>',
+      (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
+      (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
+    };
     buffer.writeln(
       '  static const ${columnNames[column.name]} = '
-      '$columnType<$rowType, ${binding.dartType}>'
-      '(${_stringLiteral(column.name)});',
+      '$columnType(${_stringLiteral(column.name)});',
     );
   }
   for (final (index, relation) in relations.indexed) {
@@ -725,6 +759,10 @@ _Binding _bindingFor(
   ),
   ColumnTypeKind.text => const _Binding('String', ColumnTypeKind.text),
   ColumnTypeKind.binary => const _Binding('Uint8List', ColumnTypeKind.binary),
+  ColumnTypeKind.vector => const _Binding(
+    'List<double>',
+    ColumnTypeKind.vector,
+  ),
   ColumnTypeKind.range => _Binding(
     'PostgrestRange<${_boundDartType(column.boundTypeKind)}>',
     ColumnTypeKind.range,
@@ -767,6 +805,7 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
   ColumnTypeKind.binary ||
+  ColumnTypeKind.vector ||
   ColumnTypeKind.json ||
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
@@ -786,6 +825,7 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
   ColumnTypeKind.binary ||
+  ColumnTypeKind.vector ||
   ColumnTypeKind.json ||
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
@@ -800,10 +840,11 @@ String _elementDartType(ColumnTypeKind? elementTypeKind) =>
       ColumnTypeKind.floating => 'double',
       ColumnTypeKind.numeric => 'num',
       ColumnTypeKind.boolean => 'bool',
-      // Temporal, enum, range and binary elements stay in their wire
+      // Temporal, enum, range, binary and vector elements stay in their wire
       // representation, a documented limitation of array columns.
       ColumnTypeKind.text ||
       ColumnTypeKind.binary ||
+      ColumnTypeKind.vector ||
       ColumnTypeKind.date ||
       ColumnTypeKind.timestamp ||
       ColumnTypeKind.timestampWithTimeZone ||
@@ -864,6 +905,10 @@ String _readExpression(ColumnDescription column, _Binding binding) {
       nullable
           ? _nullableSwitch(access, 'postgrestBytea.decode(value as String)')
           : 'postgrestBytea.decode($access as String)',
+    ColumnTypeKind.vector =>
+      nullable
+          ? _nullableSwitch(access, 'postgrestVector.decode(value as String)')
+          : 'postgrestVector.decode($access as String)',
     ColumnTypeKind.range =>
       nullable
           ? _nullableSwitch(
@@ -903,6 +948,11 @@ String _writeExpression(
           ? 'switch ($parameterName) '
                 '{ null => null, final value => postgrestBytea.encode(value) }'
           : 'postgrestBytea.encode($parameterName)',
+    ColumnTypeKind.vector =>
+      nullable
+          ? 'switch ($parameterName) '
+                '{ null => null, final value => postgrestVector.encode(value) }'
+          : 'postgrestVector.encode($parameterName)',
     ColumnTypeKind.range => switch (binding.boundKind) {
       ColumnTypeKind.date => '$access.render(_dateString)',
       ColumnTypeKind.timestamp =>
@@ -915,6 +965,7 @@ String _writeExpression(
       ColumnTypeKind.boolean ||
       ColumnTypeKind.text ||
       ColumnTypeKind.binary ||
+      ColumnTypeKind.vector ||
       ColumnTypeKind.json ||
       ColumnTypeKind.enumType ||
       ColumnTypeKind.array ||

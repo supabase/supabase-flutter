@@ -61,6 +61,15 @@ void main() {
     );
   });
 
+  test('split representation clauses carry no trailing comma', () {
+    final code = generateDartCode(hostileSchema);
+
+    // The name is long enough that the formatter has to split the clause.
+    expect(code, contains('PrivateAchievementItemProgressTblInsert._(\n'));
+    // Language versions before 3.13 reject a trailing comma there.
+    expect(code, isNot(matches(RegExp(r'_json,\s*\)'))));
+  });
+
   test('range columns parse their literal and render it back', () {
     final code = _normalize(generateDartCode(hostileSchema));
     final compact = code.replaceAll(' ', '');
@@ -203,6 +212,53 @@ void main() {
     );
     // Array elements stay in their wire representation.
     expect(compact, contains("List<String>?getblobs=>"));
+  });
+
+  test('vector columns read and write through the vector codec', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableVectorColumn<PostgrestTableRow>('half_embedding'",
+      ),
+    );
+    expect(
+      compact,
+      contains("PostgrestVectorColumn<PostgrestTableRow>('postgrest_vector'"),
+    );
+    expect(
+      compact,
+      contains(
+        "List<double>?gethalfEmbedding=>switch(_json['half_embedding']){"
+        "null=>null,finalObjectvalue=>postgrestVector.decode(valueasString),};",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "'half_embedding':?switch(halfEmbedding){null=>null,"
+        "finalvalue=>postgrestVector.encode(value),},",
+      ),
+    );
+    // A column named like the codec cannot shadow it in the conversions.
+    expect(
+      compact,
+      contains(
+        "List<double>getpostgrestVector\$=>"
+        "postgrestVector.decode(_json['postgrest_vector']asString);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "'postgrest_vector':postgrestVector.encode(postgrestVector\$),",
+      ),
+    );
+    // Array elements stay in their wire representation.
+    expect(compact, contains('List<String>?getembeddings=>'));
   });
 
   test('the typed_data import is only emitted for bytea columns', () {

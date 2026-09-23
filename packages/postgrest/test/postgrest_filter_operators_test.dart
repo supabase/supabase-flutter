@@ -22,6 +22,9 @@ class Posts {
   );
   static const search = PostgrestColumn<Post, Object>('search');
   static const cover = PostgrestColumn<Post, Uint8List>('cover');
+  static const samples = PostgrestColumn<Post, List<double>>('samples');
+  static const embedding = PostgrestVectorColumn<Post>('embedding');
+  static const draft = PostgrestNullableVectorColumn<Post>('draft');
 }
 
 String rendered(PostgrestFilter<Post> filter) => [
@@ -281,6 +284,39 @@ void main() {
         rendered(Posts.cover.eq(bytes) | Posts.id.eq(1)),
         r'or=(cover.eq."\\x4869",id.eq.1)',
       );
+    });
+  });
+  group('vector', () {
+    test('renders a list as a vector literal, not an array', () {
+      expect(
+        rendered(Posts.embedding.eq([0.5, -2.25])),
+        'embedding=eq.[0.5,-2.25]',
+      );
+      expect(rendered(Posts.draft.neq([0.5])), 'draft=neq.[0.5]');
+      expect(
+        rendered(Posts.samples.eq([0.5, -2.25])),
+        'samples=eq.{0.5,-2.25}',
+      );
+    });
+
+    test('quotes the literal where the grammar reserves the comma', () {
+      expect(
+        rendered(
+          Posts.embedding.inFilter([
+            [0.5, -2.25],
+            [0.75],
+          ]),
+        ),
+        'embedding=in.("[0.5,-2.25]",[0.75])',
+      );
+      expect(
+        rendered(Posts.embedding.eq([0.5, -2.25]) | Posts.id.eq(1)),
+        'or=(embedding.eq."[0.5,-2.25]",id.eq.1)',
+      );
+    });
+
+    test('a nullable vector column still tests for NULL', () {
+      expect(rendered(Posts.draft.isNull()), 'draft=is.null');
     });
   });
 }
