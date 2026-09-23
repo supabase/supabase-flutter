@@ -7,8 +7,23 @@ void main() {
       expect(postgrestVector.encode([0.5, -2.25, 1e-7]), '[0.5,-2.25,1e-7]');
     });
 
-    test('an empty list is the empty literal', () {
-      expect(postgrestVector.encode([]), '[]');
+    test('rejects an empty list', () {
+      expect(() => postgrestVector.encode([]), throwsArgumentError);
+    });
+
+    test('rejects non-finite elements', () {
+      expect(
+        () => postgrestVector.encode([0.5, double.nan]),
+        throwsArgumentError,
+      );
+      expect(
+        () => postgrestVector.encode([double.infinity]),
+        throwsArgumentError,
+      );
+      expect(
+        () => postgrestVector.encode([double.negativeInfinity]),
+        throwsArgumentError,
+      );
     });
   });
 
@@ -28,8 +43,18 @@ void main() {
       expect(postgrestVector.decode(' [ 0.5 , -2.25 ] '), [0.5, -2.25]);
     });
 
-    test('reads the empty literal', () {
-      expect(postgrestVector.decode('[]'), isEmpty);
+    test('rejects the empty literal', () {
+      expect(() => postgrestVector.decode('[]'), throwsFormatException);
+      expect(() => postgrestVector.decode('[ ]'), throwsFormatException);
+    });
+
+    test('rejects non-finite elements', () {
+      expect(() => postgrestVector.decode('[0.5,NaN]'), throwsFormatException);
+      expect(() => postgrestVector.decode('[Infinity]'), throwsFormatException);
+      expect(
+        () => postgrestVector.decode('[-Infinity]'),
+        throwsFormatException,
+      );
     });
 
     test('rejects text that is not a vector literal', () {
