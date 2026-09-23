@@ -4,10 +4,10 @@ import 'package:test/test.dart';
 
 import 'utils.dart';
 
-const _sampledTraceparent =
-    '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
-const _unsampledTraceparent =
-    '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00';
+const _traceId = '0af7651916cd43dd8448eb211c80319c';
+const _spanId = 'b7ad6b7169203331';
+const _sampledTraceparent = '00-$_traceId-$_spanId-01';
+const _unsampledTraceparent = '00-$_traceId-$_spanId-00';
 const _supabaseUrl = 'https://project.supabase.co';
 
 void main() {
@@ -28,6 +28,12 @@ void main() {
 
   const context = TraceContext(
     traceparent: _sampledTraceparent,
+    tracestate: 'vendor=value',
+    baggage: 'key=value',
+  );
+
+  const unsampledContext = TraceContext(
+    traceparent: _unsampledTraceparent,
     tracestate: 'vendor=value',
     baggage: 'key=value',
   );
@@ -87,27 +93,39 @@ void main() {
   });
 
   test(
-    'skips unsampled traces when respecting the sampling decision',
+    'keeps traceparent but withholds tracestate and baggage when '
+    'respecting the sampling decision of an unsampled trace',
     () async {
       await client(
-        optionsWith(
-          () => const TraceContext(traceparent: _unsampledTraceparent),
-        ),
+        optionsWith(() => unsampledContext),
       ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-      expect(captured().headers.containsKey('traceparent'), isFalse);
+      expect(captured().headers['traceparent'], _unsampledTraceparent);
+      expect(captured().headers.containsKey('tracestate'), isFalse);
+      expect(captured().headers.containsKey('baggage'), isFalse);
     },
   );
 
-  test('propagates unsampled traces when sampling is not respected', () async {
+  test(
+    'sends the full unsampled context when sampling is not respected',
+    () async {
+      await client(
+        optionsWith(() => unsampledContext, respectSamplingDecision: false),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      expect(captured().headers['traceparent'], _unsampledTraceparent);
+      expect(captured().headers['tracestate'], 'vendor=value');
+      expect(captured().headers['baggage'], 'key=value');
+    },
+  );
+
+  test('does not inject when the context carries no traceparent', () async {
     await client(
-      optionsWith(
-        () => const TraceContext(traceparent: _unsampledTraceparent),
-        respectSamplingDecision: false,
-      ),
+      optionsWith(() => const TraceContext(baggage: 'key=value')),
     ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
-    expect(captured().headers['traceparent'], _unsampledTraceparent);
+    expect(captured().headers.containsKey('traceparent'), isFalse);
+    expect(captured().headers.containsKey('baggage'), isFalse);
   });
 
   test('propagates malformed traceparent without suppressing it', () async {

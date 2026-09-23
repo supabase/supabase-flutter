@@ -42,13 +42,15 @@ class TracePropagationOptions {
   /// Whether trace propagation is enabled. Defaults to `false`.
   final bool enabled;
 
-  /// Whether to skip propagation when the upstream trace is not sampled, that
-  /// is when the sampled flag is `0` in the `traceparent` header.
+  /// Whether an unsampled trace, one whose `traceparent` carries a sampled
+  /// flag of `0`, withholds [TraceContext.tracestate] and
+  /// [TraceContext.baggage].
   ///
-  /// Set to `false` to always propagate regardless of the sampling decision,
-  /// which is useful when you want every Supabase request tagged with a trace
-  /// id for log correlation even if the trace itself is not exported. Defaults
-  /// to `true`.
+  /// [TraceContext.traceparent] is sent either way, keeping its flag, so the
+  /// Supabase logs always get a trace id to correlate on while nothing
+  /// downstream records the request as sampled. Set to `false` to send the
+  /// vendor and application data channels on unsampled traces as well.
+  /// Defaults to `true`.
   final bool respectSamplingDecision;
 
   /// Supplies the current trace context for each outgoing request.
