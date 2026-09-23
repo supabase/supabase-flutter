@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
@@ -178,13 +180,32 @@ void main() {
       final eightUtc = PostgrestTime(hour: 8, offset: Duration.zero);
       final tenUtc = PostgrestTime(hour: 10, offset: Duration.zero);
 
-      expect(nineAtPlusOne.compareTo(eightUtc), 0);
+      expect(nineAtPlusOne.compareTo(eightUtc), greaterThan(0));
+      expect(eightUtc.compareTo(nineAtPlusOne), lessThan(0));
       expect(nineAtPlusOne.compareTo(tenUtc), lessThan(0));
       expect(tenUtc.compareTo(nineAtPlusOne), greaterThan(0));
       expect(
         PostgrestTime(hour: 9, minute: 30).compareTo(PostgrestTime(hour: 9)),
         greaterThan(0),
       );
+    });
+
+    test('a plain time sorts before the same instant with an offset', () {
+      final plain = PostgrestTime(hour: 9);
+      final utc = PostgrestTime(hour: 9, offset: Duration.zero);
+
+      expect(plain.compareTo(utc), lessThan(0));
+      expect(utc.compareTo(plain), greaterThan(0));
+      expect(plain.compareTo(PostgrestTime(hour: 9)), 0);
+    });
+
+    test('distinct times never compare equal', () {
+      final times = SplayTreeSet<PostgrestTime>()
+        ..add(PostgrestTime(hour: 9, offset: const Duration(hours: 1)))
+        ..add(PostgrestTime(hour: 8, offset: Duration.zero))
+        ..add(PostgrestTime(hour: 8));
+
+      expect(times.length, 3);
     });
 
     test('equality takes the offset into account', () {

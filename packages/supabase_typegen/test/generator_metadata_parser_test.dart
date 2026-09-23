@@ -601,7 +601,7 @@ void main() {
       expect(
         parsed.tables.single.columns.single.typeKind,
         kind,
-        reason: '$format should map to $kind',
+        reason: '$format should map to ${kind.name}',
       );
     }
   });

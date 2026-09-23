@@ -58,12 +58,12 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
   /// date that does not exist such as `2023-02-29`.
   factory PostgrestDate.parse(String literal) {
     final text = literal.trim();
-    switch (text.toLowerCase()) {
-      case 'infinity' || '+infinity':
-        return infinity;
-      case '-infinity':
-        return negativeInfinity;
-    }
+    final infinite = switch (text.toLowerCase()) {
+      'infinity' || '+infinity' => infinity,
+      '-infinity' => negativeInfinity,
+      _ => null,
+    };
+    if (infinite != null) return infinite;
     final match = _datePattern.firstMatch(text);
     if (match == null) throw FormatException('Not a date literal', literal);
     final year = int.parse(match[1]!);
@@ -113,7 +113,9 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
 
   /// Midnight of this date, in the local timezone or, with [isUtc], in UTC.
   ///
-  /// Throws a [StateError] for [infinity] and [negativeInfinity].
+  /// Throws a [StateError] for [infinity] and [negativeInfinity], and an
+  /// [ArgumentError] for a date outside the range [DateTime] can represent,
+  /// which ends long before the year 5874897 Postgres allows.
   DateTime toDateTime({bool isUtc = false}) =>
       isUtc ? DateTime.utc(year, month, day) : DateTime(year, month, day);
 

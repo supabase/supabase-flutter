@@ -187,9 +187,35 @@ void main() {
         const PostgrestInterval(years: 1, months: 2),
       );
       expect(PostgrestInterval.parse('3'), const PostgrestInterval(days: 3));
+      expect(PostgrestInterval.parse('0'), PostgrestInterval.zero);
       expect(
         PostgrestInterval.parse('4:05'),
         const PostgrestInterval(hours: 4, minutes: 5),
+      );
+    });
+
+    test('a single leading sign in the sql_standard style covers every '
+        'field', () {
+      expect(
+        PostgrestInterval.parse('-3 4:05:06'),
+        const PostgrestInterval(days: -3, hours: -4, minutes: -5, seconds: -6),
+      );
+      expect(
+        PostgrestInterval.parse('-1-2'),
+        const PostgrestInterval(years: -1, months: -2),
+      );
+      expect(
+        PostgrestInterval.parse('-4:05:06.5'),
+        const PostgrestInterval(
+          hours: -4,
+          minutes: -5,
+          seconds: -6,
+          milliseconds: -500,
+        ),
+      );
+      expect(
+        PostgrestInterval.parse('-3 4:05:06').literal,
+        '-3 days -04:05:06',
       );
     });
 
@@ -239,6 +265,11 @@ void main() {
         '1 day 2',
         'ago',
         '1 mon,2 days',
+        '5 6',
+        '1-2 3-4',
+        '4:05 6:07',
+        'P1YT',
+        '1.5',
       ]) {
         expect(
           () => PostgrestInterval.parse(literal),
@@ -280,6 +311,43 @@ void main() {
       expect(
         const PostgrestInterval(months: -13).toDuration(),
         -const Duration(days: 365 + 30, hours: 6),
+      );
+    });
+  });
+
+  group('ordering', () {
+    test('counts a month as 30 days and a day as 24 hours', () {
+      expect(
+        const PostgrestInterval(months: 1).compareTo(
+          const PostgrestInterval(days: 30),
+        ),
+        0,
+      );
+      expect(
+        const PostgrestInterval(days: 31).compareTo(
+          const PostgrestInterval(months: 1),
+        ),
+        greaterThan(0),
+      );
+      expect(
+        const PostgrestInterval(hours: 23).compareTo(
+          const PostgrestInterval(days: 1),
+        ),
+        lessThan(0),
+      );
+      expect(
+        [
+          const PostgrestInterval(days: 1),
+          const PostgrestInterval(hours: -1),
+          const PostgrestInterval(months: 1),
+          PostgrestInterval.zero,
+        ]..sort(),
+        [
+          const PostgrestInterval(hours: -1),
+          PostgrestInterval.zero,
+          const PostgrestInterval(days: 1),
+          const PostgrestInterval(months: 1),
+        ],
       );
     });
   });

@@ -948,6 +948,7 @@ features:
       - PostgrestInterval.microseconds
       - PostgrestInterval.toDuration
       - PostgrestInterval.literal
+      - PostgrestInterval.compareTo
       - PostgrestInterval.toString
       - PostgrestInterval.==
       - PostgrestInterval.hashCode

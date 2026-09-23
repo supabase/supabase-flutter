@@ -138,7 +138,10 @@ void main() {
         PostgrestDate(2024, 3, 1),
         PostgrestDate.infinity,
       ]);
-      expect(PostgrestDate.infinity.compareTo(PostgrestDate.infinity), 0);
+      expect(
+        PostgrestDate.infinity.compareTo(PostgrestDate.parse('infinity')),
+        0,
+      );
     });
 
     test('equal dates hash alike', () {

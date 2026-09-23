@@ -20,7 +20,7 @@ part of 'postgrest_typed_builder.dart';
 /// `postgres_verbose`, `sql_standard` and `iso_8601`; [literal] renders the
 /// `postgres` style, which Postgres accepts whatever its `IntervalStyle` is.
 @experimental
-final class PostgrestInterval {
+final class PostgrestInterval implements Comparable<PostgrestInterval> {
   /// The interval of the given components, folded into [months], [days] and
   /// [microseconds]: [years] count as 12 months, [weeks] as 7 days, and the
   /// time components add up into microseconds.
@@ -50,9 +50,10 @@ final class PostgrestInterval {
   /// Parses an interval literal in any of the output styles of Postgres:
   /// `1 year 2 mons 3 days 04:05:06.789` (`postgres`),
   /// `@ 1 year 2 mons 3 days 4 hours 5 mins 6.789 secs` and `@ 1 day ago`
-  /// (`postgres_verbose`), `+1-2 +3 +4:05:06.789` (`sql_standard`) and
-  /// `P1Y2M3DT4H5M6.789S` (`iso_8601`). The unit words may also be spelled
-  /// out, so `3 hours 30 minutes` parses too.
+  /// (`postgres_verbose`), `1-2 3 4:05:06.789`, `-3 4:05:06` and
+  /// `+1-2 -3 +4:05:06` (`sql_standard`) and `P1Y2M3DT4H5M6.789S`
+  /// (`iso_8601`). The unit words may also be spelled out, so
+  /// `3 hours 30 minutes` parses too.
   ///
   /// Throws a [FormatException] when [literal] is not an interval.
   factory PostgrestInterval.parse(String literal) {
@@ -67,79 +68,13 @@ final class PostgrestInterval {
       text = text.substring(0, text.length - 4).trim();
     }
 
-    var months = 0;
-    var days = 0;
-    var microseconds = 0;
-    var sawUnit = false;
     final tokens = text.split(RegExp(r'\s+'));
-    for (var index = 0; index < tokens.length; index++) {
-      final token = tokens[index];
-      final time = _timeToken.firstMatch(token);
-      if (time != null) {
-        final sign = time[1] == '-' ? -1 : 1;
-        microseconds +=
-            sign *
-            (int.parse(time[2]!) * Duration.microsecondsPerHour +
-                int.parse(time[3]!) * Duration.microsecondsPerMinute +
-                int.parse(time[4] ?? '0') * Duration.microsecondsPerSecond +
-                _fractionMicroseconds(time[5]));
-        continue;
-      }
-      final yearMonth = _yearMonthToken.firstMatch(token);
-      if (yearMonth != null) {
-        final sign = yearMonth[1] == '-' ? -1 : 1;
-        months +=
-            sign * (int.parse(yearMonth[2]!) * 12 + int.parse(yearMonth[3]!));
-        continue;
-      }
-      final number = _numberToken.firstMatch(token);
-      if (number == null) {
-        throw FormatException('Not an interval literal', literal);
-      }
-      final sign = number[1] == '-' ? -1 : 1;
-      final whole = int.parse(number[2]!);
-      final fraction = number[3];
-      final unit = index + 1 < tokens.length
-          ? _units[tokens[index + 1].toLowerCase()]
-          : null;
-      if (unit == null) {
-        // The `sql_standard` style writes days as a bare number, and it
-        // never mixes with unit words.
-        if (fraction != null || sawUnit) {
-          throw FormatException('Not an interval literal', literal);
-        }
-        days += sign * whole;
-        continue;
-      }
-      index++;
-      sawUnit = true;
-      switch (unit) {
-        case _Unit.years:
-          months += sign * whole * 12;
-        case _Unit.months:
-          months += sign * whole;
-        case _Unit.weeks:
-          days += sign * whole * 7;
-        case _Unit.days:
-          days += sign * whole;
-        case _Unit.hours:
-          microseconds += sign * whole * Duration.microsecondsPerHour;
-        case _Unit.minutes:
-          microseconds += sign * whole * Duration.microsecondsPerMinute;
-        case _Unit.seconds:
-          microseconds +=
-              sign *
-              (whole * Duration.microsecondsPerSecond +
-                  _fractionMicroseconds(fraction));
-        case _Unit.milliseconds:
-          microseconds += sign * whole * Duration.microsecondsPerMillisecond;
-        case _Unit.microseconds:
-          microseconds += sign * whole;
-      }
-      if (fraction != null && unit != _Unit.seconds) {
-        throw FormatException('Not an interval literal', literal);
-      }
-    }
+    final hasUnitWords = tokens.any(
+      (token) => _units.containsKey(token.toLowerCase()),
+    );
+    final (months, days, microseconds) = hasUnitWords
+        ? _parseUnitWords(tokens, literal)
+        : _parseSqlStandard(tokens, literal);
     return PostgrestInterval(
       months: negate ? -months : months,
       days: negate ? -days : days,
@@ -157,7 +92,7 @@ final class PostgrestInterval {
   static final _numberToken = RegExp(r'^([+-])?(\d+)(?:\.(\d+))?$');
   static final _iso8601Pattern = RegExp(
     r'^P(?:(-?\d+)Y)?(?:(-?\d+)M)?(?:(-?\d+)W)?(?:(-?\d+)D)?'
-    r'(?:T(?:(-?\d+)H)?(?:(-?\d+)M)?(?:(-?\d+)(?:\.(\d+))?S)?)?$',
+    r'(?:T(?=.)(?:(-?\d+)H)?(?:(-?\d+)M)?(?:(-?\d+)(?:\.(\d+))?S)?)?$',
     caseSensitive: false,
   );
 
@@ -236,34 +171,25 @@ final class PostgrestInterval {
     addPart(months.remainder(12), 'mon');
     addPart(days, 'day');
     if (parts.isEmpty || microseconds != 0) {
-      var remaining = microseconds.abs();
-      final hours = remaining ~/ Duration.microsecondsPerHour;
-      remaining = remaining.remainder(Duration.microsecondsPerHour);
-      final minutes = remaining ~/ Duration.microsecondsPerMinute;
-      remaining = remaining.remainder(Duration.microsecondsPerMinute);
-      final seconds = remaining ~/ Duration.microsecondsPerSecond;
-      final fraction = remaining.remainder(Duration.microsecondsPerSecond);
       final sign = microseconds < 0
           ? '-'
           : previousNegative
           ? '+'
           : '';
-      final time = StringBuffer()
-        ..write(sign)
-        ..write(_twoDigits(hours))
-        ..write(':')
-        ..write(_twoDigits(minutes))
-        ..write(':')
-        ..write(_twoDigits(seconds));
-      if (fraction != 0) {
-        time
-          ..write('.')
-          ..write(_trimZeros(fraction.toString().padLeft(6, '0')));
-      }
-      parts.add(time.toString());
+      parts.add('$sign${_clockTime(microseconds.abs())}');
     }
     return parts.join(' ');
   }
+
+  /// Orders intervals the way Postgres compares them: every month counts as
+  /// 30 days and every day as 24 hours, so `30 days` and `1 mon` compare
+  /// equal without being equal.
+  @override
+  int compareTo(PostgrestInterval other) =>
+      _comparisonValue.compareTo(other._comparisonValue);
+
+  int get _comparisonValue =>
+      (months * 30 + days) * Duration.microsecondsPerDay + microseconds;
 
   @override
   String toString() => literal;
@@ -278,17 +204,145 @@ final class PostgrestInterval {
   @override
   int get hashCode => Object.hash(months, days, microseconds);
 
+  /// Parses the `postgres` and `postgres_verbose` styles, whose fields are
+  /// `number unit` pairs and an optional `HH:MM:SS` clock time.
+  static (int, int, int) _parseUnitWords(List<String> tokens, String literal) {
+    var months = 0;
+    var days = 0;
+    var microseconds = 0;
+    for (var index = 0; index < tokens.length; index++) {
+      final token = tokens[index];
+      final time = _timeToken.firstMatch(token);
+      if (time != null) {
+        microseconds += _clockMicroseconds(time);
+        continue;
+      }
+      final number = _numberToken.firstMatch(token);
+      final unit = index + 1 < tokens.length
+          ? _units[tokens[index + 1].toLowerCase()]
+          : null;
+      if (number == null || unit == null) {
+        throw FormatException('Not an interval literal', literal);
+      }
+      index++;
+      final sign = number[1] == '-' ? -1 : 1;
+      final whole = int.parse(number[2]!);
+      final fraction = number[3];
+      if (fraction != null && unit != _Unit.seconds) {
+        throw FormatException('Not an interval literal', literal);
+      }
+      switch (unit) {
+        case _Unit.years:
+          months += sign * whole * 12;
+        case _Unit.months:
+          months += sign * whole;
+        case _Unit.weeks:
+          days += sign * whole * 7;
+        case _Unit.days:
+          days += sign * whole;
+        case _Unit.hours:
+          microseconds += sign * whole * Duration.microsecondsPerHour;
+        case _Unit.minutes:
+          microseconds += sign * whole * Duration.microsecondsPerMinute;
+        case _Unit.seconds:
+          microseconds +=
+              sign *
+              (whole * Duration.microsecondsPerSecond +
+                  _fractionMicroseconds(fraction));
+        case _Unit.milliseconds:
+          microseconds += sign * whole * Duration.microsecondsPerMillisecond;
+        case _Unit.microseconds:
+          microseconds += sign * whole;
+      }
+    }
+    return (months, days, microseconds);
+  }
+
+  /// Parses the `sql_standard` style: at most one `years-months`, one bare
+  /// `days` and one `HH:MM:SS` field. Postgres writes one leading sign for
+  /// the whole value when every field has the same sign, and signs every
+  /// field otherwise.
+  static (int, int, int) _parseSqlStandard(
+    List<String> tokens,
+    String literal,
+  ) {
+    var months = 0;
+    var days = 0;
+    var microseconds = 0;
+    int? yearMonthSign;
+    int? daysSign;
+    int? timeSign;
+    final laterTokensUnsigned = tokens
+        .skip(1)
+        .every((token) => !token.startsWith('-') && !token.startsWith('+'));
+    final sharedSign = laterTokensUnsigned && tokens.first.startsWith('-')
+        ? -1
+        : 1;
+    int signOf(String? explicit) => switch (explicit) {
+      '-' => -1,
+      '+' => 1,
+      _ => sharedSign,
+    };
+
+    for (final token in tokens) {
+      final time = _timeToken.firstMatch(token);
+      final yearMonth = _yearMonthToken.firstMatch(token);
+      final number = _numberToken.firstMatch(token);
+      if (time != null && timeSign == null) {
+        timeSign = signOf(time[1]);
+        microseconds = timeSign * _clockMicroseconds(time, signed: false);
+      } else if (yearMonth != null && yearMonthSign == null) {
+        yearMonthSign = signOf(yearMonth[1]);
+        months =
+            yearMonthSign *
+            (int.parse(yearMonth[2]!) * 12 + int.parse(yearMonth[3]!));
+      } else if (number != null && number[3] == null && daysSign == null) {
+        daysSign = signOf(number[1]);
+        days = daysSign * int.parse(number[2]!);
+      } else {
+        throw FormatException('Not an interval literal', literal);
+      }
+    }
+    return (months, days, microseconds);
+  }
+
+  /// The microseconds of a matched `[+-]HH:MM[:SS[.fff]]` clock time, with
+  /// its own sign applied unless [signed] is `false`.
+  static int _clockMicroseconds(RegExpMatch time, {bool signed = true}) {
+    final sign = signed && time[1] == '-' ? -1 : 1;
+    return sign *
+        (int.parse(time[2]!) * Duration.microsecondsPerHour +
+            int.parse(time[3]!) * Duration.microsecondsPerMinute +
+            int.parse(time[4] ?? '0') * Duration.microsecondsPerSecond +
+            _fractionMicroseconds(time[5]));
+  }
+
+  /// `HH:MM:SS` of a non-negative span of [microseconds], with the fraction
+  /// trimmed of trailing zeros and the hours growing past two digits.
+  static String _clockTime(int microseconds) {
+    final hours = microseconds ~/ Duration.microsecondsPerHour;
+    final minutes =
+        microseconds.remainder(Duration.microsecondsPerHour) ~/
+        Duration.microsecondsPerMinute;
+    final seconds =
+        microseconds.remainder(Duration.microsecondsPerMinute) ~/
+        Duration.microsecondsPerSecond;
+    final fraction = microseconds.remainder(Duration.microsecondsPerSecond);
+    final fractionText = fraction == 0
+        ? ''
+        : '.${_trimZeros(fraction.toString().padLeft(6, '0'))}';
+    return '${_twoDigits(hours)}:${_twoDigits(minutes)}:'
+        '${_twoDigits(seconds)}$fractionText';
+  }
+
   static PostgrestInterval _parseIso8601(String text, String literal) {
     final match = _iso8601Pattern.firstMatch(text);
-    if (match == null || text.length < 3 || text.toUpperCase() == 'PT') {
+    if (match == null ||
+        match.groups([1, 2, 3, 4, 5, 6, 7]).every((group) => group == null)) {
       throw FormatException('Not an interval literal', literal);
     }
     int component(int group) => int.parse(match[group] ?? '0');
-    final seconds = component(7);
-    final fraction = match[8];
-    final fractionMicroseconds =
-        (seconds < 0 || (match[7]?.startsWith('-') ?? false) ? -1 : 1) *
-        _fractionMicroseconds(fraction);
+    final fractionSign = (match[7]?.startsWith('-') ?? false) ? -1 : 1;
     return PostgrestInterval(
       years: component(1),
       months: component(2),
@@ -296,8 +350,8 @@ final class PostgrestInterval {
       days: component(4),
       hours: component(5),
       minutes: component(6),
-      seconds: seconds,
-      microseconds: fractionMicroseconds,
+      seconds: component(7),
+      microseconds: fractionSign * _fractionMicroseconds(match[8]),
     );
   }
 

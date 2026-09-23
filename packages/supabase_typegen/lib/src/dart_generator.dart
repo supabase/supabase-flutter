@@ -810,11 +810,12 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
 
 /// The function that reads one bound of a range literal.
 String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
-  ColumnTypeKind.integer => 'int.parse',
-  ColumnTypeKind.numeric => 'num.parse',
-  ColumnTypeKind.date => 'PostgrestDate.parse',
+  ColumnTypeKind.integer ||
+  ColumnTypeKind.numeric ||
+  ColumnTypeKind.date ||
   ColumnTypeKind.timestamp ||
-  ColumnTypeKind.timestampWithTimeZone => 'DateTime.parse',
+  ColumnTypeKind.timestampWithTimeZone =>
+    '${_boundDartType(boundTypeKind)}.parse',
   ColumnTypeKind.time ||
   ColumnTypeKind.interval ||
   ColumnTypeKind.floating ||

@@ -51,8 +51,11 @@ final class PostgrestRange<Bound extends Object> {
   /// Parses a Postgres range literal such as `[2,25)`, `["2024-01-01
   /// 00:00:00+00",)` or `empty`, reading each bound with [parseBound].
   ///
-  /// A missing bound and an unquoted `infinity` or `-infinity` bound are both
-  /// unbounded, `null`, so [parseBound] never sees them.
+  /// A missing bound is unbounded, `null`, so [parseBound] never sees it. An
+  /// `infinity` or `-infinity` bound is handed to [parseBound] and kept when
+  /// the bound type has a value for it, as [PostgrestDate] and `num` have;
+  /// when [parseBound] rejects it with a [FormatException], as
+  /// `DateTime.parse` and `int.parse` do, the side is unbounded as well.
   ///
   /// Throws a [FormatException] when [literal] is not a range.
   factory PostgrestRange.parse(
@@ -71,8 +74,20 @@ final class PostgrestRange<Bound extends Object> {
     final (lower, upper) = bounds;
     final lowerInclusive = trimmed[0] == '[';
     final upperInclusive = trimmed[trimmed.length - 1] == ']';
-    final lowerBound = lower == null ? null : parseBound(lower);
-    final upperBound = upper == null ? null : parseBound(upper);
+    Bound? side(String? bound) {
+      if (bound == null) return null;
+      if (!_infiniteBounds.contains(bound.toLowerCase())) {
+        return parseBound(bound);
+      }
+      try {
+        return parseBound(bound);
+      } on FormatException {
+        return null;
+      }
+    }
+
+    final lowerBound = side(lower);
+    final upperBound = side(upper);
     return switch ((lowerInclusive, upperInclusive)) {
       (true, false) => PostgrestRange.closedOpen(lowerBound, upperBound),
       (true, true) => PostgrestRange.closed(lowerBound, upperBound),
@@ -135,7 +150,7 @@ const _infiniteBounds = {'infinity', '+infinity', '-infinity'};
 /// Splits the inside of a range literal into its two bounds the way Postgres
 /// reads them: a backslash escapes the next character, a doubled quote inside
 /// a quoted bound is a quote, and a stray `)` or `]` makes the literal
-/// malformed. An empty or infinite unquoted bound is `null`.
+/// malformed. An empty unquoted bound is `null`.
 (String?, String?)? _splitBounds(String inner) {
   final bounds = <String?>[];
   final current = StringBuffer();
@@ -144,10 +159,7 @@ const _infiniteBounds = {'infinity', '+infinity', '-infinity'};
 
   void finishBound() {
     final text = current.toString();
-    final unbounded =
-        !sawQuotes &&
-        (text.isEmpty || _infiniteBounds.contains(text.toLowerCase()));
-    bounds.add(unbounded ? null : text);
+    bounds.add(!sawQuotes && text.isEmpty ? null : text);
     current.clear();
     sawQuotes = false;
   }

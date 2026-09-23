@@ -13,9 +13,10 @@ part of 'postgrest_typed_builder.dart';
 /// when every other component is zero.
 ///
 /// Two times are equal when all their components are, including the
-/// [offset]. [compareTo] orders them by the UTC instant of the day they name,
-/// the way Postgres orders `timetz` values, so `09:00:00+01` sorts together
-/// with `08:00:00+00` while not being equal to it.
+/// [offset]. [compareTo] orders them the way Postgres orders `timetz`
+/// values: by the UTC instant of the day they name, and by [offset] when
+/// those coincide, so `09:00:00+01` sorts right after `08:00:00+00` without
+/// being equal to it.
 @experimental
 final class PostgrestTime implements Comparable<PostgrestTime> {
   /// The time [hour]:[minute]:[second].[microsecond], at the UTC [offset]
@@ -132,39 +133,29 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
   /// The literal Postgres accepts and emits: `09:30:00`, `04:05:06.789` or
   /// `09:30:00+02`.
   String get literal {
-    final buffer = StringBuffer()
-      ..write(_twoDigits(hour))
-      ..write(':')
-      ..write(_twoDigits(minute))
-      ..write(':')
-      ..write(_twoDigits(second));
-    if (microsecond != 0) {
-      buffer
-        ..write('.')
-        ..write(_trimZeros(microsecond.toString().padLeft(6, '0')));
-    }
+    final fraction = microsecond == 0
+        ? ''
+        : '.${_trimZeros(microsecond.toString().padLeft(6, '0'))}';
+    return '${_twoDigits(hour)}:${_twoDigits(minute)}:${_twoDigits(second)}'
+        '$fraction${_offsetText()}';
+  }
+
+  /// The offset the way Postgres prints it: `+02`, `+05:30` or `+05:30:15`,
+  /// empty for a plain `time`.
+  String _offsetText() {
     final offset = this.offset;
-    if (offset != null) {
-      final total = offset.inSeconds.abs();
-      final hours = total ~/ Duration.secondsPerHour;
-      final minutes =
-          total % Duration.secondsPerHour ~/ Duration.secondsPerMinute;
-      final seconds = total % Duration.secondsPerMinute;
-      buffer
-        ..write(offset.isNegative ? '-' : '+')
-        ..write(_twoDigits(hours));
-      if (minutes != 0 || seconds != 0) {
-        buffer
-          ..write(':')
-          ..write(_twoDigits(minutes));
-      }
-      if (seconds != 0) {
-        buffer
-          ..write(':')
-          ..write(_twoDigits(seconds));
-      }
+    if (offset == null) return '';
+    final total = offset.inSeconds.abs();
+    final hours = _twoDigits(total ~/ Duration.secondsPerHour);
+    final minutes =
+        total % Duration.secondsPerHour ~/ Duration.secondsPerMinute;
+    final seconds = total % Duration.secondsPerMinute;
+    final sign = offset.isNegative ? '-' : '+';
+    if (seconds != 0) {
+      return '$sign$hours:${_twoDigits(minutes)}:${_twoDigits(seconds)}';
     }
-    return buffer.toString();
+    if (minutes != 0) return '$sign$hours:${_twoDigits(minutes)}';
+    return '$sign$hours';
   }
 
   /// The microseconds since midnight UTC of the day, which is how Postgres
@@ -177,8 +168,18 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
       (offset?.inMicroseconds ?? 0);
 
   @override
-  int compareTo(PostgrestTime other) =>
-      _utcMicroseconds.compareTo(other._utcMicroseconds);
+  int compareTo(PostgrestTime other) {
+    final byInstant = _utcMicroseconds.compareTo(other._utcMicroseconds);
+    if (byInstant != 0) return byInstant;
+    return switch ((offset, other.offset)) {
+      (null, null) => 0,
+      (null, _) => -1,
+      (_, null) => 1,
+      (final ownOffset?, final otherOffset?) => ownOffset.compareTo(
+        otherOffset,
+      ),
+    };
+  }
 
   @override
   String toString() => literal;
