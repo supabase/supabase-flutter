@@ -3,6 +3,54 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-23
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.7`](#postgrest---v300-dev7)
+ - [`supabase_typegen` - `v0.4.0`](#supabase_typegen---v040)
+
+Packages with other changes:
+
+ - [`supabase` - `v3.0.0-dev.7`](#supabase---v300-dev7)
+ - [`supabase_flutter` - `v3.0.0-dev.7`](#supabase_flutter---v300-dev7)
+ - [`supabase_test` - `v0.4.1`](#supabase_test---v041)
+ - [`supabase_flutter_web_auth` - `v0.1.5`](#supabase_flutter_web_auth---v015)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter` - `v3.0.0-dev.7`
+ - `supabase_test` - `v0.4.1`
+ - `supabase_flutter_web_auth` - `v0.1.5`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.7`
+
+ - **FIX**(postgrest): escape reserved characters in quantified pattern lists ([#1869](https://github.com/supabase/supabase-flutter/issues/1869)). ([8871b84b](https://github.com/supabase/supabase-flutter/commit/8871b84bff342083be1cc788c303f56577e8da2f))
+ - **BREAKING** **FEAT**(typegen): map date, time and interval columns to PostgrestDate, PostgrestTime and PostgrestInterval ([#1875](https://github.com/supabase/supabase-flutter/issues/1875)). ([443190b2](https://github.com/supabase/supabase-flutter/commit/443190b2a0332d09e2eea2cf591d00e89646a1dc))
+ - **BREAKING** **FEAT**(typegen): map pgvector columns to List<double> instead of Object? ([#1873](https://github.com/supabase/supabase-flutter/issues/1873)). ([74a957fd](https://github.com/supabase/supabase-flutter/commit/74a957fdf04968a0e7f9bbc43bdeb9f1b5dbca8a))
+
+#### `supabase_typegen` - `v0.4.0`
+
+ - **FIX**(supabase_typegen): format generated code for language version 3.8 ([#1874](https://github.com/supabase/supabase-flutter/issues/1874)). ([787b43f9](https://github.com/supabase/supabase-flutter/commit/787b43f911720fecad70964fb1c491ec09e26ace))
+ - **BREAKING** **FEAT**(typegen): convert array elements the way their scalar columns are converted ([#1876](https://github.com/supabase/supabase-flutter/issues/1876)). ([727b82cc](https://github.com/supabase/supabase-flutter/commit/727b82ccc9e03a04b168080ffb30e5ad46c318fe))
+ - **BREAKING** **FEAT**(typegen): map date, time and interval columns to PostgrestDate, PostgrestTime and PostgrestInterval ([#1875](https://github.com/supabase/supabase-flutter/issues/1875)). ([443190b2](https://github.com/supabase/supabase-flutter/commit/443190b2a0332d09e2eea2cf591d00e89646a1dc))
+ - **BREAKING** **FEAT**(typegen): map pgvector columns to List<double> instead of Object? ([#1873](https://github.com/supabase/supabase-flutter/issues/1873)). ([74a957fd](https://github.com/supabase/supabase-flutter/commit/74a957fdf04968a0e7f9bbc43bdeb9f1b5dbca8a))
+
+#### `supabase` - `v3.0.0-dev.7`
+
+ - **FIX**(supabase): keep traceparent on unsampled traces ([#1870](https://github.com/supabase/supabase-flutter/issues/1870)). ([dde7a7df](https://github.com/supabase/supabase-flutter/commit/dde7a7dfaff3456c36a48957a6ebb807148e05ff))
+ - **FEAT**(supabase): warn when trace propagation attaches no headers ([#1872](https://github.com/supabase/supabase-flutter/issues/1872)). ([05ea0d97](https://github.com/supabase/supabase-flutter/commit/05ea0d9728ab2e9b4ffb47a82f5766d0a7e74d18))
+ - **FEAT**(supabase): add TraceContext.fromCarrier and TraceContext.w3c ([#1871](https://github.com/supabase/supabase-flutter/issues/1871)). ([9faf7d82](https://github.com/supabase/supabase-flutter/commit/9faf7d82c1fdefa2392d9c3270364823f7ef2262))
+
+
 ## 2026-09-21
 
 ### Changes

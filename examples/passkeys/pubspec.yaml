@@ -15,7 +15,7 @@ dependencies:
   flutter:
     sdk: flutter
   passkeys: ^2.23.1
-  supabase_flutter: ^3.0.0-dev.6
+  supabase_flutter: ^3.0.0-dev.7
 
 dev_dependencies:
   supabase_lints: ^0.1.2
