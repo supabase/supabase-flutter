@@ -209,12 +209,24 @@ Future<int> _run(List<String> arguments) async {
     stderr.writeln(error.message);
     return 78;
   }
+  if (languageVersion < minimumLanguageVersion) {
+    stderr.writeln(
+      'The project is on Dart $languageVersion, but the generated code needs '
+      'Dart $minimumLanguageVersion or newer. Raise the lower bound of '
+      'environment.sdk in its pubspec.yaml.',
+    );
+    return 78;
+  }
   final code = generateDartCode(
     database,
     importUri: options.option('import')!,
     languageVersion: languageVersion,
   );
-  final formatted = await formatWithSdk(code, languageVersion);
+  final formatted = await formatWithSdk(
+    code,
+    languageVersion,
+    path: output == '-' ? null : output,
+  );
   if (formatted == null) {
     stderr.writeln(
       'Could not run `dart format` of the Dart SDK; the code is formatted '

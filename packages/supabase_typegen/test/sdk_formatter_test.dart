@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:pub_semver/pub_semver.dart';
 import 'package:supabase_typegen/supabase_typegen.dart';
 import 'package:test/test.dart';
@@ -25,6 +27,32 @@ void main() {
         contains('PrivateAchievementItemProgressTblInsert._(\n'),
       );
       expect(formatted, isNot(matches(RegExp(r'_json,\s*\)'))));
+    });
+
+    test('applies the analysis options governing the destination', () async {
+      final directory = Directory.systemTemp.createTempSync(
+        'supabase_typegen_sdk_formatter',
+      );
+      addTearDown(() => directory.deleteSync(recursive: true));
+      File(
+        '${directory.path}/analysis_options.yaml',
+      ).writeAsStringSync('formatter:\n  page_width: 40\n');
+
+      final formatted = await formatWithSdk(
+        'final numbers = [1000000, 2000000, 3000000, 4000000];\n',
+        Version(3, 8, 0),
+        path: '${directory.path}/lib/generated.dart',
+      );
+
+      expect(
+        formatted,
+        'final numbers = [\n'
+        '  1000000,\n'
+        '  2000000,\n'
+        '  3000000,\n'
+        '  4000000,\n'
+        '];\n',
+      );
     });
 
     test('is null for code the formatter rejects', () async {

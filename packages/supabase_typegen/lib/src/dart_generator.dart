@@ -2,7 +2,8 @@ import 'package:dart_style/dart_style.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'identifiers.dart';
-import 'language_version.dart';
+import 'language_version_io.dart';
+import 'sdk_formatter_io.dart';
 import 'schema_description.dart';
 import 'version.dart';
 
@@ -16,6 +17,11 @@ class _Binding {
   /// The kind of the bounds of a [ColumnTypeKind.range] column.
   final ColumnTypeKind? boundKind;
 }
+
+/// The lowest language version the generated code is valid for: the value
+/// types omit unset columns with null-aware map elements, which need Dart
+/// 3.8.
+final minimumLanguageVersion = Version(3, 8, 0);
 
 /// Generates a Dart source file with typed table definitions, row extension
 /// types, insert and update value types, column tokens and Postgres enums for

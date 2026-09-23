@@ -3,11 +3,6 @@ import 'dart:io';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:yaml/yaml.dart';
 
-/// The lowest language version the generated code is valid for: the value
-/// types omit unset columns with null-aware map elements, which need Dart
-/// 3.8.
-final minimumLanguageVersion = Version(3, 8, 0);
-
 /// The language version of the Dart package [startDirectory] belongs to,
 /// resolved the way `dart format` and the analyzer resolve it: the lower bound
 /// of the `environment.sdk` constraint in the `pubspec.yaml` of
