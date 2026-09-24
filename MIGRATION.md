@@ -1975,3 +1975,26 @@ try {
 `uploadToSignedUrl` and `uploadBinaryToSignedUrl` take the signal in the positional slot the
 controller used to occupy. `download` and `downloadStream` gain the parameter; on the stream the
 abort surfaces as a `RequestAbortedException` error.
+
+### `TracePropagationOptions` requires a `traceContextProvider`
+
+`TracePropagationOptions.enabled` is gone and `traceContextProvider` is required. The
+`tracePropagationOptions` parameter on `SupabaseClient` and `Supabase.initialize` is nullable and
+defaults to `null`, which sends no trace headers. Passing options turns propagation on, so the
+two switches that had to agree before are one:
+
+```dart
+// Before
+tracePropagationOptions: TracePropagationOptions(
+  enabled: true,
+  traceContextProvider: () => TraceContext.fromCarrier(carrier),
+),
+
+// After
+tracePropagationOptions: TracePropagationOptions(
+  traceContextProvider: () => TraceContext.fromCarrier(carrier),
+),
+```
+
+A `TracePropagationOptions()` with no provider, or `enabled: false` next to a provider, no longer
+compiles. Drop the argument to keep propagation off.

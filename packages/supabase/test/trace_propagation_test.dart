@@ -56,9 +56,8 @@ void main() {
     bool respectSamplingDecision = true,
   }) {
     return TracePropagationOptions(
-      enabled: true,
-      respectSamplingDecision: respectSamplingDecision,
       traceContextProvider: provider,
+      respectSamplingDecision: respectSamplingDecision,
     );
   }
 
@@ -227,18 +226,6 @@ void main() {
     expect(records.single.message, contains('TraceContext.w3c'));
   });
 
-  test('warns when enabled without a traceContextProvider', () async {
-    final records = await recordLogs(() async {
-      await client(
-        const TracePropagationOptions(enabled: true),
-      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
-    });
-
-    expect(records, hasLength(1));
-    expect(records.single.level, Level.WARNING);
-    expect(records.single.message, contains('no traceContextProvider'));
-  });
-
   test('does not overwrite an existing trace header', () async {
     await client(optionsWith(() => context)).get(
       Uri.parse('$_supabaseUrl/rest/v1/table'),
@@ -263,7 +250,7 @@ void main() {
     expect(captured().headers['traceparent'], _sampledTraceparent);
   });
 
-  test('SupabaseClient sends no trace headers when disabled', () async {
+  test('SupabaseClient sends no trace headers without options', () async {
     final supabase = SupabaseClient(
       _supabaseUrl,
       'anon-key',

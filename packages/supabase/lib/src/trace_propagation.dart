@@ -98,20 +98,16 @@ class TraceContext {
 /// Options controlling W3C trace context propagation onto outgoing Supabase
 /// requests.
 ///
-/// Propagation is opt-in and disabled by default, so existing clients send no
-/// additional headers. When enabled, the trace context returned by
+/// Propagation is opt-in: a client created without these options sends no
+/// additional headers. When given, the trace context returned by
 /// [traceContextProvider] is injected into requests targeting Supabase hosts
 /// (`*.supabase.co`, `*.supabase.in`, the project host, and loopback addresses
 /// for local development). Third-party hosts never receive trace headers.
 class TracePropagationOptions {
   const TracePropagationOptions({
-    this.enabled = false,
+    required this.traceContextProvider,
     this.respectSamplingDecision = true,
-    this.traceContextProvider,
   });
-
-  /// Whether trace propagation is enabled. Defaults to `false`.
-  final bool enabled;
 
   /// Whether an unsampled trace, one whose `traceparent` carries a sampled
   /// flag of `0`, withholds [TraceContext.tracestate] and
@@ -125,5 +121,5 @@ class TracePropagationOptions {
   final bool respectSamplingDecision;
 
   /// Supplies the current trace context for each outgoing request.
-  final TraceContextProvider? traceContextProvider;
+  final TraceContextProvider traceContextProvider;
 }

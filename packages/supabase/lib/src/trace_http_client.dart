@@ -8,15 +8,7 @@ import 'trace_propagation.dart';
 @internal
 class TracePropagationClient extends BaseClient {
   TracePropagationClient(this._inner, this._options, String supabaseUrl)
-    : _exactHosts = _defaultExactHosts(supabaseUrl) {
-    if (_options.traceContextProvider == null) {
-      clientLogger.warning(
-        'Trace propagation is enabled but no traceContextProvider was given, '
-        'so no trace headers are sent. Pass a provider that returns the '
-        'active trace context of your tracing client.',
-      );
-    }
-  }
+    : _exactHosts = _defaultExactHosts(supabaseUrl);
   final Client _inner;
   final TracePropagationOptions _options;
   final Set<String> _exactHosts;
@@ -36,7 +28,7 @@ class TracePropagationClient extends BaseClient {
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     if (_shouldPropagateTo(request.url)) {
-      final context = await _options.traceContextProvider?.call();
+      final context = await _options.traceContextProvider();
       final traceparent = context?.traceparent;
       if (context != null && traceparent != null && traceparent.isNotEmpty) {
         _applyHeaders(request.headers, context, traceparent);
