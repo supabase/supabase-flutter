@@ -13,6 +13,7 @@ final _databaseUrl =
     Platform.environment['SUPABASE_TYPEGEN_PARITY_DATABASE_URL'] ?? '';
 
 final _whitespace = RegExp(r'\s+');
+final _headerVersion = RegExp(r'supabase_typegen \S+ from');
 
 /// `dart run` compiles the binary from source on every invocation.
 const _compileTimeout = Timeout(Duration(minutes: 3));
@@ -257,7 +258,10 @@ Map<String, dynamic> _restrictedToPublic(Map<String, dynamic> fixture) => {
         : value,
 };
 
-String _normalize(String code) => code.replaceAll(_whitespace, ' ').trim();
+String _normalize(String code) => code
+    .replaceAll(_whitespace, ' ')
+    .replaceFirst(_headerVersion, 'supabase_typegen <version> from')
+    .trim();
 
 Future<ProcessResult> _runBinary(
   List<String> arguments, {
