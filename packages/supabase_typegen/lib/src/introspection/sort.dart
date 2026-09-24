@@ -9,9 +9,10 @@ import 'collation.dart';
 /// `@supabase/postgrest-typegen`: relations and types by schema and name,
 /// columns by schema, table and name, primary keys grouped by table with
 /// their declared column order kept, relationships by foreign key name,
-/// referenced relation and referenced columns, functions by schema, name and
-/// signature with their arguments by name. Names compare with
-/// [localeCompare]. The sort is stable, so ties keep the introspection order.
+/// referenced relation and referenced columns and then by referenced schema,
+/// schema, relation and columns, functions by schema, name and signature with
+/// their arguments by name. Names compare with [localeCompare]. The sort is
+/// stable, so the primary keys of one table keep their declared order.
 Map<String, dynamic> sortGeneratorMetadata(Map<String, dynamic> document) {
   int bySchemaName(Map<String, dynamic> a, Map<String, dynamic> b) =>
       _firstNonZero([
@@ -66,6 +67,16 @@ Map<String, dynamic> sortGeneratorMetadata(Map<String, dynamic> document) {
           jsonEncode(a['referenced_columns']),
           jsonEncode(b['referenced_columns']),
         ),
+        // The view expansion copies one foreign key onto every view exposing
+        // it, so the copies tie on the keys above and the view key dependency
+        // query does not order the view columns it aggregates.
+        () => localeCompare(
+          a['referenced_schema'] as String,
+          b['referenced_schema'] as String,
+        ),
+        () => localeCompare(a['schema'] as String, b['schema'] as String),
+        () => localeCompare(a['relation'] as String, b['relation'] as String),
+        () => localeCompare(jsonEncode(a['columns']), jsonEncode(b['columns'])),
       ]),
     ),
     'functions': [
