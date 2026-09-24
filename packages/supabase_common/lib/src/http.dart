@@ -45,6 +45,13 @@ extension HeaderMap on Map<String, String> {
   /// answer with anything at all.
   String? get mediaType =>
       header('content-type')?.split(';').first.trim().toLowerCase();
+
+  /// The identifier the gateway assigned to the request.
+  ///
+  /// The Supabase gateway sends it as `sb-request-id`. `x-request-id` is the
+  /// fallback for a self-hosted stack behind a reverse proxy that assigns its
+  /// own. Returns `null` when the response carries neither.
+  String? get requestId => header('sb-request-id') ?? header('x-request-id');
 }
 
 /// Decodes [body] as a JSON object, or returns `null` when it is empty, is not

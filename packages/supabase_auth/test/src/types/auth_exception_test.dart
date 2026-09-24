@@ -6,31 +6,58 @@ import 'package:test/test.dart';
 
 void main() {
   group('AuthException', () {
-    test('toString lists the message and the error code', () {
+    test('toString lists the message, the error code and the request id', () {
       expect(
         const AuthException(
           'Test error',
           errorCode: 'validation_failed',
+          requestId: 'request-1',
         ).toString(),
-        'AuthException(message: Test error, errorCode: validation_failed)',
+        'AuthException(message: Test error, errorCode: validation_failed, '
+        'requestId: request-1)',
       );
       expect(
         const AuthException('Test error').toString(),
-        'AuthException(message: Test error, errorCode: null)',
+        'AuthException(message: Test error, errorCode: null, requestId: null)',
       );
     });
 
-    test('equality compares the message and the error code', () {
-      const exception = AuthException('Test error', errorCode: 'bad_json');
-      const same = AuthException('Test error', errorCode: 'bad_json');
-      const otherMessage = AuthException('Other error', errorCode: 'bad_json');
-      const otherCode = AuthException('Test error', errorCode: 'other');
+    test(
+      'equality compares the message, the error code and the request id',
+      () {
+        const exception = AuthException(
+          'Test error',
+          errorCode: 'bad_json',
+          requestId: 'request-1',
+        );
+        const same = AuthException(
+          'Test error',
+          errorCode: 'bad_json',
+          requestId: 'request-1',
+        );
+        const otherMessage = AuthException(
+          'Other error',
+          errorCode: 'bad_json',
+          requestId: 'request-1',
+        );
+        const otherCode = AuthException(
+          'Test error',
+          errorCode: 'other',
+          requestId: 'request-1',
+        );
+        const otherRequest = AuthException(
+          'Test error',
+          errorCode: 'bad_json',
+          requestId: 'request-2',
+        );
 
-      expect(exception, equals(same));
-      expect(exception.hashCode, equals(same.hashCode));
-      expect(exception, isNot(equals(otherMessage)));
-      expect(exception, isNot(equals(otherCode)));
-    });
+        expect(exception, equals(same));
+        expect(exception.hashCode, equals(same.hashCode));
+        expect(exception, isNot(equals(otherMessage)));
+        expect(exception, isNot(equals(otherCode)));
+        expect(exception, isNot(equals(otherRequest)));
+      },
+    );
 
     test('a subtype is never equal to the base it extends', () {
       const base = AuthException('Test error');
@@ -128,9 +155,10 @@ void main() {
           'API error',
           statusCode: 422,
           errorCode: 'bad_json',
+          requestId: 'request-1',
         ).toString(),
         'AuthApiException(message: API error, statusCode: 422, '
-        'errorCode: bad_json)',
+        'errorCode: bad_json, requestId: request-1)',
       );
     });
 
@@ -171,7 +199,7 @@ void main() {
         string,
         startsWith(
           'AuthUnknownException(message: Unknown error, errorCode: null, '
-          'originalError:',
+          'requestId: null, originalError:',
         ),
       );
       expect(string, isNot(contains('statusCode:')));
@@ -194,12 +222,13 @@ void main() {
         message: 'Password too weak',
         statusCode: 422,
         reasons: ['too_short', 'no_special_chars'],
+        requestId: 'request-1',
       );
 
       expect(
         exception.toString(),
         'AuthWeakPasswordException(message: Password too weak, '
-        'statusCode: 422, errorCode: weak_password, '
+        'statusCode: 422, errorCode: weak_password, requestId: request-1, '
         'reasons: [too_short, no_special_chars])',
       );
     });

@@ -52,6 +52,7 @@ class AuthFetch {
       throw AuthRetryableFetchException(message: error.toString());
     }
     final response = error;
+    final requestId = response.headers.requestId;
 
     // If the status is 500 or above, it's likely a server error,
     // and can be retried.
@@ -66,6 +67,7 @@ class AuthFetch {
         throw AuthRetryableApiException(
           message: _getStatusMessage(response),
           statusCode: response.statusCode,
+          requestId: requestId,
         );
       }
       throw AuthUnknownException(
@@ -73,6 +75,7 @@ class AuthFetch {
             'Received an empty response with status code '
             '${response.statusCode}',
         originalError: response,
+        requestId: requestId,
       );
     }
     try {
@@ -82,11 +85,13 @@ class AuthFetch {
         throw AuthRetryableApiException(
           message: _getStatusMessage(response),
           statusCode: response.statusCode,
+          requestId: requestId,
         );
       }
       throw AuthUnknownException(
         message: 'Failed to decode error response',
         originalError: error,
+        requestId: requestId,
       );
     }
 
@@ -94,6 +99,7 @@ class AuthFetch {
       throw AuthRetryableApiException(
         message: _getErrorMessage(data),
         statusCode: response.statusCode,
+        requestId: requestId,
       );
     }
 
@@ -104,6 +110,7 @@ class AuthFetch {
         message: _getErrorMessage(data),
         statusCode: response.statusCode,
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
+        requestId: requestId,
       );
     }
 
@@ -111,6 +118,7 @@ class AuthFetch {
       _getErrorMessage(data),
       statusCode: response.statusCode,
       errorCode: errorCode,
+      requestId: requestId,
     );
   }
 
@@ -179,7 +187,10 @@ class AuthFetch {
       }
       return json.decode(bodyString);
     } catch (error) {
-      throw _handleError(error);
+      throw AuthRetryableFetchException(
+        message: error.toString(),
+        requestId: response.headers.requestId,
+      );
     }
   }
 

@@ -555,6 +555,22 @@ void main() {
       expect(exception.message, 'not found');
       expect(exception.errorCode, 'NotFound');
       expect(exception.statusCode, 404);
+      expect(exception.requestId, isNull);
+    });
+
+    test('fromJson keeps the request id of the response', () {
+      final exception = StorageApiException.fromJson(
+        {'message': 'not found', 'code': 'NoSuchKey'},
+        404,
+        requestId: 'request-1',
+      );
+
+      expect(exception.requestId, 'request-1');
+      expect(
+        exception.toString(),
+        'StorageApiException(message: not found, statusCode: 404, '
+        'errorCode: NoSuchKey, requestId: request-1)',
+      );
     });
 
     test('fromJson reads a stringified statusCode', () {

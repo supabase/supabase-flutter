@@ -2,7 +2,7 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 class TestException extends SupabaseException {
-  const TestException(super.message, {super.errorCode});
+  const TestException(super.message, {super.errorCode, super.requestId});
 }
 
 class TestApiException extends SupabaseException with SupabaseApiException {
@@ -10,6 +10,7 @@ class TestApiException extends SupabaseException with SupabaseApiException {
     super.message, {
     required this.statusCode,
     super.errorCode,
+    super.requestId,
   });
   @override
   final int statusCode;
@@ -29,7 +30,22 @@ void main() {
 
     expect(
       exception.toString(),
-      'TestException(message: boom, errorCode: server_error)',
+      'TestException(message: boom, errorCode: server_error, requestId: null)',
+    );
+  });
+
+  test('toString lists the request id when the response carried one', () {
+    const exception = TestException(
+      'boom',
+      errorCode: 'server_error',
+      requestId: '01a0d2ea-2094-72da-ae7f-a390251e6909',
+    );
+
+    expect(exception.requestId, '01a0d2ea-2094-72da-ae7f-a390251e6909');
+    expect(
+      exception.toString(),
+      'TestException(message: boom, errorCode: server_error, '
+      'requestId: 01a0d2ea-2094-72da-ae7f-a390251e6909)',
     );
   });
 
@@ -38,12 +54,13 @@ void main() {
       'boom',
       statusCode: 500,
       errorCode: 'server_error',
+      requestId: 'request-1',
     );
 
     expect(
       exception.toString(),
       'TestApiException(message: boom, statusCode: 500, '
-      'errorCode: server_error)',
+      'errorCode: server_error, requestId: request-1)',
     );
   });
 

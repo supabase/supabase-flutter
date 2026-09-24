@@ -237,6 +237,137 @@ void main() {
       );
     });
   });
+
+  group('AuthFetch request id', () {
+    const requestIdHeaders = {'sb-request-id': 'request-1'};
+
+    test('is carried on an api exception', () async {
+      final client = MockSupabaseHttpClient()
+        ..stub(
+          {'code': 'bad_json', 'message': 'error_message'},
+          statusCode: 400,
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthApiException>()
+              .having((e) => e.requestId, 'requestId', 'request-1')
+              .having(
+                (e) => e.toString(),
+                'toString()',
+                contains('requestId: request-1'),
+              ),
+        ),
+      );
+    });
+
+    test('is carried on a weak password exception', () async {
+      final client = MockSupabaseHttpClient()
+        ..stub(
+          {
+            'code': 'weak_password',
+            'message': 'error_message',
+            'weak_password': {
+              'reasons': ['characters'],
+            },
+          },
+          statusCode: 400,
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthWeakPasswordException>().having(
+            (e) => e.requestId,
+            'requestId',
+            'request-1',
+          ),
+        ),
+      );
+    });
+
+    test('is carried on a retryable api exception', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubText(
+          '',
+          statusCode: 503,
+          reasonPhrase: 'Service Unavailable',
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthRetryableApiException>().having(
+            (e) => e.requestId,
+            'requestId',
+            'request-1',
+          ),
+        ),
+      );
+    });
+
+    test('is carried on an unknown exception', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubText(
+          '<html><body><h1>400 Bad Request</h1></body></html>',
+          statusCode: 400,
+          reasonPhrase: 'Bad Request',
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthUnknownException>().having(
+            (e) => e.requestId,
+            'requestId',
+            'request-1',
+          ),
+        ),
+      );
+    });
+
+    test('is carried when a success body fails to decode', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubText(
+          '<html>maintenance</html>',
+          statusCode: 200,
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthRetryableFetchException>()
+              .having((e) => e.message, 'message', contains('FormatException'))
+              .having((e) => e.requestId, 'requestId', 'request-1'),
+        ),
+      );
+    });
+
+    test('is null when the response carries none', () async {
+      final client = MockSupabaseHttpClient()
+        ..stub({
+          'code': 'bad_json',
+          'message': 'error_message',
+        }, statusCode: 400);
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthApiException>().having(
+            (e) => e.requestId,
+            'requestId',
+            isNull,
+          ),
+        ),
+      );
+    });
+  });
 }
 
 Future<void> _expectRetryableFetch(

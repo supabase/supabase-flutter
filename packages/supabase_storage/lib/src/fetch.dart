@@ -40,6 +40,7 @@ class Fetch {
     }
 
     final data = tryDecodeJsonObject(error.body);
+    final requestId = error.headers.requestId;
 
     if (data == null) {
       storageLogger.fine(
@@ -50,10 +51,15 @@ class Fetch {
       return StorageApiException(
         error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
         statusCode: error.statusCode,
+        requestId: requestId,
       );
     }
 
-    final exception = StorageApiException.fromJson(data, error.statusCode);
+    final exception = StorageApiException.fromJson(
+      data,
+      error.statusCode,
+      requestId: requestId,
+    );
     storageLogger.fine(
       'StorageException for ${url?.redacted}',
       exception,
@@ -226,6 +232,7 @@ class Fetch {
       if (body is! T) {
         throw StorageException(
           'Expected a $T response, but got a ${body.runtimeType}',
+          requestId: response.headers.requestId,
         );
       }
       return body;

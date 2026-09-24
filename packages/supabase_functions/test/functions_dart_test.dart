@@ -7,6 +7,7 @@ import 'package:supabase_functions/src/types.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase_common/supabase_common.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -838,6 +839,93 @@ void main() {
                 .having((e) => e.details, 'details', isNotNull)
                 .having((e) => e.message, 'message', 'Enhance Your Calm')
                 .having((e) => e.toString(), 'toString()', contains('420')),
+          ),
+        );
+      });
+
+      test('toString lists the request id', () {
+        const exception = FunctionsApiException(
+          statusCode: 500,
+          requestId: 'request-1',
+          details: 'boom',
+        );
+
+        expect(
+          exception.toString(),
+          'FunctionsApiException(message: Edge Function returned a non-2xx '
+          'status code, statusCode: 500, requestId: request-1, details: boom)',
+        );
+        expect(
+          const FunctionsFetchException(details: 'offline').toString(),
+          'FunctionsFetchException(message: Failed to send a request to the '
+          'Edge Function, requestId: null, details: offline)',
+        );
+      });
+    });
+
+    group('Request id', () {
+      const requestIdHeaders = {'sb-request-id': 'request-1'};
+
+      FunctionsClient buildClient(MockSupabaseHttpClient httpClient) =>
+          FunctionsClient(
+            'http://localhost/functions/v1',
+            {},
+            httpClient: httpClient,
+          );
+
+      test('is carried on a FunctionsApiException', () async {
+        final client = buildClient(
+          MockSupabaseHttpClient()..stub(
+            {'error': 'boom'},
+            statusCode: 500,
+            headers: requestIdHeaders,
+          ),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsApiException>()
+                .having((e) => e.statusCode, 'statusCode', 500)
+                .having((e) => e.requestId, 'requestId', 'request-1'),
+          ),
+        );
+      });
+
+      test('is carried on a FunctionsRelayException', () async {
+        final client = buildClient(
+          MockSupabaseHttpClient()..stub(
+            {'error': 'relay down'},
+            statusCode: 500,
+            headers: {...requestIdHeaders, 'x-relay-error': 'true'},
+          ),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsRelayException>().having(
+              (e) => e.requestId,
+              'requestId',
+              'request-1',
+            ),
+          ),
+        );
+      });
+
+      test('is null when the response carries none', () async {
+        final client = buildClient(
+          MockSupabaseHttpClient()..stub({'error': 'boom'}, statusCode: 500),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsApiException>().having(
+              (e) => e.requestId,
+              'requestId',
+              isNull,
+            ),
           ),
         );
       });

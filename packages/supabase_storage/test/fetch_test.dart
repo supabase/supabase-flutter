@@ -336,5 +336,98 @@ void main() {
         );
       },
     );
+
+    group('request id', () {
+      const requestIdHeaders = {'sb-request-id': 'request-1'};
+
+      test('is read from the response of a JSON error body', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stub(
+            {'statusCode': '404', 'code': 'NoSuchKey', 'message': 'not found'},
+            statusCode: 404,
+            headers: requestIdHeaders,
+          );
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageApiException>()
+                .having((e) => e.errorCode, 'errorCode', 'NoSuchKey')
+                .having((e) => e.requestId, 'requestId', 'request-1'),
+          ),
+        );
+      });
+
+      test('is read from the response of a non-JSON error body', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stubText(
+            '<html>502 Bad Gateway</html>',
+            statusCode: 502,
+            headers: requestIdHeaders,
+          );
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageApiException>()
+                .having((e) => e.statusCode, 'statusCode', 502)
+                .having((e) => e.requestId, 'requestId', 'request-1'),
+          ),
+        );
+      });
+
+      test('is read from a success response of the wrong shape', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stub({'not': 'a list'}, headers: requestIdHeaders);
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageException>()
+                .having((e) => e.message, 'message', startsWith('Expected a'))
+                .having((e) => e.requestId, 'requestId', 'request-1'),
+          ),
+        );
+      });
+
+      test('is null when the response carries none', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stub(
+            {'statusCode': '404', 'code': 'NoSuchKey', 'message': 'not found'},
+            statusCode: 404,
+          );
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageApiException>().having(
+              (e) => e.requestId,
+              'requestId',
+              isNull,
+            ),
+          ),
+        );
+      });
+    });
   });
 }
