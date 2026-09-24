@@ -277,14 +277,80 @@ void main() {
       );
     });
 
-    test('keeps the introspection order of relationships that tie', () {
-      final tableRelationship = _relationship('fk', 't', 'users', ['id']);
-      final viewRelationship = _relationship('fk', 't_view', 'users', ['id']);
-      final result = sortGeneratorMetadata(
-        _document(relationships: [tableRelationship, viewRelationship]),
-      );
+    test('orders the view copies of one foreign key deterministically', () {
+      final copies = [
+        {
+          ..._relationship('fk', 't_view', 'users', ['id']),
+          'columns': ['owner_id'],
+        },
+        {
+          ..._relationship('fk', 't', 'users', ['id']),
+          'schema': 'reporting',
+        },
+        {
+          ..._relationship('fk', 't', 'users', ['id']),
+          'referenced_schema': 'reporting',
+        },
+        {
+          ..._relationship('fk', 't_view', 'users', ['id']),
+          'columns': ['assignee_id'],
+        },
+        _relationship('fk', 't', 'users', ['id']),
+      ];
+      const expected = [
+        [
+          'public',
+          'public',
+          't',
+          ['id'],
+        ],
+        [
+          'public',
+          'public',
+          't_view',
+          ['assignee_id'],
+        ],
+        [
+          'public',
+          'public',
+          't_view',
+          ['owner_id'],
+        ],
+        [
+          'public',
+          'reporting',
+          't',
+          ['id'],
+        ],
+        [
+          'reporting',
+          'public',
+          't',
+          ['id'],
+        ],
+      ];
+      List<List<Object?>> order(Map<String, dynamic> result) => [
+        for (final relationship in result['relationships'] as List<dynamic>)
+          [
+            relationship['referenced_schema'],
+            relationship['schema'],
+            relationship['relation'],
+            relationship['columns'],
+          ],
+      ];
 
-      expect(result['relationships'], [tableRelationship, viewRelationship]);
+      expect(
+        order(sortGeneratorMetadata(_document(relationships: copies))),
+        expected,
+      );
+      expect(
+        order(
+          sortGeneratorMetadata(
+            _document(relationships: copies.reversed.toList()),
+          ),
+        ),
+        expected,
+      );
     });
 
     test('does not mutate the input and keeps the version', () {
