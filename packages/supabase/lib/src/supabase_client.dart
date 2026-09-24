@@ -78,8 +78,7 @@ class SupabaseClient {
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    TracePropagationOptions tracePropagationOptions =
-        const TracePropagationOptions(),
+    TracePropagationOptions? tracePropagationOptions,
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
@@ -104,13 +103,13 @@ class SupabaseClient {
        _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
        _ownsJsonCodec = jsonCodec == null {
     final baseHttpClient = httpClient ?? createDefaultHttpClient();
-    final tracedHttpClient = tracePropagationOptions.enabled
-        ? TracePropagationClient(
+    final tracedHttpClient = tracePropagationOptions == null
+        ? baseHttpClient
+        : TracePropagationClient(
             baseHttpClient,
             tracePropagationOptions,
             supabaseUrl,
-          )
-        : baseHttpClient;
+          );
     _authApiHttpClient = tracedHttpClient;
     _authInstance = _initSupabaseAuthClient(authOptions);
     _authHttpClient = AuthHttpClient(

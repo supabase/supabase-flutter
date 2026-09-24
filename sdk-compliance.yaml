@@ -2615,7 +2615,6 @@ features:
       - TraceContextProvider
       - TracePropagationOptions
       - TracePropagationOptions.TracePropagationOptions
-      - TracePropagationOptions.enabled
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
 
