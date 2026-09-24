@@ -1,3 +1,9 @@
+## 3.0.0-dev.7
+
+ - **FIX**(supabase): keep traceparent on unsampled traces ([#1870](https://github.com/supabase/supabase-flutter/issues/1870)). ([dde7a7df](https://github.com/supabase/supabase-flutter/commit/dde7a7dfaff3456c36a48957a6ebb807148e05ff))
+ - **FEAT**(supabase): warn when trace propagation attaches no headers ([#1872](https://github.com/supabase/supabase-flutter/issues/1872)). ([05ea0d97](https://github.com/supabase/supabase-flutter/commit/05ea0d9728ab2e9b4ffb47a82f5766d0a7e74d18))
+ - **FEAT**(supabase): add TraceContext.fromCarrier and TraceContext.w3c ([#1871](https://github.com/supabase/supabase-flutter/issues/1871)). ([9faf7d82](https://github.com/supabase/supabase-flutter/commit/9faf7d82c1fdefa2392d9c3270364823f7ef2262))
+
 ## 3.0.0-dev.6
 
 > Note: This release has breaking changes.
