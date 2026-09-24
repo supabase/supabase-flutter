@@ -39,6 +39,7 @@ sealed class FunctionException extends SupabaseException {
   const FunctionException({
     required String message,
     this.details,
+    super.requestId,
   }) : super(message);
 
   /// The response body, or the originating error when no response was
@@ -46,7 +47,9 @@ sealed class FunctionException extends SupabaseException {
   final dynamic details;
 
   @override
-  String toString() => '$runtimeType(message: $message, details: $details)';
+  String toString() =>
+      '$runtimeType(message: $message, requestId: $requestId, '
+      'details: $details)';
 }
 
 /// Thrown when the request to the Edge Function could not be sent, for example
@@ -70,6 +73,7 @@ class FunctionsApiException extends FunctionException
   const FunctionsApiException({
     required this.statusCode,
     super.details,
+    super.requestId,
     String? message,
   }) : super(
          message: message ?? 'Edge Function returned a non-2xx status code',
@@ -81,7 +85,7 @@ class FunctionsApiException extends FunctionException
   @override
   String toString() =>
       '$runtimeType(message: $message, statusCode: $statusCode, '
-      'details: $details)';
+      'requestId: $requestId, details: $details)';
 }
 
 /// Thrown when the Supabase relay returns an error while invoking the Edge
@@ -92,6 +96,7 @@ class FunctionsRelayException extends FunctionsApiException {
   const FunctionsRelayException({
     required super.statusCode,
     super.details,
+    super.requestId,
     String? message,
   }) : super(message: message ?? 'Relay error invoking the Edge Function');
 }

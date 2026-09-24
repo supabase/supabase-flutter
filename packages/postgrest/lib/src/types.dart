@@ -29,6 +29,7 @@ class PostgrestApiException extends SupabaseException
     required String message,
     required this.statusCode,
     super.errorCode,
+    super.requestId,
     this.details,
     this.hint,
   }) : super(message);
@@ -44,6 +45,7 @@ class PostgrestApiException extends SupabaseException
     required int statusCode,
     String? message,
     String? details,
+    String? requestId,
   }) {
     final reportedMessage = json['message'];
     return PostgrestApiException(
@@ -52,6 +54,7 @@ class PostgrestApiException extends SupabaseException
           : (message ?? json.toString()),
       statusCode: statusCode,
       errorCode: json['code']?.toString(),
+      requestId: requestId,
       details: (json['details'] ?? details),
       hint: json['hint']?.toString(),
     );
@@ -70,6 +73,7 @@ class PostgrestApiException extends SupabaseException
       'message': message,
       'statusCode': statusCode,
       'errorCode': errorCode,
+      'requestId': requestId,
       'details': details,
       'hint': hint,
     };
@@ -78,7 +82,8 @@ class PostgrestApiException extends SupabaseException
   @override
   String toString() {
     return 'PostgrestApiException(message: $message, statusCode: $statusCode, '
-        'errorCode: $errorCode, details: $details, hint: $hint)';
+        'errorCode: $errorCode, requestId: $requestId, details: $details, '
+        'hint: $hint)';
   }
 }
 

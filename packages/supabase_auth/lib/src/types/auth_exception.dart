@@ -11,7 +11,7 @@ import 'package:supabase_common/supabase_common.dart';
 /// Find the full list of error codes in our documentation.
 /// https://supabase.com/docs/guides/auth/debugging/error-codes
 class AuthException extends SupabaseException {
-  const AuthException(super.message, {super.errorCode});
+  const AuthException(super.message, {super.errorCode, super.requestId});
 
   @override
   bool operator ==(Object other) {
@@ -20,11 +20,12 @@ class AuthException extends SupabaseException {
     return other is AuthException &&
         other.runtimeType == runtimeType &&
         other.message == message &&
-        other.errorCode == errorCode;
+        other.errorCode == errorCode &&
+        other.requestId == requestId;
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, message, errorCode);
+  int get hashCode => Object.hash(runtimeType, message, errorCode, requestId);
 }
 
 /// Thrown when a PKCE flow deep link is missing the `code` query parameter
@@ -51,6 +52,7 @@ class AuthSessionMissingException extends AuthException {
 class AuthRetryableFetchException extends AuthException {
   AuthRetryableFetchException({
     String message = 'AuthRetryableFetchException',
+    super.requestId,
   }) : super(message);
 }
 
@@ -61,6 +63,7 @@ class AuthRetryableApiException extends AuthRetryableFetchException
   AuthRetryableApiException({
     required super.message,
     required this.statusCode,
+    super.requestId,
   });
   @override
   final int statusCode;
@@ -81,6 +84,7 @@ class AuthApiException extends AuthException with SupabaseApiException {
     super.message, {
     required this.statusCode,
     super.errorCode,
+    super.requestId,
   });
   @override
   final int statusCode;
@@ -104,6 +108,7 @@ class AuthUnknownException extends AuthException {
   AuthUnknownException({
     required String message,
     required this.originalError,
+    super.requestId,
   }) : super(message);
 
   /// May contain a non 2xx [http.Response] object or the original thrown error.
@@ -112,7 +117,7 @@ class AuthUnknownException extends AuthException {
   @override
   String toString() =>
       '$runtimeType(message: $message, errorCode: $errorCode, '
-      'originalError: $originalError)';
+      'requestId: $requestId, originalError: $originalError)';
 }
 
 /// Thrown when a password fails the project's strength requirements.
@@ -121,6 +126,7 @@ class AuthWeakPasswordException extends AuthApiException {
     required String message,
     required super.statusCode,
     required this.reasons,
+    super.requestId,
   }) : super(message, errorCode: ErrorCode.weakPassword.code);
 
   /// Why the password was rejected, for example `'characters'`.
@@ -129,7 +135,7 @@ class AuthWeakPasswordException extends AuthApiException {
   @override
   String toString() =>
       '$runtimeType(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode, reasons: $reasons)';
+      'errorCode: $errorCode, requestId: $requestId, reasons: $reasons)';
 }
 
 /// Thrown when a JWT could not be parsed or verified, for example by

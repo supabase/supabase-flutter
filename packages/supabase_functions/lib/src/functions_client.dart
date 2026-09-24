@@ -295,16 +295,19 @@ class FunctionsClient {
     }
     // The reason phrase is the only message the response itself carries; when
     // it is absent, as it is over HTTP/2, each exception uses its own default.
+    final requestId = response.headers.requestId;
     if (isRelayError) {
       throw FunctionsRelayException(
         statusCode: response.statusCode,
         details: data,
+        requestId: requestId,
         message: response.reasonPhrase,
       );
     }
     throw FunctionsApiException(
       statusCode: response.statusCode,
       details: data,
+      requestId: requestId,
       message: response.reasonPhrase,
     );
   }

@@ -17,7 +17,7 @@
 /// `RealtimeSubscribeException` and `IcebergException` are not part of this
 /// hierarchy.
 abstract class SupabaseException implements Exception {
-  const SupabaseException(this.message, {this.errorCode});
+  const SupabaseException(this.message, {this.errorCode, this.requestId});
 
   /// Human readable error message associated with the error.
   final String message;
@@ -28,8 +28,20 @@ abstract class SupabaseException implements Exception {
   /// `null` when neither the service nor the client named the failure.
   final String? errorCode;
 
+  /// The identifier the Supabase gateway assigned to the request, read from
+  /// the `sb-request-id` response header.
+  ///
+  /// Quote it in a support thread or paste it into the log explorer of the
+  /// dashboard to find the server side logs of the failed request.
+  ///
+  /// `null` when no response was received, or when the response carried no
+  /// request id, as one from a self-hosted stack without a gateway does.
+  final String? requestId;
+
   @override
-  String toString() => '$runtimeType(message: $message, errorCode: $errorCode)';
+  String toString() =>
+      '$runtimeType(message: $message, errorCode: $errorCode, '
+      'requestId: $requestId)';
 }
 
 /// Mixed into the exceptions that report a response from a Supabase service.
@@ -50,5 +62,5 @@ mixin SupabaseApiException on SupabaseException {
   @override
   String toString() =>
       '$runtimeType(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode)';
+      'errorCode: $errorCode, requestId: $requestId)';
 }

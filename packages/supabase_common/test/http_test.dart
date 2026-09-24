@@ -47,6 +47,38 @@ void main() {
     });
   });
 
+  group('requestId', () {
+    test('reads the id the Supabase gateway assigned', () {
+      const headers = {'sb-request-id': '01a0d2ea-2094-72da-ae7f-a390251e6909'};
+
+      expect(headers.requestId, '01a0d2ea-2094-72da-ae7f-a390251e6909');
+    });
+
+    test('matches the header name case insensitively', () {
+      const headers = {'Sb-Request-Id': 'request-1'};
+
+      expect(headers.requestId, 'request-1');
+    });
+
+    test('falls back to x-request-id from a reverse proxy', () {
+      const headers = {'x-request-id': 'proxy-1'};
+
+      expect(headers.requestId, 'proxy-1');
+    });
+
+    test('prefers the gateway id when both are present', () {
+      const headers = {'x-request-id': 'proxy-1', 'sb-request-id': 'gateway-1'};
+
+      expect(headers.requestId, 'gateway-1');
+    });
+
+    test('returns null when the response carries no request id', () {
+      const headers = {'content-type': 'application/json'};
+
+      expect(headers.requestId, isNull);
+    });
+  });
+
   group('redacted', () {
     test('replaces credential values but keeps the names', () {
       const headers = {

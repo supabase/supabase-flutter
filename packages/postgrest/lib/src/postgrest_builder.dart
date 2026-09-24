@@ -555,6 +555,7 @@ class PostgrestBuilder<T> implements Future<T> {
 
   /// Parse request response to json object if possible
   Future<T> _parseResponse(http.Response response, HttpMethod method) async {
+    final requestId = response.headers.requestId;
     if (isSuccessStatusCode(response.statusCode)) {
       Object? body;
       int? count;
@@ -584,6 +585,7 @@ class PostgrestBuilder<T> implements Future<T> {
             throw PostgrestApiException(
               message: response.body,
               statusCode: response.statusCode,
+              requestId: requestId,
               details: response.reasonPhrase,
             );
           }
@@ -598,6 +600,7 @@ class PostgrestBuilder<T> implements Future<T> {
           final exception = PostgrestApiException(
             statusCode: 406,
             errorCode: 'PGRST116',
+            requestId: requestId,
             details:
                 'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
@@ -631,6 +634,7 @@ class PostgrestBuilder<T> implements Future<T> {
         error = PostgrestApiException(
           message: response.body,
           statusCode: response.statusCode,
+          requestId: requestId,
           details: response.reasonPhrase,
         );
       } else {
@@ -639,12 +643,14 @@ class PostgrestBuilder<T> implements Future<T> {
           message: response.body,
           statusCode: response.statusCode,
           details: response.reasonPhrase,
+          requestId: requestId,
         );
       }
     } else {
       error = PostgrestApiException(
         statusCode: response.statusCode,
         message: response.body,
+        requestId: requestId,
         details: 'Error in Postgrest response for method HEAD',
         hint: response.reasonPhrase,
       );

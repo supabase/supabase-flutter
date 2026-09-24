@@ -949,7 +949,7 @@ class SignedUploadURLResponse extends SignedUrl {
 /// as a request that never reached storage. A failure storage reported is a
 /// [StorageApiException].
 class StorageException extends SupabaseException {
-  const StorageException(super.message, {super.errorCode});
+  const StorageException(super.message, {super.errorCode, super.requestId});
 }
 
 /// Thrown when storage answered with an error.
@@ -958,6 +958,7 @@ class StorageApiException extends StorageException with SupabaseApiException {
     super.message, {
     required this.statusCode,
     super.errorCode,
+    super.requestId,
   });
 
   /// Builds an exception from an error response body.
@@ -965,7 +966,8 @@ class StorageApiException extends StorageException with SupabaseApiException {
   /// A JSON object is no guarantee that its fields carry the types the storage
   /// API documents, since a proxy or gateway in front of it can answer with a
   /// shape of its own, so every field is read defensively. [statusCode] is used
-  /// when the body reports none.
+  /// when the body reports none, and [requestId] is the one the response
+  /// headers carried.
   ///
   /// [SupabaseException.errorCode] is read from the body's `code`, the
   /// documented storage error code such as `NoSuchKey` or `AccessDenied`. The
@@ -975,13 +977,15 @@ class StorageApiException extends StorageException with SupabaseApiException {
   /// See https://supabase.com/docs/guides/storage/debugging/error-codes
   factory StorageApiException.fromJson(
     Map<String, dynamic> json,
-    int statusCode,
-  ) {
+    int statusCode, {
+    String? requestId,
+  }) {
     final message = json['message'];
     return StorageApiException(
       message is String ? message : json.toString(),
       errorCode: (json['code'] ?? json['error'])?.toString(),
       statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
+      requestId: requestId,
     );
   }
   @override
