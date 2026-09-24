@@ -1067,9 +1067,7 @@ features:
     symbols:
       - PostgrestQueryBuilder.insert
       - PostgrestQueryBuilder.upsert
-      - PostgrestTypedQueryBuilder.insert
       - PostgrestTypedQueryBuilder.insertAll
-      - PostgrestTypedQueryBuilder.upsert
       - PostgrestTypedQueryBuilder.upsertAll
   database.mutate.count:
     status: implemented
@@ -2639,8 +2637,8 @@ features:
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
   client.observability.diagnostic_logging:
-    status: implemented
-    note: "Records are emitted through `package:logging` under the `supabase` logger hierarchy rather than to a logger supplied at construction time, which is the idiomatic Dart way for a library to log. Nothing is printed until the application listens to `Logger('supabase')` or one of its children, and tokens and headers are redacted before they are logged."
+    status: partially_implemented
+    note: "Records go to the process-wide `supabase` logger hierarchy of `package:logging` instead of a logger supplied when a client is constructed, so logs from separate clients cannot be routed apart."
 
 # Public API the matrix accounts for but that no single capability owns: shared
 # domain models, the exception hierarchies, the client and sub-API handles that
