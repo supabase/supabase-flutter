@@ -1055,6 +1055,25 @@ features:
     symbols:
       - PostgrestTransformBuilder.select
       - PostgrestTypedTransformBuilder.select
+  database.mutate.bulk_rows_with_differing_fields:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
+      - PostgrestTypedQueryBuilder.insertAll
+      - PostgrestTypedQueryBuilder.upsertAll
+  database.mutate.missing_defaults:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
+      - PostgrestTypedQueryBuilder.insertAll
+      - PostgrestTypedQueryBuilder.upsertAll
+  database.mutate.count:
+    status: implemented
+    symbols:
+      - PostgrestBuilder.count
+      - PostgrestTypedTransformBuilder.count
 
   # database — filters
   database.using_filters.eq:
@@ -2617,6 +2636,9 @@ features:
       - TracePropagationOptions.TracePropagationOptions
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
+  client.observability.diagnostic_logging:
+    status: implemented
+    note: "Records go through the `supabase` logger hierarchy of `package:logging` instead of a logger supplied when the client is constructed."
 
 # Public API the matrix accounts for but that no single capability owns: shared
 # domain models, the exception hierarchies, the client and sub-API handles that
