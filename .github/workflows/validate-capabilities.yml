@@ -13,4 +13,4 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-dart.yml@ad910cfa7b87ed7dab32b409f5509611d64168c9 # capability-matrix-v1.9.0
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-dart.yml@9e71603c5d8410255493d264738e5c5f64251735 # capability-matrix-v1.12.0
