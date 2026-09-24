@@ -1050,6 +1050,28 @@ features:
     symbols:
       - PostgrestQueryBuilder.delete
       - PostgrestTypedQueryBuilder.delete
+  database.mutate.missing_defaults:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
+      - PostgrestTypedQueryBuilder.insert
+      - PostgrestTypedQueryBuilder.insertAll
+      - PostgrestTypedQueryBuilder.upsert
+      - PostgrestTypedQueryBuilder.upsertAll
+      - PostgrestTableRequest.defaultToNull
+  database.mutate.bulk_rows_with_differing_fields:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
+      - PostgrestTypedQueryBuilder.insertAll
+      - PostgrestTypedQueryBuilder.upsertAll
+  database.mutate.count:
+    status: implemented
+    symbols:
+      - PostgrestBuilder.count
+      - PostgrestTypedTransformBuilder.count
   database.mutate.select_after_mutation:
     status: implemented
     symbols:
