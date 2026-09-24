@@ -2637,8 +2637,8 @@ features:
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
   client.observability.diagnostic_logging:
-    status: partially_implemented
-    note: "Records go to the process-wide `supabase` logger hierarchy of `package:logging` instead of a logger supplied when a client is constructed, so logs from separate clients cannot be routed apart."
+    status: implemented
+    note: "Records go through the `supabase` logger hierarchy of `package:logging` instead of a logger supplied when the client is constructed."
 
 # Public API the matrix accounts for but that no single capability owns: shared
 # domain models, the exception hierarchies, the client and sub-API handles that
