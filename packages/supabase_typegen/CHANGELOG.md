@@ -1,3 +1,12 @@
+## 0.4.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_typegen): format generated code for language version 3.8 ([#1874](https://github.com/supabase/supabase-flutter/issues/1874)). ([787b43f9](https://github.com/supabase/supabase-flutter/commit/787b43f911720fecad70964fb1c491ec09e26ace))
+ - **BREAKING** **FEAT**(typegen): convert array elements the way their scalar columns are converted ([#1876](https://github.com/supabase/supabase-flutter/issues/1876)). ([727b82cc](https://github.com/supabase/supabase-flutter/commit/727b82ccc9e03a04b168080ffb30e5ad46c318fe))
+ - **BREAKING** **FEAT**(typegen): map date, time and interval columns to PostgrestDate, PostgrestTime and PostgrestInterval ([#1875](https://github.com/supabase/supabase-flutter/issues/1875)). ([443190b2](https://github.com/supabase/supabase-flutter/commit/443190b2a0332d09e2eea2cf591d00e89646a1dc))
+ - **BREAKING** **FEAT**(typegen): map pgvector columns to List<double> instead of Object? ([#1873](https://github.com/supabase/supabase-flutter/issues/1873)). ([74a957fd](https://github.com/supabase/supabase-flutter/commit/74a957fdf04968a0e7f9bbc43bdeb9f1b5dbca8a))
+
 ## 0.3.0
 
 > Note: This release has breaking changes.

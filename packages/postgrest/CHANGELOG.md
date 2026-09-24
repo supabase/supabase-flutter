@@ -1,3 +1,11 @@
+## 3.0.0-dev.7
+
+> Note: This release has breaking changes.
+
+ - **FIX**(postgrest): escape reserved characters in quantified pattern lists ([#1869](https://github.com/supabase/supabase-flutter/issues/1869)). ([8871b84b](https://github.com/supabase/supabase-flutter/commit/8871b84bff342083be1cc788c303f56577e8da2f))
+ - **BREAKING** **FEAT**(typegen): map date, time and interval columns to PostgrestDate, PostgrestTime and PostgrestInterval ([#1875](https://github.com/supabase/supabase-flutter/issues/1875)). ([443190b2](https://github.com/supabase/supabase-flutter/commit/443190b2a0332d09e2eea2cf591d00e89646a1dc))
+ - **BREAKING** **FEAT**(typegen): map pgvector columns to List<double> instead of Object? ([#1873](https://github.com/supabase/supabase-flutter/issues/1873)). ([74a957fd](https://github.com/supabase/supabase-flutter/commit/74a957fdf04968a0e7f9bbc43bdeb9f1b5dbca8a))
+
 ## 3.0.0-dev.6
 
 > Note: This release has breaking changes.
