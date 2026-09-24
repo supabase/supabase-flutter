@@ -331,6 +331,24 @@ void main() {
       );
     });
 
+    test('is carried when a success body fails to decode', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubText(
+          '<html>maintenance</html>',
+          statusCode: 200,
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthRetryableFetchException>()
+              .having((e) => e.message, 'message', contains('FormatException'))
+              .having((e) => e.requestId, 'requestId', 'request-1'),
+        ),
+      );
+    });
+
     test('is null when the response carries none', () async {
       final client = MockSupabaseHttpClient()
         ..stub({

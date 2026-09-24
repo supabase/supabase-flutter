@@ -187,7 +187,10 @@ class AuthFetch {
       }
       return json.decode(bodyString);
     } catch (error) {
-      throw _handleError(error);
+      throw AuthRetryableFetchException(
+        message: error.toString(),
+        requestId: response.headers.requestId,
+      );
     }
   }
 

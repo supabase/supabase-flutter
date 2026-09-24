@@ -58,7 +58,7 @@ void main() {
       );
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(
           isA<PostgrestApiException>()
               .having((e) => e.errorCode, 'errorCode', 'PGRST100')
@@ -77,7 +77,7 @@ void main() {
       );
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(
           isA<PostgrestApiException>()
               .having((e) => e.statusCode, 'statusCode', 502)
@@ -93,13 +93,15 @@ void main() {
       );
 
       await expectLater(
-        client.from('users').select().count(CountOption.exact),
+        () => client.from('users').count(),
         throwsA(
-          isA<PostgrestApiException>().having(
-            (e) => e.requestId,
-            'requestId',
-            'request-1',
-          ),
+          isA<PostgrestApiException>()
+              .having((e) => e.requestId, 'requestId', 'request-1')
+              .having(
+                (e) => e.details,
+                'details',
+                'Error in Postgrest response for method HEAD',
+              ),
         ),
       );
     });
@@ -114,7 +116,7 @@ void main() {
       );
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(
           isA<PostgrestApiException>()
               .having((e) => e.statusCode, 'statusCode', 200)
@@ -135,7 +137,7 @@ void main() {
       );
 
       await expectLater(
-        client.from('users').select().maybeSingle(),
+        () => client.from('users').select().maybeSingle(),
         throwsA(
           isA<PostgrestApiException>()
               .having((e) => e.errorCode, 'errorCode', 'PGRST116')
@@ -151,7 +153,7 @@ void main() {
       );
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(
           isA<PostgrestApiException>().having(
             (e) => e.requestId,
