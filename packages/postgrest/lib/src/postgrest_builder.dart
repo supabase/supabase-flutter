@@ -90,7 +90,10 @@ String? _emptyPreferAsNull(String? prefer) =>
 String _mergePrefer(String? existing, List<String> preferences) {
   String keyOf(String preference) {
     final separator = preference.indexOf('=');
-    return separator == -1 ? preference : preference.substring(0, separator);
+    final key = separator == -1
+        ? preference
+        : preference.substring(0, separator);
+    return key.trim().toLowerCase();
   }
 
   final replaced = preferences.map(keyOf).toSet();

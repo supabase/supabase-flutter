@@ -14,18 +14,12 @@ import 'test_utils.dart';
 void main() {
   late CustomHttpClient customHttpClient;
   late PostgrestClient postgrest;
-  late PostgrestClient rollbackPostgrest;
 
   setUp(() {
     customHttpClient = CustomHttpClient();
     postgrest = PostgrestClient(
       localStackRestUrl,
       headers: apiHeaders,
-      httpClient: customHttpClient,
-    );
-    rollbackPostgrest = PostgrestClient(
-      localStackRestUrl,
-      headers: {...apiHeaders, 'Prefer': 'tx=rollback'},
       httpClient: customHttpClient,
     );
   });
@@ -169,7 +163,9 @@ void main() {
 
   test('insert() keeps a Prefer header set on the client', () async {
     try {
-      await rollbackPostgrest.from('users').insert({'username': 'foo'});
+      await clientWithPrefer(
+        'tx=rollback',
+      ).from('users').insert({'username': 'foo'});
     } catch (_) {}
 
     expect(sentPrefer(), 'tx=rollback');
@@ -177,10 +173,9 @@ void main() {
 
   test('update() keeps a Prefer header set on the client', () async {
     try {
-      await rollbackPostgrest
-          .from('users')
-          .update({'status': 'INACTIVE'})
-          .eq('id', 1);
+      await clientWithPrefer(
+        'tx=rollback',
+      ).from('users').update({'status': 'INACTIVE'}).eq('id', 1);
     } catch (_) {}
 
     expect(sentPrefer(), 'tx=rollback');
@@ -188,7 +183,7 @@ void main() {
 
   test('delete() keeps a Prefer header set on the client', () async {
     try {
-      await rollbackPostgrest.from('users').delete().eq('id', 1);
+      await clientWithPrefer('tx=rollback').from('users').delete().eq('id', 1);
     } catch (_) {}
 
     expect(sentPrefer(), 'tx=rollback');
@@ -196,7 +191,7 @@ void main() {
 
   test('upsert() keeps a Prefer header set on the client', () async {
     try {
-      await rollbackPostgrest.from('users').upsert({'id': 1});
+      await clientWithPrefer('tx=rollback').from('users').upsert({'id': 1});
     } catch (_) {}
 
     expect(sentPrefer(), 'tx=rollback,resolution=merge-duplicates');
@@ -204,7 +199,7 @@ void main() {
 
   test('insert(defaultToNull: false) appends to a client Prefer', () async {
     try {
-      await rollbackPostgrest.from('users').insert({
+      await clientWithPrefer('tx=rollback').from('users').insert({
         'username': 'foo',
       }, defaultToNull: false);
     } catch (_) {}
@@ -214,7 +209,7 @@ void main() {
 
   test('a client Prefer survives select() and count()', () async {
     try {
-      await rollbackPostgrest
+      await clientWithPrefer('tx=rollback')
           .from('users')
           .insert({'username': 'foo'})
           .select()
@@ -285,5 +280,28 @@ void main() {
       sentPrefer(),
       'tx=rollback,timezone=UTC,handling=strict,max-affected=5',
     );
+  });
+
+  test('a preference name is matched ignoring case and spacing', () async {
+    try {
+      await clientWithPrefer(
+        'Handling = lenient',
+      ).from('users').delete().eq('id', 1).maxAffected(5);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'handling=strict,max-affected=5');
+  });
+
+  test('maxAffected() called twice keeps the last value', () async {
+    try {
+      await postgrest
+          .from('users')
+          .delete()
+          .eq('id', 1)
+          .maxAffected(5)
+          .maxAffected(10);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'handling=strict,max-affected=10');
   });
 }
