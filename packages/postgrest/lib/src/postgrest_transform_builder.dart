@@ -64,11 +64,9 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     final newHeaders = {..._headers};
 
     final url = _url.overrideSearchParameters('select', cleanedColumns);
-    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
-    newHeaders['Prefer'] = [
-      ?prefer,
+    _mergePrefer(newHeaders, [
       'return=representation',
-    ].join(',');
+    ]);
     return PostgrestTransformBuilder(
       _copyWithType(
         url: url,
@@ -258,11 +256,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// ```
   PostgrestTransformBuilder<T> dryRun() {
     final newHeaders = {..._headers};
-    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
-    newHeaders['Prefer'] = [
-      ?prefer,
-      'tx=rollback',
-    ].join(',');
+    _mergePrefer(newHeaders, ['tx=rollback']);
 
     return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
   }
@@ -330,21 +324,10 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   PostgrestTransformBuilder<T> maxAffected(int value) {
     final newHeaders = {..._headers};
 
-    final existingPrefer = _emptyPreferAsNull(newHeaders['Prefer']);
-    final String preferHeader;
-    if (existingPrefer != null) {
-      var header = existingPrefer;
-      if (!header.contains('handling=strict')) {
-        header += ',handling=strict';
-      }
-      if (!header.contains('max-affected=')) {
-        header += ',max-affected=$value';
-      }
-      preferHeader = header;
-    } else {
-      preferHeader = 'handling=strict,max-affected=$value';
-    }
-    newHeaders['Prefer'] = preferHeader;
+    _mergePrefer(newHeaders, [
+      'handling=strict',
+      'max-affected=$value',
+    ]);
 
     return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
   }
