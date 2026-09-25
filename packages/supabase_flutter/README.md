@@ -710,7 +710,7 @@ A `traceparent` that is not valid W3C trace context is not sent, and the client 
 
 #### Which requests carry trace headers
 
-The headers are only sent to Supabase hosts: your project URL, `*.supabase.co`, `*.supabase.in`, and `localhost`, `127.0.0.1` and `::1` for local development. Third-party hosts never receive them. They are sent on every HTTP request the client makes, including realtime broadcasts sent over HTTP, but not over the realtime WebSocket connection.
+The headers are only added to requests addressed to a Supabase host: your project URL, `*.supabase.co`, `*.supabase.in`, and `localhost`, `127.0.0.1` and `::1` for local development. Requests to third-party hosts never get them. The check is made on the URL the request is sent to, so if a Supabase host answers a GET or HEAD request with a redirect to another host, the HTTP client follows it with the trace headers still attached. They are sent on every HTTP request the client makes, including realtime broadcasts sent over HTTP, but not over the realtime WebSocket connection.
 
 #### Sampling
 
