@@ -14,12 +14,18 @@ import 'test_utils.dart';
 void main() {
   late CustomHttpClient customHttpClient;
   late PostgrestClient postgrest;
+  late PostgrestClient rollbackPostgrest;
 
   setUp(() {
     customHttpClient = CustomHttpClient();
     postgrest = PostgrestClient(
       localStackRestUrl,
       headers: apiHeaders,
+      httpClient: customHttpClient,
+    );
+    rollbackPostgrest = PostgrestClient(
+      localStackRestUrl,
+      headers: {...apiHeaders, 'Prefer': 'tx=rollback'},
       httpClient: customHttpClient,
     );
   });
@@ -153,5 +159,62 @@ void main() {
     final prefer = sentPrefer()!;
     expect(prefer, isNot(startsWith(',')));
     expect(prefer, 'handling=strict,max-affected=5');
+  });
+
+  test('insert() keeps a Prefer header set on the client', () async {
+    try {
+      await rollbackPostgrest.from('users').insert({'username': 'foo'});
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback');
+  });
+
+  test('update() keeps a Prefer header set on the client', () async {
+    try {
+      await rollbackPostgrest
+          .from('users')
+          .update({'status': 'INACTIVE'})
+          .eq('id', 1);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback');
+  });
+
+  test('delete() keeps a Prefer header set on the client', () async {
+    try {
+      await rollbackPostgrest.from('users').delete().eq('id', 1);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback');
+  });
+
+  test('upsert() keeps a Prefer header set on the client', () async {
+    try {
+      await rollbackPostgrest.from('users').upsert({'id': 1});
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback,resolution=merge-duplicates');
+  });
+
+  test('insert(defaultToNull: false) appends to a client Prefer', () async {
+    try {
+      await rollbackPostgrest.from('users').insert({
+        'username': 'foo',
+      }, defaultToNull: false);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback,missing=default');
+  });
+
+  test('a client Prefer survives select() and count()', () async {
+    try {
+      await rollbackPostgrest
+          .from('users')
+          .insert({'username': 'foo'})
+          .select()
+          .count(CountOption.exact);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback,return=representation,count=exact');
   });
 }

@@ -108,10 +108,12 @@ class PostgrestQueryBuilder {
     bool defaultToNull = true,
   }) {
     final newHeaders = {..._config.headers};
-    if (defaultToNull) {
-      newHeaders.remove('Prefer');
-    } else {
-      newHeaders['Prefer'] = 'missing=default';
+    if (!defaultToNull) {
+      final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
+      newHeaders['Prefer'] = [
+        ?prefer,
+        'missing=default',
+      ].join(',');
     }
 
     Uri url = _config.url;
@@ -170,12 +172,12 @@ class PostgrestQueryBuilder {
     bool defaultToNull = true,
   }) {
     final newHeaders = {..._config.headers};
-    newHeaders['Prefer'] =
-        'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates';
-
-    if (!defaultToNull) {
-      newHeaders['Prefer'] = '${newHeaders['Prefer']!},missing=default';
-    }
+    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
+    newHeaders['Prefer'] = [
+      ?prefer,
+      'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates',
+      if (!defaultToNull) 'missing=default',
+    ].join(',');
 
     Uri url = _config.url;
 
@@ -223,7 +225,7 @@ class PostgrestQueryBuilder {
   ///     .select();
   /// ```
   PostgrestFilterBuilder<void> update(Object values) {
-    final newHeaders = {..._config.headers}..remove('Prefer');
+    final newHeaders = {..._config.headers};
 
     return _filterBuilder(
       _config.copyWith(
@@ -255,7 +257,7 @@ class PostgrestQueryBuilder {
   ///     .select();
   /// ```
   PostgrestFilterBuilder<void> delete() {
-    final newHeaders = {..._config.headers}..remove('Prefer');
+    final newHeaders = {..._config.headers};
     return _filterBuilder(
       _config.copyWith(
         method: HttpMethod.delete,
