@@ -96,7 +96,12 @@ void _mergePrefer(Map<String, String> headers, List<String> preferences) {
     return key.trim().toLowerCase();
   }
 
-  final existing = headers.header('Prefer');
+  String? existing;
+  for (final MapEntry(:key, :value) in headers.entries) {
+    if (key.toLowerCase() == 'prefer') {
+      existing = value;
+    }
+  }
   headers.removeWhere((name, _) => name.toLowerCase() == 'prefer');
 
   final replaced = preferences.map(keyOf).toSet();

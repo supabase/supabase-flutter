@@ -326,4 +326,19 @@ void main() {
 
     expect(sentPrefer(), 'tx=rollback,return=representation');
   });
+
+  test(
+    'setHeader() with another spelling of Prefer wins over the client',
+    () async {
+      try {
+        await clientWithPrefer('tx=commit')
+            .from('users')
+            .setHeader('prefer', 'tx=rollback')
+            .insert({'username': 'foo'})
+            .select();
+      } catch (_) {}
+
+      expect(sentPrefer(), 'tx=rollback,return=representation');
+    },
+  );
 }
