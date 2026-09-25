@@ -71,7 +71,8 @@ final supabase = Supabase.instance.client;
 * [Edge Functions](#edge-functions)
 * [Deep Links](#deep-links)
 * [Custom session storage](#custom-session-storage)
-- [Logging](#logging)
+* [Logging](#logging)
+* [Request ids and tracing](#request-ids-and-tracing)
 
 
 ### <a id="authentication"></a>[Authentication](https://supabase.com/docs/guides/auth)
@@ -614,6 +615,106 @@ Without `hierarchicalLoggingEnabled = true`, `package:logging` only supports lis
 - `supabase_storage`: `Logger('supabase.storage')`
 - `supabase_functions`: `Logger('supabase.functions')`
 - `iceberg`: `Logger('supabase.storage.iceberg')`
+
+## <a id="request-ids-and-tracing"></a>Request ids and tracing
+
+When a request fails, the Supabase logs of your project usually say why. There are two ways to find the entries for a specific request: the request id on the exception, which needs no setup, and trace propagation, which ties requests into the traces of a tracing tool you already use.
+
+### Request id on a failure
+
+Every response from the Supabase gateway carries a request id, and the exceptions thrown by the auth, database, storage and functions clients expose it as `requestId`. Paste it into the log explorer of your project dashboard to find the server side logs of the failed request, or quote it when you contact support.
+
+```dart
+try {
+  await supabase.from('countries').select();
+} on SupabaseException catch (error) {
+  print('Request failed: ${error.message} (request id: ${error.requestId})');
+}
+```
+
+`requestId` is also part of the `toString()` of every one of these exceptions, so an error reporter that records the exception records the id with it.
+
+It is read from the `sb-request-id` response header, falling back to `x-request-id` for a self-hosted stack behind a reverse proxy that assigns its own. It is `null` when no response was received, for example on a network failure, or when the response carried neither header. Realtime errors do not carry a request id.
+
+### Trace propagation
+
+If your app already records traces with a tool like Sentry or OpenTelemetry, the client can send the active [W3C trace context](https://www.w3.org/TR/trace-context/) along with each request, so the Supabase logs of that request carry the trace id of the span that made it.
+
+Propagation is off by default. Turn it on by passing `TracePropagationOptions` with a `traceContextProvider`, which the client calls before each request to read the active trace. Return `null` when there is no active trace and the request is sent without trace headers.
+
+#### Sentry
+
+`toSentryTrace()` returns a header in the `sentry-trace` format, so convert it with `formatAsW3CHeader` from `package:sentry` before passing it on:
+
+```dart
+import 'package:sentry/sentry.dart';
+
+await Supabase.initialize(
+  url: 'SUPABASE_URL',
+  publishableKey: 'SUPABASE_PUBLISHABLE_KEY',
+  tracePropagationOptions: TracePropagationOptions(
+    traceContextProvider: () {
+      final span = Sentry.getSpan();
+      if (span == null) {
+        return null;
+      }
+      return TraceContext(
+        traceparent: formatAsW3CHeader(span.toSentryTrace()),
+        baggage: span.toBaggageHeader()?.value,
+      );
+    },
+  ),
+);
+```
+
+#### OpenTelemetry
+
+Let the propagator you registered write the active context into a map, and read the headers back out of it with `TraceContext.fromCarrier`:
+
+```dart
+import 'package:opentelemetry/api.dart';
+
+class MapSetter implements TextMapSetter<Map<String, String>> {
+  @override
+  void set(Map<String, String> carrier, String key, String value) {
+    carrier[key] = value;
+  }
+}
+
+await Supabase.initialize(
+  url: 'SUPABASE_URL',
+  publishableKey: 'SUPABASE_PUBLISHABLE_KEY',
+  tracePropagationOptions: TracePropagationOptions(
+    traceContextProvider: () {
+      final carrier = <String, String>{};
+      globalTextMapPropagator.inject(Context.current, carrier, MapSetter());
+      return TraceContext.fromCarrier(carrier);
+    },
+  ),
+);
+```
+
+#### Other tracing tools
+
+For a tool that exposes the ids of the active span rather than a W3C header, build the context with `TraceContext.w3c`:
+
+```dart
+traceContextProvider: () => TraceContext.w3c(
+  traceId: span.traceId,
+  spanId: span.spanId,
+  sampled: span.isSampled,
+),
+```
+
+A `traceparent` that is not valid W3C trace context is not sent, and the client logs a warning the first time it sees one.
+
+#### Which requests carry trace headers
+
+The headers are only sent to Supabase hosts: your project URL, `*.supabase.co`, `*.supabase.in`, and `localhost`, `127.0.0.1` and `::1` for local development. Third-party hosts never receive them. They are sent on every HTTP request the client makes, including realtime broadcasts sent over HTTP, but not over the realtime WebSocket connection.
+
+#### Sampling
+
+On a trace that is not sampled, one whose `traceparent` carries a sampled flag of `0`, the client still sends `traceparent` so the Supabase logs get a trace id to correlate on, but withholds `tracestate` and `baggage`. Set `respectSamplingDecision` to `false` to send them on unsampled traces as well.
 
 ---
 
