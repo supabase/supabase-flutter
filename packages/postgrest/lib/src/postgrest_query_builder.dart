@@ -109,11 +109,9 @@ class PostgrestQueryBuilder {
   }) {
     final newHeaders = {..._config.headers};
     if (!defaultToNull) {
-      final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
-      newHeaders['Prefer'] = [
-        ?prefer,
+      newHeaders['Prefer'] = _mergePrefer(newHeaders['Prefer'], [
         'missing=default',
-      ].join(',');
+      ]);
     }
 
     Uri url = _config.url;
@@ -172,12 +170,10 @@ class PostgrestQueryBuilder {
     bool defaultToNull = true,
   }) {
     final newHeaders = {..._config.headers};
-    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
-    newHeaders['Prefer'] = [
-      ?prefer,
+    newHeaders['Prefer'] = _mergePrefer(newHeaders['Prefer'], [
       'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates',
       if (!defaultToNull) 'missing=default',
-    ].join(',');
+    ]);
 
     Uri url = _config.url;
 

@@ -87,6 +87,24 @@ class _RequestConfig {
 String? _emptyPreferAsNull(String? prefer) =>
     (prefer == null || prefer.isEmpty) ? null : prefer;
 
+String _mergePrefer(String? existing, List<String> preferences) {
+  String keyOf(String preference) {
+    final separator = preference.indexOf('=');
+    return separator == -1 ? preference : preference.substring(0, separator);
+  }
+
+  final replaced = preferences.map(keyOf).toSet();
+  final kept = (_emptyPreferAsNull(existing) ?? '')
+      .split(',')
+      .map((preference) => preference.trim())
+      .where(
+        (preference) =>
+            preference.isNotEmpty && !replaced.contains(keyOf(preference)),
+      );
+
+  return [...kept, ...preferences].join(',');
+}
+
 extension on Uri {
   /// Returns this url with [value] appended to the values of query parameter
   /// [key].
@@ -410,10 +428,9 @@ class PostgrestBuilder<T> implements Future<T> {
 
     final count = _count;
     if (count != null) {
-      final oldPreferHeader = _emptyPreferAsNull(execHeaders['Prefer']);
-      execHeaders['Prefer'] = oldPreferHeader != null
-          ? '$oldPreferHeader,count=${count.name}'
-          : 'count=${count.name}';
+      execHeaders['Prefer'] = _mergePrefer(execHeaders['Prefer'], [
+        'count=${count.name}',
+      ]);
     }
 
     if (method == null) {

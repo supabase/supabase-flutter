@@ -32,6 +32,12 @@ void main() {
 
   String? sentPrefer() => customHttpClient.lastRequest!.headers['Prefer'];
 
+  PostgrestClient clientWithPrefer(String prefer) => PostgrestClient(
+    localStackRestUrl,
+    headers: {...apiHeaders, 'Prefer': prefer},
+    httpClient: customHttpClient,
+  );
+
   test('insert() does not send an empty Prefer header', () async {
     try {
       await postgrest.from('users').insert({'username': 'foo'});
@@ -216,5 +222,68 @@ void main() {
     } catch (_) {}
 
     expect(sentPrefer(), 'tx=rollback,return=representation,count=exact');
+  });
+
+  test('maxAffected() replaces a client max-affected', () async {
+    try {
+      await clientWithPrefer(
+        'max-affected=100',
+      ).from('users').delete().eq('id', 1).maxAffected(5);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'handling=strict,max-affected=5');
+  });
+
+  test('maxAffected() replaces a client handling', () async {
+    try {
+      await clientWithPrefer(
+        'handling=lenient',
+      ).from('users').delete().eq('id', 1).maxAffected(5);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'handling=strict,max-affected=5');
+  });
+
+  test('select() replaces a client return preference', () async {
+    try {
+      await clientWithPrefer(
+        'return=minimal',
+      ).from('users').insert({'username': 'foo'}).select();
+    } catch (_) {}
+
+    expect(sentPrefer(), 'return=representation');
+  });
+
+  test('upsert() replaces a client resolution preference', () async {
+    try {
+      await clientWithPrefer(
+        'resolution=ignore-duplicates',
+      ).from('users').upsert({'id': 1});
+    } catch (_) {}
+
+    expect(sentPrefer(), 'resolution=merge-duplicates');
+  });
+
+  test('count() replaces a client count preference', () async {
+    try {
+      await clientWithPrefer(
+        'count=planned',
+      ).from('users').select().count(CountOption.exact);
+    } catch (_) {}
+
+    expect(sentPrefer(), 'count=exact');
+  });
+
+  test('preferences the call does not set are kept', () async {
+    try {
+      await clientWithPrefer(
+        'tx=rollback, timezone=UTC',
+      ).from('users').delete().eq('id', 1).maxAffected(5);
+    } catch (_) {}
+
+    expect(
+      sentPrefer(),
+      'tx=rollback,timezone=UTC,handling=strict,max-affected=5',
+    );
   });
 }
