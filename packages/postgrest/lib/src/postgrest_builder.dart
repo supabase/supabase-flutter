@@ -87,7 +87,7 @@ class _RequestConfig {
 String? _emptyPreferAsNull(String? prefer) =>
     (prefer == null || prefer.isEmpty) ? null : prefer;
 
-String _mergePrefer(String? existing, List<String> preferences) {
+void _mergePrefer(Map<String, String> headers, List<String> preferences) {
   String keyOf(String preference) {
     final separator = preference.indexOf('=');
     final key = separator == -1
@@ -95,6 +95,9 @@ String _mergePrefer(String? existing, List<String> preferences) {
         : preference.substring(0, separator);
     return key.trim().toLowerCase();
   }
+
+  final existing = headers.header('Prefer');
+  headers.removeWhere((name, _) => name.toLowerCase() == 'prefer');
 
   final replaced = preferences.map(keyOf).toSet();
   final kept = (_emptyPreferAsNull(existing) ?? '')
@@ -105,7 +108,7 @@ String _mergePrefer(String? existing, List<String> preferences) {
             preference.isNotEmpty && !replaced.contains(keyOf(preference)),
       );
 
-  return [...kept, ...preferences].join(',');
+  headers['Prefer'] = [...kept, ...preferences].join(',');
 }
 
 extension on Uri {
@@ -431,7 +434,7 @@ class PostgrestBuilder<T> implements Future<T> {
 
     final count = _count;
     if (count != null) {
-      execHeaders['Prefer'] = _mergePrefer(execHeaders['Prefer'], [
+      _mergePrefer(execHeaders, [
         'count=${count.name}',
       ]);
     }

@@ -26,11 +26,12 @@ void main() {
 
   String? sentPrefer() => customHttpClient.lastRequest!.headers['Prefer'];
 
-  PostgrestClient clientWithPrefer(String prefer) => PostgrestClient(
-    localStackRestUrl,
-    headers: {...apiHeaders, 'Prefer': prefer},
-    httpClient: customHttpClient,
-  );
+  PostgrestClient clientWithPrefer(String prefer, {String name = 'Prefer'}) =>
+      PostgrestClient(
+        localStackRestUrl,
+        headers: {...apiHeaders, name: prefer},
+        httpClient: customHttpClient,
+      );
 
   test('insert() does not send an empty Prefer header', () async {
     try {
@@ -303,5 +304,26 @@ void main() {
     } catch (_) {}
 
     expect(sentPrefer(), 'handling=strict,max-affected=10');
+  });
+
+  test('dryRun() replaces a client tx preference', () async {
+    try {
+      await clientWithPrefer(
+        'tx=commit',
+      ).from('users').insert({'username': 'foo'}).dryRun();
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback');
+  });
+
+  test('a lowercase prefer header name is merged too', () async {
+    try {
+      await clientWithPrefer(
+        'tx=rollback',
+        name: 'prefer',
+      ).from('users').insert({'username': 'foo'}).select();
+    } catch (_) {}
+
+    expect(sentPrefer(), 'tx=rollback,return=representation');
   });
 }

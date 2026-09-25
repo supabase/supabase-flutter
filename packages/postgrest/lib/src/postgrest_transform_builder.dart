@@ -64,7 +64,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     final newHeaders = {..._headers};
 
     final url = _url.overrideSearchParameters('select', cleanedColumns);
-    newHeaders['Prefer'] = _mergePrefer(newHeaders['Prefer'], [
+    _mergePrefer(newHeaders, [
       'return=representation',
     ]);
     return PostgrestTransformBuilder(
@@ -256,7 +256,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// ```
   PostgrestTransformBuilder<T> dryRun() {
     final newHeaders = {..._headers};
-    newHeaders['Prefer'] = _mergePrefer(newHeaders['Prefer'], ['tx=rollback']);
+    _mergePrefer(newHeaders, ['tx=rollback']);
 
     return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
   }
@@ -324,7 +324,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   PostgrestTransformBuilder<T> maxAffected(int value) {
     final newHeaders = {..._headers};
 
-    newHeaders['Prefer'] = _mergePrefer(newHeaders['Prefer'], [
+    _mergePrefer(newHeaders, [
       'handling=strict',
       'max-affected=$value',
     ]);

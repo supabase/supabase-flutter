@@ -109,7 +109,7 @@ class PostgrestQueryBuilder {
   }) {
     final newHeaders = {..._config.headers};
     if (!defaultToNull) {
-      newHeaders['Prefer'] = _mergePrefer(newHeaders['Prefer'], [
+      _mergePrefer(newHeaders, [
         'missing=default',
       ]);
     }
@@ -170,7 +170,7 @@ class PostgrestQueryBuilder {
     bool defaultToNull = true,
   }) {
     final newHeaders = {..._config.headers};
-    newHeaders['Prefer'] = _mergePrefer(newHeaders['Prefer'], [
+    _mergePrefer(newHeaders, [
       'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates',
       if (!defaultToNull) 'missing=default',
     ]);
