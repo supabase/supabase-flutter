@@ -273,7 +273,7 @@ class FunctionsClient {
           // as the exception `details`. On a success status it's a real
           // anomaly, so keep surfacing it instead of handing back a String.
           if (isSuccessStatus) rethrow;
-          decoded = utf8.decode(bodyBytes);
+          decoded = utf8.decode(bodyBytes, allowMalformed: true);
         }
         data = decoded;
       }
@@ -287,7 +287,7 @@ class FunctionsClient {
       data = response.stream;
     } else {
       final bodyBytes = await response.stream.toBytes();
-      data = utf8.decode(bodyBytes);
+      data = utf8.decode(bodyBytes, allowMalformed: true);
     }
 
     if (isSuccessStatus) {

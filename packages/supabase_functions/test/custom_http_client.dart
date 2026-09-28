@@ -120,6 +120,25 @@ class CustomHttpClient extends BaseClient {
           "Content-Type": "application/json",
         },
       );
+    } else if (request.url.path.endsWith('latin1-plain')) {
+      return StreamedResponse(
+        Stream.value(latin1.encode('Café')),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "text/plain; charset=iso-8859-1",
+        },
+      );
+    } else if (request.url.path.endsWith('latin1-error')) {
+      return StreamedResponse(
+        Stream.value(latin1.encode('<html><body>Café</body></html>')),
+        500,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        reasonPhrase: "Internal Server Error",
+      );
     } else if (request.url.path.endsWith('uppercase-json')) {
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
