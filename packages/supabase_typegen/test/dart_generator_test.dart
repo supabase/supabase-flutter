@@ -745,6 +745,25 @@ void main() {
     expect(code, isNot(contains('extension type const PostgrestTable._')));
   });
 
+  test('an enum named like the error the parser throws is suffixed', () {
+    final code = generateDartCode(
+      DatabaseDescription(
+        schemaNames: const ['public'],
+        tables: const [],
+        enums: const [
+          EnumDescription(
+            schema: 'public',
+            name: 'argument_error',
+            values: ['a'],
+          ),
+        ],
+      ),
+    );
+
+    expect(code, contains('enum ArgumentError\$ '));
+    expect(code, contains('throw ArgumentError.value('));
+  });
+
   test('floating array elements convert through num', () {
     final code = generateDartCode(
       DatabaseDescription(
