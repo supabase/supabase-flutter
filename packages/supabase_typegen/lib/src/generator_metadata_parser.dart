@@ -361,22 +361,19 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
               .cast<Map<String, dynamic>>())
         (table['schema'] as String, table['name'] as String),
   };
-  final relationships =
+  final documentRelationships =
       (document['relationships'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()
-          .toList()
-        ..sort((a, b) {
-          final aIsTable = tables.contains((
-            a['referenced_schema'] as String,
-            a['referenced_relation'] as String,
-          ));
-          final bIsTable = tables.contains((
-            b['referenced_schema'] as String,
-            b['referenced_relation'] as String,
-          ));
-          if (aIsTable == bIsTable) return 0;
-          return aIsTable ? -1 : 1;
-        });
+          .cast<Map<String, dynamic>>();
+  bool referencesTable(Map<String, dynamic> relationship) => tables.contains((
+    relationship['referenced_schema'] as String,
+    relationship['referenced_relation'] as String,
+  ));
+  final relationships = [
+    ...documentRelationships.where(referencesTable),
+    ...documentRelationships.where(
+      (relationship) => !referencesTable(relationship),
+    ),
+  ];
 
   final foreignKeys = <(String, String, String), ForeignKeyDescription>{};
   for (final relationship in relationships) {

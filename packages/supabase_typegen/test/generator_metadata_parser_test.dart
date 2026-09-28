@@ -439,6 +439,50 @@ void main() {
     expect(authorId.foreignKey?.table, 'authors');
   });
 
+  test('the first foreign key on a column wins past the sort threshold', () {
+    Map<String, dynamic> relationship(int index) => switch (index) {
+      0 => {
+        'foreign_key_name': 'books_author_id_fkey',
+        'schema': 'public',
+        'relation': 'books',
+        'columns': ['author_id'],
+        'referenced_schema': 'public',
+        'referenced_relation': 'authors',
+        'referenced_columns': ['id'],
+      },
+      30 => {
+        'foreign_key_name': 'books_author_id_editors_fkey',
+        'schema': 'public',
+        'relation': 'books',
+        'columns': ['author_id'],
+        'referenced_schema': 'public',
+        'referenced_relation': 'editors',
+        'referenced_columns': ['id'],
+      },
+      _ => {
+        'foreign_key_name': 'chapters_book_id_fkey',
+        'schema': 'public',
+        'relation': 'chapters',
+        'columns': ['book_id'],
+        'referenced_schema': 'public',
+        'referenced_relation': index % 3 == 0 ? 'books' : 'book_stats',
+        'referenced_columns': ['id'],
+      },
+    };
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        {'id': 2, 'schema': 'public', 'name': 'authors', 'comment': null},
+        {'id': 3, 'schema': 'public', 'name': 'editors', 'comment': null},
+      ],
+      'columns': [_column(tableId: 1, table: 'books', name: 'author_id')],
+      'relationships': [for (var i = 0; i < 34; i++) relationship(i)],
+    });
+
+    final authorId = publicTable(parsed, 'books').columns.single;
+    expect(authorId.foreignKey?.table, 'authors');
+  });
+
   test('tables of the same name in different schemas stay apart', () {
     final parsed = parseGeneratorMetadata({
       'tables': [
