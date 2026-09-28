@@ -81,7 +81,7 @@ final class _Derivation<Row, Value extends Object>
 /// and the entry merges with the other entries of the same embed.
 final class _EmbeddedDerivation<Row, Value extends Object>
     extends PostgrestDerivedExpression<Row, Value>
-    implements _Embedded<Row> {
+    with _Embedded<Row> {
   const _EmbeddedDerivation._(this.relation, this._inner) : super._();
 
   @override
@@ -91,9 +91,6 @@ final class _EmbeddedDerivation<Row, Value extends Object>
 
   @override
   List<PostgrestSelectable<Object?>> get _selections => [_inner];
-
-  @override
-  String get expression => _embedExpression(relation.name, _selections);
 
   @override
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(

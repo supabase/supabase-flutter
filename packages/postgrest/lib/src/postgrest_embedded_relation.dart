@@ -96,7 +96,8 @@ final class PostgrestToOneRelation<Row, Target>
   @override
   PostgrestToOneEmbed<Row, Target> select([
     List<PostgrestSelectable<Target>>? selections,
-  ]) => PostgrestToOneEmbed._(this, _checkedSelections(selections));
+  ]) =>
+      PostgrestToOneEmbed._(this, _checkedSelections(selections, 'selections'));
 }
 
 /// A to-many embedded relation (one-to-many or many-to-many) of the table
@@ -122,20 +123,34 @@ final class PostgrestToManyRelation<Row, Target>
   @override
   PostgrestToManyEmbed<Row, Target> select([
     List<PostgrestSelectable<Target>>? selections,
-  ]) => PostgrestToManyEmbed._(this, _checkedSelections(selections));
+  ]) => PostgrestToManyEmbed._(
+    this,
+    _checkedSelections(selections, 'selections'),
+  );
 }
 
-/// A `select` entry that lives inside an embed's parentheses.
-///
-/// Entries of one relation in the same list are rendered as a single embed,
-/// since PostgREST joins the relation once per embed and Postgres rejects the
-/// repeated join with 42803.
-abstract interface class _Embedded<Row> implements PostgrestSelectable<Row> {
+/// A `select` entry that goes through a relation: it renders as that
+/// relation's embed, and entries of one relation in the same list are
+/// rendered as a single embed.
+base mixin _Embedded<Row> on PostgrestSelectable<Row> {
   /// The relation the entry is projected through.
   PostgrestRelation<Row, Object?> get relation;
 
   /// What goes inside the parentheses; empty for every column, `*`.
   List<PostgrestSelectable<Object?>> get _selections;
+
+  @override
+  String get expression => _embedExpression(relation.name, _selections);
+
+  /// The filter form, `parent.title`, dotted through every level of a
+  /// nested projection.
+  String get _filterName {
+    final inner = _selections.single;
+    final innerName = inner is _Embedded<Object?>
+        ? inner._filterName
+        : inner.expression;
+    return '${relation.name}.$innerName';
+  }
 }
 
 /// An embedded relation selected as a whole into the parent's `select` list:
@@ -148,7 +163,7 @@ abstract interface class _Embedded<Row> implements PostgrestSelectable<Row> {
 /// [PostgrestToOneEmbed] and a list for a [PostgrestToManyEmbed].
 @experimental
 sealed class PostgrestEmbed<Row, Target> extends PostgrestSelectable<Row>
-    implements _Embedded<Row> {
+    with _Embedded<Row> {
   PostgrestEmbed._(this.relation, List<PostgrestSelectable<Target>> selections)
     : selections = List.unmodifiable(selections),
       super._();
@@ -164,7 +179,7 @@ sealed class PostgrestEmbed<Row, Target> extends PostgrestSelectable<Row>
   List<PostgrestSelectable<Object?>> get _selections => selections;
 
   @override
-  String get expression => _embedExpression(relation.name, selections);
+  String get _filterName => relation.name;
 }
 
 /// A to-one relation selected as a whole, `author(id,name)`.
@@ -195,7 +210,7 @@ final class PostgrestToManyEmbed<Row, Target>
 /// ordered by.
 sealed class _EmbeddedColumn<Row, Value extends Object>
     extends PostgrestColumnExpression<Row, Value>
-    implements _Embedded<Row> {
+    with _Embedded<Row> {
   const _EmbeddedColumn(this.relation, this._inner) : super._();
 
   /// The relation the column is projected through.
@@ -207,19 +222,9 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
   @override
   List<PostgrestSelectable<Object?>> get _selections => [_inner];
 
-  /// The `select` list form, `parent(title)`.
-  @override
-  String get expression => _embedExpression(relation.name, _selections);
-
   /// The filter form, `parent.title`, dotted through every level of a
   /// nested projection.
-  String get embeddedFilterName {
-    final inner = _inner;
-    final innerName = inner is _EmbeddedColumn<Object?, Value>
-        ? inner.embeddedFilterName
-        : inner.expression;
-    return '${relation.name}.$innerName';
-  }
+  String get embeddedFilterName => _filterName;
 
   /// Places the derivation on the projected column, inside the embed's
   /// parentheses, where PostgREST applies it.

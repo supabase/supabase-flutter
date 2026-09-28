@@ -158,6 +158,10 @@ void main() {
       Orders.todo(Todos.orders(Orders.amount)).embeddedFilterName,
       'todo.orders.amount',
     );
+    expect(
+      Orders.todo(Todos.orders(Orders.amount).sum()).embeddedFilterName,
+      'todo.orders.amount.sum()',
+    );
   });
 
   test('a derivation of a nested projection lands on the innermost column', () {
@@ -188,8 +192,13 @@ void main() {
       expect(Orders.todo.select().selections, isEmpty);
     });
 
-    test('an empty selection throws', () {
-      expect(() => Orders.todo.select([]), throwsArgumentError);
+    test('an empty selection throws, naming the parameter', () {
+      expect(
+        () => Orders.todo.select([]),
+        throwsA(
+          isA<ArgumentError>().having((e) => e.name, 'name', 'selections'),
+        ),
+      );
     });
 
     test('keeps the relation and its kind', () {

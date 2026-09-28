@@ -35,11 +35,12 @@ List<Row> _rowsFromJson<Row>(
 ///
 /// Entries that go through the same relation are merged into one embed at
 /// the position of the first, so `author(id),author(name)` is sent as
-/// `author(id,name)`. PostgREST joins a relation once per embed and Postgres
-/// rejects the repeated join with 42803. Merging recurses, so the entries of
-/// a nested embed merge too.
+/// `author(id,name)`, since PostgREST joins a relation once per embed and
+/// rejects a repeated join. Merging recurses into nested embeds, and an
+/// entry that renders the same as an earlier one is left out.
 String _selectList(List<PostgrestSelectable<Object?>> selections) {
   if (selections.isEmpty) return '*';
+  if (selections case [final single]) return single.expression;
   final entries = <String>[];
   final embeds = <String, _EmbedGroup>{};
   for (final selection in selections) {
@@ -51,7 +52,8 @@ String _selectList(List<PostgrestSelectable<Object?>> selections) {
           })
           .add(members);
     } else {
-      entries.add(selection.expression);
+      final expression = selection.expression;
+      if (!entries.contains(expression)) entries.add(expression);
     }
   }
   for (final MapEntry(key: name, value: group) in embeds.entries) {
@@ -82,7 +84,7 @@ final class _EmbedGroup {
     }
   }
 
-  /// `name(*)`, `name(a,b)` or, when both were asked for, `name(*,a.sum())`.
+  /// `name(*)`, `name(a,b)` or, when both were asked for, `name(*,a)`.
   String render(String name) {
     if (!_all) return _embedExpression(name, _members);
     final rest = _members.isEmpty ? '' : ',${_selectList(_members)}';
@@ -98,16 +100,18 @@ String _embedExpression(
 ) => '$name(${_selectList(members)})';
 
 /// [selections] as the request stores them: every column when none are
-/// given. An empty list is rejected up front so the error surfaces where
-/// `select` is called rather than when awaited.
+/// given. An empty list is rejected up front, naming the caller's
+/// [parameter], so the error surfaces where `select` is called rather than
+/// when awaited.
 List<PostgrestSelectable<Row>> _checkedSelections<Row>(
   List<PostgrestSelectable<Row>>? selections,
+  String parameter,
 ) {
   if (selections == null) return const [];
   if (selections.isEmpty) {
     throw ArgumentError.value(
       selections,
-      'selections',
+      parameter,
       'select needs at least one column',
     );
   }

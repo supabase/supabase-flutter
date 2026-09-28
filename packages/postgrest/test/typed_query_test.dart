@@ -208,16 +208,32 @@ void main() {
         httpClient.stub([]);
 
         await client.table(Authors.table).select([
-          Authors.books(Books.id).count(),
+          Authors.books(Books.title),
           Authors.books.select(),
         ]);
 
-        expect(requestParameters()['select'], 'books(*,id.count())');
+        expect(requestParameters()['select'], 'books(*,title)');
       },
     );
 
-    test('an empty column list throws', () {
-      expect(() => client.table(Books.table).select([]), throwsArgumentError);
+    test('an entry selected twice is sent once', () async {
+      httpClient.stub([]);
+
+      await client.table(Books.table).select([
+        Books.id,
+        Books.author(Authors.id),
+        Books.id,
+        Books.author.select([Authors.id, Authors.name]),
+      ]);
+
+      expect(requestParameters()['select'], 'id,author(id,name)');
+    });
+
+    test('an empty column list throws, naming the parameter', () {
+      expect(
+        () => client.table(Books.table).select([]),
+        throwsA(isA<ArgumentError>().having((e) => e.name, 'name', 'columns')),
+      );
     });
 
     test('single returns one row converted into the table row type', () async {

@@ -84,7 +84,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ]) => PostgrestTypedFilterBuilder._(
     _request(
       PostgrestTableOperation.select,
-    ).copyWith(columns: _checkedSelections(columns)),
+    ).copyWith(columns: _checkedSelections(columns, 'columns')),
     _executor,
     _rowsConverter(table.rowFromJson),
     table.rowFromJson,
