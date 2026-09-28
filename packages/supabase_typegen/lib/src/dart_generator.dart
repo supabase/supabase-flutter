@@ -315,7 +315,10 @@ class _RelationMember {
     required this.baseName,
     required this.disambiguatedName,
     required this.type,
+    required this.isToOne,
+    required this.targetRowType,
     required this.embedName,
+    required this.ambiguous,
     required this.columns,
     required this.referencedTable,
     required this.referencedColumns,
@@ -332,9 +335,19 @@ class _RelationMember {
   /// `PostgrestToOneRelation<SourceRow, TargetRow>` or the to-many kind.
   final String type;
 
+  /// Whether the embed holds one row rather than a list.
+  final bool isToOne;
+
+  /// The row type of the embedded table.
+  final String targetRowType;
+
   /// The name PostgREST addresses the embed by, with a foreign key hint when
   /// the plain table name would be ambiguous.
   final String embedName;
+
+  /// Whether another key joins the same two tables, so the embed carries a
+  /// hint and is aliased to the member name to come back under its own key.
+  final bool ambiguous;
 
   /// The column constants of this table the relation joins on.
   final List<String> columns;
@@ -406,9 +419,12 @@ List<_RelationMember> _relationMembers(
           baseName: ambiguous ? '$targetName$byColumns' : targetName,
           disambiguatedName: '$targetName$byColumns',
           type: 'PostgrestToOneRelation<${source.rowType}, ${target.rowType}>',
+          isToOne: true,
+          targetRowType: target.rowType,
           embedName: ambiguous
               ? '${relationship.targetTable}!${relationship.foreignKeyName}'
               : relationship.targetTable,
+          ambiguous: ambiguous,
           columns: sourceColumns,
           referencedTable: relationship.targetTable,
           referencedColumns: [
@@ -431,9 +447,12 @@ List<_RelationMember> _relationMembers(
           baseName: ambiguous ? '$sourceName$viaColumns' : sourceName,
           disambiguatedName: '$sourceName$viaColumns',
           type: '$kind<${target.rowType}, ${source.rowType}>',
+          isToOne: relationship.isOneToOne,
+          targetRowType: source.rowType,
           embedName: ambiguous
               ? '${relationship.sourceTable}!${relationship.foreignKeyName}'
               : relationship.sourceTable,
+          ambiguous: ambiguous,
           columns: targetColumns,
           referencedTable: relationship.sourceTable,
           referencedColumns: [
@@ -486,8 +505,17 @@ void _writeTable(
     for (final column in table.columns)
       column.name: _bindingFor(column, enumTypeNames),
   };
+  final relationNames = _relationNames(names, members, relations);
 
-  _writeRow(buffer, table, names, memberNames, bindings);
+  _writeRow(
+    buffer,
+    table,
+    names,
+    memberNames,
+    bindings,
+    relations,
+    relationNames,
+  );
   if (insertType != null) {
     _writeValues(
       buffer,
@@ -528,8 +556,55 @@ void _writeTable(
     members.columnMembers,
     bindings,
     relations,
+    relationNames,
   );
 }
+
+/// The Dart names of [relations], settled against both scopes a relation
+/// member lives in: the namespace class, next to the column constants, and
+/// the row type, next to the column getters, so the same name works in both.
+List<String> _relationNames(
+  _TableNames names,
+  _TableMembers members,
+  List<_RelationMember> relations,
+) {
+  final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
+  final used = {
+    'table',
+    namespaceType,
+    ...members.columnMembers.values,
+    rowType,
+    ?insertType,
+    ?updateType,
+    'toJson',
+    'postgrestBytea',
+    'postgrestVector',
+    ...members.rowMembers.values,
+  };
+  final baseNameCounts = <String, int>{};
+  for (final relation in relations) {
+    baseNameCounts.update(
+      relation.baseName,
+      (count) => count + 1,
+      ifAbsent: () => 1,
+    );
+  }
+  return [
+    for (final relation in relations)
+      _claimName(
+        used,
+        used.contains(relation.baseName) ||
+                baseNameCounts[relation.baseName]! > 1
+            ? relation.disambiguatedName
+            : relation.baseName,
+      ),
+  ];
+}
+
+/// The key the embedded rows of [relation] come back under: the member name
+/// in snake case when the embed is aliased, otherwise the table name.
+String _embedKey(_RelationMember relation, String name) =>
+    relation.ambiguous ? snakeCase(name) : relation.referencedTable;
 
 void _writeRow(
   StringBuffer buffer,
@@ -537,6 +612,8 @@ void _writeRow(
   _TableNames names,
   Map<String, String> memberNames,
   Map<String, _Binding> bindings,
+  List<_RelationMember> relations,
+  List<String> relationNames,
 ) {
   final rowType = names.rowType;
   _writeDocComment(buffer, 'A row of the `${names.displayName}` table.');
@@ -551,6 +628,41 @@ void _writeRow(
       '  ${_getterType(column, binding)} get ${memberNames[column.name]} => '
       '${_readExpression(column, binding)};',
     );
+  }
+  for (final (index, relation) in relations.indexed) {
+    final name = relationNames[index];
+    final key = _stringLiteral(_embedKey(relation, name));
+    final _RelationMember(:targetRowType) = relation;
+    buffer.writeln();
+    if (relation.isToOne) {
+      _writeDocComment(
+        buffer,
+        '${relation.docLine} `null` unless the relation was selected and '
+        'the key points at a row.',
+        indent: '  ',
+      );
+      buffer
+        ..writeln('  $targetRowType? get $name => switch (_json[$key]) {')
+        ..writeln('    null => null,')
+        ..writeln(
+          '    final Object value => '
+          '$targetRowType(value as Map<String, dynamic>),',
+        )
+        ..writeln('  };');
+    } else {
+      _writeDocComment(
+        buffer,
+        '${relation.docLine} Only readable when the relation was selected.',
+        indent: '  ',
+      );
+      buffer
+        ..writeln('  List<$targetRowType> get $name => [')
+        ..writeln(
+          '    for (final row in _json[$key] as List) '
+          '$targetRowType(row as Map<String, dynamic>),',
+        )
+        ..writeln('  ];');
+    }
   }
   buffer
     ..writeln()
@@ -640,27 +752,9 @@ void _writeNamespace(
   Map<String, String> columnNames,
   Map<String, _Binding> bindings,
   List<_RelationMember> relations,
+  List<String> relationNames,
 ) {
   final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
-  final used = {'table', namespaceType, ...columnNames.values};
-  final baseNameCounts = <String, int>{};
-  for (final relation in relations) {
-    baseNameCounts.update(
-      relation.baseName,
-      (count) => count + 1,
-      ifAbsent: () => 1,
-    );
-  }
-  final relationNames = [
-    for (final relation in relations)
-      _claimName(
-        used,
-        used.contains(relation.baseName) ||
-                baseNameCounts[relation.baseName]! > 1
-            ? relation.disambiguatedName
-            : relation.baseName,
-      ),
-  ];
 
   final primaryKey = _columnConstants(
     table.primaryKey,
@@ -716,8 +810,12 @@ void _writeNamespace(
       )
       ..writeln(
         '    referencedColumns: [${relation.referencedColumns.join(', ')}],',
-      )
-      ..writeln('  );');
+      );
+    if (relation.ambiguous) {
+      final alias = _stringLiteral(_embedKey(relation, relationNames[index]));
+      buffer.writeln('    alias: $alias,');
+    }
+    buffer.writeln('  );');
   }
   buffer
     ..writeln('}')

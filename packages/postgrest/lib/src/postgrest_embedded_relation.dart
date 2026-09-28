@@ -12,10 +12,12 @@ part of 'postgrest_typed_builder.dart';
 /// calling it with a column of [Target], or as a whole with [select]. Entries
 /// of the same relation in one list are sent as a single embed, so
 /// `[Books.author(Authors.id), Books.author(Authors.name)]` renders
-/// `author(id,name)`.
+/// `author(id,name)`. The embedded rows come back under [key] in the parent
+/// row.
 ///
 /// `package:supabase_typegen` generates one relation constant per foreign
-/// key on each side and lists them in [PostgrestTable.relations].
+/// key on each side, lists them in [PostgrestTable.relations], and gives the
+/// row type a getter per relation that reads the embedded rows.
 @experimental
 sealed class PostgrestRelation<Row, Target> {
   const PostgrestRelation(
@@ -23,11 +25,30 @@ sealed class PostgrestRelation<Row, Target> {
     required this.columns,
     required this.referencedTable,
     required this.referencedColumns,
+    this.alias,
   });
 
   /// The name PostgREST addresses the embed by, including any disambiguating
   /// foreign key hint such as `authors!books_author_id_fkey`.
   final String name;
+
+  /// The name the embed is renamed to, `alias:authors!books_author_id_fkey`
+  /// in the `select` list, or `null` to keep the table name.
+  ///
+  /// Two hinted embeds of one table both come back under the table name, so
+  /// each needs an alias to be told apart. An aliased embed is addressed by
+  /// the alias in `order` and in a filter, which the rendering takes care of.
+  final String? alias;
+
+  /// The key the embedded rows come back under in the parent row: [alias]
+  /// when set, otherwise the table name in [name].
+  String get key => alias ?? name.split('!').first;
+
+  /// How the embed is spelled in the `select` list.
+  String get _selectName => alias == null ? name : '$alias:$name';
+
+  /// How the embed is addressed outside the `select` list.
+  String get _reference => alias ?? name;
 
   /// The columns of this table the relation joins on.
   final List<PostgrestColumn<Row, Object>> columns;
@@ -86,6 +107,7 @@ final class PostgrestToOneRelation<Row, Target>
     required super.columns,
     required super.referencedTable,
     required super.referencedColumns,
+    super.alias,
   });
 
   /// Projects [column] of the embedded table into the parent's frame.
@@ -113,6 +135,7 @@ final class PostgrestToManyRelation<Row, Target>
     required super.columns,
     required super.referencedTable,
     required super.referencedColumns,
+    super.alias,
   });
 
   /// Projects [column] of the embedded table into the parent's frame.
@@ -140,7 +163,7 @@ base mixin _Embedded<Row> on PostgrestSelectable<Row> {
   List<PostgrestSelectable<Object?>> get _selections;
 
   @override
-  String get expression => _embedExpression(relation.name, _selections);
+  String get expression => _embedExpression(relation._selectName, _selections);
 
   /// The filter form, `parent.title`, dotted through every level of a
   /// nested projection.
@@ -149,7 +172,7 @@ base mixin _Embedded<Row> on PostgrestSelectable<Row> {
     final innerName = inner is _Embedded<Object?>
         ? inner._filterName
         : inner.expression;
-    return '${relation.name}.$innerName';
+    return '${relation._reference}.$innerName';
   }
 }
 
@@ -159,7 +182,7 @@ base mixin _Embedded<Row> on PostgrestSelectable<Row> {
 /// Created by [PostgrestRelation.select]. Select position only: a whole embed
 /// is neither an order key nor a filter operand, and PostgREST applies no
 /// cast, JSON path or aggregate to one. The embedded rows come back under
-/// [PostgrestRelation.name] in the parent row, one object for a
+/// [PostgrestRelation.key] in the parent row, one object for a
 /// [PostgrestToOneEmbed] and a list for a [PostgrestToManyEmbed].
 @experimental
 sealed class PostgrestEmbed<Row, Target> extends PostgrestSelectable<Row>
@@ -179,7 +202,7 @@ sealed class PostgrestEmbed<Row, Target> extends PostgrestSelectable<Row>
   List<PostgrestSelectable<Object?>> get _selections => selections;
 
   @override
-  String get _filterName => relation.name;
+  String get _filterName => relation._reference;
 }
 
 /// A to-one relation selected as a whole, `author(id,name)`.
@@ -225,6 +248,11 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
   /// The filter form, `parent.title`, dotted through every level of a
   /// nested projection.
   String get embeddedFilterName => _filterName;
+
+  /// The `order` form, `parent(title)`, addressing an aliased embed by its
+  /// alias.
+  @override
+  String get _orderKey => '${relation._reference}(${_inner._orderKey})';
 
   /// Places the derivation on the projected column, inside the embed's
   /// parentheses, where PostgREST applies it.

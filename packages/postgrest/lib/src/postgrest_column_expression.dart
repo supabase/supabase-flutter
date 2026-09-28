@@ -38,6 +38,10 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
     extends PostgrestSelectable<Row> {
   const PostgrestColumnExpression._() : super._();
 
+  /// The text PostgREST expects in `order`; differs from [expression] for an
+  /// aliased embed.
+  String get _orderKey => expression;
+
   /// Applies [derivation] where PostgREST expects it: appended, or inside an
   /// embedded projection's parentheses.
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
@@ -257,23 +261,23 @@ base mixin PostgrestOrderableExpression<Row, Value extends Object>
     on PostgrestColumnExpression<Row, Value>
     implements PostgrestOrdering<Row> {
   @override
-  String get orderKey => expression;
+  String get orderKey => _orderKey;
 
   @override
   PostgrestOrdering<Row> asc() =>
-      _Ordering(expression, direction: SortDirection.ascending);
+      _Ordering(_orderKey, direction: SortDirection.ascending);
 
   @override
   PostgrestOrdering<Row> desc() =>
-      _Ordering(expression, direction: SortDirection.descending);
+      _Ordering(_orderKey, direction: SortDirection.descending);
 
   @override
   PostgrestOrdering<Row> nullsFirst() =>
-      _Ordering(expression, nulls: _NullPlacement.first);
+      _Ordering(_orderKey, nulls: _NullPlacement.first);
 
   @override
   PostgrestOrdering<Row> nullsLast() =>
-      _Ordering(expression, nulls: _NullPlacement.last);
+      _Ordering(_orderKey, nulls: _NullPlacement.last);
 }
 
 /// A filterable expression whose value the database allows to be `NULL`,
