@@ -67,12 +67,24 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///
   /// Rows are still converted into [Row], whose getters for the columns left
   /// out have nothing to read.
+  ///
+  /// An embedded relation is selected column by column,
+  /// `Books.author(Authors.name)`, or as a whole, `Books.author.select()`.
+  /// Entries of one relation are sent as a single embed whatever their
+  /// order in [columns], so `author(id)` and `author(name)` become
+  /// `author(id,name)`:
+  ///
+  /// ```dart
+  /// final List<Book> books = await client
+  ///     .table(Books.table)
+  ///     .select([Books.id, Books.author.select([Authors.id, Authors.name])]);
+  /// ```
   PostgrestTypedFilterBuilder<Row, List<Row>> select([
-    List<PostgrestColumnExpression<Row, Object>>? columns,
+    List<PostgrestSelectable<Row>>? columns,
   ]) => PostgrestTypedFilterBuilder._(
     _request(
       PostgrestTableOperation.select,
-    ).copyWith(columns: _checkedColumns(columns)),
+    ).copyWith(columns: _checkedSelections(columns)),
     _executor,
     _rowsConverter(table.rowFromJson),
     table.rowFromJson,

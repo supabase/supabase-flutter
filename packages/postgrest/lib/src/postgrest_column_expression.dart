@@ -1,12 +1,32 @@
 part of 'postgrest_typed_builder.dart';
 
-/// Anything that can appear in a `select` list: a stored column, or an
+/// Anything that can appear in a `select` list.
+///
+/// [Row] is the row type of the table the entry belongs to, so selecting an
+/// entry of one table from a query on another is a compile error rather than
+/// a PostgREST 400.
+///
+/// A [PostgrestColumnExpression] is a single value of the row: a stored
+/// column or something derived from one. A [PostgrestEmbed] is an embedded
+/// relation selected as a whole.
+@experimental
+sealed class PostgrestSelectable<Row> {
+  const PostgrestSelectable._();
+
+  /// The text PostgREST expects in a `select` list and, for a column
+  /// expression, on the left of an operator.
+  String get expression;
+
+  @override
+  String toString() => expression;
+}
+
+/// A single value of the row in a `select` list: a stored column, or an
 /// expression derived from one.
 ///
-/// [Row] is the row type of the table the expression belongs to. Every
-/// filter and ordering built from the expression carries it, so using a
-/// column of one table against a query on another is a compile error rather
-/// than a PostgREST 400.
+/// Every filter and ordering built from the expression carries [Row], so
+/// using a column of one table against a query on another is a compile error
+/// rather than a PostgREST 400.
 ///
 /// [Value] is the Dart type the expression produces. Operators require a
 /// matching operand, so `.eq('seven')` on an `int` column does not compile.
@@ -14,21 +34,15 @@ part of 'postgrest_typed_builder.dart';
 /// Stored columns are declared as [PostgrestColumn] or
 /// [PostgrestNullableColumn].
 @experimental
-sealed class PostgrestColumnExpression<Row, Value extends Object> {
-  const PostgrestColumnExpression._();
-
-  /// The text PostgREST expects, in a `select` list or on the left of an
-  /// operator.
-  String get expression;
+sealed class PostgrestColumnExpression<Row, Value extends Object>
+    extends PostgrestSelectable<Row> {
+  const PostgrestColumnExpression._() : super._();
 
   /// Applies [derivation] where PostgREST expects it: appended, or inside an
   /// embedded projection's parentheses.
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
     String derivation,
-  ) => PostgrestDerivedExpression._(
-    embed: null,
-    inner: '$expression$derivation',
-  );
+  ) => _Derivation._('$expression$derivation');
 
   /// Casts this expression to another Postgres type, `cost::text`.
   ///
@@ -102,9 +116,6 @@ sealed class PostgrestColumnExpression<Row, Value extends Object> {
   /// {@macro postgrest_aggregate}
   PostgrestDerivedExpression<Row, int> count() =>
       _derive(_AggregateFunction.count.suffix);
-
-  @override
-  String toString() => expression;
 }
 
 /// The aggregate functions PostgREST applies to a `select` list entry.

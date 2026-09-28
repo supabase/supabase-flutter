@@ -36,17 +36,9 @@ final class PostgrestCastTarget<Value extends Object> {
 /// and a derivation of an embedded column stays inside the embed's
 /// parentheses, `todo(amount::text)`.
 @experimental
-final class PostgrestDerivedExpression<Row, Value extends Object>
+sealed class PostgrestDerivedExpression<Row, Value extends Object>
     extends PostgrestColumnExpression<Row, Value> {
-  const PostgrestDerivedExpression._({
-    required String? embed,
-    required String inner,
-  }) : _embed = embed,
-       _inner = inner,
-       super._();
-
-  final String? _embed;
-  final String _inner;
+  const PostgrestDerivedExpression._() : super._();
 
   /// `count()`, which counts rows rather than the values of a column.
   ///
@@ -58,22 +50,7 @@ final class PostgrestDerivedExpression<Row, Value extends Object>
   ///
   /// {@macro postgrest_aggregate}
   static PostgrestDerivedExpression<Row, int> countAll<Row>() =>
-      const PostgrestDerivedExpression._(embed: null, inner: 'count()');
-
-  @override
-  String get expression => switch (_embed) {
-    null => _inner,
-    final embed => '$embed($_inner)',
-  };
-
-  /// Keeps the embed, so a chained derivation stays inside the parentheses.
-  @override
-  PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
-    String derivation,
-  ) => PostgrestDerivedExpression._(
-    embed: _embed,
-    inner: '$_inner$derivation',
-  );
+      const _Derivation._('count()');
 
   @override
   PostgrestDerivedExpression<Row, String> jsonText(String path) =>
@@ -82,6 +59,46 @@ final class PostgrestDerivedExpression<Row, Value extends Object>
   @override
   PostgrestDerivedExpression<Row, Value> jsonObject(String path) =>
       _derive('->$path');
+}
+
+/// A derivation of a value of this table, kept as the text PostgREST reads.
+final class _Derivation<Row, Value extends Object>
+    extends PostgrestDerivedExpression<Row, Value> {
+  const _Derivation._(this.expression) : super._();
+
+  @override
+  final String expression;
+
+  @override
+  PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
+    String derivation,
+  ) => _Derivation._('$expression$derivation');
+}
+
+/// A derivation applied inside an embed's parentheses, `todo(amount.sum())`.
+///
+/// Keeps the relation, so a chained derivation stays inside the parentheses
+/// and the entry merges with the other entries of the same embed.
+final class _EmbeddedDerivation<Row, Value extends Object>
+    extends PostgrestDerivedExpression<Row, Value>
+    implements _Embedded<Row> {
+  const _EmbeddedDerivation._(this.relation, this._inner) : super._();
+
+  @override
+  final PostgrestRelation<Row, Object?> relation;
+
+  final PostgrestDerivedExpression<Object?, Value> _inner;
+
+  @override
+  List<PostgrestSelectable<Object?>> get _selections => [_inner];
+
+  @override
+  String get expression => _embedExpression(relation.name, _selections);
+
+  @override
+  PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
+    String derivation,
+  ) => _EmbeddedDerivation._(relation, _inner._derive(derivation));
 }
 
 /// A JSON path read from a stored column, at every position the column is.

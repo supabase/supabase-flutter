@@ -167,6 +167,55 @@ void main() {
       expect(requestParameters()['select'], 'id,books(id.count())');
     });
 
+    test('projections of one relation are sent as a single embed', () async {
+      // `author(id),author(name)` is a 42803 from Postgres.
+      httpClient.stub([]);
+
+      await client.table(Books.table).select([
+        Books.author(Authors.id),
+        Books.id,
+        Books.author(Authors.name),
+      ]);
+
+      expect(requestParameters()['select'], 'author(id,name),id');
+
+      await client.table(Authors.table).select([
+        Authors.books(Books.id).count(),
+        Authors.books(Books.title),
+      ]);
+
+      expect(requestParameters()['select'], 'books(id.count(),title)');
+    });
+
+    test('selects a whole embed', () async {
+      httpClient.stub([]);
+
+      await client.table(Books.table).select([Books.id, Books.author.select()]);
+
+      expect(requestParameters()['select'], 'id,author(*)');
+
+      await client.table(Books.table).select([
+        Books.id,
+        Books.author.select([Authors.id, Authors.name]),
+      ]);
+
+      expect(requestParameters()['select'], 'id,author(id,name)');
+    });
+
+    test(
+      'a whole embed merges with projections of the same relation',
+      () async {
+        httpClient.stub([]);
+
+        await client.table(Authors.table).select([
+          Authors.books(Books.id).count(),
+          Authors.books.select(),
+        ]);
+
+        expect(requestParameters()['select'], 'books(*,id.count())');
+      },
+    );
+
     test('an empty column list throws', () {
       expect(() => client.table(Books.table).select([]), throwsArgumentError);
     });
