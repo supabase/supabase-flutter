@@ -126,7 +126,7 @@ class CustomHttpClient extends BaseClient {
         200,
         request: request,
         headers: {
-          "Content-Type": "text/plain; charset=iso-8859-1",
+          "Content-Type": "text/plain",
         },
       );
     } else if (request.url.path.endsWith('latin1-error')) {
