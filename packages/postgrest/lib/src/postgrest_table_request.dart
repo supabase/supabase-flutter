@@ -121,7 +121,7 @@ final class PostgrestTableRequest {
     required this.table,
     required this.operation,
     this.schema,
-    List<PostgrestColumnExpression<Object?, Object>> columns = const [],
+    List<PostgrestSelectable<Object?>> columns = const [],
     this.filter,
     List<PostgrestOrdering<Object?>> orderings = const [],
     this.limit,
@@ -152,11 +152,12 @@ final class PostgrestTableRequest {
   /// The database schema of [table], or `null` for the client default.
   final String? schema;
 
-  /// The expressions to read back; empty for every column.
+  /// The `select` list entries to read back, column expressions and
+  /// embeds; empty for every column.
   ///
   /// For a mutation these are the columns of the returned rows, and only
   /// apply when [returning] is set.
-  final List<PostgrestColumnExpression<Object?, Object>> columns;
+  final List<PostgrestSelectable<Object?>> columns;
 
   /// The rows to act on, or `null` for every row.
   final PostgrestFilter<Object?>? filter;
@@ -225,7 +226,7 @@ final class PostgrestTableRequest {
     PostgrestTable<Object?, Object?, Object?>? table,
     PostgrestTableOperation? operation,
     String? schema,
-    List<PostgrestColumnExpression<Object?, Object>>? columns,
+    List<PostgrestSelectable<Object?>>? columns,
     PostgrestFilter<Object?>? filter,
     List<PostgrestOrdering<Object?>>? orderings,
     int? limit,

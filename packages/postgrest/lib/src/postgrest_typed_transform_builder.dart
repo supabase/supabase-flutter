@@ -46,10 +46,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ///
   /// See [PostgrestTypedQueryBuilder.select] for [columns].
   PostgrestTypedTransformBuilder<Row, List<Row>> select([
-    List<PostgrestColumnExpression<Row, Object>>? columns,
+    List<PostgrestSelectable<Row>>? columns,
   ]) => PostgrestTypedTransformBuilder._(
     request.copyWith(
-      columns: _checkedColumns(columns),
+      columns: _checkedSelections(columns, 'columns'),
       shape: PostgrestResultShape.rows,
       returning: true,
     ),
