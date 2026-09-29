@@ -286,4 +286,33 @@ void main() {
       expect(exception.statusCode, 403);
     });
   });
+  group('Deep Link with malformed percent-encoding', () {
+    for (final link in [
+      'com.supabase://callback/?code=%FF',
+      'com.supabase://callback/#access_token=%FF',
+      'com.supabase://callback/#/route%C3',
+    ]) {
+      test('$link does not raise an unhandled error', () async {
+        final httpClient = createGetUserHttpClient('new@email.com');
+
+        mockAppLink(
+          mockMethodChannel: false,
+          mockEventChannel: true,
+          initialLink: link,
+        );
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          httpClient: httpClient,
+          authOptions: FlutterAuthClientOptions(
+            asyncStorage: MockAsyncStorage(),
+          ),
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+        expect(httpClient.requests, isEmpty);
+        expect(Supabase.instance.client.auth.currentSession, isNull);
+      });
+    }
+  });
 }
