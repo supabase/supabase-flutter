@@ -157,6 +157,31 @@ void main() {
       },
     );
 
+    test('a success text body that is not valid UTF-8 still throws', () async {
+      await expectLater(
+        functionsCustomHttpClient.invoke('latin1-plain'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test(
+      'an error body that is not valid UTF-8 still reports the status',
+      () async {
+        await expectLater(
+          functionsCustomHttpClient.invoke('latin1-error'),
+          throwsA(
+            isA<FunctionsApiException>()
+                .having((e) => e.statusCode, 'statusCode', 500)
+                .having(
+                  (e) => e.details,
+                  'details',
+                  '<html><body>Caf\uFFFD</body></html>',
+                ),
+          ),
+        );
+      },
+    );
+
     test(
       'an upper-cased application/JSON content type is parsed as JSON',
       () async {
