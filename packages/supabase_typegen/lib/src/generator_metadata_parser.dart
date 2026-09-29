@@ -350,6 +350,8 @@ Map<(String, String), List<String>> _primaryKeysByTable(
 /// The document also lists a relationship for every view that exposes the
 /// referenced key column, so the target of a column is the referenced table
 /// itself, and one of those views only when the table is not in the document.
+/// A column with several foreign keys takes the first one in document order,
+/// with those into tables ahead of those into views.
 Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
   Map<String, dynamic> document,
   Set<String> schemas,
@@ -361,19 +363,20 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
               .cast<Map<String, dynamic>>())
         (table['schema'] as String, table['name'] as String),
   };
-  final documentRelationships =
-      (document['relationships'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>();
-  bool referencesTable(Map<String, dynamic> relationship) => tables.contains((
-    relationship['referenced_schema'] as String,
-    relationship['referenced_relation'] as String,
-  ));
-  final relationships = [
-    ...documentRelationships.where(referencesTable),
-    ...documentRelationships.where(
-      (relationship) => !referencesTable(relationship),
-    ),
-  ];
+  final tableRelationships = <Map<String, dynamic>>[];
+  final viewRelationships = <Map<String, dynamic>>[];
+  for (final relationship
+      in (document['relationships'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()) {
+    final referencesTable = tables.contains((
+      relationship['referenced_schema'] as String,
+      relationship['referenced_relation'] as String,
+    ));
+    (referencesTable ? tableRelationships : viewRelationships).add(
+      relationship,
+    );
+  }
+  final relationships = [...tableRelationships, ...viewRelationships];
 
   final foreignKeys = <(String, String, String), ForeignKeyDescription>{};
   for (final relationship in relationships) {
