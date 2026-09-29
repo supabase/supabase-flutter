@@ -193,7 +193,8 @@ void main() {
     expect(
       compact,
       contains(
-        "PostgrestNullableColumn<PostgrestTableRow,Uint8List>('uint8_list')",
+        "PostgrestNullableColumn<PostgrestTableRow,Uint8List>('uint8_list',"
+        "fromJson:_uint8ListFromJson",
       ),
     );
     expect(
@@ -236,6 +237,111 @@ void main() {
         ".toList(),",
       ),
     );
+  });
+
+  test('column tokens decode through one helper per Dart type', () {
+    final compact = _normalize(
+      generateDartCode(schema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "PostgrestColumn<BooksRow,DateTime>('created_at',"
+        "fromJson:_dateTimeFromJson",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<BooksRow,DateTime>('updated_at',"
+        "fromJson:_dateTimeFromJson",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<BooksRow,Mood>('mood',fromJson:_moodFromJson",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<BooksRow,List<int>>('page_counts',"
+        "fromJson:_intListFromJson",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestNullableColumn<BooksRow,double>('rating',"
+        "fromJson:_doubleFromJson",
+      ),
+    );
+    // Types the decoded JSON already is need no decoder.
+    expect(compact, contains("PostgrestColumn<BooksRow,int>('id');"));
+    expect(compact, contains("PostgrestColumn<BooksRow,String>('title');"));
+    expect(
+      compact,
+      contains("PostgrestNullableColumn<BooksRow,num>('price');"),
+    );
+    expect(
+      compact,
+      contains("PostgrestNullableColumn<BooksRow,Object>('metadata');"),
+    );
+    expect(
+      compact,
+      contains(
+        "DateTime_dateTimeFromJson(Objectjson)=>DateTime.parse(jsonasString);",
+      ),
+    );
+    expect(
+      compact,
+      contains("Mood_moodFromJson(Objectjson)=>Mood.fromWire(jsonasString);"),
+    );
+    expect(
+      compact,
+      contains(
+        "List<int>_intListFromJson(Objectjson)=>(jsonasList<dynamic>).cast();",
+      ),
+    );
+    expect(compact.split('_dateTimeFromJson(Objectjson)'), hasLength(2));
+  });
+
+  test('array and range decoders are named after their type', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "List<PostgrestRange<int>>_postgrestRangeOfIntListFromJson(Objectjson)"
+        "=>(jsonasList<dynamic>).map((element)=>PostgrestRange.parse("
+        "elementasString,int.parse)).toList();",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "List<double>_doubleListFromJson(Objectjson)=>(jsonasList<dynamic>)"
+        ".map((element)=>(elementasnum).toDouble()).toList();",
+      ),
+    );
+    // A `List<String$>` enum array cannot take the `List<String>` helper.
+    expect(compact, contains("List<String>_stringListFromJson(Objectjson)"));
+    expect(
+      compact,
+      contains("List<String\$>_stringListFromJson\$(Objectjson)"),
+    );
+  });
+
+  test('row types carry no relation getters', () {
+    final code = _normalize(generateDartCode(schema));
+
+    expect(code, isNot(contains('AuthorsRow? get authors')));
+    expect(code, isNot(contains('List<BooksRow> get books')));
+    expect(code, contains('static const authors = PostgrestToOneRelation'));
   });
 
   test('vector columns read and write through the vector codec', () {
@@ -290,10 +396,19 @@ void main() {
     final code = _normalize(generateDartCode(hostileSchema));
     final compact = code.replaceAll(' ', '');
 
-    expect(compact, contains("PostgrestColumn<MapRow,PostgrestDate>('since')"));
     expect(
       compact,
-      contains("PostgrestColumn<MapRow,PostgrestTime>('opens_at')"),
+      contains(
+        "PostgrestColumn<MapRow,PostgrestDate>('since',"
+        "fromJson:_postgrestDateFromJson",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "PostgrestColumn<MapRow,PostgrestTime>('opens_at',"
+        "fromJson:_postgrestTimeFromJson",
+      ),
     );
     expect(
       compact,
@@ -301,7 +416,10 @@ void main() {
     );
     expect(
       compact,
-      contains("PostgrestNullableColumn<MapRow,PostgrestInterval>('ttl')"),
+      contains(
+        "PostgrestNullableColumn<MapRow,PostgrestInterval>('ttl',"
+        "fromJson:_postgrestIntervalFromJson",
+      ),
     );
     expect(
       code,
@@ -376,25 +494,6 @@ void main() {
         "staticconstbooks=PostgrestToManyRelation<AuthorsRow,BooksRow>('books',"
         "columns:[id],referencedTable:'books',"
         "referencedColumns:[Books.authorId],);",
-      ),
-    );
-  });
-
-  test('the row type reads embedded rows through a getter per relation', () {
-    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
-
-    expect(
-      compact,
-      contains(
-        "AuthorsRow?getauthors=>switch(_json['authors']){null=>null,"
-        "finalObjectvalue=>AuthorsRow(valueasMap<String,dynamic>),};",
-      ),
-    );
-    expect(
-      compact,
-      contains(
-        "List<BooksRow>getbooks=>[for(finalrowin_json['books']asList)"
-        "BooksRow(rowasMap<String,dynamic>),];",
       ),
     );
   });
@@ -502,17 +601,12 @@ void main() {
         "referencedColumns:[Map\$.list],alias:'map_by_mood',);",
       ),
     );
-    expect(compact, contains("getmapByMood=>switch(_json['map_by_mood'])"));
     expect(
       compact,
       contains(
         "referencedColumns:[PostgrestTable\$.mood],"
         "alias:'postgrest_table_via_mood',);",
       ),
-    );
-    expect(
-      compact,
-      contains("_json['postgrest_table_via_mood']asList"),
     );
   });
 
@@ -550,7 +644,6 @@ void main() {
         "referencedColumns:[Map\$.list],alias:'map_by_mood_2',);",
       ),
     );
-    expect(compact, contains("getmapByMood\$=>switch(_json['map_by_mood_2'])"));
   });
 
   test('a self-referential key produces no relation member', () {
@@ -996,7 +1089,7 @@ void main() {
       compact,
       contains(
         "PostgrestNullableColumn<PostgrestTableRow,List<PostgrestDate>>"
-        "('days')",
+        "('days',fromJson:_postgrestDateListFromJson",
       ),
     );
     expect(

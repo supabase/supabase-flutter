@@ -121,7 +121,7 @@ void main() {
     test('selects the given columns', () async {
       httpClient.stub(bookRows);
 
-      await client.table(Books.table).select([Books.id, Books.title]);
+      await client.table(Books.table).selectOnly([Books.id, Books.title]);
 
       expect(requestParameters()['select'], 'id,title');
     });
@@ -129,7 +129,7 @@ void main() {
     test('selects casts and JSON paths', () async {
       httpClient.stub(bookRows);
 
-      await client.table(Books.table).select([
+      await client.table(Books.table).selectOnly([
         Books.id,
         Books.title.cast(PostgrestCastTarget.text),
         Books.metadata.jsonText('isbn'),
@@ -143,7 +143,7 @@ void main() {
         {'count': 2, 'max': 'b'},
       ]);
 
-      await client.table(Books.table).select([
+      await client.table(Books.table).selectOnly([
         PostgrestDerivedExpression.countAll(),
         Books.title.max(),
       ]);
@@ -161,13 +161,13 @@ void main() {
 
       await client
           .table(Books.table)
-          .select([Books.id, Books.author(Authors.name)])
+          .selectOnly([Books.id, Books.author(Authors.name)])
           .order(Books.author(Authors.name).desc());
 
       expect(requestParameters()['select'], 'id,author(name)');
       expect(requestParameters()['order'], 'author(name).desc');
 
-      await client.table(Authors.table).select([
+      await client.table(Authors.table).selectOnly([
         Authors.id,
         Authors.books(Books.id).count(),
       ]);
@@ -179,7 +179,7 @@ void main() {
       // `author(id),author(name)` is a 42803 from Postgres.
       httpClient.stub([]);
 
-      await client.table(Books.table).select([
+      await client.table(Books.table).selectOnly([
         Books.author(Authors.id),
         Books.id,
         Books.author(Authors.name),
@@ -187,7 +187,7 @@ void main() {
 
       expect(requestParameters()['select'], 'author(id,name),id');
 
-      await client.table(Authors.table).select([
+      await client.table(Authors.table).selectOnly([
         Authors.books(Books.id).count(),
         Authors.books(Books.title),
       ]);
@@ -198,11 +198,14 @@ void main() {
     test('selects a whole embed', () async {
       httpClient.stub([]);
 
-      await client.table(Books.table).select([Books.id, Books.author.select()]);
+      await client.table(Books.table).selectOnly([
+        Books.id,
+        Books.author.select(),
+      ]);
 
       expect(requestParameters()['select'], 'id,author(*)');
 
-      await client.table(Books.table).select([
+      await client.table(Books.table).selectOnly([
         Books.id,
         Books.author.select([Authors.id, Authors.name]),
       ]);
@@ -215,7 +218,7 @@ void main() {
       () async {
         httpClient.stub([]);
 
-        await client.table(Authors.table).select([
+        await client.table(Authors.table).selectOnly([
           Authors.books(Books.title),
           Authors.books.select(),
         ]);
@@ -229,7 +232,7 @@ void main() {
 
       await client
           .table(Books.table)
-          .select([
+          .selectOnly([
             Books.editor(Authors.id),
             Books.author(Authors.name),
             Books.editor(Authors.name),
@@ -246,7 +249,7 @@ void main() {
     test('an entry selected twice is sent once', () async {
       httpClient.stub([]);
 
-      await client.table(Books.table).select([
+      await client.table(Books.table).selectOnly([
         Books.id,
         Books.author(Authors.id),
         Books.id,
@@ -258,7 +261,7 @@ void main() {
 
     test('an empty column list throws, naming the parameter', () {
       expect(
-        () => client.table(Books.table).select([]),
+        () => client.table(Books.table).selectOnly([]),
         throwsA(isA<ArgumentError>().having((e) => e.name, 'name', 'columns')),
       );
     });
@@ -836,13 +839,13 @@ void main() {
         {'id': 3},
       ]);
 
-      final List<Book> books = await client
+      final books = await client
           .table(Books.table)
           .insert(BookInsert(title: 'foo'))
-          .select([Books.id]);
+          .selectOnly([Books.id]);
 
       expect(requestParameters()['select'], 'id');
-      expect(books.map((book) => book.id), [3]);
+      expect(books.map((book) => book.read(Books.id)), [3]);
     });
 
     test('insert and upsert return builders without filters', () {

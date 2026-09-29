@@ -865,17 +865,26 @@ features:
       - PostgrestHttpTableExecutor.execute
       - PostgrestSelectable
       - PostgrestSelectable.expression
+      - PostgrestSelectable.responseKey
       - PostgrestSelectable.toString
       - PostgrestColumnExpression
       - PostgrestFilterableExpression
       - PostgrestOrderableExpression
       - PostgrestNullableExpression
+      - PostgrestStoredColumn
+      - PostgrestStoredColumn.name
+      - PostgrestStoredColumn.expression
+      - PostgrestStoredColumn.responseKey
       - PostgrestColumn
       - PostgrestColumn.PostgrestColumn
-      - PostgrestColumn.name
-      - PostgrestColumn.expression
       - PostgrestNullableColumn
       - PostgrestNullableColumn.PostgrestNullableColumn
+      - PostgrestReadable
+      - PostgrestReadable.responseKey
+      - PostgrestPartialRow
+      - PostgrestPartialRow.read
+      - PostgrestPartialRow.toJson
+      - PostgrestPartialRow.toString
       - PostgrestRange
       - PostgrestRange.closedOpen
       - PostgrestRange.closed
@@ -969,6 +978,7 @@ features:
     symbols:
       - PostgrestQueryBuilder.select
       - PostgrestTypedQueryBuilder.select
+      - PostgrestTypedQueryBuilder.selectOnly
       - PostgrestTypedQueryBuilder.count
       - PostgrestTypedTransformBuilder
       - PostgrestTypedTransformBuilder.count
@@ -976,8 +986,8 @@ features:
       - PostgrestColumnExpression.cast
       - PostgrestColumnExpression.jsonText
       - PostgrestColumnExpression.jsonObject
-      - PostgrestColumn.jsonText
-      - PostgrestColumn.jsonObject
+      - PostgrestStoredColumn.jsonText
+      - PostgrestStoredColumn.jsonObject
       - PostgrestCastTarget
       - PostgrestCastTarget.PostgrestCastTarget
       - PostgrestCastTarget.sqlType
@@ -996,6 +1006,7 @@ features:
       - PostgrestDerivedExpression.jsonObject
       - PostgrestJsonPath
       - PostgrestJsonPath.expression
+      - PostgrestJsonPath.responseKey
       - PostgrestJsonPath.jsonText
       - PostgrestJsonPath.jsonObject
   database.query.rpc:
@@ -1055,6 +1066,7 @@ features:
     symbols:
       - PostgrestTransformBuilder.select
       - PostgrestTypedTransformBuilder.select
+      - PostgrestTypedTransformBuilder.selectOnly
   database.mutate.bulk_rows_with_differing_fields:
     status: implemented
     symbols:
@@ -1305,12 +1317,14 @@ features:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.single
-      - PostgrestTypedTransformBuilder.single
+      - PostgrestTypedRowsBuilder.single
+    supporting_symbols:
+      - PostgrestTypedRowsBuilder
   database.using_modifiers.maybe_single_row:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.maybeSingle
-      - PostgrestTypedTransformBuilder.maybeSingle
+      - PostgrestTypedRowsBuilder.maybeSingle
   database.using_modifiers.max_affected_rows:
     status: implemented
     symbols:
@@ -1350,6 +1364,7 @@ features:
       - PostgrestRelation.name
       - PostgrestRelation.alias
       - PostgrestRelation.key
+      - PostgrestRelation.responseKey
       - PostgrestRelation.columns
       - PostgrestRelation.referencedTable
       - PostgrestRelation.referencedColumns

@@ -84,9 +84,9 @@ void main() {
           const PostgrestTableResult(data: bookRows),
         );
 
-        final List<Book> books = await client
+        final books = await client
             .table(Books.table, executor: executor)
-            .select([Books.id, Books.title])
+            .selectOnly([Books.id, Books.title])
             .where(Books.id.gt(1))
             .where(Books.title.eq('a'))
             .order(Books.title.desc())
@@ -109,7 +109,7 @@ void main() {
         expect(request.orderings.single.orderKey, 'title.desc');
         expect(request.offset, 10);
         expect(request.limit, 10);
-        expect(books.map((book) => book.title), ['a', 'b']);
+        expect(books.map((book) => book.read(Books.title)), ['a', 'b']);
       },
     );
 
@@ -190,10 +190,10 @@ void main() {
         const PostgrestTableResult(data: bookRows),
       );
 
-      final List<Book> books = await client
+      final books = await client
           .table(Books.table, executor: executor)
           .insertAll([BookInsert(title: 'a'), BookInsert(title: 'b')])
-          .select([Books.id]);
+          .selectOnly([Books.id]);
 
       final request = executor.onlyRequest;
       expect(request.operation, PostgrestTableOperation.insert);
@@ -275,8 +275,9 @@ void main() {
 
     test('an empty column list is rejected when select is called', () {
       expect(
-        () =>
-            client.table(Books.table, executor: RecordingExecutor()).select([]),
+        () => client
+            .table(Books.table, executor: RecordingExecutor())
+            .selectOnly([]),
         throwsArgumentError,
       );
     });
@@ -341,7 +342,7 @@ void main() {
     test('sends what the untyped builder sends for the same query', () async {
       await client
           .table(Books.table)
-          .select([Books.id, Books.title])
+          .selectOnly([Books.id, Books.title])
           .where(Books.id.gt(1) | Books.title.eq('a'))
           .order(Books.title.desc().nullsLast())
           .range(10, 19);
@@ -419,16 +420,16 @@ void main() {
           {'id': 3, 'title': 'c'},
         ]);
 
-      final List<Book> books = await client
+      final books = await client
           .table(Books.table)
           .insert(BookInsert(title: 'c'))
-          .select([Books.id]);
+          .selectOnly([Books.id]);
 
       final request = httpClient.requests.single;
       expect(request.method, 'POST');
       expect(request.headers['Prefer'], contains('return=representation'));
       expect(request.queryParameters['select'], 'id');
-      expect(books.single.id, 3);
+      expect(books.single.read(Books.id), 3);
     });
 
     test('scopes the request to the schema of the request', () async {

@@ -17,6 +17,11 @@ sealed class PostgrestSelectable<Row> {
   /// expression, on the left of an operator.
   String get expression;
 
+  /// The key the entry comes back under in a response row: the column name,
+  /// the function name of an aggregate, the last key of a JSON path, or the
+  /// [PostgrestRelation.key] of an embed.
+  String get responseKey;
+
   @override
   String toString() => expression;
 }
@@ -42,11 +47,18 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// aliased embed.
   String get _orderKey => expression;
 
+  /// Converts the decoded JSON of a present value into [Value], or `null`
+  /// when the decoded JSON is the value.
+  Value Function(Object json)? get _fromJson;
+
   /// Applies [derivation] where PostgREST expects it: appended, or inside an
-  /// embedded projection's parentheses.
+  /// embedded projection's parentheses. The result comes back under [key]
+  /// and is decoded with [fromJson].
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
-    String derivation,
-  ) => _Derivation._('$expression$derivation');
+    String derivation, {
+    required String key,
+    required Derived Function(Object json)? fromJson,
+  }) => _Derivation._('$expression$derivation', key, fromJson);
 
   /// Casts this expression to another Postgres type, `cost::text`.
   ///
@@ -54,9 +66,15 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// `cost::text=eq.10` compares the uncast column, and rejects one in
   /// `order`. Make it the last step in a chain, since PostgREST applies only
   /// the first of two casts and rejects a JSON path on a cast.
+  ///
+  /// The cast value comes back under the key of what was cast.
   PostgrestDerivedExpression<Row, Target> cast<Target extends Object>(
     PostgrestCastTarget<Target> target,
-  ) => _derive('::${target.sqlType}');
+  ) => _derive(
+    '::${target.sqlType}',
+    key: responseKey,
+    fromJson: target._fromJson,
+  );
 
   /// Reads a `json`/`jsonb` path as text, with `->>`.
   ///
@@ -90,37 +108,55 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// `avg`, `min` and `max` are `null` when no row matches; the type
   /// parameter describes a present value.
   /// {@endtemplate}
-  PostgrestDerivedExpression<Row, double> sum() =>
-      _derive(_AggregateFunction.sum.suffix);
+  PostgrestDerivedExpression<Row, double> sum() => _derive(
+    _AggregateFunction.sum.suffix,
+    key: _AggregateFunction.sum.name,
+    fromJson: _toDouble,
+  );
 
   /// The mean of this expression across the group.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, double> avg() =>
-      _derive(_AggregateFunction.avg.suffix);
+  PostgrestDerivedExpression<Row, double> avg() => _derive(
+    _AggregateFunction.avg.suffix,
+    key: _AggregateFunction.avg.name,
+    fromJson: _toDouble,
+  );
 
   /// The smallest value of this expression in the group, keeping the
   /// expression's own type.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, Value> min() =>
-      _derive(_AggregateFunction.min.suffix);
+  PostgrestDerivedExpression<Row, Value> min() => _derive(
+    _AggregateFunction.min.suffix,
+    key: _AggregateFunction.min.name,
+    fromJson: _fromJson,
+  );
 
   /// The largest value of this expression in the group, keeping the
   /// expression's own type.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, Value> max() =>
-      _derive(_AggregateFunction.max.suffix);
+  PostgrestDerivedExpression<Row, Value> max() => _derive(
+    _AggregateFunction.max.suffix,
+    key: _AggregateFunction.max.name,
+    fromJson: _fromJson,
+  );
 
   /// How many non-null values of this expression are in the group.
   ///
   /// Use [PostgrestDerivedExpression.countAll] to count rows instead.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, int> count() =>
-      _derive(_AggregateFunction.count.suffix);
+  PostgrestDerivedExpression<Row, int> count() => _derive(
+    _AggregateFunction.count.suffix,
+    key: _AggregateFunction.count.name,
+    fromJson: null,
+  );
 }
+
+/// Reads a number PostgREST may have sent as a JSON integer as a [double].
+double _toDouble(Object json) => (json as num).toDouble();
 
 /// The aggregate functions PostgREST applies to a `select` list entry.
 enum _AggregateFunction {
@@ -312,7 +348,9 @@ extension PostgrestBooleanFilters<Row>
   );
 }
 
-/// A stored `NOT NULL` column of the table whose rows are [Row].
+/// A stored column of the table whose rows are [Row]: a [PostgrestColumn]
+/// when the database forbids `NULL`, a [PostgrestNullableColumn] when it
+/// allows it.
 ///
 /// Declared once per column, normally by `supabase_typegen`, as a static
 /// member of the table's namespace class:
@@ -324,47 +362,99 @@ extension PostgrestBooleanFilters<Row>
 ///   static const title = PostgrestColumn<BooksRow, String>('title');
 ///   static const dueDate = PostgrestNullableColumn<BooksRow, DateTime>(
 ///     'due_date',
+///     fromJson: _dateTimeFromJson,
 ///   );
 /// }
+///
+/// DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
 /// ```
 ///
-/// [Value] is the column's non-nullable Dart type; a column that allows
-/// `NULL` is a [PostgrestNullableColumn].
+/// [Value] is the column's non-nullable Dart type; it is the operand type of
+/// every filter, and what [PostgrestPartialRow.read] produces, nullable for a
+/// [PostgrestNullableColumn].
+///
+/// `fromJson` converts the decoded JSON of a present value into [Value]. Left
+/// out, the decoded JSON is cast to [Value], which is right for `int`,
+/// `num`, `bool`, `String` and `Object`. `supabase_typegen` supplies it for
+/// every column whose Dart type differs from its JSON representation.
 @experimental
-final class PostgrestColumn<Row, Value extends Object>
+sealed class PostgrestStoredColumn<Row, Value extends Object>
     extends PostgrestColumnExpression<Row, Value>
     with
         PostgrestFilterableExpression<Row, Value>,
         PostgrestOrderableExpression<Row, Value> {
-  /// Creates a reference to the column called [name] in the database.
-  const PostgrestColumn(this.name) : super._();
+  const PostgrestStoredColumn._(this.name, this._fromJson) : super._();
 
   /// Name of the column in the database.
   final String name;
+
+  @override
+  final Value Function(Object json)? _fromJson;
 
   @override
   // ignore: match-getter-setter-field-names
   String get expression => name;
 
   @override
+  // ignore: match-getter-setter-field-names
+  String get responseKey => name;
+
+  /// [json], the decoded JSON of a present value, as [Value].
+  Value _decode(Object json) => switch (_fromJson) {
+    null => json as Value,
+    final fromJson => fromJson(json),
+  };
+
+  @override
   PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$name->>$path');
+      PostgrestJsonPath._('$name->>$path', path);
 
   @override
   PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$name->$path');
+      PostgrestJsonPath._('$name->$path', path);
 }
 
-/// A stored column the database allows to be `NULL`.
+/// A stored `NOT NULL` column, see [PostgrestStoredColumn].
+///
+/// Read from a [PostgrestPartialRow] as [Value].
+@experimental
+final class PostgrestColumn<Row, Value extends Object>
+    extends PostgrestStoredColumn<Row, Value>
+    implements PostgrestReadable<Row, Value> {
+  /// Creates a reference to the column called [name] in the database.
+  const PostgrestColumn(String name, {Value Function(Object json)? fromJson})
+    : super._(name, fromJson);
+
+  @override
+  Value _read(Object? json, _NestedSelection nested) => _decode(json as Object);
+
+  @override
+  bool get _selectedByStar => true;
+}
+
+/// A stored column the database allows to be `NULL`, see
+/// [PostgrestStoredColumn].
 ///
 /// [Value] stays the non-nullable type, `PostgrestNullableColumn<Row, String>`
 /// for a nullable `text` column; `NULL` is tested with
-/// [PostgrestNullableExpression.isNull].
+/// [PostgrestNullableExpression.isNull], and the column is read from a
+/// [PostgrestPartialRow] as `Value?`.
 @experimental
 final class PostgrestNullableColumn<Row, Value extends Object>
-    extends PostgrestColumn<Row, Value>
-    with PostgrestNullableExpression<Row, Value> {
+    extends PostgrestStoredColumn<Row, Value>
+    with PostgrestNullableExpression<Row, Value>
+    implements PostgrestReadable<Row, Value?> {
   /// Creates a reference to the nullable column called [name] in the
   /// database.
-  const PostgrestNullableColumn(super.name);
+  const PostgrestNullableColumn(
+    String name, {
+    Value Function(Object json)? fromJson,
+  }) : super._(name, fromJson);
+
+  @override
+  Value? _read(Object? json, _NestedSelection nested) =>
+      json == null ? null : _decode(json);
+
+  @override
+  bool get _selectedByStar => true;
 }

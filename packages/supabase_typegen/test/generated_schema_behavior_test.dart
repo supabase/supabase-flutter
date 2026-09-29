@@ -185,7 +185,7 @@ void main() {
     () async {
       httpClient.stubTable('stock', rows: [], schema: 'inventory');
 
-      await client.table(InventoryStock.table).select([
+      await client.table(InventoryStock.table).selectOnly([
         InventoryStock.id,
         InventoryStock.books(InventoryBooks.isbn),
       ]);
@@ -198,7 +198,7 @@ void main() {
   );
 
   test('relation members project embedded columns', () async {
-    await client.table(Books.table).select([
+    await client.table(Books.table).selectOnly([
       Books.id,
       Books.authors(Authors.name),
     ]);
@@ -208,7 +208,7 @@ void main() {
       'id,authors(name)',
     );
 
-    await client.table(Authors.table).select([
+    await client.table(Authors.table).selectOnly([
       Authors.id,
       Authors.books(Books.id).count(),
     ]);
@@ -219,7 +219,7 @@ void main() {
     );
   });
 
-  test('embedded rows are read through the row getters', () async {
+  test('embedded rows are read through the relation', () async {
     httpClient.stub([
       {
         'id': 1,
@@ -228,7 +228,7 @@ void main() {
       {'id': 2, 'authors': null},
     ]);
 
-    final books = await client.table(Books.table).select([
+    final books = await client.table(Books.table).selectOnly([
       Books.id,
       Books.authors.select([Authors.id, Authors.name]),
     ]);
@@ -237,8 +237,8 @@ void main() {
       httpClient.requests.last.queryParameters['select'],
       'id,authors(id,name)',
     );
-    expect(books.first.authors?.name, 'Ada');
-    expect(books.last.authors == null, isTrue);
+    expect(books.first.read(Books.authors)?.read(Authors.name), 'Ada');
+    expect(books.last.read(Books.authors), isNull);
 
     httpClient.stub([
       {
@@ -250,7 +250,7 @@ void main() {
       },
     ]);
 
-    final authors = await client.table(Authors.table).select([
+    final authors = await client.table(Authors.table).selectOnly([
       Authors.id,
       Authors.books.select(),
     ]);
@@ -259,7 +259,10 @@ void main() {
       httpClient.requests.last.queryParameters['select'],
       'id,books(*)',
     );
-    expect(authors.single.books.map((book) => book.title), ['a', 'b']);
+    expect(
+      authors.single.read(Authors.books).map((book) => book.read(Books.title)),
+      ['a', 'b'],
+    );
   });
 
   test(
@@ -275,7 +278,7 @@ void main() {
 
       final rows = await client
           .table(hostile.PostgrestTable$.table)
-          .select([
+          .selectOnly([
             hostile.PostgrestTable$.days,
             hostile.PostgrestTable$.mapByMood(hostile.Map$.list),
             hostile.PostgrestTable$.mapByDays.select(),
@@ -291,8 +294,13 @@ void main() {
         httpClient.requests.last.queryParameters['order'],
         'map_by_mood(list).desc',
       );
-      expect(rows.single.mapByMood?.list, 3);
-      expect(rows.single.mapByDays == null, isTrue);
+      expect(
+        rows.single
+            .read(hostile.PostgrestTable$.mapByMood)
+            ?.read(hostile.Map$.list),
+        3,
+      );
+      expect(rows.single.read(hostile.PostgrestTable$.mapByDays), isNull);
     },
   );
 

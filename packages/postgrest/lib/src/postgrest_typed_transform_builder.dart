@@ -44,19 +44,43 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ///     .select();
   /// ```
   ///
-  /// See [PostgrestTypedQueryBuilder.select] for [columns].
-  PostgrestTypedTransformBuilder<Row, List<Row>> select([
-    List<PostgrestSelectable<Row>>? columns,
-  ]) => PostgrestTypedTransformBuilder._(
-    request.copyWith(
-      columns: _checkedSelections(columns, 'columns'),
-      shape: PostgrestResultShape.rows,
-      returning: true,
-    ),
-    _executor,
-    _rowsConverter(_rowFromJson),
-    _rowFromJson,
-  );
+  /// See [selectOnly] to return some columns only.
+  PostgrestTypedTransformBuilder<Row, List<Row>> select() =>
+      PostgrestTypedTransformBuilder._(
+        request.copyWith(
+          columns: const [],
+          shape: PostgrestResultShape.rows,
+          returning: true,
+        ),
+        _executor,
+        _rowsConverter(_rowFromJson),
+        _rowFromJson,
+      );
+
+  /// Performs horizontal filtering with SELECT, returning [columns] of the
+  /// affected rows as [PostgrestPartialRow]s.
+  ///
+  /// ```dart
+  /// final rows = await client
+  ///     .table(Books.table)
+  ///     .insert(BookInsert(title: 'foo'))
+  ///     .selectOnly([Books.id]);
+  /// final int id = rows.single.read(Books.id);
+  /// ```
+  ///
+  /// See [PostgrestTypedQueryBuilder.selectOnly] for [columns].
+  PostgrestTypedTransformBuilder<Row, List<PostgrestPartialRow<Row>>>
+  selectOnly(List<PostgrestSelectable<Row>> columns) =>
+      PostgrestTypedTransformBuilder._(
+        request.copyWith(
+          columns: _checkedSelections(columns, 'columns'),
+          shape: PostgrestResultShape.rows,
+          returning: true,
+        ),
+        _executor,
+        _partialRowsConverter(columns),
+        _rowFromJson,
+      );
 
   /// Sorts the result by [ordering].
   ///
@@ -107,33 +131,6 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
               ),
             ],
           ),
-  );
-
-  /// Retrieves only one row from the result as [Row].
-  ///
-  /// The result must be exactly one row, otherwise this will result in an
-  /// error.
-  ///
-  /// ```dart
-  /// final Book book = await client
-  ///     .table(Books.table)
-  ///     .select()
-  ///     .where(Books.id.eq(1))
-  ///     .single();
-  /// ```
-  PostgrestTypedTransformBuilder<Row, Row> single() => _shaped(
-    PostgrestResultShape.single,
-    (result) => _rowFromJson(result.data! as PostgrestMap),
-  );
-
-  /// Retrieves at most one row from the result as [Row], or `null` when the
-  /// result is empty.
-  PostgrestTypedTransformBuilder<Row, Row?> maybeSingle() => _shaped(
-    PostgrestResultShape.maybeSingle,
-    (result) {
-      final row = result.data;
-      return row == null ? null : _rowFromJson(row as PostgrestMap);
-    },
   );
 
   /// Omits `null`-valued properties from the response objects.

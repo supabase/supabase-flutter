@@ -130,7 +130,7 @@ final class PostgrestTableRequest {
     this.shape = PostgrestResultShape.rows,
     this.countOption,
     this.payload,
-    List<PostgrestColumn<Object?, Object>>? onConflict,
+    List<PostgrestStoredColumn<Object?, Object>>? onConflict,
     this.ignoreDuplicates = false,
     this.defaultToNull = true,
     this.returning = false,
@@ -192,7 +192,7 @@ final class PostgrestTableRequest {
 
   /// The columns of the unique constraint an upsert merges on, or `null` for
   /// the primary key.
-  final List<PostgrestColumn<Object?, Object>>? onConflict;
+  final List<PostgrestStoredColumn<Object?, Object>>? onConflict;
 
   /// Whether an upsert skips conflicting rows instead of merging them.
   final bool ignoreDuplicates;
@@ -235,7 +235,7 @@ final class PostgrestTableRequest {
     PostgrestResultShape? shape,
     CountOption? countOption,
     Object? payload,
-    List<PostgrestColumn<Object?, Object>>? onConflict,
+    List<PostgrestStoredColumn<Object?, Object>>? onConflict,
     bool? ignoreDuplicates,
     bool? defaultToNull,
     bool? returning,
