@@ -863,9 +863,10 @@ features:
       - PostgrestHttpTableExecutor.PostgrestHttpTableExecutor
       - PostgrestHttpTableExecutor.client
       - PostgrestHttpTableExecutor.execute
+      - PostgrestSelectable
+      - PostgrestSelectable.expression
+      - PostgrestSelectable.toString
       - PostgrestColumnExpression
-      - PostgrestColumnExpression.expression
-      - PostgrestColumnExpression.toString
       - PostgrestFilterableExpression
       - PostgrestOrderableExpression
       - PostgrestNullableExpression
@@ -991,7 +992,6 @@ features:
       - PostgrestColumnExpression.count
       - PostgrestDerivedExpression
       - PostgrestDerivedExpression.countAll
-      - PostgrestDerivedExpression.expression
       - PostgrestDerivedExpression.jsonText
       - PostgrestDerivedExpression.jsonObject
       - PostgrestJsonPath
@@ -1328,17 +1328,28 @@ features:
       - PostgrestTypedTransformBuilder.geojson
   database.using_modifiers.relationship_embed:
     status: implemented
-    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server). Filtering inside an embed is not on the typed surface; embeddedFilterName is the form it will use."
+    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Filtering inside an embed is not on the typed surface; embeddedFilterName is the form it will use."
     symbols:
       - PostgrestTransformBuilder.select
       - PostgrestToOneRelation.call
       - PostgrestToManyRelation.call
+      - PostgrestRelation.select
+      - PostgrestToOneRelation.select
+      - PostgrestToManyRelation.select
     supporting_symbols:
+      - PostgrestEmbed
+      - PostgrestEmbed.relation
+      - PostgrestEmbed.selections
+      - PostgrestEmbed.expression
+      - PostgrestToOneEmbed
+      - PostgrestToManyEmbed
       - PostgrestToOneRelation
       - PostgrestToOneRelation.PostgrestToOneRelation
       - PostgrestRelation
       - PostgrestRelation.PostgrestRelation
       - PostgrestRelation.name
+      - PostgrestRelation.alias
+      - PostgrestRelation.key
       - PostgrestRelation.columns
       - PostgrestRelation.referencedTable
       - PostgrestRelation.referencedColumns

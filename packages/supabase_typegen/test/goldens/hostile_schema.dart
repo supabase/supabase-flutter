@@ -86,6 +86,20 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
           )
           .toList();
 
+  /// The `map` row referenced by `mood`. `null` unless the relation was
+  /// selected and the key points at a row.
+  MapRow? get mapByMood => switch (_json['map_by_mood']) {
+    null => null,
+    final Object value => MapRow(value as Map<String, dynamic>),
+  };
+
+  /// The `map` row referenced by `days`. `null` unless the relation was
+  /// selected and the key points at a row.
+  MapRow? get mapByDays => switch (_json['map_by_days']) {
+    null => null,
+    final Object value => MapRow(value as Map<String, dynamic>),
+  };
+
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
 }
@@ -366,6 +380,7 @@ class PostgrestTable$ {
     columns: [mood],
     referencedTable: 'map',
     referencedColumns: [Map$.list],
+    alias: 'map_by_mood',
   );
 
   /// The `map` row referenced by `days`.
@@ -374,6 +389,7 @@ class PostgrestTable$ {
     columns: [days],
     referencedTable: 'map',
     referencedColumns: [Map$.list],
+    alias: 'map_by_days',
   );
 }
 
@@ -408,6 +424,21 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => PostgrestInterval.parse(value as String),
   };
+
+  /// The `postgrest_table` rows referencing this row through `mood`. Only
+  /// readable when the relation was selected.
+  List<PostgrestTableRow> get postgrestTableViaMood => [
+    for (final row in _json['postgrest_table_via_mood'] as List)
+      PostgrestTableRow(row as Map<String, dynamic>),
+  ];
+
+  /// The `postgrest_table` row referencing this row through `days`. `null`
+  /// unless the relation was selected and the key points at a row.
+  PostgrestTableRow? get postgrestTableViaDays =>
+      switch (_json['postgrest_table_via_days']) {
+        null => null,
+        final Object value => PostgrestTableRow(value as Map<String, dynamic>),
+      };
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -560,6 +591,7 @@ class Map$ {
         columns: [list],
         referencedTable: 'postgrest_table',
         referencedColumns: [PostgrestTable$.mood],
+        alias: 'postgrest_table_via_mood',
       );
 
   /// The `postgrest_table` row referencing this row through `days`.
@@ -569,6 +601,7 @@ class Map$ {
         columns: [list],
         referencedTable: 'postgrest_table',
         referencedColumns: [PostgrestTable$.days],
+        alias: 'postgrest_table_via_days',
       );
 }
 

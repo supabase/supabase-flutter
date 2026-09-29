@@ -20,6 +20,14 @@ class Orders {
     referencedTable: 'todos',
     referencedColumns: [Todos.id],
   );
+  static const parentId = PostgrestColumn<Order, int>('parent_id');
+  static const parentTodo = PostgrestToOneRelation<Order, Todo>(
+    'todo!orders_parent_id_fkey',
+    columns: [parentId],
+    referencedTable: 'todos',
+    referencedColumns: [Todos.id],
+    alias: 'parent_todo',
+  );
 }
 
 class Todos {
@@ -154,5 +162,148 @@ void main() {
       Orders.todo(Todos.orders(Orders.amount)).expression,
       'todo(orders(amount))',
     );
+    expect(
+      Orders.todo(Todos.orders(Orders.amount)).embeddedFilterName,
+      'todo.orders.amount',
+    );
+    expect(
+      Orders.todo(Todos.orders(Orders.amount).sum()).embeddedFilterName,
+      'todo.orders.amount.sum()',
+    );
+  });
+
+  test('a derivation of a nested projection lands on the innermost column', () {
+    expect(
+      Orders.todo(Todos.orders(Orders.amount)).sum().expression,
+      'todo(orders(amount.sum()))',
+    );
+    expect(
+      Orders.todo(Todos.orders(Orders.amount)).sum().jsonText('k').expression,
+      'todo(orders(amount.sum()->>k))',
+    );
+  });
+
+  group('alias', () {
+    test('the key is the alias, or the table name of the embed', () {
+      expect(Orders.todo.key, 'todo');
+      expect(Orders.parentTodo.key, 'parent_todo');
+      expect(
+        const PostgrestToOneRelation<Order, Todo>(
+          'todo!orders_parent_id_fkey',
+          columns: [Orders.parentId],
+          referencedTable: 'todos',
+          referencedColumns: [Todos.id],
+        ).key,
+        'todo',
+      );
+    });
+
+    test('renames the embed in the select list', () {
+      expect(
+        Orders.parentTodo(Todos.title).expression,
+        'parent_todo:todo!orders_parent_id_fkey(title)',
+      );
+      expect(
+        Orders.parentTodo.select().expression,
+        'parent_todo:todo!orders_parent_id_fkey(*)',
+      );
+      expect(
+        Orders.parentTodo(Todos.title).sum().expression,
+        'parent_todo:todo!orders_parent_id_fkey(title.sum())',
+      );
+    });
+
+    test('addresses the embed by the alias in order and filter', () {
+      expect(
+        Orders.parentTodo(Todos.title).desc().orderKey,
+        'parent_todo(title).desc',
+      );
+      expect(Orders.parentTodo(Todos.title).orderKey, 'parent_todo(title)');
+      expect(
+        Orders.parentTodo(Todos.title).embeddedFilterName,
+        'parent_todo.title',
+      );
+      expect(
+        Orders.parentTodo(Todos.orders(Orders.id)).orderKey,
+        'parent_todo(orders(id))',
+      );
+    });
+  });
+
+  group('select', () {
+    test('several columns of an embed share one pair of parentheses', () {
+      expect(
+        Orders.todo.select([Todos.id, Todos.title]).expression,
+        'todo(id,title)',
+      );
+      expect(
+        Todos.orders.select([Orders.id, Orders.amount.sum()]).expression,
+        'orders(id,amount.sum())',
+      );
+    });
+
+    test('no selections selects every column of the embed', () {
+      expect(Orders.todo.select().expression, 'todo(*)');
+      expect(Orders.todo.select().selections, isEmpty);
+    });
+
+    test('an empty selection throws, naming the parameter', () {
+      expect(
+        () => Orders.todo.select([]),
+        throwsA(
+          isA<ArgumentError>().having((e) => e.name, 'name', 'selections'),
+        ),
+      );
+    });
+
+    test('keeps the relation and its kind', () {
+      final toOne = Orders.todo.select();
+      final toMany = Todos.orders.select();
+
+      expect(toOne, isA<PostgrestToOneEmbed<Order, Todo>>());
+      expect(toOne.relation, same(Orders.todo));
+      expect(toMany, isA<PostgrestToManyEmbed<Todo, Order>>());
+      expect(toMany.relation, same(Todos.orders));
+    });
+
+    test('is selectable and nothing else', () {
+      final Object embed = Orders.todo.select();
+
+      expect(embed, isA<PostgrestSelectable<Order>>());
+      expect(embed, isNot(isA<PostgrestColumnExpression<Order, Object>>()));
+      expect(embed, isNot(isA<PostgrestOrdering<Order>>()));
+    });
+
+    test('nests', () {
+      expect(
+        Orders.todo.select([Todos.id, Todos.orders.select()]).expression,
+        'todo(id,orders(*))',
+      );
+      expect(
+        Orders.todo.select([
+          Todos.id,
+          Todos.orders.select([Orders.id, Orders.amount]),
+        ]).expression,
+        'todo(id,orders(id,amount))',
+      );
+    });
+
+    test('merges the projections of one relation inside it', () {
+      expect(
+        Orders.todo.select([
+          Todos.orders(Orders.id),
+          Todos.title,
+          Todos.orders(Orders.amount),
+        ]).expression,
+        'todo(orders(id,amount),title)',
+      );
+    });
+
+    test('a single-column projection renders like a one-entry select', () {
+      expect(
+        Orders.todo(Todos.title).expression,
+        Orders.todo.select([Todos.title]).expression,
+      );
+    });
   });
 }

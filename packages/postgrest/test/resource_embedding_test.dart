@@ -4,6 +4,46 @@ import 'package:test/test.dart';
 import 'reset_helper.dart';
 import 'test_utils.dart';
 
+extension type const User(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {}
+
+extension type const Message(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {}
+
+class Users {
+  static const table = PostgrestTable<User, Never, Never>(
+    'users',
+    User.new,
+    primaryKey: [username],
+    relations: [messages],
+  );
+  static const username = PostgrestColumn<User, String>('username');
+  static const messages = PostgrestToManyRelation<User, Message>(
+    'messages',
+    columns: [username],
+    referencedTable: 'messages',
+    referencedColumns: [Messages.username],
+  );
+}
+
+class Messages {
+  static const table = PostgrestTable<Message, Never, Never>(
+    'messages',
+    Message.new,
+    primaryKey: [id],
+    relations: [user],
+  );
+  static const id = PostgrestColumn<Message, int>('id');
+  static const message = PostgrestColumn<Message, String>('message');
+  static const username = PostgrestColumn<Message, String>('username');
+  static const user = PostgrestToOneRelation<Message, User>(
+    'users',
+    columns: [username],
+    referencedTable: 'users',
+    referencedColumns: [Users.username],
+  );
+}
+
 void main() {
   late PostgrestClient postgrest;
   final resetHelper = ResetHelper();
@@ -147,5 +187,49 @@ void main() {
       response[3]['messages']!.length,
       0,
     );
+  });
+
+  group('typed', () {
+    test('two columns of one embed are fetched in a single request', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .select([
+            Users.username,
+            Users.messages(Messages.message),
+            Users.messages(Messages.username),
+          ])
+          .where(Users.username.eq('supabot'));
+
+      final messages = users.single['messages'] as List;
+      expect(messages, hasLength(3));
+      for (final message in messages) {
+        expect(message.keys, unorderedEquals(['message', 'username']));
+        expect(message['username'], 'supabot');
+      }
+    });
+
+    test('a whole embed returns every column of the embedded rows', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .select([Users.username, Users.messages.select()])
+          .where(Users.username.eq('supabot'));
+
+      final messages = users.single['messages'] as List;
+      expect(messages, hasLength(3));
+      expect(messages.first, containsPair('channel_id', isA<int>()));
+      expect(messages.first, contains('inserted_at'));
+    });
+
+    test('a to-one embed returns one object', () async {
+      final messages = await postgrest
+          .table(Messages.table)
+          .select([
+            Messages.id,
+            Messages.user.select([Users.username]),
+          ])
+          .order(Messages.id);
+
+      expect(messages.first['users'], {'username': 'supabot'});
+    });
   });
 }

@@ -65,6 +65,13 @@ extension type const InventoryBooksRow(Map<String, dynamic> _json)
   int get id => _json['id'] as int;
   String get isbn => _json['isbn'] as String;
 
+  /// The `inventory.stock` rows referencing this row through `copy_id`. Only
+  /// readable when the relation was selected.
+  List<InventoryStockRow> get stock => [
+    for (final row in _json['stock'] as List)
+      InventoryStockRow(row as Map<String, dynamic>),
+  ];
+
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
 }
@@ -128,6 +135,13 @@ extension type const InventoryStockRow(Map<String, dynamic> _json)
   int get copyId => _json['copy_id'] as int;
   int get id => _json['id'] as int;
   int get quantity => _json['quantity'] as int;
+
+  /// The `inventory.books` row referenced by `copy_id`. `null` unless the
+  /// relation was selected and the key points at a row.
+  InventoryBooksRow? get books => switch (_json['books']) {
+    null => null,
+    final Object value => InventoryBooksRow(value as Map<String, dynamic>),
+  };
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -213,6 +227,13 @@ extension type const AuthorStatsRow(Map<String, dynamic> _json)
   int? get authorId => _json['author_id'] as int?;
   int? get bookCount => _json['book_count'] as int?;
 
+  /// The `authors` row referenced by `author_id`. `null` unless the relation
+  /// was selected and the key points at a row.
+  AuthorsRow? get authors => switch (_json['authors']) {
+    null => null,
+    final Object value => AuthorsRow(value as Map<String, dynamic>),
+  };
+
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
 }
@@ -250,6 +271,20 @@ class AuthorStats {
 extension type const AuthorsRow(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
   String get name => _json['name'] as String;
+
+  /// The `author_stats` rows referencing this row through `author_id`. Only
+  /// readable when the relation was selected.
+  List<AuthorStatsRow> get authorStats => [
+    for (final row in _json['author_stats'] as List)
+      AuthorStatsRow(row as Map<String, dynamic>),
+  ];
+
+  /// The `books` rows referencing this row through `author_id`. Only readable
+  /// when the relation was selected.
+  List<BooksRow> get books => [
+    for (final row in _json['books'] as List)
+      BooksRow(row as Map<String, dynamic>),
+  ];
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -503,6 +538,13 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   DateTime? get updatedAt => switch (_json['updated_at']) {
     null => null,
     final Object value => DateTime.parse(value as String),
+  };
+
+  /// The `authors` row referenced by `author_id`. `null` unless the relation
+  /// was selected and the key points at a row.
+  AuthorsRow? get authors => switch (_json['authors']) {
+    null => null,
+    final Object value => AuthorsRow(value as Map<String, dynamic>),
   };
 
   /// The row as decoded from the response.

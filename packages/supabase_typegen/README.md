@@ -23,11 +23,13 @@ For every table the generator emits:
   with its UTC offset, and months, days and clock time kept apart,
 - `PostgrestToOneRelation` and `PostgrestToManyRelation` members for every
   foreign key between two generated tables of one schema, named after the
-  table on the other side and carrying the constraint hint when two keys
-  point at the same table. Keys into another schema and self-referential keys
-  get no member, since PostgREST resolves embeds within the schema of the
-  request only and needs a computed relationship to embed a table into
-  itself,
+  table on the other side, and a getter of the same name on the row type that
+  reads the embedded rows, `book.authors?.name` or `author.books`. When two
+  keys point at the same table the embed carries the constraint hint and is
+  aliased to the member name, so each comes back under its own key. Keys into
+  another schema and self-referential keys get no member, since PostgREST
+  resolves embeds within the schema of the request only and needs a computed
+  relationship to embed a table into itself,
 - Dart enums for Postgres enums, with wire-name mapping.
 
 The schemas are generated into one file. Objects of the `public` schema are
