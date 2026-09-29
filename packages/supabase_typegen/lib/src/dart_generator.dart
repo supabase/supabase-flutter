@@ -162,6 +162,7 @@ class _TypeNameRegistry {
     'num',
     'bool',
     'Never',
+    'ArgumentError',
     'PostgrestTable',
     'PostgrestColumn',
     'PostgrestNullableColumn',
