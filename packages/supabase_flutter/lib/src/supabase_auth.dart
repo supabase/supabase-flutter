@@ -221,7 +221,16 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving succeeds
   Future<void> _handleDeeplink(Uri uri) async {
-    if (!_isAuthCallbackDeeplink(uri)) return;
+    try {
+      if (!_isAuthCallbackDeeplink(uri)) return;
+    } on FormatException catch (error, stackTrace) {
+      flutterLogger.warning(
+        'Ignoring deeplink that is not valid percent-encoded UTF-8',
+        error,
+        stackTrace,
+      );
+      return;
+    }
 
     flutterLogger.finest('handle deeplink uri: ${uri.redacted}');
     flutterLogger.info('handle deeplink uri');

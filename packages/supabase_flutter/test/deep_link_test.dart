@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -284,6 +285,58 @@ void main() {
       );
       expect(exception.errorCode, 'access_denied');
       expect(exception.statusCode, 403);
+    });
+  });
+  group('Deep Link with malformed percent-encoding', () {
+    Future<void> expectIgnoredDeeplink(
+      String link, {
+      bool Function(Uri uri)? detectSessionInUriPredicate,
+    }) async {
+      final httpClient = createGetUserHttpClient('new@email.com');
+      final warning = Logger.root.onRecord.firstWhere(
+        (record) =>
+            record.level == Level.WARNING &&
+            record.message ==
+                'Ignoring deeplink that is not valid percent-encoded UTF-8',
+      );
+
+      mockAppLink(
+        mockMethodChannel: false,
+        mockEventChannel: true,
+        initialLink: link,
+      );
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: MockAsyncStorage(),
+          detectSessionInUriPredicate: detectSessionInUriPredicate,
+        ),
+      );
+
+      final record = await warning.timeout(const Duration(seconds: 5));
+      expect(record.error, isA<FormatException>());
+      expect(httpClient.requests, isEmpty);
+      expect(Supabase.instance.client.auth.currentSession, isNull);
+    }
+
+    for (final link in [
+      'com.supabase://callback/?code=%FF',
+      'com.supabase://callback/#access_token=%FF',
+      'com.supabase://callback/#/route%C3',
+    ]) {
+      test('$link is ignored by the default predicate', () async {
+        await expectIgnoredDeeplink(link);
+      });
+    }
+
+    test('a throwing custom predicate is ignored', () async {
+      await expectIgnoredDeeplink(
+        'com.supabase://callback/?code=%FF',
+        detectSessionInUriPredicate: (uri) =>
+            uri.queryParameters.containsKey('code'),
+      );
     });
   });
 }

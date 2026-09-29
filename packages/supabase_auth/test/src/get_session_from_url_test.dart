@@ -42,5 +42,24 @@ void main() {
         );
       });
     }
+
+    for (final url in [
+      'http://localhost/callback?code=%FF',
+      'http://localhost/callback#access_token=my_access_token&state=%FF',
+    ]) {
+      test('throws an AuthException for $url', () async {
+        await expectLater(
+          client.getSessionFromUrl(Uri.parse(url)),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.message,
+              'message',
+              'The callback URL contains a parameter that is not valid '
+                  'percent-encoded UTF-8.',
+            ),
+          ),
+        );
+      });
+    }
   });
 }
