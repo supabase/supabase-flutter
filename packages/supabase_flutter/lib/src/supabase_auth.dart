@@ -140,39 +140,17 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Default heuristic: treat a deep link as an auth callback when it carries
   /// any of the auth-related parameters, in the query or the fragment.
-  ///
-  /// Only the parameter names are read, so a value that is not valid
-  /// percent-encoded UTF-8 doesn't make the check throw.
   bool _defaultIsAuthCallbackDeeplink(Uri uri) {
+    final fragmentParameters = Uri.splitQueryString(uri.fragment);
     bool hasParameter(String key) =>
-        _hasParameterName(uri.query, key) ||
-        _hasParameterName(uri.fragment, key);
+        uri.queryParameters.containsKey(key) ||
+        fragmentParameters.containsKey(key);
 
     return hasParameter('access_token') ||
         hasParameter('code') ||
         hasParameter('error') ||
         hasParameter('error_code') ||
         hasParameter('error_description');
-  }
-
-  /// Whether the `&` separated pairs in [encodedParameters] contain [name].
-  bool _hasParameterName(String encodedParameters, String name) {
-    for (final pair in encodedParameters.split('&')) {
-      final separatorIndex = pair.indexOf('=');
-      final encodedName = separatorIndex == -1
-          ? pair
-          : pair.substring(0, separatorIndex);
-      try {
-        if (Uri.decodeQueryComponent(encodedName) == name) {
-          return true;
-        }
-      } on FormatException {
-        // A name that can't be decoded can't be one of the names checked for.
-      } on ArgumentError {
-        // Same for a truncated or invalid escape sequence.
-      }
-    }
-    return false;
   }
 
   /// Enable deep link observer to handle deep links
@@ -243,7 +221,16 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving succeeds
   Future<void> _handleDeeplink(Uri uri) async {
-    if (!_isAuthCallbackDeeplink(uri)) return;
+    try {
+      if (!_isAuthCallbackDeeplink(uri)) return;
+    } on FormatException catch (error, stackTrace) {
+      flutterLogger.warning(
+        'Ignoring deeplink that is not valid percent-encoded UTF-8',
+        error,
+        stackTrace,
+      );
+      return;
+    }
 
     flutterLogger.finest('handle deeplink uri: ${uri.redacted}');
     flutterLogger.info('handle deeplink uri');
