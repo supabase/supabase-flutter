@@ -25,16 +25,104 @@ class TracePropagationClient extends BaseClient {
     return hosts;
   }
 
+  static const _isWeb = bool.fromEnvironment('dart.library.js_interop');
+
+  /// The headers `dart:io` drops when it follows a redirect to another origin.
+  static const _credentialHeaders = {
+    'authorization',
+    'www-authenticate',
+    'cookie',
+    'cookie2',
+  };
+
+  static const _redirectStatusCodes = {301, 302, 303, 307, 308};
+
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    if (_shouldPropagateTo(request.url)) {
-      final context = await _options.traceContextProvider();
-      final traceparent = context?.traceparent;
-      if (context != null && traceparent != null && traceparent.isNotEmpty) {
-        _applyHeaders(request.headers, context, traceparent);
-      }
+    if (!_shouldPropagateTo(request.url)) {
+      return _inner.send(request);
     }
-    return _inner.send(request);
+    final context = await _options.traceContextProvider();
+    final traceparent = context?.traceparent;
+    if (context == null || traceparent == null || traceparent.isEmpty) {
+      return _inner.send(request);
+    }
+    final addedHeaders = _applyHeaders(request.headers, context, traceparent);
+    if (addedHeaders.isEmpty || !_followsRedirectsItself(request)) {
+      return _inner.send(request);
+    }
+    return _sendFollowingRedirects(request, addedHeaders);
+  }
+
+  /// Whether redirects of [request] are followed here rather than by the
+  /// inner client, which would carry the trace headers to any host.
+  ///
+  /// The browser follows redirects on its own and cannot hand them over, so
+  /// on the web they are left to it.
+  bool _followsRedirectsItself(BaseRequest request) {
+    if (_isWeb || !request.followRedirects) {
+      return false;
+    }
+    final method = request.method.toUpperCase();
+    return method == 'GET' || method == 'HEAD' || method == 'POST';
+  }
+
+  /// Sends [request] and follows its redirects the way `dart:io` does,
+  /// removing [traceHeaders] once a redirect leaves the Supabase hosts.
+  Future<StreamedResponse> _sendFollowingRedirects(
+    BaseRequest request,
+    Set<String> traceHeaders,
+  ) async {
+    request.followRedirects = false;
+    final headers = Map.of(request.headers);
+    final locations = <Uri>[];
+    var method = request.method.toUpperCase();
+    var url = request.url;
+    var response = await _inner.send(request);
+    while (_isRedirect(method, response.statusCode)) {
+      final location = response.headers['location'];
+      if (location == null) {
+        return response;
+      }
+      await response.stream.drain<void>();
+      final next = url.resolve(location);
+      if (locations.length >= request.maxRedirects) {
+        throw ClientException('Redirect limit exceeded', next);
+      }
+      if (locations.contains(next)) {
+        throw ClientException('Redirect loop detected', next);
+      }
+      locations.add(next);
+      if (response.statusCode == 303 && method == 'POST') {
+        method = 'GET';
+      }
+      final isSameOrigin =
+          url.scheme == next.scheme &&
+          url.host == next.host &&
+          url.port == next.port;
+      final isSupabaseHost = _shouldPropagateTo(next);
+      headers.removeWhere((name, _) {
+        final lowercased = name.toLowerCase();
+        return lowercased == 'content-length' ||
+            lowercased == 'transfer-encoding' ||
+            (!isSameOrigin && _credentialHeaders.contains(lowercased)) ||
+            (!isSupabaseHost && traceHeaders.contains(lowercased));
+      });
+      url = next;
+      response = await _inner.send(
+        Request(method, url)
+          ..followRedirects = false
+          ..headers.addAll(headers),
+      );
+    }
+    return response;
+  }
+
+  static bool _isRedirect(String method, int statusCode) {
+    if (method == 'GET' || method == 'HEAD') {
+      return _redirectStatusCodes.contains(statusCode);
+    }
+    return method == 'POST' && statusCode == 303;
   }
 
   bool _shouldPropagateTo(Uri url) {
@@ -50,7 +138,8 @@ class TracePropagationClient extends BaseClient {
     return false;
   }
 
-  /// Writes the headers of [context] onto [headers].
+  /// Writes the headers of [context] onto [headers] and returns the names of
+  /// the ones it added.
   ///
   /// A `traceparent` that is not well-formed is dropped rather than sent, as
   /// it correlates with nothing on the server. An unsampled trace keeps its
@@ -58,28 +147,37 @@ class TracePropagationClient extends BaseClient {
   /// on, and, when [TracePropagationOptions.respectSamplingDecision] is set,
   /// withholds `tracestate` and `baggage`, the vendor and application data
   /// channels.
-  void _applyHeaders(
+  Set<String> _applyHeaders(
     Map<String, String> headers,
     TraceContext context,
     String traceparent,
   ) {
+    final added = <String>{};
+    void add(String name, String value) {
+      if (!headers.containsKey(name)) {
+        headers[name] = value;
+        added.add(name);
+      }
+    }
+
     if (!isValidTraceparent(traceparent)) {
       _warnOnMalformedTraceparent(traceparent);
-      return;
+      return added;
     }
-    headers.putIfAbsent('traceparent', () => traceparent);
+    add('traceparent', traceparent);
     if (_options.respectSamplingDecision &&
         !isSampledTraceparent(traceparent)) {
-      return;
+      return added;
     }
     final tracestate = context.tracestate;
     if (tracestate != null) {
-      headers.putIfAbsent('tracestate', () => tracestate);
+      add('tracestate', tracestate);
     }
     final baggage = context.baggage;
     if (baggage != null) {
-      headers.putIfAbsent('baggage', () => baggage);
+      add('baggage', baggage);
     }
+    return added;
   }
 
   void _warnOnMalformedTraceparent(String traceparent) {

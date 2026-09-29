@@ -102,7 +102,9 @@ class TraceContext {
 /// additional headers. When given, the trace context returned by
 /// [traceContextProvider] is injected into requests targeting Supabase hosts
 /// (`*.supabase.co`, `*.supabase.in`, the project host, and loopback addresses
-/// for local development). Third-party hosts never receive trace headers.
+/// for local development). Third-party hosts never receive trace headers,
+/// and a redirect to one is followed without them, except on the web, where
+/// the browser follows redirects itself.
 class TracePropagationOptions {
   const TracePropagationOptions({
     required this.traceContextProvider,
