@@ -31,27 +31,91 @@ List<Row> _rowsFromJson<Row>(
   PostgrestList rows,
 ) => [for (final row in rows) rowFromJson(row)];
 
-/// The `select` parameter for [columns], or `*` when none are given.
-String _selectList(List<PostgrestColumnExpression<Object?, Object>> columns) {
-  if (columns.isEmpty) return '*';
-  return columns.map((column) => column.expression).join(',');
+/// The `select` parameter for [selections], or `*` when none are given.
+///
+/// Entries that go through the same relation are merged into one embed at
+/// the position of the first, so `author(id),author(name)` is sent as
+/// `author(id,name)`, since PostgREST joins a relation once per embed and
+/// rejects a repeated join. Merging recurses into nested embeds, and an
+/// entry that renders the same as an earlier one is left out.
+String _selectList(List<PostgrestSelectable<Object?>> selections) {
+  if (selections.isEmpty) return '*';
+  if (selections case [final single]) return single.expression;
+  final entries = <String>[];
+  final embeds = <String, _EmbedGroup>{};
+  for (final selection in selections) {
+    if (selection case _Embedded(:final relation, _selections: final members)) {
+      embeds
+          .putIfAbsent(relation._selectName, () {
+            entries.add('');
+            return _EmbedGroup(entries.length - 1);
+          })
+          .add(members);
+    } else {
+      final expression = selection.expression;
+      if (!entries.contains(expression)) entries.add(expression);
+    }
+  }
+  for (final MapEntry(key: name, value: group) in embeds.entries) {
+    entries[group.index] = group.render(name);
+  }
+  return entries.join(',');
 }
 
-/// [columns] as the request stores them: every column when none are given.
-/// An empty list is rejected up front so the error surfaces where `select`
-/// is called rather than when awaited.
-List<PostgrestColumnExpression<Object?, Object>> _checkedColumns<Row>(
-  List<PostgrestColumnExpression<Row, Object>>? columns,
+/// The entries of one relation collected from a `select` list.
+final class _EmbedGroup {
+  _EmbedGroup(this.index);
+
+  /// Where in the rendered list the embed goes: the position of its first
+  /// entry.
+  final int index;
+
+  final List<PostgrestSelectable<Object?>> _members = [];
+
+  /// Whether an entry asked for every column of the embed.
+  bool _all = false;
+
+  /// Adds the members of one entry; none means every column.
+  void add(List<PostgrestSelectable<Object?>> members) {
+    if (members.isEmpty) {
+      _all = true;
+    } else {
+      _members.addAll(members);
+    }
+  }
+
+  /// `name(*)`, `name(a,b)` or, when both were asked for, `name(*,a)`.
+  String render(String name) {
+    if (!_all) return _embedExpression(name, _members);
+    final rest = _members.isEmpty ? '' : ',${_selectList(_members)}';
+    return '$name(*$rest)';
+  }
+}
+
+/// The `select` list form of an embed: [name] wrapping [members], or
+/// `name(*)` when there are none.
+String _embedExpression(
+  String name,
+  List<PostgrestSelectable<Object?>> members,
+) => '$name(${_selectList(members)})';
+
+/// [selections] as the request stores them: every column when none are
+/// given. An empty list is rejected up front, naming the caller's
+/// [parameter], so the error surfaces where `select` is called rather than
+/// when awaited.
+List<PostgrestSelectable<Row>> _checkedSelections<Row>(
+  List<PostgrestSelectable<Row>>? selections,
+  String parameter,
 ) {
-  if (columns == null) return const [];
-  if (columns.isEmpty) {
+  if (selections == null) return const [];
+  if (selections.isEmpty) {
     throw ArgumentError.value(
-      columns,
-      'columns',
+      selections,
+      parameter,
       'select needs at least one column',
     );
   }
-  return columns;
+  return selections;
 }
 
 /// Converts the result of a [PostgrestTableRequest] into [T].

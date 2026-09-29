@@ -53,6 +53,14 @@ class Books {
     referencedTable: 'authors',
     referencedColumns: [Authors.id],
   );
+  static const editorId = PostgrestColumn<Book, int>('editor_id');
+  static const editor = PostgrestToOneRelation<Book, Author>(
+    'authors!books_editor_id_fkey',
+    columns: [editorId],
+    referencedTable: 'authors',
+    referencedColumns: [Authors.id],
+    alias: 'editor',
+  );
 }
 
 class Authors {
@@ -167,8 +175,92 @@ void main() {
       expect(requestParameters()['select'], 'id,books(id.count())');
     });
 
-    test('an empty column list throws', () {
-      expect(() => client.table(Books.table).select([]), throwsArgumentError);
+    test('projections of one relation are sent as a single embed', () async {
+      // `author(id),author(name)` is a 42803 from Postgres.
+      httpClient.stub([]);
+
+      await client.table(Books.table).select([
+        Books.author(Authors.id),
+        Books.id,
+        Books.author(Authors.name),
+      ]);
+
+      expect(requestParameters()['select'], 'author(id,name),id');
+
+      await client.table(Authors.table).select([
+        Authors.books(Books.id).count(),
+        Authors.books(Books.title),
+      ]);
+
+      expect(requestParameters()['select'], 'books(id.count(),title)');
+    });
+
+    test('selects a whole embed', () async {
+      httpClient.stub([]);
+
+      await client.table(Books.table).select([Books.id, Books.author.select()]);
+
+      expect(requestParameters()['select'], 'id,author(*)');
+
+      await client.table(Books.table).select([
+        Books.id,
+        Books.author.select([Authors.id, Authors.name]),
+      ]);
+
+      expect(requestParameters()['select'], 'id,author(id,name)');
+    });
+
+    test(
+      'a whole embed merges with projections of the same relation',
+      () async {
+        httpClient.stub([]);
+
+        await client.table(Authors.table).select([
+          Authors.books(Books.title),
+          Authors.books.select(),
+        ]);
+
+        expect(requestParameters()['select'], 'books(*,title)');
+      },
+    );
+
+    test('an aliased relation is its own embed', () async {
+      httpClient.stub([]);
+
+      await client
+          .table(Books.table)
+          .select([
+            Books.editor(Authors.id),
+            Books.author(Authors.name),
+            Books.editor(Authors.name),
+          ])
+          .order(Books.editor(Authors.name).desc());
+
+      expect(
+        requestParameters()['select'],
+        'editor:authors!books_editor_id_fkey(id,name),author(name)',
+      );
+      expect(requestParameters()['order'], 'editor(name).desc');
+    });
+
+    test('an entry selected twice is sent once', () async {
+      httpClient.stub([]);
+
+      await client.table(Books.table).select([
+        Books.id,
+        Books.author(Authors.id),
+        Books.id,
+        Books.author.select([Authors.id, Authors.name]),
+      ]);
+
+      expect(requestParameters()['select'], 'id,author(id,name)');
+    });
+
+    test('an empty column list throws, naming the parameter', () {
+      expect(
+        () => client.table(Books.table).select([]),
+        throwsA(isA<ArgumentError>().having((e) => e.name, 'name', 'columns')),
+      );
     });
 
     test('single returns one row converted into the table row type', () async {
