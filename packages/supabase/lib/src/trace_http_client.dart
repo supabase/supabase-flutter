@@ -37,8 +37,6 @@ class TracePropagationClient extends BaseClient {
     'cookie2',
   };
 
-  static const _redirectStatusCodes = {301, 302, 303, 307, 308};
-
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     if (!_shouldPropagateTo(request.url)) {
@@ -50,27 +48,22 @@ class TracePropagationClient extends BaseClient {
       return _inner.send(request);
     }
     final addedHeaders = _applyHeaders(request.headers, context, traceparent);
-    if (addedHeaders.isEmpty || !_followsRedirectsItself(request)) {
+    // The browser follows redirects on its own and cannot hand them over, so
+    // on the web they are left to it.
+    if (addedHeaders.isEmpty || _isWeb || !request.followRedirects) {
       return _inner.send(request);
     }
     return _sendFollowingRedirects(request, addedHeaders);
   }
 
-  /// Whether redirects of [request] are followed here rather than by the
-  /// inner client, which would carry the trace headers to any host.
+  /// Sends [request] and follows its redirects itself, since the inner client
+  /// would carry the trace headers to any host, removing [traceHeaders] once
+  /// a redirect leaves the Supabase hosts.
   ///
-  /// The browser follows redirects on its own and cannot hand them over, so
-  /// on the web they are left to it.
-  bool _followsRedirectsItself(BaseRequest request) {
-    if (_isWeb || !request.followRedirects) {
-      return false;
-    }
-    final method = request.method.toUpperCase();
-    return method == 'GET' || method == 'HEAD' || method == 'POST';
-  }
-
-  /// Sends [request] and follows its redirects the way `dart:io` does,
-  /// removing [traceHeaders] once a redirect leaves the Supabase hosts.
+  /// A 303 is followed with a GET without a body, a 307 or 308 with the same
+  /// method and body, and a 301 or 302 only for a GET or HEAD. A body is only
+  /// sent again when [request] is a [Request]; a streamed one is returned
+  /// unfollowed.
   Future<StreamedResponse> _sendFollowingRedirects(
     BaseRequest request,
     Set<String> traceHeaders,
@@ -79,12 +72,20 @@ class TracePropagationClient extends BaseClient {
     late final headers = Map.of(request.headers);
     final locations = <Uri>[];
     var method = request.method.toUpperCase();
+    var body = request is Request ? request.bodyBytes : null;
     var url = request.url;
     var response = await _inner.send(request);
-    while (_isRedirect(method, response.statusCode)) {
+    while (true) {
       final location = response.headers['location'];
-      if (location == null) {
-        return response;
+      final nextMethod = _redirectMethod(
+        method,
+        response.statusCode,
+        canResendBody: body != null,
+      );
+      if (location == null || nextMethod == null) {
+        return locations.isEmpty
+            ? response
+            : _RedirectedResponse(response, request: request, url: url);
       }
       await response.stream.drain<void>();
       final next = url.resolve(location);
@@ -95,8 +96,9 @@ class TracePropagationClient extends BaseClient {
         throw ClientException('Redirect loop detected', next);
       }
       locations.add(next);
-      if (response.statusCode == 303 && method == 'POST') {
-        method = 'GET';
+      if (nextMethod != method) {
+        method = nextMethod;
+        body = null;
       }
       final isSameOrigin =
           url.scheme == next.scheme &&
@@ -111,21 +113,31 @@ class TracePropagationClient extends BaseClient {
             (!isSupabaseHost && traceHeaders.contains(lowercased));
       });
       url = next;
-      response = await _inner.send(
-        Request(method, url)
-          ..followRedirects = false
-          ..persistentConnection = request.persistentConnection
-          ..headers.addAll(headers),
-      );
+      final redirected = Request(method, url)
+        ..followRedirects = false
+        ..persistentConnection = request.persistentConnection
+        ..headers.addAll(headers);
+      if (body != null && body.isNotEmpty) {
+        redirected.bodyBytes = body;
+      }
+      response = await _inner.send(redirected);
     }
-    return response;
   }
 
-  static bool _isRedirect(String method, int statusCode) {
-    if (method == 'GET' || method == 'HEAD') {
-      return _redirectStatusCodes.contains(statusCode);
-    }
-    return method == 'POST' && statusCode == 303;
+  /// The method a [method] request answered with [statusCode] is redirected
+  /// with, or `null` when the response is not a redirect to follow.
+  static String? _redirectMethod(
+    String method,
+    int statusCode, {
+    required bool canResendBody,
+  }) {
+    final hasNoBody = method == 'GET' || method == 'HEAD';
+    return switch (statusCode) {
+      303 => method == 'HEAD' ? 'HEAD' : 'GET',
+      301 || 302 when hasNoBody => method,
+      307 || 308 when hasNoBody || canResendBody => method,
+      _ => null,
+    };
   }
 
   bool _shouldPropagateTo(Uri url) {
@@ -212,4 +224,27 @@ class TracePropagationClient extends BaseClient {
 
   @override
   void close() => _inner.close();
+}
+
+/// The response a followed redirect ended in, reporting the request the
+/// caller sent and the URL it was redirected to, as `IOClient` does.
+class _RedirectedResponse extends StreamedResponse
+    implements BaseResponseWithUrl {
+  _RedirectedResponse(
+    StreamedResponse response, {
+    required BaseRequest request,
+    required this.url,
+  }) : super(
+         response.stream,
+         response.statusCode,
+         contentLength: response.contentLength,
+         request: request,
+         headers: response.headers,
+         isRedirect: response.isRedirect,
+         persistentConnection: response.persistentConnection,
+         reasonPhrase: response.reasonPhrase,
+       );
+
+  @override
+  final Uri url;
 }
