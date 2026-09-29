@@ -157,10 +157,11 @@ void main() {
       },
     );
 
-    test('a text body that is not valid UTF-8 is decoded leniently', () async {
-      final response = await functionsCustomHttpClient.invoke('latin1-plain');
-      expect(response.data, 'Caf\uFFFD');
-      expect(response.statusCode, 200);
+    test('a success text body that is not valid UTF-8 still throws', () async {
+      await expectLater(
+        functionsCustomHttpClient.invoke('latin1-plain'),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test(
