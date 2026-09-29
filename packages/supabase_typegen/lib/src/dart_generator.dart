@@ -506,6 +506,7 @@ void _writeTable(
       column.name: _bindingFor(column, enumTypeNames),
   };
   final relationNames = _relationNames(names, members, relations);
+  final relationKeys = _embedKeys(relations, relationNames);
 
   _writeRow(
     buffer,
@@ -515,6 +516,7 @@ void _writeTable(
     bindings,
     relations,
     relationNames,
+    relationKeys,
   );
   if (insertType != null) {
     _writeValues(
@@ -557,6 +559,7 @@ void _writeTable(
     bindings,
     relations,
     relationNames,
+    relationKeys,
   );
 }
 
@@ -601,10 +604,35 @@ List<String> _relationNames(
   ];
 }
 
-/// The key the embedded rows of [relation] come back under: the member name
-/// in snake case when the embed is aliased, otherwise the table name.
-String _embedKey(_RelationMember relation, String name) =>
-    relation.ambiguous ? snakeCase(name) : relation.referencedTable;
+/// The keys the embedded rows of [relations] come back under: the table name
+/// for a plain embed and, for a hinted one, an alias made of the member name
+/// in snake case, kept apart from every other key of the table.
+List<String> _embedKeys(
+  List<_RelationMember> relations,
+  List<String> relationNames,
+) {
+  final used = {
+    for (final relation in relations)
+      if (!relation.ambiguous) relation.referencedTable,
+  };
+  return [
+    for (final (index, relation) in relations.indexed)
+      if (relation.ambiguous)
+        _claimAlias(used, snakeCase(relationNames[index]))
+      else
+        relation.referencedTable,
+  ];
+}
+
+/// Adds [candidate] to [used], numbered from `_2` up until no earlier alias
+/// matches, and returns the alias added.
+String _claimAlias(Set<String> used, String candidate) {
+  var alias = candidate;
+  for (var number = 2; !used.add(alias); number++) {
+    alias = '${candidate}_$number';
+  }
+  return alias;
+}
 
 void _writeRow(
   StringBuffer buffer,
@@ -614,6 +642,7 @@ void _writeRow(
   Map<String, _Binding> bindings,
   List<_RelationMember> relations,
   List<String> relationNames,
+  List<String> relationKeys,
 ) {
   final rowType = names.rowType;
   _writeDocComment(buffer, 'A row of the `${names.displayName}` table.');
@@ -631,7 +660,7 @@ void _writeRow(
   }
   for (final (index, relation) in relations.indexed) {
     final name = relationNames[index];
-    final key = _stringLiteral(_embedKey(relation, name));
+    final key = _stringLiteral(relationKeys[index]);
     final _RelationMember(:targetRowType) = relation;
     buffer.writeln();
     if (relation.isToOne) {
@@ -753,6 +782,7 @@ void _writeNamespace(
   Map<String, _Binding> bindings,
   List<_RelationMember> relations,
   List<String> relationNames,
+  List<String> relationKeys,
 ) {
   final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
 
@@ -812,8 +842,7 @@ void _writeNamespace(
         '    referencedColumns: [${relation.referencedColumns.join(', ')}],',
       );
     if (relation.ambiguous) {
-      final alias = _stringLiteral(_embedKey(relation, relationNames[index]));
-      buffer.writeln('    alias: $alias,');
+      buffer.writeln('    alias: ${_stringLiteral(relationKeys[index])},');
     }
     buffer.writeln('  );');
   }

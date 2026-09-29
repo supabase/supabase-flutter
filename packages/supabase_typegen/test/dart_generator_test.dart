@@ -516,6 +516,43 @@ void main() {
     );
   });
 
+  test('aliases of relations that share a member name stay distinct', () {
+    // Two constraints over the same columns claim `mapByMood` and
+    // `mapByMood$`, which snake case alone would both turn into `map_by_mood`.
+    final duplicated = DatabaseDescription(
+      schemaNames: hostileSchema.schemaNames,
+      tables: hostileSchema.tables,
+      enums: hostileSchema.enums,
+      relationships: [
+        ...hostileSchema.relationships,
+        const RelationshipDescription(
+          foreignKeyName: 'postgrest_table_mood_fkey2',
+          sourceSchema: 'public',
+          sourceTable: 'postgrest_table',
+          sourceColumns: ['mood'],
+          targetSchema: 'public',
+          targetTable: 'map',
+          targetColumns: ['list'],
+        ),
+      ],
+    );
+    final compact = _normalize(
+      generateDartCode(duplicated),
+    ).replaceAll(' ', '');
+
+    expect(compact, contains("alias:'map_by_mood',"));
+    expect(
+      compact,
+      contains(
+        "staticconstmapByMood\$=PostgrestToOneRelation<"
+        "PostgrestTableRow,MapRow>('map!postgrest_table_mood_fkey2',"
+        "columns:[mood],referencedTable:'map',"
+        "referencedColumns:[Map\$.list],alias:'map_by_mood_2',);",
+      ),
+    );
+    expect(compact, contains("getmapByMood\$=>switch(_json['map_by_mood_2'])"));
+  });
+
   test('a self-referential key produces no relation member', () {
     // PostgREST needs a computed relationship to embed a table into itself.
     final compact = _normalize(
