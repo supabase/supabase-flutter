@@ -328,11 +328,16 @@ void main() {
 
       await client(optionsWith(() => context)).get(
         Uri.parse('$_supabaseUrl/rest/v1/table'),
-        headers: {'Authorization': 'Bearer token', 'apikey': 'key'},
+        headers: {
+          'Authorization': 'Bearer token',
+          'Proxy-Authorization': 'Basic credentials',
+          'apikey': 'key',
+        },
       );
 
       final redirected = httpClient.requests.last;
       expect(redirected.headers.containsKey('authorization'), isFalse);
+      expect(redirected.headers.containsKey('proxy-authorization'), isFalse);
       expect(redirected.headers['apikey'], 'key');
     });
 

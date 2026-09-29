@@ -31,6 +31,8 @@ class TracePropagationClient extends BaseClient {
   static const _credentialHeaders = {
     'authorization',
     'www-authenticate',
+    'proxy-authorization',
+    'proxy-authenticate',
     'cookie',
     'cookie2',
   };
@@ -74,7 +76,7 @@ class TracePropagationClient extends BaseClient {
     Set<String> traceHeaders,
   ) async {
     request.followRedirects = false;
-    final headers = Map.of(request.headers);
+    late final headers = Map.of(request.headers);
     final locations = <Uri>[];
     var method = request.method.toUpperCase();
     var url = request.url;
@@ -112,6 +114,7 @@ class TracePropagationClient extends BaseClient {
       response = await _inner.send(
         Request(method, url)
           ..followRedirects = false
+          ..persistentConnection = request.persistentConnection
           ..headers.addAll(headers),
       );
     }
