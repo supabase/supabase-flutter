@@ -46,7 +46,7 @@ String _selectList(List<PostgrestSelectable<Object?>> selections) {
   for (final selection in selections) {
     if (selection case _Embedded(:final relation, _selections: final members)) {
       embeds
-          .putIfAbsent(relation.name, () {
+          .putIfAbsent(relation._selectName, () {
             entries.add('');
             return _EmbedGroup(entries.length - 1);
           })

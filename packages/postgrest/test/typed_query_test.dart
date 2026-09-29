@@ -53,6 +53,14 @@ class Books {
     referencedTable: 'authors',
     referencedColumns: [Authors.id],
   );
+  static const editorId = PostgrestColumn<Book, int>('editor_id');
+  static const editor = PostgrestToOneRelation<Book, Author>(
+    'authors!books_editor_id_fkey',
+    columns: [editorId],
+    referencedTable: 'authors',
+    referencedColumns: [Authors.id],
+    alias: 'editor',
+  );
 }
 
 class Authors {
@@ -215,6 +223,25 @@ void main() {
         expect(requestParameters()['select'], 'books(*,title)');
       },
     );
+
+    test('an aliased relation is its own embed', () async {
+      httpClient.stub([]);
+
+      await client
+          .table(Books.table)
+          .select([
+            Books.editor(Authors.id),
+            Books.author(Authors.name),
+            Books.editor(Authors.name),
+          ])
+          .order(Books.editor(Authors.name).desc());
+
+      expect(
+        requestParameters()['select'],
+        'editor:authors!books_editor_id_fkey(id,name),author(name)',
+      );
+      expect(requestParameters()['order'], 'editor(name).desc');
+    });
 
     test('an entry selected twice is sent once', () async {
       httpClient.stub([]);

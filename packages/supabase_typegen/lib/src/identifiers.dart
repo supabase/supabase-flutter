@@ -97,6 +97,11 @@ String pascalCase(String name) {
   return pascal.startsWith(RegExp('[0-9]')) ? '\$$pascal' : pascal;
 }
 
+/// Converts [name] to snake_case, for example `mapByMood` to `map_by_mood`.
+String snakeCase(String name) => [
+  for (final word in _words(name)) word.toLowerCase(),
+].join('_');
+
 /// Converts [name] to camelCase, for example `created_at` to `createdAt`.
 String camelCase(String name) {
   final pascal = pascalCase(name);

@@ -1348,6 +1348,8 @@ features:
       - PostgrestRelation
       - PostgrestRelation.PostgrestRelation
       - PostgrestRelation.name
+      - PostgrestRelation.alias
+      - PostgrestRelation.key
       - PostgrestRelation.columns
       - PostgrestRelation.referencedTable
       - PostgrestRelation.referencedColumns

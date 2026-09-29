@@ -219,6 +219,83 @@ void main() {
     );
   });
 
+  test('embedded rows are read through the row getters', () async {
+    httpClient.stub([
+      {
+        'id': 1,
+        'authors': {'id': 7, 'name': 'Ada'},
+      },
+      {'id': 2, 'authors': null},
+    ]);
+
+    final books = await client.table(Books.table).select([
+      Books.id,
+      Books.authors.select([Authors.id, Authors.name]),
+    ]);
+
+    expect(
+      httpClient.requests.last.queryParameters['select'],
+      'id,authors(id,name)',
+    );
+    expect(books.first.authors?.name, 'Ada');
+    expect(books.last.authors == null, isTrue);
+
+    httpClient.stub([
+      {
+        'id': 7,
+        'books': [
+          {'id': 1, 'title': 'a'},
+          {'id': 2, 'title': 'b'},
+        ],
+      },
+    ]);
+
+    final authors = await client.table(Authors.table).select([
+      Authors.id,
+      Authors.books.select(),
+    ]);
+
+    expect(
+      httpClient.requests.last.queryParameters['select'],
+      'id,books(*)',
+    );
+    expect(authors.single.books.map((book) => book.title), ['a', 'b']);
+  });
+
+  test(
+    'a hinted relation is selected, ordered and read by its alias',
+    () async {
+      httpClient.stub([
+        {
+          'id': 1,
+          'map_by_mood': {'list': 3},
+          'map_by_days': null,
+        },
+      ]);
+
+      final rows = await client
+          .table(hostile.PostgrestTable$.table)
+          .select([
+            hostile.PostgrestTable$.days,
+            hostile.PostgrestTable$.mapByMood(hostile.Map$.list),
+            hostile.PostgrestTable$.mapByDays.select(),
+          ])
+          .order(hostile.PostgrestTable$.mapByMood(hostile.Map$.list).desc());
+
+      expect(
+        httpClient.requests.last.queryParameters['select'],
+        'days,map_by_mood:map!postgrest_table_mood_fkey(list),'
+        'map_by_days:map!postgrest_table_days_fkey(*)',
+      );
+      expect(
+        httpClient.requests.last.queryParameters['order'],
+        'map_by_mood(list).desc',
+      );
+      expect(rows.single.mapByMood?.list, 3);
+      expect(rows.single.mapByDays == null, isTrue);
+    },
+  );
+
   test('enum column tokens filter with the wire name', () async {
     await client.table(Books.table).select().where(Books.mood.eq(Mood.happy));
 

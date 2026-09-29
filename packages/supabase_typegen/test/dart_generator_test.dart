@@ -380,6 +380,25 @@ void main() {
     );
   });
 
+  test('the row type reads embedded rows through a getter per relation', () {
+    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "AuthorsRow?getauthors=>switch(_json['authors']){null=>null,"
+        "finalObjectvalue=>AuthorsRow(valueasMap<String,dynamic>),};",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "List<BooksRow>getbooks=>[for(finalrowin_json['books']asList)"
+        "BooksRow(rowasMap<String,dynamic>),];",
+      ),
+    );
+  });
+
   test('the table definition lists its primary key and relations', () {
     final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
 
@@ -469,6 +488,69 @@ void main() {
         "('postgrest_table!postgrest_table_days_fkey'",
       ),
     );
+  });
+
+  test('a hinted relation is aliased to its member name', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    // Both embeds would come back under `map` otherwise.
+    expect(
+      compact,
+      contains(
+        "referencedColumns:[Map\$.list],alias:'map_by_mood',);",
+      ),
+    );
+    expect(compact, contains("getmapByMood=>switch(_json['map_by_mood'])"));
+    expect(
+      compact,
+      contains(
+        "referencedColumns:[PostgrestTable\$.mood],"
+        "alias:'postgrest_table_via_mood',);",
+      ),
+    );
+    expect(
+      compact,
+      contains("_json['postgrest_table_via_mood']asList"),
+    );
+  });
+
+  test('aliases of relations that share a member name stay distinct', () {
+    // Two constraints over the same columns claim `mapByMood` and
+    // `mapByMood$`, which snake case alone would both turn into `map_by_mood`.
+    final duplicated = DatabaseDescription(
+      schemaNames: hostileSchema.schemaNames,
+      tables: hostileSchema.tables,
+      enums: hostileSchema.enums,
+      relationships: [
+        ...hostileSchema.relationships,
+        const RelationshipDescription(
+          foreignKeyName: 'postgrest_table_mood_fkey2',
+          sourceSchema: 'public',
+          sourceTable: 'postgrest_table',
+          sourceColumns: ['mood'],
+          targetSchema: 'public',
+          targetTable: 'map',
+          targetColumns: ['list'],
+        ),
+      ],
+    );
+    final compact = _normalize(
+      generateDartCode(duplicated),
+    ).replaceAll(' ', '');
+
+    expect(compact, contains("alias:'map_by_mood',"));
+    expect(
+      compact,
+      contains(
+        "staticconstmapByMood\$=PostgrestToOneRelation<"
+        "PostgrestTableRow,MapRow>('map!postgrest_table_mood_fkey2',"
+        "columns:[mood],referencedTable:'map',"
+        "referencedColumns:[Map\$.list],alias:'map_by_mood_2',);",
+      ),
+    );
+    expect(compact, contains("getmapByMood\$=>switch(_json['map_by_mood_2'])"));
   });
 
   test('a self-referential key produces no relation member', () {

@@ -20,6 +20,14 @@ class Orders {
     referencedTable: 'todos',
     referencedColumns: [Todos.id],
   );
+  static const parentId = PostgrestColumn<Order, int>('parent_id');
+  static const parentTodo = PostgrestToOneRelation<Order, Todo>(
+    'todo!orders_parent_id_fkey',
+    columns: [parentId],
+    referencedTable: 'todos',
+    referencedColumns: [Todos.id],
+    alias: 'parent_todo',
+  );
 }
 
 class Todos {
@@ -173,6 +181,53 @@ void main() {
       Orders.todo(Todos.orders(Orders.amount)).sum().jsonText('k').expression,
       'todo(orders(amount.sum()->>k))',
     );
+  });
+
+  group('alias', () {
+    test('the key is the alias, or the table name of the embed', () {
+      expect(Orders.todo.key, 'todo');
+      expect(Orders.parentTodo.key, 'parent_todo');
+      expect(
+        const PostgrestToOneRelation<Order, Todo>(
+          'todo!orders_parent_id_fkey',
+          columns: [Orders.parentId],
+          referencedTable: 'todos',
+          referencedColumns: [Todos.id],
+        ).key,
+        'todo',
+      );
+    });
+
+    test('renames the embed in the select list', () {
+      expect(
+        Orders.parentTodo(Todos.title).expression,
+        'parent_todo:todo!orders_parent_id_fkey(title)',
+      );
+      expect(
+        Orders.parentTodo.select().expression,
+        'parent_todo:todo!orders_parent_id_fkey(*)',
+      );
+      expect(
+        Orders.parentTodo(Todos.title).sum().expression,
+        'parent_todo:todo!orders_parent_id_fkey(title.sum())',
+      );
+    });
+
+    test('addresses the embed by the alias in order and filter', () {
+      expect(
+        Orders.parentTodo(Todos.title).desc().orderKey,
+        'parent_todo(title).desc',
+      );
+      expect(Orders.parentTodo(Todos.title).orderKey, 'parent_todo(title)');
+      expect(
+        Orders.parentTodo(Todos.title).embeddedFilterName,
+        'parent_todo.title',
+      );
+      expect(
+        Orders.parentTodo(Todos.orders(Orders.id)).orderKey,
+        'parent_todo(orders(id))',
+      );
+    });
   });
 
   group('select', () {
