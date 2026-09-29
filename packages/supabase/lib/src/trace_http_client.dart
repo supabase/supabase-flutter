@@ -69,7 +69,7 @@ class TracePropagationClient extends BaseClient {
     Set<String> traceHeaders,
   ) async {
     request.followRedirects = false;
-    late final headers = Map.of(request.headers);
+    final headers = Map.of(request.headers);
     final locations = <Uri>[];
     var method = request.method.toUpperCase();
     var body = request is Request ? request.bodyBytes : null;

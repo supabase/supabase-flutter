@@ -304,13 +304,15 @@ void main() {
         Uri.parse('$_supabaseUrl/rest/v1/table'),
       );
 
-      final response = await client(optionsWith(() => context)).send(request);
+      final BaseResponse response = await client(
+        optionsWith(() => context),
+      ).send(request);
 
       expect(response.request, same(request));
       expect(
         response,
         isA<BaseResponseWithUrl>().having(
-          (response) => response.url,
+          (redirected) => redirected.url,
           'url',
           Uri.parse('$thirdPartyUrl/landing'),
         ),
