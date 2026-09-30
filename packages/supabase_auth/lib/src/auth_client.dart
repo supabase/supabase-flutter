@@ -1286,9 +1286,19 @@ class AuthClient {
       url = Uri.parse(decoded);
     }
 
-    final errorDescription = url.queryParameters['error_description'];
-    final errorCode = url.queryParameters['error_code'];
-    final error = url.queryParameters['error'];
+    final Map<String, String> parameters;
+    try {
+      parameters = url.queryParameters;
+    } on FormatException {
+      throw AuthException(
+        'The callback URL contains a parameter that is not valid '
+        'percent-encoded UTF-8.',
+      );
+    }
+
+    final errorDescription = parameters['error_description'];
+    final errorCode = parameters['error_code'];
+    final error = parameters['error'];
     if (error != null || errorDescription != null || errorCode != null) {
       final message =
           errorDescription ?? 'Error in URL with unspecified error_description';
@@ -1306,27 +1316,27 @@ class AuthClient {
       throw AuthException(message, errorCode: errorCode ?? error);
     }
 
-    final authCode = url.queryParameters['code'];
+    final authCode = parameters['code'];
     if (authCode != null) {
       return await exchangeCodeForSession(
         authCode,
-        flowId: url.queryParameters[pkceFlowIdParam],
+        flowId: parameters[pkceFlowIdParam],
       );
     }
 
     if (_flowType == AuthFlowType.pkce &&
-        !url.queryParameters.containsKey('access_token')) {
+        !parameters.containsKey('access_token')) {
       throw AuthPKCEGrantCodeExchangeError(
         'No code detected in query parameters.',
       );
     }
 
-    final accessToken = url.queryParameters['access_token'];
-    final expiresIn = url.queryParameters['expires_in'];
-    final refreshToken = url.queryParameters['refresh_token'];
-    final tokenType = url.queryParameters['token_type'];
-    final providerToken = url.queryParameters['provider_token'];
-    final providerRefreshToken = url.queryParameters['provider_refresh_token'];
+    final accessToken = parameters['access_token'];
+    final expiresIn = parameters['expires_in'];
+    final refreshToken = parameters['refresh_token'];
+    final tokenType = parameters['token_type'];
+    final providerToken = parameters['provider_token'];
+    final providerRefreshToken = parameters['provider_refresh_token'];
 
     if (accessToken == null) {
       throw AuthException('No access_token detected.');
@@ -1360,7 +1370,7 @@ class AuthClient {
       user: user,
     );
 
-    final redirectType = url.queryParameters['type'];
+    final redirectType = parameters['type'];
 
     if (storeSession == true) {
       _saveSession(session);

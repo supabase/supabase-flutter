@@ -449,6 +449,24 @@ myChannel.onStatusChange.listen((change) async {
 myChannel.subscribe();
 ```
 
+#### <a id="realtime-app-lifecycle"></a>Realtime and the app lifecycle
+
+`Supabase` disconnects the realtime socket when the app is paused and reconnects it, rejoining every joined channel, when the app is resumed. Every reconnect costs a new socket and a fresh authorization of each channel.
+
+On iOS a full-screen view such as a video ad or a system sheet reports the app as paused while it is on screen. Pass `RealtimeLifecycleOptions` to keep the socket open through pauses shorter than a grace period:
+
+```dart
+await Supabase.initialize(
+  url: supabaseUrl,
+  publishableKey: supabasePublishableKey,
+  realtimeLifecycleOptions: const RealtimeLifecycleOptions(
+    disconnectAfterPause: Duration(minutes: 1),
+  ),
+);
+```
+
+Use `RealtimeLifecycleOptions.manual()` to keep the socket out of the app lifecycle entirely. The socket then stays open in the background until the operating system closes it, and the realtime client reconnects and rejoins its channels by itself once the app runs again.
+
 ### <a id="storage"></a>[Storage](https://supabase.com/docs/guides/storage)
 
 ```dart
@@ -710,7 +728,7 @@ A `traceparent` that is not valid W3C trace context is not sent, and the client 
 
 #### Which requests carry trace headers
 
-The headers are only added to requests addressed to a Supabase host: your project URL, `*.supabase.co`, `*.supabase.in`, and `localhost`, `127.0.0.1` and `::1` for local development. Requests to third-party hosts never get them. The check is made on the URL the request is sent to, so if a Supabase host answers a GET or HEAD request with a redirect to another host, the HTTP client follows it with the trace headers still attached. They are sent on every HTTP request the client makes, including realtime broadcasts sent over HTTP, but not over the realtime WebSocket connection.
+The headers are only added to requests addressed to a Supabase host: your project URL, `*.supabase.co`, `*.supabase.in`, and `localhost`, `127.0.0.1` and `::1` for local development. Third-party hosts never receive them: when a Supabase host redirects a request to another host, the redirected request is sent without them. The exception is the web, where the browser follows redirects itself and a redirect to another host still carries the headers. They are sent on every HTTP request the client makes, including realtime broadcasts sent over HTTP, but not over the realtime WebSocket connection.
 
 #### Sampling
 
