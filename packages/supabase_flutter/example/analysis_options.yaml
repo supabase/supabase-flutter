@@ -3,6 +3,13 @@ include: package:supabase_lints/analysis_options_flutter.yaml
 analyzer:
   exclude:
     - lib/generated_plugin_registrant.dart
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 dcm:
   rules:
