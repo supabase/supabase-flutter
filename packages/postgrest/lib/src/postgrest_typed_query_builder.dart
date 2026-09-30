@@ -49,44 +49,61 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     table.rowFromJson,
   );
 
-  /// Perform a SELECT query on the table or view.
-  ///
-  /// Without [columns] every column is selected:
+  /// Perform a SELECT query on the table or view, reading every column.
   ///
   /// ```dart
   /// final List<Book> books = await client.table(Books.table).select();
   /// ```
   ///
-  /// With [columns], only those are, and each has to belong to this table:
+  /// Rows are converted into [Row] through [PostgrestTable.rowFromJson].
+  /// See [selectOnly] to read some columns, an embedded relation or an
+  /// aggregate instead.
+  PostgrestTypedFilterBuilder<Row, List<Row>> select() =>
+      PostgrestTypedFilterBuilder._(
+        _request(PostgrestTableOperation.select),
+        _executor,
+        _rowsConverter(table.rowFromJson),
+        table.rowFromJson,
+      );
+
+  /// Perform a SELECT query on the table or view, reading [columns] only.
+  ///
+  /// Each entry has to belong to this table, and the rows come back as
+  /// [PostgrestPartialRow]s that are read through the same entries, so a
+  /// column left out cannot be read by mistake:
   ///
   /// ```dart
-  /// final List<Book> books = await client
+  /// final books = await client
   ///     .table(Books.table)
-  ///     .select([Books.id, Books.title]);
+  ///     .selectOnly([Books.id, Books.title]);
+  /// final String title = books.first.read(Books.title);
   /// ```
-  ///
-  /// Rows are still converted into [Row], whose getters for the columns left
-  /// out have nothing to read.
   ///
   /// An embedded relation is selected column by column,
   /// `Books.author(Authors.name)`, or as a whole, `Books.author.select()`.
   /// Entries of one relation are sent as a single embed whatever their
   /// order in [columns], so `author(id)` and `author(name)` become
-  /// `author(id,name)`:
+  /// `author(id,name)`, and the embedded rows are read through the relation:
   ///
   /// ```dart
-  /// final List<Book> books = await client
+  /// final books = await client
   ///     .table(Books.table)
-  ///     .select([Books.id, Books.author.select([Authors.id, Authors.name])]);
+  ///     .selectOnly([
+  ///       Books.id,
+  ///       Books.author.select([Authors.id, Authors.name]),
+  ///     ]);
+  /// final String? author = books.first.read(Books.author)?.read(Authors.name);
   /// ```
-  PostgrestTypedFilterBuilder<Row, List<Row>> select([
-    List<PostgrestSelectable<Row>>? columns,
-  ]) => PostgrestTypedFilterBuilder._(
+  ///
+  /// [columns] needs at least one entry; use [select] for every column.
+  PostgrestTypedFilterBuilder<Row, List<PostgrestPartialRow<Row>>> selectOnly(
+    List<PostgrestSelectable<Row>> columns,
+  ) => PostgrestTypedFilterBuilder._(
     _request(
       PostgrestTableOperation.select,
     ).copyWith(columns: _checkedSelections(columns, 'columns')),
     _executor,
-    _rowsConverter(table.rowFromJson),
+    _partialRowsConverter(columns),
     table.rowFromJson,
   );
 
@@ -157,7 +174,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// [defaultToNull].
   PostgrestTypedTransformBuilder<Row, void> upsert(
     Insert row, {
-    List<PostgrestColumn<Row, Object>>? onConflict,
+    List<PostgrestStoredColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
   }) => _upsert(
@@ -185,7 +202,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// [ignoreDuplicates] and [defaultToNull].
   PostgrestTypedTransformBuilder<Row, void> upsertAll(
     List<Insert> rows, {
-    List<PostgrestColumn<Row, Object>>? onConflict,
+    List<PostgrestStoredColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
   }) => _upsert(
@@ -204,7 +221,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
 
   PostgrestTypedTransformBuilder<Row, void> _upsert(
     Object values, {
-    required List<PostgrestColumn<Row, Object>>? onConflict,
+    required List<PostgrestStoredColumn<Row, Object>>? onConflict,
     required bool ignoreDuplicates,
     required bool defaultToNull,
   }) {

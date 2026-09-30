@@ -53,11 +53,13 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 /// which makes the corresponding methods uncallable.
 ///
 /// Extension types over the decoded JSON map (as above) are the recommended
-/// row representation since they carry no conversion cost and tolerate
-/// partial selects, but any converter works, for example `Book.fromJson` on a
-/// regular data class. `package:supabase_typegen` generates all three types
-/// and the table definition, including [primaryKey] and [relations], from the
-/// database schema.
+/// row representation since they carry no conversion cost, but any converter
+/// works, for example `Book.fromJson` on a regular data class. [Row] is only
+/// built from a `select()` of every column; a `selectOnly` of some columns
+/// resolves to [PostgrestPartialRow]s read through the column tokens.
+/// `package:supabase_typegen` generates all three types and the table
+/// definition, including [primaryKey] and [relations], from the database
+/// schema.
 ///
 /// A table that carries its [schema] is queried in that schema by
 /// [PostgrestClient.table] without a [PostgrestClient.schema] call, so tables
@@ -87,7 +89,7 @@ class PostgrestTable<Row, Insert, Update> {
   ///
   /// Empty for a view or a table without a primary key, where nothing on
   /// the client can tell two rows apart.
-  final List<PostgrestColumn<Row, Object>> primaryKey;
+  final List<PostgrestStoredColumn<Row, Object>> primaryKey;
 
   /// The foreign keys this table holds and the ones pointing at it, each as
   /// the relation an embedded select addresses it by.

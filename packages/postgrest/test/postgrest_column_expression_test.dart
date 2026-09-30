@@ -41,9 +41,9 @@ void main() {
       expect('${Todos.id}', 'id');
     });
 
-    test('a nullable column is a column', () {
+    test('a nullable column is a stored column', () {
       // A nullable column keeps every operator of a column and adds isNull.
-      expect(Todos.dueDate, isA<PostgrestColumn<Todo, DateTime>>());
+      expect(Todos.dueDate, isA<PostgrestStoredColumn<Todo, DateTime>>());
       expect(rendered(Todos.dueDate.isNull()), 'due_date=is.null');
       expect(rendered(Todos.dueDate.isNull().not()), 'due_date=not.is.null');
     });

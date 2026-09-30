@@ -193,43 +193,53 @@ void main() {
     test('two columns of one embed are fetched in a single request', () async {
       final users = await postgrest
           .table(Users.table)
-          .select([
+          .selectOnly([
             Users.username,
             Users.messages(Messages.message),
             Users.messages(Messages.username),
           ])
           .where(Users.username.eq('supabot'));
 
-      final messages = users.single['messages'] as List;
+      final messages = users.single.read(Users.messages);
       expect(messages, hasLength(3));
       for (final message in messages) {
-        expect(message.keys, unorderedEquals(['message', 'username']));
-        expect(message['username'], 'supabot');
+        expect(
+          message.toJson().keys,
+          unorderedEquals(['message', 'username']),
+        );
+        expect(message.read(Messages.username), 'supabot');
+        expect(message.read(Messages.message), isNotEmpty);
       }
     });
 
     test('a whole embed returns every column of the embedded rows', () async {
       final users = await postgrest
           .table(Users.table)
-          .select([Users.username, Users.messages.select()])
+          .selectOnly([Users.username, Users.messages.select()])
           .where(Users.username.eq('supabot'));
 
-      final messages = users.single['messages'] as List;
+      final messages = users.single.read(Users.messages);
       expect(messages, hasLength(3));
-      expect(messages.first, containsPair('channel_id', isA<int>()));
-      expect(messages.first, contains('inserted_at'));
+      expect(messages.first.toJson(), containsPair('channel_id', isA<int>()));
+      expect(messages.first.toJson(), contains('inserted_at'));
     });
 
     test('a to-one embed returns one object', () async {
       final messages = await postgrest
           .table(Messages.table)
-          .select([
+          .selectOnly([
             Messages.id,
             Messages.user.select([Users.username]),
           ])
           .order(Messages.id);
 
-      expect(messages.first['users'], {'username': 'supabot'});
+      expect(
+        messages.first.read(Messages.user)?.read(Users.username),
+        'supabot',
+      );
+      expect(messages.first.read(Messages.user)?.toJson(), {
+        'username': 'supabot',
+      });
     });
   });
 }

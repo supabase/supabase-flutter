@@ -16,6 +16,7 @@ part 'postgrest_filter.dart';
 part 'postgrest_filter_operators.dart';
 part 'postgrest_interval.dart';
 part 'postgrest_ordering.dart';
+part 'postgrest_partial_row.dart';
 part 'postgrest_range.dart';
 part 'postgrest_table.dart';
 part 'postgrest_table_executor.dart';
@@ -126,7 +127,58 @@ _ResultConverter<List<Row>> _rowsConverter<Row>(
 ) =>
     (result) => _rowsFromJson(rowFromJson, result.data! as PostgrestList);
 
+/// Converts the rows of a result into partial rows answering [selections].
+_ResultConverter<List<PostgrestPartialRow<Row>>> _partialRowsConverter<Row>(
+  List<PostgrestSelectable<Row>> selections,
+) =>
+    (result) => [
+      for (final row in result.data! as PostgrestList)
+        PostgrestPartialRow<Row>._(row, selections, allColumns: false),
+    ];
+
 void _noResult(PostgrestTableResult result) {}
+
+/// The single-row shapes of a builder that resolves to a list of rows, the
+/// full [Row] of a `select()` or the [PostgrestPartialRow] of a `selectOnly`.
+///
+/// They live on the list-shaped builders only, so a mutation without a
+/// trailing `select`, which returns no rows, has no `single()` to call.
+@experimental
+extension PostgrestTypedRowsBuilder<Row, Element>
+    on PostgrestTypedTransformBuilder<Row, List<Element>> {
+  /// Retrieves only one row from the result.
+  ///
+  /// The result must be exactly one row, otherwise this will result in an
+  /// error.
+  ///
+  /// ```dart
+  /// final Book book = await client
+  ///     .table(Books.table)
+  ///     .select()
+  ///     .where(Books.id.eq(1))
+  ///     .single();
+  /// ```
+  PostgrestTypedTransformBuilder<Row, Element> single() => _shaped(
+    PostgrestResultShape.single,
+    (result) => _convertRow(result).single,
+  );
+
+  /// Retrieves at most one row from the result, or `null` when the result is
+  /// empty.
+  PostgrestTypedTransformBuilder<Row, Element?> maybeSingle() => _shaped(
+    PostgrestResultShape.maybeSingle,
+    (result) => result.data == null ? null : _convertRow(result).single,
+  );
+
+  /// Converts the one row of [result] the way the list conversion would,
+  /// so the same element type comes out of both.
+  List<Element> _convertRow(PostgrestTableResult result) => _convert(
+    PostgrestTableResult(
+      data: <PostgrestMap>[result.data! as PostgrestMap],
+      count: result.count,
+    ),
+  );
+}
 
 /// A typed PostgREST request that can be awaited.
 ///

@@ -93,6 +93,7 @@ String generateDartCode(
 
   final typeNames = _TypeNameRegistry();
   final enumTypeNames = <(String, String), String>{};
+  final decoders = _DecoderRegistry();
 
   for (final enumDescription in database.enums) {
     final typeName = typeNames.claim(
@@ -125,8 +126,10 @@ String generateDartCode(
       tableMembers[(table.schema, table.name)]!,
       _relationMembers(table, database, tableNames, tableMembers),
       enumTypeNames,
+      decoders,
     );
   }
+  decoders.write(buffer);
 
   return DartFormatter(
     languageVersion: formatVersion,
@@ -316,8 +319,6 @@ class _RelationMember {
     required this.baseName,
     required this.disambiguatedName,
     required this.type,
-    required this.isToOne,
-    required this.targetRowType,
     required this.embedName,
     required this.ambiguous,
     required this.columns,
@@ -335,12 +336,6 @@ class _RelationMember {
 
   /// `PostgrestToOneRelation<SourceRow, TargetRow>` or the to-many kind.
   final String type;
-
-  /// Whether the embed holds one row rather than a list.
-  final bool isToOne;
-
-  /// The row type of the embedded table.
-  final String targetRowType;
 
   /// The name PostgREST addresses the embed by, with a foreign key hint when
   /// the plain table name would be ambiguous.
@@ -420,8 +415,6 @@ List<_RelationMember> _relationMembers(
           baseName: ambiguous ? '$targetName$byColumns' : targetName,
           disambiguatedName: '$targetName$byColumns',
           type: 'PostgrestToOneRelation<${source.rowType}, ${target.rowType}>',
-          isToOne: true,
-          targetRowType: target.rowType,
           embedName: ambiguous
               ? '${relationship.targetTable}!${relationship.foreignKeyName}'
               : relationship.targetTable,
@@ -448,8 +441,6 @@ List<_RelationMember> _relationMembers(
           baseName: ambiguous ? '$sourceName$viaColumns' : sourceName,
           disambiguatedName: '$sourceName$viaColumns',
           type: '$kind<${target.rowType}, ${source.rowType}>',
-          isToOne: relationship.isOneToOne,
-          targetRowType: source.rowType,
           embedName: ambiguous
               ? '${relationship.sourceTable}!${relationship.foreignKeyName}'
               : relationship.sourceTable,
@@ -498,6 +489,7 @@ void _writeTable(
   _TableMembers members,
   List<_RelationMember> relations,
   Map<(String, String), String> enumTypeNames,
+  _DecoderRegistry decoders,
 ) {
   final _TableNames(:insertType, :updateType) = names;
 
@@ -509,16 +501,7 @@ void _writeTable(
   final relationNames = _relationNames(names, members, relations);
   final relationKeys = _embedKeys(relations, relationNames);
 
-  _writeRow(
-    buffer,
-    table,
-    names,
-    memberNames,
-    bindings,
-    relations,
-    relationNames,
-    relationKeys,
-  );
+  _writeRow(buffer, table, names, memberNames, bindings);
   if (insertType != null) {
     _writeValues(
       buffer,
@@ -561,12 +544,12 @@ void _writeTable(
     relations,
     relationNames,
     relationKeys,
+    decoders,
   );
 }
 
-/// The Dart names of [relations], settled against both scopes a relation
-/// member lives in: the namespace class, next to the column constants, and
-/// the row type, next to the column getters, so the same name works in both.
+/// The Dart names of [relations] in the namespace class, next to the column
+/// constants and the types the table definition names.
 List<String> _relationNames(
   _TableNames names,
   _TableMembers members,
@@ -580,10 +563,6 @@ List<String> _relationNames(
     rowType,
     ?insertType,
     ?updateType,
-    'toJson',
-    'postgrestBytea',
-    'postgrestVector',
-    ...members.rowMembers.values,
   };
   final baseNameCounts = <String, int>{};
   for (final relation in relations) {
@@ -641,12 +620,13 @@ void _writeRow(
   _TableNames names,
   Map<String, String> memberNames,
   Map<String, _Binding> bindings,
-  List<_RelationMember> relations,
-  List<String> relationNames,
-  List<String> relationKeys,
 ) {
   final rowType = names.rowType;
-  _writeDocComment(buffer, 'A row of the `${names.displayName}` table.');
+  _writeDocComment(
+    buffer,
+    'A row of the `${names.displayName}` table, as `select()` reads it with '
+    'every column.',
+  );
   _writeDocComment(buffer, table.comment);
   buffer
     ..writeln('extension type const $rowType(Map<String, dynamic> _json)')
@@ -658,41 +638,6 @@ void _writeRow(
       '  ${_getterType(column, binding)} get ${memberNames[column.name]} => '
       '${_readExpression(column, binding)};',
     );
-  }
-  for (final (index, relation) in relations.indexed) {
-    final name = relationNames[index];
-    final key = _stringLiteral(relationKeys[index]);
-    final _RelationMember(:targetRowType) = relation;
-    buffer.writeln();
-    if (relation.isToOne) {
-      _writeDocComment(
-        buffer,
-        '${relation.docLine} `null` unless the relation was selected and '
-        'the key points at a row.',
-        indent: '  ',
-      );
-      buffer
-        ..writeln('  $targetRowType? get $name => switch (_json[$key]) {')
-        ..writeln('    null => null,')
-        ..writeln(
-          '    final Object value => '
-          '$targetRowType(value as Map<String, dynamic>),',
-        )
-        ..writeln('  };');
-    } else {
-      _writeDocComment(
-        buffer,
-        '${relation.docLine} Only readable when the relation was selected.',
-        indent: '  ',
-      );
-      buffer
-        ..writeln('  List<$targetRowType> get $name => [')
-        ..writeln(
-          '    for (final row in _json[$key] as List) '
-          '$targetRowType(row as Map<String, dynamic>),',
-        )
-        ..writeln('  ];');
-    }
   }
   buffer
     ..writeln()
@@ -784,6 +729,7 @@ void _writeNamespace(
   List<_RelationMember> relations,
   List<String> relationNames,
   List<String> relationKeys,
+  _DecoderRegistry decoders,
 ) {
   final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
 
@@ -822,9 +768,14 @@ void _writeNamespace(
       (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
       (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
     };
+    // A vector column decodes its literal itself.
+    final decoder = binding.kind == ColumnTypeKind.vector
+        ? null
+        : decoders.claim(binding);
+    final arguments = decoder == null ? '' : ', fromJson: $decoder';
     buffer.writeln(
       '  static const ${columnNames[column.name]} = '
-      '$columnType(${_stringLiteral(column.name)});',
+      '$columnType(${_stringLiteral(column.name)}$arguments);',
     );
   }
   for (final (index, relation) in relations.indexed) {
@@ -850,6 +801,72 @@ void _writeNamespace(
   buffer
     ..writeln('}')
     ..writeln();
+}
+
+/// The private top-level functions the column tokens decode their values
+/// with, one per Dart type that differs from its JSON representation, shared
+/// by every column of that type.
+class _DecoderRegistry {
+  /// The decoder name by the type it produces and the body producing it.
+  final Map<(String, String), String> _names = {};
+  final Set<String> _claimed = {};
+
+  /// The name of the decoder for [binding], or `null` when the decoded JSON
+  /// is the value and the column token needs none.
+  String? claim(_Binding binding) {
+    final body = _decoderBody(binding, 'json');
+    if (body == null) return null;
+    return _names.putIfAbsent(
+      (binding.dartType, body),
+      () => _claimName(_claimed, _decoderName(binding)),
+    );
+  }
+
+  /// Writes the decoders claimed so far, sorted by name.
+  void write(StringBuffer buffer) {
+    final entries = _names.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    for (final MapEntry(key: (type, body), value: name) in entries) {
+      buffer
+        ..writeln('$type $name(Object json) => $body;')
+        ..writeln();
+    }
+  }
+}
+
+/// `_dateTimeFromJson` for `DateTime`, `_intListFromJson` for `List<int>`
+/// and `_postgrestRangeOfIntFromJson` for `PostgrestRange<int>`.
+String _decoderName(_Binding binding) {
+  var words = binding.dartType;
+  final argument = RegExp(r'<([^<>]+)>');
+  while (argument.hasMatch(words)) {
+    words = words.replaceAllMapped(
+      argument,
+      (match) => 'Of${_capitalized(match[1]!)}',
+    );
+  }
+  words = words.replaceAll(RegExp(r'\W'), '');
+  final base = words.startsWith('ListOf')
+      ? '${words.substring('ListOf'.length)}List'
+      : words;
+  return '_${base[0].toLowerCase()}${base.substring(1)}FromJson';
+}
+
+String _capitalized(String word) =>
+    '${word[0].toUpperCase()}${word.substring(1)}';
+
+/// The expression converting [json], one decoded present JSON value bound to
+/// [binding], into its Dart type, or `null` when the decoded value is used
+/// as it is and the column token needs no decoder.
+String? _decoderBody(_Binding binding, String json) {
+  if (binding.kind == ColumnTypeKind.array) {
+    final conversion = _readConversion(binding.element!, 'element');
+    final list = '($json as List<dynamic>)';
+    return conversion == null
+        ? '$list.cast()'
+        : '$list.map((element) => $conversion).toList()';
+  }
+  return _readConversion(binding, json);
 }
 
 _Binding _bindingFor(

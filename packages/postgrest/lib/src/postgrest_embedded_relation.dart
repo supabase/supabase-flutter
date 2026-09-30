@@ -15,9 +15,21 @@ part of 'postgrest_typed_builder.dart';
 /// `author(id,name)`. The embedded rows come back under [key] in the parent
 /// row.
 ///
+/// The embedded rows are read from a [PostgrestPartialRow] through the
+/// relation, as a nested partial row of [Target] for a
+/// [PostgrestToOneRelation] and a list of them for a
+/// [PostgrestToManyRelation]:
+///
+/// ```dart
+/// final book = await client
+///     .table(Books.table)
+///     .selectOnly([Books.id, Books.author.select([Authors.name])])
+///     .single();
+/// final String? authorName = book.read(Books.author)?.read(Authors.name);
+/// ```
+///
 /// `package:supabase_typegen` generates one relation constant per foreign
-/// key on each side, lists them in [PostgrestTable.relations], and gives the
-/// row type a getter per relation that reads the embedded rows.
+/// key on each side and lists them in [PostgrestTable.relations].
 @experimental
 sealed class PostgrestRelation<Row, Target> {
   const PostgrestRelation(
@@ -44,6 +56,23 @@ sealed class PostgrestRelation<Row, Target> {
   /// when set, otherwise the table name in [name].
   String get key => alias ?? name.split('!').first;
 
+  /// The same as [key]: where the embedded rows are read from.
+  String get responseKey => key;
+
+  /// The partial rows of [Target] under [json], the embedded object or list
+  /// as decoded, shaped by [nested].
+  List<PostgrestPartialRow<Target>> _partialRows(
+    Iterable<Object?> json,
+    _NestedSelection nested,
+  ) => [
+    for (final row in json)
+      PostgrestPartialRow<Target>._(
+        row as Map<String, dynamic>,
+        nested.selections,
+        allColumns: nested.allColumns,
+      ),
+  ];
+
   /// How the embed is spelled in the `select` list.
   String get _selectName => alias == null ? name : '$alias:$name';
 
@@ -51,14 +80,14 @@ sealed class PostgrestRelation<Row, Target> {
   String get _reference => alias ?? name;
 
   /// The columns of this table the relation joins on.
-  final List<PostgrestColumn<Row, Object>> columns;
+  final List<PostgrestStoredColumn<Row, Object>> columns;
 
   /// The name of the table the relation points at.
   final String referencedTable;
 
   /// The columns of [referencedTable] the relation joins on, paired with
   /// [columns] by index.
-  final List<PostgrestColumn<Target, Object>> referencedColumns;
+  final List<PostgrestStoredColumn<Target, Object>> referencedColumns;
 
   /// Selects the embedded table as a whole: [selections] of it, or every
   /// column when none are given.
@@ -101,7 +130,8 @@ sealed class PostgrestRelation<Row, Target> {
 /// [PostgrestToManyRelation].
 @experimental
 final class PostgrestToOneRelation<Row, Target>
-    extends PostgrestRelation<Row, Target> {
+    extends PostgrestRelation<Row, Target>
+    implements PostgrestReadable<Row, PostgrestPartialRow<Target>?> {
   const PostgrestToOneRelation(
     super.name, {
     required super.columns,
@@ -120,6 +150,13 @@ final class PostgrestToOneRelation<Row, Target>
     List<PostgrestSelectable<Target>>? selections,
   ]) =>
       PostgrestToOneEmbed._(this, _checkedSelections(selections, 'selections'));
+
+  @override
+  PostgrestPartialRow<Target>? _read(Object? json, _NestedSelection nested) =>
+      json == null ? null : _partialRows([json], nested).single;
+
+  @override
+  bool get _selectedByStar => false;
 }
 
 /// A to-many embedded relation (one-to-many or many-to-many) of the table
@@ -129,7 +166,8 @@ final class PostgrestToOneRelation<Row, Target>
 /// `order=children(amount).desc` with PGRST118.
 @experimental
 final class PostgrestToManyRelation<Row, Target>
-    extends PostgrestRelation<Row, Target> {
+    extends PostgrestRelation<Row, Target>
+    implements PostgrestReadable<Row, List<PostgrestPartialRow<Target>>> {
   const PostgrestToManyRelation(
     super.name, {
     required super.columns,
@@ -150,6 +188,15 @@ final class PostgrestToManyRelation<Row, Target>
     this,
     _checkedSelections(selections, 'selections'),
   );
+
+  @override
+  List<PostgrestPartialRow<Target>> _read(
+    Object? json,
+    _NestedSelection nested,
+  ) => _partialRows(json as List<Object?>, nested);
+
+  @override
+  bool get _selectedByStar => false;
 }
 
 /// A `select` entry that goes through a relation: it renders as that
@@ -164,6 +211,9 @@ base mixin _Embedded<Row> on PostgrestSelectable<Row> {
 
   @override
   String get expression => _embedExpression(relation._selectName, _selections);
+
+  @override
+  String get responseKey => relation.key;
 
   /// The filter form, `parent.title`, dotted through every level of a
   /// nested projection.
@@ -183,7 +233,8 @@ base mixin _Embedded<Row> on PostgrestSelectable<Row> {
 /// is neither an order key nor a filter operand, and PostgREST applies no
 /// cast, JSON path or aggregate to one. The embedded rows come back under
 /// [PostgrestRelation.key] in the parent row, one object for a
-/// [PostgrestToOneEmbed] and a list for a [PostgrestToManyEmbed].
+/// [PostgrestToOneEmbed] and a list for a [PostgrestToManyEmbed], and are
+/// read from a [PostgrestPartialRow] through the relation.
 @experimental
 sealed class PostgrestEmbed<Row, Target> extends PostgrestSelectable<Row>
     with _Embedded<Row> {
@@ -230,7 +281,7 @@ final class PostgrestToManyEmbed<Row, Target>
 /// A single-column embed: renders and merges the same way a
 /// [PostgrestEmbed] with one selection does, and on top of that keeps the
 /// column's [Value] so it can be derived from or, for a to-one relation,
-/// ordered by.
+/// ordered by. It is read through its relation, like every embedded entry.
 sealed class _EmbeddedColumn<Row, Value extends Object>
     extends PostgrestColumnExpression<Row, Value>
     with _Embedded<Row> {
@@ -245,6 +296,9 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
   @override
   List<PostgrestSelectable<Object?>> get _selections => [_inner];
 
+  @override
+  Value Function(Object json)? get _fromJson => _inner._fromJson;
+
   /// The filter form, `parent.title`, dotted through every level of a
   /// nested projection.
   String get embeddedFilterName => _filterName;
@@ -258,8 +312,13 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
   /// parentheses, where PostgREST applies it.
   @override
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
-    String derivation,
-  ) => _EmbeddedDerivation._(relation, _inner._derive(derivation));
+    String derivation, {
+    required String key,
+    required Derived Function(Object json)? fromJson,
+  }) => _EmbeddedDerivation._(
+    relation,
+    _inner._derive(derivation, key: key, fromJson: fromJson),
+  );
 }
 
 /// A column of a to-one embedded relation, seen from the parent.

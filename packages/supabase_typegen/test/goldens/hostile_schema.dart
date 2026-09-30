@@ -34,7 +34,8 @@ enum String$ {
   String toString() => wireName;
 }
 
-/// A row of the `postgrest_table` table.
+/// A row of the `postgrest_table` table, as `select()` reads it with every
+/// column.
 /// first
 /// second
 /// third $interpolation "quoted"
@@ -85,20 +86,6 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
                 PostgrestRange.parse(element as String, DateTime.parse),
           )
           .toList();
-
-  /// The `map` row referenced by `mood`. `null` unless the relation was
-  /// selected and the key points at a row.
-  MapRow? get mapByMood => switch (_json['map_by_mood']) {
-    null => null,
-    final Object value => MapRow(value as Map<String, dynamic>),
-  };
-
-  /// The `map` row referenced by `days`. `null` unless the relation was
-  /// selected and the key points at a row.
-  MapRow? get mapByDays => switch (_json['map_by_days']) {
-    null => null,
-    final Object value => MapRow(value as Map<String, dynamic>),
-  };
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -339,19 +326,31 @@ class PostgrestTable$ {
   );
   static const mood = PostgrestNullableColumn<PostgrestTableRow, String$>(
     'mood',
+    fromJson: _stringFromJson,
   );
   static const samples = PostgrestColumn<PostgrestTableRow, List<double>>(
     'samples',
+    fromJson: _doubleListFromJson,
   );
   static const days =
-      PostgrestNullableColumn<PostgrestTableRow, List<PostgrestDate>>('days');
+      PostgrestNullableColumn<PostgrestTableRow, List<PostgrestDate>>(
+        'days',
+        fromJson: _postgrestDateListFromJson,
+      );
   static const postgrestBytea$ = PostgrestColumn<PostgrestTableRow, Uint8List>(
     'postgrest_bytea',
+    fromJson: _uint8ListFromJson,
   );
   static const uint8List =
-      PostgrestNullableColumn<PostgrestTableRow, Uint8List>('uint8_list');
+      PostgrestNullableColumn<PostgrestTableRow, Uint8List>(
+        'uint8_list',
+        fromJson: _uint8ListFromJson,
+      );
   static const blobs =
-      PostgrestNullableColumn<PostgrestTableRow, List<Uint8List>>('blobs');
+      PostgrestNullableColumn<PostgrestTableRow, List<Uint8List>>(
+        'blobs',
+        fromJson: _uint8ListListFromJson,
+      );
   static const postgrestVector$ = PostgrestVectorColumn<PostgrestTableRow>(
     'postgrest_vector',
   );
@@ -359,20 +358,30 @@ class PostgrestTable$ {
     'half_embedding',
   );
   static const embeddings =
-      PostgrestNullableColumn<PostgrestTableRow, List<String>>('embeddings');
+      PostgrestNullableColumn<PostgrestTableRow, List<String>>(
+        'embeddings',
+        fromJson: _stringListFromJson,
+      );
   static const moods =
-      PostgrestNullableColumn<PostgrestTableRow, List<String$>>('moods');
+      PostgrestNullableColumn<PostgrestTableRow, List<String$>>(
+        'moods',
+        fromJson: _stringListFromJson$,
+      );
   static const spans =
       PostgrestNullableColumn<PostgrestTableRow, List<PostgrestRange<int>>>(
         'spans',
+        fromJson: _postgrestRangeOfIntListFromJson,
       );
   static const stamps =
-      PostgrestNullableColumn<PostgrestTableRow, List<DateTime>>('stamps');
+      PostgrestNullableColumn<PostgrestTableRow, List<DateTime>>(
+        'stamps',
+        fromJson: _dateTimeListFromJson,
+      );
   static const shifts =
       PostgrestNullableColumn<
         PostgrestTableRow,
         List<PostgrestRange<DateTime>>
-      >('shifts');
+      >('shifts', fromJson: _postgrestRangeOfDateTimeListFromJson);
 
   /// The `map` row referenced by `mood`.
   static const mapByMood = PostgrestToOneRelation<PostgrestTableRow, MapRow>(
@@ -393,7 +402,7 @@ class PostgrestTable$ {
   );
 }
 
-/// A row of the `map` table.
+/// A row of the `map` table, as `select()` reads it with every column.
 extension type const MapRow(Map<String, dynamic> _json) implements Object {
   int get list => _json['list'] as int;
   DateTime? get dateTime => switch (_json['date_time']) {
@@ -424,21 +433,6 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => PostgrestInterval.parse(value as String),
   };
-
-  /// The `postgrest_table` rows referencing this row through `mood`. Only
-  /// readable when the relation was selected.
-  List<PostgrestTableRow> get postgrestTableViaMood => [
-    for (final row in _json['postgrest_table_via_mood'] as List)
-      PostgrestTableRow(row as Map<String, dynamic>),
-  ];
-
-  /// The `postgrest_table` row referencing this row through `days`. `null`
-  /// unless the relation was selected and the key points at a row.
-  PostgrestTableRow? get postgrestTableViaDays =>
-      switch (_json['postgrest_table_via_days']) {
-        null => null,
-        final Object value => PostgrestTableRow(value as Map<String, dynamic>),
-      };
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -564,25 +558,45 @@ class Map$ {
   static const list = PostgrestColumn<MapRow, int>('list');
   static const dateTime = PostgrestNullableColumn<MapRow, DateTime>(
     'date_time',
+    fromJson: _dateTimeFromJson,
   );
-  static const pages = PostgrestColumn<MapRow, PostgrestRange<int>>('pages');
+  static const pages = PostgrestColumn<MapRow, PostgrestRange<int>>(
+    'pages',
+    fromJson: _postgrestRangeOfIntFromJson,
+  );
   static const prices = PostgrestNullableColumn<MapRow, PostgrestRange<num>>(
     'prices',
+    fromJson: _postgrestRangeOfNumFromJson,
   );
   static const season = PostgrestColumn<MapRow, PostgrestRange<PostgrestDate>>(
     'season',
+    fromJson: _postgrestRangeOfPostgrestDateFromJson,
   );
   static const shift = PostgrestColumn<MapRow, PostgrestRange<DateTime>>(
     'shift',
+    fromJson: _postgrestRangeOfDateTimeFromJson,
   );
   static const during =
-      PostgrestNullableColumn<MapRow, PostgrestRange<DateTime>>('during');
-  static const since = PostgrestColumn<MapRow, PostgrestDate>('since');
-  static const opensAt = PostgrestColumn<MapRow, PostgrestTime>('opens_at');
+      PostgrestNullableColumn<MapRow, PostgrestRange<DateTime>>(
+        'during',
+        fromJson: _postgrestRangeOfDateTimeFromJson,
+      );
+  static const since = PostgrestColumn<MapRow, PostgrestDate>(
+    'since',
+    fromJson: _postgrestDateFromJson,
+  );
+  static const opensAt = PostgrestColumn<MapRow, PostgrestTime>(
+    'opens_at',
+    fromJson: _postgrestTimeFromJson,
+  );
   static const closesAt = PostgrestNullableColumn<MapRow, PostgrestTime>(
     'closes_at',
+    fromJson: _postgrestTimeFromJson,
   );
-  static const ttl = PostgrestNullableColumn<MapRow, PostgrestInterval>('ttl');
+  static const ttl = PostgrestNullableColumn<MapRow, PostgrestInterval>(
+    'ttl',
+    fromJson: _postgrestIntervalFromJson,
+  );
 
   /// The `postgrest_table` rows referencing this row through `mood`.
   static const postgrestTableViaMood =
@@ -606,7 +620,8 @@ class Map$ {
 }
 
 /// A row of the `evil
-/// multiline "schema" name.postgrest_column` table.
+/// multiline "schema" name.postgrest_column` table, as `select()` reads it with
+/// every column.
 extension type const EvilMultilineSchemaNamePostgrestColumnRow(
   Map<String, dynamic> _json
 )
@@ -664,7 +679,8 @@ class EvilMultilineSchemaNamePostgrestColumn {
       PostgrestColumn<EvilMultilineSchemaNamePostgrestColumnRow, int>('id');
 }
 
-/// A row of the `private.achievement_item_progress_tbl` table.
+/// A row of the `private.achievement_item_progress_tbl` table, as `select()`
+/// reads it with every column.
 extension type const PrivateAchievementItemProgressTblRow(
   Map<String, dynamic> _json
 )
@@ -723,3 +739,66 @@ class PrivateAchievementItemProgressTbl {
   static const name =
       PostgrestColumn<PrivateAchievementItemProgressTblRow, String>('name');
 }
+
+DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
+
+List<DateTime> _dateTimeListFromJson(Object json) => (json as List<dynamic>)
+    .map((element) => DateTime.parse(element as String))
+    .toList();
+
+List<double> _doubleListFromJson(Object json) => (json as List<dynamic>)
+    .map((element) => (element as num).toDouble())
+    .toList();
+
+PostgrestDate _postgrestDateFromJson(Object json) =>
+    PostgrestDate.parse(json as String);
+
+List<PostgrestDate> _postgrestDateListFromJson(Object json) =>
+    (json as List<dynamic>)
+        .map((element) => PostgrestDate.parse(element as String))
+        .toList();
+
+PostgrestInterval _postgrestIntervalFromJson(Object json) =>
+    PostgrestInterval.parse(json as String);
+
+PostgrestRange<DateTime> _postgrestRangeOfDateTimeFromJson(Object json) =>
+    PostgrestRange.parse(json as String, DateTime.parse);
+
+List<PostgrestRange<DateTime>> _postgrestRangeOfDateTimeListFromJson(
+  Object json,
+) => (json as List<dynamic>)
+    .map((element) => PostgrestRange.parse(element as String, DateTime.parse))
+    .toList();
+
+PostgrestRange<int> _postgrestRangeOfIntFromJson(Object json) =>
+    PostgrestRange.parse(json as String, int.parse);
+
+List<PostgrestRange<int>> _postgrestRangeOfIntListFromJson(Object json) =>
+    (json as List<dynamic>)
+        .map((element) => PostgrestRange.parse(element as String, int.parse))
+        .toList();
+
+PostgrestRange<num> _postgrestRangeOfNumFromJson(Object json) =>
+    PostgrestRange.parse(json as String, num.parse);
+
+PostgrestRange<PostgrestDate> _postgrestRangeOfPostgrestDateFromJson(
+  Object json,
+) => PostgrestRange.parse(json as String, PostgrestDate.parse);
+
+PostgrestTime _postgrestTimeFromJson(Object json) =>
+    PostgrestTime.parse(json as String);
+
+String$ _stringFromJson(Object json) => String$.fromWire(json as String);
+
+List<String> _stringListFromJson(Object json) => (json as List<dynamic>).cast();
+
+List<String$> _stringListFromJson$(Object json) => (json as List<dynamic>)
+    .map((element) => String$.fromWire(element as String))
+    .toList();
+
+Uint8List _uint8ListFromJson(Object json) =>
+    postgrestBytea.decode(json as String);
+
+List<Uint8List> _uint8ListListFromJson(Object json) => (json as List<dynamic>)
+    .map((element) => postgrestBytea.decode(element as String))
+    .toList();

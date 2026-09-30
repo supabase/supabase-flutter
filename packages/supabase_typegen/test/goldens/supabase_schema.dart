@@ -59,18 +59,12 @@ enum Mood {
   String toString() => wireName;
 }
 
-/// A row of the `inventory.books` table.
+/// A row of the `inventory.books` table, as `select()` reads it with every
+/// column.
 extension type const InventoryBooksRow(Map<String, dynamic> _json)
     implements Object {
   int get id => _json['id'] as int;
   String get isbn => _json['isbn'] as String;
-
-  /// The `inventory.stock` rows referencing this row through `copy_id`. Only
-  /// readable when the relation was selected.
-  List<InventoryStockRow> get stock => [
-    for (final row in _json['stock'] as List)
-      InventoryStockRow(row as Map<String, dynamic>),
-  ];
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -125,7 +119,8 @@ class InventoryBooks {
       );
 }
 
-/// A row of the `inventory.stock` table.
+/// A row of the `inventory.stock` table, as `select()` reads it with every
+/// column.
 /// Copies held per book
 extension type const InventoryStockRow(Map<String, dynamic> _json)
     implements Object {
@@ -135,13 +130,6 @@ extension type const InventoryStockRow(Map<String, dynamic> _json)
   int get copyId => _json['copy_id'] as int;
   int get id => _json['id'] as int;
   int get quantity => _json['quantity'] as int;
-
-  /// The `inventory.books` row referenced by `copy_id`. `null` unless the
-  /// relation was selected and the key points at a row.
-  InventoryBooksRow? get books => switch (_json['books']) {
-    null => null,
-    final Object value => InventoryBooksRow(value as Map<String, dynamic>),
-  };
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -205,7 +193,10 @@ class InventoryStock {
 
   static const bookId = PostgrestColumn<InventoryStockRow, int>('book_id');
   static const condition =
-      PostgrestColumn<InventoryStockRow, InventoryCondition>('condition');
+      PostgrestColumn<InventoryStockRow, InventoryCondition>(
+        'condition',
+        fromJson: _inventoryConditionFromJson,
+      );
   static const copyId = PostgrestColumn<InventoryStockRow, int>('copy_id');
   static const id = PostgrestColumn<InventoryStockRow, int>('id');
   static const quantity = PostgrestColumn<InventoryStockRow, int>('quantity');
@@ -220,19 +211,12 @@ class InventoryStock {
       );
 }
 
-/// A row of the `author_stats` table.
+/// A row of the `author_stats` table, as `select()` reads it with every column.
 /// Aggregated statistics per author
 extension type const AuthorStatsRow(Map<String, dynamic> _json)
     implements Object {
   int? get authorId => _json['author_id'] as int?;
   int? get bookCount => _json['book_count'] as int?;
-
-  /// The `authors` row referenced by `author_id`. `null` unless the relation
-  /// was selected and the key points at a row.
-  AuthorsRow? get authors => switch (_json['authors']) {
-    null => null,
-    final Object value => AuthorsRow(value as Map<String, dynamic>),
-  };
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -267,24 +251,10 @@ class AuthorStats {
   );
 }
 
-/// A row of the `authors` table.
+/// A row of the `authors` table, as `select()` reads it with every column.
 extension type const AuthorsRow(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
   String get name => _json['name'] as String;
-
-  /// The `author_stats` rows referencing this row through `author_id`. Only
-  /// readable when the relation was selected.
-  List<AuthorStatsRow> get authorStats => [
-    for (final row in _json['author_stats'] as List)
-      AuthorStatsRow(row as Map<String, dynamic>),
-  ];
-
-  /// The `books` rows referencing this row through `author_id`. Only readable
-  /// when the relation was selected.
-  List<BooksRow> get books => [
-    for (final row in _json['books'] as List)
-      BooksRow(row as Map<String, dynamic>),
-  ];
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -342,7 +312,7 @@ class Authors {
   );
 }
 
-/// A row of the `book_prices` table.
+/// A row of the `book_prices` table, as `select()` reads it with every column.
 /// Prices per book, with the standard discount precomputed
 extension type const BookPricesRow(Map<String, dynamic> _json)
     implements Object {
@@ -422,7 +392,8 @@ class BookPrices {
   static const title = PostgrestNullableColumn<BookPricesRow, String>('title');
 }
 
-/// A row of the `book_submissions` table.
+/// A row of the `book_submissions` table, as `select()` reads it with every
+/// column.
 extension type const BookSubmissionsRow(Map<String, dynamic> _json)
     implements Object {
   String? get authorName => _json['author_name'] as String?;
@@ -474,7 +445,8 @@ class BookSubmissions {
   );
 }
 
-/// A row of the `book_summaries` table.
+/// A row of the `book_summaries` table, as `select()` reads it with every
+/// column.
 /// Denormalized book and author names
 extension type const BookSummariesRow(Map<String, dynamic> _json)
     implements Object {
@@ -507,7 +479,7 @@ class BookSummaries {
   );
 }
 
-/// A row of the `books` table.
+/// A row of the `books` table, as `select()` reads it with every column.
 /// Books available in the library
 extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   int get authorId => _json['author_id'] as int;
@@ -538,13 +510,6 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   DateTime? get updatedAt => switch (_json['updated_at']) {
     null => null,
     final Object value => DateTime.parse(value as String),
-  };
-
-  /// The `authors` row referenced by `author_id`. `null` unless the relation
-  /// was selected and the key points at a row.
-  AuthorsRow? get authors => switch (_json['authors']) {
-    null => null,
-    final Object value => AuthorsRow(value as Map<String, dynamic>),
   };
 
   /// The row as decoded from the response.
@@ -747,27 +712,43 @@ class Books {
   static const authorId = PostgrestColumn<BooksRow, int>('author_id');
   static const coverImage = PostgrestNullableColumn<BooksRow, Uint8List>(
     'cover_image',
+    fromJson: _uint8ListFromJson,
   );
   static const coverUuid = PostgrestNullableColumn<BooksRow, String>(
     'cover_uuid',
   );
-  static const createdAt = PostgrestColumn<BooksRow, DateTime>('created_at');
+  static const createdAt = PostgrestColumn<BooksRow, DateTime>(
+    'created_at',
+    fromJson: _dateTimeFromJson,
+  );
   static const id = PostgrestColumn<BooksRow, int>('id');
   static const inPrint = PostgrestColumn<BooksRow, bool>('in_print');
   static const metadata = PostgrestNullableColumn<BooksRow, Object>('metadata');
-  static const mood = PostgrestNullableColumn<BooksRow, Mood>('mood');
+  static const mood = PostgrestNullableColumn<BooksRow, Mood>(
+    'mood',
+    fromJson: _moodFromJson,
+  );
   static const pageCounts = PostgrestNullableColumn<BooksRow, List<int>>(
     'page_counts',
+    fromJson: _intListFromJson,
   );
   static const price = PostgrestNullableColumn<BooksRow, num>('price');
   static const publishedOn = PostgrestNullableColumn<BooksRow, PostgrestDate>(
     'published_on',
+    fromJson: _postgrestDateFromJson,
   );
-  static const rating = PostgrestNullableColumn<BooksRow, double>('rating');
-  static const tags = PostgrestNullableColumn<BooksRow, List<String>>('tags');
+  static const rating = PostgrestNullableColumn<BooksRow, double>(
+    'rating',
+    fromJson: _doubleFromJson,
+  );
+  static const tags = PostgrestNullableColumn<BooksRow, List<String>>(
+    'tags',
+    fromJson: _stringListFromJson,
+  );
   static const title = PostgrestColumn<BooksRow, String>('title');
   static const updatedAt = PostgrestNullableColumn<BooksRow, DateTime>(
     'updated_at',
+    fromJson: _dateTimeFromJson,
   );
 
   /// The `authors` row referenced by `author_id`.
@@ -778,3 +759,22 @@ class Books {
     referencedColumns: [Authors.id],
   );
 }
+
+DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
+
+double _doubleFromJson(Object json) => (json as num).toDouble();
+
+List<int> _intListFromJson(Object json) => (json as List<dynamic>).cast();
+
+InventoryCondition _inventoryConditionFromJson(Object json) =>
+    InventoryCondition.fromWire(json as String);
+
+Mood _moodFromJson(Object json) => Mood.fromWire(json as String);
+
+PostgrestDate _postgrestDateFromJson(Object json) =>
+    PostgrestDate.parse(json as String);
+
+List<String> _stringListFromJson(Object json) => (json as List<dynamic>).cast();
+
+Uint8List _uint8ListFromJson(Object json) =>
+    postgrestBytea.decode(json as String);

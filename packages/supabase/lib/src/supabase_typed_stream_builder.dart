@@ -27,7 +27,7 @@ class SupabaseTypedStreamBuilder<Row> extends Stream<List<Row>> {
   ///     .order(Books.title);
   /// ```
   SupabaseTypedStreamBuilder<Row> order(
-    PostgrestColumn<Row, Object> column, {
+    PostgrestStoredColumn<Row, Object> column, {
     bool ascending = true,
   }) {
     _streamBuilder.order(column.name, ascending: ascending);
@@ -102,7 +102,7 @@ class SupabaseTypedStreamFilterBuilder<Row>
       );
     }
     final PostgrestComparison(:column, :operator, :value) = comparison;
-    if (column is! PostgrestColumn<Row, Object>) {
+    if (column is! PostgrestStoredColumn<Row, Object>) {
       throw ArgumentError.value(
         filter,
         'filter',
