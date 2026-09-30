@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-30
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`storage_client` - `v2.8.1`](#storage_client---v281)
+ - [`supabase_flutter` - `v2.18.0`](#supabase_flutter---v2180)
+ - [`supabase` - `v2.16.2`](#supabase---v2162)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.16.2`
+
+---
+
+#### `storage_client` - `v2.8.1`
+
+ - **FIX**(gotrue): parse expires_in as num in Session.fromJson ([#1719](https://github.com/supabase/supabase-flutter/issues/1719)). ([6c8047ee](https://github.com/supabase/supabase-flutter/commit/6c8047eefb82c76936a14eebe281276526e3037c))
+
+#### `supabase_flutter` - `v2.18.0`
+
+ - **FEAT**(supabase_flutter): add RealtimeLifecycleOptions to delay or skip the realtime disconnect on pause ([#1900](https://github.com/supabase/supabase-flutter/issues/1900)). ([ea93c9a6](https://github.com/supabase/supabase-flutter/commit/ea93c9a6c3b19ad0adc6b8c32df27f36948ae714))
+
+
 ## 2026-08-14
 
 ### Changes
