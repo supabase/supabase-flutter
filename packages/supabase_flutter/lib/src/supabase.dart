@@ -217,6 +217,11 @@ class Supabase {
   /// app is paused. Cancelled when the app is resumed or detached first.
   Timer? _pendingPause;
 
+  /// When [_pendingPause] started. The operating system may freeze the app
+  /// before the timer fires, so on resume the elapsed wall-clock time decides
+  /// whether the pause counts as expired.
+  DateTime? _pausedAt;
+
   /// Serial queue for lifecycle operations (connect/disconnect). Each event
   /// appends via `.then()` so operations never overlap.
   Future<void> _pendingLifecycleOperation = Future.value();
@@ -341,6 +346,9 @@ class Supabase {
       onStateChange: (state) {
         switch (state) {
           case AppLifecycleState.resumed:
+            final pauseExpired = _pendingPauseExpired();
+            _cancelPendingPause();
+            _enqueueLifecycle(state, replaceConnection: pauseExpired);
           case AppLifecycleState.detached:
             _cancelPendingPause();
             _enqueueLifecycle(state);
@@ -350,8 +358,9 @@ class Supabase {
               _enqueueLifecycle(state);
             } else {
               _cancelPendingPause();
+              _pausedAt = DateTime.now();
               _pendingPause = Timer(delay, () {
-                _pendingPause = null;
+                _cancelPendingPause();
                 _enqueueLifecycle(AppLifecycleState.paused);
               });
             }
@@ -363,16 +372,29 @@ class Supabase {
     );
   }
 
-  void _enqueueLifecycle(AppLifecycleState state) {
+  void _enqueueLifecycle(
+    AppLifecycleState state, {
+    bool replaceConnection = false,
+  }) {
     _targetLifecycleState = state;
     _pendingLifecycleOperation = _pendingLifecycleOperation
-        .then((_) => _processLifecycle(state))
+        .then(
+          (_) => _processLifecycle(state, replaceConnection: replaceConnection),
+        )
         .catchError((_) {});
+  }
+
+  bool _pendingPauseExpired() {
+    final pausedAt = _pausedAt;
+    if (_pendingPause == null || pausedAt == null) return false;
+    return DateTime.now().difference(pausedAt) >=
+        _realtimeLifecycleOptions.disconnectAfterPause;
   }
 
   void _cancelPendingPause() {
     _pendingPause?.cancel();
     _pendingPause = null;
+    _pausedAt = null;
   }
 
   /// Processes a lifecycle state change. Operations are serialized via
@@ -380,7 +402,14 @@ class Supabase {
   ///
   /// [captured] is the lifecycle state at the time the event was enqueued.
   /// If a newer event has arrived since, this one is skipped (stale).
-  Future<void> _processLifecycle(AppLifecycleState captured) async {
+  ///
+  /// [replaceConnection] closes an open socket before reconnecting, for a
+  /// resume after a pause that outlasted its grace period while the app was
+  /// frozen, since the socket may be dead by then.
+  Future<void> _processLifecycle(
+    AppLifecycleState captured, {
+    bool replaceConnection = false,
+  }) async {
     if (captured != _targetLifecycleState) return;
 
     final currentClient = _client;
@@ -405,6 +434,11 @@ class Supabase {
 
       // No channels subscribed — nothing to reconnect.
       if (realtime.channels.isEmpty) return;
+
+      if (replaceConnection && realtime.isConnected) {
+        await realtime.disconnect();
+        if (_targetLifecycleState != AppLifecycleState.resumed) return;
+      }
 
       // Already connected (e.g. coming from [AppLifecycleState.inactive]
       // where no disconnect happened).

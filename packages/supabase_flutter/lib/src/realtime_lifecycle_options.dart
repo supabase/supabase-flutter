@@ -31,8 +31,9 @@ class RealtimeLifecycleOptions {
   ///
   /// When the app is resumed before this has passed the socket stays open, so
   /// nothing is reconnected or rejoined. The app being detached disconnects
-  /// the socket right away regardless. While the operating system suspends the
-  /// app no timers run, so a pause that outlasts the suspension is handled
-  /// when the app is next resumed.
+  /// the socket right away regardless. The pause is measured in wall-clock
+  /// time, so a pause that outlasted this while the operating system had the
+  /// app suspended still disconnects and reconnects the socket when the app
+  /// is next resumed.
   final Duration disconnectAfterPause;
 }
