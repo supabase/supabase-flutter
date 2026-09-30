@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase/src/trace_context_format.dart';
 import 'package:supabase/src/trace_http_client.dart';
@@ -262,5 +265,282 @@ void main() {
     await supabase.from('table').select();
 
     expect(captured().headers.containsKey('traceparent'), isFalse);
+  });
+
+  group('redirects', testOn: 'vm', () {
+    const thirdPartyUrl = 'https://thirdparty.example';
+
+    void stubRedirect(String path, String location, {int statusCode = 302}) {
+      httpClient.stubHandler(
+        (_) => Response('', statusCode, headers: {'location': location}),
+        path: path,
+      );
+    }
+
+    test('drops trace headers on a redirect to a third-party host', () async {
+      httpClient.stub({'ok': true}, path: '/landing');
+      stubRedirect('/rest/v1/table', '$thirdPartyUrl/landing');
+
+      final response = await client(
+        optionsWith(() => context),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      expect(response.statusCode, 200);
+      expect(response.request?.url, Uri.parse('$_supabaseUrl/rest/v1/table'));
+      final [original, redirected] = httpClient.requests;
+      expect(original.headers['traceparent'], _sampledTraceparent);
+      expect(original.request.followRedirects, isFalse);
+      expect(redirected.url, Uri.parse('$thirdPartyUrl/landing'));
+      expect(redirected.headers.containsKey('traceparent'), isFalse);
+      expect(redirected.headers.containsKey('tracestate'), isFalse);
+      expect(redirected.headers.containsKey('baggage'), isFalse);
+    });
+
+    test('reports the redirected URL on the streamed response', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect('/rest/v1/table', '$thirdPartyUrl/landing');
+      final request = Request(
+        HttpMethod.get.value,
+        Uri.parse('$_supabaseUrl/rest/v1/table'),
+      );
+
+      final BaseResponse response = await client(
+        optionsWith(() => context),
+      ).send(request);
+
+      expect(response.request, same(request));
+      expect(
+        response,
+        isA<BaseResponseWithUrl>().having(
+          (redirected) => redirected.url,
+          'url',
+          Uri.parse('$thirdPartyUrl/landing'),
+        ),
+      );
+    });
+
+    test('keeps trace headers on a redirect between Supabase hosts', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect('/rest/v1/table', 'https://other.supabase.co/landing');
+
+      await client(
+        optionsWith(() => context),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      final redirected = httpClient.requests.last;
+      expect(redirected.url.host, 'other.supabase.co');
+      expect(redirected.headers['traceparent'], _sampledTraceparent);
+      expect(redirected.headers['tracestate'], 'vendor=value');
+      expect(redirected.headers['baggage'], 'key=value');
+    });
+
+    test('keeps trace headers the caller set on a redirect', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect('/rest/v1/table', '$thirdPartyUrl/landing');
+
+      await client(optionsWith(() => context)).get(
+        Uri.parse('$_supabaseUrl/rest/v1/table'),
+        headers: {'baggage': 'caller=value'},
+      );
+
+      final redirected = httpClient.requests.last;
+      expect(redirected.headers['baggage'], 'caller=value');
+      expect(redirected.headers.containsKey('traceparent'), isFalse);
+    });
+
+    test('drops credentials on a redirect to another origin', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect('/rest/v1/table', 'https://other.supabase.co/landing');
+
+      await client(optionsWith(() => context)).get(
+        Uri.parse('$_supabaseUrl/rest/v1/table'),
+        headers: {
+          'Authorization': 'Bearer token',
+          'Proxy-Authorization': 'Basic credentials',
+          'apikey': 'key',
+        },
+      );
+
+      final redirected = httpClient.requests.last;
+      expect(redirected.headers.containsKey('authorization'), isFalse);
+      expect(redirected.headers.containsKey('proxy-authorization'), isFalse);
+      expect(redirected.headers['apikey'], 'key');
+    });
+
+    test('keeps credentials and resolves a relative redirect', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect('/rest/v1/table', '/landing', statusCode: 307);
+
+      await client(optionsWith(() => context)).get(
+        Uri.parse('$_supabaseUrl/rest/v1/table'),
+        headers: {'Authorization': 'Bearer token'},
+      );
+
+      final redirected = httpClient.requests.last;
+      expect(redirected.url, Uri.parse('$_supabaseUrl/landing'));
+      expect(redirected.headers['authorization'], 'Bearer token');
+      expect(redirected.headers['traceparent'], _sampledTraceparent);
+    });
+
+    test('follows a 303 on a POST as a GET without a body', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect(
+        '/rest/v1/rpc/fn',
+        '$thirdPartyUrl/landing',
+        statusCode: 303,
+      );
+
+      await client(
+        optionsWith(() => context),
+      ).post(Uri.parse('$_supabaseUrl/rest/v1/rpc/fn'), body: '{"a":1}');
+
+      final redirected = httpClient.requests.last;
+      expect(redirected.method, HttpMethod.get.value);
+      expect(redirected.bodyBytes, isEmpty);
+      expect(redirected.headers.containsKey('traceparent'), isFalse);
+    });
+
+    test('returns a redirect of a POST other than a 303 unfollowed', () async {
+      stubRedirect('/rest/v1/table', '$thirdPartyUrl/landing');
+
+      final response = await client(
+        optionsWith(() => context),
+      ).post(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      expect(response.statusCode, 302);
+      expect(httpClient.requests, hasLength(1));
+    });
+
+    test('follows a 307 on a POST with the same method and body', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect('/rest/v1/rpc/fn', '/landing', statusCode: 307);
+
+      await client(
+        optionsWith(() => context),
+      ).post(Uri.parse('$_supabaseUrl/rest/v1/rpc/fn'), body: '{"a":1}');
+
+      final redirected = httpClient.requests.last;
+      expect(redirected.url, Uri.parse('$_supabaseUrl/landing'));
+      expect(redirected.method, HttpMethod.post.value);
+      expect(redirected.body, '{"a":1}');
+      expect(redirected.headers['traceparent'], _sampledTraceparent);
+    });
+
+    test(
+      'drops trace headers on a write redirected to a third party',
+      () async {
+        httpClient.stub(null, path: '/landing');
+        stubRedirect(
+          '/rest/v1/table',
+          '$thirdPartyUrl/landing',
+          statusCode: 308,
+        );
+
+        await client(
+          optionsWith(() => context),
+        ).patch(Uri.parse('$_supabaseUrl/rest/v1/table'), body: '{"a":1}');
+
+        final redirected = httpClient.requests.last;
+        expect(redirected.method, HttpMethod.patch.value);
+        expect(redirected.body, '{"a":1}');
+        expect(redirected.headers.containsKey('traceparent'), isFalse);
+        expect(redirected.headers.containsKey('baggage'), isFalse);
+      },
+    );
+
+    test('follows a 303 on a PUT as a GET without a body', () async {
+      httpClient.stub(null, path: '/landing');
+      stubRedirect('/rest/v1/table', '/landing', statusCode: 303);
+
+      await client(
+        optionsWith(() => context),
+      ).put(Uri.parse('$_supabaseUrl/rest/v1/table'), body: '{"a":1}');
+
+      final redirected = httpClient.requests.last;
+      expect(redirected.method, HttpMethod.get.value);
+      expect(redirected.bodyBytes, isEmpty);
+    });
+
+    test('returns a 307 on a streamed request unfollowed', () async {
+      stubRedirect(
+        '/storage/v1/object/bucket/file',
+        '/landing',
+        statusCode: 307,
+      );
+      final request = StreamedRequest(
+        HttpMethod.post.value,
+        Uri.parse('$_supabaseUrl/storage/v1/object/bucket/file'),
+      );
+      unawaited(request.sink.close());
+
+      final response = await client(optionsWith(() => context)).send(request);
+
+      expect(response.statusCode, 307);
+      expect(httpClient.requests, hasLength(1));
+    });
+
+    test('throws when the redirect limit is exceeded', () async {
+      for (var hop = 0; hop < 3; hop++) {
+        stubRedirect('/hop$hop', '$_supabaseUrl/hop${hop + 1}');
+      }
+      final request = Request(
+        HttpMethod.get.value,
+        Uri.parse('$_supabaseUrl/hop0'),
+      )..maxRedirects = 2;
+
+      await expectLater(
+        client(optionsWith(() => context)).send(request),
+        throwsA(
+          isA<ClientException>().having(
+            (error) => error.message,
+            'message',
+            'Redirect limit exceeded',
+          ),
+        ),
+      );
+      expect(httpClient.requests, hasLength(3));
+    });
+
+    test('throws on a redirect loop', () async {
+      stubRedirect('/first', '$_supabaseUrl/second');
+      stubRedirect('/second', '$_supabaseUrl/first');
+
+      await expectLater(
+        client(
+          optionsWith(() => context),
+        ).get(Uri.parse('$_supabaseUrl/first')),
+        throwsA(
+          isA<ClientException>().having(
+            (error) => error.message,
+            'message',
+            'Redirect loop detected',
+          ),
+        ),
+      );
+    });
+
+    test(
+      'leaves redirects to the inner client without trace headers',
+      () async {
+        await client(
+          optionsWith(() => null),
+        ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+        expect(captured().request.followRedirects, isTrue);
+      },
+    );
+
+    test('leaves redirects to the inner client when disabled', () async {
+      stubRedirect('/rest/v1/table', '$thirdPartyUrl/landing');
+      final request = Request(
+        HttpMethod.get.value,
+        Uri.parse('$_supabaseUrl/rest/v1/table'),
+      )..followRedirects = false;
+
+      final response = await client(optionsWith(() => context)).send(request);
+
+      expect(response.statusCode, 302);
+      expect(httpClient.requests, hasLength(1));
+    });
   });
 }

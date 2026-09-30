@@ -7,7 +7,7 @@ import 'utils.dart';
 /// here until it is handled.
 String describe(AuthState state) => switch (state) {
   AuthInitialSession(session: null) => 'initial, signed out',
-  AuthInitialSession(session: final session?) => 'initial ${session.user.id}',
+  AuthInitialSession(:final session?) => 'initial ${session.user.id}',
   AuthSignedIn(:final session) => 'signed in ${session.user.id}',
   AuthSignedOut(:final reason) => 'signed out ${reason?.name}',
   AuthTokenRefreshed(:final session) => 'refreshed ${session.user.id}',
