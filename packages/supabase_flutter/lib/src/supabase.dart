@@ -10,6 +10,7 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
+import 'package:supabase_flutter/src/realtime_lifecycle_options.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
 import 'hot_restart_cleanup_stub.dart'
@@ -70,6 +71,12 @@ class Supabase {
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
   ///
+  /// [realtimeLifecycleOptions] controls how the realtime socket follows the
+  /// app lifecycle. By default it is disconnected as soon as the app is paused
+  /// and reconnected, with every joined channel rejoined, when the app is
+  /// resumed. See [RealtimeLifecycleOptions] to delay the disconnect or to
+  /// manage the socket yourself.
+  ///
   /// Set [authFlowType] to [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
@@ -87,6 +94,8 @@ class Supabase {
     Map<String, String>? headers,
     Client? httpClient,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    RealtimeLifecycleOptions realtimeLifecycleOptions =
+        const RealtimeLifecycleOptions(),
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
@@ -141,6 +150,7 @@ class Supabase {
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,
+      realtimeLifecycleOptions: realtimeLifecycleOptions,
       authOptions: authOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
@@ -190,6 +200,13 @@ class Supabase {
   // Listener for app lifecycle events to handle Realtime reconnection.
   AppLifecycleListener? _lifecycleListener;
 
+  RealtimeLifecycleOptions _realtimeLifecycleOptions =
+      const RealtimeLifecycleOptions();
+
+  /// Counts down [RealtimeLifecycleOptions.disconnectAfterPause] while the
+  /// app is paused. Cancelled when the app is resumed or detached first.
+  Timer? _pendingPause;
+
   /// Serial queue for lifecycle operations (connect/disconnect). Each event
   /// appends via `.then()` so operations never overlap.
   Future<void> _pendingLifecycleOperation = Future.value();
@@ -204,6 +221,7 @@ class Supabase {
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
     _targetLifecycleState = null;
+    _cancelPendingPause();
     await _restoreSessionCancellableOperation?.cancel();
     await _logSubscription?.cancel();
     await client.dispose();
@@ -218,12 +236,14 @@ class Supabase {
     Client? httpClient,
     Map<String, String>? customHeaders,
     required RealtimeClientOptions realtimeClientOptions,
+    required RealtimeLifecycleOptions realtimeLifecycleOptions,
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
     required AuthClientOptions authOptions,
     required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
   }) {
+    _realtimeLifecycleOptions = realtimeLifecycleOptions;
     final headers = {
       ...Constants.defaultHeaders,
       ...?customHeaders,
@@ -258,18 +278,38 @@ class Supabase {
       onStateChange: (state) {
         switch (state) {
           case AppLifecycleState.resumed:
-          case AppLifecycleState.paused:
           case AppLifecycleState.detached:
-            _targetLifecycleState = state;
-            _pendingLifecycleOperation = _pendingLifecycleOperation
-                .then((_) => _processLifecycle(state))
-                .catchError((_) {});
+            _cancelPendingPause();
+            _enqueueLifecycle(state);
+          case AppLifecycleState.paused:
+            final delay = _realtimeLifecycleOptions.disconnectAfterPause;
+            if (delay == Duration.zero) {
+              _enqueueLifecycle(state);
+            } else {
+              _cancelPendingPause();
+              _pendingPause = Timer(delay, () {
+                _pendingPause = null;
+                _enqueueLifecycle(AppLifecycleState.paused);
+              });
+            }
           case AppLifecycleState.inactive:
           case AppLifecycleState.hidden:
             break;
         }
       },
     );
+  }
+
+  void _enqueueLifecycle(AppLifecycleState state) {
+    _targetLifecycleState = state;
+    _pendingLifecycleOperation = _pendingLifecycleOperation
+        .then((_) => _processLifecycle(state))
+        .catchError((_) {});
+  }
+
+  void _cancelPendingPause() {
+    _pendingPause?.cancel();
+    _pendingPause = null;
   }
 
   /// Processes a lifecycle state change. Operations are serialized via
@@ -280,6 +320,7 @@ class Supabase {
   Future<void> _processLifecycle(AppLifecycleState captured) async {
     // Skip if a newer lifecycle event has superseded this one.
     if (captured != _targetLifecycleState) return;
+    if (!_realtimeLifecycleOptions.managed) return;
 
     final realtime = Supabase.instance.client.realtime;
 

@@ -1520,6 +1520,11 @@ features:
     status: implemented
     symbols:
       - RealtimeClientOptions.disconnectOnEmptyChannelsAfter
+      - RealtimeLifecycleOptions
+      - RealtimeLifecycleOptions.RealtimeLifecycleOptions
+      - RealtimeLifecycleOptions.manual
+      - RealtimeLifecycleOptions.managed
+      - RealtimeLifecycleOptions.disconnectAfterPause
 
   # functions
   functions.invocation.invoke:
