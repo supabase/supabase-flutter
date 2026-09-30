@@ -3,6 +3,92 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-30
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.8`](#postgrest---v300-dev8)
+ - [`supabase` - `v3.0.0-dev.8`](#supabase---v300-dev8)
+ - [`supabase_flutter` - `v3.0.0-dev.8`](#supabase_flutter---v300-dev8)
+ - [`supabase_typegen` - `v0.5.0`](#supabase_typegen---v050)
+
+Packages with other changes:
+
+ - [`supabase_auth` - `v3.0.0-dev.7`](#supabase_auth---v300-dev7)
+ - [`supabase_common` - `v3.0.0-dev.5`](#supabase_common---v300-dev5)
+ - [`supabase_functions` - `v3.0.0-dev.6`](#supabase_functions---v300-dev6)
+ - [`supabase_storage` - `v3.0.0-dev.6`](#supabase_storage---v300-dev6)
+ - [`supabase_test` - `v0.4.2`](#supabase_test---v042)
+ - [`iceberg` - `v0.1.4`](#iceberg---v014)
+ - [`supabase_realtime` - `v3.0.0-dev.7`](#supabase_realtime---v300-dev7)
+ - [`supabase_flutter_web_auth` - `v0.1.6`](#supabase_flutter_web_auth---v016)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_test` - `v0.4.2`
+ - `iceberg` - `v0.1.4`
+ - `supabase_realtime` - `v3.0.0-dev.7`
+ - `supabase_flutter_web_auth` - `v0.1.6`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.8`
+
+ - **FIX**(postgrest): keep a client-level Prefer header on writes ([#1886](https://github.com/supabase/supabase-flutter/issues/1886)). ([7b2027ae](https://github.com/supabase/supabase-flutter/commit/7b2027ae519311e6176ad327c1d9431d3514ce28))
+ - **FEAT**(postgrest): type the embedded rows of a relation ([#1891](https://github.com/supabase/supabase-flutter/issues/1891)). ([0281f352](https://github.com/supabase/supabase-flutter/commit/0281f3527490df26bf6ae28a5a09566a129e57c9))
+ - **FEAT**(postgrest): select several columns of an embed ([#1890](https://github.com/supabase/supabase-flutter/issues/1890)). ([8741aae6](https://github.com/supabase/supabase-flutter/commit/8741aae62b54ecef919729cc92a2f5a561966e7a))
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+ - **BREAKING** **FEAT**(postgrest): type a partial select as a partial row instead of the full row ([#1897](https://github.com/supabase/supabase-flutter/issues/1897)). ([9378ac89](https://github.com/supabase/supabase-flutter/commit/9378ac891afb573f80992cea00dfb0efd73f583e))
+
+#### `supabase` - `v3.0.0-dev.8`
+
+ - **FIX**(supabase): drop trace headers when a redirect leaves the Supabase hosts ([#1895](https://github.com/supabase/supabase-flutter/issues/1895)). ([d9c0827d](https://github.com/supabase/supabase-flutter/commit/d9c0827dd94dff11ad8eaca108bd523fa1b4ce3a))
+ - **DOCS**(supabase_flutter): document request ids and trace propagation ([#1887](https://github.com/supabase/supabase-flutter/issues/1887)). ([818479e7](https://github.com/supabase/supabase-flutter/commit/818479e7b8ed43039db710bd2c0b13279d238f0e))
+ - **BREAKING** **REFACTOR**(supabase): require a traceContextProvider in TracePropagationOptions ([#1882](https://github.com/supabase/supabase-flutter/issues/1882)). ([d69f644d](https://github.com/supabase/supabase-flutter/commit/d69f644d47912e4d4e2be0bc5f374ed050d91d5e))
+ - **BREAKING** **FEAT**(postgrest): type a partial select as a partial row instead of the full row ([#1897](https://github.com/supabase/supabase-flutter/issues/1897)). ([9378ac89](https://github.com/supabase/supabase-flutter/commit/9378ac891afb573f80992cea00dfb0efd73f583e))
+
+#### `supabase_flutter` - `v3.0.0-dev.8`
+
+ - **FIX**(supabase): drop trace headers when a redirect leaves the Supabase hosts ([#1895](https://github.com/supabase/supabase-flutter/issues/1895)). ([d9c0827d](https://github.com/supabase/supabase-flutter/commit/d9c0827dd94dff11ad8eaca108bd523fa1b4ce3a))
+ - **FIX**(supabase_flutter): don't throw on deep links with malformed percent-encoding ([#1898](https://github.com/supabase/supabase-flutter/issues/1898)). ([ed23dea2](https://github.com/supabase/supabase-flutter/commit/ed23dea254172fecd1ee142b58ce334bfa64b899))
+ - **FEAT**(supabase_flutter): add RealtimeLifecycleOptions to delay or skip the realtime disconnect on pause ([#1899](https://github.com/supabase/supabase-flutter/issues/1899)). ([52dcd2f4](https://github.com/supabase/supabase-flutter/commit/52dcd2f464db90b6a72b4583b1e6a599d65c8eb0))
+ - **DOCS**(supabase_flutter): document request ids and trace propagation ([#1887](https://github.com/supabase/supabase-flutter/issues/1887)). ([818479e7](https://github.com/supabase/supabase-flutter/commit/818479e7b8ed43039db710bd2c0b13279d238f0e))
+ - **BREAKING** **REFACTOR**(supabase): require a traceContextProvider in TracePropagationOptions ([#1882](https://github.com/supabase/supabase-flutter/issues/1882)). ([d69f644d](https://github.com/supabase/supabase-flutter/commit/d69f644d47912e4d4e2be0bc5f374ed050d91d5e))
+
+#### `supabase_typegen` - `v0.5.0`
+
+ - **FIX**(typegen): keep the document order of foreign keys when partitioning relationships ([#1894](https://github.com/supabase/supabase-flutter/issues/1894)). ([e1f4a83b](https://github.com/supabase/supabase-flutter/commit/e1f4a83b58e742067b831ffe0e496ae96ca02c69))
+ - **FIX**(typegen): suffix a schema object named ArgumentError so the generated enums compile ([#1893](https://github.com/supabase/supabase-flutter/issues/1893)). ([03783d9e](https://github.com/supabase/supabase-flutter/commit/03783d9e203a4915a57cc6ea161e5fbef636372b))
+ - **FIX**(supabase_typegen): order the view copies of a foreign key deterministically ([#1883](https://github.com/supabase/supabase-flutter/issues/1883)). ([6975f620](https://github.com/supabase/supabase-flutter/commit/6975f6205ae69b8c26e083a900dd5ae026f8d057))
+ - **FEAT**(postgrest): type the embedded rows of a relation ([#1891](https://github.com/supabase/supabase-flutter/issues/1891)). ([0281f352](https://github.com/supabase/supabase-flutter/commit/0281f3527490df26bf6ae28a5a09566a129e57c9))
+ - **BREAKING** **FEAT**(postgrest): type a partial select as a partial row instead of the full row ([#1897](https://github.com/supabase/supabase-flutter/issues/1897)). ([9378ac89](https://github.com/supabase/supabase-flutter/commit/9378ac891afb573f80992cea00dfb0efd73f583e))
+
+#### `supabase_auth` - `v3.0.0-dev.7`
+
+ - **FIX**(supabase): drop trace headers when a redirect leaves the Supabase hosts ([#1895](https://github.com/supabase/supabase-flutter/issues/1895)). ([d9c0827d](https://github.com/supabase/supabase-flutter/commit/d9c0827dd94dff11ad8eaca108bd523fa1b4ce3a))
+ - **FIX**(supabase_flutter): don't throw on deep links with malformed percent-encoding ([#1898](https://github.com/supabase/supabase-flutter/issues/1898)). ([ed23dea2](https://github.com/supabase/supabase-flutter/commit/ed23dea254172fecd1ee142b58ce334bfa64b899))
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+
+#### `supabase_common` - `v3.0.0-dev.5`
+
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+
+#### `supabase_functions` - `v3.0.0-dev.6`
+
+ - **FIX**(functions): decode response bodies that are not valid UTF-8 instead of throwing ([#1892](https://github.com/supabase/supabase-flutter/issues/1892)). ([56950108](https://github.com/supabase/supabase-flutter/commit/5695010858d22d57962e1e3bee434bf2a3ec14e1))
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+
+#### `supabase_storage` - `v3.0.0-dev.6`
+
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+
+
 ## 2026-09-24
 
 ### Changes

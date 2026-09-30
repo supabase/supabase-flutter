@@ -1,3 +1,13 @@
+## 3.0.0-dev.8
+
+> Note: This release has breaking changes.
+
+ - **FIX**(postgrest): keep a client-level Prefer header on writes ([#1886](https://github.com/supabase/supabase-flutter/issues/1886)). ([7b2027ae](https://github.com/supabase/supabase-flutter/commit/7b2027ae519311e6176ad327c1d9431d3514ce28))
+ - **FEAT**(postgrest): type the embedded rows of a relation ([#1891](https://github.com/supabase/supabase-flutter/issues/1891)). ([0281f352](https://github.com/supabase/supabase-flutter/commit/0281f3527490df26bf6ae28a5a09566a129e57c9))
+ - **FEAT**(postgrest): select several columns of an embed ([#1890](https://github.com/supabase/supabase-flutter/issues/1890)). ([8741aae6](https://github.com/supabase/supabase-flutter/commit/8741aae62b54ecef919729cc92a2f5a561966e7a))
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+ - **BREAKING** **FEAT**(postgrest): type a partial select as a partial row instead of the full row ([#1897](https://github.com/supabase/supabase-flutter/issues/1897)). ([9378ac89](https://github.com/supabase/supabase-flutter/commit/9378ac891afb573f80992cea00dfb0efd73f583e))
+
 ## 3.0.0-dev.7
 
 > Note: This release has breaking changes.
