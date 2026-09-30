@@ -8,6 +8,7 @@ export 'package:url_launcher/url_launcher.dart' show LaunchMode;
 
 export 'src/flutter_auth_client_options.dart';
 export 'src/oauth_launcher.dart';
+export 'src/realtime_lifecycle_options.dart';
 export 'src/shared_preferences_auth_async_storage.dart';
 export 'src/supabase.dart';
 export 'src/supabase_auth.dart' hide SupabaseAuth;
