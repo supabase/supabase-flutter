@@ -74,11 +74,36 @@ void main() {
 
   late List<Completer<void>> readyCompleters;
 
+  /// Walks the binding back to [AppLifecycleState.resumed] through valid
+  /// transitions, since [AppLifecycleListener] asserts on them and the state
+  /// carries over from the previous test.
+  void resetLifecycleToResumed() {
+    final binding = TestWidgetsFlutterBinding.instance;
+    final steps = switch (binding.lifecycleState) {
+      null || AppLifecycleState.resumed => const <AppLifecycleState>[],
+      AppLifecycleState.paused => const [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ],
+      AppLifecycleState.hidden => const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ],
+      AppLifecycleState.inactive ||
+      AppLifecycleState.detached => const [AppLifecycleState.resumed],
+    };
+    for (final state in steps) {
+      binding.handleAppLifecycleStateChanged(state);
+    }
+  }
+
   Future<void> initializeSupabase({
     RealtimeLifecycleOptions realtimeLifecycleOptions =
         const RealtimeLifecycleOptions(),
   }) async {
     mockAppLink();
+    resetLifecycleToResumed();
     readyCompleters = [];
     await Supabase.initialize(
       url: supabaseUrl,
