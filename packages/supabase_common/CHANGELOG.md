@@ -1,3 +1,7 @@
+## 3.0.0-dev.5
+
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+
 ## 3.0.0-dev.4
 
 > Note: This release has breaking changes.

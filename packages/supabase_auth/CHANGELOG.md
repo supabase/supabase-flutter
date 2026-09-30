@@ -1,3 +1,9 @@
+## 3.0.0-dev.7
+
+ - **FIX**(supabase): drop trace headers when a redirect leaves the Supabase hosts ([#1895](https://github.com/supabase/supabase-flutter/issues/1895)). ([d9c0827d](https://github.com/supabase/supabase-flutter/commit/d9c0827dd94dff11ad8eaca108bd523fa1b4ce3a))
+ - **FIX**(supabase_flutter): don't throw on deep links with malformed percent-encoding ([#1898](https://github.com/supabase/supabase-flutter/issues/1898)). ([ed23dea2](https://github.com/supabase/supabase-flutter/commit/ed23dea254172fecd1ee142b58ce334bfa64b899))
+ - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
+
 ## 3.0.0-dev.6
 
 > Note: This release has breaking changes.

@@ -1,3 +1,12 @@
+## 3.0.0-dev.8
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase): drop trace headers when a redirect leaves the Supabase hosts ([#1895](https://github.com/supabase/supabase-flutter/issues/1895)). ([d9c0827d](https://github.com/supabase/supabase-flutter/commit/d9c0827dd94dff11ad8eaca108bd523fa1b4ce3a))
+ - **DOCS**(supabase_flutter): document request ids and trace propagation ([#1887](https://github.com/supabase/supabase-flutter/issues/1887)). ([818479e7](https://github.com/supabase/supabase-flutter/commit/818479e7b8ed43039db710bd2c0b13279d238f0e))
+ - **BREAKING** **REFACTOR**(supabase): require a traceContextProvider in TracePropagationOptions ([#1882](https://github.com/supabase/supabase-flutter/issues/1882)). ([d69f644d](https://github.com/supabase/supabase-flutter/commit/d69f644d47912e4d4e2be0bc5f374ed050d91d5e))
+ - **BREAKING** **FEAT**(postgrest): type a partial select as a partial row instead of the full row ([#1897](https://github.com/supabase/supabase-flutter/issues/1897)). ([9378ac89](https://github.com/supabase/supabase-flutter/commit/9378ac891afb573f80992cea00dfb0efd73f583e))
+
 ## 3.0.0-dev.7
 
  - **FIX**(supabase): keep traceparent on unsampled traces ([#1870](https://github.com/supabase/supabase-flutter/issues/1870)). ([dde7a7df](https://github.com/supabase/supabase-flutter/commit/dde7a7dfaff3456c36a48957a6ebb807148e05ff))

@@ -1,3 +1,13 @@
+## 3.0.0-dev.8
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase): drop trace headers when a redirect leaves the Supabase hosts ([#1895](https://github.com/supabase/supabase-flutter/issues/1895)). ([d9c0827d](https://github.com/supabase/supabase-flutter/commit/d9c0827dd94dff11ad8eaca108bd523fa1b4ce3a))
+ - **FIX**(supabase_flutter): don't throw on deep links with malformed percent-encoding ([#1898](https://github.com/supabase/supabase-flutter/issues/1898)). ([ed23dea2](https://github.com/supabase/supabase-flutter/commit/ed23dea254172fecd1ee142b58ce334bfa64b899))
+ - **FEAT**(supabase_flutter): add RealtimeLifecycleOptions to delay or skip the realtime disconnect on pause ([#1899](https://github.com/supabase/supabase-flutter/issues/1899)). ([52dcd2f4](https://github.com/supabase/supabase-flutter/commit/52dcd2f464db90b6a72b4583b1e6a599d65c8eb0))
+ - **DOCS**(supabase_flutter): document request ids and trace propagation ([#1887](https://github.com/supabase/supabase-flutter/issues/1887)). ([818479e7](https://github.com/supabase/supabase-flutter/commit/818479e7b8ed43039db710bd2c0b13279d238f0e))
+ - **BREAKING** **REFACTOR**(supabase): require a traceContextProvider in TracePropagationOptions ([#1882](https://github.com/supabase/supabase-flutter/issues/1882)). ([d69f644d](https://github.com/supabase/supabase-flutter/commit/d69f644d47912e4d4e2be0bc5f374ed050d91d5e))
+
 ## 3.0.0-dev.7
 
  - Update a dependency to the latest release.

@@ -1,3 +1,13 @@
+## 0.5.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(typegen): keep the document order of foreign keys when partitioning relationships ([#1894](https://github.com/supabase/supabase-flutter/issues/1894)). ([e1f4a83b](https://github.com/supabase/supabase-flutter/commit/e1f4a83b58e742067b831ffe0e496ae96ca02c69))
+ - **FIX**(typegen): suffix a schema object named ArgumentError so the generated enums compile ([#1893](https://github.com/supabase/supabase-flutter/issues/1893)). ([03783d9e](https://github.com/supabase/supabase-flutter/commit/03783d9e203a4915a57cc6ea161e5fbef636372b))
+ - **FIX**(supabase_typegen): order the view copies of a foreign key deterministically ([#1883](https://github.com/supabase/supabase-flutter/issues/1883)). ([6975f620](https://github.com/supabase/supabase-flutter/commit/6975f6205ae69b8c26e083a900dd5ae026f8d057))
+ - **FEAT**(postgrest): type the embedded rows of a relation ([#1891](https://github.com/supabase/supabase-flutter/issues/1891)). ([0281f352](https://github.com/supabase/supabase-flutter/commit/0281f3527490df26bf6ae28a5a09566a129e57c9))
+ - **BREAKING** **FEAT**(postgrest): type a partial select as a partial row instead of the full row ([#1897](https://github.com/supabase/supabase-flutter/issues/1897)). ([9378ac89](https://github.com/supabase/supabase-flutter/commit/9378ac891afb573f80992cea00dfb0efd73f583e))
+
 ## 0.4.0
 
 > Note: This release has breaking changes.
