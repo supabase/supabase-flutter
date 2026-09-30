@@ -2650,6 +2650,7 @@ features:
   client.observability.diagnostic_logging:
     status: implemented
     note: "Records go through the `supabase` logger hierarchy of `package:logging` instead of a logger supplied when the client is constructed."
+    no_public_symbols: true
 
 # Public API the matrix accounts for but that no single capability owns: shared
 # domain models, the exception hierarchies, the client and sub-API handles that
