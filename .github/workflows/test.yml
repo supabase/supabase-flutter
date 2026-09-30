@@ -321,6 +321,7 @@ jobs:
         uses: CQLabs/setup-dcm@8697ae0790c0852e964a6ef1d768d62a6675481a # v2.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: 1.38.3
 
       - name: Run DCM
         run: dcm analyze --ci-key="${{ secrets.DCM_CI_KEY }}" --email="${{ secrets.DCM_EMAIL }}" packages
