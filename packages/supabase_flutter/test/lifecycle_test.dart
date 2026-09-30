@@ -345,6 +345,28 @@ void main() {
       expect(readyCompleters, hasLength(2));
     });
 
+    test('a pause that outlasted the delay while no timer could fire '
+        'reconnects on resume', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+
+      pause();
+      await pumpEventQueue();
+
+      // The operating system froze the app: wall-clock time moved on, but
+      // the pause timer never got to fire before the app was resumed.
+      // Blocking the event loop keeps the timer from running until the
+      // resume has been handled.
+      final stopwatch = Stopwatch()..start();
+      while (stopwatch.elapsed < delay * 2) {}
+      resume();
+      await settleLifecycle();
+
+      expect(realtime.connState, SocketStates.open);
+      expect(readyCompleters, hasLength(2), reason: 'the socket was replaced');
+    });
+
     test('detached during the delay disconnects right away', () async {
       final realtime = Supabase.instance.client.realtime;
       realtime.channel('test');
