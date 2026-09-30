@@ -72,57 +72,100 @@ void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
 
-  group('Lifecycle realtime reconnection', () {
-    late List<Completer<void>> readyCompleters;
+  late List<Completer<void>> readyCompleters;
 
-    setUp(() async {
-      mockAppLink();
-      readyCompleters = [];
-      await Supabase.initialize(
-        url: supabaseUrl,
-        publishableKey: supabaseKey,
-        authOptions: FlutterAuthClientOptions(
-          asyncStorage: MockAsyncStorage(),
-        ),
-        realtimeClientOptions: RealtimeClientOptions(
-          transport: (url, headers) {
-            final completer = Completer<void>();
-            readyCompleters.add(completer);
-            return FakeWebSocketChannel(readyCompleter: completer);
-          },
-        ),
-      );
-    });
-
-    tearDown(() async {
-      try {
-        await Supabase.instance.dispose();
-      } catch (_) {}
-    });
-
-    /// Helper: call connect() and immediately complete the
-    /// ready future created by the transport factory.
-    Future<void> connectAndReady(RealtimeClient realtime) async {
-      // ignore: invalid_use_of_internal_member
-      final future = realtime.connect();
-      // The transport factory just added a completer
-      readyCompleters.last.complete();
-      await future;
+  /// Walks the binding back to [AppLifecycleState.resumed] through valid
+  /// transitions, since [AppLifecycleListener] asserts on them and the state
+  /// carries over from the previous test.
+  void resetLifecycleToResumed() {
+    final binding = TestWidgetsFlutterBinding.instance;
+    final steps = switch (binding.lifecycleState) {
+      null || AppLifecycleState.resumed => const <AppLifecycleState>[],
+      AppLifecycleState.paused => const [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ],
+      AppLifecycleState.hidden => const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ],
+      AppLifecycleState.inactive ||
+      AppLifecycleState.detached => const [AppLifecycleState.resumed],
+    };
+    for (final state in steps) {
+      binding.handleAppLifecycleStateChanged(state);
     }
+  }
 
-    /// Repeatedly complete pending ready futures and pump the event queue
-    /// until no new completers appear. This handles the case where lifecycle
-    /// processing triggers a connect() that creates a new completer.
-    Future<void> settleLifecycle() async {
-      var previousCount = -1;
-      while (readyCompleters.length != previousCount) {
-        previousCount = readyCompleters.length;
-        for (final completer in readyCompleters) {
-          if (!completer.isCompleted) completer.complete();
-        }
-        await pumpEventQueue();
+  Future<void> initializeSupabase({
+    RealtimeLifecycleOptions realtimeLifecycleOptions =
+        const RealtimeLifecycleOptions(),
+  }) async {
+    mockAppLink();
+    resetLifecycleToResumed();
+    readyCompleters = [];
+    await Supabase.initialize(
+      url: supabaseUrl,
+      publishableKey: supabaseKey,
+      authOptions: FlutterAuthClientOptions(asyncStorage: MockAsyncStorage()),
+      realtimeClientOptions: RealtimeClientOptions(
+        transport: (url, headers) {
+          final completer = Completer<void>();
+          readyCompleters.add(completer);
+          return FakeWebSocketChannel(readyCompleter: completer);
+        },
+      ),
+      realtimeLifecycleOptions: realtimeLifecycleOptions,
+    );
+  }
+
+  tearDown(() async {
+    try {
+      await Supabase.instance.dispose();
+    } catch (_) {}
+  });
+
+  /// Helper: call connect() and immediately complete the
+  /// ready future created by the transport factory.
+  Future<void> connectAndReady(RealtimeClient realtime) async {
+    // ignore: invalid_use_of_internal_member
+    final future = realtime.connect();
+    // The transport factory just added a completer
+    readyCompleters.last.complete();
+    await future;
+  }
+
+  /// Repeatedly complete pending ready futures and pump the event queue
+  /// until no new completers appear. This handles the case where lifecycle
+  /// processing triggers a connect() that creates a new completer.
+  Future<void> settleLifecycle() async {
+    var previousCount = -1;
+    while (readyCompleters.length != previousCount) {
+      previousCount = readyCompleters.length;
+      for (final completer in readyCompleters) {
+        if (!completer.isCompleted) completer.complete();
       }
+      await pumpEventQueue();
     }
+  }
+
+  void pause() {
+    final binding = TestWidgetsFlutterBinding.instance;
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+  }
+
+  void resume() {
+    final binding = TestWidgetsFlutterBinding.instance;
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  }
+
+  group('Lifecycle realtime reconnection', () {
+    setUp(initializeSupabase);
 
     test('paused then resumed waits for disconnect '
         'before reconnecting', () async {
@@ -248,6 +291,144 @@ void main() {
       // Should be disconnected since the last event was paused
       expect(realtime.connectionState, SocketState.disconnected);
       expect(realtime.connection, isNull);
+    });
+  });
+  group('RealtimeLifecycleOptions.disconnectAfterPause', () {
+    const delay = Duration(milliseconds: 100);
+
+    setUp(
+      () => initializeSupabase(
+        realtimeLifecycleOptions: const RealtimeLifecycleOptions(
+          disconnectAfterPause: delay,
+        ),
+      ),
+    );
+
+    test('a pause shorter than the delay keeps the socket', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+
+      pause();
+      await Future<void>.delayed(delay ~/ 2);
+      resume();
+      await settleLifecycle();
+
+      expect(realtime.connectionState, SocketState.open);
+      expect(readyCompleters, hasLength(1), reason: 'no reconnect happened');
+    });
+
+    test('a pause longer than the delay disconnects, and resume '
+        'reconnects', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+
+      pause();
+      await pumpEventQueue();
+      expect(realtime.connectionState, SocketState.open);
+
+      await Future<void>.delayed(delay * 2);
+      await pumpEventQueue();
+      expect(realtime.connectionState, SocketState.disconnected);
+
+      resume();
+      await settleLifecycle();
+
+      expect(realtime.connectionState, SocketState.open);
+      expect(readyCompleters, hasLength(2));
+    });
+
+    test('a pause that outlasted the delay while no timer could fire '
+        'reconnects on resume', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+
+      pause();
+      await pumpEventQueue();
+
+      // The operating system froze the app: wall-clock time moved on, but
+      // the pause timer never got to fire before the app was resumed.
+      // Blocking the event loop keeps the timer from running until the
+      // resume has been handled.
+      final stopwatch = Stopwatch()..start();
+      while (stopwatch.elapsed < delay * 2) {}
+      resume();
+      await settleLifecycle();
+
+      expect(realtime.connectionState, SocketState.open);
+      expect(readyCompleters, hasLength(2), reason: 'the socket was replaced');
+    });
+
+    test('detached during the delay disconnects right away', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+
+      pause();
+      TestWidgetsFlutterBinding.instance.handleAppLifecycleStateChanged(
+        AppLifecycleState.detached,
+      );
+      await pumpEventQueue();
+
+      expect(realtime.connectionState, SocketState.disconnected);
+    });
+
+    test('dispose during the delay cancels the pending disconnect', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+
+      final timers = <Timer>[];
+      runZoned(
+        pause,
+        zoneSpecification: ZoneSpecification(
+          createTimer: (self, parent, zone, duration, callback) {
+            final timer = parent.createTimer(zone, duration, callback);
+            timers.add(timer);
+            return timer;
+          },
+        ),
+      );
+      expect(timers.where((timer) => timer.isActive), hasLength(1));
+
+      await Supabase.instance.dispose();
+
+      expect(timers.where((timer) => timer.isActive), isEmpty);
+    });
+  });
+
+  group('RealtimeLifecycleOptions.manual', () {
+    setUp(
+      () => initializeSupabase(
+        realtimeLifecycleOptions: const RealtimeLifecycleOptions.manual(),
+      ),
+    );
+
+    test('pausing leaves the socket open', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+
+      pause();
+      await pumpEventQueue();
+
+      expect(realtime.connectionState, SocketState.open);
+    });
+
+    test('resuming does not reconnect a socket the app closed', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+      await realtime.disconnect();
+
+      pause();
+      resume();
+      await settleLifecycle();
+
+      expect(realtime.connectionState, SocketState.disconnected);
+      expect(readyCompleters, hasLength(1));
     });
   });
 }

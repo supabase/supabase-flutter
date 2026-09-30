@@ -449,6 +449,24 @@ myChannel.onStatusChange.listen((change) async {
 myChannel.subscribe();
 ```
 
+#### <a id="realtime-app-lifecycle"></a>Realtime and the app lifecycle
+
+`Supabase` disconnects the realtime socket when the app is paused and reconnects it, rejoining every joined channel, when the app is resumed. Every reconnect costs a new socket and a fresh authorization of each channel.
+
+On iOS a full-screen view such as a video ad or a system sheet reports the app as paused while it is on screen. Pass `RealtimeLifecycleOptions` to keep the socket open through pauses shorter than a grace period:
+
+```dart
+await Supabase.initialize(
+  url: supabaseUrl,
+  publishableKey: supabasePublishableKey,
+  realtimeLifecycleOptions: const RealtimeLifecycleOptions(
+    disconnectAfterPause: Duration(minutes: 1),
+  ),
+);
+```
+
+Use `RealtimeLifecycleOptions.manual()` to keep the socket out of the app lifecycle entirely. The socket then stays open in the background until the operating system closes it, and the realtime client reconnects and rejoins its channels by itself once the app runs again.
+
 ### <a id="storage"></a>[Storage](https://supabase.com/docs/guides/storage)
 
 ```dart
