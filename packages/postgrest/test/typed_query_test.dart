@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -999,6 +1001,134 @@ void main() {
       await client.schema('tenant_a').table(inventoryBooks).select();
 
       expect(httpClient.requests.last.headers['Accept-Profile'], 'tenant_a');
+    });
+  });
+
+  group('request options', () {
+    late PostgrestClient retryingClient;
+
+    setUp(() {
+      retryingClient = PostgrestClient(
+        'http://localhost/rest/v1',
+        httpClient: httpClient,
+        retryOptions: SupabaseRetryOptions(
+          count: 1,
+          initialDelay: Duration.zero,
+        ),
+      );
+    });
+
+    tearDown(() async {
+      await retryingClient.dispose();
+    });
+
+    test('setHeader sends the header from every phase', () async {
+      httpClient.stub(bookRows.first);
+
+      await client
+          .table(Books.table)
+          .setHeader('X-Query', 'query')
+          .select()
+          .setHeader('X-Filter', 'filter')
+          .where(Books.id.eq(1))
+          .order(Books.title)
+          .setHeader('X-Transform', 'transform')
+          .single()
+          .setHeader('X-Terminal', 'terminal');
+
+      final headers = httpClient.requests.last.headers;
+      expect(headers['X-Query'], 'query');
+      expect(headers['X-Filter'], 'filter');
+      expect(headers['X-Transform'], 'transform');
+      expect(headers['X-Terminal'], 'terminal');
+    });
+
+    test('setHeader keeps the filter builder, so where follows it', () async {
+      httpClient.stub(bookRows);
+
+      await client
+          .table(Books.table)
+          .select()
+          .setHeader('Authorization', 'Bearer override')
+          .where(Books.id.eq(1));
+
+      final request = httpClient.requests.last;
+      expect(request.headers['Authorization'], 'Bearer override');
+      expect(request.queryParameters['id'], 'eq.1');
+    });
+
+    test('setHeader is sent on a count of the table', () async {
+      httpClient.stub(null, headers: {'content-range': '*/3'});
+
+      final int count = await client
+          .table(Books.table)
+          .setHeader('X-Count', 'yes')
+          .count();
+
+      expect(count, 3);
+      expect(httpClient.requests.last.headers['X-Count'], 'yes');
+    });
+
+    test('retry(enabled: false) sends the request once', () async {
+      httpClient.stubStatuses([503, 200], body: bookRows);
+
+      await expectLater(
+        () => retryingClient.table(Books.table).select().retry(enabled: false),
+        throwsA(isA<PostgrestApiException>()),
+      );
+      expect(httpClient.requests, hasLength(1));
+    });
+
+    test('retry(count:) overrides the retry count of the client', () async {
+      httpClient.stubStatuses([503, 503, 200], body: bookRows);
+
+      final List<Book> books = await retryingClient
+          .table(Books.table)
+          .retry(count: 2)
+          .select();
+
+      expect(books, hasLength(2));
+      expect(httpClient.requests, hasLength(3));
+    });
+
+    test('requestTimeout cancels an attempt that takes too long', () async {
+      httpClient.stubStall();
+
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .select()
+            .retry(enabled: false)
+            .requestTimeout(const Duration(milliseconds: 20)),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('abortSignal cancels the request in flight', () async {
+      httpClient.stubStall();
+      final abort = Completer<void>();
+
+      final books = client
+          .table(Books.table)
+          .abortSignal(abort.future)
+          .select()
+          .where(Books.id.eq(1));
+      abort.complete();
+
+      await expectLater(() => books, throwsA(isA<RequestAbortedException>()));
+    });
+
+    test('abortSignal on the filter builder keeps where available', () async {
+      httpClient.stubStall();
+
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .select()
+            .abortSignal(Future.delayed(Duration.zero))
+            .where(Books.id.eq(1)),
+        throwsA(isA<RequestAbortedException>()),
+      );
     });
   });
 }

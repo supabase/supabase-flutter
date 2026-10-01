@@ -42,16 +42,19 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     final query = client.fromInSchema(request.table.name, request.schema);
 
     if (request.operation == PostgrestTableOperation.count) {
-      final counted = _applyFilter(
-        query.count(request.countOption ?? CountOption.exact),
-        request,
+      final counted = _applyOptions(
+        _applyFilter(
+          query.count(request.countOption ?? CountOption.exact),
+          request,
+        ),
+        request.options,
       );
       return PostgrestTableResult(count: await counted);
     }
 
-    final terminal = _terminal(
-      _transforms(_operation(query, request), request),
-      request,
+    final terminal = _applyOptions(
+      _terminal(_transforms(_operation(query, request), request), request),
+      request.options,
     );
 
     final countOption = request.countOption;
@@ -60,6 +63,33 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
       return PostgrestTableResult(data: response.data, count: response.count);
     }
     return PostgrestTableResult(data: await terminal);
+  }
+
+  /// [builder] with the headers, retry policy, timeout and abort signal of
+  /// [options] applied.
+  PostgrestBuilder<T> _applyOptions<T>(
+    PostgrestBuilder<T> builder,
+    PostgrestRequestOptions options,
+  ) {
+    var configured = builder;
+    for (final MapEntry(:key, :value) in options.headers.entries) {
+      configured = configured.setHeader(key, value);
+    }
+    final retryEnabled = options.retryEnabled;
+    final retryCount = options.retryCount;
+    if (retryEnabled != null || retryCount != null) {
+      configured = configured.retry(
+        enabled: retryEnabled ?? client.retryOptions.enabled,
+        count: retryCount,
+      );
+    }
+    final requestTimeout = options.requestTimeout;
+    if (requestTimeout != null) {
+      configured = configured.requestTimeout(requestTimeout);
+    }
+    final abortSignal = options.abortSignal;
+    if (abortSignal != null) configured = configured.abortSignal(abortSignal);
+    return configured;
   }
 
   /// The operation of [request] with its filter applied.

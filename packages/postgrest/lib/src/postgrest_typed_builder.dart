@@ -119,6 +119,36 @@ List<PostgrestSelectable<Row>> _checkedSelections<Row>(
   return selections;
 }
 
+/// The per-request options the typed builders set, see
+/// [PostgrestRequestOptions].
+extension on PostgrestRequestOptions {
+  PostgrestRequestOptions _retry(bool enabled, int? count) =>
+      copyWith(retryEnabled: enabled, retryCount: count);
+
+  PostgrestRequestOptions _requestTimeout(Duration timeout) =>
+      copyWith(requestTimeout: timeout);
+
+  PostgrestRequestOptions _abortSignal(Future<void> abortSignal) =>
+      copyWith(abortSignal: abortSignal);
+
+  PostgrestRequestOptions _header(String key, String value) =>
+      copyWith(headers: {...headers, key: value});
+}
+
+extension on PostgrestTableRequest {
+  PostgrestTableRequest _retry(bool enabled, int? count) =>
+      copyWith(options: options._retry(enabled, count));
+
+  PostgrestTableRequest _requestTimeout(Duration timeout) =>
+      copyWith(options: options._requestTimeout(timeout));
+
+  PostgrestTableRequest _abortSignal(Future<void> abortSignal) =>
+      copyWith(options: options._abortSignal(abortSignal));
+
+  PostgrestTableRequest _header(String key, String value) =>
+      copyWith(options: options._header(key, value));
+}
+
 /// Converts the result of a [PostgrestTableRequest] into [T].
 typedef _ResultConverter<T> = T Function(PostgrestTableResult result);
 
@@ -200,6 +230,42 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   /// returned future so the [Future] contract holds for every executor.
   Future<T> _execute() =>
       Future.sync(() => _executor.execute(request)).then(_convert);
+
+  PostgrestTypedBuilder<T> _with(PostgrestTableRequest changed) =>
+      PostgrestTypedBuilder._(changed, _executor, _convert);
+
+  /// Overrides the retry behavior for this request.
+  ///
+  /// See [PostgrestBuilder.retry] for [enabled] and [count].
+  PostgrestTypedBuilder<T> retry({bool enabled = true, int? count}) =>
+      _with(request._retry(enabled, count));
+
+  /// Bounds how long a single attempt of this request may take, overriding
+  /// the timeout configured on [PostgrestClient].
+  ///
+  /// Unlike [timeout], which only stops waiting for the result, this cancels
+  /// the attempt. See [PostgrestBuilder.requestTimeout].
+  PostgrestTypedBuilder<T> requestTimeout(Duration timeout) =>
+      _with(request._requestTimeout(timeout));
+
+  /// Cancels the request when [abortSignal] completes, throwing a
+  /// [RequestAbortedException] and stopping any retries.
+  ///
+  /// ```dart
+  /// final abort = Completer<void>();
+  /// final books = client
+  ///     .table(Books.table)
+  ///     .select()
+  ///     .abortSignal(abort.future);
+  /// ```
+  ///
+  /// See [PostgrestBuilder.abortSignal].
+  PostgrestTypedBuilder<T> abortSignal(Future<void> abortSignal) =>
+      _with(request._abortSignal(abortSignal));
+
+  /// Sets [key] to [value] in the headers of this request.
+  PostgrestTypedBuilder<T> setHeader(String key, String value) =>
+      _with(request._header(key, value));
 
   /// A broadcast stream of the one result. The request runs when the first
   /// listener subscribes, so a listener added later still receives it.
