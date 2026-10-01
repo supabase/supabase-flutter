@@ -5,9 +5,9 @@ import 'package:postgres/postgres.dart';
 import 'package:supabase_typegen/introspection.dart';
 import 'package:test/test.dart';
 
-/// Connection URL of a fresh `postgres:15` database, the way
-/// `tool/regenerate_fixture.ts` starts one, with `sslmode=disable` since the
-/// Supabase CLI requires TLS otherwise. The test seeds it with
+/// Connection URL of a fresh `postgres:15` database without autovacuum, the
+/// way `tool/regenerate_fixture.ts` starts one, with `sslmode=disable` since
+/// the Supabase CLI requires TLS otherwise. The test seeds it with
 /// `test/fixtures/seed.sql` on first use.
 final _databaseUrl =
     Platform.environment['SUPABASE_TYPEGEN_PARITY_DATABASE_URL'] ?? '';
@@ -25,7 +25,8 @@ void main() {
       () {},
       skip:
           'Set SUPABASE_TYPEGEN_PARITY_DATABASE_URL to a fresh postgres:15 '
-          'database to run the parity tests; see the README.',
+          'database started with -c autovacuum=off to run the parity tests; '
+          'see the README.',
     );
     return;
   }
@@ -299,8 +300,8 @@ void _expectSameDocument(
         expected[i],
         reason:
             '$collection[$i] differs. The fixture was generated on a fresh '
-            'postgres:15 database, so the object ids only match when the '
-            'database under test was seeded fresh as well.',
+            'postgres:15 database without autovacuum, so the object ids only '
+            'match when the database under test was seeded the same way.',
       );
     }
   }
