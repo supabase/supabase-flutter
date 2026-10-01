@@ -38,8 +38,9 @@ const _importCandidates = {
 /// Throws a [FormatException] when the pubspec is not valid YAML.
 String packageImportUri({Directory? startDirectory}) {
   final pubspec = _nearestPubspec(startDirectory ?? Directory.current);
-  final document = pubspec == null ? null : _loadPubspec(pubspec);
-  final dependencies = document is Map ? document['dependencies'] : null;
+  final dependencies = pubspec == null
+      ? null
+      : _loadPubspec(pubspec)['dependencies'];
   if (dependencies is Map) {
     for (final MapEntry(key: name, value: uri) in _importCandidates.entries) {
       if (dependencies.containsKey(name)) return uri;
@@ -61,17 +62,18 @@ File? _nearestPubspec(Directory directory) {
   }
 }
 
-Object? _loadPubspec(File pubspec) {
+/// The top-level map of [pubspec], empty when the document is not a map.
+Map<Object?, Object?> _loadPubspec(File pubspec) {
   try {
-    return loadYaml(pubspec.readAsStringSync());
+    final document = loadYaml(pubspec.readAsStringSync());
+    return document is Map ? document : const {};
   } on YamlException catch (error) {
     throw FormatException('${pubspec.path} is not valid YAML: $error');
   }
 }
 
 Version? _sdkLowerBound(File pubspec) {
-  final document = _loadPubspec(pubspec);
-  final environment = document is Map ? document['environment'] : null;
+  final environment = _loadPubspec(pubspec)['environment'];
   final sdk = environment is Map ? environment['sdk'] : null;
   if (sdk == null) return null;
   if (sdk is! String) {
