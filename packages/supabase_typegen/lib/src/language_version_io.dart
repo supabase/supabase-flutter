@@ -30,8 +30,9 @@ const _importCandidates = {
 
 /// The library the generated code imports by default for the Dart package
 /// [startDirectory] belongs to, found through the same `pubspec.yaml` as
-/// [packageLanguageVersion]: the library of the first of `supabase_flutter`,
-/// `supabase` and `postgrest` the package lists under `dependencies`.
+/// [packageLanguageVersion]: the library of `supabase_flutter`, `supabase` or
+/// `postgrest`, preferred in that order, that the package lists under
+/// `dependencies`.
 /// Returns `package:postgrest/postgrest.dart` when it depends on none of them
 /// or no such pubspec exists.
 ///

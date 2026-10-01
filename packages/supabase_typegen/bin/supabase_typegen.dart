@@ -27,9 +27,9 @@ final _argParser = ArgParser()
     valueHelp: 'uri',
     help:
         'The import the generated file uses for PostgrestTable and '
-        'PostgrestColumn. Defaults to the library of the first of '
-        'supabase_flutter, supabase and postgrest that the pubspec.yaml '
-        'nearest to the output lists under dependencies, or to '
+        'PostgrestColumn. Defaults to the library of supabase_flutter, '
+        'supabase or postgrest, preferred in that order, that the '
+        'pubspec.yaml nearest to the output lists under dependencies, or to '
         'package:postgrest/postgrest.dart when it lists none of them.',
   )
   ..addFlag(

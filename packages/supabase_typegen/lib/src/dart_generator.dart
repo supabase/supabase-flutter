@@ -40,7 +40,9 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
 /// `PostgrestNullableVectorColumn`, `PostgrestRange`, `PostgrestDate`,
 /// `PostgrestTime`, `PostgrestInterval`, `PostgrestToOneRelation`,
-/// `PostgrestToManyRelation`, `postgrestBytea` and `postgrestVector`).
+/// `PostgrestToManyRelation`, `postgrestBytea` and `postgrestVector`); pass
+/// the library [packageImportUri] finds for the project the file is written
+/// into.
 ///
 /// The code is formatted for [languageVersion], so it uses no syntax a
 /// project on that language version rejects; pass the version
