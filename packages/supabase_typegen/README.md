@@ -31,6 +31,16 @@ For every table the generator emits:
   and self-referential keys get no member, since PostgREST resolves embeds
   within the schema of the request only and needs a computed relationship to
   embed a table into itself,
+- `PostgrestComputedField` members for computed fields, functions whose only
+  argument is the table's row type and that return a scalar, and
+  `PostgrestToOneRelation.computed` and `PostgrestToManyRelation.computed`
+  members for computed relationships, such functions returning a row or a set
+  of rows of a generated table. PostgREST leaves both out of `*`, so they are
+  no getters of the row type: a computed field goes into a `selectOnly` list
+  and is read back as a nullable value, `book.read(Books.titleUpper)`, and a
+  computed relationship embeds like a foreign key relation. A function named
+  like a column gets no member, since PostgREST resolves the name to the
+  column,
 - Dart enums for Postgres enums, with wire-name mapping.
 
 The schemas are generated into one file. Objects of the `public` schema are

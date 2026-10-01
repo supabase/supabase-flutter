@@ -27,8 +27,8 @@ class _Binding {
 final minimumLanguageVersion = Version(3, 8, 0);
 
 /// Generates a Dart source file with typed table definitions, row extension
-/// types, insert and update value types, column tokens and Postgres enums for
-/// the schemas of [database].
+/// types, insert and update value types, column tokens, computed fields,
+/// relations and Postgres enums for the schemas of [database].
 ///
 /// Objects of the `public` schema are named after themselves, `books` becomes
 /// `Books` and `BooksRow`; objects of any other schema carry the schema as a
@@ -38,11 +38,11 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
-/// `PostgrestNullableVectorColumn`, `PostgrestRange`, `PostgrestDate`,
-/// `PostgrestTime`, `PostgrestInterval`, `PostgrestToOneRelation`,
-/// `PostgrestToManyRelation`, `postgrestBytea` and `postgrestVector`); pass
-/// the library [packageImportUri] finds for the project the file is written
-/// into.
+/// `PostgrestNullableVectorColumn`, `PostgrestComputedField`,
+/// `PostgrestRange`, `PostgrestDate`, `PostgrestTime`, `PostgrestInterval`,
+/// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `postgrestBytea` and
+/// `postgrestVector`); pass the library [packageImportUri] finds for the
+/// project the file is written into.
 ///
 /// The code is formatted for [languageVersion], so it uses no syntax a
 /// project on that language version rejects; pass the version
@@ -60,11 +60,15 @@ String generateDartCode(
       ? minimumLanguageVersion
       : languageVersion;
   final usesBinaryColumns = database.tables.any(
-    (table) => table.columns.any(
-      (column) =>
-          column.typeKind == ColumnTypeKind.binary ||
-          column.elementTypeKind == ColumnTypeKind.binary,
-    ),
+    (table) =>
+        [
+          for (final column in table.columns) _columnShape(column),
+          for (final field in table.computedFields) _computedFieldShape(field),
+        ].any(
+          (shape) =>
+              shape.typeKind == ColumnTypeKind.binary ||
+              shape.elementTypeKind == ColumnTypeKind.binary,
+        ),
   );
   // Caller-provided values are encoded before they are written into source:
   // a line terminator in a schema name would escape the comment, and a
@@ -173,6 +177,7 @@ class _TypeNameRegistry {
     'PostgrestNullableColumn',
     'PostgrestVectorColumn',
     'PostgrestNullableVectorColumn',
+    'PostgrestComputedField',
     'PostgrestRange',
     'PostgrestDate',
     'PostgrestTime',
@@ -276,13 +281,16 @@ class _TableNames {
   final String displayName;
 }
 
-/// One relation member of a namespace class, before its Dart name is settled
-/// against the table's columns.
 /// The member identifiers of one table: [rowMembers] for the getters of the
-/// row and value types, [columnMembers] for the column constants of the
-/// namespace class, both keyed by column name.
+/// row and value types and [columnMembers] for the column constants of the
+/// namespace class, both keyed by column name, and [computedFieldMembers] for
+/// the computed field constants, keyed by function name.
 class _TableMembers {
-  const _TableMembers({required this.rowMembers, required this.columnMembers});
+  const _TableMembers({
+    required this.rowMembers,
+    required this.columnMembers,
+    required this.computedFieldMembers,
+  });
 
   factory _TableMembers.claim(TableDescription table, _TableNames names) {
     final _TableNames(:rowType, :insertType, :updateType, :namespaceType) =
@@ -302,18 +310,25 @@ class _TableMembers {
         'postgrestVector',
       },
     );
+    final columnMembers = _uniqueMemberNames(
+      columns,
+      reserved: {'table', namespaceType},
+      existing: rowMembers,
+    );
     return _TableMembers(
       rowMembers: rowMembers,
-      columnMembers: _uniqueMemberNames(
-        columns,
-        reserved: {'table', namespaceType},
-        existing: rowMembers,
+      columnMembers: columnMembers,
+      // Computed fields share the namespace with the column constants.
+      computedFieldMembers: _uniqueMemberNames(
+        [for (final field in table.computedFields) field.name],
+        reserved: {'table', namespaceType, ...columnMembers.values},
       ),
     );
   }
 
   final Map<String, String> rowMembers;
   final Map<String, String> columnMembers;
+  final Map<String, String> computedFieldMembers;
 }
 
 class _RelationMember {
@@ -327,7 +342,36 @@ class _RelationMember {
     required this.referencedTable,
     required this.referencedColumns,
     required this.docLine,
+    this.isComputed = false,
   });
+
+  /// A computed relationship: the function called [embedName] takes a row of
+  /// this table and returns rows of [referencedTable].
+  factory _RelationMember.computed(
+    ComputedRelationshipDescription relationship,
+    _TableNames source,
+    _TableNames target,
+  ) {
+    final name = memberIdentifier(relationship.name);
+    final kind = relationship.isToMany
+        ? 'PostgrestToManyRelation'
+        : 'PostgrestToOneRelation';
+    return _RelationMember(
+      baseName: name,
+      disambiguatedName: name,
+      type: '$kind<${source.rowType}, ${target.rowType}>.computed',
+      embedName: relationship.name,
+      ambiguous: false,
+      columns: const [],
+      referencedTable: relationship.targetTable,
+      referencedColumns: const [],
+      docLine:
+          'The `${target.displayName}` '
+          '${relationship.isToMany ? 'rows' : 'row'} computed by '
+          '`${relationship.name}`.',
+      isComputed: true,
+    );
+  }
 
   /// The name used when nothing else in the namespace claims it.
   final String baseName;
@@ -339,9 +383,19 @@ class _RelationMember {
   /// `PostgrestToOneRelation<SourceRow, TargetRow>` or the to-many kind.
   final String type;
 
-  /// The name PostgREST addresses the embed by, with a foreign key hint when
-  /// the plain table name would be ambiguous.
+  /// The name PostgREST addresses the embed by: the table name, with a
+  /// foreign key hint when the plain name would be ambiguous, or the
+  /// function name of a computed relationship.
   final String embedName;
+
+  /// Whether the relation is a computed relationship rather than a foreign
+  /// key, so it joins on no columns.
+  final bool isComputed;
+
+  /// The key the embedded rows come back under when the embed is not
+  /// aliased: the table name, or the function name of a computed
+  /// relationship.
+  String get key => isComputed ? embedName : referencedTable;
 
   /// Whether another key joins the same two tables, so the embed carries a
   /// hint and is aliased to the member name to come back under its own key.
@@ -369,6 +423,9 @@ class _RelationMember {
 /// generated member could never be requested. A key into another schema
 /// produces no member either: PostgREST resolves embeds within the schema of
 /// the request only.
+///
+/// The computed relationships of [table] follow the foreign keys, one member
+/// each, for every function whose return table is generated.
 List<_RelationMember> _relationMembers(
   TableDescription table,
   DatabaseDescription database,
@@ -461,6 +518,13 @@ List<_RelationMember> _relationMembers(
       );
     }
   }
+  final source = tableNames[(table.schema, table.name)]!;
+  for (final relationship in table.computedRelationships) {
+    final target =
+        tableNames[(relationship.targetSchema, relationship.targetTable)];
+    if (target == null) continue;
+    members.add(_RelationMember.computed(relationship, source, target));
+  }
   return members;
 }
 
@@ -498,7 +562,11 @@ void _writeTable(
   final memberNames = members.rowMembers;
   final bindings = {
     for (final column in table.columns)
-      column.name: _bindingFor(column, enumTypeNames),
+      column.name: _bindingFor(_columnShape(column), enumTypeNames),
+  };
+  final computedFieldBindings = {
+    for (final field in table.computedFields)
+      field.name: _bindingFor(_computedFieldShape(field), enumTypeNames),
   };
   final relationNames = _relationNames(names, members, relations);
   final relationKeys = _embedKeys(relations, relationNames);
@@ -541,8 +609,9 @@ void _writeTable(
     buffer,
     table,
     names,
-    members.columnMembers,
+    members,
     bindings,
+    computedFieldBindings,
     relations,
     relationNames,
     relationKeys,
@@ -562,6 +631,7 @@ List<String> _relationNames(
     'table',
     namespaceType,
     ...members.columnMembers.values,
+    ...members.computedFieldMembers.values,
     rowType,
     ?insertType,
     ?updateType,
@@ -587,22 +657,23 @@ List<String> _relationNames(
 }
 
 /// The keys the embedded rows of [relations] come back under: the table name
-/// for a plain embed and, for a hinted one, an alias made of the member name
-/// in snake case, kept apart from every other key of the table.
+/// for a plain embed, the function name for a computed relationship and, for
+/// a hinted one, an alias made of the member name in snake case, kept apart
+/// from every other key of the table.
 List<String> _embedKeys(
   List<_RelationMember> relations,
   List<String> relationNames,
 ) {
   final used = {
     for (final relation in relations)
-      if (!relation.ambiguous) relation.referencedTable,
+      if (!relation.ambiguous) relation.key,
   };
   return [
     for (final (index, relation) in relations.indexed)
       if (relation.ambiguous)
         _claimAlias(used, snakeCase(relationNames[index]))
       else
-        relation.referencedTable,
+        relation.key,
   ];
 }
 
@@ -726,19 +797,21 @@ void _writeNamespace(
   StringBuffer buffer,
   TableDescription table,
   _TableNames names,
-  Map<String, String> columnNames,
+  _TableMembers members,
   Map<String, _Binding> bindings,
+  Map<String, _Binding> computedFieldBindings,
   List<_RelationMember> relations,
   List<String> relationNames,
   List<String> relationKeys,
   _DecoderRegistry decoders,
 ) {
   final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
+  final _TableMembers(:columnMembers, :computedFieldMembers) = members;
 
   final primaryKey = _columnConstants(
     table.primaryKey,
     names.displayName,
-    columnNames,
+    columnMembers,
     keyDescription: 'the primary key',
   );
   _writeDocComment(buffer, 'Typed access to the `${names.displayName}` table.');
@@ -758,6 +831,13 @@ void _writeNamespace(
   if (relations.isNotEmpty) {
     buffer.writeln('    relations: [${relationNames.join(', ')}],');
   }
+  if (table.computedFields.isNotEmpty) {
+    final fields = [
+      for (final field in table.computedFields)
+        computedFieldMembers[field.name],
+    ];
+    buffer.writeln('    computedFields: [${fields.join(', ')}],');
+  }
   buffer
     ..writeln('  );')
     ..writeln();
@@ -776,8 +856,25 @@ void _writeNamespace(
         : decoders.claim(binding);
     final arguments = decoder == null ? '' : ', fromJson: $decoder';
     buffer.writeln(
-      '  static const ${columnNames[column.name]} = '
+      '  static const ${columnMembers[column.name]} = '
       '$columnType(${_stringLiteral(column.name)}$arguments);',
+    );
+  }
+  for (final field in table.computedFields) {
+    final binding = computedFieldBindings[field.name]!;
+    final decoder = decoders.claim(binding);
+    final arguments = decoder == null ? '' : ', fromJson: $decoder';
+    buffer.writeln();
+    _writeDocComment(
+      buffer,
+      'The `${field.name}` computed field, selected by name; `select()` '
+      'leaves it out.',
+      indent: '  ',
+    );
+    buffer.writeln(
+      '  static const ${computedFieldMembers[field.name]} = '
+      'PostgrestComputedField<$rowType, ${binding.dartType}>'
+      '(${_stringLiteral(field.name)}$arguments);',
     );
   }
   for (final (index, relation) in relations.indexed) {
@@ -787,14 +884,18 @@ void _writeNamespace(
       ..writeln(
         '  static const ${relationNames[index]} = ${relation.type}(',
       )
-      ..writeln('    ${_stringLiteral(relation.embedName)},')
-      ..writeln('    columns: [${relation.columns.join(', ')}],')
-      ..writeln(
-        '    referencedTable: ${_stringLiteral(relation.referencedTable)},',
-      )
-      ..writeln(
+      ..writeln('    ${_stringLiteral(relation.embedName)},');
+    if (!relation.isComputed) {
+      buffer.writeln('    columns: [${relation.columns.join(', ')}],');
+    }
+    buffer.writeln(
+      '    referencedTable: ${_stringLiteral(relation.referencedTable)},',
+    );
+    if (!relation.isComputed) {
+      buffer.writeln(
         '    referencedColumns: [${relation.referencedColumns.join(', ')}],',
       );
+    }
     if (relation.ambiguous) {
       buffer.writeln('    alias: ${_stringLiteral(relationKeys[index])},');
     }
@@ -871,30 +972,56 @@ String? _decoderBody(_Binding binding, String json) {
   return _readConversion(binding, json);
 }
 
+/// What decides the Dart type of a value: the type kinds and enum of a
+/// column or a computed field, with its [name] for error messages.
+typedef _TypeShape = ({
+  String name,
+  ColumnTypeKind typeKind,
+  ColumnTypeKind? elementTypeKind,
+  ColumnTypeKind? boundTypeKind,
+  EnumDescription? enumType,
+});
+
+_TypeShape _columnShape(ColumnDescription column) => (
+  name: column.name,
+  typeKind: column.typeKind,
+  elementTypeKind: column.elementTypeKind,
+  boundTypeKind: column.boundTypeKind,
+  enumType: column.enumType,
+);
+
+_TypeShape _computedFieldShape(ComputedFieldDescription field) => (
+  name: field.name,
+  typeKind: field.typeKind,
+  elementTypeKind: field.elementTypeKind,
+  boundTypeKind: field.boundTypeKind,
+  enumType: field.enumType,
+);
+
 _Binding _bindingFor(
-  ColumnDescription column,
+  _TypeShape shape,
   Map<(String, String), String> enumTypeNames,
 ) {
-  if (column.typeKind == ColumnTypeKind.array) {
-    final element = _elementBindingFor(column, enumTypeNames);
+  if (shape.typeKind == ColumnTypeKind.array) {
+    final element = _elementBindingFor(shape, enumTypeNames);
     return _Binding(
       'List<${element.dartType}>',
       ColumnTypeKind.array,
       element: element,
     );
   }
-  return _scalarBindingFor(column.typeKind, column, enumTypeNames);
+  return _scalarBindingFor(shape.typeKind, shape, enumTypeNames);
 }
 
 /// The binding of a scalar of [kind], resolving an enum or the range bounds
-/// through [column].
+/// through [shape].
 _Binding _scalarBindingFor(
   ColumnTypeKind kind,
-  ColumnDescription column,
+  _TypeShape shape,
   Map<(String, String), String> enumTypeNames,
 ) => switch (kind) {
   ColumnTypeKind.enumType => _Binding(
-    _enumTypeName(column, enumTypeNames),
+    _enumTypeName(shape, enumTypeNames),
     ColumnTypeKind.enumType,
   ),
   ColumnTypeKind.integer => const _Binding('int', ColumnTypeKind.integer),
@@ -922,49 +1049,50 @@ _Binding _scalarBindingFor(
     ColumnTypeKind.vector,
   ),
   ColumnTypeKind.range => _Binding(
-    'PostgrestRange<${_boundDartType(column.boundTypeKind)}>',
+    'PostgrestRange<${_boundDartType(shape.boundTypeKind)}>',
     ColumnTypeKind.range,
-    boundKind: column.boundTypeKind,
+    boundKind: shape.boundTypeKind,
   ),
   ColumnTypeKind.json ||
   ColumnTypeKind.array ||
   ColumnTypeKind.unknown => const _Binding('Object', ColumnTypeKind.json),
 };
 
-/// The binding of the elements of the array [column], which convert like a
+/// The binding of the elements of the array [shape], which convert like a
 /// scalar of the same kind.
 ///
 /// pgvector elements stay in their wire representation: the filter renderer
 /// could not tell a `List<double>` element from a nested array. Nested arrays
 /// and JSON elements are `Object`.
 _Binding _elementBindingFor(
-  ColumnDescription column,
+  _TypeShape shape,
   Map<(String, String), String> enumTypeNames,
-) => switch (column.elementTypeKind) {
+) => switch (shape.elementTypeKind) {
   ColumnTypeKind.vector => const _Binding('String', ColumnTypeKind.text),
   null => const _Binding('Object', ColumnTypeKind.json),
-  final kind => _scalarBindingFor(kind, column, enumTypeNames),
+  final kind => _scalarBindingFor(kind, shape, enumTypeNames),
 };
 
-/// The generated Dart enum of an enum [column], resolved by the schema and
-/// name of its Postgres enum rather than by a qualified string, which could
-/// not tell `tenant.v1`.`status` from `tenant`.`v1.status`.
+/// The generated Dart enum of the enum column or computed field [shape],
+/// resolved by the schema and name of its Postgres enum rather than by a
+/// qualified string, which could not tell `tenant.v1`.`status` from
+/// `tenant`.`v1.status`.
 String _enumTypeName(
-  ColumnDescription column,
+  _TypeShape shape,
   Map<(String, String), String> enumTypeNames,
 ) {
-  final enumType = column.enumType;
+  final enumType = shape.enumType;
   if (enumType == null) {
     throw ArgumentError.value(
-      column,
-      'column',
+      shape.name,
+      'name',
       'An enum column has to name its enum type.',
     );
   }
   return enumTypeNames[(enumType.schema, enumType.name)] ??
       (throw ArgumentError.value(
-        column,
-        'column',
+        shape.name,
+        'name',
         'The enum ${enumType.qualifiedName} is not among the described enums.',
       ));
 }

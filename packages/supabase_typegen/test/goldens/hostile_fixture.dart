@@ -17,6 +17,61 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       name: 'postgrest_table',
       comment: 'first\rsecond\u2028third \$interpolation "quoted"',
       primaryKey: ["quote'name tail", 'days'],
+      computedFields: [
+        // A reserved word, suffixed like a column of that name.
+        ComputedFieldDescription(
+          name: 'class',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+        ),
+        // Named like the table definition member of the namespace class.
+        ComputedFieldDescription(
+          name: 'table',
+          postgresFormat: 'bool',
+          typeKind: ColumnTypeKind.boolean,
+        ),
+        // Spelled differently from the first column but camel-cased the
+        // same, so the member is kept apart from the column constant.
+        ComputedFieldDescription(
+          name: 'quote_name_tail',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+        ),
+        // An array of a shadowing enum, decoded through the shared helper.
+        ComputedFieldDescription(
+          name: 'moods_by_weight',
+          postgresFormat: '_string',
+          typeKind: ColumnTypeKind.array,
+          elementTypeKind: ColumnTypeKind.enumType,
+          enumType: EnumDescription(
+            schema: 'public',
+            name: 'string',
+            values: ["it's \$a trap", 'plain'],
+          ),
+        ),
+        ComputedFieldDescription(
+          name: 'thumbnail',
+          postgresFormat: 'bytea',
+          typeKind: ColumnTypeKind.binary,
+        ),
+      ],
+      computedRelationships: [
+        // To-one, next to the two hinted foreign keys into the same table.
+        ComputedRelationshipDescription(
+          name: 'map',
+          targetSchema: 'public',
+          targetTable: 'map',
+          isToMany: false,
+        ),
+        // Into another generated schema, which a foreign key could not
+        // embed.
+        ComputedRelationshipDescription(
+          name: 'postgrest_column',
+          targetSchema: 'evil\nmultiline "schema" name',
+          targetTable: 'postgrest_column',
+          isToMany: true,
+        ),
+      ],
       columns: [
         ColumnDescription(
           name: "quote'name tail",
@@ -158,6 +213,22 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
     TableDescription(
       schema: 'public',
       name: 'map',
+      // Self-referential computed relationships, which are how PostgREST
+      // embeds a table into itself.
+      computedRelationships: [
+        ComputedRelationshipDescription(
+          name: 'parent',
+          targetSchema: 'public',
+          targetTable: 'map',
+          isToMany: false,
+        ),
+        ComputedRelationshipDescription(
+          name: 'children',
+          targetSchema: 'public',
+          targetTable: 'map',
+          isToMany: true,
+        ),
+      ],
       columns: [
         ColumnDescription(
           name: 'list',

@@ -58,8 +58,8 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 /// built from a `select()` of every column; a `selectOnly` of some columns
 /// resolves to [PostgrestPartialRow]s read through the column tokens.
 /// `package:supabase_typegen` generates all three types and the table
-/// definition, including [primaryKey] and [relations], from the database
-/// schema.
+/// definition, including [primaryKey], [relations] and [computedFields], from
+/// the database schema.
 ///
 /// A table that carries its [schema] is queried in that schema by
 /// [PostgrestClient.table] without a [PostgrestClient.schema] call, so tables
@@ -72,6 +72,7 @@ class PostgrestTable<Row, Insert, Update> {
     this.rowFromJson, {
     required this.primaryKey,
     this.relations = const [],
+    this.computedFields = const [],
     this.schema,
   });
 
@@ -92,6 +93,12 @@ class PostgrestTable<Row, Insert, Update> {
   final List<PostgrestStoredColumn<Row, Object>> primaryKey;
 
   /// The foreign keys this table holds and the ones pointing at it, each as
-  /// the relation an embedded select addresses it by.
+  /// the relation an embedded select addresses it by, and the table's
+  /// computed relationships.
   final List<PostgrestRelation<Row, Object?>> relations;
+
+  /// The computed fields of the table: functions whose only argument is the
+  /// row type, which PostgREST selects like columns but leaves out of `*`, so
+  /// a `select()` row never carries them.
+  final List<PostgrestComputedField<Row, Object>> computedFields;
 }

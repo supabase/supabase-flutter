@@ -458,3 +458,84 @@ final class PostgrestNullableColumn<Row, Value extends Object>
   @override
   bool get _selectedByStar => true;
 }
+
+/// A computed field of the table whose rows are [Row]: a function whose only
+/// argument is the table's row type, which PostgREST exposes like a column.
+///
+/// PostgREST leaves computed fields out of `*`, so a `select()` row never
+/// carries one; it is read from a [PostgrestPartialRow] of a `selectOnly` that
+/// names it, as `Value?`, since the function can return `NULL` whatever its
+/// declared type. It filters and orders like a column.
+///
+/// Declared once per computed field, normally by `supabase_typegen`, next to
+/// the column tokens of the table's namespace class and listed in
+/// [PostgrestTable.computedFields]:
+///
+/// ```dart
+/// class Users {
+///   static const fullName = PostgrestComputedField<UsersRow, String>(
+///     'full_name',
+///   );
+/// }
+///
+/// final users = await client
+///     .table(Users.table)
+///     .selectOnly([Users.id, Users.fullName])
+///     .order(Users.fullName);
+/// final String? fullName = users.first.read(Users.fullName);
+/// ```
+///
+/// [Value] is the non-nullable Dart type of the function's return type and
+/// `fromJson` converts the decoded JSON of a present value into it, as for a
+/// [PostgrestStoredColumn].
+@experimental
+final class PostgrestComputedField<Row, Value extends Object>
+    extends PostgrestColumnExpression<Row, Value>
+    with
+        PostgrestFilterableExpression<Row, Value>,
+        PostgrestOrderableExpression<Row, Value>,
+        PostgrestNullableExpression<Row, Value>
+    implements PostgrestReadable<Row, Value?> {
+  /// Creates a reference to the computed field backed by the function called
+  /// [name] in the database.
+  const PostgrestComputedField(
+    this.name, {
+    Value Function(Object json)? fromJson,
+  }) : _fromJson = fromJson,
+       super._();
+
+  /// Name of the function in the database, which is also the name the field
+  /// is selected by.
+  final String name;
+
+  @override
+  final Value Function(Object json)? _fromJson;
+
+  @override
+  // ignore: match-getter-setter-field-names
+  String get expression => name;
+
+  @override
+  // ignore: match-getter-setter-field-names
+  String get responseKey => name;
+
+  @override
+  PostgrestJsonPath<Row, String> jsonText(String path) =>
+      PostgrestJsonPath._('$name->>$path', path);
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObject(String path) =>
+      PostgrestJsonPath._('$name->$path', path);
+
+  @override
+  Value? _read(Object? json, _NestedSelection nested) => switch (json) {
+    null => null,
+    final value => switch (_fromJson) {
+      null => value as Value,
+      final fromJson => fromJson(value),
+    },
+  };
+
+  @override
+  bool get _selectedByStar => false;
+}
