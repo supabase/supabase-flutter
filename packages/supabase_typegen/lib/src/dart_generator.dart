@@ -425,7 +425,10 @@ class _RelationMember {
 /// the request only.
 ///
 /// The computed relationships of [table] follow the foreign keys, one member
-/// each, for every function whose return table is generated.
+/// each, for every function whose return table is generated. A computed
+/// relationship named like the table of a plain foreign key embed replaces
+/// that embed: PostgREST resolves the unhinted name to the function, so the
+/// foreign key gets no member of its own.
 List<_RelationMember> _relationMembers(
   TableDescription table,
   DatabaseDescription database,
@@ -518,6 +521,13 @@ List<_RelationMember> _relationMembers(
       );
     }
   }
+  final overriddenEmbeds = {
+    for (final relationship in table.computedRelationships) relationship.name,
+  };
+  members.removeWhere(
+    (member) =>
+        !member.ambiguous && overriddenEmbeds.contains(member.embedName),
+  );
   final source = tableNames[(table.schema, table.name)]!;
   for (final relationship in table.computedRelationships) {
     final target =

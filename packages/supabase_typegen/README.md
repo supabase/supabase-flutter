@@ -40,7 +40,9 @@ For every table the generator emits:
   and is read back as a nullable value, `book.read(Books.titleUpper)`, and a
   computed relationship embeds like a foreign key relation. A function named
   like a column gets no member, since PostgREST resolves the name to the
-  column,
+  column, and a computed relationship named like the table of a foreign key
+  embed replaces that embed, since PostgREST resolves the name to the
+  function,
 - Dart enums for Postgres enums, with wire-name mapping.
 
 The schemas are generated into one file. Objects of the `public` schema are

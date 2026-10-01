@@ -1416,6 +1416,94 @@ void main() {
     expect(code, isNot(contains('audit')));
   });
 
+  test('a computed relationship named like a foreign key embed replaces '
+      'it', () {
+    const id = ColumnDescription(
+      name: 'id',
+      postgresFormat: 'int8',
+      typeKind: ColumnTypeKind.integer,
+      isRequired: true,
+      hasDefault: false,
+      isNullable: false,
+    );
+    const database = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'authors',
+          columns: [id],
+          // PostgREST resolves `authors(*)` on books to this function, so the
+          // detected foreign key embed is unreachable by its plain name.
+          computedRelationships: [
+            ComputedRelationshipDescription(
+              name: 'books',
+              targetSchema: 'public',
+              targetTable: 'books',
+              isToMany: true,
+            ),
+          ],
+        ),
+        TableDescription(
+          schema: 'public',
+          name: 'books',
+          columns: [
+            id,
+            ColumnDescription(
+              name: 'author_id',
+              postgresFormat: 'int8',
+              typeKind: ColumnTypeKind.integer,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+          ],
+          computedRelationships: [
+            ComputedRelationshipDescription(
+              name: 'authors',
+              targetSchema: 'public',
+              targetTable: 'authors',
+              isToMany: false,
+            ),
+          ],
+        ),
+      ],
+      relationships: [
+        RelationshipDescription(
+          foreignKeyName: 'books_author_id_fkey',
+          sourceSchema: 'public',
+          sourceTable: 'books',
+          sourceColumns: ['author_id'],
+          targetSchema: 'public',
+          targetTable: 'authors',
+          targetColumns: ['id'],
+        ),
+      ],
+      enums: [],
+    );
+
+    final compact = _normalize(generateDartCode(database)).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstauthors=PostgrestToOneRelation<BooksRow,AuthorsRow>"
+        ".computed('authors',referencedTable:'authors',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstbooks=PostgrestToManyRelation<AuthorsRow,BooksRow>"
+        ".computed('books',referencedTable:'books',);",
+      ),
+    );
+    expect(compact, isNot(contains("('authors',columns:")));
+    expect(compact, isNot(contains("('books',columns:")));
+    expect(compact, contains('relations:[authors],'));
+    expect(compact, contains('relations:[books],'));
+  });
+
   test('a bytea computed field alone brings the typed_data import', () {
     const database = DatabaseDescription(
       schemaNames: ['public'],
