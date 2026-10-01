@@ -195,7 +195,8 @@ jobs:
         if: ${{ matrix.package.name == 'supabase_typegen' }}
         run: |
           docker run --detach --name supabase_typegen_parity \
-            --env POSTGRES_PASSWORD=postgres --publish 55432:5432 postgres:15
+            --env POSTGRES_PASSWORD=postgres --publish 55432:5432 postgres:15 \
+            -c autovacuum=off
           for _ in $(seq 1 30); do
             if docker exec supabase_typegen_parity pg_isready --host localhost --username postgres; then
               exit 0

@@ -6,7 +6,8 @@
 // Run from the package root (Bun resolves the checkout's own dependencies):
 //
 //   docker run --rm --detach --name supabase_typegen_fixture \
-//     --env POSTGRES_PASSWORD=postgres --publish 55432:5432 postgres:15
+//     --env POSTGRES_PASSWORD=postgres --publish 55432:5432 postgres:15 \
+//     -c autovacuum=off
 //   until docker exec supabase_typegen_fixture pg_isready --host localhost \
 //     --username postgres; do sleep 1; done
 //   docker cp test/fixtures/seed.sql supabase_typegen_fixture:/seed.sql
@@ -15,8 +16,9 @@
 //   bun tool/regenerate_fixture.ts --source ../../../sdk/packages/postgrest-typegen
 //   docker rm --force supabase_typegen_fixture
 //
-// The database must be fresh: the fixture carries object ids and the parity
-// test compares them.
+// The database must be fresh and run without autovacuum: the fixture carries
+// object ids and the parity test compares them, and the first autovacuum pass
+// over a new cluster advances the object id counter.
 
 import { resolve } from "node:path";
 import pg from "pg@8.23.0";
