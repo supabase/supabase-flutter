@@ -24,10 +24,13 @@ final _argParser = ArgParser()
   )
   ..addOption(
     'import',
-    defaultsTo: 'package:postgrest/postgrest.dart',
+    valueHelp: 'uri',
     help:
         'The import the generated file uses for PostgrestTable and '
-        'PostgrestColumn.',
+        'PostgrestColumn. Defaults to the library of the first of '
+        'supabase_flutter, supabase and postgrest that the pubspec.yaml '
+        'nearest to the output lists under dependencies, or to '
+        'package:postgrest/postgrest.dart when it lists none of them.',
   )
   ..addFlag(
     'local',
@@ -196,15 +199,18 @@ Future<int> _run(List<String> arguments) async {
   // Formatted by the formatter of the running SDK for the language version
   // of the project the file lands in, so `dart format` there leaves it
   // unchanged.
+  final projectDirectory = output == '-'
+      ? Directory.current
+      : File(output).parent;
   final Version languageVersion;
+  final String importUri;
   try {
     languageVersion =
-        packageLanguageVersion(
-          startDirectory: output == '-'
-              ? Directory.current
-              : File(output).parent,
-        ) ??
+        packageLanguageVersion(startDirectory: projectDirectory) ??
         minimumLanguageVersion;
+    importUri =
+        options.option('import') ??
+        packageImportUri(startDirectory: projectDirectory);
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     return 78;
@@ -219,7 +225,7 @@ Future<int> _run(List<String> arguments) async {
   }
   final code = generateDartCode(
     database,
-    importUri: options.option('import')!,
+    importUri: importUri,
     languageVersion: languageVersion,
   );
   final formatted = await formatWithSdk(

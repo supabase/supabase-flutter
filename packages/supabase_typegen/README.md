@@ -85,9 +85,11 @@ plus the `api.schemas` of the project's `supabase/config.toml`, found under
 `SUPABASE_WORKDIR` or by walking up from the working directory, so the
 exposed schemas of the project are generated. Pass `--schema` to name the schemas yourself, repeated
 or comma separated (`--schema public,inventory`). Only schemas exposed through
-the Data API can be queried at runtime. Use `--import` to change which
-library the generated file imports `PostgrestTable` and `PostgrestColumn`
-from.
+the Data API can be queried at runtime. The generated file imports
+`PostgrestTable` and `PostgrestColumn` from the library of the first of
+`supabase_flutter`, `supabase` and `postgrest` that the `pubspec.yaml` nearest
+to the output lists under `dependencies`, and from `package:postgrest` when it
+lists none of them. Use `--import` to import them from another library.
 
 ### How it works
 

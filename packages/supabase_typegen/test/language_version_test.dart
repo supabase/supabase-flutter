@@ -83,6 +83,94 @@ void main() {
     });
   });
 
+  group('packageImportUri', () {
+    test('is postgrest without a pubspec', () {
+      expect(
+        packageImportUri(startDirectory: directory),
+        'package:postgrest/postgrest.dart',
+      );
+    });
+
+    test('prefers supabase_flutter', () {
+      writePubspec(
+        'name: app\n'
+        'dependencies:\n'
+        '  postgrest: any\n'
+        '  supabase: any\n'
+        '  supabase_flutter: any\n',
+      );
+
+      expect(
+        packageImportUri(startDirectory: directory),
+        'package:supabase_flutter/supabase_flutter.dart',
+      );
+    });
+
+    test('prefers supabase over postgrest', () {
+      writePubspec(
+        'name: app\ndependencies:\n  postgrest: any\n  supabase: any\n',
+      );
+
+      expect(
+        packageImportUri(startDirectory: directory),
+        'package:supabase/supabase.dart',
+      );
+    });
+
+    test('is postgrest for a direct postgrest dependency', () {
+      writePubspec('name: app\ndependencies:\n  postgrest: any\n');
+
+      expect(
+        packageImportUri(startDirectory: directory),
+        'package:postgrest/postgrest.dart',
+      );
+    });
+
+    test('is postgrest when the package depends on none of them', () {
+      writePubspec('name: app\ndependencies:\n  http: any\n');
+
+      expect(
+        packageImportUri(startDirectory: directory),
+        'package:postgrest/postgrest.dart',
+      );
+    });
+
+    test('ignores dev_dependencies', () {
+      writePubspec(
+        'name: app\n'
+        'dependencies:\n'
+        '  postgrest: any\n'
+        'dev_dependencies:\n'
+        '  supabase_flutter: any\n',
+      );
+
+      expect(
+        packageImportUri(startDirectory: directory),
+        'package:postgrest/postgrest.dart',
+      );
+    });
+
+    test('finds the pubspec of the nearest ancestor', () {
+      writePubspec('name: app\ndependencies:\n  supabase: any\n');
+      final nested = Directory('${directory.path}/lib/generated')
+        ..createSync(recursive: true);
+
+      expect(
+        packageImportUri(startDirectory: nested),
+        'package:supabase/supabase.dart',
+      );
+    });
+
+    test('rejects a pubspec that is not valid YAML', () {
+      writePubspec('dependencies: [\n');
+
+      expect(
+        () => packageImportUri(startDirectory: directory),
+        throwsFormatException,
+      );
+    });
+  });
+
   group('generateDartCode', () {
     test('formats for at least the minimum language version', () {
       expect(
