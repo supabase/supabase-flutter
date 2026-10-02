@@ -66,6 +66,15 @@ void main() {
     });
   }
 
+  test('a negated inFilter needs a List of values', () {
+    final stream = supabase.from('users').stream(primaryKey: ['username']);
+
+    expect(
+      () => stream.not('status', PostgresChangeFilterType.inFilter, 'ONLINE'),
+      throwsArgumentError,
+    );
+  });
+
   group('typed', () {
     for (final testCase in _typedTestCases) {
       test(testCase.name, () async {

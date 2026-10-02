@@ -150,38 +150,7 @@ class SupabaseTypedStreamFilterBuilder<Row, Element>
         'Streams do not support the ${operator.name} operator.',
       ),
     };
-    if (negated) {
-      _streamFilterBuilder.not(name, type, value);
-      return this;
-    }
-    switch (type) {
-      case PostgresChangeFilterType.eq:
-        _streamFilterBuilder.eq(name, value!);
-      case PostgresChangeFilterType.neq:
-        _streamFilterBuilder.neq(name, value!);
-      case PostgresChangeFilterType.lt:
-        _streamFilterBuilder.lt(name, value!);
-      case PostgresChangeFilterType.lte:
-        _streamFilterBuilder.lte(name, value!);
-      case PostgresChangeFilterType.gt:
-        _streamFilterBuilder.gt(name, value!);
-      case PostgresChangeFilterType.gte:
-        _streamFilterBuilder.gte(name, value!);
-      case PostgresChangeFilterType.inFilter:
-        _streamFilterBuilder.inFilter(name, value! as List<Object>);
-      case PostgresChangeFilterType.like:
-        _streamFilterBuilder.like(name, value! as String);
-      case PostgresChangeFilterType.ilike:
-        _streamFilterBuilder.ilike(name, value! as String);
-      case PostgresChangeFilterType.match:
-        _streamFilterBuilder.matchRegex(name, value! as String);
-      case PostgresChangeFilterType.imatch:
-        _streamFilterBuilder.imatchRegex(name, value! as String);
-      case PostgresChangeFilterType.isFilter:
-        _streamFilterBuilder.isFilter(name, value as bool?);
-      case PostgresChangeFilterType.isDistinct:
-        _streamFilterBuilder.isDistinct(name, value);
-    }
+    _streamFilterBuilder.addFilter(name, type, value, negated: negated);
     return this;
   }
 }

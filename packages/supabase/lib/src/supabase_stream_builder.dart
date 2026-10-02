@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:supabase/src/logger.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -281,64 +282,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       _effectiveSelect?.join(',') ?? '*',
     );
     for (final filter in _streamFilters) {
-      if (filter.negated) {
-        query = query.not(filter.column, filter.type.token, filter.value);
-        continue;
-      }
-      query = switch (filter.type) {
-        PostgresChangeFilterType.eq => query.eq(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.neq => query.neq(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.lt => query.lt(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.lte => query.lte(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.gt => query.gt(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.gte => query.gte(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.inFilter => query.inFilter(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.like => query.like(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.ilike => query.ilike(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.match => query.matchRegex(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.imatch => query.imatchRegex(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.isFilter => query.isFilter(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.isDistinct => query.isDistinct(
-          filter.column,
-          filter.value,
-        ),
-      };
+      final token = filter.type.token;
+      query = filter.negated
+          ? query.not(filter.column, token, filter.value)
+          : query.filter(filter.column, token, filter.value);
     }
     PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {
