@@ -55,8 +55,9 @@ class SupabaseTypedQueryBuilder<Row, Insert, Update>
   ///
   /// The typed counterpart of [SupabaseQueryBuilder.stream] with `select`:
   /// the initial snapshot and every change payload carry [columns] and
-  /// [primaryKey] instead of the full row, and the rows are read through the
-  /// same column tokens, so a column left out cannot be read by mistake.
+  /// [primaryKey] instead of the full row, and the rows are read through
+  /// [columns], so a column left out cannot be read by mistake. A column
+  /// passed to `order` only is fetched for sorting and stays unreadable.
   ///
   /// ```dart
   /// supabase

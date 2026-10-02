@@ -175,6 +175,40 @@ void main() {
       },
     );
 
+    test('the order column is added to the selected columns', () async {
+      final subscription = supabase
+          .from('users')
+          .stream(primaryKey: ['username'], select: ['status'])
+          .order('age')
+          .listen(null);
+      addTearDown(subscription.cancel);
+
+      await _eventually(
+        () => postgresChanges.isNotEmpty && restQueries.isNotEmpty,
+        'the channel to join and the PostgREST request to arrive',
+      );
+
+      expect(postgresChanges.single['select'], ['status', 'username', 'age']);
+      expect(restQueries.single['select'], 'status,username,age');
+    });
+
+    test('the typed order column is added to the selected columns', () async {
+      final subscription = supabase
+          .table(_Users.table)
+          .streamOnly(primaryKey: [_Users.username], columns: [_Users.status])
+          .order(_Users.age)
+          .listen(null);
+      addTearDown(subscription.cancel);
+
+      await _eventually(
+        () => postgresChanges.isNotEmpty && restQueries.isNotEmpty,
+        'the channel to join and the PostgREST request to arrive',
+      );
+
+      expect(postgresChanges.single['select'], ['status', 'username', 'age']);
+      expect(restQueries.single['select'], 'status,username,age');
+    });
+
     test('the typed streamOnly needs at least one column', () {
       expect(
         () => supabase

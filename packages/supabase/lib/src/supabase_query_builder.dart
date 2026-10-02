@@ -44,7 +44,8 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   ///
   /// [select] restricts the rows to a subset of columns, in the initial
   /// snapshot and in every change payload, instead of the full row. The
-  /// [primaryKey] columns are always included, since they identify the rows.
+  /// [primaryKey] columns are always included, since they identify the rows,
+  /// and so is the column passed to `order`, which the rows are sorted by.
   ///
   /// It handles the life cycle of the realtime connection and automatically
   /// refetches data from PostgREST when needed.

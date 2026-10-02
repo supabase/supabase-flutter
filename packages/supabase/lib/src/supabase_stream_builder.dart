@@ -87,10 +87,21 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Used to identify which row has changed
   final List<String> _uniqueColumns;
 
-  /// The columns PostgREST and the realtime server are asked for, `null` for
-  /// every column. Always holds [_uniqueColumns], which the change payloads
-  /// are matched to the rows by.
+  /// The columns asked for with `select`, `null` for every column. Always
+  /// holds [_uniqueColumns], which the change payloads are matched to the rows
+  /// by.
   final List<String>? _select;
+
+  /// The columns PostgREST and the realtime server are asked for: [_select]
+  /// plus the column of [_orderBy], which [_sortData] reads from every row.
+  List<String>? get _effectiveSelect {
+    final select = _select;
+    final orderColumn = _orderBy?.column;
+    if (select == null || orderColumn == null || select.contains(orderColumn)) {
+      return select;
+    }
+    return [...select, orderColumn];
+  }
 
   /// StreamController for `stream()` method.
   ReplaySubject<SupabaseStreamEvent>? _streamController;
@@ -210,7 +221,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           schema: _schema,
           table: _table,
           filters: realtimeFilters,
-          select: _select,
+          select: _effectiveSelect,
         )
         .listen((payload) {
           switch (payload.eventType) {
@@ -267,7 +278,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   Future<void> _getPostgrestData() async {
     PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select(
-      _select?.join(',') ?? '*',
+      _effectiveSelect?.join(',') ?? '*',
     );
     for (final filter in _streamFilters) {
       if (filter.negated) {
