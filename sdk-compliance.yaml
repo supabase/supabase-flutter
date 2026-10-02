@@ -838,6 +838,7 @@ features:
       - PostgrestTableRequest.explainOptions
       - PostgrestTableRequest.returning
       - PostgrestTableRequest.copyWith
+      - PostgrestTableRequest.options
       - PostgrestTableOperation
       - PostgrestTableOperation.isMutation
       - PostgrestResultShape
@@ -854,6 +855,14 @@ features:
       - PostgrestExplainOptions.buffers
       - PostgrestExplainOptions.wal
       - PostgrestExplainOptions.format
+      - PostgrestRequestOptions
+      - PostgrestRequestOptions.PostgrestRequestOptions
+      - PostgrestRequestOptions.headers
+      - PostgrestRequestOptions.retryEnabled
+      - PostgrestRequestOptions.retryCount
+      - PostgrestRequestOptions.requestTimeout
+      - PostgrestRequestOptions.abortSignal
+      - PostgrestRequestOptions.copyWith
       - PostgrestTableResult
       - PostgrestTableResult.PostgrestTableResult
       - PostgrestTableResult.data
@@ -1407,6 +1416,11 @@ features:
     status: implemented
     symbols:
       - PostgrestBuilder.abortSignal
+    supporting_symbols:
+      - PostgrestTypedBuilder.abortSignal
+      - PostgrestTypedFilterBuilder.abortSignal
+      - PostgrestTypedQueryBuilder.abortSignal
+      - PostgrestTypedTransformBuilder.abortSignal
 
   # database — configuration
   database.configuration.auto_retry:
@@ -1426,6 +1440,10 @@ features:
       - PostgrestFilterBuilder.retry
       - PostgrestQueryBuilder.retry
       - PostgrestTransformBuilder.retry
+      - PostgrestTypedBuilder.retry
+      - PostgrestTypedFilterBuilder.retry
+      - PostgrestTypedQueryBuilder.retry
+      - PostgrestTypedTransformBuilder.retry
       - SupabaseRetryOptions.SupabaseRetryOptions
       - SupabaseRetryOptions.copyWith
       - SupabaseRetryOptions.delay
@@ -1443,6 +1461,10 @@ features:
       - PostgrestFilterBuilder.requestTimeout
       - PostgrestQueryBuilder.requestTimeout
       - PostgrestTransformBuilder.requestTimeout
+      - PostgrestTypedBuilder.requestTimeout
+      - PostgrestTypedFilterBuilder.requestTimeout
+      - PostgrestTypedQueryBuilder.requestTimeout
+      - PostgrestTypedTransformBuilder.requestTimeout
   database.configuration.access_token:
     status: implemented
     note: "There is no setter. The token is supplied as an accessToken callback on PostgrestClient that is resolved before every request, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single request can override it with an Authorization header via setHeader."
@@ -1454,6 +1476,10 @@ features:
       - PostgrestFilterBuilder.setHeader
       - PostgrestQueryBuilder.setHeader
       - PostgrestTransformBuilder.setHeader
+      - PostgrestTypedBuilder.setHeader
+      - PostgrestTypedFilterBuilder.setHeader
+      - PostgrestTypedQueryBuilder.setHeader
+      - PostgrestTypedTransformBuilder.setHeader
 
   # storage — file buckets
   storage.file_buckets.access_bucket:

@@ -198,20 +198,18 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         )
         .listen((payload) {
           switch (payload.eventType) {
-            case PostgresChangeEvent.insert:
-              final newRecord = payload.newRecord;
-              _streamData.add(newRecord);
-              _addStream();
-            case PostgresChangeEvent.update:
-              final updatedIndex = _streamData.indexWhere(
+            // An insert can arrive for a row that a refetch after a
+            // reconnect already returned, so it replaces that row.
+            case PostgresChangeEvent.insert || PostgresChangeEvent.update:
+              final index = _streamData.indexWhere(
                 (element) => _isTargetRecord(record: element, payload: payload),
               );
 
-              final updatedRecord = payload.newRecord;
-              if (updatedIndex >= 0) {
-                _streamData[updatedIndex] = updatedRecord;
+              final record = payload.newRecord;
+              if (index >= 0) {
+                _streamData[index] = record;
               } else {
-                _streamData.add(updatedRecord);
+                _streamData.add(record);
               }
               _addStream();
             case PostgresChangeEvent.delete:
@@ -338,12 +336,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     required Map<String, dynamic> record,
     required PostgresChangePayload payload,
   }) {
-    late final Map<String, dynamic> targetRecord;
-    if (payload.eventType == PostgresChangeEvent.update) {
-      targetRecord = payload.newRecord;
-    } else if (payload.eventType == PostgresChangeEvent.delete) {
-      targetRecord = payload.oldRecord;
-    }
+    final targetRecord = payload.eventType == PostgresChangeEvent.delete
+        ? payload.oldRecord
+        : payload.newRecord;
     return _uniqueColumns.every(
       (column) => record[column] == targetRecord[column],
     );

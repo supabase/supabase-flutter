@@ -1,6 +1,8 @@
 // The typed table access API under test is annotated @experimental.
 // ignore_for_file: experimental_member_use
 
+import 'dart:async';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -112,6 +114,48 @@ void main() {
         expect(books.map((book) => book.read(Books.title)), ['a', 'b']);
       },
     );
+
+    test('carries the request options from every phase', () async {
+      final executor = RecordingExecutor(
+        const PostgrestTableResult(data: bookRows),
+      );
+      final abortSignal = Completer<void>().future;
+
+      await client
+          .table(Books.table, executor: executor)
+          .setHeader('X-Query', 'query')
+          .retry(enabled: false)
+          .select()
+          .requestTimeout(const Duration(seconds: 3))
+          .order(Books.title)
+          .abortSignal(abortSignal)
+          .setHeader('X-Transform', 'transform');
+
+      final options = executor.onlyRequest.options;
+      expect(options.headers, {
+        'X-Query': 'query',
+        'X-Transform': 'transform',
+      });
+      expect(options.retryEnabled, isFalse);
+      expect(options.retryCount, isNull);
+      expect(options.requestTimeout, const Duration(seconds: 3));
+      expect(options.abortSignal, same(abortSignal));
+    });
+
+    test('has no request options unless one is set', () async {
+      final executor = RecordingExecutor(
+        const PostgrestTableResult(data: bookRows),
+      );
+
+      await client.table(Books.table, executor: executor).select();
+
+      final options = executor.onlyRequest.options;
+      expect(options.headers, isEmpty);
+      expect(options.retryEnabled, isNull);
+      expect(options.retryCount, isNull);
+      expect(options.requestTimeout, isNull);
+      expect(options.abortSignal, isNull);
+    });
 
     test('carries the schema of the client', () async {
       final executor = RecordingExecutor(
