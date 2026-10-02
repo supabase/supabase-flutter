@@ -935,7 +935,11 @@ void main() {
         () => stream.filter(Todos.status.eq(true) & Todos.id.gt(1)),
         throwsArgumentError,
       );
-      expect(() => stream.filter(Todos.id.eq(1).not()), throwsArgumentError);
+      expect(
+        () => stream.filter((Todos.status.eq(true) & Todos.id.gt(1)).not()),
+        throwsArgumentError,
+      );
+      expect(() => stream.filter(Todos.id.eq(1).not()), returnsNormally);
     });
   });
 }
