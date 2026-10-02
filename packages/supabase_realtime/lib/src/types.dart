@@ -524,7 +524,10 @@ class PostgresChangeFilter {
     required this.column,
     required this.value,
     this.negate = false,
-  });
+  }) : assert(
+         type != PostgresChangeFilterType.inFilter || value is Iterable,
+         'An inFilter takes an Iterable of values.',
+       );
 
   /// The type of the filter to set.
   final PostgresChangeFilterType type;

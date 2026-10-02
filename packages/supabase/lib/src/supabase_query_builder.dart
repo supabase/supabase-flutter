@@ -42,6 +42,11 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   /// set up. See https://supabase.com/docs/guides/realtime/authorization for
   /// more details.
   ///
+  /// [select] restricts the rows to a subset of columns, in the initial
+  /// snapshot and in every change payload, instead of the full row. The
+  /// [primaryKey] columns are always included, since they identify the rows,
+  /// and so is the column passed to `order`, which the rows are sorted by.
+  ///
   /// It handles the life cycle of the realtime connection and automatically
   /// refetches data from PostgREST when needed.
   ///
@@ -69,8 +74,9 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   ///
   /// `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
   /// `matchRegex`, `imatchRegex`, `isFilter` and `isDistinct` are available to
-  /// limit the data being queried. Multiple filters are combined with an `AND`.
-  /// `order` and `limit` are available to sort and cap the result.
+  /// limit the data being queried, and `not` negates any of them. Multiple
+  /// filters are combined with an `AND`. `order` and `limit` are available to
+  /// sort and cap the result.
   ///
   /// ```dart
   /// supabase
@@ -90,11 +96,25 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   ///     .like('message', '%supabase%')
   ///     .listen(_onChatsReceived);
   /// ```
+  ///
+  /// ```dart
+  /// supabase
+  ///     .from('chats')
+  ///     .stream(primaryKey: ['id'], select: ['message', 'created_at'])
+  ///     .not('status', PostgresChangeFilterType.inFilter, ['draft', 'spam'])
+  ///     .listen(_onChatsReceived);
+  /// ```
   SupabaseStreamFilterBuilder stream({
     required List<String> primaryKey,
     bool private = false,
+    List<String>? select,
   }) {
     assert(primaryKey.isNotEmpty, 'Please specify primary key column(s).');
+    assert(
+      select == null || select.isNotEmpty,
+      'Please specify at least one column to select, or leave `select` out '
+      'to select every column.',
+    );
     return SupabaseStreamFilterBuilder(
       queryBuilder: this,
       realtimeClient: _realtime,
@@ -103,6 +123,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
       table: _table,
       primaryKey: primaryKey,
       private: private,
+      select: select,
     );
   }
 }

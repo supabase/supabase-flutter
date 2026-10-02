@@ -1,17 +1,19 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:supabase/src/logger.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 part 'supabase_stream_filter_builder.dart';
 
-/// [column] name of the eq filter, [value] of the eq filter, and [type] of the
-/// filter being applied.
+/// [column] name of the filter, [value] of the filter, [type] of the filter
+/// being applied, and whether the filter is [negated].
 typedef _StreamPostgrestFilter = ({
   String column,
   dynamic value,
   PostgresChangeFilterType type,
+  bool negated,
 });
 
 typedef _Order = ({String column, bool ascending});
@@ -52,13 +54,21 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     required String table,
     required List<String> primaryKey,
     required bool private,
+    List<String>? select,
   }) : _queryBuilder = queryBuilder,
        _realtimeTopic = realtimeTopic,
        _realtimeClient = realtimeClient,
        _schema = schema,
        _table = table,
        _uniqueColumns = primaryKey,
-       _private = private;
+       _private = private,
+       _select = select == null
+           ? null
+           : [
+               ...select,
+               for (final column in primaryKey)
+                 if (!select.contains(column)) column,
+             ];
   final PostgrestQueryBuilder _queryBuilder;
 
   final RealtimeClient _realtimeClient;
@@ -77,6 +87,22 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Used to identify which row has changed
   final List<String> _uniqueColumns;
+
+  /// The columns asked for with `select`, `null` for every column. Always
+  /// holds [_uniqueColumns], which the change payloads are matched to the rows
+  /// by.
+  final List<String>? _select;
+
+  /// The columns PostgREST and the realtime server are asked for: [_select]
+  /// plus the column of [_orderBy], which [_sortData] reads from every row.
+  List<String>? get _effectiveSelect {
+    final select = _select;
+    final orderColumn = _orderBy?.column;
+    if (select == null || orderColumn == null || select.contains(orderColumn)) {
+      return select;
+    }
+    return [...select, orderColumn];
+  }
 
   /// StreamController for `stream()` method.
   ReplaySubject<SupabaseStreamEvent>? _streamController;
@@ -178,6 +204,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
             column: filter.column,
             type: filter.type,
             value: filter.value,
+            negate: filter.negated,
           ),
         )
         .toList();
@@ -195,6 +222,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           schema: _schema,
           table: _table,
           filters: realtimeFilters,
+          select: _effectiveSelect,
         )
         .listen((payload) {
           switch (payload.eventType) {
@@ -250,62 +278,14 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   }
 
   Future<void> _getPostgrestData() async {
-    PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
+    PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select(
+      _effectiveSelect?.join(',') ?? '*',
+    );
     for (final filter in _streamFilters) {
-      query = switch (filter.type) {
-        PostgresChangeFilterType.eq => query.eq(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.neq => query.neq(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.lt => query.lt(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.lte => query.lte(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.gt => query.gt(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.gte => query.gte(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.inFilter => query.inFilter(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.like => query.like(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.ilike => query.ilike(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.match => query.matchRegex(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.imatch => query.imatchRegex(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.isFilter => query.isFilter(
-          filter.column,
-          filter.value,
-        ),
-        PostgresChangeFilterType.isDistinct => query.isDistinct(
-          filter.column,
-          filter.value,
-        ),
-      };
+      final token = filter.type.token;
+      query = filter.negated
+          ? query.not(filter.column, token, filter.value)
+          : query.filter(filter.column, token, filter.value);
     }
     PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {
