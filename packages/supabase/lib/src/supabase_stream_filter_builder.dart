@@ -20,12 +20,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).eq('name', 'Supabase');
   /// ```
   SupabaseStreamFilterBuilder eq(String column, Object value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.eq,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.eq, value);
   }
 
   /// Filters the results where [column] does not equal [value].
@@ -34,12 +29,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).neq('name', 'Supabase');
   /// ```
   SupabaseStreamFilterBuilder neq(String column, Object value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.neq,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.neq, value);
   }
 
   /// Filters the results where [column] is less than [value].
@@ -48,12 +38,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lt('likes', 100);
   /// ```
   SupabaseStreamFilterBuilder lt(String column, Object value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.lt,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.lt, value);
   }
 
   /// Filters the results where [column] is less than or equal to [value].
@@ -62,12 +47,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lte('likes', 100);
   /// ```
   SupabaseStreamFilterBuilder lte(String column, Object value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.lte,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.lte, value);
   }
 
   /// Filters the results where [column] is greater than [value].
@@ -76,12 +56,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gt('likes', '100');
   /// ```
   SupabaseStreamFilterBuilder gt(String column, Object value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.gt,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.gt, value);
   }
 
   /// Filters the results where [column] is greater than or equal to [value].
@@ -90,12 +65,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gte('likes', 100);
   /// ```
   SupabaseStreamFilterBuilder gte(String column, Object value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.gte,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.gte, value);
   }
 
   /// Filters the results where [column] is included in [values].
@@ -107,12 +77,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   ///     .inFilter('name', ['Andy', 'Amy', 'Terry']);
   /// ```
   SupabaseStreamFilterBuilder inFilter(String column, List<Object> values) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.inFilter,
-      values,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.inFilter, values);
   }
 
   /// Filters the results where [column] matches the [pattern] case-sensitive.
@@ -121,12 +86,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).like('title', '%foo%');
   /// ```
   SupabaseStreamFilterBuilder like(String column, String pattern) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.like,
-      pattern,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.like, pattern);
   }
 
   /// Filters the results where [column] matches the [pattern] case-insensitive.
@@ -135,12 +95,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).ilike('title', '%foo%');
   /// ```
   SupabaseStreamFilterBuilder ilike(String column, String pattern) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.ilike,
-      pattern,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.ilike, pattern);
   }
 
   /// Filters the results where [column] matches the PostgreSQL regular
@@ -153,12 +108,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   ///     .matchRegex('slug', r'^post-\d+$');
   /// ```
   SupabaseStreamFilterBuilder matchRegex(String column, String pattern) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.match,
-      pattern,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.match, pattern);
   }
 
   /// Filters the results where [column] matches the PostgreSQL regular
@@ -171,12 +121,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   ///     .imatchRegex('slug', r'^post-\d+$');
   /// ```
   SupabaseStreamFilterBuilder imatchRegex(String column, String pattern) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.imatch,
-      pattern,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.imatch, pattern);
   }
 
   /// Filters the results where [column] is `null`, `true` or `false`.
@@ -185,12 +130,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).isFilter('data', null);
   /// ```
   SupabaseStreamFilterBuilder isFilter(String column, bool? value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.isFilter,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.isFilter, value);
   }
 
   /// Filters the results where [column] is not equal to [value] treating `null`
@@ -200,16 +140,11 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).isDistinct('age', null);
   /// ```
   SupabaseStreamFilterBuilder isDistinct(String column, Object? value) {
-    return addFilter(
-      column,
-      PostgresChangeFilterType.isDistinct,
-      value,
-      negated: false,
-    );
+    return addFilter(column, PostgresChangeFilterType.isDistinct, value);
   }
 
   /// Filters the results where [column] does not satisfy the filter of [type]
-  /// with [value], the negation of the method of the same name.
+  /// with [value], the negation of the filter method for [type].
   ///
   /// [value] is what that method takes: a `List` for
   /// [PostgresChangeFilterType.inFilter], `null`, `true` or `false` for
@@ -236,7 +171,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
     String column,
     PostgresChangeFilterType type,
     Object? value, {
-    required bool negated,
+    bool negated = false,
   }) {
     if (type == PostgresChangeFilterType.inFilter && value is! List) {
       throw ArgumentError.value(
