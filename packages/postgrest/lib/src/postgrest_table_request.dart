@@ -104,6 +104,59 @@ final class PostgrestExplainOptions {
   final ExplainFormat format;
 }
 
+/// How a [PostgrestTableRequest] is sent, as opposed to what it asks for.
+///
+/// [PostgrestHttpTableExecutor] applies every option. An executor that does
+/// not send the request over HTTP, one answering from a local store for
+/// example, may ignore them.
+@experimental
+final class PostgrestRequestOptions {
+  PostgrestRequestOptions({
+    Map<String, String> headers = const {},
+    this.retryEnabled,
+    this.retryCount,
+    this.requestTimeout,
+    this.abortSignal,
+  }) : headers = Map.unmodifiable(headers);
+
+  /// The headers sent on top of the ones the request produces, see
+  /// [PostgrestBuilder.setHeader].
+  final Map<String, String> headers;
+
+  /// Whether a failed attempt is retried, or `null` for the client's
+  /// [PostgrestClient.retryOptions], see [PostgrestBuilder.retry].
+  final bool? retryEnabled;
+
+  /// The number of retry attempts, or `null` for the client's
+  /// [PostgrestClient.retryOptions].
+  final int? retryCount;
+
+  /// How long a single attempt may take, or `null` for the client's
+  /// [PostgrestClient.requestTimeout], see [PostgrestBuilder.requestTimeout].
+  final Duration? requestTimeout;
+
+  /// Cancels the request when it completes, see [PostgrestBuilder.abortSignal].
+  ///
+  /// A signal is not part of what the request asks for, so a cache that keys
+  /// on the request leaves it out of the key.
+  final Future<void>? abortSignal;
+
+  /// A copy with the given fields replaced.
+  PostgrestRequestOptions copyWith({
+    Map<String, String>? headers,
+    bool? retryEnabled,
+    int? retryCount,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
+  }) => PostgrestRequestOptions(
+    headers: headers ?? this.headers,
+    retryEnabled: retryEnabled ?? this.retryEnabled,
+    retryCount: retryCount ?? this.retryCount,
+    requestTimeout: requestTimeout ?? this.requestTimeout,
+    abortSignal: abortSignal ?? this.abortSignal,
+  );
+}
+
 /// Everything a typed table builder has collected, ready to be run by a
 /// [PostgrestTableExecutor].
 ///
@@ -138,7 +191,9 @@ final class PostgrestTableRequest {
     this.stripNulls = false,
     this.dryRun = false,
     this.explainOptions,
-  }) : columns = List.unmodifiable(columns),
+    PostgrestRequestOptions? options,
+  }) : options = options ?? PostgrestRequestOptions(),
+       columns = List.unmodifiable(columns),
        orderings = List.unmodifiable(orderings),
        embeddedPages = List.unmodifiable(embeddedPages),
        onConflict = onConflict == null ? null : List.unmodifiable(onConflict);
@@ -218,6 +273,10 @@ final class PostgrestTableRequest {
   /// The options of an explain request.
   final PostgrestExplainOptions? explainOptions;
 
+  /// How the request is sent: its headers, retry policy, timeout and abort
+  /// signal.
+  final PostgrestRequestOptions options;
+
   /// A copy with the given fields replaced.
   ///
   /// A field that is not given keeps its value, so a nullable field cannot
@@ -243,6 +302,7 @@ final class PostgrestTableRequest {
     bool? stripNulls,
     bool? dryRun,
     PostgrestExplainOptions? explainOptions,
+    PostgrestRequestOptions? options,
   }) => PostgrestTableRequest(
     table: table ?? this.table,
     operation: operation ?? this.operation,
@@ -264,6 +324,7 @@ final class PostgrestTableRequest {
     stripNulls: stripNulls ?? this.stripNulls,
     dryRun: dryRun ?? this.dryRun,
     explainOptions: explainOptions ?? this.explainOptions,
+    options: options ?? this.options,
   );
 }
 

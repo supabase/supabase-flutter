@@ -15,9 +15,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
 
   final RowConverter<Row> _rowFromJson;
 
-  PostgrestTypedTransformBuilder<Row, T> _with(PostgrestTableRequest request) =>
+  @override
+  PostgrestTypedTransformBuilder<Row, T> _with(PostgrestTableRequest changed) =>
       PostgrestTypedTransformBuilder._(
-        request,
+        changed,
         _executor,
         _convert,
         _rowFromJson,
@@ -32,6 +33,25 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     convert,
     _rowFromJson,
   );
+
+  @override
+  PostgrestTypedTransformBuilder<Row, T> retry({
+    bool enabled = true,
+    int? count,
+  }) => _with(request._retry(enabled, count));
+
+  @override
+  PostgrestTypedTransformBuilder<Row, T> requestTimeout(Duration timeout) =>
+      _with(request._requestTimeout(timeout));
+
+  @override
+  PostgrestTypedTransformBuilder<Row, T> abortSignal(
+    Future<void> abortSignal,
+  ) => _with(request._abortSignal(abortSignal));
+
+  @override
+  PostgrestTypedTransformBuilder<Row, T> setHeader(String key, String value) =>
+      _with(request._header(key, value));
 
   /// Performs horizontal filtering with SELECT, returning the affected rows
   /// typed as [Row].

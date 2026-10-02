@@ -16,10 +16,19 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     required PostgrestTableExecutor executor,
     String? schema,
   }) : _executor = executor,
-       _schema = schema;
+       _schema = schema,
+       _options = null;
+
+  const PostgrestTypedQueryBuilder._(
+    this.table,
+    this._executor,
+    this._schema,
+    this._options,
+  );
 
   final PostgrestTableExecutor _executor;
   final String? _schema;
+  final PostgrestRequestOptions? _options;
 
   /// The table this builder queries.
   final PostgrestTable<Row, Insert, Update> table;
@@ -29,7 +38,45 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
         table: table,
         operation: operation,
         schema: _schema,
+        options: _options,
       );
+
+  PostgrestTypedQueryBuilder<Row, Insert, Update> _with(
+    PostgrestRequestOptions options,
+  ) => PostgrestTypedQueryBuilder._(table, _executor, _schema, options);
+
+  PostgrestRequestOptions get _currentOptions =>
+      _options ?? PostgrestRequestOptions();
+
+  /// Overrides the retry behavior of the requests built by this builder.
+  ///
+  /// See [PostgrestBuilder.retry] for [enabled] and [count].
+  PostgrestTypedQueryBuilder<Row, Insert, Update> retry({
+    bool enabled = true,
+    int? count,
+  }) => _with(_currentOptions._retry(enabled, count));
+
+  /// Bounds how long a single attempt of the requests built by this builder
+  /// may take.
+  ///
+  /// See [PostgrestBuilder.requestTimeout].
+  PostgrestTypedQueryBuilder<Row, Insert, Update> requestTimeout(
+    Duration timeout,
+  ) => _with(_currentOptions._requestTimeout(timeout));
+
+  /// Cancels the requests built by this builder when [abortSignal]
+  /// completes.
+  ///
+  /// See [PostgrestTypedBuilder.abortSignal].
+  PostgrestTypedQueryBuilder<Row, Insert, Update> abortSignal(
+    Future<void> abortSignal,
+  ) => _with(_currentOptions._abortSignal(abortSignal));
+
+  /// Sets a header on the requests built by this builder.
+  PostgrestTypedQueryBuilder<Row, Insert, Update> setHeader(
+    String key,
+    String value,
+  ) => _with(_currentOptions._header(key, value));
 
   PostgrestTypedFilterBuilder<Row, void> _mutation(
     PostgrestTableRequest request,
