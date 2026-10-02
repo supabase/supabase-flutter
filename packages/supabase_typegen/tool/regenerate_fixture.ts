@@ -6,7 +6,7 @@
 // Run from the package root (Bun resolves the checkout's own dependencies):
 //
 //   docker run --rm --detach --name supabase_typegen_fixture \
-//     --env POSTGRES_PASSWORD=postgres --publish 55432:5432 postgres:15 \
+//     --env POSTGRES_PASSWORD=postgres --publish 14432:5432 postgres:15 \
 //     -c autovacuum=off
 //   until docker exec supabase_typegen_fixture pg_isready --host localhost \
 //     --username postgres; do sleep 1; done
@@ -38,7 +38,7 @@ const { sortGeneratorMetadata } = await import(`${source}/src/sort.ts`);
 const pool = new pg.Pool({
   connectionString:
     process.env.DATABASE_URL ??
-    "postgresql://postgres:postgres@localhost:55432/postgres",
+    "postgresql://postgres:postgres@localhost:14432/postgres",
 });
 const metadata = sortGeneratorMetadata(await introspect(pool));
 await pool.end();
