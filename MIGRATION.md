@@ -15,6 +15,9 @@ the Flutter one.
 > v3 has not been released yet. This section is updated as breaking changes land on `main`, so
 > treat it as the running list rather than the final one.
 
+v3 also adds a typed table API next to `from()`. Moving to it is optional, so it is covered in
+[its own section](#moving-from-from-to-the-typed-table-api) after the breaking changes.
+
 ### Changes the compiler will not catch
 
 Most of this guide produces compile errors until you act on it. These do not, so check them
@@ -1998,3 +2001,383 @@ tracePropagationOptions: TracePropagationOptions(
 
 A `TracePropagationOptions()` with no provider, or `enabled: false` next to a provider, no longer
 compiles. Drop the argument to keep propagation off.
+
+## Moving from `from()` to the typed table API
+
+v3 adds `table()`, a typed counterpart of `from()` built on definitions generated from your database
+schema. Rows come back as generated types instead of `Map<String, dynamic>`, filters and orderings
+are checked against the column types at compile time, and writes only accept the generated insert
+and update types. `from()` keeps working, and both can be used on one client, so a codebase can move
+over one table at a time.
+
+Requests made through `table()` run through the executor that `SupabaseClientPlugin`s wrap, so
+features built as plugins, such as offline support, only apply to them. Requests made through
+`from()` bypass every plugin.
+
+The typed API is marked `@experimental` while it settles. Referencing an experimental type such as
+`PostgrestFilter` directly reports `experimental_member_use`, which an
+`// ignore_for_file: experimental_member_use` silences; the generated file already carries it.
+
+The examples below use this schema:
+
+```sql
+create table authors (
+  id bigint generated always as identity primary key,
+  name text not null unique
+);
+
+create table books (
+  id bigint generated always as identity primary key,
+  author_id bigint not null references authors (id),
+  title text not null,
+  in_print boolean not null default true,
+  price numeric,
+  published_on date,
+  created_at timestamptz not null default now()
+);
+```
+
+### Generate the table definitions
+
+Add `supabase_typegen` as a dev dependency and run it against your database. With `--local` it reads
+the database of the running local stack, which the Supabase CLI builds from the migrations in your
+`supabase/` directory:
+
+```sh
+dart pub add dev:supabase_typegen
+dart run supabase_typegen --local
+```
+
+This writes `lib/supabase_schema.g.dart`. `--linked`, `--project-ref` and `--db-url` generate from
+a hosted project instead; see the
+[`supabase_typegen` README](packages/supabase_typegen/README.md) for every option. Once the Supabase
+CLI ships Dart support, `supabase gen types --lang dart --local > lib/supabase_schema.g.dart`
+replaces the direct connection.
+
+For every table the file holds a row type (`BooksRow`), an insert type (`BooksInsert`), an update
+type (`BooksUpdate`), and a class (`Books`) with the table definition and one constant per column
+and foreign key. Run the generator again after every migration so the types follow the schema.
+
+### Reading rows
+
+```dart
+// Before
+final List<Map<String, dynamic>> books = await supabase
+    .from('books')
+    .select();
+final title = books.first['title'] as String;
+
+// After
+final List<BooksRow> books = await supabase.table(Books.table).select();
+final String title = books.first.title;
+```
+
+`BooksRow` is an extension type over the decoded JSON, so the getters cost nothing over reading the
+map, and `toJson()` returns the map when something still needs it. Dates, enums, `bytea` and the
+other column types are converted by the getters, so `createdAt` is a `DateTime` and `publishedOn` a
+`PostgrestDate`.
+
+A table outside the `public` schema carries its schema in the definition, so
+`supabase.table(InventoryBooks.table)` replaces `supabase.schema('inventory').from('books')`.
+
+To read some columns only, `selectOnly` replaces the column string of `select()`. The rows are
+`PostgrestPartialRow`s, read through the same column constants. Each value comes back with the
+type of its column, and reading a column that was not selected throws a `StateError` instead of
+returning `null`:
+
+```dart
+// Before
+final books = await supabase.from('books').select('id, title');
+final title = books.first['title'] as String;
+
+// After
+final books = await supabase.table(Books.table).selectOnly([
+  Books.id,
+  Books.title,
+]);
+final String title = books.first.read(Books.title);
+```
+
+### Filters
+
+Filters are methods on the column constants, passed to `where()`. The value has to match the column
+type, so `Books.price.eq('ten')` does not compile, and `isNull()` only exists on nullable columns.
+
+| Before                                 | After                                                   |
+| -------------------------------------- | ------------------------------------------------------- |
+| `.eq('author_id', 2)`                  | `.where(Books.authorId.eq(2))`                          |
+| `.neq('title', 'Dune')`                | `.where(Books.title.neq('Dune'))`                       |
+| `.gte('price', 10)`                    | `.where(Books.price.gte(10))`                           |
+| `.ilike('title', '%dune%')`            | `.where(Books.title.ilike('%dune%'))`                   |
+| `.inFilter('id', [1, 2])`              | `.where(Books.id.inFilter([1, 2]))`                     |
+| `.isFilter('published_on', null)`      | `.where(Books.publishedOn.isNull())`                    |
+| `.not('published_on', 'is', null)`     | `.where(Books.publishedOn.isNull().not())`              |
+| `.or('price.lt.10,in_print.eq.false')` | `.where(Books.price.lt(10) \| Books.inPrint.isFalse())` |
+
+Filters combine with `&` and `|` and negate with `not()`, so a nested `or()` string becomes an
+expression the compiler checks. Repeated `where()` calls combine with AND, like repeated filter
+calls did:
+
+```dart
+// Before
+await supabase
+    .from('books')
+    .select()
+    .eq('in_print', true)
+    .or('price.lt.10,published_on.is.null');
+
+// After
+await supabase
+    .table(Books.table)
+    .select()
+    .where(
+      Books.inPrint.isTrue() &
+          (Books.price.lt(10) | Books.publishedOn.isNull()),
+    );
+```
+
+A filter is a value, so one assembled conditionally no longer needs to reassign the builder:
+
+```dart
+var filter = Books.inPrint.isTrue();
+if (search != null) filter = filter & Books.title.ilike('%$search%');
+final books = await supabase.table(Books.table).select().where(filter);
+```
+
+For an operator the API has no method for, `raw()` on a column keeps the column checked and takes
+the operand as PostgREST spells it, `Books.title.raw('eq.Dune')`. `PostgrestFilter.raw` takes both
+sides as strings, for an expression no column constant can name:
+
+```dart
+.where(PostgrestFilter.raw('metadata->>edition', 'eq.first'))
+```
+
+### Ordering, pagination and single rows
+
+The direction of an ordering is spelled on the column:
+
+```dart
+// Before
+await supabase
+    .from('books')
+    .select()
+    .order('created_at', ascending: false)
+    .range(0, 9);
+
+// After
+await supabase
+    .table(Books.table)
+    .select()
+    .order(Books.createdAt.desc())
+    .range(0, 9);
+```
+
+`order()` on `from()` always sends a null ordering and defaults it to nulls last, while the typed
+ordering only sends what was asked for, which leaves the null placement to Postgres: last for an
+ascending sort and first for a descending one. On a nullable column,
+`.order('price', ascending: false)` therefore matches `.order(Books.price.desc().nullsLast())`,
+not `.order(Books.price.desc())`. Repeated `order()` calls append on both APIs.
+
+`limit()` and `range()` take the same arguments as before, including `referencedTable` for an
+embedded table. `single()` and `maybeSingle()` resolve to the row type:
+
+```dart
+// Before
+final Map<String, dynamic> book = await supabase
+    .from('books')
+    .select()
+    .eq('id', 1)
+    .single();
+
+// After
+final BooksRow book = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.id.eq(1))
+    .single();
+final BooksRow? maybeBook = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.id.eq(1))
+    .maybeSingle();
+```
+
+`count()` keeps both of its shapes. After `select()` it resolves to a `PostgrestResponse` holding
+the typed rows and the count; on its own it is a count query that resolves to an `int` and takes
+filters like any other request:
+
+```dart
+// Before
+final PostgrestResponse<List<Map<String, dynamic>>> response = await supabase
+    .from('books')
+    .select()
+    .count(CountOption.exact);
+final int inPrint = await supabase.from('books').count().eq('in_print', true);
+
+// After
+final PostgrestResponse<List<BooksRow>> response = await supabase
+    .table(Books.table)
+    .select()
+    .count(CountOption.exact);
+final int inPrint = await supabase
+    .table(Books.table)
+    .count()
+    .where(Books.inPrint.isTrue());
+```
+
+### Writes
+
+`insert()`, `upsert()` and `update()` take the generated `Insert` and `Update` types instead of
+maps. A required column is a required parameter of `BooksInsert`, and a column the database always
+generates, such as `id` above, is not a parameter at all:
+
+```dart
+// Before
+await supabase.from('books').insert({'author_id': 2, 'title': 'Dune'});
+await supabase.from('books').insert([
+  {'author_id': 2, 'title': 'Dune'},
+  {'author_id': 3, 'title': 'Emma'},
+]);
+await supabase
+    .from('books')
+    .update({'in_print': false, 'price': null})
+    .eq('id', 1);
+await supabase.from('books').delete().eq('id', 1);
+
+// After
+await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Dune'));
+await supabase.table(Books.table).insertAll([
+  BooksInsert(authorId: 2, title: 'Dune'),
+  BooksInsert(authorId: 3, title: 'Emma'),
+]);
+await supabase
+    .table(Books.table)
+    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .where(Books.id.eq(1));
+await supabase.table(Books.table).delete().where(Books.id.eq(1));
+```
+
+Several rows go through `insertAll()` and `upsertAll()` instead of a list passed to `insert()`.
+Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the column out of the
+request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
+generated `set…ToNull()` methods, which only exist for nullable columns.
+
+`onConflict` of `upsert()` is a list of columns instead of a comma separated string:
+
+```dart
+// Before
+await supabase.from('authors').upsert({
+  'name': 'Frank Herbert',
+}, onConflict: 'name');
+
+// After
+await supabase
+    .table(Authors.table)
+    .upsert(AuthorsInsert(name: 'Frank Herbert'), onConflict: [Authors.name]);
+```
+
+Writes resolve to `void` on both APIs. A trailing `select()` returns the written rows, typed as the
+row type:
+
+```dart
+// Before
+final Map<String, dynamic> book = await supabase
+    .from('books')
+    .insert({'author_id': 2, 'title': 'Dune'})
+    .select()
+    .single();
+
+// After
+final BooksRow book = await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Dune'))
+    .select()
+    .single();
+```
+
+### Embedded selects
+
+Every foreign key between two generated tables of one schema becomes a relation constant on both
+sides, named after the table on the other side: `Books.authors` points at the author of a book, and
+`Authors.books` at the books of an author. A relation goes into a `selectOnly` list, called with a
+column of the other table or with `select()` for several of them, and the embedded rows are read
+back through it:
+
+```dart
+// Before
+final books = await supabase.from('books').select('title, authors(name)');
+final authorName = books.first['authors']?['name'] as String?;
+
+final authors = await supabase
+    .from('authors')
+    .select('name, books(title)')
+    .limit(3, referencedTable: 'books');
+final titles = [
+  for (final book in authors.first['books'] as List) book['title'] as String,
+];
+
+// After
+final books = await supabase.table(Books.table).selectOnly([
+  Books.title,
+  Books.authors(Authors.name),
+]);
+final String? authorName = books.first
+    .read(Books.authors)
+    ?.read(Authors.name);
+
+final authors = await supabase
+    .table(Authors.table)
+    .selectOnly([
+      Authors.name,
+      Authors.books.select([Books.title]),
+    ])
+    .limit(3, referencedTable: 'books');
+final List<String> titles = [
+  for (final book in authors.first.read(Authors.books))
+    book.read(Books.title),
+];
+```
+
+A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
+When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
+so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.
+
+The generated table definition also lists `primaryKey` and `relations`. Neither changes how a
+request is sent; they describe the table to code that handles requests itself, such as a plugin
+that caches rows and needs to tell them apart, or one that resolves an embed from local data.
+
+### Realtime streams
+
+`stream()` on `table()` emits lists of the row type and takes the primary key as columns. Its filter
+method is named `filter()`, since `Stream.where` already exists, and takes a single operator:
+
+```dart
+// Before
+supabase
+    .from('books')
+    .stream(primaryKey: ['id'])
+    .eq('author_id', 2)
+    .order('title')
+    .listen((List<Map<String, dynamic>> books) {});
+
+// After
+supabase
+    .table(Books.table)
+    .stream(primaryKey: [Books.id])
+    .filter(Books.authorId.eq(2))
+    .order(Books.title)
+    .listen((List<BooksRow> books) {});
+```
+
+A stream filter supports `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
+`matchRegex`, `imatchRegex`, `isNull`, `isTrue`, `isFalse` and `isDistinct`. A filter composed
+with `&`, `|` or `not()` throws an `ArgumentError`.
+
+### What stays on `from()`
+
+These have no typed counterpart yet, so keep them on the untyped API:
+
+- `rpc()`, since the generator does not emit Postgres functions yet.
+- `retry()`, `requestTimeout()`, `abortSignal()` and `setHeader()` on a single request.
