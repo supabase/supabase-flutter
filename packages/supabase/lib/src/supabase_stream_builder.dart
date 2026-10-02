@@ -6,12 +6,13 @@ import 'package:supabase_common/supabase_common.dart';
 
 part 'supabase_stream_filter_builder.dart';
 
-/// [column] name of the eq filter, [value] of the eq filter, and [type] of the
-/// filter being applied.
+/// [column] name of the filter, [value] of the filter, [type] of the filter
+/// being applied, and whether the filter is [negated].
 typedef _StreamPostgrestFilter = ({
   String column,
   dynamic value,
   PostgresChangeFilterType type,
+  bool negated,
 });
 
 typedef _Order = ({String column, bool ascending});
@@ -52,13 +53,21 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     required String table,
     required List<String> primaryKey,
     required bool private,
+    List<String>? select,
   }) : _queryBuilder = queryBuilder,
        _realtimeTopic = realtimeTopic,
        _realtimeClient = realtimeClient,
        _schema = schema,
        _table = table,
        _uniqueColumns = primaryKey,
-       _private = private;
+       _private = private,
+       _select = select == null
+           ? null
+           : [
+               ...select,
+               for (final column in primaryKey)
+                 if (!select.contains(column)) column,
+             ];
   final PostgrestQueryBuilder _queryBuilder;
 
   final RealtimeClient _realtimeClient;
@@ -77,6 +86,11 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Used to identify which row has changed
   final List<String> _uniqueColumns;
+
+  /// The columns PostgREST and the realtime server are asked for, `null` for
+  /// every column. Always holds [_uniqueColumns], which the change payloads
+  /// are matched to the rows by.
+  final List<String>? _select;
 
   /// StreamController for `stream()` method.
   ReplaySubject<SupabaseStreamEvent>? _streamController;
@@ -178,6 +192,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
             column: filter.column,
             type: filter.type,
             value: filter.value,
+            negate: filter.negated,
           ),
         )
         .toList();
@@ -195,6 +210,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           schema: _schema,
           table: _table,
           filters: realtimeFilters,
+          select: _select,
         )
         .listen((payload) {
           switch (payload.eventType) {
@@ -250,8 +266,14 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   }
 
   Future<void> _getPostgrestData() async {
-    PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
+    PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select(
+      _select?.join(',') ?? '*',
+    );
     for (final filter in _streamFilters) {
+      if (filter.negated) {
+        query = query.not(filter.column, filter.type.token, filter.value);
+        continue;
+      }
       query = switch (filter.type) {
         PostgresChangeFilterType.eq => query.eq(
           filter.column,

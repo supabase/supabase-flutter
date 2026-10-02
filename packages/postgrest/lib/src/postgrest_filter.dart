@@ -165,11 +165,13 @@ final class PostgrestFilter<Row> {
   List<({String key, String value})> get queryParameters =>
       _queryParameters(_node);
 
-  /// The one comparison this filter consists of, or `null` for a raw or a
-  /// composed filter.
+  /// The one comparison this filter consists of, negated or not, or `null`
+  /// for a raw or a composed filter.
   PostgrestComparison<Row>? get comparison => switch (_node) {
     _Comparison(:final column, :final operator, :final value) =>
-      PostgrestComparison._(column, operator, value),
+      PostgrestComparison._(column, operator, value, negated: false),
+    _Not(inner: _Comparison(:final column, :final operator, :final value)) =>
+      PostgrestComparison._(column, operator, value, negated: true),
     _Raw() || _And() || _Or() || _Not() => null,
   };
 
@@ -194,7 +196,12 @@ final class PostgrestFilter<Row> {
 /// [PostgrestFilter.comparison].
 @experimental
 final class PostgrestComparison<Row> {
-  const PostgrestComparison._(this.column, this.operator, this.value);
+  const PostgrestComparison._(
+    this.column,
+    this.operator,
+    this.value, {
+    required this.negated,
+  });
 
   /// The expression on the left of the operator.
   final PostgrestFilterableExpression<Row, Object> column;
@@ -205,6 +212,10 @@ final class PostgrestComparison<Row> {
   /// The operand as it was given: the value for a comparison, a `List` for
   /// `in` and the array operators, and `null`, `true` or `false` for `is`.
   final Object? value;
+
+  /// Whether the comparison is wrapped in [PostgrestFilter.not], so it
+  /// matches the rows the operator does not.
+  final bool negated;
 }
 
 sealed class _FilterNode<Row> {

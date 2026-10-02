@@ -11,6 +11,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
     required super.table,
     required super.primaryKey,
     required super.private,
+    super.select,
   });
 
   /// Filters the results where [column] equals [value].
@@ -23,6 +24,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.eq,
       column: column,
       value: value,
+      negated: false,
     ));
     return this;
   }
@@ -37,6 +39,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.neq,
       column: column,
       value: value,
+      negated: false,
     ));
     return this;
   }
@@ -51,6 +54,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.lt,
       column: column,
       value: value,
+      negated: false,
     ));
     return this;
   }
@@ -65,6 +69,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.lte,
       column: column,
       value: value,
+      negated: false,
     ));
     return this;
   }
@@ -79,6 +84,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.gt,
       column: column,
       value: value,
+      negated: false,
     ));
     return this;
   }
@@ -93,6 +99,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.gte,
       column: column,
       value: value,
+      negated: false,
     ));
     return this;
   }
@@ -110,6 +117,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.inFilter,
       column: column,
       value: values,
+      negated: false,
     ));
     return this;
   }
@@ -124,6 +132,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.like,
       column: column,
       value: pattern,
+      negated: false,
     ));
     return this;
   }
@@ -138,6 +147,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.ilike,
       column: column,
       value: pattern,
+      negated: false,
     ));
     return this;
   }
@@ -156,6 +166,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.match,
       column: column,
       value: pattern,
+      negated: false,
     ));
     return this;
   }
@@ -174,6 +185,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.imatch,
       column: column,
       value: pattern,
+      negated: false,
     ));
     return this;
   }
@@ -188,6 +200,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.isFilter,
       column: column,
       value: value,
+      negated: false,
     ));
     return this;
   }
@@ -203,6 +216,34 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.isDistinct,
       column: column,
       value: value,
+      negated: false,
+    ));
+    return this;
+  }
+
+  /// Filters the results where [column] does not satisfy the filter of [type]
+  /// with [value], the negation of the method of the same name.
+  ///
+  /// [value] is what that method takes: a `List` for
+  /// [PostgresChangeFilterType.inFilter], `null`, `true` or `false` for
+  /// [PostgresChangeFilterType.isFilter], and a single value otherwise.
+  ///
+  /// ```dart
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .not('status', PostgresChangeFilterType.inFilter, ['OFFLINE']);
+  /// ```
+  SupabaseStreamFilterBuilder not(
+    String column,
+    PostgresChangeFilterType type,
+    Object? value,
+  ) {
+    _streamFilters.add((
+      type: type,
+      column: column,
+      value: value,
+      negated: true,
     ));
     return this;
   }
