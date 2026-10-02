@@ -812,6 +812,7 @@ features:
       - PostgrestTable.rowFromJson
       - PostgrestTable.primaryKey
       - PostgrestTable.relations
+      - PostgrestTable.computedFields
       - RowConverter
       - PostgrestTypedBuilder.request
       - PostgrestTableRequest
@@ -888,6 +889,13 @@ features:
       - PostgrestColumn.PostgrestColumn
       - PostgrestNullableColumn
       - PostgrestNullableColumn.PostgrestNullableColumn
+      - PostgrestComputedField
+      - PostgrestComputedField.PostgrestComputedField
+      - PostgrestComputedField.name
+      - PostgrestComputedField.expression
+      - PostgrestComputedField.responseKey
+      - PostgrestComputedField.jsonText
+      - PostgrestComputedField.jsonObject
       - PostgrestReadable
       - PostgrestReadable.responseKey
       - PostgrestPartialRow
@@ -1368,8 +1376,10 @@ features:
       - PostgrestToManyEmbed
       - PostgrestToOneRelation
       - PostgrestToOneRelation.PostgrestToOneRelation
+      - PostgrestToOneRelation.computed
       - PostgrestRelation
       - PostgrestRelation.PostgrestRelation
+      - PostgrestRelation.computed
       - PostgrestRelation.name
       - PostgrestRelation.alias
       - PostgrestRelation.key
@@ -1379,6 +1389,7 @@ features:
       - PostgrestRelation.referencedColumns
       - PostgrestToManyRelation
       - PostgrestToManyRelation.PostgrestToManyRelation
+      - PostgrestToManyRelation.computed
       - PostgrestToOneColumn
       - PostgrestToOneColumn.jsonText
       - PostgrestToOneColumn.jsonObject

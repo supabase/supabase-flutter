@@ -560,4 +560,67 @@ void main() {
       'published_on': null,
     });
   });
+  test('computed fields are selected by name and read as nullable', () async {
+    httpClient.stub([
+      {'id': 1, 'title_upper': 'A TYPED ROW', 'mood_or_default': 'happy'},
+      {'id': 2, 'title_upper': null, 'mood_or_default': null},
+    ]);
+
+    final books = await client
+        .table(Books.table)
+        .selectOnly([Books.id, Books.titleUpper, Books.moodOrDefault])
+        .where(Books.moodOrDefault.eq(Mood.happy))
+        .order(Books.titleUpper);
+
+    expect(httpClient.requests.last.queryParameters, {
+      'select': 'id,title_upper,mood_or_default',
+      'mood_or_default': 'eq.happy',
+      'order': 'title_upper',
+    });
+    final String? title = books.first.read(Books.titleUpper);
+    expect(title, 'A TYPED ROW');
+    expect(books.first.read(Books.moodOrDefault), Mood.happy);
+    expect(books.last.read(Books.titleUpper), isNull);
+    expect(books.last.read(Books.moodOrDefault), isNull);
+    expect(Books.table.computedFields, [Books.moodOrDefault, Books.titleUpper]);
+  });
+
+  test('computed relationships embed the rows of the returned table', () async {
+    httpClient.stub([
+      {
+        'id': 7,
+        'recent_books': [
+          {'id': 1, 'title': 'A typed row'},
+        ],
+        'latest_book': {'id': 1, 'title': 'A typed row'},
+      },
+    ]);
+
+    final authors = await client.table(Authors.table).selectOnly([
+      Authors.id,
+      Authors.recentBooks.select([Books.id, Books.title]),
+      Authors.latestBook(Books.id),
+      Authors.latestBook(Books.title),
+    ]);
+
+    expect(
+      httpClient.requests.last.queryParameters['select'],
+      'id,recent_books(id,title),latest_book(id,title)',
+    );
+    final author = authors.single;
+    final List<PostgrestPartialRow<BooksRow>> recent = author.read(
+      Authors.recentBooks,
+    );
+    expect(recent.single.read(Books.title), 'A typed row');
+    final PostgrestPartialRow<BooksRow>? latest = author.read(
+      Authors.latestBook,
+    );
+    expect(latest?.read(Books.id), 1);
+    expect(Authors.table.relations, [
+      Authors.authorStats,
+      Authors.books,
+      Authors.latestBook,
+      Authors.recentBooks,
+    ]);
+  });
 }

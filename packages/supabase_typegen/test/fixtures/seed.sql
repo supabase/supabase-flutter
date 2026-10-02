@@ -110,3 +110,40 @@ CREATE TABLE inventory.stock (
   quantity integer NOT NULL DEFAULT 0
 );
 COMMENT ON TABLE inventory.stock IS 'Copies held per book';
+
+-- Computed fields and computed relationships: functions whose only argument
+-- is a relation's row type. PostgREST selects a scalar one like a column and
+-- embeds a row- or set-returning one like a foreign table; none of them is
+-- part of `select=*`.
+CREATE FUNCTION public.title_upper(public.books) RETURNS text
+LANGUAGE sql STABLE AS $$ SELECT upper($1.title); $$;
+
+-- A named parameter and an enum return type: the function is matched by the
+-- type of its argument, however the argument is spelled.
+CREATE FUNCTION public.mood_or_default(book public.books) RETURNS public.mood
+LANGUAGE sql STABLE AS $$ SELECT coalesce(book.mood, 'happy'::public.mood); $$;
+
+-- A set-returning function is a to-many computed relationship...
+CREATE FUNCTION public.recent_books(public.authors) RETURNS SETOF public.books
+LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.books WHERE author_id = $1.id ORDER BY created_at DESC;
+$$;
+
+-- ...unless it is declared ROWS 1, which makes it to-one.
+CREATE FUNCTION public.latest_book(public.authors)
+RETURNS SETOF public.books ROWS 1
+LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.books
+  WHERE author_id = $1.id
+  ORDER BY created_at DESC
+  LIMIT 1;
+$$;
+
+-- Named like a column of the relation: PostgREST resolves `title` to the
+-- column, so the function gets no member.
+CREATE FUNCTION public.title(public.books) RETURNS text
+LANGUAGE sql STABLE AS $$ SELECT 'shadowed'; $$;
+
+-- A computed field on a view.
+CREATE FUNCTION public.discount(public.book_prices) RETURNS numeric
+LANGUAGE sql STABLE AS $$ SELECT $1.price - $1.discounted_price; $$;

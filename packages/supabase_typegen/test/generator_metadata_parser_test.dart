@@ -945,6 +945,281 @@ void main() {
       }
     });
   });
+  group('computed fields and relationships', () {
+    test('parses computed fields from functions taking the row type', () {
+      final books = publicTable(schema, 'books');
+
+      expect(books.computedFields.map((field) => field.name), [
+        'mood_or_default',
+        'title_upper',
+      ]);
+      final mood = books.computedFields.first;
+      expect(mood.typeKind, ColumnTypeKind.enumType);
+      expect(mood.postgresFormat, 'public.mood');
+      expect(mood.enumType?.qualifiedName, 'public.mood');
+      expect(books.computedFields.last.typeKind, ColumnTypeKind.text);
+      expect(books.computedFields.last.postgresFormat, 'text');
+
+      final discount = publicTable(schema, 'book_prices').computedFields.single;
+      expect(discount.name, 'discount');
+      expect(discount.typeKind, ColumnTypeKind.numeric);
+    });
+
+    test('a function named like a column is not a computed field', () {
+      final books = publicTable(schema, 'books');
+
+      expect(books.columns.map((column) => column.name), contains('title'));
+      expect(
+        books.computedFields.map((field) => field.name),
+        isNot(contains('title')),
+      );
+    });
+
+    test('parses computed relationships with their direction', () {
+      final authors = publicTable(schema, 'authors');
+
+      expect(
+        authors.computedRelationships.map(
+          (relationship) => (
+            relationship.name,
+            relationship.targetSchema,
+            relationship.targetTable,
+            relationship.isToMany,
+          ),
+        ),
+        [
+          ('latest_book', 'public', 'books', false),
+          ('recent_books', 'public', 'books', true),
+        ],
+      );
+      expect(authors.computedFields, isEmpty);
+      expect(publicTable(schema, 'books').computedRelationships, isEmpty);
+    });
+
+    test('matches the row argument by type, however it is spelled', () {
+      final parsed = parseGeneratorMetadata(
+        _functionDocument([
+          _function(name: 'unnamed', args: [_arg(_todosType)]),
+          _function(
+            id: 501,
+            name: 'named',
+            args: [_arg(_todosType, name: 'todo')],
+          ),
+          _function(
+            id: 502,
+            name: 'in_out',
+            args: [_arg(_todosType, mode: 'inout')],
+          ),
+          _function(
+            id: 503,
+            name: 'with_out',
+            args: [
+              _arg(_todosType),
+              _arg(_textType, name: 'o', mode: 'out'),
+            ],
+          ),
+        ]),
+      );
+
+      expect(
+        publicTable(parsed, 'todos').computedFields.map((field) => field.name),
+        ['unnamed', 'named', 'in_out', 'with_out'],
+      );
+    });
+
+    test('functions with other input arguments are not computed', () {
+      final parsed = parseGeneratorMetadata(
+        _functionDocument([
+          _function(
+            name: 'two',
+            args: [
+              _arg(_todosType),
+              _arg(_textType, name: 'suffix'),
+            ],
+          ),
+          _function(id: 501, name: 'none', args: []),
+          _function(id: 502, name: 'scalar', args: [_arg(_textType)]),
+        ]),
+      );
+
+      expect(publicTable(parsed, 'todos').computedFields, isEmpty);
+      expect(publicTable(parsed, 'todos').computedRelationships, isEmpty);
+    });
+
+    test('a function of another schema is not a member of the table', () {
+      final parsed = parseGeneratorMetadata(
+        _functionDocument([
+          _function(
+            name: 'elsewhere',
+            schema: 'private',
+            args: [_arg(_todosType)],
+          ),
+        ]),
+      );
+
+      expect(publicTable(parsed, 'todos').computedFields, isEmpty);
+    });
+
+    test('a set of scalars is left out', () {
+      final parsed = parseGeneratorMetadata(
+        _functionDocument([
+          _function(
+            name: 'labels',
+            args: [_arg(_todosType)],
+            setReturning: true,
+            prorows: 1000,
+          ),
+        ]),
+      );
+
+      expect(publicTable(parsed, 'todos').computedFields, isEmpty);
+      expect(publicTable(parsed, 'todos').computedRelationships, isEmpty);
+    });
+
+    test('overloads of one name yield one member', () {
+      final parsed = parseGeneratorMetadata(
+        _functionDocument([
+          _function(name: 'label', args: [_arg(_todosType)]),
+          _function(id: 501, name: 'label', args: [_arg(_todosType)]),
+        ]),
+      );
+
+      expect(
+        publicTable(parsed, 'todos').computedFields.map((field) => field.name),
+        ['label'],
+      );
+    });
+
+    test('return types resolve like column types', () {
+      final parsed = parseGeneratorMetadata(
+        _functionDocument([
+          _function(name: 'moods', args: [_arg(_todosType)], returnTypeId: 101),
+          _function(
+            id: 501,
+            name: 'tags',
+            args: [_arg(_todosType)],
+            returnTypeId: 1009,
+          ),
+          _function(
+            id: 502,
+            name: 'seen_at',
+            args: [_arg(_todosType)],
+            returnTypeId: 1184,
+          ),
+          _function(
+            id: 503,
+            name: 'mood',
+            args: [_arg(_todosType)],
+            returnTypeId: 100,
+          ),
+          _function(
+            id: 504,
+            name: 'mystery',
+            args: [_arg(_todosType)],
+            returnTypeId: 424242,
+          ),
+        ]),
+      );
+      final fields = {
+        for (final field in publicTable(parsed, 'todos').computedFields)
+          field.name: field,
+      };
+
+      expect(fields['moods']!.typeKind, ColumnTypeKind.array);
+      expect(fields['moods']!.elementTypeKind, ColumnTypeKind.enumType);
+      expect(fields['moods']!.postgresFormat, '_mood');
+      expect(fields['moods']!.enumType?.qualifiedName, 'public.mood');
+      expect(fields['tags']!.typeKind, ColumnTypeKind.array);
+      expect(fields['tags']!.elementTypeKind, ColumnTypeKind.text);
+      expect(
+        fields['seen_at']!.typeKind,
+        ColumnTypeKind.timestampWithTimeZone,
+      );
+      expect(fields['mood']!.typeKind, ColumnTypeKind.enumType);
+      expect(fields['mood']!.postgresFormat, 'public.mood');
+      expect(fields['mystery']!.typeKind, ColumnTypeKind.unknown);
+      expect(fields['mystery']!.postgresFormat, 'unknown');
+      // An enum only a computed field returns is still described.
+      expect(parsed.enums.map((enumType) => enumType.qualifiedName), [
+        'public.mood',
+      ]);
+    });
+
+    test('the direction of a computed relationship follows prorows', () {
+      final parsed = parseGeneratorMetadata(
+        _functionDocument([
+          _function(
+            name: 'owner',
+            args: [_arg(_todosType)],
+            returnTypeId: _usersType,
+            returnRelationId: 2,
+          ),
+          _function(
+            id: 501,
+            name: 'first_user',
+            args: [_arg(_todosType)],
+            returnTypeId: _usersType,
+            returnRelationId: 2,
+            setReturning: true,
+            prorows: 1,
+          ),
+          _function(
+            id: 502,
+            name: 'users',
+            args: [_arg(_todosType)],
+            returnTypeId: _usersType,
+            returnRelationId: 2,
+            setReturning: true,
+            prorows: 1000,
+          ),
+        ]),
+      );
+
+      expect(
+        publicTable(parsed, 'todos').computedRelationships.map(
+          (relationship) => (relationship.name, relationship.isToMany),
+        ),
+        [('owner', false), ('first_user', false), ('users', true)],
+      );
+    });
+
+    test('a computed relationship into a relation that is not generated is '
+        'left out', () {
+      final functionDocument = _functionDocument([
+        _function(
+          name: 'unknown',
+          args: [_arg(_todosType)],
+          returnTypeId: 999,
+          returnRelationId: 999,
+          setReturning: true,
+          prorows: 1000,
+        ),
+        _function(
+          id: 501,
+          name: 'secrets',
+          args: [_arg(_todosType)],
+          returnTypeId: _secretsType,
+          returnRelationId: 3,
+          setReturning: true,
+          prorows: 1000,
+        ),
+      ]);
+
+      final everySchema = parseGeneratorMetadata(functionDocument);
+      expect(
+        publicTable(everySchema, 'todos').computedRelationships.map(
+          (relationship) => relationship.name,
+        ),
+        ['secrets'],
+      );
+
+      final publicOnly = parseGeneratorMetadata(
+        functionDocument,
+        schemaNames: ['public'],
+      );
+      expect(publicTable(publicOnly, 'todos').computedRelationships, isEmpty);
+    });
+  });
 }
 
 /// The table [name] of the `public` schema.
@@ -979,3 +1254,95 @@ Map<String, dynamic> _column({
   'check': null,
   'comment': null,
 };
+
+const _todosType = 10;
+const _usersType = 20;
+const _secretsType = 30;
+const _textType = 25;
+
+/// A document with the tables `public.todos`, `public.users` and
+/// `private.secrets`, their row types, a few scalar types, the `public.mood`
+/// enum and [functions].
+Map<String, dynamic> _functionDocument(List<Map<String, dynamic>> functions) =>
+    {
+      'version': 1,
+      'schemas': [
+        {'name': 'private'},
+        {'name': 'public'},
+      ],
+      'tables': [
+        {'id': 3, 'schema': 'private', 'name': 'secrets', 'comment': null},
+        {'id': 1, 'schema': 'public', 'name': 'todos', 'comment': null},
+        {'id': 2, 'schema': 'public', 'name': 'users', 'comment': null},
+      ],
+      'foreignTables': <Map<String, dynamic>>[],
+      'views': <Map<String, dynamic>>[],
+      'materializedViews': <Map<String, dynamic>>[],
+      'columns': [
+        _column(tableId: 3, table: 'secrets', name: 'id'),
+        _column(tableId: 1, table: 'todos', name: 'id'),
+        _column(tableId: 2, table: 'users', name: 'id'),
+      ],
+      'primaryKeys': <Map<String, dynamic>>[],
+      'relationships': <Map<String, dynamic>>[],
+      'functions': functions,
+      'types': [
+        _type(_textType, 'text', schema: 'pg_catalog'),
+        _type(1009, '_text', schema: 'pg_catalog'),
+        _type(1184, 'timestamptz', schema: 'pg_catalog'),
+        _type(100, 'mood', enums: ['happy', 'sad']),
+        _type(101, '_mood'),
+        _type(_todosType, 'todos', relationId: 1),
+        _type(_usersType, 'users', relationId: 2),
+        _type(_secretsType, 'secrets', schema: 'private', relationId: 3),
+      ],
+    };
+
+Map<String, dynamic> _type(
+  int id,
+  String name, {
+  String schema = 'public',
+  List<String> enums = const [],
+  int? relationId,
+}) => {
+  'id': id,
+  'name': name,
+  'schema': schema,
+  'format': name,
+  'enums': enums,
+  'attributes': <Map<String, dynamic>>[],
+  'comment': null,
+  'type_relation_id': relationId,
+};
+
+Map<String, dynamic> _function({
+  required String name,
+  required List<Map<String, dynamic>> args,
+  String schema = 'public',
+  int id = 500,
+  int returnTypeId = _textType,
+  int? returnRelationId,
+  bool setReturning = false,
+  int? prorows,
+}) => {
+  'id': id,
+  'schema': schema,
+  'name': name,
+  'language': 'sql',
+  'definition': '',
+  'complete_statement': '',
+  'args': args,
+  'argument_types': '',
+  'identity_argument_types': '',
+  'return_type_id': returnTypeId,
+  'return_type': 'text',
+  'return_type_relation_id': returnRelationId,
+  'is_set_returning_function': setReturning,
+  'prorows': prorows,
+  'behavior': 'STABLE',
+  'security_definer': false,
+  'config_params': null,
+};
+
+Map<String, dynamic> _arg(int typeId, {String name = '', String mode = 'in'}) =>
+    {'mode': mode, 'name': name, 'type_id': typeId, 'has_default': false};

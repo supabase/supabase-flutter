@@ -961,7 +961,164 @@
       "is_one_to_one": false
     }
   ],
-  "functions": [],
+  "functions": [
+    {
+      "id": 16472,
+      "schema": "public",
+      "name": "discount",
+      "language": "sql",
+      "definition": " SELECT $1.price - $1.discounted_price; ",
+      "complete_statement": "CREATE OR REPLACE FUNCTION public.discount(book_prices)\n RETURNS numeric\n LANGUAGE sql\n STABLE\nAS $function$ SELECT $1.price - $1.discounted_price; $function$\n",
+      "args": [
+        {
+          "mode": "in",
+          "name": "",
+          "type_id": 16420,
+          "has_default": false
+        }
+      ],
+      "argument_types": "book_prices",
+      "identity_argument_types": "book_prices",
+      "return_type_id": 1700,
+      "return_type": "numeric",
+      "return_type_relation_id": null,
+      "is_set_returning_function": false,
+      "prorows": null,
+      "behavior": "STABLE",
+      "security_definer": false,
+      "config_params": null
+    },
+    {
+      "id": 16470,
+      "schema": "public",
+      "name": "latest_book",
+      "language": "sql",
+      "definition": "\n  SELECT * FROM public.books\n  WHERE author_id = $1.id\n  ORDER BY created_at DESC\n  LIMIT 1;\n",
+      "complete_statement": "CREATE OR REPLACE FUNCTION public.latest_book(authors)\n RETURNS SETOF books\n LANGUAGE sql\n STABLE ROWS 1\nAS $function$\n  SELECT * FROM public.books\n  WHERE author_id = $1.id\n  ORDER BY created_at DESC\n  LIMIT 1;\n$function$\n",
+      "args": [
+        {
+          "mode": "in",
+          "name": "",
+          "type_id": 16394,
+          "has_default": false
+        }
+      ],
+      "argument_types": "authors",
+      "identity_argument_types": "authors",
+      "return_type_id": 16402,
+      "return_type": "SETOF books",
+      "return_type_relation_id": 16400,
+      "is_set_returning_function": true,
+      "prorows": 1,
+      "behavior": "STABLE",
+      "security_definer": false,
+      "config_params": null
+    },
+    {
+      "id": 16468,
+      "schema": "public",
+      "name": "mood_or_default",
+      "language": "sql",
+      "definition": " SELECT coalesce(book.mood, 'happy'::public.mood); ",
+      "complete_statement": "CREATE OR REPLACE FUNCTION public.mood_or_default(book books)\n RETURNS mood\n LANGUAGE sql\n STABLE\nAS $function$ SELECT coalesce(book.mood, 'happy'::public.mood); $function$\n",
+      "args": [
+        {
+          "mode": "in",
+          "name": "book",
+          "type_id": 16402,
+          "has_default": false
+        }
+      ],
+      "argument_types": "book books",
+      "identity_argument_types": "book books",
+      "return_type_id": 16385,
+      "return_type": "mood",
+      "return_type_relation_id": null,
+      "is_set_returning_function": false,
+      "prorows": null,
+      "behavior": "STABLE",
+      "security_definer": false,
+      "config_params": null
+    },
+    {
+      "id": 16469,
+      "schema": "public",
+      "name": "recent_books",
+      "language": "sql",
+      "definition": "\n  SELECT * FROM public.books WHERE author_id = $1.id ORDER BY created_at DESC;\n",
+      "complete_statement": "CREATE OR REPLACE FUNCTION public.recent_books(authors)\n RETURNS SETOF books\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT * FROM public.books WHERE author_id = $1.id ORDER BY created_at DESC;\n$function$\n",
+      "args": [
+        {
+          "mode": "in",
+          "name": "",
+          "type_id": 16394,
+          "has_default": false
+        }
+      ],
+      "argument_types": "authors",
+      "identity_argument_types": "authors",
+      "return_type_id": 16402,
+      "return_type": "SETOF books",
+      "return_type_relation_id": 16400,
+      "is_set_returning_function": true,
+      "prorows": 1000,
+      "behavior": "STABLE",
+      "security_definer": false,
+      "config_params": null
+    },
+    {
+      "id": 16471,
+      "schema": "public",
+      "name": "title",
+      "language": "sql",
+      "definition": " SELECT 'shadowed'; ",
+      "complete_statement": "CREATE OR REPLACE FUNCTION public.title(books)\n RETURNS text\n LANGUAGE sql\n STABLE\nAS $function$ SELECT 'shadowed'; $function$\n",
+      "args": [
+        {
+          "mode": "in",
+          "name": "",
+          "type_id": 16402,
+          "has_default": false
+        }
+      ],
+      "argument_types": "books",
+      "identity_argument_types": "books",
+      "return_type_id": 25,
+      "return_type": "text",
+      "return_type_relation_id": null,
+      "is_set_returning_function": false,
+      "prorows": null,
+      "behavior": "STABLE",
+      "security_definer": false,
+      "config_params": null
+    },
+    {
+      "id": 16467,
+      "schema": "public",
+      "name": "title_upper",
+      "language": "sql",
+      "definition": " SELECT upper($1.title); ",
+      "complete_statement": "CREATE OR REPLACE FUNCTION public.title_upper(books)\n RETURNS text\n LANGUAGE sql\n STABLE\nAS $function$ SELECT upper($1.title); $function$\n",
+      "args": [
+        {
+          "mode": "in",
+          "name": "",
+          "type_id": 16402,
+          "has_default": false
+        }
+      ],
+      "argument_types": "books",
+      "identity_argument_types": "books",
+      "return_type_id": 25,
+      "return_type": "text",
+      "return_type_relation_id": null,
+      "is_set_returning_function": false,
+      "prorows": null,
+      "behavior": "STABLE",
+      "security_definer": false,
+      "config_params": null
+    }
+  ],
   "types": [
     {
       "id": 13574,

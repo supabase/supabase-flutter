@@ -28,8 +28,16 @@ part of 'postgrest_typed_builder.dart';
 /// final String? authorName = book.read(Books.author)?.read(Authors.name);
 /// ```
 ///
+/// A computed relationship, a function whose only argument is this table's
+/// row type and that returns rows of [referencedTable], embeds the same way
+/// and is declared with [PostgrestToOneRelation.computed] or
+/// [PostgrestToManyRelation.computed]. It joins on no key, so [columns] and
+/// [referencedColumns] are empty, and the function name is both the embed
+/// name and the key the rows come back under.
+///
 /// `package:supabase_typegen` generates one relation constant per foreign
-/// key on each side and lists them in [PostgrestTable.relations].
+/// key on each side and per computed relationship, and lists them in
+/// [PostgrestTable.relations].
 @experimental
 sealed class PostgrestRelation<Row, Target> {
   const PostgrestRelation(
@@ -40,8 +48,19 @@ sealed class PostgrestRelation<Row, Target> {
     this.alias,
   });
 
-  /// The name PostgREST addresses the embed by, including any disambiguating
-  /// foreign key hint such as `authors!books_author_id_fkey`.
+  /// A computed relationship through the function called [name], returning
+  /// rows of [referencedTable].
+  const PostgrestRelation.computed(
+    this.name, {
+    required this.referencedTable,
+    this.alias,
+  }) : columns = const [],
+       referencedColumns = const [];
+
+  /// The name PostgREST addresses the embed by: the table name, including
+  /// any disambiguating foreign key hint such as
+  /// `authors!books_author_id_fkey`, or the function name of a computed
+  /// relationship.
   final String name;
 
   /// The name the embed is renamed to, `alias:authors!books_author_id_fkey`
@@ -53,7 +72,7 @@ sealed class PostgrestRelation<Row, Target> {
   final String? alias;
 
   /// The key the embedded rows come back under in the parent row: [alias]
-  /// when set, otherwise the table name in [name].
+  /// when set, otherwise the table or function name in [name].
   String get key => alias ?? name.split('!').first;
 
   /// The same as [key]: where the embedded rows are read from.
@@ -79,14 +98,15 @@ sealed class PostgrestRelation<Row, Target> {
   /// How the embed is addressed outside the `select` list.
   String get _reference => alias ?? name;
 
-  /// The columns of this table the relation joins on.
+  /// The columns of this table the relation joins on; empty for a computed
+  /// relationship.
   final List<PostgrestStoredColumn<Row, Object>> columns;
 
   /// The name of the table the relation points at.
   final String referencedTable;
 
   /// The columns of [referencedTable] the relation joins on, paired with
-  /// [columns] by index.
+  /// [columns] by index; empty for a computed relationship.
   final List<PostgrestStoredColumn<Target, Object>> referencedColumns;
 
   /// Selects the embedded table as a whole: [selections] of it, or every
@@ -140,6 +160,27 @@ final class PostgrestToOneRelation<Row, Target>
     super.alias,
   });
 
+  /// A to-one computed relationship: the function called [name] takes a row
+  /// of this table and returns one row of [referencedTable], either a single
+  /// row or a set declared `ROWS 1`.
+  ///
+  /// ```dart
+  /// class Channels {
+  ///   static const latestMessage =
+  ///       PostgrestToOneRelation<ChannelsRow, MessagesRow>.computed(
+  ///         'latest_message',
+  ///         referencedTable: 'messages',
+  ///       );
+  /// }
+  ///
+  /// Channels.latestMessage.select().expression // latest_message(*)
+  /// ```
+  const PostgrestToOneRelation.computed(
+    super.name, {
+    required super.referencedTable,
+    super.alias,
+  }) : super.computed();
+
   /// Projects [column] of the embedded table into the parent's frame.
   PostgrestToOneColumn<Row, Value> call<Value extends Object>(
     PostgrestColumnExpression<Target, Value> column,
@@ -175,6 +216,26 @@ final class PostgrestToManyRelation<Row, Target>
     required super.referencedColumns,
     super.alias,
   });
+
+  /// A to-many computed relationship: the function called [name] takes a row
+  /// of this table and returns a set of rows of [referencedTable].
+  ///
+  /// ```dart
+  /// class Channels {
+  ///   static const recentMessages =
+  ///       PostgrestToManyRelation<ChannelsRow, MessagesRow>.computed(
+  ///         'recent_messages',
+  ///         referencedTable: 'messages',
+  ///       );
+  /// }
+  ///
+  /// Channels.recentMessages(Messages.id).expression // recent_messages(id)
+  /// ```
+  const PostgrestToManyRelation.computed(
+    super.name, {
+    required super.referencedTable,
+    super.alias,
+  }) : super.computed();
 
   /// Projects [column] of the embedded table into the parent's frame.
   PostgrestToManyColumn<Row, Value> call<Value extends Object>(
