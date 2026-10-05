@@ -232,7 +232,7 @@ class RealtimeClient {
       'Initialize with headers: ${_headers.redacted}, '
       'parameters: ${redactedPayload(parameters)}',
     );
-    final customJWT = _headers['Authorization']?.split(' ').last;
+    final customJWT = _headers[HttpHeader.authorization]?.split(' ').last;
     _accessToken = customJWT ?? parameters['apikey'];
 
     this.disconnectOnEmptyChannelsAfter =
@@ -944,7 +944,7 @@ class RealtimeClient {
       if (tokenToSend != null) {
         channel.updateJoinPayload({
           'access_token': tokenToSend,
-          'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
+          'version': RealtimeConstants.defaultHeaders[HttpHeader.clientInfo],
         });
       }
       if (channel.joinedOnce && channel.isJoined) {

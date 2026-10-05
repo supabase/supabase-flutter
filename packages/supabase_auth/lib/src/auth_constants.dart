@@ -6,7 +6,7 @@ import 'package:supabase_common/supabase_common.dart';
 class AuthConstants {
   static const String defaultAuthUrl = 'http://localhost:9999';
   static final Map<String, String> defaultHeaders = {
-    'X-Client-Info': buildClientInfoHeader('gotrue-dart', version),
+    HttpHeader.clientInfo: buildClientInfoHeader('gotrue-dart', version),
   };
 
   /// The prefix code verifiers were stored under before they were keyed by

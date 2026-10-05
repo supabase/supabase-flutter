@@ -246,7 +246,7 @@ class SupabaseClient {
     // manually unsubscribe and resubscribe to all channels.
     // ignore: invalid_use_of_internal_member
     realtime.replaceHeaders({
-      'apikey': _supabaseKey,
+      HttpHeader.apiKey: _supabaseKey,
       ..._headers,
     });
   }
@@ -401,8 +401,8 @@ class SupabaseClient {
 
   AuthClient _initSupabaseAuthClient(AuthClientOptions authOptions) {
     final authHeaders = {...headers};
-    authHeaders['apikey'] = _supabaseKey;
-    authHeaders['Authorization'] = 'Bearer $_supabaseKey';
+    authHeaders[HttpHeader.apiKey] = _supabaseKey;
+    authHeaders[HttpHeader.authorization] = 'Bearer $_supabaseKey';
 
     return AuthClient(
       url: _authUrl,
@@ -459,9 +459,9 @@ class SupabaseClient {
     return RealtimeClient(
       _realtimeUrl,
       parameters: {
-        'apikey': _supabaseKey,
+        HttpHeader.apiKey: _supabaseKey,
       },
-      headers: {'apikey': _supabaseKey, ...headers},
+      headers: {HttpHeader.apiKey: _supabaseKey, ...headers},
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
@@ -484,8 +484,8 @@ class SupabaseClient {
   Map<String, String> _getAuthHeaders() {
     final authBearer = auth.currentSession?.accessToken ?? _supabaseKey;
     final defaultHeaders = {
-      'apikey': _supabaseKey,
-      'Authorization': 'Bearer $authBearer',
+      HttpHeader.apiKey: _supabaseKey,
+      HttpHeader.authorization: 'Bearer $authBearer',
     };
     final mergedHeaders = {...defaultHeaders, ..._headers};
     return mergedHeaders;

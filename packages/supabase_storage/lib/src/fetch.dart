@@ -90,7 +90,10 @@ class Fetch {
   }) async {
     final request = _createRequest(method, url, options, abortSignal);
     if (method != HttpMethod.get) {
-      request.headers.putIfAbsent('Content-Type', () => 'application/json');
+      request.headers.putIfAbsent(
+        HttpHeader.contentType,
+        () => 'application/json',
+      );
     }
     if (body != null) {
       request.body = json.encode(body);
@@ -128,7 +131,7 @@ class Fetch {
         : _parseMediaType(contentTypePath);
     final headers = {
       ...?options?.headers,
-      'Content-Type': contentType.toString(),
+      HttpHeader.contentType: contentType.toString(),
       'Cache-Control': 'max-age=${fileOptions.cacheControl}',
       'x-upsert': fileOptions.upsert.toString(),
       if (fileOptions.metadata != null)
