@@ -669,24 +669,132 @@ void main() {
       );
     });
 
-    test('appends nulls=stripped to the Accept header', () async {
+    test('asks for the array media type on a plain select', () async {
       try {
         await postgrestCustomHttpClient.from('users').select().stripNulls();
       } catch (_) {}
 
       expect(
         customHttpClient.lastRequest!.headers['Accept'],
-        'application/json;nulls=stripped',
+        'application/vnd.pgrst.array+json;nulls=stripped',
       );
     });
 
-    test('omits null-valued properties from the response', () async {
+    test('survives a later single()', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .stripNulls()
+            .single();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        'application/vnd.pgrst.object+json;nulls=stripped',
+      );
+    });
+
+    test('keeps the parameters of a custom Accept header', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .setHeader('Accept', 'application/json; charset=utf-8')
+            .stripNulls();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        'application/vnd.pgrst.array+json; charset=utf-8;nulls=stripped',
+      );
+    });
+
+    test('does not repeat an explicit nulls=stripped', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .setHeader(
+              'Accept',
+              'application/vnd.pgrst.array+json;nulls=stripped',
+            )
+            .stripNulls();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        'application/vnd.pgrst.array+json;nulls=stripped',
+      );
+    });
+
+    test('explains the stripped media type', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .stripNulls()
+            .explain();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        contains('for="application/vnd.pgrst.array+json;nulls=stripped"'),
+      );
+    });
+
+    test('finds a custom Accept header regardless of its casing', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .setHeader('accept', 'text/csv')
+            .stripNulls();
+      } catch (_) {}
+
+      expect(customHttpClient.lastRequest!.headers['Accept'], 'text/csv');
+    });
+
+    test('leaves a csv request untouched', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .stripNulls()
+            .csv();
+      } catch (_) {}
+
+      expect(customHttpClient.lastRequest!.headers['Accept'], 'text/csv');
+    });
+
+    test('omits null-valued properties from row responses', () async {
+      final response = await postgrest
+          .from('users')
+          .select()
+          .eq('username', 'supabot')
+          .stripNulls();
+      expect(response.single.containsKey('username'), isTrue);
+      expect(response.single.containsKey('data'), isFalse);
+    });
+
+    test('omits null-valued properties when single() comes first', () async {
       final response = await postgrest
           .from('users')
           .select()
           .eq('username', 'supabot')
           .single()
           .stripNulls();
+      expect(response.containsKey('username'), isTrue);
+      expect(response.containsKey('data'), isFalse);
+    });
+
+    test('omits null-valued properties when single() comes last', () async {
+      final response = await postgrest
+          .from('users')
+          .select()
+          .eq('username', 'supabot')
+          .stripNulls()
+          .single();
       expect(response.containsKey('username'), isTrue);
       expect(response.containsKey('data'), isFalse);
     });

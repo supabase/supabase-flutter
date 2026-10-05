@@ -697,9 +697,26 @@ void main() {
 
       expect(
         httpClient.requests.last.headers['Accept'],
-        'application/json;nulls=stripped',
+        'application/vnd.pgrst.array+json;nulls=stripped',
       );
       expect(books, hasLength(2));
+    });
+
+    test('stripNulls keeps stripping nulls on a single row', () async {
+      httpClient.stub({'id': 1, 'title': 'a'});
+
+      final Book book = await client
+          .table(Books.table)
+          .select()
+          .where(Books.id.eq(1))
+          .stripNulls()
+          .single();
+
+      expect(
+        httpClient.requests.last.headers['Accept'],
+        'application/vnd.pgrst.object+json;nulls=stripped',
+      );
+      expect(book.title, 'a');
     });
 
     test('maxAffected limits a delete', () async {
