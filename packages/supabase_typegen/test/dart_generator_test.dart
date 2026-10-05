@@ -934,6 +934,17 @@ void main() {
     expect(code, contains('throw ArgumentError.value('));
   });
 
+  test('members named like a core type are suffixed', () {
+    final code = generateDartCode(hostileSchema);
+
+    expect(code, contains("int get num\$ => _json['num'] as int;"));
+    expect(code, contains("num get int\$ => _json['int'] as num;"));
+    expect(code, contains('static const num\$ = PostgrestColumn<'));
+    expect(code, contains('static const int\$ = PostgrestColumn<'));
+    expect(code, contains('static const bool\$ = PostgrestComputedField<'));
+    expect(code, contains('static const double\$ ='));
+  });
+
   test('floating array elements convert through num', () {
     final code = generateDartCode(
       DatabaseDescription(
