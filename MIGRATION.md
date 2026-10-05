@@ -2005,9 +2005,12 @@ expect(
 
 Uploading a `Stream<List<int>>` is new: `uploadStream`, `updateStream` and
 `uploadStreamToSignedUrl` send the bytes as they arrive, with an optional `contentLength`. A
-stream can only be read once, so these are never retried.
+stream can only be read once, so these are never retried. This is how a file picked on the web
+is uploaded without reading it into memory first:
 
 ```dart
+import 'package:cross_file/cross_file.dart';
+
 final file = XFile(path);
 await supabase.storage.from('avatars').uploadStream(
   'avatar.png',
