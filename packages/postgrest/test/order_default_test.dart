@@ -24,12 +24,12 @@ void main() {
     return customHttpClient.lastRequest!.url.queryParameters;
   }
 
-  test('order defaults to ascending with nulls last', () async {
+  test('order defaults to ascending without a null placement', () async {
     final queryParameters = await queryParametersOf(
       postgrest.from('users').select().order('username'),
     );
 
-    expect(queryParameters['order'], 'username.asc.nullslast');
+    expect(queryParameters['order'], 'username.asc');
   });
 
   test('order descending has to be requested explicitly', () async {
@@ -37,7 +37,7 @@ void main() {
       postgrest.from('users').select().order('username', ascending: false),
     );
 
-    expect(queryParameters['order'], 'username.desc.nullslast');
+    expect(queryParameters['order'], 'username.desc');
   });
 
   test('order puts nulls first when requested', () async {
@@ -48,6 +48,17 @@ void main() {
     expect(queryParameters['order'], 'username.asc.nullsfirst');
   });
 
+  test('order puts nulls last when requested', () async {
+    final queryParameters = await queryParametersOf(
+      postgrest
+          .from('users')
+          .select()
+          .order('username', ascending: false, nullsFirst: false),
+    );
+
+    expect(queryParameters['order'], 'username.desc.nullslast');
+  });
+
   test('order on a referenced table defaults to ascending', () async {
     final queryParameters = await queryParametersOf(
       postgrest
@@ -56,7 +67,7 @@ void main() {
           .order('channel_id', referencedTable: 'messages'),
     );
 
-    expect(queryParameters['messages.order'], 'channel_id.asc.nullslast');
+    expect(queryParameters['messages.order'], 'channel_id.asc');
   });
 
   test('order keeps the direction of each column when chained', () async {
@@ -68,9 +79,6 @@ void main() {
           .order('username'),
     );
 
-    expect(
-      queryParameters['order'],
-      'status.desc.nullslast,username.asc.nullslast',
-    );
+    expect(queryParameters['order'], 'status.desc,username.asc');
   });
 }
