@@ -95,7 +95,7 @@ void main() {
           ..headers.contentType = ContentType.json
           ..write(jsonString);
         await request.response.close();
-      } else if (url == '/rest/v1/todos?select=%2A&order=id.asc.nullslast') {
+      } else if (url == '/rest/v1/todos?select=%2A&order=id.asc') {
         final jsonString = jsonEncode([
           {'id': 1, 'task': 'task 1', 'status': true},
           {'id': 2, 'task': 'task 2', 'status': false},
@@ -105,7 +105,7 @@ void main() {
           ..headers.contentType = ContentType.json
           ..write(jsonString);
         await request.response.close();
-      } else if (url == '/rest/v1/todos?select=%2A&order=id.desc.nullslast') {
+      } else if (url == '/rest/v1/todos?select=%2A&order=id.desc') {
         final jsonString = jsonEncode([
           {'id': 2, 'task': 'task 2', 'status': false},
           {'id': 1, 'task': 'task 1', 'status': true},
@@ -115,8 +115,7 @@ void main() {
           ..headers.contentType = ContentType.json
           ..write(jsonString);
         await request.response.close();
-      } else if (url ==
-          '/rest/v1/todos?select=%2A&order=id.desc.nullslast&limit=2') {
+      } else if (url == '/rest/v1/todos?select=%2A&order=id.desc&limit=2') {
         final jsonString = jsonEncode([
           {'id': 2, 'task': 'task 2', 'status': false},
           {'id': 1, 'task': 'task 1', 'status': true},

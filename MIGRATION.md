@@ -24,6 +24,7 @@ Most of this guide produces compile errors until you act on it. These do not, so
 explicitly:
 
 - [`order()` now sorts ascending by default](#order-now-sorts-ascending-by-default)
+- [`order()` no longer sends a null placement by default](#order-no-longer-sends-a-null-placement-by-default)
 - [`RealtimeClient.connectionState` is now typed](#realtimeclientconnectionstate-is-now-typed)
 - [`HttpMethod` is one shared enum](#httpmethod-is-one-shared-enum), where the enum `index` shifted
 - [Confirming an email or phone change emits `userUpdated`](#confirming-an-email-or-phone-change-emits-userupdated)
@@ -705,7 +706,40 @@ final messages = await supabase
 `ascending: false` already means descending on v2, so you can add it to your current code before
 upgrading and leave this change out of the upgrade itself.
 
-`nullsFirst` is unchanged and still defaults to `false`.
+### `order()` no longer sends a null placement by default
+
+`nullsFirst` on `PostgrestTransformBuilder.order()` is now a `bool?` that defaults to `null`. When
+it is left out, no `nullsfirst` or `nullslast` is sent and PostgreSQL decides where `NULL`s go: last
+for an ascending sort and first for a descending one. v2 defaulted it to `false`, which always sent
+`nullslast` and so put `NULL`s last on a descending sort too. This is not a compile error, so check
+every `.order(..., ascending: false)` call on a nullable column.
+
+```dart
+// Before: order=price.desc.nullslast, nulls at the end
+final books = await supabase
+    .from('books')
+    .select()
+    .order('price', ascending: false);
+
+// After: order=price.desc, nulls at the start
+final books = await supabase
+    .from('books')
+    .select()
+    .order('price', ascending: false);
+```
+
+To keep the previous behaviour, ask for nulls last explicitly:
+
+```dart
+final books = await supabase
+    .from('books')
+    .select()
+    .order('price', ascending: false, nullsFirst: false);
+```
+
+`nullsFirst: false` already means nulls last on v2, so you can add it to your current code before
+upgrading and leave this change out of the upgrade itself. Ascending sorts are unaffected, since
+nulls last is also PostgreSQL's default there.
 
 ### The rest client and its builders are stateless
 
@@ -2172,11 +2206,9 @@ await supabase
     .range(0, 9);
 ```
 
-`order()` on `from()` always sends a null ordering and defaults it to nulls last, while the typed
-ordering only sends what was asked for, which leaves the null placement to Postgres: last for an
-ascending sort and first for a descending one. On a nullable column,
-`.order('price', ascending: false)` therefore matches `.order(Books.price.desc().nullsLast())`,
-not `.order(Books.price.desc())`. Repeated `order()` calls append on both APIs.
+Both APIs only send what was asked for, so `.order('price', ascending: false)` matches
+`.order(Books.price.desc())` and `.order('price', ascending: false, nullsFirst: false)` matches
+`.order(Books.price.desc().nullsLast())`. Repeated `order()` calls append on both APIs.
 
 `limit()` and `range()` take the same arguments as before, including `referencedTable` for an
 embedded table. `single()` and `maybeSingle()` resolve to the row type:

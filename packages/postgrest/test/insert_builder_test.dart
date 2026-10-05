@@ -61,7 +61,7 @@ void main() {
     final request = httpClient.requests.last;
     expect(request.method, HttpMethod.post.value);
     expect(request.queryParameters['select'], 'username');
-    expect(request.queryParameters['order'], 'username.asc.nullslast');
+    expect(request.queryParameters['order'], 'username.asc');
     expect(request.queryParameters['limit'], '1');
     expect(request.headers['Prefer'], 'return=representation');
   });
