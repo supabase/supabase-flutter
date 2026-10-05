@@ -330,7 +330,11 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       final columnA = a[_orderBy!.column];
       final columnB = b[_orderBy!.column];
 
-      if (columnA is num && columnB is num) {
+      if (columnA == null) {
+        return columnB == null ? 0 : orderModifier;
+      } else if (columnB == null) {
+        return -orderModifier;
+      } else if (columnA is num && columnB is num) {
         return orderModifier * columnA.compareTo(columnB);
       } else if (columnA is String && columnB is String) {
         return orderModifier * columnA.compareTo(columnB);
