@@ -80,7 +80,10 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// [ascending] defaults to `true`, matching SQL's `ORDER BY`, so results come
   /// back in ascending order unless `ascending: false` is passed.
   ///
-  /// [nullsFirst] defaults to `false`, so `null`s appear last.
+  /// [nullsFirst] places `null`s before (`true`) or after (`false`) the other
+  /// values. When it is left out no placement is sent and PostgreSQL's
+  /// default applies: last for an ascending sort and first for a descending
+  /// one.
   ///
   /// ```dart
   /// // Ascending is the default.
@@ -110,15 +113,19 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   PostgrestTransformBuilder<T> order(
     String column, {
     bool ascending = true,
-    bool nullsFirst = false,
+    bool? nullsFirst,
     String? referencedTable,
   }) {
     final key = referencedTable == null ? 'order' : '$referencedTable.order';
     final existingOrder = _url.queryParameters[key];
+    final placement = switch (nullsFirst) {
+      null => '',
+      true => '.nullsfirst',
+      false => '.nullslast',
+    };
     final value =
         '${existingOrder == null ? '' : '$existingOrder,'}$column.'
-        '${ascending ? 'asc' : 'desc'}.'
-        '${nullsFirst ? 'nullsfirst' : 'nullslast'}';
+        '${ascending ? 'asc' : 'desc'}$placement';
     final url = _url.overrideSearchParameters(key, value);
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
