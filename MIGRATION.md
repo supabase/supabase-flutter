@@ -240,6 +240,19 @@ final String name = client.clientName ?? client.clientId;
 `admin.oauth.createClient` always have one. Clients that register themselves through the dynamic
 client registration API, where the name is optional, may not.
 
+### `JWK.publicKey` returns a `JWTKey`
+
+`JWK.publicKey` supports EC keys as well as RSA keys, so it returns a `JWTKey`: an `RSAPublicKey`
+for `RSA` keys and an `ECPublicKey` for `EC` keys.
+
+```dart
+// Before
+final RSAPublicKey key = jwk.publicKey;
+
+// After
+final JWTKey key = jwk.publicKey;
+```
+
 ### `User.appMetadata` is an `AppMetadata` and `userMetadata` is never null
 
 `User.appMetadata` changes from a `Map<String, dynamic>` to an `AppMetadata` value object with
