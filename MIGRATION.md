@@ -2011,7 +2011,7 @@ is uploaded without reading it into memory first:
 ```dart
 import 'package:cross_file/cross_file.dart';
 
-final file = XFile(path);
+final file = XFile.fileSystem(path: path);
 await supabase.storage.from('avatars').uploadStream(
   'avatar.png',
   file.openRead(),
