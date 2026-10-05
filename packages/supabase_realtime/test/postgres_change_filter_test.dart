@@ -2,6 +2,17 @@ import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('an inFilter asserts that its value is an Iterable', () {
+    expect(
+      () => PostgresChangeFilter(
+        type: PostgresChangeFilterType.inFilter,
+        column: 'status',
+        value: 'ONLINE',
+      ),
+      throwsA(isA<AssertionError>()),
+    );
+  });
+
   group('PostgresChangeFilter.toString()', () {
     test('escapes double quotes and backslashes in `in` filter values', () {
       final filter = PostgresChangeFilter(

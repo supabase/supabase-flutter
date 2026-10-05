@@ -201,10 +201,24 @@ void main() {
       );
     });
 
+    test('is not negated unless wrapped in not()', () {
+      expect(Todos.id.eq(1).comparison!.negated, isFalse);
+    });
+
+    test('survives a not() around a single comparison as negated', () {
+      final comparison = Todos.id.inFilter([1, 2]).not().comparison!;
+
+      expect(comparison.column, Todos.id);
+      expect(comparison.operator, PostgrestFilterOperator.inFilter);
+      expect(comparison.value, [1, 2]);
+      expect(comparison.negated, isTrue);
+    });
+
     test('is null for a raw or composed filter', () {
       expect(PostgrestFilter.raw<Todo>('x', 'eq.1').comparison, isNull);
       expect((Todos.a.eq(1) & Todos.b.eq(2)).comparison, isNull);
-      expect(Todos.a.eq(1).not().comparison, isNull);
+      expect((Todos.a.eq(1) & Todos.b.eq(2)).not().comparison, isNull);
+      expect(Todos.a.eq(1).not().not().comparison, isNull);
     });
   });
 }

@@ -37,7 +37,7 @@ class SupabaseTypedQueryBuilder<Row, Insert, Update>
   ///   // ...
   /// });
   /// ```
-  SupabaseTypedStreamFilterBuilder<Row> stream({
+  SupabaseTypedStreamFilterBuilder<Row, Row> stream({
     required List<PostgrestStoredColumn<Row, Object>> primaryKey,
     bool private = false,
   }) {
@@ -47,6 +47,55 @@ class SupabaseTypedQueryBuilder<Row, Insert, Update>
         private: private,
       ),
       table.rowFromJson,
+    );
+  }
+
+  /// Returns real-time data from the table as a `Stream` of
+  /// `List<PostgrestPartialRow<Row>>` holding [columns] only.
+  ///
+  /// The typed counterpart of [SupabaseQueryBuilder.stream] with `select`:
+  /// the initial snapshot and every change payload carry [columns] and
+  /// [primaryKey] instead of the full row, and the rows are read through
+  /// [columns], so a column left out cannot be read by mistake. A column
+  /// passed to `order` only is fetched for sorting and stays unreadable.
+  ///
+  /// ```dart
+  /// supabase
+  ///     .table(Books.table)
+  ///     .streamOnly(primaryKey: [Books.id], columns: [Books.title])
+  ///     .listen((List<PostgrestPartialRow<Book>> books) {
+  ///   for (final book in books) {
+  ///     print(book.read(Books.title));
+  ///   }
+  /// });
+  /// ```
+  ///
+  /// [columns] needs at least one entry; use [stream] for every column.
+  SupabaseTypedStreamFilterBuilder<Row, PostgrestPartialRow<Row>> streamOnly({
+    required List<PostgrestStoredColumn<Row, Object>> primaryKey,
+    required List<PostgrestStoredColumn<Row, Object>> columns,
+    bool private = false,
+  }) {
+    if (columns.isEmpty) {
+      throw ArgumentError.value(
+        columns,
+        'columns',
+        'streamOnly needs at least one column',
+      );
+    }
+    final selections = <PostgrestStoredColumn<Row, Object>>[
+      ...columns,
+      for (final column in primaryKey)
+        if (!columns.any((selected) => selected.name == column.name)) column,
+    ];
+    return SupabaseTypedStreamFilterBuilder(
+      _queryBuilder.stream(
+        primaryKey: [for (final column in primaryKey) column.name],
+        private: private,
+        select: [for (final column in columns) column.name],
+      ),
+      // ignore: invalid_use_of_internal_member
+      (json) => PostgrestPartialRow.fromSelections(json, selections),
     );
   }
 }

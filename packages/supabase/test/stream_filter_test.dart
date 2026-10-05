@@ -66,6 +66,15 @@ void main() {
     });
   }
 
+  test('a negated inFilter needs a List of values', () {
+    final stream = supabase.from('users').stream(primaryKey: ['username']);
+
+    expect(
+      () => stream.not('status', PostgresChangeFilterType.inFilter, 'ONLINE'),
+      throwsArgumentError,
+    );
+  });
+
   group('typed', () {
     for (final testCase in _typedTestCases) {
       test(testCase.name, () async {
@@ -87,6 +96,136 @@ void main() {
         expect(restQueries.single, testCase.restQuery);
       });
     }
+
+    test('a filter composed with & or | is rejected', () {
+      final stream = supabase
+          .table(_Users.table)
+          .stream(primaryKey: [_Users.username]);
+
+      expect(
+        () => stream.filter(_Users.status.eq('ONLINE') & _Users.age.gt(20)),
+        throwsArgumentError,
+      );
+      expect(
+        () => stream.filter(
+          (_Users.status.eq('ONLINE') & _Users.age.gt(20)).not(),
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('select', () {
+    Future<void> expectSelected({
+      required List<String>? realtimeSelect,
+      required String restSelect,
+    }) async {
+      await _eventually(
+        () => postgresChanges.isNotEmpty && restQueries.isNotEmpty,
+        'the channel to join and the PostgREST request to arrive',
+      );
+
+      expect(postgresChanges.single['select'], realtimeSelect);
+      expect(restQueries.single, {'select': restSelect});
+    }
+
+    test('without select every column is requested', () async {
+      final subscription = supabase
+          .from('users')
+          .stream(primaryKey: ['username'])
+          .listen(null);
+      addTearDown(subscription.cancel);
+
+      await expectSelected(realtimeSelect: null, restSelect: '*');
+    });
+
+    test('the primary key is added to the selected columns', () async {
+      final subscription = supabase
+          .from('users')
+          .stream(primaryKey: ['username'], select: ['status', 'age'])
+          .listen(null);
+      addTearDown(subscription.cancel);
+
+      await expectSelected(
+        realtimeSelect: ['status', 'age', 'username'],
+        restSelect: 'status,age,username',
+      );
+    });
+
+    test('a selected primary key is not repeated', () async {
+      final subscription = supabase
+          .from('users')
+          .stream(primaryKey: ['username'], select: ['username', 'status'])
+          .listen(null);
+      addTearDown(subscription.cancel);
+
+      await expectSelected(
+        realtimeSelect: ['username', 'status'],
+        restSelect: 'username,status',
+      );
+    });
+
+    test(
+      'the typed streamOnly selects its columns and the primary key',
+      () async {
+        final subscription = supabase
+            .table(_Users.table)
+            .streamOnly(
+              primaryKey: [_Users.username],
+              columns: [_Users.status, _Users.age],
+            )
+            .listen(null);
+        addTearDown(subscription.cancel);
+
+        await expectSelected(
+          realtimeSelect: ['status', 'age', 'username'],
+          restSelect: 'status,age,username',
+        );
+      },
+    );
+
+    test('the order column is added to the selected columns', () async {
+      final subscription = supabase
+          .from('users')
+          .stream(primaryKey: ['username'], select: ['status'])
+          .order('age')
+          .listen(null);
+      addTearDown(subscription.cancel);
+
+      await _eventually(
+        () => postgresChanges.isNotEmpty && restQueries.isNotEmpty,
+        'the channel to join and the PostgREST request to arrive',
+      );
+
+      expect(postgresChanges.single['select'], ['status', 'username', 'age']);
+      expect(restQueries.single['select'], 'status,username,age');
+    });
+
+    test('the typed order column is added to the selected columns', () async {
+      final subscription = supabase
+          .table(_Users.table)
+          .streamOnly(primaryKey: [_Users.username], columns: [_Users.status])
+          .order(_Users.age)
+          .listen(null);
+      addTearDown(subscription.cancel);
+
+      await _eventually(
+        () => postgresChanges.isNotEmpty && restQueries.isNotEmpty,
+        'the channel to join and the PostgREST request to arrive',
+      );
+
+      expect(postgresChanges.single['select'], ['status', 'username', 'age']);
+      expect(restQueries.single['select'], 'status,username,age');
+    });
+
+    test('the typed streamOnly needs at least one column', () {
+      expect(
+        () => supabase
+            .table(_Users.table)
+            .streamOnly(primaryKey: [_Users.username], columns: []),
+        throwsArgumentError,
+      );
+    });
   });
 }
 
@@ -271,6 +410,42 @@ final _testCases = <_TestCase>[
     realtimeFilter: 'username=eq."supa,bot"',
     restQuery: {'select': '*', 'username': 'eq.supa,bot'},
   ),
+  (
+    name: 'not eq',
+    filter: (stream) =>
+        stream.not('status', PostgresChangeFilterType.eq, 'ONLINE'),
+    realtimeFilter: 'status=not.eq.ONLINE',
+    restQuery: {'select': '*', 'status': 'not.eq.ONLINE'},
+  ),
+  (
+    name: 'not inFilter',
+    filter: (stream) =>
+        stream.not('status', PostgresChangeFilterType.inFilter, [
+          'ONLINE',
+          'OFFLINE',
+        ]),
+    realtimeFilter: 'status=not.in.(ONLINE,OFFLINE)',
+    restQuery: {'select': '*', 'status': 'not.in.("ONLINE","OFFLINE")'},
+  ),
+  (
+    name: 'not isFilter with null',
+    filter: (stream) =>
+        stream.not('data', PostgresChangeFilterType.isFilter, null),
+    realtimeFilter: 'data=not.is.null',
+    restQuery: {'select': '*', 'data': 'not.is.null'},
+  ),
+  (
+    name: 'a negated filter is combined with the other filters',
+    filter: (stream) => stream
+        .eq('status', 'ONLINE')
+        .not('username', PostgresChangeFilterType.like, '%bot%'),
+    realtimeFilter: 'status=eq.ONLINE,username=not.like.%bot%',
+    restQuery: {
+      'select': '*',
+      'status': 'eq.ONLINE',
+      'username': 'not.like.%bot%',
+    },
+  ),
 ];
 
 extension type const _User(Map<String, dynamic> _json)
@@ -292,8 +467,8 @@ class _Users {
 
 typedef _TypedTestCase = ({
   String name,
-  SupabaseTypedStreamBuilder<_User> Function(
-    SupabaseTypedStreamFilterBuilder<_User> stream,
+  SupabaseTypedStreamBuilder<_User, _User> Function(
+    SupabaseTypedStreamFilterBuilder<_User, _User> stream,
   )
   filter,
   String? realtimeFilter,
@@ -392,6 +567,37 @@ final _typedTestCases = <_TypedTestCase>[
       'select': '*',
       'status': 'eq.ONLINE',
       'username': 'like.%supa%',
+    },
+  ),
+  (
+    name: 'a negated eq',
+    filter: (stream) => stream.filter(_Users.status.eq('ONLINE').not()),
+    realtimeFilter: 'status=not.eq.ONLINE',
+    restQuery: {'select': '*', 'status': 'not.eq.ONLINE'},
+  ),
+  (
+    name: 'a negated inFilter',
+    filter: (stream) =>
+        stream.filter(_Users.status.inFilter(['ONLINE', 'OFFLINE']).not()),
+    realtimeFilter: 'status=not.in.(ONLINE,OFFLINE)',
+    restQuery: {'select': '*', 'status': 'not.in.("ONLINE","OFFLINE")'},
+  ),
+  (
+    name: 'a negated isNull',
+    filter: (stream) => stream.filter(_Users.data.isNull().not()),
+    realtimeFilter: 'data=not.is.null',
+    restQuery: {'select': '*', 'data': 'not.is.null'},
+  ),
+  (
+    name: 'a negated filter is combined with the other filters',
+    filter: (stream) => stream
+        .filter(_Users.status.eq('ONLINE'))
+        .filter(_Users.username.like('%bot%').not()),
+    realtimeFilter: 'status=eq.ONLINE,username=not.like.%bot%',
+    restQuery: {
+      'select': '*',
+      'status': 'eq.ONLINE',
+      'username': 'not.like.%bot%',
     },
   ),
 ];

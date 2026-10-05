@@ -64,6 +64,14 @@ final class PostgrestPartialRow<Row> {
   /// can be read, though still no relation.
   final bool _allColumns;
 
+  /// A row of [selections] decoded from [json] that reached the client some
+  /// other way than a PostgREST response, such as a realtime change payload.
+  @internal
+  static PostgrestPartialRow<Row> fromSelections<Row>(
+    Map<String, dynamic> json,
+    List<PostgrestSelectable<Row>> selections,
+  ) => PostgrestPartialRow._(json, selections, allColumns: false);
+
   /// The value of [entry] in this row.
   ///
   /// A stored column reads as its value type, nullable when the database

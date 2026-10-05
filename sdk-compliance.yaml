@@ -1235,6 +1235,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.not
       - PostgrestFilter.not
+      - SupabaseStreamFilterBuilder.not
   database.using_filters.or:
     status: implemented
     symbols:
@@ -2353,6 +2354,7 @@ features:
       - RealtimeSystemPayload.status
       - RealtimeSystemPayload.toString
       - SupabaseTypedQueryBuilder.stream
+      - SupabaseTypedQueryBuilder.streamOnly
       - SupabaseTypedStreamBuilder
       - SupabaseTypedStreamBuilder.SupabaseTypedStreamBuilder
       - SupabaseTypedStreamBuilder.isBroadcast
@@ -2389,6 +2391,7 @@ features:
       - PostgrestFilter.comparison
       - PostgrestComparison
       - PostgrestComparison.column
+      - PostgrestComparison.negated
       - PostgrestComparison.operator
       - PostgrestComparison.value
     supporting_symbols:

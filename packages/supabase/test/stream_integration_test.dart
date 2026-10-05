@@ -273,6 +273,75 @@ void main() {
         ]),
       );
     });
+
+    test('not', () async {
+      await _expectSnapshots(
+        stream: _supabase
+            .from('users')
+            .stream(primaryKey: ['username'])
+            .not('status', PostgresChangeFilterType.eq, 'ONLINE'),
+        expectedSnapshots: [
+          {'kiwicopple'},
+          {'kiwicopple', 'not_online'},
+        ],
+        mutate: () => _insertUsers([
+          (username: 'still_online', status: 'ONLINE'),
+          (username: 'not_online', status: 'OFFLINE'),
+        ]),
+      );
+    });
+
+    test('not inFilter', () async {
+      await _expectSnapshots(
+        stream: _supabase.from('users').stream(primaryKey: ['username']).not(
+          'username',
+          PostgresChangeFilterType.inFilter,
+          [
+            'supabot',
+            'awailas',
+            'dragarcia',
+            'excluded',
+          ],
+        ),
+        expectedSnapshots: [
+          {'kiwicopple'},
+          {'kiwicopple', 'included'},
+        ],
+        mutate: () => _insertUsers([
+          (username: 'excluded', status: 'ONLINE'),
+          (username: 'included', status: 'ONLINE'),
+        ]),
+      );
+    });
+  });
+
+  group('stream() column selection', () {
+    test('the snapshot and the changes hold the selected columns', () async {
+      await _expectSnapshots(
+        stream: _supabase
+            .from('users')
+            .stream(primaryKey: ['username'], select: ['status']),
+        expectedSnapshots: [
+          {
+            'supabot:status,username',
+            'kiwicopple:status,username',
+            'awailas:status,username',
+            'dragarcia:status,username',
+          },
+          {
+            'supabot:status,username',
+            'kiwicopple:status,username',
+            'awailas:status,username',
+            'dragarcia:status,username',
+            'selected:status,username',
+          },
+        ],
+        mutate: () => _insertUsers([
+          (username: 'selected', status: 'ONLINE'),
+        ]),
+        project: _usernamesWithColumns,
+      );
+    });
   });
 
   group('stream() multiple filters', () {
@@ -705,6 +774,14 @@ Set<String> _usernames(SupabaseStreamEvent rows) {
 
 Set<String> _usernamesWithStatus(SupabaseStreamEvent rows) {
   return rows.map((row) => '${row['username']}:${row['status']}').toSet();
+}
+
+/// Every row as its username and its sorted column names.
+Set<String> _usernamesWithColumns(SupabaseStreamEvent rows) {
+  return rows.map((row) {
+    final columns = row.keys.toList()..sort();
+    return '${row['username']}:${columns.join(',')}';
+  }).toSet();
 }
 
 const _seedUsers = <_User>[
