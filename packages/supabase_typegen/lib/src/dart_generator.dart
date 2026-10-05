@@ -121,7 +121,7 @@ String generateDartCode(
     for (final table in tables)
       (table.schema, table.name): _TableMembers.claim(
         table,
-        tableNames[(table.schema, table.name)]!,
+        typeNames.taken,
       ),
   };
   for (final table in tables) {
@@ -131,6 +131,7 @@ String generateDartCode(
       tableNames[(table.schema, table.name)]!,
       tableMembers[(table.schema, table.name)]!,
       _relationMembers(table, database, tableNames, tableMembers),
+      typeNames.taken,
       enumTypeNames,
       decoders,
     );
@@ -188,6 +189,8 @@ class _TypeNameRegistry {
   };
 
   String claim(String name) => _claimName(_used, name);
+
+  Set<String> get taken => _used;
 }
 
 void _writeEnum(
@@ -292,9 +295,7 @@ class _TableMembers {
     required this.computedFieldMembers,
   });
 
-  factory _TableMembers.claim(TableDescription table, _TableNames names) {
-    final _TableNames(:rowType, :insertType, :updateType, :namespaceType) =
-        names;
+  factory _TableMembers.claim(TableDescription table, Set<String> typeNames) {
     final columns = [for (final column in table.columns) column.name];
     // The row getters and the value constructor parameters share their
     // names, and both are in scope where the generated conversions call
@@ -302,18 +303,15 @@ class _TableMembers {
     final rowMembers = _uniqueMemberNames(
       columns,
       reserved: {
-        rowType,
-        ?insertType,
-        ?updateType,
+        ...typeNames,
         'toJson',
         'postgrestBytea',
         'postgrestVector',
-        ..._coreTypeNames,
       },
     );
     final columnMembers = _uniqueMemberNames(
       columns,
-      reserved: {'table', namespaceType},
+      reserved: {'table', ...typeNames},
       existing: rowMembers,
     );
     return _TableMembers(
@@ -322,12 +320,7 @@ class _TableMembers {
       // Computed fields share the namespace with the column constants.
       computedFieldMembers: _uniqueMemberNames(
         [for (final field in table.computedFields) field.name],
-        reserved: {
-          'table',
-          namespaceType,
-          ..._coreTypeNames,
-          ...columnMembers.values,
-        },
+        reserved: {'table', ...typeNames, ...columnMembers.values},
       ),
     );
   }
@@ -570,6 +563,7 @@ void _writeTable(
   _TableNames names,
   _TableMembers members,
   List<_RelationMember> relations,
+  Set<String> typeNames,
   Map<(String, String), String> enumTypeNames,
   _DecoderRegistry decoders,
 ) {
@@ -584,7 +578,7 @@ void _writeTable(
     for (final field in table.computedFields)
       field.name: _bindingFor(_computedFieldShape(field), enumTypeNames),
   };
-  final relationNames = _relationNames(names, members, relations);
+  final relationNames = _relationNames(typeNames, members, relations);
   final relationKeys = _embedKeys(relations, relationNames);
 
   _writeRow(buffer, table, names, memberNames, bindings);
@@ -638,20 +632,15 @@ void _writeTable(
 /// The Dart names of [relations] in the namespace class, next to the column
 /// constants and the types the table definition names.
 List<String> _relationNames(
-  _TableNames names,
+  Set<String> typeNames,
   _TableMembers members,
   List<_RelationMember> relations,
 ) {
-  final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
   final used = {
     'table',
-    namespaceType,
-    ..._coreTypeNames,
+    ...typeNames,
     ...members.columnMembers.values,
     ...members.computedFieldMembers.values,
-    rowType,
-    ?insertType,
-    ?updateType,
   };
   final baseNameCounts = <String, int>{};
   for (final relation in relations) {
@@ -1321,8 +1310,6 @@ Map<String, String> _uniqueMemberNames(
       name: _claimName(used, existing?[name] ?? memberIdentifier(name)),
   };
 }
-
-const _coreTypeNames = {'int', 'double', 'num', 'bool'};
 
 /// Adds [candidate] to [used], suffixed with `\$` until no earlier name
 /// matches, and returns the name added.
