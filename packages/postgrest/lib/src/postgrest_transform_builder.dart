@@ -370,8 +370,9 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
 
     // An Accept header can carry multiple media types but postgrest-js always
     // sends one
-    final forMediatype = _headers['Accept'] ?? 'application/json';
     final newHeaders = {..._headers};
+    if (_stripNulls) _applyStripNulls(newHeaders);
+    final forMediatype = newHeaders['Accept'] ?? 'application/json';
     newHeaders['Accept'] =
         'application/vnd.pgrst.plan+${format.name}; for="$forMediatype"; options=$options;';
     return _copyWithType(headers: newHeaders);

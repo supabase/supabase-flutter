@@ -695,6 +695,54 @@ void main() {
       );
     });
 
+    test('keeps the parameters of a custom Accept header', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .setHeader('Accept', 'application/json; charset=utf-8')
+            .stripNulls();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        'application/vnd.pgrst.array+json; charset=utf-8;nulls=stripped',
+      );
+    });
+
+    test('does not repeat an explicit nulls=stripped', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .setHeader(
+              'Accept',
+              'application/vnd.pgrst.array+json;nulls=stripped',
+            )
+            .stripNulls();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        'application/vnd.pgrst.array+json;nulls=stripped',
+      );
+    });
+
+    test('explains the stripped media type', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .stripNulls()
+            .explain();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        contains('for="application/vnd.pgrst.array+json;nulls=stripped"'),
+      );
+    });
+
     test('leaves a csv request untouched', () async {
       try {
         await postgrestCustomHttpClient

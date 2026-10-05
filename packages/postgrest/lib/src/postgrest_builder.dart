@@ -87,14 +87,21 @@ class _RequestConfig {
 }
 
 /// PostgREST only honors `nulls=stripped` on its own array and object media
-/// types, so a plain JSON request is upgraded to the array media type.
+/// types, so a plain JSON request is upgraded to the array media type. Any
+/// other media type, such as CSV or a plan, is left untouched.
 void _applyStripNulls(Map<String, String> headers) {
-  final stripped = switch (headers['Accept']) {
-    null || 'application/json' => 'application/vnd.pgrst.array+json',
+  final accept = headers['Accept'] ?? 'application/json';
+  final separator = accept.indexOf(';');
+  final mediaType = separator == -1 ? accept : accept.substring(0, separator);
+  final parameters = separator == -1 ? '' : accept.substring(separator);
+  final strippable = switch (mediaType.trim()) {
+    'application/json' ||
+    'application/vnd.pgrst.array+json' => 'application/vnd.pgrst.array+json',
     'application/vnd.pgrst.object+json' => 'application/vnd.pgrst.object+json',
     _ => null,
   };
-  if (stripped != null) headers['Accept'] = '$stripped;nulls=stripped';
+  if (strippable == null || parameters.contains('nulls=stripped')) return;
+  headers['Accept'] = '$strippable$parameters;nulls=stripped';
 }
 
 /// Treats an empty `Prefer` value as absent, so every append site can rely on
