@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart' show HttpMethod;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -11,8 +13,8 @@ const storageUrl = 'http://localhost/storage/v1';
 const headers = {'Authorization': 'Bearer token'};
 
 /// Client that finalizes (reads) the request body before failing, mimicking a
-/// real HTTP client. This exercises [MultipartFile] finalization on every retry
-/// attempt, which previously crashed because the same file instance was reused.
+/// real HTTP client. This exercises body finalization on every retry attempt,
+/// which needs a fresh body stream since the previous attempt consumed it.
 class FinalizingRetryHttpClient extends BaseClient {
   FinalizingRetryHttpClient({this.failuresBeforeSuccess = 1});
 
@@ -49,7 +51,159 @@ class NonObjectErrorHttpClient extends BaseClient {
 }
 
 void main() {
-  group('multipart uploads', () {
+  group('uploads', () {
+    late Directory temporaryDirectory;
+
+    setUp(() {
+      temporaryDirectory = Directory.systemTemp.createTempSync('storage_test');
+    });
+
+    tearDown(() {
+      temporaryDirectory.deleteSync(recursive: true);
+    });
+
+    test(
+      'sends the bytes as the raw body with the file options as headers',
+      () async {
+        final mockClient = MockSupabaseHttpClient();
+        mockClient.stub({'Key': 'bucket/a.txt'});
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: mockClient,
+        );
+        const metadata = {
+          'owner': 'me',
+          'tags': ['a', 'b'],
+        };
+
+        await client
+            .from('bucket')
+            .uploadBinary(
+              'a.txt',
+              Uint8List.fromList([1, 2, 3]),
+              fileOptions: const FileOptions(
+                cacheControl: '60',
+                upsert: true,
+                contentType: 'text/plain',
+                metadata: metadata,
+                headers: {'x-custom': 'value'},
+              ),
+            );
+
+        final request = mockClient.requests.single;
+        expect(request.method, HttpMethod.post.value);
+        expect(request.bodyBytes, [1, 2, 3]);
+        expect(request.request.contentLength, 3);
+        expect(request.headers['content-type'], 'text/plain');
+        expect(request.headers['cache-control'], 'max-age=60');
+        expect(request.headers['x-upsert'], 'true');
+        expect(request.headers['x-custom'], 'value');
+        expect(request.headers['authorization'], 'Bearer token');
+        expect(
+          json.decode(
+            utf8.decode(base64.decode(request.headers['x-metadata']!)),
+          ),
+          metadata,
+        );
+      },
+    );
+
+    test('sends no x-metadata header without metadata', () async {
+      final mockClient = MockSupabaseHttpClient();
+      mockClient.stub({'Key': 'bucket/a.txt'});
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+      );
+
+      await client
+          .from('bucket')
+          .uploadBinary('a.txt', Uint8List.fromList([1, 2, 3]));
+
+      final request = mockClient.requests.single;
+      expect(request.headers.containsKey('x-metadata'), isFalse);
+      expect(request.headers['cache-control'], 'max-age=3600');
+      expect(request.headers['x-upsert'], 'false');
+    });
+
+    test('streams a file from disk as the raw body', () async {
+      final mockClient = MockSupabaseHttpClient();
+      mockClient.stub({'Key': 'bucket/folder/notes.txt'});
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+      );
+      final file = File('${temporaryDirectory.path}/notes.txt')
+        ..writeAsStringSync('hello');
+
+      final response = await client
+          .from('bucket')
+          .upload('folder/notes.txt', file);
+
+      expect(response.fullPath, 'bucket/folder/notes.txt');
+      final request = mockClient.requests.single;
+      expect(request.body, 'hello');
+      expect(request.request.contentLength, 5);
+      expect(request.headers['content-type'], 'text/plain');
+    });
+
+    test('detects the content type of a file from its own path', () async {
+      final mockClient = MockSupabaseHttpClient();
+      mockClient.stub({'Key': 'bucket/a'});
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+      );
+      final file = File('${temporaryDirectory.path}/picture.png')
+        ..writeAsBytesSync([1, 2, 3]);
+
+      await client.from('bucket').upload('a', file);
+
+      expect(mockClient.requests.single.headers['content-type'], 'image/png');
+    });
+
+    test('re-reads the file on every retry attempt', () async {
+      final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 2);
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: retryClient,
+        retryOptions: const SupabaseRetryOptions(
+          count: 3,
+          initialDelay: Duration(milliseconds: 1),
+        ),
+      );
+      final file = File('${temporaryDirectory.path}/notes.txt')
+        ..writeAsStringSync('hello');
+
+      final result = await client.from('bucket').upload('notes.txt', file);
+
+      expect(result.fullPath, 'public/a.txt');
+      expect(retryClient.attempts, 3);
+    });
+
+    test('an update sends the body with PUT', () async {
+      final mockClient = MockSupabaseHttpClient();
+      mockClient.stub({'Key': 'bucket/a.txt'});
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+      );
+
+      await client
+          .from('bucket')
+          .updateBinary('a.txt', Uint8List.fromList([4, 5]));
+
+      final request = mockClient.requests.single;
+      expect(request.method, HttpMethod.put.value);
+      expect(request.bodyBytes, [4, 5]);
+    });
+
     test(
       'retries a binary upload after a failure that finalized the request',
       () async {
@@ -154,10 +308,164 @@ void main() {
               Uint8List.fromList([1, 2, 3]),
             );
 
-        final request = mockClient.requests.single.request as MultipartRequest;
-        expect(request.files.single.contentType.mimeType, 'image/png');
+        final request = mockClient.requests.single;
+        expect(request.headers['content-type'], 'image/png');
+        expect(request.queryParameters['token'], 'signed-token');
       },
     );
+  });
+
+  group('stream uploads', () {
+    late MockSupabaseHttpClient mockClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      mockClient = MockSupabaseHttpClient();
+      client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+      );
+    });
+
+    test('sends the stream as the raw body with its content length', () async {
+      mockClient.stub({'Key': 'bucket/a.txt'});
+
+      final response = await client
+          .from('bucket')
+          .uploadStream(
+            'a.txt',
+            Stream.fromIterable([
+              [1, 2],
+              [3],
+            ]),
+            contentLength: 3,
+            fileOptions: const FileOptions(metadata: {'kind': 'notes'}),
+          );
+
+      expect(response.fullPath, 'bucket/a.txt');
+      final request = mockClient.requests.single;
+      expect(request.method, HttpMethod.post.value);
+      expect(request.bodyBytes, [1, 2, 3]);
+      expect(request.request.contentLength, 3);
+      expect(request.headers['content-type'], 'text/plain');
+      expect(request.headers['cache-control'], 'max-age=3600');
+      expect(
+        json.decode(utf8.decode(base64.decode(request.headers['x-metadata']!))),
+        {'kind': 'notes'},
+      );
+    });
+
+    test('sends an unknown length as a chunked body', () async {
+      mockClient.stub({'Key': 'bucket/a.txt'});
+
+      await client
+          .from('bucket')
+          .uploadStream(
+            'a.txt',
+            Stream.value([1, 2, 3]),
+          );
+
+      final request = mockClient.requests.single;
+      expect(request.bodyBytes, [1, 2, 3]);
+      expect(request.request.contentLength, isNull);
+    });
+
+    test('an update streams the body with PUT', () async {
+      mockClient.stub({'Key': 'bucket/a.txt'});
+
+      await client
+          .from('bucket')
+          .updateStream(
+            'a.txt',
+            Stream.value([1, 2, 3]),
+            contentLength: 3,
+          );
+
+      final request = mockClient.requests.single;
+      expect(request.method, HttpMethod.put.value);
+      expect(request.bodyBytes, [1, 2, 3]);
+    });
+
+    test(
+      'a signed url upload streams the body with PUT and the token',
+      () async {
+        mockClient.stub({'Key': 'bucket/a.txt'});
+
+        final response = await client
+            .from('bucket')
+            .uploadStreamToSignedUrl(
+              'a.txt',
+              'signed-token',
+              Stream.value([1, 2, 3]),
+              contentLength: 3,
+            );
+
+        expect(response.id, isNull);
+        expect(response.fullPath, 'bucket/a.txt');
+        final request = mockClient.requests.single;
+        expect(request.method, HttpMethod.put.value);
+        expect(request.url.path, endsWith('/object/upload/sign/bucket/a.txt'));
+        expect(request.queryParameters['token'], 'signed-token');
+        expect(request.bodyBytes, [1, 2, 3]);
+      },
+    );
+
+    test('is never retried, since the stream can be read only once', () async {
+      final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 1);
+      final retryingClient = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: retryClient,
+        retryOptions: const SupabaseRetryOptions(count: 3),
+      );
+
+      await expectLater(
+        retryingClient
+            .from('bucket')
+            .uploadStream(
+              'a.txt',
+              Stream.value([1, 2, 3]),
+              contentLength: 3,
+            ),
+        throwsA(isA<ClientException>()),
+      );
+      expect(retryClient.attempts, 1);
+    });
+
+    test('hands the abort signal to the request', () async {
+      mockClient.stub({'Key': 'bucket/a.txt'});
+      final abortSignal = Completer<void>();
+
+      await client
+          .from('bucket')
+          .uploadStream(
+            'a.txt',
+            Stream.value([1, 2, 3]),
+            abortSignal: abortSignal.future,
+          );
+
+      final request = mockClient.requests.single.request as Abortable;
+      expect(request.abortTrigger, same(abortSignal.future));
+    });
+
+    test('aborts an in-flight stream upload', () async {
+      mockClient.stubStall();
+      final abortSignal = Future<void>.delayed(
+        const Duration(milliseconds: 50),
+      );
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadStream(
+              'a.txt',
+              Stream.value([1, 2, 3]),
+              abortSignal: abortSignal,
+            ),
+        throwsA(isA<RequestAbortedException>()),
+      );
+    });
   });
 
   group('request cancellation', () {
