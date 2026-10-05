@@ -407,11 +407,11 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
 
   @override
   PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$name->>$path', path);
+      PostgrestJsonPath._('$name->>$path', _jsonPathKey(path, name));
 
   @override
   PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$name->$path', path);
+      PostgrestJsonPath._('$name->$path', _jsonPathKey(path, name));
 }
 
 /// A stored `NOT NULL` column, see [PostgrestStoredColumn].
@@ -521,11 +521,11 @@ final class PostgrestComputedField<Row, Value extends Object>
 
   @override
   PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$name->>$path', path);
+      PostgrestJsonPath._('$name->>$path', _jsonPathKey(path, name));
 
   @override
   PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$name->$path', path);
+      PostgrestJsonPath._('$name->$path', _jsonPathKey(path, name));
 
   @override
   Value? _read(Object? json, _NestedSelection nested) => switch (json) {

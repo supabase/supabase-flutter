@@ -70,11 +70,11 @@ sealed class PostgrestDerivedExpression<Row, Value extends Object>
 
   @override
   PostgrestDerivedExpression<Row, String> jsonText(String path) =>
-      _derive('->>$path', key: path, fromJson: null);
+      _derive('->>$path', key: _jsonPathKey(path, responseKey), fromJson: null);
 
   @override
   PostgrestDerivedExpression<Row, Value> jsonObject(String path) =>
-      _derive('->$path', key: path, fromJson: null);
+      _derive('->$path', key: _jsonPathKey(path, responseKey), fromJson: null);
 
   @override
   bool get _selectedByStar => false;
@@ -175,12 +175,16 @@ final class PostgrestJsonPath<Row, Value extends Object>
   Value Function(Object json)? get _fromJson => null;
 
   @override
-  PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$expression->>$path', path);
+  PostgrestJsonPath<Row, String> jsonText(String path) => PostgrestJsonPath._(
+    '$expression->>$path',
+    _jsonPathKey(path, responseKey),
+  );
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$expression->$path', path);
+  PostgrestJsonPath<Row, Value> jsonObject(String path) => PostgrestJsonPath._(
+    '$expression->$path',
+    _jsonPathKey(path, responseKey),
+  );
 
   @override
   bool get _selectedByStar => false;
@@ -191,3 +195,8 @@ final class PostgrestJsonPath<Row, Value extends Object>
     return json as Value;
   }
 }
+
+final _jsonArrayIndex = RegExp(r'^-?[0-9]+$');
+
+String _jsonPathKey(String path, String parentKey) =>
+    _jsonArrayIndex.hasMatch(path) ? parentKey : path;

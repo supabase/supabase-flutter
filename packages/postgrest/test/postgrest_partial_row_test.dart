@@ -249,6 +249,38 @@ void main() {
         throwsNotSelected('wrapping'),
       );
     });
+
+    test('a JSON path ending in an array index reads under the key before '
+        'it', () async {
+      httpClient.stub({
+        'id': 1,
+        'tags': 'urgent',
+        'items': {'sku': 'A1'},
+        'metadata': 'first',
+        'sku': 'B2',
+      });
+      final firstTag = Orders.metadata.jsonObject('tags').jsonText('0');
+      final lastItem = Orders.metadata.jsonObject('items').jsonObject('-1');
+      final firstElement = Orders.metadata.jsonText('0');
+      final nestedSku = Orders.metadata
+          .jsonObject('items')
+          .jsonObject('0')
+          .jsonObject('1')
+          .jsonText('sku');
+
+      final row = await client.table(Orders.table).selectOnly([
+        Orders.id,
+        firstTag,
+        lastItem,
+        firstElement,
+        nestedSku,
+      ]).single();
+
+      expect(row.read(firstTag), 'urgent');
+      expect(row.read(lastItem), {'sku': 'A1'});
+      expect(row.read(firstElement), 'first');
+      expect(row.read(nestedSku), 'B2');
+    });
   });
 
   group('relations', () {
