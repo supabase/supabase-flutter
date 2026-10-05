@@ -325,6 +325,51 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
       ],
     ),
+    TableDescription(
+      schema: 'public',
+      name: 'core_type_names',
+      computedFields: [
+        ComputedFieldDescription(
+          name: 'bool',
+          postgresFormat: 'float8',
+          typeKind: ColumnTypeKind.floating,
+        ),
+      ],
+      computedRelationships: [
+        ComputedRelationshipDescription(
+          name: 'double',
+          targetSchema: 'public',
+          targetTable: 'map',
+          isToMany: false,
+        ),
+      ],
+      columns: [
+        ColumnDescription(
+          name: 'num',
+          postgresFormat: 'int4',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'int',
+          postgresFormat: 'numeric',
+          typeKind: ColumnTypeKind.numeric,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'active',
+          postgresFormat: 'bool',
+          typeKind: ColumnTypeKind.boolean,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
     // A table outside public: its type names carry the schema, and the key
     // from public.map into it gets no relation member.
     TableDescription(

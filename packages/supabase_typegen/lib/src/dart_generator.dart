@@ -308,6 +308,7 @@ class _TableMembers {
         'toJson',
         'postgrestBytea',
         'postgrestVector',
+        ..._coreTypeNames,
       },
     );
     final columnMembers = _uniqueMemberNames(
@@ -321,7 +322,12 @@ class _TableMembers {
       // Computed fields share the namespace with the column constants.
       computedFieldMembers: _uniqueMemberNames(
         [for (final field in table.computedFields) field.name],
-        reserved: {'table', namespaceType, ...columnMembers.values},
+        reserved: {
+          'table',
+          namespaceType,
+          ..._coreTypeNames,
+          ...columnMembers.values,
+        },
       ),
     );
   }
@@ -640,6 +646,7 @@ List<String> _relationNames(
   final used = {
     'table',
     namespaceType,
+    ..._coreTypeNames,
     ...members.columnMembers.values,
     ...members.computedFieldMembers.values,
     rowType,
@@ -1314,6 +1321,8 @@ Map<String, String> _uniqueMemberNames(
       name: _claimName(used, existing?[name] ?? memberIdentifier(name)),
   };
 }
+
+const _coreTypeNames = {'int', 'double', 'num', 'bool'};
 
 /// Adds [candidate] to [used], suffixed with `\$` until no earlier name
 /// matches, and returns the name added.
