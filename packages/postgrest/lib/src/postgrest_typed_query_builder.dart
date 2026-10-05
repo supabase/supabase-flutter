@@ -78,12 +78,11 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     String value,
   ) => _with(_currentOptions._header(key, value));
 
-  PostgrestTypedFilterBuilder<Row, void> _mutation(
+  PostgrestTypedUnscopedBuilder<Row> _mutation(
     PostgrestTableRequest request,
-  ) => PostgrestTypedFilterBuilder._(
+  ) => PostgrestTypedUnscopedBuilder._(
     request.copyWith(shape: PostgrestResultShape.none),
     _executor,
-    _noResult,
     table.rowFromJson,
   );
 
@@ -291,6 +290,10 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
 
   /// Perform an UPDATE on the table or view.
   ///
+  /// The rows to update are chosen with [PostgrestTypedUnscopedBuilder.where],
+  /// or every row with [PostgrestTypedUnscopedBuilder.all]; the request
+  /// cannot be awaited before one of them is called.
+  ///
   /// By default no data is returned. Use a trailing [select] to return the
   /// updated rows typed as [Row].
   ///
@@ -300,7 +303,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///     .update(BookUpdate(title: 'bar'))
   ///     .where(Books.id.eq(1));
   /// ```
-  PostgrestTypedFilterBuilder<Row, void> update(Update values) => _mutation(
+  PostgrestTypedUnscopedBuilder<Row> update(Update values) => _mutation(
     _request(
       PostgrestTableOperation.update,
     ).copyWith(payload: values as Object),
@@ -308,13 +311,17 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
 
   /// Perform a DELETE on the table or view.
   ///
+  /// The rows to delete are chosen with [PostgrestTypedUnscopedBuilder.where],
+  /// or every row with [PostgrestTypedUnscopedBuilder.all]; the request
+  /// cannot be awaited before one of them is called.
+  ///
   /// By default no data is returned. Use a trailing [select] to return the
   /// deleted rows typed as [Row].
   ///
   /// ```dart
   /// await client.table(Books.table).delete().where(Books.id.eq(1));
   /// ```
-  PostgrestTypedFilterBuilder<Row, void> delete() =>
+  PostgrestTypedUnscopedBuilder<Row> delete() =>
       _mutation(_request(PostgrestTableOperation.delete));
 
   /// Only performs a count query on the table or view.

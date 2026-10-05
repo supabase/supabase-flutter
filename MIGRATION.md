@@ -766,6 +766,29 @@ await supabase.from('messages').update({'message': 'foo'}).eq('id', 1);
 Code that stores one of these builders in a variable typed as `PostgrestFilterBuilder<void>` or
 `PostgrestTypedFilterBuilder<Row, void>` needs the `Transform` type instead.
 
+### Typed `update()` and `delete()` require a filter or `all()`
+
+The typed `update()` and `delete()` return a `PostgrestTypedUnscopedBuilder` instead of a
+`PostgrestTypedFilterBuilder`. It cannot be awaited and has no transforms, only `where()` and
+`all()`, each of which returns the `PostgrestTypedFilterBuilder` the mutation used to start with.
+A mutation that forgot its filter, and would have written every row in the table, no longer
+compiles; writing every row is spelled out with `all()`.
+
+```dart
+// Before: compiled, and deleted every book.
+await supabase.table(Books.table).delete();
+
+// After: does not compile. Filter the rows, or ask for all of them.
+await supabase.table(Books.table).delete().where(Books.id.eq(1));
+await supabase.table(Books.table).delete().all();
+```
+
+A `select()`, `order()`, `maxAffected()` or request option chained directly after `update()` or
+`delete()` moves after the `where()` or `all()`. Code that stores the result of `update()` or
+`delete()` in a variable typed as `PostgrestTypedFilterBuilder<Row, void>` needs
+`PostgrestTypedUnscopedBuilder<Row>` instead, or a `where()` or `all()` call. `update()` and
+`delete()` on `from()` are unchanged.
+
 ### `createSignedUrls` reports per-path failures
 
 `createSignedUrls` returns a list of `SignedUrlSuccess` and `SignedUrlFailure` instead of
@@ -2263,6 +2286,17 @@ Several rows go through `insertAll()` and `upsertAll()` instead of a list passed
 Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the column out of the
 request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
 generated `set…ToNull()` methods, which only exist for nullable columns.
+
+An `update()` or `delete()` cannot be awaited until it says which rows it acts on, through
+`where()` or, for every row in the table, `all()`:
+
+```dart
+// Before
+await supabase.from('books').delete();
+
+// After
+await supabase.table(Books.table).delete().all();
+```
 
 `onConflict` of `upsert()` is a list of columns instead of a comma separated string:
 

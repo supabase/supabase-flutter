@@ -1067,6 +1067,10 @@ features:
     symbols:
       - PostgrestQueryBuilder.update
       - PostgrestTypedQueryBuilder.update
+    supporting_symbols:
+      - PostgrestTypedUnscopedBuilder
+      - PostgrestTypedUnscopedBuilder.all
+      - PostgrestTypedUnscopedBuilder.where
   database.mutate.upsert:
     status: implemented
     symbols:
@@ -1078,6 +1082,10 @@ features:
     symbols:
       - PostgrestQueryBuilder.delete
       - PostgrestTypedQueryBuilder.delete
+    supporting_symbols:
+      - PostgrestTypedUnscopedBuilder
+      - PostgrestTypedUnscopedBuilder.all
+      - PostgrestTypedUnscopedBuilder.where
   database.mutate.select_after_mutation:
     status: implemented
     symbols:
