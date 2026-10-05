@@ -90,7 +90,13 @@ class _RequestConfig {
 /// types, so a plain JSON request is upgraded to the array media type. Any
 /// other media type, such as CSV or a plan, is left untouched.
 void _applyStripNulls(Map<String, String> headers) {
-  final accept = headers['Accept'] ?? 'application/json';
+  String? existing;
+  for (final MapEntry(:key, :value) in headers.entries) {
+    if (key.toLowerCase() == 'accept') {
+      existing = value;
+    }
+  }
+  final accept = existing ?? 'application/json';
   final separator = accept.indexOf(';');
   final mediaType = separator == -1 ? accept : accept.substring(0, separator);
   final parameters = separator == -1 ? '' : accept.substring(separator);
@@ -101,6 +107,7 @@ void _applyStripNulls(Map<String, String> headers) {
     _ => null,
   };
   if (strippable == null || parameters.contains('nulls=stripped')) return;
+  headers.removeWhere((name, _) => name.toLowerCase() == 'accept');
   headers['Accept'] = '$strippable$parameters;nulls=stripped';
 }
 

@@ -743,6 +743,18 @@ void main() {
       );
     });
 
+    test('finds a custom Accept header regardless of its casing', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .setHeader('accept', 'text/csv')
+            .stripNulls();
+      } catch (_) {}
+
+      expect(customHttpClient.lastRequest!.headers['Accept'], 'text/csv');
+    });
+
     test('leaves a csv request untouched', () async {
       try {
         await postgrestCustomHttpClient
