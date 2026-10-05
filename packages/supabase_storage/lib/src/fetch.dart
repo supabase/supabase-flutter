@@ -104,94 +104,39 @@ class Fetch {
     return _handleResponse(streamedResponse, options);
   }
 
-  Future<Map<String, dynamic>> _handleFileRequest(
+  /// Sends an upload whose body is produced by [createBody] on every attempt,
+  /// so a retry reads a fresh stream instead of one an earlier attempt already
+  /// consumed.
+  ///
+  /// The file is the raw request body. `Content-Type`, `Cache-Control`,
+  /// `x-upsert` and `x-metadata` carry what the multipart form fields used to.
+  /// [contentLength] is sent as `Content-Length` when known; otherwise the
+  /// body goes out with chunked transfer encoding.
+  Future<Map<String, dynamic>> _handleUploadRequest(
     HttpMethod method,
     String url,
-    File file,
-    FileOptions fileOptions,
-    FetchOptions? options,
-    SupabaseRetryOptions retryOptions,
-    Future<void>? abortSignal,
-  ) {
-    final contentType = fileOptions.contentType != null
-        ? MediaType.parse(fileOptions.contentType!)
-        : _parseMediaType(file.path);
-    final bytes = file.readAsBytesSync();
-    return _handleMultipartRequest(
-      method,
-      url,
-      () => http.MultipartFile.fromBytes(
-        '',
-        bytes,
-        filename: file.path,
-        contentType: contentType,
-      ),
-      fileOptions,
-      options,
-      retryOptions,
-      abortSignal,
-    );
-  }
-
-  Future<Map<String, dynamic>> _handleBinaryFileRequest(
-    HttpMethod method,
-    String url,
-    Uint8List data,
-    FileOptions fileOptions,
-    FetchOptions? options,
-    SupabaseRetryOptions retryOptions,
-    Future<void>? abortSignal,
-  ) {
-    final contentType = fileOptions.contentType != null
-        ? MediaType.parse(fileOptions.contentType!)
-        : _parseMediaType(Uri.parse(url).path);
-    return _handleMultipartRequest(
-      method,
-      url,
-      () => http.MultipartFile.fromBytes(
-        '',
-        data,
-        // request fails with null filename so set it empty instead.
-        filename: '',
-        contentType: contentType,
-      ),
-      fileOptions,
-      options,
-      retryOptions,
-      abortSignal,
-    );
-  }
-
-  Future<Map<String, dynamic>> _handleMultipartRequest(
-    HttpMethod method,
-    String url,
-    MultipartFile Function() createMultipartFile,
+    Stream<List<int>> Function() createBody,
+    int? contentLength,
+    String contentTypePath,
     FileOptions fileOptions,
     FetchOptions? options,
     SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
   ) async {
-    final headers = options?.headers ?? {};
-
-    http.MultipartRequest createRequest() {
-      final request = http.AbortableMultipartRequest(
-        method.value,
-        Uri.parse(url),
-        abortTrigger: abortSignal,
-      );
-      request
-        ..headers.addAll(headers)
-        ..files.add(createMultipartFile())
-        ..fields['cacheControl'] = fileOptions.cacheControl
-        ..headers['x-upsert'] = fileOptions.upsert.toString();
-      if (fileOptions.metadata != null) {
-        request.fields['metadata'] = json.encode(fileOptions.metadata);
-      }
-      if (fileOptions.headers != null) {
-        request.headers.addAll(fileOptions.headers!);
-      }
-      return request;
-    }
+    final contentType = fileOptions.contentType != null
+        ? MediaType.parse(fileOptions.contentType!)
+        : _parseMediaType(contentTypePath);
+    final headers = {
+      ...?options?.headers,
+      'Content-Type': contentType.toString(),
+      'Cache-Control': 'max-age=${fileOptions.cacheControl}',
+      'x-upsert': fileOptions.upsert.toString(),
+      if (fileOptions.metadata != null)
+        'x-metadata': base64.encode(
+          utf8.encode(json.encode(fileOptions.metadata)),
+        ),
+      ...?fileOptions.headers,
+    };
 
     var attempts = 0;
     final streamedResponse = await retry<http.StreamedResponse>(
@@ -201,8 +146,16 @@ class Fetch {
           'Request: attempt: $attempts ${method.value} '
           '${Uri.parse(url).redacted} ${headers.redacted}',
         );
-
-        return createRequest().sendWith(httpClient);
+        final request = _UploadRequest(
+          method.value,
+          Uri.parse(url),
+          createBody,
+          abortTrigger: abortSignal,
+        );
+        request
+          ..headers.addAll(headers)
+          ..contentLength = contentLength;
+        return request.sendWith(httpClient);
       },
       options: retryOptions,
       retryIf: (error) => error is ClientException || error is TimeoutException,
@@ -327,18 +280,23 @@ class Fetch {
     return _handleRequest(HttpMethod.delete, url, body, options);
   }
 
-  Future<Map<String, dynamic>> postFile(
+  /// Uploads [file] with [method], streaming it from disk.
+  Future<Map<String, dynamic>> uploadFile(
+    HttpMethod method,
     String url,
     File file,
     FileOptions fileOptions, {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
-  }) {
-    return _handleFileRequest(
-      HttpMethod.post,
+  }) async {
+    final int contentLength = await file.length();
+    return _handleUploadRequest(
+      method,
       url,
-      file,
+      () => file.openRead(),
+      contentLength,
+      file.path,
       fileOptions,
       options,
       retryOptions,
@@ -346,26 +304,9 @@ class Fetch {
     );
   }
 
-  Future<Map<String, dynamic>> putFile(
-    String url,
-    File file,
-    FileOptions fileOptions, {
-    FetchOptions? options,
-    required SupabaseRetryOptions retryOptions,
-    Future<void>? abortSignal,
-  }) {
-    return _handleFileRequest(
-      HttpMethod.put,
-      url,
-      file,
-      fileOptions,
-      options,
-      retryOptions,
-      abortSignal,
-    );
-  }
-
-  Future<Map<String, dynamic>> postBinaryFile(
+  /// Uploads [data] with [method].
+  Future<Map<String, dynamic>> uploadBytes(
+    HttpMethod method,
     String url,
     Uint8List data,
     FileOptions fileOptions, {
@@ -373,10 +314,12 @@ class Fetch {
     required SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
   }) {
-    return _handleBinaryFileRequest(
-      HttpMethod.post,
+    return _handleUploadRequest(
+      method,
       url,
-      data,
+      () => Stream.value(data),
+      data.length,
+      Uri.parse(url).path,
       fileOptions,
       options,
       retryOptions,
@@ -384,22 +327,50 @@ class Fetch {
     );
   }
 
-  Future<Map<String, dynamic>> putBinaryFile(
+  /// Uploads the bytes of [data] with [method] as they are read.
+  ///
+  /// A stream can only be listened to once, so the request is never retried.
+  Future<Map<String, dynamic>> uploadStream(
+    HttpMethod method,
     String url,
-    Uint8List data,
+    Stream<List<int>> data,
+    int? contentLength,
     FileOptions fileOptions, {
     FetchOptions? options,
-    required SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
   }) {
-    return _handleBinaryFileRequest(
-      HttpMethod.put,
+    return _handleUploadRequest(
+      method,
       url,
-      data,
+      () => data,
+      contentLength,
+      Uri.parse(url).path,
       fileOptions,
       options,
-      retryOptions,
+      const SupabaseRetryOptions(enabled: false),
       abortSignal,
     );
+  }
+}
+
+/// A request whose body is created when it is finalized, so each attempt of a
+/// retried upload sends a fresh stream.
+final class _UploadRequest extends http.BaseRequest with http.Abortable {
+  _UploadRequest(
+    super.method,
+    super.url,
+    this._createBody, {
+    this.abortTrigger,
+  });
+
+  final Stream<List<int>> Function() _createBody;
+
+  @override
+  final Future<void>? abortTrigger;
+
+  @override
+  http.ByteStream finalize() {
+    super.finalize();
+    return http.ByteStream(_createBody());
   }
 }

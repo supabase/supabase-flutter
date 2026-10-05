@@ -77,7 +77,8 @@ class StorageFileApi {
   /// format `folder/subfolder/filename.png`. The bucket must already
   /// exist before attempting to upload.
   ///
-  /// [file] is the File object to be stored in the bucket.
+  /// [file] is the File object to be stored in the bucket. It is streamed
+  /// from disk, so it never has to be in memory as a whole.
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
@@ -123,7 +124,8 @@ class StorageFileApi {
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
-    final response = await _storageFetch.postFile(
+    final response = await _storageFetch.uploadFile(
+      HttpMethod.post,
       '$url/object/$finalPath',
       file,
       fileOptions,
@@ -161,12 +163,60 @@ class StorageFileApi {
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
-    final response = await _storageFetch.postBinaryFile(
+    final response = await _storageFetch.uploadBytes(
+      HttpMethod.post,
       '$url/object/$finalPath',
       data,
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      abortSignal: abortSignal,
+    );
+
+    return _uploadResponse(cleanPath, response);
+  }
+
+  /// Uploads a byte stream to an existing bucket.
+  ///
+  /// [path] is the relative file path without the bucket ID. Should be of the
+  /// format `folder/subfolder/filename.png`. The bucket must already
+  /// exist before attempting to upload.
+  ///
+  /// [data] yields the bytes to be stored in the bucket. They are sent as they
+  /// arrive, so the file never has to be in memory as a whole.
+  ///
+  /// {@template storage_upload_stream}
+  /// [contentLength] is the total number of bytes [data] yields. When it is
+  /// given, the server rejects a file over the bucket's size limit before any
+  /// bytes are transferred. When it is `null`, the body is sent with chunked
+  /// transfer encoding.
+  ///
+  /// A stream can only be listened to once, so the upload is never retried.
+  /// Open a new stream and call again to retry.
+  /// {@endtemplate}
+  ///
+  /// [fileOptions] HTTP headers. For example `cacheControl`
+  ///
+  /// {@macro storage_abort_signal}
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> uploadStream(
+    String path,
+    Stream<List<int>> data, {
+    int? contentLength,
+    FileOptions fileOptions = const FileOptions(),
+    Future<void>? abortSignal,
+  }) async {
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
+    final response = await _storageFetch.uploadStream(
+      HttpMethod.post,
+      '$url/object/$finalPath',
+      data,
+      contentLength,
+      fileOptions,
+      options: _fetchOptions,
       abortSignal: abortSignal,
     );
 
@@ -204,7 +254,8 @@ class StorageFileApi {
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
-    final response = await _storageFetch.putFile(
+    final response = await _storageFetch.uploadFile(
+      HttpMethod.put,
       requestUrl.toString(),
       file,
       fileOptions,
@@ -246,11 +297,55 @@ class StorageFileApi {
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
-    final response = await _storageFetch.putBinaryFile(
+    final response = await _storageFetch.uploadBytes(
+      HttpMethod.put,
       requestUrl.toString(),
       data,
       fileOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      abortSignal: abortSignal,
+    );
+
+    return _uploadResponse(cleanPath, response);
+  }
+
+  /// Upload a byte stream with a token generated from `createUploadSignedUrl`.
+  ///
+  /// [path] The file path, including the file name. Should be of the format
+  /// `folder/subfolder/filename.png`. The bucket must already exist before
+  /// attempting to upload.
+  ///
+  /// [token] The token generated from `createUploadSignedUrl`
+  ///
+  /// [data] yields the bytes to be stored in the bucket. They are sent as they
+  /// arrive, so the file never has to be in memory as a whole.
+  ///
+  /// {@macro storage_upload_stream}
+  ///
+  /// Returns an [UploadResponse] with the path and full path of the stored
+  /// object. [UploadResponse.id] is `null`, because the server does not
+  /// report it for uploads through a signed URL.
+  ///
+  /// {@macro storage_abort_signal}
+  Future<UploadResponse> uploadStreamToSignedUrl(
+    String path,
+    String token,
+    Stream<List<int>> data, {
+    int? contentLength,
+    FileOptions fileOptions = const FileOptions(),
+    Future<void>? abortSignal,
+  }) async {
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
+    var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
+    requestUrl = requestUrl.replace(queryParameters: {'token': token});
+
+    final response = await _storageFetch.uploadStream(
+      HttpMethod.put,
+      requestUrl.toString(),
+      data,
+      contentLength,
+      fileOptions,
       abortSignal: abortSignal,
     );
 
@@ -323,7 +418,8 @@ class StorageFileApi {
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
-    final response = await _storageFetch.putFile(
+    final response = await _storageFetch.uploadFile(
+      HttpMethod.put,
       '$url/object/$finalPath',
       file,
       fileOptions,
@@ -362,12 +458,52 @@ class StorageFileApi {
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
-    final response = await _storageFetch.putBinaryFile(
+    final response = await _storageFetch.uploadBytes(
+      HttpMethod.put,
       '$url/object/$finalPath',
       data,
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      abortSignal: abortSignal,
+    );
+
+    return _uploadResponse(cleanPath, response);
+  }
+
+  /// Replaces an existing file at the specified path with a byte stream.
+  ///
+  /// [path] is the relative file path without the bucket ID. Should be of the
+  /// format `folder/subfolder/filename.png`. The bucket must already
+  /// exist before attempting to upload.
+  ///
+  /// [data] yields the bytes to be stored in the bucket. They are sent as they
+  /// arrive, so the file never has to be in memory as a whole.
+  ///
+  /// {@macro storage_upload_stream}
+  ///
+  /// [fileOptions] HTTP headers. For example `cacheControl`
+  ///
+  /// {@macro storage_abort_signal}
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> updateStream(
+    String path,
+    Stream<List<int>> data, {
+    int? contentLength,
+    FileOptions fileOptions = const FileOptions(),
+    Future<void>? abortSignal,
+  }) async {
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
+    final response = await _storageFetch.uploadStream(
+      HttpMethod.put,
+      '$url/object/$finalPath',
+      data,
+      contentLength,
+      fileOptions,
+      options: _fetchOptions,
       abortSignal: abortSignal,
     );
 

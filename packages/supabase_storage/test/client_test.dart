@@ -643,6 +643,80 @@ void main() {
     expect(objectMetadata.metadata, metadata);
   });
 
+  test('upload a stream with its content length', () async {
+    final path = '$uploadPath-stream';
+    final response = await storage
+        .from(newBucketName)
+        .uploadStream(
+          path,
+          file.openRead(),
+          contentLength: file.lengthSync(),
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            metadata: {'source': 'stream'},
+          ),
+        );
+
+    expect(response.path, path);
+    final objectMetadata = await storage.from(newBucketName).getMetadata(path);
+    expect(objectMetadata.size, file.lengthSync());
+    expect(objectMetadata.contentType, 'image/jpeg');
+    expect(objectMetadata.metadata, {'source': 'stream'});
+    expect(
+      await storage.from(newBucketName).download(path),
+      file.readAsBytesSync(),
+    );
+  });
+
+  test('upload a stream of unknown length', () async {
+    final path = '$uploadPath-chunked';
+    await storage.from(newBucketName).uploadStream(path, file.openRead());
+
+    expect(
+      await storage.from(newBucketName).download(path),
+      file.readAsBytesSync(),
+    );
+  });
+
+  test('update a stream replaces the object', () async {
+    final path = '$uploadPath-stream-update';
+    await storage.from(newBucketName).upload(path, file);
+    await storage
+        .from(newBucketName)
+        .updateStream(
+          path,
+          Stream.value(utf8.encode('replaced')),
+          contentLength: 8,
+          fileOptions: const FileOptions(contentType: 'text/plain'),
+        );
+
+    expect(
+      utf8.decode(await storage.from(newBucketName).download(path)),
+      'replaced',
+    );
+  });
+
+  test('upload a stream to a signed url', () async {
+    final path = '$uploadPath-stream-signed';
+    final signed = await storage
+        .from(newBucketName)
+        .createSignedUploadUrl(path);
+    final response = await storage
+        .from(newBucketName)
+        .uploadStreamToSignedUrl(
+          path,
+          signed.token,
+          file.openRead(),
+          contentLength: file.lengthSync(),
+        );
+
+    expect(response.path, path);
+    expect(
+      await storage.from(newBucketName).download(path),
+      file.readAsBytesSync(),
+    );
+  });
+
   test('check if object exists', () async {
     await storage.from(newBucketName).upload('$uploadPath-exists', file);
     final exists = await storage

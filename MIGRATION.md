@@ -1979,6 +1979,43 @@ try {
 controller used to occupy. `download` and `downloadStream` gain the parameter; on the stream the
 abort surfaces as a `RequestAbortedException` error.
 
+### Storage uploads send the raw file body
+
+Every upload used to be a `multipart/form-data` request with the file as one part and
+`cacheControl` and `metadata` as form fields, and `upload(path, file)` read the whole file into
+memory before sending it. The file is now the request body itself, with the options as headers:
+`Content-Type`, `Cache-Control: max-age=<seconds>`, `x-upsert` and `x-metadata` holding the
+metadata as base64-encoded JSON. This is the shape `supabase-js` sends for an `ArrayBuffer`, and
+the storage server treats both the same. `upload`, `update` and `uploadToSignedUrl` stream the
+`File` from disk, so its size no longer matters for memory.
+
+The Dart API is unchanged. Only middleware, proxies or test fixtures that matched on the
+multipart body need to read the raw body and the `x-metadata` header instead.
+
+```dart
+// A fixture that used to parse the multipart form
+final request = httpClient.requests.single;
+expect(request.bodyBytes, fileBytes);
+expect(request.headers['cache-control'], 'max-age=3600');
+expect(
+  json.decode(utf8.decode(base64.decode(request.headers['x-metadata']!))),
+  {'owner': 'me'},
+);
+```
+
+Uploading a `Stream<List<int>>` is new: `uploadStream`, `updateStream` and
+`uploadStreamToSignedUrl` send the bytes as they arrive, with an optional `contentLength`. A
+stream can only be read once, so these are never retried.
+
+```dart
+final file = XFile(path);
+await supabase.storage.from('avatars').uploadStream(
+  'avatar.png',
+  file.openRead(),
+  contentLength: await file.length(),
+);
+```
+
 ### `TracePropagationOptions` requires a `traceContextProvider`
 
 `TracePropagationOptions.enabled` is gone and `traceContextProvider` is required. The
