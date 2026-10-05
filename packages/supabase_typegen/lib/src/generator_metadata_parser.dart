@@ -70,8 +70,10 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
 /// The document carries a `version` field, currently 1, and the
 /// semantically sorted collections produced by `sortGeneratorMetadata`:
 /// `tables`, `foreignTables`, `views`, `materializedViews`, `columns`,
-/// `primaryKeys`, `relationships`, `functions` and `types`. Collections and
-/// fields the generator does not need, such as `functions`, are ignored.
+/// `primaryKeys`, `relationships`, `functions` and `types`. Of `functions`,
+/// only the computed fields and computed relationships are read: functions
+/// whose single input argument is the row type of a described relation of
+/// the same schema. Fields the generator does not need are ignored.
 ///
 /// Tables and foreign tables are always insertable and updatable. Views use
 /// the `is_insert_enabled` and `is_update_enabled` flags, falling back to
@@ -159,6 +161,27 @@ DatabaseDescription _parseGeneratorMetadata(
   final foreignKeysByColumn = _foreignKeysByColumn(document, schemas);
   final primaryKeysByTable = _primaryKeysByTable(document, schemas);
   final enumTypes = _enumTypes(document);
+  final typesById = {
+    for (final type
+        in (document['types'] as List<dynamic>? ?? const [])
+            .cast<Map<String, dynamic>>())
+      type['id'] as int: type,
+  };
+  final relationsById = {
+    for (final collection in _relationCollections)
+      for (final relation
+          in (document[collection] as List<dynamic>? ?? const [])
+              .cast<Map<String, dynamic>>())
+        relation['id'] as int: (
+          relation['schema'] as String,
+          relation['name'] as String,
+        ),
+  };
+  final generatedRelations = {
+    for (final (:relation, isInsertable: _, isUpdatable: _) in relations)
+      (relation['schema'] as String, relation['name'] as String),
+  };
+  final functionsByRelationId = _functionsByRelationId(document, typesById);
 
   final tables = <TableDescription>[];
   final enumsByType = <(String, String), EnumDescription>{};
@@ -230,6 +253,47 @@ DatabaseDescription _parseGeneratorMetadata(
       );
     }
 
+    final computedFields = <ComputedFieldDescription>[];
+    final computedRelationships = <ComputedRelationshipDescription>[];
+    final columnNames = {for (final column in columns) column.name};
+    final memberNames = <String>{};
+    for (final function
+        in functionsByRelationId[relation['id'] as int] ?? const []) {
+      final name = function['name'] as String;
+      // PostgREST resolves a name to the column first, and an overload of a
+      // computed field is addressed by the same name as the first.
+      if (function['schema'] != relationSchema ||
+          columnNames.contains(name) ||
+          !memberNames.add(name)) {
+        continue;
+      }
+      final returnRelationId = function['return_type_relation_id'] as int?;
+      if (returnRelationId != null) {
+        final target = relationsById[returnRelationId];
+        if (target == null || !generatedRelations.contains(target)) continue;
+        final prorows = function['prorows'] as int?;
+        computedRelationships.add(
+          ComputedRelationshipDescription(
+            name: name,
+            targetSchema: target.$1,
+            targetTable: target.$2,
+            isToMany: prorows != null && prorows > 1,
+          ),
+        );
+        continue;
+      }
+      // A set of scalars has no PostgREST shape to select it by.
+      if (function['is_set_returning_function'] as bool) continue;
+      computedFields.add(
+        _computedField(
+          name,
+          typesById[function['return_type_id'] as int],
+          enumTypes,
+          enumsByType,
+        ),
+      );
+    }
+
     tables.add(
       TableDescription(
         schema: relationSchema,
@@ -238,6 +302,8 @@ DatabaseDescription _parseGeneratorMetadata(
         columns: columns,
         primaryKey:
             primaryKeysByTable[(relationSchema, relationName)] ?? const [],
+        computedFields: computedFields,
+        computedRelationships: computedRelationships,
         isInsertable: isInsertable,
         isUpdatable: isUpdatable,
       ),
@@ -434,3 +500,90 @@ EnumDescription _enumDescription(
   name: format,
   values: enumTypes[(typeSchema, format)] ?? columnEnumValues,
 );
+
+/// The argument modes of a function's input parameters.
+const _inputArgumentModes = {'in', 'inout', 'variadic'};
+
+/// Maps the id of each relation to the functions whose single input argument
+/// is the relation's row type, in document order: the candidates for its
+/// computed fields and computed relationships.
+///
+/// The argument is matched on its `type_id` through the `types` collection,
+/// which records the relation a row type belongs to, so a named parameter
+/// (`book public.books`) and a schema-qualified type match as well as a bare
+/// one.
+Map<int, List<Map<String, dynamic>>> _functionsByRelationId(
+  Map<String, dynamic> document,
+  Map<int, Map<String, dynamic>> typesById,
+) {
+  final functions = <int, List<Map<String, dynamic>>>{};
+  for (final function
+      in (document['functions'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()) {
+    final inputArguments = [
+      for (final argument
+          in (function['args'] as List<dynamic>? ?? const [])
+              .cast<Map<String, dynamic>>())
+        if (_inputArgumentModes.contains(argument['mode'])) argument,
+    ];
+    if (inputArguments case [final argument]) {
+      final relationId =
+          typesById[argument['type_id'] as int]?['type_relation_id'] as int?;
+      if (relationId != null) {
+        functions.putIfAbsent(relationId, () => []).add(function);
+      }
+    }
+  }
+  return functions;
+}
+
+/// The computed field [name] returning [returnType], a record of the `types`
+/// collection, or `null` for a type the document does not list, which reads
+/// as an unknown kind.
+ComputedFieldDescription _computedField(
+  String name,
+  Map<String, dynamic>? returnType,
+  Map<(String, String), List<String>> enumTypes,
+  Map<(String, String), EnumDescription> enumsByType,
+) {
+  if (returnType == null) {
+    return ComputedFieldDescription(
+      name: name,
+      postgresFormat: 'unknown',
+      typeKind: ColumnTypeKind.unknown,
+    );
+  }
+  final format = returnType['name'] as String;
+  final typeSchema = returnType['schema'] as String;
+  final isArray = format.startsWith('_');
+  final elementFormat = isArray ? format.substring(1) : format;
+  // The array type of an enum carries no values itself; its element type
+  // does.
+  final enumValues = isArray
+      ? (enumTypes[(typeSchema, elementFormat)] ?? const <String>[])
+      : (returnType['enums'] as List<dynamic>? ?? const []).cast<String>();
+  final isEnum = enumValues.isNotEmpty;
+  EnumDescription? enumDescription;
+  if (isEnum) {
+    final described = _enumDescription(
+      elementFormat,
+      typeSchema,
+      enumValues,
+      enumTypes,
+    );
+    enumDescription = enumsByType.putIfAbsent(
+      (described.schema, described.name),
+      () => described,
+    );
+  }
+  return ComputedFieldDescription(
+    name: name,
+    postgresFormat: isEnum && !isArray
+        ? enumDescription!.qualifiedName
+        : format,
+    typeKind: _typeKind(format, isEnum: isEnum),
+    elementTypeKind: isArray ? _typeKind(elementFormat, isEnum: isEnum) : null,
+    boundTypeKind: _rangeBoundKinds[elementFormat],
+    enumType: enumDescription,
+  );
+}

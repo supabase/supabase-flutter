@@ -134,6 +134,8 @@ class TableDescription {
     required this.name,
     required this.columns,
     this.primaryKey = const [],
+    this.computedFields = const [],
+    this.computedRelationships = const [],
     this.comment,
     this.isInsertable = true,
     this.isUpdatable = true,
@@ -157,6 +159,18 @@ class TableDescription {
   /// The names of the primary key columns in key order; empty for a view
   /// or a table without one.
   final List<String> primaryKey;
+
+  /// The computed fields of the table: functions of its schema whose only
+  /// argument is the table's row type and that return a scalar, in document
+  /// order. A function named like one of [columns] is left out, since
+  /// PostgREST resolves the name to the column.
+  final List<ComputedFieldDescription> computedFields;
+
+  /// The computed relationships of the table: functions of its schema whose
+  /// only argument is the table's row type and that return a row or a set of
+  /// rows of a described table, in document order. A function named like one
+  /// of [columns] is left out.
+  final List<ComputedRelationshipDescription> computedRelationships;
 
   /// Whether rows can be inserted through the relation. Tables and foreign
   /// tables always are; views only when the database reports that INSERT
@@ -273,4 +287,65 @@ class EnumDescription {
 
   /// The schema-qualified name, for example `public.mood`.
   String get qualifiedName => '$schema.$name';
+}
+
+/// A computed field of a table: a function taking the table's row type and
+/// returning a scalar, which PostgREST selects like a column but leaves out
+/// of `*`.
+class ComputedFieldDescription {
+  const ComputedFieldDescription({
+    required this.name,
+    required this.postgresFormat,
+    required this.typeKind,
+    this.elementTypeKind,
+    this.boundTypeKind,
+    this.enumType,
+  });
+
+  /// Name of the function in the database, which the field is selected by.
+  final String name;
+
+  /// The Postgres return type, for example `int8`, `_text` or `public.mood`.
+  final String postgresFormat;
+
+  /// The kind of Dart type the return value maps to. A function can always
+  /// return `NULL`, so the value is nullable whatever the kind.
+  final ColumnTypeKind typeKind;
+
+  /// The kind of Dart type of the array elements for [ColumnTypeKind.array]
+  /// return types.
+  final ColumnTypeKind? elementTypeKind;
+
+  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] return
+  /// types and for arrays of a range type.
+  final ColumnTypeKind? boundTypeKind;
+
+  /// The Postgres enum of an enum return type or an array of one, which the
+  /// generated type is resolved through; `null` otherwise.
+  final EnumDescription? enumType;
+}
+
+/// A computed relationship of a table: a function taking the table's row type
+/// and returning a row or a set of rows of [targetTable], which PostgREST
+/// embeds like a foreign table.
+class ComputedRelationshipDescription {
+  const ComputedRelationshipDescription({
+    required this.name,
+    required this.targetSchema,
+    required this.targetTable,
+    required this.isToMany,
+  });
+
+  /// Name of the function in the database, which the embed is addressed by.
+  final String name;
+
+  /// The schema of [targetTable].
+  final String targetSchema;
+
+  /// The table whose rows the function returns.
+  final String targetTable;
+
+  /// Whether the function returns a set of more than one row, so the embed is
+  /// a list. A single row and a set declared `ROWS 1` embed as one object.
+  final bool isToMany;
 }

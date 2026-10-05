@@ -506,7 +506,7 @@ void main() {
       contains(
         "staticconsttable=PostgrestTable<BooksRow,BooksInsert,BooksUpdate>("
         "'books',BooksRow.new,schema:'public',primaryKey:[id],"
-        "relations:[authors],);",
+        "relations:[authors],computedFields:[moodOrDefault,titleUpper],);",
       ),
     );
   });
@@ -647,20 +647,15 @@ void main() {
   });
 
   test('a self-referential key produces no relation member', () {
-    // PostgREST needs a computed relationship to embed a table into itself.
+    // PostgREST needs a computed relationship to embed a table into itself,
+    // which the fixture declares as `parent` and `children`.
     final compact = _normalize(
       generateDartCode(hostileSchema),
     ).replaceAll(' ', '');
 
-    expect(
-      compact,
-      isNot(
-        contains(
-          '<MapRow,MapRow>',
-        ),
-      ),
-    );
+    expect(compact, isNot(contains('<MapRow,MapRow>(')));
     expect(compact, isNot(contains('mapByList')));
+    expect(compact, isNot(contains('map_list_fkey')));
   });
 
   test('respects a custom import', () {
@@ -1211,5 +1206,336 @@ void main() {
     expect(code, contains('CountersInsert() : this._({});'));
     expect(code, contains('CountersUpdate() : this._({});'));
     expect(code, contains("int get id => _json['id'] as int;"));
+  });
+  test('computed fields are constants next to the columns, with no row '
+      'getter', () {
+    final code = _normalize(generateDartCode(schema));
+    final compact = code.replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconsttitleUpper=PostgrestComputedField<BooksRow,String>("
+        "'title_upper',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstmoodOrDefault=PostgrestComputedField<BooksRow,Mood>("
+        "'mood_or_default',fromJson:_moodFromJson,);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstdiscount=PostgrestComputedField<BookPricesRow,num>("
+        "'discount',);",
+      ),
+    );
+    expect(compact, contains('computedFields:[discount],'));
+    expect(code, isNot(contains('get titleUpper')));
+    expect(code, isNot(contains('get moodOrDefault')));
+    expect(code, isNot(contains('get discount =>')));
+    expect(code, isNot(contains('titleUpper,')));
+    expect(code, isNot(contains('String? titleUpper')));
+  });
+
+  test('a function named like a column gets no computed field', () {
+    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
+
+    expect(
+      compact,
+      isNot(contains("PostgrestComputedField<BooksRow,String>('title'")),
+    );
+    expect(
+      compact,
+      contains("staticconsttitle=PostgrestColumn<BooksRow,String>('title');"),
+    );
+  });
+
+  test('computed relationships embed through the function name', () {
+    final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "///The`books`rowcomputedby`latest_book`."
+        "staticconstlatestBook=PostgrestToOneRelation<AuthorsRow,BooksRow>"
+        ".computed('latest_book',referencedTable:'books',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "///The`books`rowscomputedby`recent_books`."
+        "staticconstrecentBooks=PostgrestToManyRelation<AuthorsRow,BooksRow>"
+        ".computed('recent_books',referencedTable:'books',);",
+      ),
+    );
+    expect(
+      compact,
+      contains('relations:[authorStats,books,latestBook,recentBooks],'),
+    );
+  });
+
+  test('computed field members are kept apart from reserved words, the '
+      'table definition and the column constants', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstclass\$=PostgrestComputedField<PostgrestTableRow,String>("
+        "'class',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconsttable\$=PostgrestComputedField<PostgrestTableRow,bool>("
+        "'table',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstquoteNameTail\$=PostgrestComputedField<PostgrestTableRow,"
+        "int>('quote_name_tail',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        'computedFields:[class\$,table\$,quoteNameTail\$,moodsByWeight,'
+        'thumbnail,],',
+      ),
+    );
+  });
+
+  test('computed fields decode through the helpers the columns share', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstmoodsByWeight=PostgrestComputedField<PostgrestTableRow,"
+        "List<String\$>>('moods_by_weight',fromJson:_stringListFromJson\$,);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstthumbnail=PostgrestComputedField<PostgrestTableRow,"
+        "Uint8List>('thumbnail',fromJson:_uint8ListFromJson,);",
+      ),
+    );
+    expect(
+      'List<String\$>_stringListFromJson\$(Objectjson)'.allMatches(compact),
+      hasLength(1),
+    );
+    expect(
+      'Uint8List_uint8ListFromJson(Objectjson)'.allMatches(compact),
+      hasLength(1),
+    );
+  });
+
+  test('computed relationships reach the table itself and tables of other '
+      'schemas', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstparent=PostgrestToOneRelation<MapRow,MapRow>.computed("
+        "'parent',referencedTable:'map',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstchildren=PostgrestToManyRelation<MapRow,MapRow>.computed("
+        "'children',referencedTable:'map',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstpostgrestColumn=PostgrestToManyRelation<PostgrestTableRow,"
+        "EvilMultilineSchemaNamePostgrestColumnRow>.computed("
+        "'postgrest_column',referencedTable:'postgrest_column');",
+      ),
+    );
+    expect(
+      compact,
+      contains('relations:[mapByMood,mapByDays,map,postgrestColumn],'),
+    );
+  });
+
+  test('a computed relationship into a table without columns gets no '
+      'member', () {
+    const database = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'todos',
+          columns: [
+            ColumnDescription(
+              name: 'id',
+              postgresFormat: 'int8',
+              typeKind: ColumnTypeKind.integer,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+          ],
+          computedRelationships: [
+            ComputedRelationshipDescription(
+              name: 'audit',
+              targetSchema: 'public',
+              targetTable: 'empty',
+              isToMany: true,
+            ),
+          ],
+        ),
+        TableDescription(schema: 'public', name: 'empty', columns: []),
+      ],
+      enums: [],
+    );
+
+    final code = _normalize(generateDartCode(database));
+
+    expect(code, isNot(contains('relations:')));
+    expect(code, isNot(contains('audit')));
+  });
+
+  test('a computed relationship named like a foreign key embed replaces '
+      'it', () {
+    const id = ColumnDescription(
+      name: 'id',
+      postgresFormat: 'int8',
+      typeKind: ColumnTypeKind.integer,
+      isRequired: true,
+      hasDefault: false,
+      isNullable: false,
+    );
+    const database = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'authors',
+          columns: [id],
+          // PostgREST resolves `authors(*)` on books to this function, so the
+          // detected foreign key embed is unreachable by its plain name.
+          computedRelationships: [
+            ComputedRelationshipDescription(
+              name: 'books',
+              targetSchema: 'public',
+              targetTable: 'books',
+              isToMany: true,
+            ),
+          ],
+        ),
+        TableDescription(
+          schema: 'public',
+          name: 'books',
+          columns: [
+            id,
+            ColumnDescription(
+              name: 'author_id',
+              postgresFormat: 'int8',
+              typeKind: ColumnTypeKind.integer,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+          ],
+          computedRelationships: [
+            ComputedRelationshipDescription(
+              name: 'authors',
+              targetSchema: 'public',
+              targetTable: 'authors',
+              isToMany: false,
+            ),
+          ],
+        ),
+      ],
+      relationships: [
+        RelationshipDescription(
+          foreignKeyName: 'books_author_id_fkey',
+          sourceSchema: 'public',
+          sourceTable: 'books',
+          sourceColumns: ['author_id'],
+          targetSchema: 'public',
+          targetTable: 'authors',
+          targetColumns: ['id'],
+        ),
+      ],
+      enums: [],
+    );
+
+    final compact = _normalize(generateDartCode(database)).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstauthors=PostgrestToOneRelation<BooksRow,AuthorsRow>"
+        ".computed('authors',referencedTable:'authors',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstbooks=PostgrestToManyRelation<AuthorsRow,BooksRow>"
+        ".computed('books',referencedTable:'books',);",
+      ),
+    );
+    expect(compact, isNot(contains("('authors',columns:")));
+    expect(compact, isNot(contains("('books',columns:")));
+    expect(compact, contains('relations:[authors],'));
+    expect(compact, contains('relations:[books],'));
+  });
+
+  test('a bytea computed field alone brings the typed_data import', () {
+    const database = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'todos',
+          columns: [
+            ColumnDescription(
+              name: 'id',
+              postgresFormat: 'int8',
+              typeKind: ColumnTypeKind.integer,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+          ],
+          computedFields: [
+            ComputedFieldDescription(
+              name: 'thumbnail',
+              postgresFormat: 'bytea',
+              typeKind: ColumnTypeKind.binary,
+            ),
+          ],
+        ),
+      ],
+      enums: [],
+    );
+
+    final code = generateDartCode(database);
+
+    expect(code, contains("import 'dart:typed_data';"));
+    expect(code, contains('PostgrestComputedField<TodosRow, Uint8List>'));
   });
 }
