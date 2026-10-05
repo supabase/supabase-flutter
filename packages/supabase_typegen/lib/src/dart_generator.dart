@@ -171,6 +171,7 @@ class _TypeNameRegistry {
     'num',
     'bool',
     'Never',
+    'Function',
     'ArgumentError',
     'PostgrestTable',
     'PostgrestColumn',
