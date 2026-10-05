@@ -56,18 +56,7 @@ class PostgrestQueryBuilder {
   /// supabase.from('users').select('id, messages').count(CountOption.exact);
   /// ```
   PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
-    // Remove whitespaces except when quoted
-    var quoted = false;
-    final whitespaceRegularExpression = RegExp(r'\s');
-    final cleanedColumns = columns.split('').map((c) {
-      if (whitespaceRegularExpression.hasMatch(c) && !quoted) {
-        return '';
-      }
-      if (c == '"') {
-        quoted = !quoted;
-      }
-      return c;
-    }).join();
+    final cleanedColumns = _removeUnquotedWhitespace(columns);
 
     return _filterBuilder(
       _config.copyWith(

@@ -49,18 +49,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   ///
   /// Append [count] to also receive the total number of rows.
   PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
-    // Remove whitespaces except when quoted
-    var quoted = false;
-    final whitespaceRegularExpression = RegExp(r'\s');
-    final cleanedColumns = columns.split('').map((c) {
-      if (whitespaceRegularExpression.hasMatch(c) && !quoted) {
-        return '';
-      }
-      if (c == '"') {
-        quoted = !quoted;
-      }
-      return c;
-    }).join();
+    final cleanedColumns = _removeUnquotedWhitespace(columns);
     final newHeaders = {..._headers};
 
     final url = _url.overrideSearchParameters('select', cleanedColumns);

@@ -233,8 +233,12 @@ void main() {
       expect(() => row.read(Orders.id), throwsA(isA<TypeError>()));
     });
 
-    test('a JSON path reads under its last key', () async {
-      httpClient.stub({'id': 1, 'gift': 'true', 'tags': null});
+    test('a JSON path reads under its own expression', () async {
+      httpClient.stub({
+        'id': 1,
+        'metadata->>gift': 'true',
+        'metadata->tags': null,
+      });
 
       final row = await client.table(Orders.table).selectOnly([
         Orders.id,
@@ -246,44 +250,71 @@ void main() {
       expect(row.read(Orders.metadata.jsonObject('tags')), isNull);
       expect(
         () => row.read(Orders.metadata.jsonText('wrapping')),
-        throwsNotSelected('wrapping'),
+        throwsNotSelected('metadata->>wrapping'),
+      );
+      expect(
+        httpClient.requests.last.url.queryParameters['select'],
+        'id,"metadata->>gift":metadata->>gift,"metadata->tags":metadata->tags',
       );
     });
 
-    test('a JSON path ending in an array index reads under the key before '
-        'it', () async {
+    test('JSON paths of one column read their own values', () async {
       httpClient.stub({
-        'id': 1,
-        'tags': 'urgent',
-        'items': {'sku': 'A1'},
-        'metadata': 'first',
-        'sku': 'B2',
+        'metadata': {
+          'tags': ['urgent', 'later'],
+        },
+        'metadata->tags->>0': 'urgent',
+        'metadata->tags->>1': 'later',
       });
       final firstTag = Orders.metadata.jsonObject('tags').jsonText('0');
-      final lastItem = Orders.metadata.jsonObject('items').jsonObject('-1');
-      final firstElement = Orders.metadata.jsonText('0');
-      final nestedSku = Orders.metadata
-          .jsonObject('items')
-          .jsonObject('0')
-          .jsonObject('1')
-          .jsonText('sku');
+      final secondTag = Orders.metadata.jsonObject('tags').jsonText('1');
 
       final row = await client.table(Orders.table).selectOnly([
-        Orders.id,
+        Orders.metadata,
         firstTag,
-        lastItem,
-        firstElement,
-        nestedSku,
+        secondTag,
       ]).single();
 
       expect(row.read(firstTag), 'urgent');
-      expect(row.read(lastItem), {'sku': 'A1'});
-      expect(row.read(firstElement), 'first');
-      expect(row.read(nestedSku), 'B2');
+      expect(row.read(secondTag), 'later');
+      expect(row.read(Orders.metadata), {
+        'tags': ['urgent', 'later'],
+      });
+    });
+
+    test('a JSON path does not select its column', () async {
+      httpClient.stub({'metadata->>0': 'first'});
+
+      final row = await client.table(Orders.table).selectOnly([
+        Orders.metadata.jsonText('0'),
+      ]).single();
+
+      expect(() => row.read(Orders.metadata), throwsNotSelected('metadata'));
+      expect(
+        () => row.read(Orders.metadata.jsonText('1')),
+        throwsNotSelected('metadata->>1'),
+      );
     });
   });
 
   group('relations', () {
+    test('a derivation inside an embed reads under the embedded key', () async {
+      httpClient.stub({
+        'items': [
+          {'sku': 'A1', 'sku->>k': 'v'},
+        ],
+      });
+
+      final row = await client.table(Orders.table).selectOnly([
+        Orders.items(Items.sku).cast(PostgrestCastTarget.text),
+        Orders.items(Items.sku).jsonText('k'),
+      ]).single();
+
+      final item = row.read(Orders.items).single;
+      expect(item.read(Items.sku.cast(PostgrestCastTarget.text)), 'A1');
+      expect(item.read(Items.sku.jsonText('k')), 'v');
+    });
+
     test('a to-one relation reads as a nested partial row', () async {
       httpClient.stub([
         {

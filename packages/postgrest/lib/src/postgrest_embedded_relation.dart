@@ -360,6 +360,9 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
   @override
   Value Function(Object json)? get _fromJson => _inner._fromJson;
 
+  @override
+  String? get _castKey => _inner._castKey;
+
   /// The filter form, `parent.title`, dotted through every level of a
   /// nested projection.
   String get embeddedFilterName => _filterName;
@@ -374,7 +377,7 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
   @override
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
     String derivation, {
-    required String key,
+    required String? key,
     required Derived Function(Object json)? fromJson,
   }) => _EmbeddedDerivation._(
     relation,

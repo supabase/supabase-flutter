@@ -91,16 +91,10 @@ void main() {
     test('reads a JSON path like a column', () {
       expect(Users.profile.jsonText('city').expression, 'profile->>city');
       expect(Users.profile.jsonObject('city').expression, 'profile->city');
-      expect(Users.profile.jsonText('city').responseKey, 'city');
-    });
-
-    test('names a JSON path ending in an array index after the key before '
-        'it', () {
-      expect(Users.profile.jsonText('0').responseKey, 'profile');
-      expect(Users.profile.jsonObject('-1').responseKey, 'profile');
+      expect(Users.profile.jsonText('city').responseKey, 'profile->>city');
       expect(
         Users.profile.jsonObject('tags').jsonText('0').responseKey,
-        'tags',
+        'profile->tags->>0',
       );
     });
 

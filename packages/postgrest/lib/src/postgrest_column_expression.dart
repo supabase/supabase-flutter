@@ -14,13 +14,17 @@ sealed class PostgrestSelectable<Row> {
   const PostgrestSelectable._();
 
   /// The text PostgREST expects in a `select` list and, for a column
-  /// expression, on the left of an operator.
+  /// expression, on the left of an operator. A JSON path is renamed to its
+  /// [responseKey] in a `select` list.
   String get expression;
 
   /// The key the entry comes back under in a response row: the column name,
-  /// the function name of an aggregate, the last key of a JSON path, or the
+  /// the function name of an aggregate, the expression of a JSON path, or the
   /// [PostgrestRelation.key] of an embed.
   String get responseKey;
+
+  /// The text the entry is sent as in a `select` list.
+  String get _selectExpression => expression;
 
   @override
   String toString() => expression;
@@ -51,12 +55,18 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// when the decoded JSON is the value.
   Value Function(Object json)? get _fromJson;
 
+  /// The key a cast of this expression comes back under, or `null` when the
+  /// cast is keyed by its own expression, as a JSON path is.
+  // ignore: avoid-unnecessary-nullable-return-type
+  String? get _castKey => responseKey;
+
   /// Applies [derivation] where PostgREST expects it: appended, or inside an
-  /// embedded projection's parentheses. The result comes back under [key]
-  /// and is decoded with [fromJson].
+  /// embedded projection's parentheses. The result comes back under [key],
+  /// or under its own expression sent as an alias when [key] is `null`, and
+  /// is decoded with [fromJson].
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
     String derivation, {
-    required String key,
+    required String? key,
     required Derived Function(Object json)? fromJson,
   }) => _Derivation._('$expression$derivation', key, fromJson);
 
@@ -67,12 +77,14 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// `order`. Make it the last step in a chain, since PostgREST applies only
   /// the first of two casts and rejects a JSON path on a cast.
   ///
-  /// The cast value comes back under the key of what was cast.
+  /// The cast value comes back under the key of what was cast, so a column
+  /// and its cast in one `select` collide. A cast JSON path is keyed by its
+  /// own expression instead.
   PostgrestDerivedExpression<Row, Target> cast<Target extends Object>(
     PostgrestCastTarget<Target> target,
   ) => _derive(
     '::${target.sqlType}',
-    key: responseKey,
+    key: _castKey,
     fromJson: target._fromJson,
   );
 
@@ -85,6 +97,13 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// Comparison is textual, so `data->>n=gt.2` excludes a row where `n` is
   /// `10`; use [jsonObject] for numeric comparison. The result keeps the
   /// positions of what it was applied to.
+  ///
+  /// {@template postgrest_json_path_key}
+  /// [path] is sent as written, so it can be a key, an array index or
+  /// several of them, `tags->0`. The value comes back under the whole
+  /// expression, `data->>name`, which the `select` list sends as an alias,
+  /// so a path never collides with its column or another path of it.
+  /// {@endtemplate}
   PostgrestColumnExpression<Row, String> jsonText(String path);
 
   /// Reads a `json`/`jsonb` path as JSON, with `->`.
@@ -94,6 +113,8 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   ///
   /// The result keeps this expression's [Value], but `->` returns `jsonb`;
   /// chain [jsonText] or [cast] to reach a scalar.
+  ///
+  /// {@macro postgrest_json_path_key}
   PostgrestColumnExpression<Row, Value> jsonObject(String path);
 
   /// The sum of this expression across the group, typed [double] whatever
@@ -407,11 +428,11 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
 
   @override
   PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$name->>$path', _jsonPathKey(path, name));
+      PostgrestJsonPath._('$name->>$path');
 
   @override
   PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$name->$path', _jsonPathKey(path, name));
+      PostgrestJsonPath._('$name->$path');
 }
 
 /// A stored `NOT NULL` column, see [PostgrestStoredColumn].
@@ -521,11 +542,11 @@ final class PostgrestComputedField<Row, Value extends Object>
 
   @override
   PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$name->>$path', _jsonPathKey(path, name));
+      PostgrestJsonPath._('$name->>$path');
 
   @override
   PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$name->$path', _jsonPathKey(path, name));
+      PostgrestJsonPath._('$name->$path');
 
   @override
   Value? _read(Object? json, _NestedSelection nested) => switch (json) {
