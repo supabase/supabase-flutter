@@ -669,24 +669,72 @@ void main() {
       );
     });
 
-    test('appends nulls=stripped to the Accept header', () async {
+    test('asks for the array media type on a plain select', () async {
       try {
         await postgrestCustomHttpClient.from('users').select().stripNulls();
       } catch (_) {}
 
       expect(
         customHttpClient.lastRequest!.headers['Accept'],
-        'application/json;nulls=stripped',
+        'application/vnd.pgrst.array+json;nulls=stripped',
       );
     });
 
-    test('omits null-valued properties from the response', () async {
+    test('survives a later single()', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .stripNulls()
+            .single();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        'application/vnd.pgrst.object+json;nulls=stripped',
+      );
+    });
+
+    test('leaves a csv request untouched', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .stripNulls()
+            .csv();
+      } catch (_) {}
+
+      expect(customHttpClient.lastRequest!.headers['Accept'], 'text/csv');
+    });
+
+    test('omits null-valued properties from row responses', () async {
+      final response = await postgrest
+          .from('users')
+          .select()
+          .eq('username', 'supabot')
+          .stripNulls();
+      expect(response.single.containsKey('username'), isTrue);
+      expect(response.single.containsKey('data'), isFalse);
+    });
+
+    test('omits null-valued properties when single() comes first', () async {
       final response = await postgrest
           .from('users')
           .select()
           .eq('username', 'supabot')
           .single()
           .stripNulls();
+      expect(response.containsKey('username'), isTrue);
+      expect(response.containsKey('data'), isFalse);
+    });
+
+    test('omits null-valued properties when single() comes last', () async {
+      final response = await postgrest
+          .from('users')
+          .select()
+          .eq('username', 'supabot')
+          .stripNulls()
+          .single();
       expect(response.containsKey('username'), isTrue);
       expect(response.containsKey('data'), isFalse);
     });
