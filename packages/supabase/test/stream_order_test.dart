@@ -88,6 +88,28 @@ void main() {
     ]);
   });
 
+  test('booleans sort false before true', () async {
+    httpClient.stubTable(
+      'todos',
+      rows: [
+        {'id': 1, 'priority': true},
+      ],
+    );
+    final snapshots = await listenToTodosByPriority(ascending: true);
+
+    realtime.emitPostgresChange(
+      table: 'todos',
+      event: PostgresChangeEvent.insert,
+      newRecord: {'id': 2, 'priority': false},
+    );
+
+    await waitFor(() => snapshots.length == 2);
+    expect(snapshots.last, [
+      {'id': 2, 'priority': false},
+      {'id': 1, 'priority': true},
+    ]);
+  });
+
   test('null values do not unsort the rows around them', () async {
     httpClient.stubTable(
       'todos',

@@ -133,6 +133,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// [ascending] defaults to `true`, matching SQL's `ORDER BY`, so results come
   /// back in ascending order unless `ascending: false` is passed.
   ///
+  /// `null` values sort last in ascending order and first in descending order,
+  /// matching PostgreSQL's default, both in the initial fetch and when a
+  /// realtime change is merged into the stream.
+  ///
   /// ```dart
   /// // Ascending is the default.
   /// supabase.from('users').stream(primaryKey: ['id']).order('username');
@@ -338,6 +342,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         return orderModifier * columnA.compareTo(columnB);
       } else if (columnA is String && columnB is String) {
         return orderModifier * columnA.compareTo(columnB);
+      } else if (columnA is bool && columnB is bool) {
+        return orderModifier * (columnA ? 1 : 0).compareTo(columnB ? 1 : 0);
       }
       return 0;
     });
