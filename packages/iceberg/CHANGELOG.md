@@ -1,3 +1,7 @@
+## 0.1.5
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+
 ## 0.1.4
 
  - Update a dependency to the latest release.

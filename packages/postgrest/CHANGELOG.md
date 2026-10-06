@@ -1,3 +1,17 @@
+## 3.0.0-dev.9
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **FIX**(postgrest): key long JSON paths by a SHA-256 digest of the expression ([#1924](https://github.com/supabase/supabase-flutter/issues/1924)). ([7e91e7e3](https://github.com/supabase/supabase-flutter/commit/7e91e7e3ecdb1fe5fa7cfc24e7e3944af3e8b4cb))
+ - **FIX**(postgrest): read a JSON path ending in an array index under the key PostgREST answers with ([#1915](https://github.com/supabase/supabase-flutter/issues/1915)). ([cb12a186](https://github.com/supabase/supabase-flutter/commit/cb12a1861e7eb2fc61221d85898468954ec31e85))
+ - **FIX**(postgrest): strip nulls on plain and single() responses ([#1910](https://github.com/supabase/supabase-flutter/issues/1910)). ([37c29c9a](https://github.com/supabase/supabase-flutter/commit/37c29c9a18df8bd5cbf9da564acb137c209b98f9))
+ - **FEAT**(postgrest): add computed fields and computed relationships to the typed table surface ([#1905](https://github.com/supabase/supabase-flutter/issues/1905)). ([69e46365](https://github.com/supabase/supabase-flutter/commit/69e4636557617f2ea6c85fba1e69fc0f56b5ec76))
+ - **FEAT**(postgrest): add retry, requestTimeout, abortSignal and setHeader to the typed builders ([#1907](https://github.com/supabase/supabase-flutter/issues/1907)). ([e7ab358f](https://github.com/supabase/supabase-flutter/commit/e7ab358f8f0c91e86a5f8cb4aa9c53d1c598a3c9))
+ - **BREAKING** **FIX**(postgrest): order() no longer forces NULLS LAST by default ([#1912](https://github.com/supabase/supabase-flutter/issues/1912)). ([3632d11a](https://github.com/supabase/supabase-flutter/commit/3632d11a6a09715fc6199e5378822a2844231886))
+ - **BREAKING** **FEAT**(postgrest): require a filter or all() on typed update() and delete() ([#1913](https://github.com/supabase/supabase-flutter/issues/1913)). ([4705528d](https://github.com/supabase/supabase-flutter/commit/4705528d75c20af6fd919d60ae2c3c990bff8f81))
+ - **BREAKING** **FEAT**(supabase): add negated filters and column selection to stream() ([#1909](https://github.com/supabase/supabase-flutter/issues/1909)). ([4411c7fc](https://github.com/supabase/supabase-flutter/commit/4411c7fc9475008a55cdb3a4c9c4cd87a122e446))
+
 ## 3.0.0-dev.8
 
 > Note: This release has breaking changes.

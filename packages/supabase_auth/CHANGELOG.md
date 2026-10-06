@@ -1,3 +1,12 @@
+## 3.0.0-dev.8
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **FIX**(auth): refreshing a different invalid token signs out the current session ([#1922](https://github.com/supabase/supabase-flutter/issues/1922)). ([a10906f9](https://github.com/supabase/supabase-flutter/commit/a10906f9d657dbcbdc7c13f2be71262b615fd27b))
+ - **FIX**(auth): decode OAuth clients that omit redirect_uris or grant_types ([#1923](https://github.com/supabase/supabase-flutter/issues/1923)). ([56d8a450](https://github.com/supabase/supabase-flutter/commit/56d8a4506ce7ff4d464578a12e3b3848ca8c8f38))
+ - **BREAKING** **FIX**(auth): verify ES256 tokens in getClaims ([#1916](https://github.com/supabase/supabase-flutter/issues/1916)). ([9f235afb](https://github.com/supabase/supabase-flutter/commit/9f235afba7f664ee10fe9f5e5e622b1fb43191db))
+
 ## 3.0.0-dev.7
 
  - **FIX**(supabase): drop trace headers when a redirect leaves the Supabase hosts ([#1895](https://github.com/supabase/supabase-flutter/issues/1895)). ([d9c0827d](https://github.com/supabase/supabase-flutter/commit/d9c0827dd94dff11ad8eaca108bd523fa1b4ce3a))

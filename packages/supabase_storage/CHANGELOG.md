@@ -1,3 +1,10 @@
+## 3.0.0-dev.7
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **BREAKING** **FEAT**(storage): upload the raw file body and stream files from disk ([#1911](https://github.com/supabase/supabase-flutter/issues/1911)). ([e1d18f8c](https://github.com/supabase/supabase-flutter/commit/e1d18f8c57ae19d4849862bb20d23e925bb459d4))
+
 ## 3.0.0-dev.6
 
  - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))

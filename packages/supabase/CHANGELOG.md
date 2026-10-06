@@ -1,3 +1,13 @@
+## 3.0.0-dev.9
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **FIX**(supabase): sort null values in an ordered stream the way the database does ([#1918](https://github.com/supabase/supabase-flutter/issues/1918)). ([64dc4ec2](https://github.com/supabase/supabase-flutter/commit/64dc4ec2693d8f135c4ea509a355bfe2c53a2aef))
+ - **FIX**(supabase): replace an already streamed row on a realtime insert ([#1908](https://github.com/supabase/supabase-flutter/issues/1908)). ([1eefe0ee](https://github.com/supabase/supabase-flutter/commit/1eefe0ee2b22c883fb26ac21cb5bbe38d7df2493))
+ - **BREAKING** **FIX**(postgrest): order() no longer forces NULLS LAST by default ([#1912](https://github.com/supabase/supabase-flutter/issues/1912)). ([3632d11a](https://github.com/supabase/supabase-flutter/commit/3632d11a6a09715fc6199e5378822a2844231886))
+ - **BREAKING** **FEAT**(supabase): add negated filters and column selection to stream() ([#1909](https://github.com/supabase/supabase-flutter/issues/1909)). ([4411c7fc](https://github.com/supabase/supabase-flutter/commit/4411c7fc9475008a55cdb3a4c9c4cd87a122e446))
+
 ## 3.0.0-dev.8
 
 > Note: This release has breaking changes.

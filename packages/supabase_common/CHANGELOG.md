@@ -1,3 +1,7 @@
+## 3.0.0-dev.6
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+
 ## 3.0.0-dev.5
 
  - **FEAT**(supabase): surface the server request id on exceptions ([#1885](https://github.com/supabase/supabase-flutter/issues/1885)). ([e28a6ad3](https://github.com/supabase/supabase-flutter/commit/e28a6ad3db192a186e427724d1b50a8ffdaa51bc))
