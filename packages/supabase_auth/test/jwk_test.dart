@@ -26,5 +26,31 @@ void main() {
 
       expect(jwk.publicKey, isA<RSAPublicKey>());
     });
+
+    test('builds an EC public key from an EC JWK', () {
+      final jwk = JWK.fromJson({
+        'kty': 'EC',
+        'alg': 'ES256',
+        'kid': 'ec-test',
+        'use': 'sig',
+        'crv': 'P-256',
+        'x': 'gctse0odNml3G63HfU7BIZ4zOY3PrcwlC70031KGnwo',
+        'y': 'k_uxFaLt2Ad5gueJZGnzKBIid6mxfJYqjXssxE1vORA',
+      });
+
+      expect(jwk.publicKey, isA<ECPublicKey>());
+    });
+
+    test('ignores private parameters in an EC JWK', () {
+      final jwk = JWK.fromJson({
+        'kty': 'EC',
+        'crv': 'P-256',
+        'x': 'gctse0odNml3G63HfU7BIZ4zOY3PrcwlC70031KGnwo',
+        'y': 'k_uxFaLt2Ad5gueJZGnzKBIid6mxfJYqjXssxE1vORA',
+        'd': 'U5tTXVLtdEGz6Bh_XWOSQLV3vZRowQ4Z9K7LsDd7qIM',
+      });
+
+      expect(jwk.publicKey, isA<ECPublicKey>());
+    });
   });
 }
