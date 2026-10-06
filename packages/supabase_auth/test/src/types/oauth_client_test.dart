@@ -52,6 +52,23 @@ void main() {
 
       expect(client.logoUri, isNull);
     });
+
+    test(
+      'fromJson parses a client without redirect URIs, grant types or '
+      'response types',
+      () {
+        final client = OAuthClient.fromJson(
+          {...json}
+            ..remove('redirect_uris')
+            ..remove('grant_types')
+            ..remove('response_types'),
+        );
+
+        expect(client.redirectUris, isEmpty);
+        expect(client.grantTypes, isEmpty);
+        expect(client.responseTypes, isEmpty);
+      },
+    );
   });
 
   group('CreateOAuthClientOptions', () {

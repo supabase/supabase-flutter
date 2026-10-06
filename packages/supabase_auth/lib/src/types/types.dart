@@ -230,15 +230,15 @@ class OAuthClient {
       ),
       clientUri: json['client_uri'] as String?,
       logoUri: json['logo_uri'] as String?,
-      redirectUris: (json['redirect_uris'] as List).cast(),
-      grantTypes: (json['grant_types'] as List)
+      redirectUris: (json['redirect_uris'] as List? ?? const []).cast(),
+      grantTypes: (json['grant_types'] as List? ?? const [])
           .map(
             (e) => OAuthClientGrantType.values.firstWhere(
               (gt) => gt.snakeCase == e as String,
             ),
           )
           .toList(),
-      responseTypes: (json['response_types'] as List)
+      responseTypes: (json['response_types'] as List? ?? const [])
           .map(
             (e) => OAuthClientResponseType.values.firstWhere(
               (rt) => rt.snakeCase == e as String,
