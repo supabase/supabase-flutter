@@ -934,6 +934,38 @@ void main() {
     expect(code, contains('throw ArgumentError.value('));
   });
 
+  test('a table and an enum named function are suffixed', () {
+    final code = generateDartCode(
+      DatabaseDescription(
+        schemaNames: const ['public'],
+        tables: const [
+          TableDescription(
+            schema: 'public',
+            name: 'function',
+            columns: [
+              ColumnDescription(
+                name: 'id',
+                postgresFormat: 'int8',
+                typeKind: ColumnTypeKind.integer,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [
+          EnumDescription(schema: 'public', name: 'FUNCTION', values: ['a']),
+        ],
+      ),
+    );
+
+    expect(code, contains('enum Function\$ '));
+    expect(code, contains('class Function\$\$ '));
+    expect(code, isNot(contains('class Function ')));
+    expect(code, isNot(contains('enum Function ')));
+  });
+
   test('members named like a core type are suffixed', () {
     final code = generateDartCode(hostileSchema);
 
