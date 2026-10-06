@@ -5,7 +5,7 @@ import 'package:meta/meta.dart';
 @internal
 class SupabaseConstants {
   static final Map<String, String> defaultHeaders = Map.unmodifiable({
-    'X-Client-Info': buildClientInfoHeader(
+    HttpHeader.clientInfo: buildClientInfoHeader(
       'supabase-dart',
       version,
       platformInfo: PlatformInfo(

@@ -4,5 +4,5 @@ import 'package:meta/meta.dart';
 
 @internal
 final defaultHeaders = {
-  'X-Client-Info': buildClientInfoHeader('postgrest-dart', version),
+  HttpHeader.clientInfo: buildClientInfoHeader('postgrest-dart', version),
 };

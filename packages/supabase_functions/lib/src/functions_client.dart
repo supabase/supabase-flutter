@@ -31,7 +31,8 @@ class FunctionsClient {
     String? region,
     Future<String?> Function()? accessToken,
   }) : assert(
-         accessToken == null || headers.header('Authorization') == null,
+         accessToken == null ||
+             headers.header(HttpHeader.authorization) == null,
          'Pass either an Authorization header or accessToken, not both: the '
          'header would win over the resolved token on every invocation.',
        ),
@@ -219,7 +220,7 @@ class FunctionsClient {
         // string is encoded with the charset the caller asked for, and so that
         // the charset `Request.body` fills in for itself is kept.
         bodyRequest.headers.putIfAbsent(
-          'Content-Type',
+          HttpHeader.contentType,
           () => switch (body) {
             Uint8List() => 'application/octet-stream',
             String() => 'text/plain',

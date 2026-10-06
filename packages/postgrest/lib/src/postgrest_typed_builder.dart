@@ -41,7 +41,7 @@ List<Row> _rowsFromJson<Row>(
 /// entry that renders the same as an earlier one is left out.
 String _selectList(List<PostgrestSelectable<Object?>> selections) {
   if (selections.isEmpty) return '*';
-  if (selections case [final single]) return single.expression;
+  if (selections case [final single]) return single._selectExpression;
   final entries = <String>[];
   final embeds = <String, _EmbedGroup>{};
   for (final selection in selections) {
@@ -53,7 +53,7 @@ String _selectList(List<PostgrestSelectable<Object?>> selections) {
           })
           .add(members);
     } else {
-      final expression = selection.expression;
+      final expression = selection._selectExpression;
       if (!entries.contains(expression)) entries.add(expression);
     }
   }
@@ -88,7 +88,7 @@ final class _EmbedGroup {
   /// `name(*)`, `name(a,b)` or, when both were asked for, `name(*,a)`.
   String render(String name) {
     if (!_all) return _embedExpression(name, _members);
-    final rest = _members.isEmpty ? '' : ',${_selectList(_members)}';
+    final rest = _members.isEmpty ? '' : ',${_embedList(_members)}';
     return '$name(*$rest)';
   }
 }
@@ -98,7 +98,22 @@ final class _EmbedGroup {
 String _embedExpression(
   String name,
   List<PostgrestSelectable<Object?>> members,
-) => '$name(${_selectList(members)})';
+) => '$name(${_embedList(members)})';
+
+final _trailingJsonIndex = RegExp(r'(->>?)-?[0-9]+$');
+
+/// [members] as the list inside an embed's parentheses.
+///
+/// PostgREST reads an array index right before `)` as an object key, so a
+/// list ending in one gets a cast to the type the arrow already returns.
+String _embedList(List<PostgrestSelectable<Object?>> members) {
+  final list = _selectList(members);
+  return switch (_trailingJsonIndex.firstMatch(list)?[1]) {
+    null => list,
+    '->>' => '$list::text',
+    _ => '$list::jsonb',
+  };
+}
 
 /// [selections] as the request stores them: every column when none are
 /// given. An empty list is rejected up front, naming the caller's

@@ -153,7 +153,7 @@ class AuthFetch {
     headers[AuthConstants.apiVersionHeaderName] = AuthConstants.apiVersion;
 
     if (options?.jwt != null) {
-      headers['Authorization'] = 'Bearer ${options!.jwt}';
+      headers[HttpHeader.authorization] = 'Bearer ${options!.jwt}';
     }
 
     final queryParameters = {...?options?.query};
@@ -203,7 +203,7 @@ class AuthFetch {
     final bodyString = json.encode(options?.body ?? {});
 
     if (method != HttpMethod.get && method != HttpMethod.head) {
-      headers['Content-Type'] = 'application/json';
+      headers[HttpHeader.contentType] = 'application/json';
     }
     Response response;
     try {
