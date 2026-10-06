@@ -1,5 +1,6 @@
 import 'package:http/http.dart';
 import 'package:supabase_common/src/http.dart';
+import 'package:supabase_common/src/http_header.dart';
 
 /// An HTTP client that resolves an access token per request and sends it as a
 /// bearer token.
@@ -23,7 +24,10 @@ class AccessTokenClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     final accessToken = await _accessToken();
     if (accessToken != null) {
-      request.headers.putIfAbsent('Authorization', () => 'Bearer $accessToken');
+      request.headers.putIfAbsent(
+        HttpHeader.authorization,
+        () => 'Bearer $accessToken',
+      );
     }
     return request.sendWith(_inner);
   }

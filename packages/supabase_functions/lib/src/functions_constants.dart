@@ -5,6 +5,6 @@ import 'package:meta/meta.dart';
 @internal
 class FunctionsConstants {
   static final defaultHeaders = {
-    'X-Client-Info': buildClientInfoHeader('functions-dart', version),
+    HttpHeader.clientInfo: buildClientInfoHeader('functions-dart', version),
   };
 }
