@@ -159,7 +159,7 @@ String _displayName(String schema, String name) =>
 /// unqualified, so a schema object named like one of them (for example an
 /// enum named `string`) cannot shadow it.
 class _TypeNameRegistry {
-  final _used = {
+  final _taken = {
     'String',
     'Object',
     'Map',
@@ -189,9 +189,9 @@ class _TypeNameRegistry {
     'PostgrestToManyRelation',
   };
 
-  String claim(String name) => _claimName(_used, name);
+  String claim(String name) => _claimName(_taken, name);
 
-  Set<String> get taken => _used;
+  Set<String> get taken => _taken;
 }
 
 void _writeEnum(
