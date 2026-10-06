@@ -972,6 +972,38 @@ void main() {
     expect(code, contains('throw ArgumentError.value('));
   });
 
+  test('a table and an enum named function are suffixed', () {
+    final code = generateDartCode(
+      DatabaseDescription(
+        schemaNames: const ['public'],
+        tables: const [
+          TableDescription(
+            schema: 'public',
+            name: 'function',
+            columns: [
+              ColumnDescription(
+                name: 'id',
+                postgresFormat: 'int8',
+                typeKind: ColumnTypeKind.integer,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [
+          EnumDescription(schema: 'public', name: 'FUNCTION', values: ['a']),
+        ],
+      ),
+    );
+
+    expect(code, contains('enum Function\$ '));
+    expect(code, contains('class Function\$\$ '));
+    expect(code, isNot(contains('class Function ')));
+    expect(code, isNot(contains('enum Function ')));
+  });
+
   test('members named like a core type are suffixed', () {
     final code = generateDartCode(hostileSchema);
 
@@ -981,6 +1013,16 @@ void main() {
     expect(code, contains('static const int\$ = PostgrestColumn<'));
     expect(code, contains('static const bool\$ = PostgrestComputedField<'));
     expect(code, contains('static const double\$ ='));
+  });
+
+  test('an enum named without ASCII letters gets a decoder', () {
+    final code = generateDartCode(hostileSchema);
+
+    expect(code, contains('fromJson: _fromJson,'));
+    expect(
+      code,
+      contains(r'$ _fromJson(Object json) => $.fromWire(json as String);'),
+    );
   });
 
   test('floating array elements convert through num', () {

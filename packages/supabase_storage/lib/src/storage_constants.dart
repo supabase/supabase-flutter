@@ -5,6 +5,6 @@ import 'package:meta/meta.dart';
 @internal
 class StorageConstants {
   static final Map<String, String> defaultHeaders = {
-    'X-Client-Info': buildClientInfoHeader('storage-dart', version),
+    HttpHeader.clientInfo: buildClientInfoHeader('storage-dart', version),
   };
 }
