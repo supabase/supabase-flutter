@@ -34,6 +34,30 @@ enum String$ {
   String toString() => wireName;
 }
 
+/// Postgres enum `public.статус`.
+enum $ {
+  $$('новый'),
+  $$$('готов');
+
+  const $(this.wireName);
+
+  /// The value as stored in the database.
+  final String wireName;
+
+  /// Parses the database representation of the enum.
+  static $ fromWire(String wireName) => values.firstWhere(
+    (value) => value.wireName == wireName,
+    orElse: () => throw ArgumentError.value(
+      wireName,
+      'wireName',
+      'No \$ value with this wire name',
+    ),
+  );
+
+  @override
+  String toString() => wireName;
+}
+
 /// A row of the `postgrest_table` table, as `select()` reads it with every
 /// column.
 /// first
@@ -756,6 +780,50 @@ class CoreTypeNames {
       );
 }
 
+/// A row of the `orders` table, as `select()` reads it with every column.
+extension type const OrdersRow(Map<String, dynamic> _json) implements Object {
+  $ get status => $.fromWire(_json['status'] as String);
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `orders`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const OrdersInsert._(Map<String, dynamic> _json)
+    implements Object {
+  OrdersInsert({required $ status}) : this._({'status': status.wireName});
+}
+
+/// Values for updating rows of `orders`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const OrdersUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  OrdersUpdate({$? status}) : this._({'status': ?status?.wireName});
+}
+
+/// Typed access to the `orders` table.
+class Orders {
+  const Orders._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable<OrdersRow, OrdersInsert, OrdersUpdate>(
+    'orders',
+    OrdersRow.new,
+    schema: 'public',
+    primaryKey: [],
+  );
+
+  static const status = PostgrestColumn<OrdersRow, $>(
+    'status',
+    fromJson: _fromJson,
+  );
+}
+
 /// A row of the `evil
 /// multiline "schema" name.postgrest_column` table, as `select()` reads it with
 /// every column.
@@ -888,6 +956,8 @@ double _doubleFromJson(Object json) => (json as num).toDouble();
 List<double> _doubleListFromJson(Object json) => (json as List<dynamic>)
     .map((element) => (element as num).toDouble())
     .toList();
+
+$ _fromJson(Object json) => $.fromWire(json as String);
 
 PostgrestDate _postgrestDateFromJson(Object json) =>
     PostgrestDate.parse(json as String);
