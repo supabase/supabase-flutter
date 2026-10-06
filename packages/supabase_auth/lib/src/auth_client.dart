@@ -2102,11 +2102,14 @@ class AuthClient {
         // The server rejected [refreshToken], so only the session that token
         // was redeemed for is gone: the stored session when it held the
         // token, or no session at all when nothing was stored. A session
-        // stored since then belongs to someone else and stays signed in.
+        // stored since then belongs to someone else and stays signed in, and
+        // a sign-in that was already signed out again has emitted its own
+        // `signedOut`.
         final storeIsUnchanged =
             sessionBeforeRefresh?.refreshToken == refreshToken
             ? ownsStoredSession
-            : sessionBeforeRefresh == null && existingSession == null;
+            : sessionBeforeRefresh == null &&
+                  _sessionVersion == versionBeforeRefresh;
         if (!_isDisposed && storeIsUnchanged) {
           _removeSession();
           notifyAllSubscribers(

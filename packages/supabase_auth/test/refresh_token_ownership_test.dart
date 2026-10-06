@@ -139,24 +139,44 @@ void main() {
   });
 
   group('refreshing with no stored session', () {
+    late Completer<void> release;
+
+    setUp(() {
+      release = Completer<void>();
+      httpClient.stubHandler(
+        (request) async {
+          await release.future;
+          return jsonResponse(
+            rejection('refresh_token_not_found'),
+            statusCode: 400,
+            headers: apiVersionHeaders,
+          );
+        },
+        method: HttpMethod.post.value,
+        path: '/token',
+        query: {'grant_type': 'refresh_token'},
+      );
+    });
+
+    test('signs out when nothing was stored since', () async {
+      final hydration = client.setSession(foreignRefreshToken);
+      await pumpEventQueue();
+      events.clear();
+
+      release.complete();
+      await expectLater(
+        hydration,
+        throwsRefreshRejection('refresh_token_not_found'),
+      );
+      await pumpEventQueue();
+
+      expect(client.currentSession, isNull);
+      expect(events, [AuthChangeEvent.signedOut]);
+    });
+
     test(
       'does not sign out a user who signed in while the refresh was in flight',
       () async {
-        final release = Completer<void>();
-        httpClient.stubHandler(
-          (request) async {
-            await release.future;
-            return jsonResponse(
-              rejection('refresh_token_not_found'),
-              statusCode: 400,
-              headers: apiVersionHeaders,
-            );
-          },
-          method: HttpMethod.post.value,
-          path: '/token',
-          query: {'grant_type': 'refresh_token'},
-        );
-
         final hydration = client.setSession(foreignRefreshToken);
         await pumpEventQueue();
         final stored = await signInTestUser(client);
@@ -171,6 +191,31 @@ void main() {
         await pumpEventQueue();
 
         expect(client.currentSession?.refreshToken, stored.refreshToken);
+        expect(events, isNot(contains(AuthChangeEvent.signedOut)));
+      },
+    );
+
+    test(
+      'does not sign out again after a sign-in and sign-out while the refresh '
+      'was in flight',
+      () async {
+        httpClient.stubSignOut();
+
+        final hydration = client.setSession(foreignRefreshToken);
+        await pumpEventQueue();
+        await signInTestUser(client);
+        await client.signOut();
+        await pumpEventQueue();
+        events.clear();
+
+        release.complete();
+        await expectLater(
+          hydration,
+          throwsRefreshRejection('refresh_token_not_found'),
+        );
+        await pumpEventQueue();
+
+        expect(client.currentSession, isNull);
         expect(events, isNot(contains(AuthChangeEvent.signedOut)));
       },
     );
