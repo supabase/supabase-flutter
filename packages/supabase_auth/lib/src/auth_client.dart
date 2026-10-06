@@ -2052,8 +2052,18 @@ class AuthClient {
   /// [AuthChangeEvent.tokenRefreshed] on success, [AuthChangeEvent.signedOut]
   /// when the refresh token is invalid, or a stream error ([notifyException])
   /// for a retryable/unexpected failure.
+  ///
+  /// A rejected [refreshToken] only affects the stored session that token
+  /// belongs to. When the stored session holds a different refresh token,
+  /// because [refreshSession] or [setSession] was given a token the client
+  /// never stored, or because another sign-in replaced the session while the
+  /// request was in flight, the stored session is neither handed back to the
+  /// caller nor signed out. A refresh that started with no stored session,
+  /// such as the recovery of an expired persisted session, signs out only
+  /// while nothing has been stored since.
   Future<Session> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
+    final sessionBeforeRefresh = _currentSession;
     authLogger.fine('Refresh access token');
 
     try {
@@ -2074,9 +2084,12 @@ class AuthClient {
       return session;
     } on AuthException catch (error, stack) {
       final existingSession = _currentSession;
+      final ownsStoredSession =
+          existingSession != null &&
+          existingSession.refreshToken == refreshToken;
       if (error is AuthApiException &&
           error.errorCode == 'refresh_token_already_used' &&
-          existingSession != null &&
+          ownsStoredSession &&
           !existingSession.isExpired) {
         authLogger.fine(
           'Refresh token already used but current session is still valid, '
@@ -2086,9 +2099,15 @@ class AuthClient {
       }
 
       if (error is! AuthRetryableFetchException) {
-        // Only remove the session if it hasn't been replaced while we were
-        // refreshing, otherwise we'd sign out a user who just signed in.
-        if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
+        // The server rejected [refreshToken], so only the session that token
+        // was redeemed for is gone: the stored session when it held the
+        // token, or no session at all when nothing was stored. A session
+        // stored since then belongs to someone else and stays signed in.
+        final storeIsUnchanged =
+            sessionBeforeRefresh?.refreshToken == refreshToken
+            ? ownsStoredSession
+            : sessionBeforeRefresh == null && existingSession == null;
+        if (!_isDisposed && storeIsUnchanged) {
           _removeSession();
           notifyAllSubscribers(
             AuthChangeEvent.signedOut,

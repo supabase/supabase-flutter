@@ -610,45 +610,40 @@ void main() {
       expect(httpClient.retryCount, 4);
     });
 
-    test('Sign out on wrong refresh token', () async {
-      await client.signInWithPassword(password: password, email: email1);
+    test(
+      'Recovering another user\'s session with a wrong refresh token keeps '
+      'the signed-in user',
+      () async {
+        final signedIn = await client.signInWithPassword(
+          password: password,
+          email: email1,
+        );
 
-      final stream = client.onAuthStateChange;
+        final events = <AuthChangeEvent>[];
+        Object? streamError;
+        final subscription = client.onAuthStateChange.listen(
+          (state) => events.add(state.event),
+          onError: (Object error) => streamError = error,
+        );
 
-      expect(
-        stream,
-        emitsInOrder([
-          predicate<AuthState>(
-            (event) =>
-                event.event == AuthChangeEvent.initialSession &&
-                event.session != null,
-          ),
-          predicate<AuthState>(
-            (event) => event.event == AuthChangeEvent.signedOut,
-          ),
-        ]),
-      );
+        // The persisted session belongs to a different user, and its refresh
+        // token is unknown to the server.
+        final expiredSession = getSessionData(
+          DateTime.now().subtract(Duration(hours: 1)),
+        );
 
-      Object? streamError;
-      final errorSubscription = stream.listen(
-        (_) {},
-        onError: (Object error) => streamError = error,
-      );
+        await expectLater(
+          client.recoverSession(expiredSession.sessionString),
+          throwsA(isA<AuthException>()),
+        );
 
-      final expiredSession = getSessionData(
-        DateTime.now().subtract(Duration(hours: 1)),
-      );
-
-      await expectLater(
-        client.recoverSession(expiredSession.sessionString),
-        throwsA(isA<AuthException>()),
-      );
-
-      await pumpEventQueue();
-      await errorSubscription.cancel();
-      expect(streamError, isNull);
-      expect(client.currentSession, isNull);
-    });
+        await pumpEventQueue();
+        await subscription.cancel();
+        expect(streamError, isNull);
+        expect(events, isNot(contains(AuthChangeEvent.signedOut)));
+        expect(client.currentSession?.refreshToken, signedIn.refreshToken);
+      },
+    );
 
     test('Call getLinkIdentityUrl', () async {
       await client.signInWithPassword(email: email1, password: password);
