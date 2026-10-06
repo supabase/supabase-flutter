@@ -847,3 +847,26 @@ class PostgrestBuilder<T> implements Future<T> {
     );
   }
 }
+
+final _whitespace = RegExp(r'\s');
+
+/// [columns] without the whitespace outside double quotes. Inside quotes a
+/// backslash escapes the next character, as PostgREST reads it.
+String _removeUnquotedWhitespace(String columns) {
+  final cleaned = StringBuffer();
+  var quoted = false;
+  var escaped = false;
+  for (final character in columns.split('')) {
+    if (escaped) {
+      escaped = false;
+    } else if (quoted && character == r'\') {
+      escaped = true;
+    } else if (character == '"') {
+      quoted = !quoted;
+    } else if (!quoted && _whitespace.hasMatch(character)) {
+      continue;
+    }
+    cleaned.write(character);
+  }
+  return cleaned.toString();
+}

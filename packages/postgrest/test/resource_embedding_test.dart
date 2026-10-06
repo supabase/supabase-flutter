@@ -36,6 +36,7 @@ class Messages {
   static const id = PostgrestColumn<Message, int>('id');
   static const message = PostgrestColumn<Message, String>('message');
   static const username = PostgrestColumn<Message, String>('username');
+  static const data = PostgrestNullableColumn<Message, Object>('data');
   static const user = PostgrestToOneRelation<Message, User>(
     'users',
     columns: [username],
@@ -239,6 +240,71 @@ void main() {
       );
       expect(messages.first.read(Messages.user)?.toJson(), {
         'username': 'supabot',
+      });
+    });
+
+    test('JSON paths read back under their own keys', () async {
+      final longKey = 'a_key_long_enough_to_push_its_path_past_63_bytes' * 2;
+      await postgrest
+          .from('messages')
+          .update({
+            'data': {
+              'tags': ['urgent', 'later'],
+              'a,b': 'comma',
+              'say "hi"': 'quoted',
+              longKey: 'long',
+              'items': [
+                {'sku': 'A1'},
+              ],
+            },
+          })
+          .eq('username', 'supabot');
+      final firstTag = Messages.data.jsonObject('tags').jsonText('0');
+      final secondTag = Messages.data.jsonObject('tags').jsonText('1');
+      final commaKey = Messages.data.jsonText('"a,b"');
+      final quotedKey = Messages.data.jsonText(r'"say \"hi\""');
+      final longPath = Messages.data.jsonText(longKey);
+      final firstSku = Messages.data.jsonObject('items->0').jsonText('sku');
+      final embeddedTag = Users.messages(
+        Messages.data,
+      ).jsonObject('tags').jsonText('1');
+      final embeddedItem = Users.messages(
+        Messages.data,
+      ).jsonObject('items->0');
+
+      final messages = await postgrest
+          .table(Messages.table)
+          .selectOnly([
+            Messages.data,
+            firstTag,
+            secondTag,
+            commaKey,
+            quotedKey,
+            longPath,
+            firstSku,
+          ])
+          .where(Messages.username.eq('supabot'))
+          .order(Messages.id);
+      final users = await postgrest
+          .table(Users.table)
+          .selectOnly([Users.username, embeddedItem, embeddedTag])
+          .where(Users.username.eq('supabot'));
+
+      final message = messages.first;
+      expect(message.read(Messages.data), containsPair('a,b', 'comma'));
+      expect(message.read(firstTag), 'urgent');
+      expect(message.read(secondTag), 'later');
+      expect(message.read(commaKey), 'comma');
+      expect(message.read(quotedKey), 'quoted');
+      expect(message.read(longPath), 'long');
+      expect(message.read(firstSku), 'A1');
+      final embedded = users.single.read(Users.messages).first;
+      expect(
+        embedded.read(Messages.data.jsonObject('tags').jsonText('1')),
+        'later',
+      );
+      expect(embedded.read(Messages.data.jsonObject('items->0')), {
+        'sku': 'A1',
       });
     });
   });
