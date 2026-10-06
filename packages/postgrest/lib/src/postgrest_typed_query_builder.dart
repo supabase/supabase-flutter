@@ -291,8 +291,8 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// Perform an UPDATE on the table or view.
   ///
   /// The rows to update are chosen with [PostgrestTypedUnscopedBuilder.where],
-  /// or every row with [PostgrestTypedUnscopedBuilder.all]; the request
-  /// cannot be awaited before one of them is called.
+  /// or every row with [PostgrestTypedUnscopedBuilder.all]; nothing is sent
+  /// before one of them is called.
   ///
   /// By default no data is returned. Use a trailing [select] to return the
   /// updated rows typed as [Row].
@@ -312,8 +312,8 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// Perform a DELETE on the table or view.
   ///
   /// The rows to delete are chosen with [PostgrestTypedUnscopedBuilder.where],
-  /// or every row with [PostgrestTypedUnscopedBuilder.all]; the request
-  /// cannot be awaited before one of them is called.
+  /// or every row with [PostgrestTypedUnscopedBuilder.all]; nothing is sent
+  /// before one of them is called.
   ///
   /// By default no data is returned. Use a trailing [select] to return the
   /// deleted rows typed as [Row].

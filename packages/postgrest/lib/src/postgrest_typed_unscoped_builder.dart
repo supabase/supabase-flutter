@@ -3,10 +3,15 @@ part of 'postgrest_typed_builder.dart';
 /// An `update` or `delete` that does not say yet which rows it acts on.
 ///
 /// Returned by [PostgrestTypedQueryBuilder.update] and
-/// [PostgrestTypedQueryBuilder.delete]. It cannot be awaited: a filter has
-/// to be added with [where], or every row chosen on purpose with [all],
-/// before the request can run. This keeps a forgotten filter, which would
-/// write every row in the table, from compiling.
+/// [PostgrestTypedQueryBuilder.delete]. It does not implement `Future` and
+/// sends nothing: a filter has to be added with [where], or every row chosen
+/// on purpose with [all], before there is a request to await. A forgotten
+/// filter, which would write every row in the table, has to be spelled out
+/// as [all] instead.
+///
+/// Dart allows `await` on any value, so a bare `await table.update(…)` still
+/// compiles and performs no request. The `await_only_futures` lint of the
+/// core lint set reports it; keep that lint enabled.
 @experimental
 final class PostgrestTypedUnscopedBuilder<Row> {
   const PostgrestTypedUnscopedBuilder._(

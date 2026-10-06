@@ -803,22 +803,26 @@ Code that stores one of these builders in a variable typed as `PostgrestFilterBu
 ### Typed `update()` and `delete()` require a filter or `all()`
 
 The typed `update()` and `delete()` return a `PostgrestTypedUnscopedBuilder` instead of a
-`PostgrestTypedFilterBuilder`. It cannot be awaited and has no transforms, only `where()` and
-`all()`, each of which returns the `PostgrestTypedFilterBuilder` the mutation used to start with.
-A mutation that forgot its filter, and would have written every row in the table, no longer
-compiles; writing every row is spelled out with `all()`.
+`PostgrestTypedFilterBuilder`. It does not implement `Future` and has no transforms, only
+`where()` and `all()`, each of which returns the `PostgrestTypedFilterBuilder` the mutation used to
+start with. A mutation that forgot its filter, and would have written every row in the table, no
+longer sends a request; writing every row is spelled out with `all()`.
 
 ```dart
 // Before: compiled, and deleted every book.
 await supabase.table(Books.table).delete();
 
-// After: does not compile. Filter the rows, or ask for all of them.
+// After: sends nothing, see below. Filter the rows, or ask for all of them.
 await supabase.table(Books.table).delete().where(Books.id.eq(1));
 await supabase.table(Books.table).delete().all();
 ```
 
-A `select()`, `order()`, `maxAffected()` or request option chained directly after `update()` or
-`delete()` moves after the `where()` or `all()`. Code that stores the result of `update()` or
+Dart allows `await` on a value that is not a `Future`, so an unchanged bare `await` of `update()`
+or `delete()` still compiles and silently performs no request. The `await_only_futures` lint of
+the core lint set reports every such line; make sure it is enabled and fix its reports when
+upgrading. Anything chained directly after `update()` or `delete()`, a filter, `select()`,
+`order()`, `maxAffected()` or a request option, does not compile until it moves after the
+`where()` or `all()`. Code that stores the result of `update()` or
 `delete()` in a variable typed as `PostgrestTypedFilterBuilder<Row, void>` needs
 `PostgrestTypedUnscopedBuilder<Row>` instead, or a `where()` or `all()` call. `update()` and
 `delete()` on `from()` are unchanged.
@@ -2359,8 +2363,8 @@ Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the colum
 request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
 generated `set…ToNull()` methods, which only exist for nullable columns.
 
-An `update()` or `delete()` cannot be awaited until it says which rows it acts on, through
-`where()` or, for every row in the table, `all()`:
+An `update()` or `delete()` sends nothing until it says which rows it acts on, through `where()`
+or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request:
 
 ```dart
 // Before
