@@ -253,6 +253,8 @@ void main() {
               'a,b': 'comma',
               'say "hi"': 'quoted',
               longKey: 'long',
+              '${longKey}aB': 'first',
+              '${longKey}b#': 'second',
               'items': [
                 {'sku': 'A1'},
               ],
@@ -264,6 +266,8 @@ void main() {
       final commaKey = Messages.data.jsonText('"a,b"');
       final quotedKey = Messages.data.jsonText(r'"say \"hi\""');
       final longPath = Messages.data.jsonText(longKey);
+      final firstLongPath = Messages.data.jsonText('${longKey}aB');
+      final secondLongPath = Messages.data.jsonText('${longKey}b#');
       final firstSku = Messages.data.jsonObject('items->0').jsonText('sku');
       final embeddedTag = Users.messages(
         Messages.data,
@@ -281,6 +285,8 @@ void main() {
             commaKey,
             quotedKey,
             longPath,
+            firstLongPath,
+            secondLongPath,
             firstSku,
           ])
           .where(Messages.username.eq('supabot'))
@@ -297,6 +303,9 @@ void main() {
       expect(message.read(commaKey), 'comma');
       expect(message.read(quotedKey), 'quoted');
       expect(message.read(longPath), 'long');
+      expect(firstLongPath.responseKey, isNot(secondLongPath.responseKey));
+      expect(message.read(firstLongPath), 'first');
+      expect(message.read(secondLongPath), 'second');
       expect(message.read(firstSku), 'A1');
       final embedded = users.single.read(Users.messages).first;
       expect(

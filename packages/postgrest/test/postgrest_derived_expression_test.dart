@@ -162,6 +162,14 @@ void main() {
       );
     });
 
+    test('give long keys differing only past the prefix their own key', () {
+      final prefix = 'a' * 70;
+      final first = Items.data.jsonText('${prefix}aB');
+      final second = Items.data.jsonText('${prefix}b#');
+
+      expect(first.responseKey, isNot(second.responseKey));
+    });
+
     test('keep the value type through jsonObject', () {
       expect(
         Items.data.jsonObject('meta'),
