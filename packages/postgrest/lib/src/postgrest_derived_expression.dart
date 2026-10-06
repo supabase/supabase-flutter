@@ -95,25 +95,21 @@ sealed class PostgrestDerivedExpression<Row, Value extends Object>
 /// alias, see [PostgrestJsonPath].
 final class _Derivation<Row, Value extends Object>
     extends PostgrestDerivedExpression<Row, Value> {
-  const _Derivation._(this.expression, String? key, this._fromJson)
-    : _key = key,
-      super._();
+  const _Derivation._(this.expression, this._castKey, this._fromJson)
+    : super._();
 
   @override
   final String expression;
 
-  final String? _key;
+  @override
+  final String? _castKey;
 
   @override
-  String get responseKey => _key ?? _expressionKey(expression);
+  String get responseKey => _castKey ?? _expressionKey(expression);
 
   @override
   String get _selectExpression =>
-      _key == null ? _aliased(expression) : expression;
-
-  @override
-  // ignore: match-getter-setter-field-names
-  String? get _castKey => _key;
+      _castKey == null ? _aliased(expression) : expression;
 
   @override
   final Value Function(Object json)? _fromJson;
