@@ -263,5 +263,9 @@ class JWK {
 
   /// The public key for verifying JWTs signed with this JWK, an
   /// [RSAPublicKey] for `RSA` keys and an [ECPublicKey] for `EC` keys.
-  JWTKey get publicKey => JWTKey.fromJWK(toJson());
+  JWTKey get publicKey => JWTKey.fromJWK(
+    Map.of(toJson())..removeWhere((key, _) => _privateParameters.contains(key)),
+  );
+
+  static const _privateParameters = {'d', 'p', 'q', 'dp', 'dq', 'qi', 'oth'};
 }
