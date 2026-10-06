@@ -128,7 +128,10 @@ class IcebergRestCatalog {
     final request = http.Request(method.value, uri)
       ..headers.addAll({..._headers, ...?headers});
     if (body != null) {
-      request.headers.putIfAbsent('Content-Type', () => 'application/json');
+      request.headers.putIfAbsent(
+        HttpHeader.contentType,
+        () => 'application/json',
+      );
       request.body = json.encode(body);
     }
 

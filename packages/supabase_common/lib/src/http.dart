@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
+import 'package:supabase_common/src/http_header.dart';
 
 /// Sending a request over a caller-provided transport.
 extension SendWith on BaseRequest {
@@ -44,7 +45,7 @@ extension HeaderMap on Map<String, String> {
   /// on a malformed value, and a proxy or gateway in front of a service can
   /// answer with anything at all.
   String? get mediaType =>
-      header('content-type')?.split(';').first.trim().toLowerCase();
+      header(HttpHeader.contentType)?.split(';').first.trim().toLowerCase();
 
   /// The identifier the gateway assigned to the request.
   ///

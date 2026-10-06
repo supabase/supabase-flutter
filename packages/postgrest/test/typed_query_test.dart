@@ -137,7 +137,23 @@ void main() {
         Books.metadata.jsonText('isbn'),
       ]);
 
-      expect(requestParameters()['select'], 'id,title::text,metadata->>isbn');
+      expect(
+        requestParameters()['select'],
+        'id,title::text,"metadata->>isbn":metadata->>isbn',
+      );
+    });
+
+    test('escapes a quoted JSON key in the alias', () async {
+      httpClient.stub(bookRows);
+
+      await client.table(Books.table).selectOnly([
+        Books.metadata.jsonText(r'"a b\"c"'),
+      ]);
+
+      expect(
+        requestParameters()['select'],
+        r'"metadata->>\"a b\\\"c\"":metadata->>"a b\"c"',
+      );
     });
 
     test('selects aggregates', () async {

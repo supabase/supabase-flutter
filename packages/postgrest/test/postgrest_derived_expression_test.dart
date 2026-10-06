@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
@@ -134,6 +136,38 @@ void main() {
       final filter = Items.data.jsonText('name').eq('Ada') | Items.cost.eq(2);
 
       expect(rendered(filter), 'or=(data->>name.eq.Ada,cost.eq.2.0)');
+    });
+
+    test('are keyed and aliased by their own expression', () {
+      final path = Items.data.jsonObject('tags').jsonText('0');
+
+      expect(path.responseKey, 'data->tags->>0');
+      expect(
+        Items.data.jsonText('n').cast(PostgrestCastTarget.integer).responseKey,
+        'data->>n::int',
+      );
+      expect(Items.cost.cast(PostgrestCastTarget.text).responseKey, 'cost');
+    });
+
+    test('shorten a key past the 63 bytes Postgres keeps of a name', () {
+      final long = Items.data.jsonText('a' * 70);
+      final other = Items.data.jsonText('${'a' * 69}b');
+
+      expect(utf8.encode(long.responseKey), hasLength(lessThanOrEqualTo(63)));
+      expect(long.responseKey, startsWith('data->>aaaa'));
+      expect(long.responseKey, isNot(other.responseKey));
+      expect(
+        utf8.encode(Items.data.jsonText('é' * 40).responseKey),
+        hasLength(lessThanOrEqualTo(63)),
+      );
+    });
+
+    test('give long keys differing only past the prefix their own key', () {
+      final prefix = 'a' * 70;
+      final first = Items.data.jsonText('${prefix}aB');
+      final second = Items.data.jsonText('${prefix}b#');
+
+      expect(first.responseKey, isNot(second.responseKey));
     });
 
     test('keep the value type through jsonObject', () {

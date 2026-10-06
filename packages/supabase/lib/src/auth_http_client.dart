@@ -1,5 +1,6 @@
 import 'package:http/http.dart';
 import 'package:supabase/src/api_key.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:meta/meta.dart';
 
 @internal
@@ -25,14 +26,17 @@ class AuthHttpClient extends BaseClient {
     final accessToken = await _getAccessToken();
 
     if (accessToken != null) {
-      request.headers.putIfAbsent("Authorization", () => 'Bearer $accessToken');
+      request.headers.putIfAbsent(
+        HttpHeader.authorization,
+        () => 'Bearer $accessToken',
+      );
     } else if (!(_omitNewApiKeyAsBearer && isNewApiKey(_supabaseKey))) {
       request.headers.putIfAbsent(
-        "Authorization",
+        HttpHeader.authorization,
         () => 'Bearer $_supabaseKey',
       );
     }
-    request.headers.putIfAbsent("apikey", () => _supabaseKey);
+    request.headers.putIfAbsent(HttpHeader.apiKey, () => _supabaseKey);
     return _inner.send(request);
   }
 

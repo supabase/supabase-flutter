@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/logger.dart';
@@ -808,7 +809,7 @@ class RealtimeChannel {
 
     final headers = {
       ..._broadcastHeaders,
-      'Content-Type': isBinary
+      HttpHeader.contentType: isBinary
           ? 'application/octet-stream'
           : 'application/json',
     };
@@ -949,12 +950,12 @@ class RealtimeChannel {
   }
 
   Map<String, String> get _broadcastHeaders => {
-    'Content-Type': 'application/json',
+    HttpHeader.contentType: 'application/json',
     if (socket.parameters['apikey'] != null)
-      'apikey': socket.parameters['apikey']!,
+      HttpHeader.apiKey: socket.parameters['apikey']!,
     ...socket.headers,
     if (socket.accessToken != null)
-      'Authorization': 'Bearer ${socket.accessToken}',
+      HttpHeader.authorization: 'Bearer ${socket.accessToken}',
   };
 
   /// Merges [payload] into the join request sent to the server.

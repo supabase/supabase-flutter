@@ -107,14 +107,37 @@ void main() {
   test('a JSON path over an embed renders inside the parentheses', () {
     expect(
       Todos.orders(Orders.amount).jsonText('k').expression,
-      'orders(amount->>k)',
+      'orders("amount->>k":amount->>k)',
     );
     expect(
       Todos.orders(Orders.amount).jsonObject('k').expression,
-      'orders(amount->k)',
+      'orders("amount->k":amount->k)',
     );
-    expect(Orders.todo(Todos.id).jsonText('k').expression, 'todo(id->>k)');
-    expect(Orders.todo(Todos.id).jsonObject('k').expression, 'todo(id->k)');
+    expect(
+      Orders.todo(Todos.id).jsonText('k').expression,
+      'todo("id->>k":id->>k)',
+    );
+  });
+
+  test('a JSON path ending in an index before `)` gets a closing cast', () {
+    expect(
+      Orders.todo(Todos.title).jsonText('0').expression,
+      'todo("title->>0":title->>0::text)',
+    );
+    expect(
+      Orders.todo(Todos.title).jsonObject('-1').expression,
+      'todo("title->-1":title->-1::jsonb)',
+    );
+    expect(
+      Orders.todo(
+        Todos.title,
+      ).jsonText('0').cast(PostgrestCastTarget.integer).expression,
+      'todo("title->>0::int":title->>0::int)',
+    );
+    expect(
+      Orders.todo.select([Todos.title.jsonText('0'), Todos.id]).expression,
+      'todo("title->>0":title->>0,id)',
+    );
   });
 
   test('a derivation chained onto a derivation stays inside the embed', () {
@@ -179,7 +202,7 @@ void main() {
     );
     expect(
       Orders.todo(Todos.orders(Orders.amount)).sum().jsonText('k').expression,
-      'todo(orders(amount.sum()->>k))',
+      'todo(orders("amount.sum()->>k":amount.sum()->>k))',
     );
   });
 

@@ -915,6 +915,44 @@ void main() {
     expect(code, isNot(contains('extension type const PostgrestTable._')));
   });
 
+  test('a member named like a generated type is suffixed', () {
+    const method = EnumDescription(
+      schema: 'public',
+      name: '2fa_method',
+      values: ['totp'],
+    );
+    final code = generateDartCode(
+      const DatabaseDescription(
+        schemaNames: ['public'],
+        tables: [
+          TableDescription(
+            schema: 'public',
+            name: 'logins',
+            columns: [
+              ColumnDescription(
+                name: '2fa_method',
+                postgresFormat: '2fa_method',
+                typeKind: ColumnTypeKind.enumType,
+                enumType: method,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: [method],
+      ),
+    );
+
+    expect(code, contains(r'enum $2faMethod {'));
+    expect(code, contains(r'$2faMethod get $2faMethod$ =>'));
+    expect(
+      code,
+      contains(r'const $2faMethod$ = PostgrestColumn<LoginsRow, $2faMethod>('),
+    );
+  });
+
   test('an enum named like the error the parser throws is suffixed', () {
     final code = generateDartCode(
       DatabaseDescription(
@@ -934,6 +972,38 @@ void main() {
     expect(code, contains('throw ArgumentError.value('));
   });
 
+  test('a table and an enum named function are suffixed', () {
+    final code = generateDartCode(
+      DatabaseDescription(
+        schemaNames: const ['public'],
+        tables: const [
+          TableDescription(
+            schema: 'public',
+            name: 'function',
+            columns: [
+              ColumnDescription(
+                name: 'id',
+                postgresFormat: 'int8',
+                typeKind: ColumnTypeKind.integer,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [
+          EnumDescription(schema: 'public', name: 'FUNCTION', values: ['a']),
+        ],
+      ),
+    );
+
+    expect(code, contains('enum Function\$ '));
+    expect(code, contains('class Function\$\$ '));
+    expect(code, isNot(contains('class Function ')));
+    expect(code, isNot(contains('enum Function ')));
+  });
+
   test('members named like a core type are suffixed', () {
     final code = generateDartCode(hostileSchema);
 
@@ -943,6 +1013,16 @@ void main() {
     expect(code, contains('static const int\$ = PostgrestColumn<'));
     expect(code, contains('static const bool\$ = PostgrestComputedField<'));
     expect(code, contains('static const double\$ ='));
+  });
+
+  test('an enum named without ASCII letters gets a decoder', () {
+    final code = generateDartCode(hostileSchema);
+
+    expect(code, contains('fromJson: _fromJson,'));
+    expect(
+      code,
+      contains(r'$ _fromJson(Object json) => $.fromWire(json as String);'),
+    );
   });
 
   test('floating array elements convert through num', () {

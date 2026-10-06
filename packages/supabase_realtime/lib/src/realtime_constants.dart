@@ -20,6 +20,6 @@ class RealtimeConstants {
   /// The `X-Client-Info` header sent on every connection.
   @internal
   static final Map<String, String> defaultHeaders = {
-    'X-Client-Info': buildClientInfoHeader('realtime-dart', version),
+    HttpHeader.clientInfo: buildClientInfoHeader('realtime-dart', version),
   };
 }
