@@ -915,6 +915,44 @@ void main() {
     expect(code, isNot(contains('extension type const PostgrestTable._')));
   });
 
+  test('a member named like a generated type is suffixed', () {
+    const method = EnumDescription(
+      schema: 'public',
+      name: '2fa_method',
+      values: ['totp'],
+    );
+    final code = generateDartCode(
+      const DatabaseDescription(
+        schemaNames: ['public'],
+        tables: [
+          TableDescription(
+            schema: 'public',
+            name: 'logins',
+            columns: [
+              ColumnDescription(
+                name: '2fa_method',
+                postgresFormat: '2fa_method',
+                typeKind: ColumnTypeKind.enumType,
+                enumType: method,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: [method],
+      ),
+    );
+
+    expect(code, contains(r'enum $2faMethod {'));
+    expect(code, contains(r'$2faMethod get $2faMethod$ =>'));
+    expect(
+      code,
+      contains(r'const $2faMethod$ = PostgrestColumn<LoginsRow, $2faMethod>('),
+    );
+  });
+
   test('an enum named like the error the parser throws is suffixed', () {
     final code = generateDartCode(
       DatabaseDescription(
