@@ -973,6 +973,76 @@ void main() {
       expect(httpClient.requests.last.method, 'DELETE');
       expect(requestParameters()['id'], 'eq.1');
     });
+
+    test('update and delete start unscoped and keep the row type', () {
+      final PostgrestTypedUnscopedBuilder<Book> update = client
+          .table(Books.table)
+          .update(BookUpdate(title: 'b'));
+      final PostgrestTypedUnscopedBuilder<Book> delete = client
+          .table(Books.table)
+          .delete();
+
+      final PostgrestTypedFilterBuilder<Book, void> scopedUpdate = update.where(
+        Books.id.eq(1),
+      );
+      final PostgrestTypedFilterBuilder<Book, void> scopedDelete = delete.all();
+
+      expect(scopedUpdate.request.filter, isNotNull);
+      expect(scopedDelete.request.filter, isNull);
+      expect(httpClient.requests, isEmpty);
+    });
+
+    test('all() updates every row without a filter', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).update(BookUpdate(title: 'bar')).all();
+
+      expect(httpClient.requests.last.method, 'PATCH');
+      expect(requestParameters(), isEmpty);
+      expect(httpClient.requests.last.body, '{"title":"bar"}');
+    });
+
+    test('all() deletes every row without a filter', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).delete().all();
+
+      expect(httpClient.requests.last.method, 'DELETE');
+      expect(requestParameters(), isEmpty);
+    });
+
+    test('a filter after all() scopes the request', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).delete().all().where(Books.id.eq(1));
+
+      expect(requestParameters()['id'], 'eq.1');
+    });
+
+    test('a scoped mutation takes the transforms and a select', () async {
+      httpClient.stub([
+        {'id': 1, 'title': 'bar'},
+      ]);
+
+      final List<Book> books = await client
+          .table(Books.table)
+          .delete()
+          .all()
+          .maxAffected(5)
+          .select();
+
+      expect(httpClient.requests.last.method, 'DELETE');
+      expect(requestParameters(), {'select': '*'});
+      expect(
+        httpClient.requests.last.headers['Prefer']!.split(','),
+        unorderedEquals([
+          'handling=strict',
+          'max-affected=5',
+          'return=representation',
+        ]),
+      );
+      expect(books.single.title, 'bar');
+    });
   });
 
   group('count', () {
