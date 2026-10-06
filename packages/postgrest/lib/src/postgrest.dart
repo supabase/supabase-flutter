@@ -52,7 +52,8 @@ class PostgrestClient {
     this.requestTimeout,
     Future<String?> Function()? accessToken,
   }) : assert(
-         accessToken == null || headers?.header('Authorization') == null,
+         accessToken == null ||
+             headers?.header(HttpHeader.authorization) == null,
          'Pass either an Authorization header or accessToken, not both: the '
          'header would win over the resolved token on every request.',
        ),

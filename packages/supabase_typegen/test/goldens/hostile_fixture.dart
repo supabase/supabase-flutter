@@ -370,6 +370,25 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
       ],
     ),
+    TableDescription(
+      schema: 'public',
+      name: 'orders',
+      columns: [
+        ColumnDescription(
+          name: 'status',
+          postgresFormat: 'статус',
+          typeKind: ColumnTypeKind.enumType,
+          enumType: EnumDescription(
+            schema: 'public',
+            name: 'статус',
+            values: ['новый', 'готов'],
+          ),
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
     // A table outside public: its type names carry the schema, and the key
     // from public.map into it gets no relation member.
     TableDescription(
@@ -460,6 +479,11 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       schema: 'public',
       name: 'string',
       values: ["it's \$a\u2028trap", 'plain'],
+    ),
+    EnumDescription(
+      schema: 'public',
+      name: 'статус',
+      values: ['новый', 'готов'],
     ),
   ],
 );
