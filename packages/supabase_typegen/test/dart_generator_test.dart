@@ -977,6 +977,16 @@ void main() {
     expect(code, contains('static const double\$ ='));
   });
 
+  test('an enum named without ASCII letters gets a decoder', () {
+    final code = generateDartCode(hostileSchema);
+
+    expect(code, contains('fromJson: _fromJson,'));
+    expect(
+      code,
+      contains(r'$ _fromJson(Object json) => $.fromWire(json as String);'),
+    );
+  });
+
   test('floating array elements convert through num', () {
     final code = generateDartCode(
       DatabaseDescription(

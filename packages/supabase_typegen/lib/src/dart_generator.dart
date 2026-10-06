@@ -970,6 +970,7 @@ String _decoderName(_Binding binding) {
   final base = words.startsWith('ListOf')
       ? '${words.substring('ListOf'.length)}List'
       : words;
+  if (base.isEmpty) return '_fromJson';
   return '_${base[0].toLowerCase()}${base.substring(1)}FromJson';
 }
 

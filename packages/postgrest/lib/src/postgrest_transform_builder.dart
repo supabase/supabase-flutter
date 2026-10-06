@@ -210,7 +210,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// ```
   PostgrestTransformBuilder<PostgrestMap> single() {
     final newHeaders = {..._headers};
-    newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
+    newHeaders[HttpHeader.accept] = 'application/vnd.pgrst.object+json';
 
     return PostgrestTransformBuilder(
       _copyWithType(
@@ -273,7 +273,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// ```
   PostgrestTransformBuilder<String> csv() {
     final newHeaders = {..._headers};
-    newHeaders['Accept'] = 'text/csv';
+    newHeaders[HttpHeader.accept] = 'text/csv';
 
     return PostgrestTransformBuilder(
       _copyWithType(
@@ -304,7 +304,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   ///
   PostgrestBuilder<Map<String, dynamic>> geojson() {
     final newHeaders = {..._headers};
-    newHeaders['Accept'] = 'application/geo+json;';
+    newHeaders[HttpHeader.accept] = 'application/geo+json;';
     return _copyWithType(headers: newHeaders);
   }
 
@@ -379,8 +379,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     // sends one
     final newHeaders = {..._headers};
     if (_stripNulls) _applyStripNulls(newHeaders);
-    final forMediatype = newHeaders['Accept'] ?? 'application/json';
-    newHeaders['Accept'] =
+    final forMediatype = newHeaders[HttpHeader.accept] ?? 'application/json';
+    newHeaders[HttpHeader.accept] =
         'application/vnd.pgrst.plan+${format.name}; for="$forMediatype"; options=$options;';
     return _copyWithType(headers: newHeaders);
   }

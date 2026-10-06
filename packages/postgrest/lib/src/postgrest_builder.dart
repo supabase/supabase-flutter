@@ -108,7 +108,7 @@ void _applyStripNulls(Map<String, String> headers) {
   };
   if (strippable == null || parameters.contains('nulls=stripped')) return;
   headers.removeWhere((name, _) => name.toLowerCase() == 'accept');
-  headers['Accept'] = '$strippable$parameters;nulls=stripped';
+  headers[HttpHeader.accept] = '$strippable$parameters;nulls=stripped';
 }
 
 /// Treats an empty `Prefer` value as absent, so every append site can rely on
@@ -142,7 +142,7 @@ void _mergePrefer(Map<String, String> headers, List<String> preferences) {
             preference.isNotEmpty && !replaced.contains(keyOf(preference)),
       );
 
-  headers['Prefer'] = [...kept, ...preferences].join(',');
+  headers[HttpHeader.prefer] = [...kept, ...preferences].join(',');
 }
 
 extension on Uri {
@@ -488,12 +488,12 @@ class PostgrestBuilder<T> implements Future<T> {
     if (schema == null) {
       // skip
     } else if (method == HttpMethod.get || method == HttpMethod.head) {
-      execHeaders['Accept-Profile'] = schema;
+      execHeaders[HttpHeader.acceptProfile] = schema;
     } else {
-      execHeaders['Content-Profile'] = schema;
+      execHeaders[HttpHeader.contentProfile] = schema;
     }
     if (method != HttpMethod.get && method != HttpMethod.head) {
-      execHeaders['Content-Type'] = 'application/json';
+      execHeaders[HttpHeader.contentType] = 'application/json';
     }
     // Only a write carries a body, so a read skips the encode entirely and a
     // client with a codec does not pay for one on every select.
@@ -625,10 +625,12 @@ class PostgrestBuilder<T> implements Future<T> {
       if (response.request!.method != HttpMethod.head.value) {
         if (response.bodyBytes.isEmpty) {
           body = null;
-        } else if (response.request!.headers['Accept'] == 'text/csv') {
+        } else if (response.request!.headers[HttpHeader.accept] == 'text/csv') {
           body = response.body;
-        } else if (_headers['Accept'] != null &&
-            _headers['Accept']!.contains('application/vnd.pgrst.plan')) {
+        } else if (_headers[HttpHeader.accept] != null &&
+            _headers[HttpHeader.accept]!.contains(
+              'application/vnd.pgrst.plan',
+            )) {
           body = response.body;
         } else {
           try {
