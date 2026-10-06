@@ -80,7 +80,10 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// [ascending] defaults to `true`, matching SQL's `ORDER BY`, so results come
   /// back in ascending order unless `ascending: false` is passed.
   ///
-  /// [nullsFirst] defaults to `false`, so `null`s appear last.
+  /// [nullsFirst] places `null`s before (`true`) or after (`false`) the other
+  /// values. When it is left out no placement is sent and PostgreSQL's
+  /// default applies: last for an ascending sort and first for a descending
+  /// one.
   ///
   /// ```dart
   /// // Ascending is the default.
@@ -110,15 +113,19 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   PostgrestTransformBuilder<T> order(
     String column, {
     bool ascending = true,
-    bool nullsFirst = false,
+    bool? nullsFirst,
     String? referencedTable,
   }) {
     final key = referencedTable == null ? 'order' : '$referencedTable.order';
     final existingOrder = _url.queryParameters[key];
+    final placement = switch (nullsFirst) {
+      null => '',
+      true => '.nullsfirst',
+      false => '.nullslast',
+    };
     final value =
         '${existingOrder == null ? '' : '$existingOrder,'}$column.'
-        '${ascending ? 'asc' : 'desc'}.'
-        '${nullsFirst ? 'nullsfirst' : 'nullslast'}';
+        '${ascending ? 'asc' : 'desc'}$placement';
     final url = _url.overrideSearchParameters(key, value);
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
@@ -232,18 +239,14 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// Omits `null`-valued properties from the response objects.
   ///
   /// This uses the `nulls=stripped` variant of the `Accept` header and
-  /// requires PostgREST 11.2 or higher.
+  /// requires PostgREST 11.2 or higher. It applies to row and [single]
+  /// responses, in either call order.
   ///
   /// ```dart
   /// supabase.from('users').select().stripNulls();
   /// ```
-  PostgrestTransformBuilder<T> stripNulls() {
-    final newHeaders = {..._headers};
-    final accept = newHeaders['Accept'] ?? 'application/json';
-    newHeaders['Accept'] = '$accept;nulls=stripped';
-
-    return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
-  }
+  PostgrestTransformBuilder<T> stripNulls() =>
+      PostgrestTransformBuilder(_copyWith(stripNulls: true));
 
   /// Runs the query but rolls back the transaction, so no changes are
   /// persisted.
@@ -374,8 +377,9 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
 
     // An Accept header can carry multiple media types but postgrest-js always
     // sends one
-    final forMediatype = _headers['Accept'] ?? 'application/json';
     final newHeaders = {..._headers};
+    if (_stripNulls) _applyStripNulls(newHeaders);
+    final forMediatype = newHeaders['Accept'] ?? 'application/json';
     newHeaders['Accept'] =
         'application/vnd.pgrst.plan+${format.name}; for="$forMediatype"; options=$options;';
     return _copyWithType(headers: newHeaders);

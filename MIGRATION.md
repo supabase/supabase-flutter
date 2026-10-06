@@ -24,6 +24,7 @@ Most of this guide produces compile errors until you act on it. These do not, so
 explicitly:
 
 - [`order()` now sorts ascending by default](#order-now-sorts-ascending-by-default)
+- [`order()` no longer sends a null placement by default](#order-no-longer-sends-a-null-placement-by-default)
 - [`RealtimeClient.connectionState` is now typed](#realtimeclientconnectionstate-is-now-typed)
 - [`HttpMethod` is one shared enum](#httpmethod-is-one-shared-enum), where the enum `index` shifted
 - [Confirming an email or phone change emits `userUpdated`](#confirming-an-email-or-phone-change-emits-userupdated)
@@ -705,7 +706,40 @@ final messages = await supabase
 `ascending: false` already means descending on v2, so you can add it to your current code before
 upgrading and leave this change out of the upgrade itself.
 
-`nullsFirst` is unchanged and still defaults to `false`.
+### `order()` no longer sends a null placement by default
+
+`nullsFirst` on `PostgrestTransformBuilder.order()` is now a `bool?` that defaults to `null`. When
+it is left out, no `nullsfirst` or `nullslast` is sent and PostgreSQL decides where `NULL`s go: last
+for an ascending sort and first for a descending one. v2 defaulted it to `false`, which always sent
+`nullslast` and so put `NULL`s last on a descending sort too. This is not a compile error, so check
+every `.order(..., ascending: false)` call on a nullable column.
+
+```dart
+// Before: order=price.desc.nullslast, nulls at the end
+final books = await supabase
+    .from('books')
+    .select()
+    .order('price', ascending: false);
+
+// After: order=price.desc, nulls at the start
+final books = await supabase
+    .from('books')
+    .select()
+    .order('price', ascending: false);
+```
+
+To keep the previous behaviour, ask for nulls last explicitly:
+
+```dart
+final books = await supabase
+    .from('books')
+    .select()
+    .order('price', ascending: false, nullsFirst: false);
+```
+
+`nullsFirst: false` already means nulls last on v2, so you can add it to your current code before
+upgrading and leave this change out of the upgrade itself. Ascending sorts are unaffected, since
+nulls last is also PostgreSQL's default there.
 
 ### The rest client and its builders are stateless
 
@@ -2002,6 +2036,46 @@ try {
 controller used to occupy. `download` and `downloadStream` gain the parameter; on the stream the
 abort surfaces as a `RequestAbortedException` error.
 
+### Storage uploads send the raw file body
+
+Every upload used to be a `multipart/form-data` request with the file as one part and
+`cacheControl` and `metadata` as form fields, and `upload(path, file)` read the whole file into
+memory before sending it. The file is now the request body itself, with the options as headers:
+`Content-Type`, `Cache-Control: max-age=<seconds>`, `x-upsert` and `x-metadata` holding the
+metadata as base64-encoded JSON. This is the shape `supabase-js` sends for an `ArrayBuffer`, and
+the storage server treats both the same. `upload`, `update` and `uploadToSignedUrl` stream the
+`File` from disk, so its size no longer matters for memory.
+
+The Dart API is unchanged. Only middleware, proxies or test fixtures that matched on the
+multipart body need to read the raw body and the `x-metadata` header instead.
+
+```dart
+// A fixture that used to parse the multipart form
+final request = httpClient.requests.single;
+expect(request.bodyBytes, fileBytes);
+expect(request.headers['cache-control'], 'max-age=3600');
+expect(
+  json.decode(utf8.decode(base64.decode(request.headers['x-metadata']!))),
+  {'owner': 'me'},
+);
+```
+
+Uploading a `Stream<List<int>>` is new: `uploadStream`, `updateStream` and
+`uploadStreamToSignedUrl` send the bytes as they arrive, with an optional `contentLength`. A
+stream can only be read once, so these are never retried. This is how a file picked on the web
+is uploaded without reading it into memory first:
+
+```dart
+import 'package:cross_file/cross_file.dart';
+
+final file = XFile.fileSystem(path: path);
+await supabase.storage.from('avatars').uploadStream(
+  'avatar.png',
+  file.openRead(),
+  contentLength: await file.length(),
+);
+```
+
 ### `TracePropagationOptions` requires a `traceContextProvider`
 
 `TracePropagationOptions.enabled` is gone and `traceContextProvider` is required. The
@@ -2195,11 +2269,9 @@ await supabase
     .range(0, 9);
 ```
 
-`order()` on `from()` always sends a null ordering and defaults it to nulls last, while the typed
-ordering only sends what was asked for, which leaves the null placement to Postgres: last for an
-ascending sort and first for a descending one. On a nullable column,
-`.order('price', ascending: false)` therefore matches `.order(Books.price.desc().nullsLast())`,
-not `.order(Books.price.desc())`. Repeated `order()` calls append on both APIs.
+Both APIs only send what was asked for, so `.order('price', ascending: false)` matches
+`.order(Books.price.desc())` and `.order('price', ascending: false, nullsFirst: false)` matches
+`.order(Books.price.desc().nullsLast())`. Repeated `order()` calls append on both APIs.
 
 `limit()` and `range()` take the same arguments as before, including `referencedTable` for an
 embedded table. `single()` and `maybeSingle()` resolve to the row type:

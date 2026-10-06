@@ -33,6 +33,7 @@ class _RequestConfig {
     this.jsonCodec,
     this.count,
     this.maybeSingle = false,
+    this.stripNulls = false,
     required this.retry,
     this.requestTimeout,
     this.abortSignal,
@@ -47,6 +48,7 @@ class _RequestConfig {
   final AsyncJsonCodec? jsonCodec;
   final CountOption? count;
   final bool maybeSingle;
+  final bool stripNulls;
   final SupabaseRetryOptions retry;
   final Duration? requestTimeout;
   final Future<void>? abortSignal;
@@ -61,6 +63,7 @@ class _RequestConfig {
     AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
+    bool? stripNulls,
     SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
@@ -75,11 +78,37 @@ class _RequestConfig {
       jsonCodec: jsonCodec ?? this.jsonCodec,
       count: count ?? this.count,
       maybeSingle: maybeSingle ?? this.maybeSingle,
+      stripNulls: stripNulls ?? this.stripNulls,
       retry: retry ?? this.retry,
       requestTimeout: requestTimeout ?? this.requestTimeout,
       abortSignal: abortSignal ?? this.abortSignal,
     );
   }
+}
+
+/// PostgREST only honors `nulls=stripped` on its own array and object media
+/// types, so a plain JSON request is upgraded to the array media type. Any
+/// other media type, such as CSV or a plan, is left untouched.
+void _applyStripNulls(Map<String, String> headers) {
+  String? existing;
+  for (final MapEntry(:key, :value) in headers.entries) {
+    if (key.toLowerCase() == 'accept') {
+      existing = value;
+    }
+  }
+  final accept = existing ?? 'application/json';
+  final separator = accept.indexOf(';');
+  final mediaType = separator == -1 ? accept : accept.substring(0, separator);
+  final parameters = separator == -1 ? '' : accept.substring(separator);
+  final strippable = switch (mediaType.trim()) {
+    'application/json' ||
+    'application/vnd.pgrst.array+json' => 'application/vnd.pgrst.array+json',
+    'application/vnd.pgrst.object+json' => 'application/vnd.pgrst.object+json',
+    _ => null,
+  };
+  if (strippable == null || parameters.contains('nulls=stripped')) return;
+  headers.removeWhere((name, _) => name.toLowerCase() == 'accept');
+  headers['Accept'] = '$strippable$parameters;nulls=stripped';
 }
 
 /// Treats an empty `Prefer` value as absent, so every append site can rely on
@@ -257,6 +286,7 @@ class PostgrestBuilder<T> implements Future<T> {
   Object? get _body => _config.body;
   Headers get _headers => _config.headers;
   bool get _maybeSingle => _config.maybeSingle;
+  bool get _stripNulls => _config.stripNulls;
   HttpMethod? get _method => _config.method;
   String? get _schema => _config.schema;
   Uri get _url => _config.url;
@@ -277,6 +307,7 @@ class PostgrestBuilder<T> implements Future<T> {
     AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
+    bool? stripNulls,
     SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
@@ -291,6 +322,7 @@ class PostgrestBuilder<T> implements Future<T> {
       jsonCodec: jsonCodec,
       count: count,
       maybeSingle: maybeSingle,
+      stripNulls: stripNulls,
       retry: retry,
       requestTimeout: requestTimeout,
       abortSignal: abortSignal,
@@ -436,6 +468,8 @@ class PostgrestBuilder<T> implements Future<T> {
     // not affected by per-execution header mutations (Prefer, schema headers,
     // X-Retry-Count, etc.).
     final execHeaders = {..._headers};
+
+    if (_stripNulls) _applyStripNulls(execHeaders);
 
     final count = _count;
     if (count != null) {

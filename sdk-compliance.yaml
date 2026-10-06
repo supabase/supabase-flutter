@@ -1500,6 +1500,7 @@ features:
     symbols:
       - StorageFileApi.upload
       - StorageFileApi.uploadBinary
+      - StorageFileApi.uploadStream
     supporting_symbols:
       - File
       - FileOptions
@@ -1523,11 +1524,13 @@ features:
     symbols:
       - StorageFileApi.uploadToSignedUrl
       - StorageFileApi.uploadBinaryToSignedUrl
+      - StorageFileApi.uploadStreamToSignedUrl
   storage.file_buckets.update_file:
     status: implemented
     symbols:
       - StorageFileApi.update
       - StorageFileApi.updateBinary
+      - StorageFileApi.updateStream
   storage.file_buckets.download:
     status: implemented
     symbols:
@@ -1754,10 +1757,13 @@ features:
     symbols:
       - StorageFileApi.upload
       - StorageFileApi.uploadBinary
+      - StorageFileApi.uploadStream
       - StorageFileApi.uploadToSignedUrl
       - StorageFileApi.uploadBinaryToSignedUrl
+      - StorageFileApi.uploadStreamToSignedUrl
       - StorageFileApi.update
       - StorageFileApi.updateBinary
+      - StorageFileApi.updateStream
       - StorageFileApi.download
       - StorageFileApi.downloadStream
   storage.file_buckets.bucket_versioning_status:

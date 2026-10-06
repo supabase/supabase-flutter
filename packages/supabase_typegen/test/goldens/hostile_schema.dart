@@ -684,6 +684,78 @@ class Map$ {
   );
 }
 
+/// A row of the `core_type_names` table, as `select()` reads it with every
+/// column.
+extension type const CoreTypeNamesRow(Map<String, dynamic> _json)
+    implements Object {
+  int get num$ => _json['num'] as int;
+  num get int$ => _json['int'] as num;
+  bool get active => _json['active'] as bool;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `core_type_names`. Columns that are
+/// nullable, identity, or covered by a database default are optional; passing
+/// `null` omits the column so the database default applies. Columns the
+/// database always generates itself are left out entirely. Use the `set…ToNull`
+/// methods to insert SQL NULL explicitly.
+extension type const CoreTypeNamesInsert._(Map<String, dynamic> _json)
+    implements Object {
+  CoreTypeNamesInsert({
+    required int num$,
+    required num int$,
+    required bool active,
+  }) : this._({'num': num$, 'int': int$, 'active': active});
+}
+
+/// Values for updating rows of `core_type_names`. All columns are optional;
+/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
+/// methods to write SQL NULL explicitly.
+extension type const CoreTypeNamesUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  CoreTypeNamesUpdate({int? num$, num? int$, bool? active})
+    : this._({'num': ?num$, 'int': ?int$, 'active': ?active});
+}
+
+/// Typed access to the `core_type_names` table.
+class CoreTypeNames {
+  const CoreTypeNames._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table =
+      PostgrestTable<
+        CoreTypeNamesRow,
+        CoreTypeNamesInsert,
+        CoreTypeNamesUpdate
+      >(
+        'core_type_names',
+        CoreTypeNamesRow.new,
+        schema: 'public',
+        primaryKey: [],
+        relations: [double$],
+        computedFields: [bool$],
+      );
+
+  static const num$ = PostgrestColumn<CoreTypeNamesRow, int>('num');
+  static const int$ = PostgrestColumn<CoreTypeNamesRow, num>('int');
+  static const active = PostgrestColumn<CoreTypeNamesRow, bool>('active');
+
+  /// The `bool` computed field, selected by name; `select()` leaves it out.
+  static const bool$ = PostgrestComputedField<CoreTypeNamesRow, double>(
+    'bool',
+    fromJson: _doubleFromJson,
+  );
+
+  /// The `map` row computed by `double`.
+  static const double$ =
+      PostgrestToOneRelation<CoreTypeNamesRow, MapRow>.computed(
+        'double',
+        referencedTable: 'map',
+      );
+}
+
 /// A row of the `evil
 /// multiline "schema" name.postgrest_column` table, as `select()` reads it with
 /// every column.
@@ -810,6 +882,8 @@ DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
 List<DateTime> _dateTimeListFromJson(Object json) => (json as List<dynamic>)
     .map((element) => DateTime.parse(element as String))
     .toList();
+
+double _doubleFromJson(Object json) => (json as num).toDouble();
 
 List<double> _doubleListFromJson(Object json) => (json as List<dynamic>)
     .map((element) => (element as num).toDouble())

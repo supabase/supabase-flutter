@@ -156,7 +156,8 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// Omits `null`-valued properties from the response objects.
   ///
   /// This uses the `nulls=stripped` variant of the `Accept` header and
-  /// requires PostgREST 11.2 or higher.
+  /// requires PostgREST 11.2 or higher. It applies to row and [single]
+  /// responses, in either call order.
   PostgrestTypedTransformBuilder<Row, T> stripNulls() =>
       _with(request.copyWith(stripNulls: true));
 
