@@ -3,6 +3,102 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-06
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.9`](#postgrest---v300-dev9)
+ - [`supabase` - `v3.0.0-dev.9`](#supabase---v300-dev9)
+ - [`supabase_auth` - `v3.0.0-dev.8`](#supabase_auth---v300-dev8)
+ - [`supabase_realtime` - `v3.0.0-dev.8`](#supabase_realtime---v300-dev8)
+ - [`supabase_storage` - `v3.0.0-dev.7`](#supabase_storage---v300-dev7)
+
+Packages with other changes:
+
+ - [`iceberg` - `v0.1.5`](#iceberg---v015)
+ - [`supabase_common` - `v3.0.0-dev.6`](#supabase_common---v300-dev6)
+ - [`supabase_flutter` - `v3.0.0-dev.9`](#supabase_flutter---v300-dev9)
+ - [`supabase_functions` - `v3.0.0-dev.7`](#supabase_functions---v300-dev7)
+ - [`supabase_typegen` - `v0.5.1`](#supabase_typegen---v051)
+ - [`supabase_test` - `v0.4.3`](#supabase_test---v043)
+ - [`supabase_flutter_web_auth` - `v0.1.7`](#supabase_flutter_web_auth---v017)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_test` - `v0.4.3`
+ - `supabase_flutter_web_auth` - `v0.1.7`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.9`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **FIX**(postgrest): key long JSON paths by a SHA-256 digest of the expression ([#1924](https://github.com/supabase/supabase-flutter/issues/1924)). ([7e91e7e3](https://github.com/supabase/supabase-flutter/commit/7e91e7e3ecdb1fe5fa7cfc24e7e3944af3e8b4cb))
+ - **FIX**(postgrest): read a JSON path ending in an array index under the key PostgREST answers with ([#1915](https://github.com/supabase/supabase-flutter/issues/1915)). ([cb12a186](https://github.com/supabase/supabase-flutter/commit/cb12a1861e7eb2fc61221d85898468954ec31e85))
+ - **FIX**(postgrest): strip nulls on plain and single() responses ([#1910](https://github.com/supabase/supabase-flutter/issues/1910)). ([37c29c9a](https://github.com/supabase/supabase-flutter/commit/37c29c9a18df8bd5cbf9da564acb137c209b98f9))
+ - **FEAT**(postgrest): add computed fields and computed relationships to the typed table surface ([#1905](https://github.com/supabase/supabase-flutter/issues/1905)). ([69e46365](https://github.com/supabase/supabase-flutter/commit/69e4636557617f2ea6c85fba1e69fc0f56b5ec76))
+ - **FEAT**(postgrest): add retry, requestTimeout, abortSignal and setHeader to the typed builders ([#1907](https://github.com/supabase/supabase-flutter/issues/1907)). ([e7ab358f](https://github.com/supabase/supabase-flutter/commit/e7ab358f8f0c91e86a5f8cb4aa9c53d1c598a3c9))
+ - **BREAKING** **FIX**(postgrest): order() no longer forces NULLS LAST by default ([#1912](https://github.com/supabase/supabase-flutter/issues/1912)). ([3632d11a](https://github.com/supabase/supabase-flutter/commit/3632d11a6a09715fc6199e5378822a2844231886))
+ - **BREAKING** **FEAT**(postgrest): require a filter or all() on typed update() and delete() ([#1913](https://github.com/supabase/supabase-flutter/issues/1913)). ([4705528d](https://github.com/supabase/supabase-flutter/commit/4705528d75c20af6fd919d60ae2c3c990bff8f81))
+ - **BREAKING** **FEAT**(supabase): add negated filters and column selection to stream() ([#1909](https://github.com/supabase/supabase-flutter/issues/1909)). ([4411c7fc](https://github.com/supabase/supabase-flutter/commit/4411c7fc9475008a55cdb3a4c9c4cd87a122e446))
+
+#### `supabase` - `v3.0.0-dev.9`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **FIX**(supabase): sort null values in an ordered stream the way the database does ([#1918](https://github.com/supabase/supabase-flutter/issues/1918)). ([64dc4ec2](https://github.com/supabase/supabase-flutter/commit/64dc4ec2693d8f135c4ea509a355bfe2c53a2aef))
+ - **FIX**(supabase): replace an already streamed row on a realtime insert ([#1908](https://github.com/supabase/supabase-flutter/issues/1908)). ([1eefe0ee](https://github.com/supabase/supabase-flutter/commit/1eefe0ee2b22c883fb26ac21cb5bbe38d7df2493))
+ - **BREAKING** **FIX**(postgrest): order() no longer forces NULLS LAST by default ([#1912](https://github.com/supabase/supabase-flutter/issues/1912)). ([3632d11a](https://github.com/supabase/supabase-flutter/commit/3632d11a6a09715fc6199e5378822a2844231886))
+ - **BREAKING** **FEAT**(supabase): add negated filters and column selection to stream() ([#1909](https://github.com/supabase/supabase-flutter/issues/1909)). ([4411c7fc](https://github.com/supabase/supabase-flutter/commit/4411c7fc9475008a55cdb3a4c9c4cd87a122e446))
+
+#### `supabase_auth` - `v3.0.0-dev.8`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **FIX**(auth): refreshing a different invalid token signs out the current session ([#1922](https://github.com/supabase/supabase-flutter/issues/1922)). ([a10906f9](https://github.com/supabase/supabase-flutter/commit/a10906f9d657dbcbdc7c13f2be71262b615fd27b))
+ - **FIX**(auth): decode OAuth clients that omit redirect_uris or grant_types ([#1923](https://github.com/supabase/supabase-flutter/issues/1923)). ([56d8a450](https://github.com/supabase/supabase-flutter/commit/56d8a4506ce7ff4d464578a12e3b3848ca8c8f38))
+ - **BREAKING** **FIX**(auth): verify ES256 tokens in getClaims ([#1916](https://github.com/supabase/supabase-flutter/issues/1916)). ([9f235afb](https://github.com/supabase/supabase-flutter/commit/9f235afba7f664ee10fe9f5e5e622b1fb43191db))
+
+#### `supabase_realtime` - `v3.0.0-dev.8`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **BREAKING** **FEAT**(supabase): add negated filters and column selection to stream() ([#1909](https://github.com/supabase/supabase-flutter/issues/1909)). ([4411c7fc](https://github.com/supabase/supabase-flutter/commit/4411c7fc9475008a55cdb3a4c9c4cd87a122e446))
+
+#### `supabase_storage` - `v3.0.0-dev.7`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+ - **BREAKING** **FEAT**(storage): upload the raw file body and stream files from disk ([#1911](https://github.com/supabase/supabase-flutter/issues/1911)). ([e1d18f8c](https://github.com/supabase/supabase-flutter/commit/e1d18f8c57ae19d4849862bb20d23e925bb459d4))
+
+#### `iceberg` - `v0.1.5`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+
+#### `supabase_common` - `v3.0.0-dev.6`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+
+#### `supabase_flutter` - `v3.0.0-dev.9`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+
+#### `supabase_functions` - `v3.0.0-dev.7`
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+
+#### `supabase_typegen` - `v0.5.1`
+
+ - **FIX**(typegen): suffix a member named like a generated type ([#1921](https://github.com/supabase/supabase-flutter/issues/1921)). ([cf5624fa](https://github.com/supabase/supabase-flutter/commit/cf5624faff47f50546ce00348afb24cebc6b81ec))
+ - **FIX**(typegen): suffix a schema object named function so the generated code compiles ([#1920](https://github.com/supabase/supabase-flutter/issues/1920)). ([9d27de5c](https://github.com/supabase/supabase-flutter/commit/9d27de5c725cbc5ff102bf5f18c274f76dbb0603))
+ - **FIX**(typegen): generate a decoder for an enum named without ASCII letters ([#1919](https://github.com/supabase/supabase-flutter/issues/1919)). ([cf0256d9](https://github.com/supabase/supabase-flutter/commit/cf0256d908a935775fc6681a95159d2c31ebb5e1))
+ - **FIX**(typegen): suffix members named like a core type so the generated code compiles ([#1914](https://github.com/supabase/supabase-flutter/issues/1914)). ([c885dd74](https://github.com/supabase/supabase-flutter/commit/c885dd7476f057f9444c4f7151f93da214252792))
+ - **FEAT**(postgrest): add computed fields and computed relationships to the typed table surface ([#1905](https://github.com/supabase/supabase-flutter/issues/1905)). ([69e46365](https://github.com/supabase/supabase-flutter/commit/69e4636557617f2ea6c85fba1e69fc0f56b5ec76))
+ - **FEAT**(supabase_typegen): default the generated import to the Supabase package the project depends on ([#1904](https://github.com/supabase/supabase-flutter/issues/1904)). ([a5c20985](https://github.com/supabase/supabase-flutter/commit/a5c20985d30c8d4ae138c5f4f8d77c68505bb489))
+
+
 ## 2026-09-30
 
 ### Changes

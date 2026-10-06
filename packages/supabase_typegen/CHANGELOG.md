@@ -1,3 +1,12 @@
+## 0.5.1
+
+ - **FIX**(typegen): suffix a member named like a generated type ([#1921](https://github.com/supabase/supabase-flutter/issues/1921)). ([cf5624fa](https://github.com/supabase/supabase-flutter/commit/cf5624faff47f50546ce00348afb24cebc6b81ec))
+ - **FIX**(typegen): suffix a schema object named function so the generated code compiles ([#1920](https://github.com/supabase/supabase-flutter/issues/1920)). ([9d27de5c](https://github.com/supabase/supabase-flutter/commit/9d27de5c725cbc5ff102bf5f18c274f76dbb0603))
+ - **FIX**(typegen): generate a decoder for an enum named without ASCII letters ([#1919](https://github.com/supabase/supabase-flutter/issues/1919)). ([cf0256d9](https://github.com/supabase/supabase-flutter/commit/cf0256d908a935775fc6681a95159d2c31ebb5e1))
+ - **FIX**(typegen): suffix members named like a core type so the generated code compiles ([#1914](https://github.com/supabase/supabase-flutter/issues/1914)). ([c885dd74](https://github.com/supabase/supabase-flutter/commit/c885dd7476f057f9444c4f7151f93da214252792))
+ - **FEAT**(postgrest): add computed fields and computed relationships to the typed table surface ([#1905](https://github.com/supabase/supabase-flutter/issues/1905)). ([69e46365](https://github.com/supabase/supabase-flutter/commit/69e4636557617f2ea6c85fba1e69fc0f56b5ec76))
+ - **FEAT**(supabase_typegen): default the generated import to the Supabase package the project depends on ([#1904](https://github.com/supabase/supabase-flutter/issues/1904)). ([a5c20985](https://github.com/supabase/supabase-flutter/commit/a5c20985d30c8d4ae138c5f4f8d77c68505bb489))
+
 ## 0.5.0
 
 > Note: This release has breaking changes.

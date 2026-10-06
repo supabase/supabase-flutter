@@ -1,3 +1,7 @@
+## 3.0.0-dev.7
+
+ - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))
+
 ## 3.0.0-dev.6
 
  - **FIX**(functions): decode response bodies that are not valid UTF-8 instead of throwing ([#1892](https://github.com/supabase/supabase-flutter/issues/1892)). ([56950108](https://github.com/supabase/supabase-flutter/commit/5695010858d22d57962e1e3bee434bf2a3ec14e1))
