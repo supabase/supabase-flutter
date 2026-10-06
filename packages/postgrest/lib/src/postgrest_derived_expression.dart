@@ -171,7 +171,7 @@ final class _EmbeddedDerivation<Row, Value extends Object>
 /// The `select` list sends the path under an alias of its own [expression],
 /// `"data->>name":data->>name`, so it never shares a key with the column or
 /// another path of it. An expression longer than the 63 bytes Postgres keeps
-/// of a name is shortened to a prefix and a hash of the whole.
+/// of a name is shortened to a prefix and a digest of the whole.
 @experimental
 final class PostgrestJsonPath<Row, Value extends Object>
     extends PostgrestColumnExpression<Row, Value>
@@ -219,16 +219,12 @@ final class PostgrestJsonPath<Row, Value extends Object>
 const _maximumNameBytes = 63;
 
 /// [expression] as a response key: itself, or when it is longer than
-/// Postgres keeps of a name, a prefix of it followed by a hash of the whole,
+/// Postgres keeps of a name, a prefix of it followed by a digest of the whole,
 /// so two long expressions sharing a prefix get different keys.
 String _expressionKey(String expression) {
   final bytes = utf8.encode(expression);
   if (bytes.length <= _maximumNameBytes) return expression;
-  var hash = 0;
-  for (final byte in bytes) {
-    hash = (hash * 31 + byte) % 4294967291;
-  }
-  final suffix = '~${hash.toRadixString(16).padLeft(8, '0')}';
+  final suffix = '~${sha256.convert(bytes).toString().substring(0, 16)}';
   final prefix = StringBuffer();
   var prefixBytes = 0;
   for (final rune in expression.runes) {
