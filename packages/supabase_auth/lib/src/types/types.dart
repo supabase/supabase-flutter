@@ -230,21 +230,22 @@ class OAuthClient {
       ),
       clientUri: json['client_uri'] as String?,
       logoUri: json['logo_uri'] as String?,
-      redirectUris: (json['redirect_uris'] as List? ?? const []).cast(),
-      grantTypes: (json['grant_types'] as List? ?? const [])
+      redirectUris: (json['redirect_uris'] as List?)?.cast() ?? const [],
+      grantTypes: ((json['grant_types'] as List?)?.cast<String>() ?? const [])
           .map(
-            (e) => OAuthClientGrantType.values.firstWhere(
-              (gt) => gt.snakeCase == e as String,
+            (value) => OAuthClientGrantType.values.firstWhere(
+              (grantType) => grantType.snakeCase == value,
             ),
           )
           .toList(),
-      responseTypes: (json['response_types'] as List? ?? const [])
-          .map(
-            (e) => OAuthClientResponseType.values.firstWhere(
-              (rt) => rt.snakeCase == e as String,
-            ),
-          )
-          .toList(),
+      responseTypes:
+          ((json['response_types'] as List?)?.cast<String>() ?? const [])
+              .map(
+                (value) => OAuthClientResponseType.values.firstWhere(
+                  (responseType) => responseType.snakeCase == value,
+                ),
+              )
+              .toList(),
       scope: json['scope'] as String?,
       createdAt: parseIso8601(json, 'created_at'),
       updatedAt: parseIso8601(json, 'updated_at'),
