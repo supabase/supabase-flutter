@@ -555,6 +555,8 @@ class PostgrestBuilder<T> implements Future<T> {
           );
         }
         rethrow;
+      } on SupabaseException {
+        rethrow;
       } on Exception catch (error) {
         throw PostgrestTransportException(
           'Request failed: $error',

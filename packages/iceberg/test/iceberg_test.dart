@@ -644,6 +644,25 @@ void main() {
       },
     );
 
+    test('passes an exception the HTTP client classified through', () async {
+      mockClient.handler = (request) =>
+          throw const IcebergNotFoundException('session expired');
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          allOf(
+            isA<IcebergNotFoundException>().having(
+              (error) => error.message,
+              'message',
+              'session expired',
+            ),
+            isNot(isA<IcebergNetworkException>()),
+          ),
+        ),
+      );
+    });
+
     test(
       'an error response carries its headers, body and request id',
       () async {

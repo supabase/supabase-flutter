@@ -1571,6 +1571,31 @@ void main() {
       },
     );
 
+    test('passes an exception the HTTP client classified through', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        parameters: {'apikey': 'abc123'},
+        httpClient: MockClient((request) {
+          throw const RealtimeException('session expired');
+        }),
+      );
+      channel = socket.channel('topic');
+
+      await expectLater(
+        channel.httpSend(event: 'test', payload: {'data': 'test'}),
+        throwsA(
+          allOf(
+            isA<RealtimeException>().having(
+              (error) => error.message,
+              'message',
+              'session expired',
+            ),
+            isNot(isA<RealtimeTransportException>()),
+          ),
+        ),
+      );
+    });
+
     test('handles timeout', () async {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',

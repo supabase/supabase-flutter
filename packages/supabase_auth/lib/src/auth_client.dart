@@ -1743,7 +1743,7 @@ class AuthClient {
         // how many attempts a short backoff can squeeze into the tick.
         final nextBackOff = retryOptions.delay(attempt - 1);
 
-        return e is AuthRetryableFetchException &&
+        return e is AuthRetryableException &&
             (DateTime.now().millisecondsSinceEpoch +
                     nextBackOff.inMilliseconds -
                     startedAt.millisecondsSinceEpoch) <
@@ -2098,7 +2098,7 @@ class AuthClient {
         return existingSession;
       }
 
-      if (error is! AuthRetryableFetchException) {
+      if (error is! AuthRetryableException) {
         // The server rejected [refreshToken], so only the session that token
         // was redeemed for is gone: the stored session when it held the
         // token, or no session at all when nothing was stored. A session

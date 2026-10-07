@@ -61,22 +61,34 @@ class Fetch {
     return exception;
   }
 
-  /// Sends [request], wrapping a failure to get a response in a
-  /// [StorageTransportException]. An abort keeps its own exception.
-  Future<http.StreamedResponse> _send(http.BaseRequest request) async {
+  /// Runs [action], wrapping a failure to get a response from [url] in a
+  /// [StorageTransportException]. An abort and an exception the HTTP client
+  /// already classified keep their own type.
+  Future<T> _guardTransport<T>(Uri? url, Future<T> Function() action) async {
     try {
-      return await request.sendWith(httpClient);
+      return await action();
     } on http.RequestAbortedException {
+      rethrow;
+    } on SupabaseException {
       rethrow;
     } on Exception catch (error, stackTrace) {
       storageLogger.fine(
-        'StorageTransportException for ${request.url.redacted}',
+        'StorageTransportException for ${url?.redacted}',
         error,
         stackTrace,
       );
       throw StorageTransportException('Request failed: $error', cause: error);
     }
   }
+
+  Future<http.StreamedResponse> _send(http.BaseRequest request) =>
+      _guardTransport(request.url, () => request.sendWith(httpClient));
+
+  Future<http.Response> _read(http.StreamedResponse streamedResponse) =>
+      _guardTransport(
+        streamedResponse.request?.url,
+        () => http.Response.fromStream(streamedResponse),
+      );
 
   http.AbortableRequest _createRequest(
     HttpMethod method,
@@ -185,7 +197,7 @@ class Fetch {
     http.StreamedResponse streamedResponse,
     FetchOptions? options,
   ) async {
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await _read(streamedResponse);
     if (isSuccessStatusCode(response.statusCode)) {
       final dynamic body;
       if (options?.noResolveJson == true) {
@@ -255,7 +267,7 @@ class Fetch {
     final streamedResponse = await _send(request);
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _read(streamedResponse);
       throw _handleError(
         response,
         StackTrace.current,

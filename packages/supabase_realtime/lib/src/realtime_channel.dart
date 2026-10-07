@@ -831,6 +831,8 @@ class RealtimeChannel {
         headers: headers,
         body: body,
       ).timeout(timeout ?? _timeout);
+    } on SupabaseException {
+      rethrow;
     } on Exception catch (error) {
       throw RealtimeTransportException(
         'Request failed: $error',

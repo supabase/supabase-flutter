@@ -63,12 +63,12 @@ void main() {
         throwsA(
           isA<PostgrestApiException>()
               .having(
-                (e) => e.headers['sb-request-id'],
+                (error) => error.headers['sb-request-id'],
                 'request id header',
                 'request-1',
               )
               .having(
-                (e) => e.body,
+                (error) => error.body,
                 'body',
                 '{"message":"boom","code":"PGRST100"}',
               ),
@@ -86,7 +86,7 @@ void main() {
         () => client.from('users').select(),
         throwsA(
           isA<PostgrestApiException>().having(
-            (e) => e.body,
+            (error) => error.body,
             'body',
             '<html>502 Bad Gateway</html>',
           ),
@@ -112,8 +112,29 @@ void main() {
         () => client.from('users').select(),
         throwsA(
           isA<PostgrestTransportException>()
-              .having((e) => e.cause, 'cause', isA<ClientException>())
-              .having((e) => e.message, 'message', contains('Offline')),
+              .having((error) => error.cause, 'cause', isA<ClientException>())
+              .having((error) => error.message, 'message', contains('Offline')),
+        ),
+      );
+    });
+
+    test('passes an exception the HTTP client classified through', () async {
+      final client = _buildClient(
+        MockSupabaseHttpClient()
+          ..stubError(const PostgrestException('session expired')),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          allOf(
+            isA<PostgrestException>().having(
+              (error) => error.message,
+              'message',
+              'session expired',
+            ),
+            isNot(isA<PostgrestTransportException>()),
+          ),
         ),
       );
     });

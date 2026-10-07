@@ -47,11 +47,6 @@ final class IcebergNetworkException extends IcebergException
 
   @override
   final Object? cause;
-
-  @override
-  String toString() =>
-      '$runtimeType(message: $message, errorCode: $errorCode, '
-      'requestId: $requestId, cause: $cause)';
 }
 
 /// The Iceberg REST Catalog API answered with an error response.

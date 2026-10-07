@@ -244,22 +244,14 @@ class FunctionsClient {
       '${request.headers.redacted}',
     );
 
-    final http.StreamedResponse response;
-    try {
-      response = await request.sendWith(_httpClient);
-    } on http.RequestAbortedException {
-      rethrow;
-    } catch (error) {
-      throw FunctionsFetchException(cause: error);
-    }
+    final response = await _guardTransport(
+      () => request.sendWith(_httpClient),
+    );
     final responseType = response.headers.mediaType ?? 'text/plain';
 
     final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =
         isSuccessStatusCode(response.statusCode) && !isRelayError;
-
-    final dynamic data;
-    final Uint8List bodyBytes;
 
     if (responseType == 'text/event-stream' && isSuccessStatus) {
       // Only a successful streaming response hands the live stream to the
@@ -271,7 +263,11 @@ class FunctionsClient {
         statusCode: response.statusCode,
       );
     }
-    bodyBytes = await response.stream.toBytes();
+    final bodyBytes = await _guardTransport(
+      () => response.stream.toBytes(),
+      message: 'Failed to read the response of the Edge Function',
+    );
+    final dynamic data;
     if (responseType == 'application/json') {
       if (bodyBytes.isEmpty) {
         data = "";
@@ -320,6 +316,24 @@ class FunctionsClient {
       body: responseBody,
       message: response.reasonPhrase,
     );
+  }
+
+  /// Runs [action], wrapping a failure to get a response in a
+  /// [FunctionsFetchException] with [message]. An abort and an exception the
+  /// HTTP client already classified keep their own type.
+  Future<T> _guardTransport<T>(
+    Future<T> Function() action, {
+    String? message,
+  }) async {
+    try {
+      return await action();
+    } on http.RequestAbortedException {
+      rethrow;
+    } on SupabaseException {
+      rethrow;
+    } catch (error) {
+      throw FunctionsFetchException(message: message, cause: error);
+    }
   }
 
   /// Disposes the JSON codec the client created for itself.

@@ -2793,7 +2793,8 @@ supporting_symbols:
   - AuthRetryableApiException.statusCode
   - AuthRetryableApiException.body
   - AuthRetryableApiException.headers
-  - AuthRetryableApiException.toString
+  - AuthRetryableException
+  - AuthRetryableException.AuthRetryableException
   - AuthRetryableFetchException
   - AuthRetryableFetchException.AuthRetryableFetchException
   - AuthRetryableFetchException.cause
@@ -2903,7 +2904,6 @@ supporting_symbols:
   - IcebergNetworkException
   - IcebergNetworkException.IcebergNetworkException
   - IcebergNetworkException.cause
-  - IcebergNetworkException.toString
   - IcebergNotFoundException
   - IcebergNotFoundException.IcebergNotFoundException
   - IcebergServerException

@@ -137,17 +137,18 @@ class IcebergRestCatalog {
 
     icebergLogger.finest('Request: ${method.value} ${uri.redacted}');
 
-    final http.StreamedResponse streamedResponse;
+    final http.Response response;
     try {
-      streamedResponse = await request.sendWith(_httpClient);
+      final streamedResponse = await request.sendWith(_httpClient);
+      response = await http.Response.fromStream(streamedResponse);
+    } on SupabaseException {
+      rethrow;
     } catch (error) {
       throw IcebergNetworkException(
         'Network request failed: $error',
         cause: error,
       );
     }
-
-    final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 304) {
       return _IcebergResponse(304, response.headers, null);

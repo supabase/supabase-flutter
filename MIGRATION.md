@@ -1487,7 +1487,7 @@ Four changes go beyond a rename:
   `invalid_jwt` instead.
 - `AuthRetryableFetchException` covers only the transport case, where the request never reached the
   service. A retryable 5xx the service answered is an `AuthRetryableApiException`, which carries the
-  status. Catching `AuthRetryableFetchException` still gets both.
+  status. Both extend `AuthRetryableException`, so catch that to get both.
 - `FunctionException` gained a `message`, taken from the response's reason phrase and falling back
   to a per-subtype default when the response carries none, as over HTTP/2. The response body is
   still in `details`.

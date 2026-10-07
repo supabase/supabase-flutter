@@ -343,14 +343,14 @@ void main() {
         AuthFetch(client).request(_mockUrl, HttpMethod.get),
         throwsA(
           isA<AuthApiException>()
-              .having((e) => e.requestId, 'requestId', 'request-1')
+              .having((error) => error.requestId, 'requestId', 'request-1')
               .having(
-                (e) => e.headers['sb-request-id'],
+                (error) => error.headers['sb-request-id'],
                 'request id header',
                 'request-1',
               )
               .having(
-                (e) => e.body,
+                (error) => error.body,
                 'body',
                 '{"code":"bad_json","message":"error_message"}',
               ),
@@ -370,10 +370,14 @@ void main() {
         AuthFetch(client).request(_mockUrl, HttpMethod.get),
         throwsA(
           isA<AuthRetryableApiException>()
-              .having((e) => e.statusCode, 'statusCode', 502)
-              .having((e) => e.body, 'body', '<html>502 Bad Gateway</html>')
+              .having((error) => error.statusCode, 'statusCode', 502)
               .having(
-                (e) => e.headers['sb-request-id'],
+                (error) => error.body,
+                'body',
+                '<html>502 Bad Gateway</html>',
+              )
+              .having(
+                (error) => error.headers['sb-request-id'],
                 'request id header',
                 'request-1',
               ),
@@ -389,9 +393,17 @@ void main() {
         AuthFetch(client).request(_mockUrl, HttpMethod.get),
         throwsA(
           isA<AuthRetryableFetchException>()
-              .having((e) => e.cause, 'cause', isA<ClientException>())
-              .having((e) => e, 'type', isA<SupabaseTransportException>())
-              .having((e) => e, 'type', isNot(isA<SupabaseApiException>())),
+              .having((error) => error.cause, 'cause', isA<ClientException>())
+              .having(
+                (error) => error,
+                'type',
+                isA<SupabaseTransportException>(),
+              )
+              .having(
+                (error) => error,
+                'type',
+                isNot(isA<SupabaseApiException>()),
+              ),
         ),
       );
     });
@@ -409,7 +421,7 @@ void main() {
         throwsA(
           isA<AuthRetryableFetchException>()
               .having((e) => e.message, 'message', contains('FormatException'))
-              .having((e) => e.cause, 'cause', isA<FormatException>())
+              .having((error) => error.cause, 'cause', isA<FormatException>())
               .having((e) => e.requestId, 'requestId', 'request-1'),
         ),
       );
