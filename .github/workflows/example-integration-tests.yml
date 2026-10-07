@@ -18,7 +18,7 @@ permissions:
   actions: read
 
 env:
-  SUPABASE_CLI_VERSION: 2.109.1
+  SUPABASE_CLI_VERSION: 2.120.0
   CLOUDFLARED_VERSION: 2026.9.0
 
 jobs:
