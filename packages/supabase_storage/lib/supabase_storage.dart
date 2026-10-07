@@ -8,6 +8,7 @@ export 'package:supabase_common/supabase_common.dart'
         SortDirection,
         SupabaseApiException,
         SupabaseException,
+        SupabaseTransportException,
         SupabaseRetryOptions;
 
 export 'src/storage_client.dart';

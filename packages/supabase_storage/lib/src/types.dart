@@ -946,10 +946,25 @@ class SignedUploadURLResponse extends SignedUrl {
 /// Thrown when a storage operation fails.
 ///
 /// A plain [StorageException] is a failure the client raised on its own, such
-/// as a request that never reached storage. A failure storage reported is a
-/// [StorageApiException].
+/// as a response whose body has an unexpected shape. A failure storage
+/// reported is a [StorageApiException], and a request that never received a
+/// response is a [StorageTransportException].
 class StorageException extends SupabaseException {
   const StorageException(super.message, {super.errorCode, super.requestId});
+}
+
+/// Thrown when a request never received a response from storage, because the
+/// connection failed or the request timed out.
+///
+/// An upload with retries enabled throws this only once every attempt has
+/// failed. A request aborted through its abort signal is not wrapped and
+/// surfaces as a `RequestAbortedException`.
+class StorageTransportException extends StorageException
+    with SupabaseTransportException {
+  const StorageTransportException(super.message, {this.cause});
+
+  @override
+  final Object? cause;
 }
 
 /// Thrown when storage answered with an error.
@@ -959,6 +974,8 @@ class StorageApiException extends StorageException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    this.headers = const {},
+    this.body,
   });
 
   /// Builds an exception from an error response body.
@@ -974,11 +991,16 @@ class StorageApiException extends StorageException with SupabaseApiException {
   /// body's `error` is the fallback for servers old enough not to send `code`,
   /// and carries a plain sentence as often as an identifier.
   ///
+  /// [headers] and [body] are the response's own, with [body] as the text the
+  /// [json] was decoded from.
+  ///
   /// See https://supabase.com/docs/guides/storage/debugging/error-codes
   factory StorageApiException.fromJson(
     Map<String, dynamic> json,
     int statusCode, {
     String? requestId,
+    Map<String, String> headers = const {},
+    String? body,
   }) {
     final message = json['message'];
     return StorageApiException(
@@ -986,10 +1008,18 @@ class StorageApiException extends StorageException with SupabaseApiException {
       errorCode: (json['code'] ?? json['error'])?.toString(),
       statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
       requestId: requestId,
+      headers: headers,
+      body: body,
     );
   }
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
 }
 
 /// {@template resize_mode}

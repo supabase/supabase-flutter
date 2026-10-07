@@ -244,24 +244,45 @@ class FunctionsClient {
       '${request.headers.redacted}',
     );
 
-    final http.StreamedResponse response;
-    try {
-      response = await request.sendWith(_httpClient);
-    } on http.RequestAbortedException {
-      rethrow;
-    } catch (error) {
-      throw FunctionsFetchException(details: error);
-    }
+    final response = await _guardTransport(
+      () => request.sendWith(_httpClient),
+    );
     final responseType = response.headers.mediaType ?? 'text/plain';
 
     final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =
         isSuccessStatusCode(response.statusCode) && !isRelayError;
 
+    if (responseType == 'text/event-stream' && isSuccessStatus) {
+      // Only a successful streaming response hands the live stream to the
+      // caller. On an error status there is nothing to stream, so the body is
+      // drained below to become the exception `details` and the connection
+      // isn't left open.
+      return FunctionResponse(
+        data: response.stream,
+        statusCode: response.statusCode,
+      );
+    }
+    final Uint8List bodyBytes;
+    try {
+      bodyBytes = await response.stream.toBytes();
+    } on http.RequestAbortedException {
+      rethrow;
+    } catch (error) {
+      // A body that stops arriving on a success status leaves the caller with
+      // nothing usable, so it is a transport failure. On an error status the
+      // status itself is the answer, so it is kept with the read error as the
+      // details.
+      if (isSuccessStatus) {
+        throw FunctionsFetchException(
+          message: 'Failed to read the response of the Edge Function',
+          cause: error,
+        );
+      }
+      throw _apiException(response, isRelayError, details: error);
+    }
     final dynamic data;
-
     if (responseType == 'application/json') {
-      final bodyBytes = await response.stream.toBytes();
       if (bodyBytes.isEmpty) {
         data = "";
       } else {
@@ -279,38 +300,67 @@ class FunctionsClient {
         data = decoded;
       }
     } else if (responseType == 'application/octet-stream') {
-      data = await response.stream.toBytes();
-    } else if (responseType == 'text/event-stream' && isSuccessStatus) {
-      // Only a successful streaming response hands the live stream to the
-      // caller. On an error status there is nothing to stream — fall through
-      // and drain the body so it becomes the exception `details` and the
-      // connection isn't left open.
-      data = response.stream;
+      data = bodyBytes;
     } else {
-      final bodyBytes = await response.stream.toBytes();
       data = utf8.decode(bodyBytes, allowMalformed: !isSuccessStatus);
     }
 
     if (isSuccessStatus) {
       return FunctionResponse(data: data, statusCode: response.statusCode);
     }
-    // The reason phrase is the only message the response itself carries; when
-    // it is absent, as it is over HTTP/2, each exception uses its own default.
+    throw _apiException(
+      response,
+      isRelayError,
+      details: data,
+      body: utf8.decode(bodyBytes, allowMalformed: true),
+    );
+  }
+
+  /// Builds the exception for an error [response], a relay one when
+  /// [isRelayError].
+  ///
+  /// The reason phrase is the only message the response itself carries; when
+  /// it is absent, as it is over HTTP/2, each exception uses its own default.
+  FunctionsApiException _apiException(
+    http.StreamedResponse response,
+    bool isRelayError, {
+    required Object? details,
+    String? body,
+  }) {
     final requestId = response.headers.requestId;
     if (isRelayError) {
-      throw FunctionsRelayException(
+      return FunctionsRelayException(
         statusCode: response.statusCode,
-        details: data,
+        details: details,
         requestId: requestId,
+        headers: response.headers,
+        body: body,
         message: response.reasonPhrase,
       );
     }
-    throw FunctionsApiException(
+    return FunctionsApiException(
       statusCode: response.statusCode,
-      details: data,
+      details: details,
       requestId: requestId,
+      headers: response.headers,
+      body: body,
       message: response.reasonPhrase,
     );
+  }
+
+  /// Runs [action], wrapping a failure to get a response in a
+  /// [FunctionsFetchException]. An abort and an exception the HTTP client
+  /// already classified keep their own type.
+  Future<T> _guardTransport<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } on http.RequestAbortedException {
+      rethrow;
+    } on SupabaseException {
+      rethrow;
+    } catch (error) {
+      throw FunctionsFetchException(cause: error);
+    }
   }
 
   /// Disposes the JSON codec the client created for itself.

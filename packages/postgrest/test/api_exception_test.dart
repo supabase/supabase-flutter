@@ -1,3 +1,6 @@
+import 'package:http/http.dart'
+    show ClientException, RequestAbortedException, StreamedResponse;
+import 'package:http/testing.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -44,6 +47,179 @@ void main() {
 
       expect(exception.errorCode, 'PGRST100');
       expect(exception.requestId, 'request-1');
+    });
+  });
+
+  group('response context', () {
+    test('an error response carries its headers and body', () async {
+      final client = _buildClient(
+        MockSupabaseHttpClient()..stub(
+          {'message': 'boom', 'code': 'PGRST100'},
+          statusCode: 400,
+          headers: _requestIdHeaders,
+        ),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having(
+                (error) => error.headers['sb-request-id'],
+                'request id header',
+                'request-1',
+              )
+              .having(
+                (error) => error.body,
+                'body',
+                '{"message":"boom","code":"PGRST100"}',
+              ),
+        ),
+      );
+    });
+
+    test('a non-JSON error response keeps the raw body', () async {
+      final client = _buildClient(
+        MockSupabaseHttpClient()
+          ..stubText('<html>502 Bad Gateway</html>', statusCode: 502),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (error) => error.body,
+            'body',
+            '<html>502 Bad Gateway</html>',
+          ),
+        ),
+      );
+    });
+
+    test('an exception built by hand has no headers or body', () {
+      const exception = PostgrestApiException(message: 'boom', statusCode: 400);
+
+      expect(exception.headers, isEmpty);
+      expect(exception.body, isNull);
+    });
+  });
+
+  group('PostgrestTransportException', () {
+    test('wraps a request that got no response', () async {
+      final client = _buildClient(
+        MockSupabaseHttpClient()..stubError(ClientException('Offline')),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestTransportException>()
+              .having((error) => error.cause, 'cause', isA<ClientException>())
+              .having((error) => error.message, 'message', contains('Offline')),
+        ),
+      );
+    });
+
+    test('passes an exception the HTTP client classified through', () async {
+      final client = _buildClient(
+        MockSupabaseHttpClient()
+          ..stubError(const PostgrestException('session expired')),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          allOf(
+            isA<PostgrestException>().having(
+              (error) => error.message,
+              'message',
+              'session expired',
+            ),
+            isNot(isA<PostgrestTransportException>()),
+          ),
+        ),
+      );
+    });
+
+    test('is a PostgrestException and a SupabaseTransportException', () {
+      const SupabaseException exception = PostgrestTransportException(
+        'offline',
+      );
+
+      expect(exception, isA<PostgrestException>());
+      expect(exception, isA<SupabaseTransportException>());
+      expect(exception, isNot(isA<SupabaseApiException>()));
+      expect(
+        exception.toString(),
+        'PostgrestTransportException(message: offline, errorCode: null, '
+        'requestId: null, cause: null)',
+      );
+    });
+
+    test('a body that fails to arrive on a success status is wrapped', () {
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            200,
+            request: request,
+          ),
+        ),
+        retryOptions: const SupabaseRetryOptions(enabled: false),
+      );
+
+      return expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
+      );
+    });
+
+    test('a body that fails to arrive on an error status keeps it', () {
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            401,
+            request: request,
+            headers: {'sb-request-id': 'request-1'},
+          ),
+        ),
+        retryOptions: const SupabaseRetryOptions(enabled: false),
+      );
+
+      return expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having((error) => error.statusCode, 'statusCode', 401)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having((error) => error.body, 'body', isNull)
+              .having(
+                (error) => error.details,
+                'details',
+                isA<ClientException>(),
+              ),
+        ),
+      );
+    });
+
+    test('an abort is not wrapped', () async {
+      final client = _buildClient(
+        MockSupabaseHttpClient()..stubError(RequestAbortedException()),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(isA<RequestAbortedException>()),
+      );
     });
   });
 

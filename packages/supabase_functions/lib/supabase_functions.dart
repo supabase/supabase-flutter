@@ -4,7 +4,11 @@ library;
 export 'package:http/http.dart'
     show ByteStream, MultipartFile, RequestAbortedException;
 export 'package:supabase_common/supabase_common.dart'
-    show HttpMethod, SupabaseApiException, SupabaseException;
+    show
+        HttpMethod,
+        SupabaseApiException,
+        SupabaseException,
+        SupabaseTransportException;
 
 export 'package:yet_another_json_isolate/yet_another_json_isolate.dart'
     show AsyncJsonCodec;

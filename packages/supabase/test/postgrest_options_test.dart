@@ -105,7 +105,13 @@ void main() {
 
     await expectLater(
       () => supabase.from('todos').select(),
-      throwsA(isA<TimeoutException>()),
+      throwsA(
+        isA<PostgrestTransportException>().having(
+          (error) => error.cause,
+          'cause',
+          isA<TimeoutException>(),
+        ),
+      ),
     );
 
     expect(httpClient.requests, hasLength(1));
@@ -116,7 +122,13 @@ void main() {
 
     await expectLater(
       () => supabase.schema('personal').from('todos').select(),
-      throwsA(isA<TimeoutException>()),
+      throwsA(
+        isA<PostgrestTransportException>().having(
+          (error) => error.cause,
+          'cause',
+          isA<TimeoutException>(),
+        ),
+      ),
     );
 
     expect(httpClient.requests, hasLength(1));

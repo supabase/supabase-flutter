@@ -44,29 +44,50 @@ class AuthSessionMissingException extends AuthException {
       );
 }
 
-/// Thrown when a request never reached the auth service, for example on a
-/// network failure, and is worth retrying.
+/// Thrown when an auth request failed in a way that is worth retrying.
 ///
-/// A retryable 5xx is an [AuthRetryableApiException]. Catch this type to cover
-/// both.
-class AuthRetryableFetchException extends AuthException {
+/// A request that never reached the service is an
+/// [AuthRetryableFetchException], and a 5xx the service answered is an
+/// [AuthRetryableApiException]. Catch this type to cover both.
+abstract class AuthRetryableException extends AuthException {
+  const AuthRetryableException({required String message, super.requestId})
+    : super(message);
+}
+
+/// Thrown when a request never reached the auth service, for example on a
+/// network failure, or when its response could not be decoded, as when a
+/// proxy answers in the service's place.
+class AuthRetryableFetchException extends AuthRetryableException
+    with SupabaseTransportException {
   AuthRetryableFetchException({
-    String message = 'AuthRetryableFetchException',
+    super.message = 'AuthRetryableFetchException',
     super.requestId,
-  }) : super(message);
+    this.cause,
+  });
+
+  @override
+  final Object? cause;
 }
 
 /// Thrown when the auth service answered with a 5xx status, which is worth
 /// retrying.
-class AuthRetryableApiException extends AuthRetryableFetchException
+class AuthRetryableApiException extends AuthRetryableException
     with SupabaseApiException {
   AuthRetryableApiException({
     required super.message,
     required this.statusCode,
     super.requestId,
+    this.headers = const {},
+    this.body,
   });
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
 
   @override
   bool operator ==(Object other) =>
@@ -85,9 +106,17 @@ class AuthApiException extends AuthException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    this.headers = const {},
+    this.body,
   });
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
 
   @override
   bool operator ==(Object other) =>
@@ -127,6 +156,8 @@ class AuthWeakPasswordException extends AuthApiException {
     required super.statusCode,
     required this.reasons,
     super.requestId,
+    super.headers,
+    super.body,
   }) : super(message, errorCode: ErrorCode.weakPassword.code);
 
   /// Why the password was rejected, for example `'characters'`.

@@ -136,15 +136,29 @@ void main() {
       );
     });
 
-    test('is never equal to the transport failure it extends', () {
-      final api = AuthRetryableApiException(
+    test('is never equal to the transport failure next to it', () {
+      final AuthRetryableException api = AuthRetryableApiException(
         message: 'Bad Gateway',
         statusCode: 502,
       );
-      final transport = AuthRetryableFetchException(message: 'Bad Gateway');
+      final AuthRetryableException transport = AuthRetryableFetchException(
+        message: 'Bad Gateway',
+      );
 
       expect(api, isNot(equals(transport)));
       expect(transport, isNot(equals(api)));
+    });
+
+    test('shares AuthRetryableException with the transport failure', () {
+      final List<SupabaseException> retryable = [
+        AuthRetryableApiException(message: 'Bad Gateway', statusCode: 502),
+        AuthRetryableFetchException(message: 'Offline'),
+      ];
+
+      expect(retryable[0], isA<SupabaseApiException>());
+      expect(retryable[0], isNot(isA<SupabaseTransportException>()));
+      expect(retryable[1], isA<SupabaseTransportException>());
+      expect(retryable[1], isNot(isA<SupabaseApiException>()));
     });
   });
 

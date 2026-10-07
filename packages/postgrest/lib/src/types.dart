@@ -18,18 +18,43 @@ typedef PostgrestListResponse = PostgrestResponse<PostgrestList>;
 /// A [PostgrestResponse] whose data is a [PostgrestMap].
 typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 
+/// Thrown when a PostgREST request fails.
+///
+/// A plain [PostgrestException] is a failure the client raised on its own. A
+/// failure PostgREST reported is a [PostgrestApiException], and a request
+/// that never received a response is a [PostgrestTransportException].
+class PostgrestException extends SupabaseException {
+  const PostgrestException(super.message, {super.errorCode, super.requestId});
+}
+
+/// Thrown when a request never received a response from PostgREST, because
+/// the connection failed or the request timed out.
+///
+/// A client with retries enabled throws this only once every attempt has
+/// failed. A request aborted through its abort signal is not wrapped and
+/// surfaces as a `RequestAbortedException`.
+class PostgrestTransportException extends PostgrestException
+    with SupabaseTransportException {
+  const PostgrestTransportException(super.message, {this.cause});
+
+  @override
+  final Object? cause;
+}
+
 /// Thrown when PostgREST answered with an error.
 ///
 /// [errorCode] holds the code reported by PostgREST or PostgreSQL, for example
 /// `PGRST116` or the SQLSTATE `23505`. It is unrelated to [statusCode], which
 /// is the HTTP status of the response.
-class PostgrestApiException extends SupabaseException
+class PostgrestApiException extends PostgrestException
     with SupabaseApiException {
   const PostgrestApiException({
     required String message,
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    this.headers = const {},
+    this.body,
     this.details,
     this.hint,
   }) : super(message);
@@ -46,6 +71,8 @@ class PostgrestApiException extends SupabaseException
     String? message,
     String? details,
     String? requestId,
+    Map<String, String> headers = const {},
+    String? body,
   }) {
     final reportedMessage = json['message'];
     return PostgrestApiException(
@@ -55,12 +82,20 @@ class PostgrestApiException extends SupabaseException
       statusCode: statusCode,
       errorCode: json['code']?.toString(),
       requestId: requestId,
+      headers: headers,
+      body: body,
       details: (json['details'] ?? details),
       hint: json['hint']?.toString(),
     );
   }
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
 
   /// Additional details PostgREST or PostgreSQL reported about the error.
   final Object? details;

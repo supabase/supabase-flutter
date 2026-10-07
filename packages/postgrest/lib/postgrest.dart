@@ -6,6 +6,7 @@ export 'package:supabase_common/supabase_common.dart'
         HttpMethod,
         SupabaseApiException,
         SupabaseException,
+        SupabaseTransportException,
         SupabaseRetryOptions;
 
 export 'package:yet_another_json_isolate/yet_another_json_isolate.dart'

@@ -25,8 +25,8 @@ class FunctionResponse {
 
 /// Thrown when invoking an Edge Function fails.
 ///
-/// The response body, or the originating error when no response was received,
-/// is available in [details].
+/// The response body, or the originating error when no response or no body
+/// was received, is available in [details].
 ///
 /// Use pattern matching over the specific subtypes:
 /// - [FunctionsFetchException]: The request could not be sent (e.g. network
@@ -42,8 +42,8 @@ sealed class FunctionException extends SupabaseException {
     super.requestId,
   }) : super(message);
 
-  /// The response body, or the originating error when no response was
-  /// received.
+  /// The response body, or the originating error when no response or no body
+  /// was received.
   final dynamic details;
 
   @override
@@ -55,25 +55,40 @@ sealed class FunctionException extends SupabaseException {
 /// Thrown when the request to the Edge Function could not be sent, for example
 /// because of a network or transport failure.
 ///
-/// The originating error is available in [details].
-class FunctionsFetchException extends FunctionException {
+/// The originating error is available in [cause], and in [details] for the
+/// shape the sealed hierarchy shares.
+class FunctionsFetchException extends FunctionException
+    with SupabaseTransportException {
   const FunctionsFetchException({
-    super.details,
+    this.cause,
     String? message,
   }) : super(
          message: message ?? 'Failed to send a request to the Edge Function',
+         details: cause,
        );
+
+  @override
+  final Object? cause;
+
+  @override
+  String toString() =>
+      '$runtimeType(message: $message, requestId: $requestId, '
+      'details: $details)';
 }
 
 /// Thrown when the Edge Function responded with a non-2xx status code.
 ///
-/// The response body is available in [details].
+/// The decoded response body is available in [details], and the text it was
+/// decoded from in [body]. When the body stopped arriving, [details] is the
+/// error that cut it short and [body] is `null`.
 class FunctionsApiException extends FunctionException
     with SupabaseApiException {
   const FunctionsApiException({
     required this.statusCode,
     super.details,
     super.requestId,
+    this.headers = const {},
+    this.body,
     String? message,
   }) : super(
          message: message ?? 'Edge Function returned a non-2xx status code',
@@ -81,6 +96,12 @@ class FunctionsApiException extends FunctionException
 
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
 
   @override
   String toString() =>
@@ -97,6 +118,8 @@ class FunctionsRelayException extends FunctionsApiException {
     required super.statusCode,
     super.details,
     super.requestId,
+    super.headers,
+    super.body,
     String? message,
   }) : super(message: message ?? 'Relay error invoking the Edge Function');
 }

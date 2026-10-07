@@ -24,6 +24,7 @@ sealed class IcebergException extends SupabaseException {
   const IcebergException(
     super.message, {
     super.errorCode,
+    super.requestId,
     this.code,
     this.details,
   });
@@ -38,33 +39,48 @@ sealed class IcebergException extends SupabaseException {
 /// A request failed at the network level, before any response was received.
 ///
 /// The request may still have reached the catalog, so the outcome of a
-/// non-idempotent operation is unknown.
-final class IcebergNetworkException extends IcebergException {
-  const IcebergNetworkException(super.message, {super.details});
+/// non-idempotent operation is unknown. The originating error is in [cause].
+final class IcebergNetworkException extends IcebergException
+    with SupabaseTransportException {
+  const IcebergNetworkException(super.message, {this.cause})
+    : super(details: cause);
+
+  @override
+  final Object? cause;
 }
 
 /// The Iceberg REST Catalog API answered with an error response.
 ///
 /// [errorCode] holds the Iceberg error type, for example
-/// `NoSuchTableException`.
+/// `NoSuchTableException`. [details] is the decoded error payload and [body]
+/// the text it was decoded from.
 sealed class IcebergApiException extends IcebergException
     with SupabaseApiException {
   const IcebergApiException(
     super.message, {
     required this.statusCode,
     super.errorCode,
+    super.requestId,
     super.code,
     super.details,
+    this.headers = const {},
+    this.body,
   });
 
   /// Builds the appropriate [IcebergApiException] subtype from an error
-  /// response.
-  factory IcebergApiException.fromResponse(int statusCode, Object? body) {
+  /// response, with [details] as its decoded body.
+  factory IcebergApiException.fromResponse(
+    int statusCode,
+    Object? details, {
+    Map<String, String> headers = const {},
+    String? body,
+  }) {
+    final requestId = headers.requestId;
     var message = 'Request failed with status $statusCode';
     String? errorCode;
     int? code;
-    if (body is Map<String, dynamic> && body['error'] is Map) {
-      final error = body['error'] as Map<String, dynamic>;
+    if (details is Map<String, dynamic> && details['error'] is Map) {
+      final error = details['error'] as Map<String, dynamic>;
       message = (error['message'] as String?) ?? message;
       errorCode = error['type'] as String?;
       code = error['code'] as int?;
@@ -75,7 +91,10 @@ sealed class IcebergApiException extends IcebergException
         message,
         statusCode: statusCode,
         code: code,
-        details: body,
+        details: details,
+        headers: headers,
+        body: body,
+        requestId: requestId,
       );
     }
 
@@ -84,38 +103,59 @@ sealed class IcebergApiException extends IcebergException
         message,
         errorCode: errorCode,
         code: code,
-        details: body,
+        details: details,
+        headers: headers,
+        body: body,
+        requestId: requestId,
       ),
       409 => IcebergConflictException(
         message,
         errorCode: errorCode,
         code: code,
-        details: body,
+        details: details,
+        headers: headers,
+        body: body,
+        requestId: requestId,
       ),
       419 => IcebergAuthenticationTimeoutException(
         message,
         errorCode: errorCode,
         code: code,
-        details: body,
+        details: details,
+        headers: headers,
+        body: body,
+        requestId: requestId,
       ),
       >= 500 => IcebergServerException(
         message,
         statusCode: statusCode,
         errorCode: errorCode,
         code: code,
-        details: body,
+        details: details,
+        headers: headers,
+        body: body,
+        requestId: requestId,
       ),
       _ => IcebergUnknownException(
         message,
         statusCode: statusCode,
         errorCode: errorCode,
         code: code,
-        details: body,
+        details: details,
+        headers: headers,
+        body: body,
+        requestId: requestId,
       ),
     };
   }
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
 
   @override
   String toString() =>
@@ -130,6 +170,9 @@ final class IcebergNotFoundException extends IcebergApiException {
     super.errorCode,
     super.code,
     super.details,
+    super.headers,
+    super.body,
+    super.requestId,
   }) : super(statusCode: 404);
 }
 
@@ -141,6 +184,9 @@ final class IcebergConflictException extends IcebergApiException {
     super.errorCode,
     super.code,
     super.details,
+    super.headers,
+    super.body,
+    super.requestId,
   }) : super(statusCode: 409);
 }
 
@@ -152,6 +198,9 @@ final class IcebergAuthenticationTimeoutException extends IcebergApiException {
     super.errorCode,
     super.code,
     super.details,
+    super.headers,
+    super.body,
+    super.requestId,
   }) : super(statusCode: 419);
 }
 
@@ -163,6 +212,9 @@ final class IcebergCommitStateUnknownException extends IcebergApiException {
     required super.statusCode,
     super.code,
     super.details,
+    super.headers,
+    super.body,
+    super.requestId,
   }) : super(errorCode: 'CommitStateUnknownException');
 }
 
@@ -174,6 +226,9 @@ final class IcebergServerException extends IcebergApiException {
     super.errorCode,
     super.code,
     super.details,
+    super.headers,
+    super.body,
+    super.requestId,
   });
 }
 
@@ -185,5 +240,8 @@ final class IcebergUnknownException extends IcebergApiException {
     super.errorCode,
     super.code,
     super.details,
+    super.headers,
+    super.body,
+    super.requestId,
   });
 }

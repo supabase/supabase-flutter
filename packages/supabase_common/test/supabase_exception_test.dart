@@ -11,9 +11,22 @@ class TestApiException extends SupabaseException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    this.headers = const {},
+    this.body,
   });
   @override
   final int statusCode;
+  @override
+  final Map<String, String> headers;
+  @override
+  final String? body;
+}
+
+class TestTransportException extends SupabaseException
+    with SupabaseTransportException {
+  const TestTransportException(super.message, {this.cause});
+  @override
+  final Object? cause;
 }
 
 class DetailedException extends SupabaseException {
@@ -61,6 +74,31 @@ void main() {
       exception.toString(),
       'TestApiException(message: boom, statusCode: 500, '
       'errorCode: server_error, requestId: request-1)',
+    );
+  });
+
+  test('the api mixin carries the response headers and body', () {
+    const exception = TestApiException(
+      'boom',
+      statusCode: 500,
+      headers: {'content-type': 'text/plain'},
+      body: 'boom',
+    );
+
+    expect(exception.headers, {'content-type': 'text/plain'});
+    expect(exception.body, 'boom');
+    expect(const TestApiException('boom', statusCode: 500).headers, isEmpty);
+    expect(const TestApiException('boom', statusCode: 500).body, isNull);
+  });
+
+  test('the transport mixin adds the cause to toString', () {
+    const exception = TestTransportException('offline', cause: 'no route');
+
+    expect(exception.cause, 'no route');
+    expect(
+      exception.toString(),
+      'TestTransportException(message: offline, errorCode: null, '
+      'requestId: null, cause: no route)',
     );
   });
 

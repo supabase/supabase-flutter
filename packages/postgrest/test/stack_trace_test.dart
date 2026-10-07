@@ -132,7 +132,13 @@ void main() {
 
         await expectLater(
           networkErrorFunction(),
-          throwsA(isA<SocketException>()),
+          throwsA(
+            isA<PostgrestTransportException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<SocketException>(),
+            ),
+          ),
         );
 
         expect(

@@ -331,6 +331,83 @@ void main() {
       );
     });
 
+    test('is carried alongside the response headers and body', () async {
+      final client = MockSupabaseHttpClient()
+        ..stub(
+          {'code': 'bad_json', 'message': 'error_message'},
+          statusCode: 400,
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthApiException>()
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having(
+                (error) => error.headers['sb-request-id'],
+                'request id header',
+                'request-1',
+              )
+              .having(
+                (error) => error.body,
+                'body',
+                '{"code":"bad_json","message":"error_message"}',
+              ),
+        ),
+      );
+    });
+
+    test('a retryable response keeps its headers and body', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubText(
+          '<html>502 Bad Gateway</html>',
+          statusCode: 502,
+          headers: requestIdHeaders,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthRetryableApiException>()
+              .having((error) => error.statusCode, 'statusCode', 502)
+              .having(
+                (error) => error.body,
+                'body',
+                '<html>502 Bad Gateway</html>',
+              )
+              .having(
+                (error) => error.headers['sb-request-id'],
+                'request id header',
+                'request-1',
+              ),
+        ),
+      );
+    });
+
+    test('a request that gets no response carries its cause', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubError(ClientException('Offline'));
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthRetryableFetchException>()
+              .having((error) => error.cause, 'cause', isA<ClientException>())
+              .having(
+                (error) => error,
+                'type',
+                isA<SupabaseTransportException>(),
+              )
+              .having(
+                (error) => error,
+                'type',
+                isNot(isA<SupabaseApiException>()),
+              ),
+        ),
+      );
+    });
+
     test('is carried when a success body fails to decode', () async {
       final client = MockSupabaseHttpClient()
         ..stubText(
@@ -344,6 +421,7 @@ void main() {
         throwsA(
           isA<AuthRetryableFetchException>()
               .having((e) => e.message, 'message', contains('FormatException'))
+              .having((error) => error.cause, 'cause', isA<FormatException>())
               .having((e) => e.requestId, 'requestId', 'request-1'),
         ),
       );

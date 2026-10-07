@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
+import 'package:http/testing.dart';
 import 'package:supabase_common/supabase_common.dart' show HttpMethod;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_test/supabase_test.dart';
@@ -239,7 +240,13 @@ void main() {
               'folder/file.png',
               Uint8List.fromList([1, 2, 3]),
             ),
-        throwsA(isA<ClientException>()),
+        throwsA(
+          isA<StorageTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
       );
       expect(retryClient.attempts, 1);
     });
@@ -260,7 +267,13 @@ void main() {
               'folder/file.png',
               Uint8List.fromList([1, 2, 3]),
             ),
-        throwsA(isA<ClientException>()),
+        throwsA(
+          isA<StorageTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
       );
       expect(retryClient.attempts, 1);
     });
@@ -428,7 +441,13 @@ void main() {
               Stream.value([1, 2, 3]),
               contentLength: 3,
             ),
-        throwsA(isA<ClientException>()),
+        throwsA(
+          isA<StorageTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
       );
       expect(retryClient.attempts, 1);
     });
@@ -620,6 +639,84 @@ void main() {
   });
 
   group('error responses', () {
+    test('passes an exception the HTTP client classified through', () async {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockSupabaseHttpClient()
+          ..stubError(const StorageException('session expired')),
+      );
+
+      await expectLater(
+        client.from('bucket').list(),
+        throwsA(
+          allOf(
+            isA<StorageException>().having(
+              (error) => error.message,
+              'message',
+              'session expired',
+            ),
+            isNot(isA<StorageTransportException>()),
+          ),
+        ),
+      );
+    });
+
+    test('a body that fails to arrive throws a StorageTransportException', () {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            200,
+            request: request,
+          ),
+        ),
+      );
+
+      return expectLater(
+        client.from('bucket').list(),
+        throwsA(
+          isA<StorageTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
+      );
+    });
+
+    test('a body that fails to arrive on an error status keeps it', () {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            403,
+            request: request,
+            headers: {'sb-request-id': 'request-1'},
+          ),
+        ),
+      );
+
+      return expectLater(
+        client.from('bucket').list(),
+        throwsA(
+          isA<StorageApiException>()
+              .having((error) => error.statusCode, 'statusCode', 403)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having((error) => error.body, 'body', isNull)
+              .having(
+                (error) => error.message,
+                'message',
+                contains('Connection reset'),
+              ),
+        ),
+      );
+    });
+
     test(
       'a JSON body that is not an object surfaces as a StorageException',
       () {

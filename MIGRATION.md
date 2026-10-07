@@ -36,6 +36,11 @@ explicitly:
   so a null check on it is dead code that the analyzer only warns about
 - [`SupabaseClient` builds its own default HTTP client](#supabaseclient-builds-its-own-default-http-client),
   so on `dart:io` platforms a client installed with `runWithClient` is no longer picked up
+- [A request that gets no response throws a transport exception](#a-request-that-gets-no-response-throws-a-transport-exception),
+  so a catch of `ClientException` or `TimeoutException` around a query or upload no longer matches
+- [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
+  so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
+  longer matches
 
 ### The client packages are renamed
 
@@ -1395,18 +1400,26 @@ The enum also exposes `value`, the uppercase wire form, in place of `method.name
 
 ### Service exceptions share one base
 
-`AuthException`, `PostgrestException`, `StorageException` and `FunctionException` now extend a
-shared `SupabaseException`, and the ones reporting a response from a service also mix in
-`SupabaseApiException`:
+`AuthException`, `PostgrestException`, `StorageException`, `FunctionException`,
+`RealtimeException` and `IcebergException` now extend a shared `SupabaseException`. The ones
+reporting a response from a service also mix in `SupabaseApiException`, and the ones thrown when
+no response arrived mix in `SupabaseTransportException`:
 
 ```dart
 abstract class SupabaseException implements Exception {
   final String message;
   final String? errorCode;
+  final String? requestId;
 }
 
 mixin SupabaseApiException on SupabaseException {
   int get statusCode;
+  Map<String, String> get headers;
+  String? get body;
+}
+
+mixin SupabaseTransportException on SupabaseException {
+  Object? get cause;
 }
 ```
 
@@ -1424,22 +1437,22 @@ try {
 
 The renames:
 
-| Before                                         | After                                                                   |
-| ---------------------------------------------- | ----------------------------------------------------------------------- |
-| `AuthException.statusCode` (`String?`)         | `AuthApiException.statusCode` (`int`)                                   |
-| `AuthException.code`                           | `AuthException.errorCode`                                               |
-| `StorageException.statusCode` (`String?`)      | `StorageApiException.statusCode` (`int`)                                |
-| `StorageException.error`                       | `errorCode`                                                             |
-| `StorageException.fromJson(json, '404')`       | `StorageApiException.fromJson(json, 404)`                               |
-| `PostgrestException`                           | `PostgrestApiException`                                                 |
-| `PostgrestException.code`                      | `PostgrestApiException.errorCode`, with the HTTP status in `statusCode` |
-| `PostgrestException.fromJson(json, code: 409)` | `PostgrestApiException.fromJson(json, statusCode: 409)`                 |
-| `PostgrestException.toJson()` key `code`       | keys `statusCode` and `errorCode`                                       |
-| `FunctionsHttpException`                       | `FunctionsApiException`                                                 |
-| `FunctionException.status` (`int`)             | `FunctionsApiException.statusCode`                                      |
-| `FunctionException.reasonPhrase`               | folded into `message`                                                   |
-| `FunctionsFetchException.status == 0`          | no status at all, no response reached the client                        |
-| `FunctionResponse.status`                      | `FunctionResponse.statusCode`                                           |
+| Before                                         | After                                                                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------- |
+| `AuthException.statusCode` (`String?`)         | `AuthApiException.statusCode` (`int`)                                      |
+| `AuthException.code`                           | `AuthException.errorCode`                                                  |
+| `StorageException.statusCode` (`String?`)      | `StorageApiException.statusCode` (`int`)                                   |
+| `StorageException.error`                       | `errorCode`                                                                |
+| `StorageException.fromJson(json, '404')`       | `StorageApiException.fromJson(json, 404)`                                  |
+| `PostgrestException` for a service error       | `PostgrestApiException`; `PostgrestException` is now the base of all three |
+| `PostgrestException.code`                      | `PostgrestApiException.errorCode`, with the HTTP status in `statusCode`    |
+| `PostgrestException.fromJson(json, code: 409)` | `PostgrestApiException.fromJson(json, statusCode: 409)`                    |
+| `PostgrestException.toJson()` key `code`       | keys `statusCode` and `errorCode`                                          |
+| `FunctionsHttpException`                       | `FunctionsApiException`                                                    |
+| `FunctionException.status` (`int`)             | `FunctionsApiException.statusCode`                                         |
+| `FunctionException.reasonPhrase`               | folded into `message`                                                      |
+| `FunctionsFetchException.status == 0`          | no status at all, no response reached the client                           |
+| `FunctionResponse.status`                      | `FunctionResponse.statusCode`                                              |
 
 Reading a status off a per-service base no longer compiles, since the base no longer has one.
 Narrow the catch to the API type:
@@ -1474,14 +1487,18 @@ Four changes go beyond a rename:
   `invalid_jwt` instead.
 - `AuthRetryableFetchException` covers only the transport case, where the request never reached the
   service. A retryable 5xx the service answered is an `AuthRetryableApiException`, which carries the
-  status. Catching `AuthRetryableFetchException` still gets both.
+  status. Both extend `AuthRetryableException`, so catch that to get both.
 - `FunctionException` gained a `message`, taken from the response's reason phrase and falling back
   to a per-subtype default when the response carries none, as over HTTP/2. The response body is
   still in `details`.
 
 `AuthUnknownException` no longer reports a status of its own. Read it from `originalError` when that
-is an `http.Response`. `RealtimeSubscribeException` is not part of this hierarchy and carries a
-`RealtimeSubscribeStatus` instead of a message.
+is an `http.Response`. `RealtimeSubscribeException` extends `RealtimeException` and keeps its
+`RealtimeSubscribeStatus` next to the message.
+
+Every `SupabaseApiException` also carries the `headers` and the text `body` of the response, so a
+proxy error page or a header a gateway adds no longer needs a custom HTTP client to be read.
+`FunctionsApiException.details` and `IcebergApiException.details` keep the decoded body.
 
 ### `FunctionException` is sealed
 
@@ -1552,6 +1569,105 @@ try {
 ```
 
 Exhaustive switches over the sealed hierarchy still compile with the same set of cases.
+
+### A request that gets no response throws a transport exception
+
+A request that never received a response, because the connection failed or the request timed
+out, used to surface differently in every package: postgrest and storage let the HTTP client's
+`ClientException` or a `TimeoutException` through, while auth, functions and iceberg wrapped it.
+Every package now wraps it in an exception of its own that mixes in
+`SupabaseTransportException`, with the original error in `cause`:
+
+| Package              | Exception                     |
+| -------------------- | ----------------------------- |
+| `postgrest`          | `PostgrestTransportException` |
+| `supabase_storage`   | `StorageTransportException`   |
+| `supabase_auth`      | `AuthRetryableFetchException` |
+| `supabase_functions` | `FunctionsFetchException`     |
+| `supabase_realtime`  | `RealtimeTransportException`  |
+| `iceberg`            | `IcebergNetworkException`     |
+
+A request aborted through its `abortSignal` is not wrapped and still throws
+`RequestAbortedException`. A body that stops arriving after an error status keeps that status: it
+is reported as the package's API exception, with the read error named in the message or kept in
+`details` where the exception has one.
+
+```dart
+// Before
+try {
+  await supabase.from('countries').select();
+} on ClientException {
+  // offline
+} on TimeoutException {
+  // the request timeout elapsed
+}
+
+// After
+try {
+  await supabase.from('countries').select();
+} on SupabaseTransportException catch (error) {
+  // offline, or the request timeout elapsed; error.cause holds which
+}
+```
+
+`PostgrestClient.requestTimeout` and `PostgrestBuilder.requestTimeout` throw a
+`PostgrestTransportException` whose `cause` is the `TimeoutException`, so a catch of
+`TimeoutException` around a query no longer matches. A storage upload with retries enabled
+throws the transport exception once every attempt has failed, as the `ClientException` did.
+
+The three packages that already wrapped the failure changed how they expose the error:
+
+| Before                                     | After                                                         |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `FunctionsFetchException(details:)`        | `FunctionsFetchException(cause:)`; `details` still returns it |
+| `IcebergNetworkException(details:)`        | `IcebergNetworkException(cause:)`; `details` still returns it |
+| `AuthRetryableFetchException.message` only | `cause` added, with the error the message was built from      |
+
+### Realtime throws exceptions instead of strings
+
+`supabase_realtime` threw bare strings for misuse and a plain `Exception` for a failed
+`httpSend()`, and neither carried a status or a request id. The failures now have types:
+
+| Before                                                          | After                                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `subscribe()` called twice throws a `String`                    | `StateError`                                                             |
+| `onPostgresChanges()` after `subscribe()` throws a `String`     | `StateError`                                                             |
+| `send()` or `track()` before `subscribe()` throws a `String`    | `StateError`                                                             |
+| `ChannelEvent.fromValue` with an unknown name throws a `String` | `ArgumentError`                                                          |
+| `httpSend()` times out with a `TimeoutException`                | `RealtimeTransportException` with the `TimeoutException` as `cause`      |
+| `httpSend()` gets a non-202 status, as `Exception(message)`     | `RealtimeApiException` with `statusCode`, `requestId`, `headers`, `body` |
+| `onStatusChange` reports `channelError` with an `Exception`     | `RealtimeException` with the server's reason as `message`                |
+
+The misuse cases are programming errors, so they are `Error`s rather than part of the
+`SupabaseException` hierarchy. A join the server declines is reported on `onStatusChange` with a
+`RealtimeException` whose `message` is the server's reason, where it used to be an `Exception`
+wrapping a JSON-encoded string, so the message no longer carries quotes.
+
+```dart
+// Before
+try {
+  await channel.httpSend(event: 'cursor-pos', payload: {'x': 1});
+} catch (error) {
+  if (error.toString().contains('404')) {
+    // server too old
+  }
+}
+
+// After
+try {
+  await channel.httpSend(event: 'cursor-pos', payload: {'x': 1});
+} on RealtimeApiException catch (error) {
+  if (error.statusCode == 404) {
+    // server too old
+  }
+} on RealtimeTransportException catch (error) {
+  // no response within the timeout
+}
+```
+
+`RealtimeSubscribeException`, which `stream()` delivers to its error handler, now extends
+`RealtimeException`, so one `on SupabaseException` covers it too. Its `status` and `details` are
+unchanged, and `message` repeats the message of `details` when that is a `SupabaseException`.
 
 ### Every client takes one `SupabaseRetryOptions`
 

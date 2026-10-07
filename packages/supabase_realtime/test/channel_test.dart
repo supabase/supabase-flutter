@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:http/http.dart' show ClientException;
+import 'package:http/testing.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/types.dart';
@@ -107,7 +109,7 @@ void main() {
     test('throws if attempting to join multiple times', () {
       channel.subscribe();
 
-      expect(() => channel.subscribe(), throwsA(const TypeMatcher<String>()));
+      expect(() => channel.subscribe(), throwsStateError);
     });
 
     test('can set timeout on joinPush', () {
@@ -256,7 +258,11 @@ void main() {
         ),
       );
 
-      channel.onStatusChange.listen((change) => status = change.status);
+      Object? error;
+      channel.onStatusChange.listen((change) {
+        status = change.status;
+        error = change.error;
+      });
       channel.subscribe();
 
       final sentFilter =
@@ -271,7 +277,39 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(status, RealtimeSubscribeStatus.channelError);
+      expect(
+        error,
+        isA<RealtimeException>().having(
+          (exception) => exception.message,
+          'message',
+          contains('mismatch between server and client bindings'),
+        ),
+      );
     });
+
+    test(
+      'reports a channelError with the reasons the server declined',
+      () async {
+        Object? error;
+        channel.onStatusChange.listen((change) => error = change.error);
+        channel.subscribe();
+
+        channel.joinPush.trigger('error', {
+          'reason': 'Unauthorized',
+          'detail': 'token expired',
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          error,
+          isA<RealtimeException>().having(
+            (exception) => exception.message,
+            'message',
+            'Unauthorized, token expired',
+          ),
+        );
+      },
+    );
 
     test('forwards `select` columns in the join payload', () {
       channel.onPostgresChanges(
@@ -373,10 +411,13 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         expect(status, RealtimeSubscribeStatus.channelError);
-        expect(error, isA<Exception>());
         expect(
-          error?.toString(),
-          contains('Unable to subscribe to changes with given parameters'),
+          error,
+          isA<RealtimeException>().having(
+            (exception) => exception.message,
+            'message',
+            'Unable to subscribe to changes with given parameters',
+          ),
         );
       },
     );
@@ -618,8 +659,9 @@ void main() {
       expect(
         () => channel.onPostgresChanges(event: PostgresChangeEvent.all),
         throwsA(
-          allOf(
-            isA<String>(),
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
             contains('cannot add `postgres_changes` callbacks'),
           ),
         ),
@@ -634,8 +676,9 @@ void main() {
       expect(
         () => channel.onPostgresChanges(event: PostgresChangeEvent.all),
         throwsA(
-          allOf(
-            isA<String>(),
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
             contains('cannot add `postgres_changes` callbacks'),
           ),
         ),
@@ -914,7 +957,13 @@ void main() {
           type: RealtimeListenType.broadcast,
           payload: {'myKey': 'myValue'},
         ),
-        throwsA(contains('before joining')),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('before joining'),
+          ),
+        ),
       );
     });
   });
@@ -1459,8 +1508,125 @@ void main() {
       await expectLater(
         sendFuture,
         throwsA(
-          predicate(
-            (Object error) => error.toString().contains('Server error'),
+          isA<RealtimeApiException>()
+              .having((error) => error.message, 'message', 'Server error')
+              .having((error) => error.statusCode, 'statusCode', 500)
+              .having(
+                (error) => error.body,
+                'body',
+                json.encode({'error': 'Server error'}),
+              )
+              .having(
+                (error) => error.headers['content-type'],
+                'content-type header',
+                contains('text/plain'),
+              ),
+        ),
+      );
+    });
+
+    test('reads the request id and reason phrase on a non-JSON body', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        parameters: {'apikey': 'abc123'},
+      );
+      channel = socket.channel('topic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture = channel.httpSend(
+        event: 'test',
+        payload: {'data': 'test'},
+      );
+
+      final request = await requestFuture;
+      request.response.statusCode = 503;
+      request.response.headers.set('sb-request-id', 'request-1');
+      request.response.write('<html>maintenance</html>');
+      await request.response.close();
+
+      await expectLater(
+        sendFuture,
+        throwsA(
+          isA<RealtimeApiException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having((error) => error.message, 'message', isNotEmpty),
+        ),
+      );
+    });
+
+    test('points at the server version on a 404', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        parameters: {'apikey': 'abc123'},
+      );
+      channel = socket.channel('topic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture = channel.httpSend(
+        event: 'test',
+        payload: {'data': 'test'},
+      );
+
+      final request = await requestFuture;
+      request.response.statusCode = 404;
+      await request.response.close();
+
+      await expectLater(
+        sendFuture,
+        throwsA(
+          isA<RealtimeApiException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having((error) => error.message, 'message', contains('v2.97.0')),
+        ),
+      );
+    });
+
+    test(
+      'wraps a connection failure in a RealtimeTransportException',
+      () async {
+        socket = RealtimeClient(
+          'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+          parameters: {'apikey': 'abc123'},
+          httpClient: MockClient((request) {
+            throw ClientException('Connection refused', request.url);
+          }),
+        );
+        channel = socket.channel('topic');
+
+        await expectLater(
+          channel.httpSend(event: 'test', payload: {'data': 'test'}),
+          throwsA(
+            isA<RealtimeTransportException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<ClientException>(),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('passes an exception the HTTP client classified through', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        parameters: {'apikey': 'abc123'},
+        httpClient: MockClient((request) {
+          throw const RealtimeException('session expired');
+        }),
+      );
+      channel = socket.channel('topic');
+
+      await expectLater(
+        channel.httpSend(event: 'test', payload: {'data': 'test'}),
+        throwsA(
+          allOf(
+            isA<RealtimeException>().having(
+              (error) => error.message,
+              'message',
+              'session expired',
+            ),
+            isNot(isA<RealtimeTransportException>()),
           ),
         ),
       );
@@ -1488,7 +1654,13 @@ void main() {
           payload: {'data': 'test'},
           timeout: const Duration(milliseconds: 100),
         ),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<RealtimeTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
       );
     });
   });

@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:http/http.dart' show ClientException;
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
@@ -394,7 +394,13 @@ void main() {
       final client = PostgrestClient('http://this.url.does.not.exist');
       await expectLater(
         () => client.from('user').select(),
-        throwsA(isA<SocketException>()),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
       );
     });
 

@@ -61,7 +61,7 @@ void main() {
       channel.subscribe();
       expect(
         () => channel.subscribe(),
-        throwsA(isA<String>()),
+        throwsStateError,
       );
     });
 

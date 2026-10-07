@@ -743,6 +743,10 @@ void main() {
 
         expect(exception.status, RealtimeSubscribeStatus.timedOut);
         expect(exception.details, isNull);
+        expect(
+          exception.message,
+          'Realtime subscription failed with status timedOut',
+        );
         expect(exception.toString(), contains('timedOut'));
       });
 
@@ -756,6 +760,17 @@ void main() {
         expect(exception.details, 'Connection failed');
         expect(exception.toString(), contains('channelError'));
         expect(exception.toString(), contains('Connection failed'));
+      });
+
+      test('is a RealtimeException that repeats the message of its cause', () {
+        final exception = RealtimeSubscribeException(
+          RealtimeSubscribeStatus.channelError,
+          const RealtimeException('Unauthorized'),
+        );
+
+        expect(exception, isA<RealtimeException>());
+        expect(exception, isA<SupabaseException>());
+        expect(exception.message, 'Unauthorized');
       });
     });
 

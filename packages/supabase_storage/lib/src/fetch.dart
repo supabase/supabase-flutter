@@ -22,43 +22,36 @@ class Fetch {
     return MediaType.parse(mime ?? 'application/octet-stream');
   }
 
-  StorageException _handleError(
-    dynamic error,
+  StorageApiException _handleError(
+    http.Response response,
     StackTrace stackTrace,
     Uri? url,
     FetchOptions? options,
   ) {
-    if (error is! http.Response) {
-      // No response was received, so there is neither a status nor a service
-      // error code to report. The error's own toString names its type.
-      storageLogger.fine(
-        'StorageException for ${url?.redacted}',
-        error,
-        stackTrace,
-      );
-      return StorageException(error.toString());
-    }
-
-    final data = tryDecodeJsonObject(error.body);
-    final requestId = error.headers.requestId;
+    final data = tryDecodeJsonObject(response.body);
+    final requestId = response.headers.requestId;
 
     if (data == null) {
       storageLogger.fine(
         'StorageException for ${url?.redacted}',
-        error.body,
+        response.body,
         stackTrace,
       );
       return StorageApiException(
-        error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
-        statusCode: error.statusCode,
+        response.body.isEmpty ? (response.reasonPhrase ?? '') : response.body,
+        statusCode: response.statusCode,
         requestId: requestId,
+        headers: response.headers,
+        body: response.body,
       );
     }
 
     final exception = StorageApiException.fromJson(
       data,
-      error.statusCode,
+      response.statusCode,
       requestId: requestId,
+      headers: response.headers,
+      body: response.body,
     );
     storageLogger.fine(
       'StorageException for ${url?.redacted}',
@@ -66,6 +59,65 @@ class Fetch {
       stackTrace,
     );
     return exception;
+  }
+
+  StorageTransportException _transportException(
+    Uri? url,
+    Exception error,
+    StackTrace stackTrace,
+  ) {
+    storageLogger.fine(
+      'StorageTransportException for ${url?.redacted}',
+      error,
+      stackTrace,
+    );
+    return StorageTransportException('Request failed: $error', cause: error);
+  }
+
+  /// Sends [request], wrapping a failure to get a response in a
+  /// [StorageTransportException]. An abort and an exception the HTTP client
+  /// already classified keep their own type.
+  Future<http.StreamedResponse> _send(http.BaseRequest request) async {
+    try {
+      return await request.sendWith(httpClient);
+    } on http.RequestAbortedException {
+      rethrow;
+    } on SupabaseException {
+      rethrow;
+    } on Exception catch (error, stackTrace) {
+      throw _transportException(request.url, error, stackTrace);
+    }
+  }
+
+  /// Reads the body of [streamedResponse].
+  ///
+  /// A body that stops arriving on a success status leaves the caller with
+  /// nothing usable, so it is a [StorageTransportException]. On an error
+  /// status the status itself is the answer, so it is kept as a
+  /// [StorageApiException] naming the read error.
+  Future<http.Response> _read(http.StreamedResponse streamedResponse) async {
+    try {
+      return await http.Response.fromStream(streamedResponse);
+    } on http.RequestAbortedException {
+      rethrow;
+    } on Exception catch (error, stackTrace) {
+      final url = streamedResponse.request?.url;
+      if (isSuccessStatusCode(streamedResponse.statusCode)) {
+        throw _transportException(url, error, stackTrace);
+      }
+      final exception = StorageApiException(
+        'Failed to read the response: $error',
+        statusCode: streamedResponse.statusCode,
+        requestId: streamedResponse.headers.requestId,
+        headers: streamedResponse.headers,
+      );
+      storageLogger.fine(
+        'StorageException for ${url?.redacted}',
+        exception,
+        stackTrace,
+      );
+      throw exception;
+    }
   }
 
   http.AbortableRequest _createRequest(
@@ -103,7 +155,7 @@ class Fetch {
       'Request: ${method.value} ${Uri.parse(url).redacted} '
       '${request.headers.redacted}',
     );
-    final streamedResponse = await request.sendWith(httpClient);
+    final streamedResponse = await _send(request);
     return _handleResponse(streamedResponse, options);
   }
 
@@ -158,10 +210,10 @@ class Fetch {
         request
           ..headers.addAll(headers)
           ..contentLength = contentLength;
-        return request.sendWith(httpClient);
+        return _send(request);
       },
       options: retryOptions,
-      retryIf: (error) => error is ClientException || error is TimeoutException,
+      retryIf: (error) => error is StorageTransportException,
       abortSignal: abortSignal,
     );
 
@@ -175,7 +227,7 @@ class Fetch {
     http.StreamedResponse streamedResponse,
     FetchOptions? options,
   ) async {
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await _read(streamedResponse);
     if (isSuccessStatusCode(response.statusCode)) {
       final dynamic body;
       if (options?.noResolveJson == true) {
@@ -242,10 +294,10 @@ class Fetch {
       'Request: GET (stream) ${Uri.parse(url).redacted} '
       '${request.headers.redacted}',
     );
-    final streamedResponse = await request.sendWith(httpClient);
+    final streamedResponse = await _send(request);
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {
-      final response = await http.Response.fromStream(streamedResponse);
+      final response = await _read(streamedResponse);
       throw _handleError(
         response,
         StackTrace.current,

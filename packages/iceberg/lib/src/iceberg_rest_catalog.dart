@@ -140,14 +140,35 @@ class IcebergRestCatalog {
     final http.StreamedResponse streamedResponse;
     try {
       streamedResponse = await request.sendWith(_httpClient);
+    } on SupabaseException {
+      rethrow;
     } catch (error) {
       throw IcebergNetworkException(
         'Network request failed: $error',
-        details: error,
+        cause: error,
       );
     }
 
-    final response = await http.Response.fromStream(streamedResponse);
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(streamedResponse);
+    } catch (error) {
+      // A body that stops arriving on a success status leaves the caller with
+      // nothing usable, so it is a network failure. On an error status the
+      // status itself is the answer, so it is kept with the read error as the
+      // details.
+      if (isSuccessStatusCode(streamedResponse.statusCode)) {
+        throw IcebergNetworkException(
+          'Failed to read the response: $error',
+          cause: error,
+        );
+      }
+      throw IcebergApiException.fromResponse(
+        streamedResponse.statusCode,
+        error,
+        headers: streamedResponse.headers,
+      );
+    }
 
     if (response.statusCode == 304) {
       return _IcebergResponse(304, response.headers, null);
@@ -159,7 +180,12 @@ class IcebergRestCatalog {
         : response.body;
 
     if (!isSuccessStatusCode(response.statusCode)) {
-      throw IcebergApiException.fromResponse(response.statusCode, decoded);
+      throw IcebergApiException.fromResponse(
+        response.statusCode,
+        decoded,
+        headers: response.headers,
+        body: response.body,
+      );
     }
 
     return _IcebergResponse(response.statusCode, response.headers, decoded);

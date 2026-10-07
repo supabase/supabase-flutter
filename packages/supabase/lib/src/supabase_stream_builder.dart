@@ -20,8 +20,13 @@ typedef _Order = ({String column, bool ascending});
 
 /// Delivered to the stream's error handler when the underlying Realtime
 /// channel fails to subscribe.
-class RealtimeSubscribeException implements Exception {
-  const RealtimeSubscribeException(this.status, [this.details]);
+class RealtimeSubscribeException extends RealtimeException {
+  RealtimeSubscribeException(this.status, [this.details])
+    : super(
+        details is SupabaseException
+            ? details.message
+            : 'Realtime subscription failed with status ${status.name}',
+      );
 
   /// The subscription status that caused this exception.
   ///

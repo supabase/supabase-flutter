@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:supabase_functions/src/functions_client.dart';
 import 'package:supabase_functions/src/types.dart';
 import 'package:http/http.dart';
+import 'package:http/testing.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_test/supabase_test.dart';
@@ -46,7 +47,15 @@ void main() {
           isA<FunctionsApiException>()
               .having((e) => e.statusCode, 'statusCode', 420)
               .having((e) => e.message, 'message', 'Enhance Your Calm')
-              .having((e) => e.details, 'details', {'key': 'Hello World'}),
+              .having((error) => error.details, 'details', {
+                'key': 'Hello World',
+              })
+              .having((error) => error.body, 'body', '{"key":"Hello World"}')
+              .having(
+                (error) => error.headers['Content-Type'],
+                'Content-Type header',
+                'application/json',
+              ),
         ),
       );
     });
@@ -73,9 +82,105 @@ void main() {
                   'message',
                   'Failed to send a request to the Edge Function',
                 )
-                .having((e) => e.details, 'details', isA<ClientException>()),
+                .having(
+                  (error) => error.details,
+                  'details',
+                  isA<ClientException>(),
+                )
+                .having(
+                  (error) => error.cause,
+                  'cause',
+                  isA<ClientException>(),
+                ),
+            isA<SupabaseTransportException>(),
             isNot(isA<SupabaseApiException>()),
           ),
+        ),
+      );
+    });
+
+    test('passes an exception the HTTP client classified through', () async {
+      final client = FunctionsClient(
+        'http://localhost/functions/v1',
+        {},
+        httpClient: MockSupabaseHttpClient()
+          ..stubError(
+            const FunctionsApiException(
+              statusCode: 401,
+              message: 'session expired',
+            ),
+          ),
+      );
+
+      await expectLater(
+        client.invoke('hello'),
+        throwsA(
+          allOf(
+            isA<FunctionsApiException>().having(
+              (error) => error.message,
+              'message',
+              'session expired',
+            ),
+            isNot(isA<FunctionsFetchException>()),
+          ),
+        ),
+      );
+    });
+
+    test('a body that fails to arrive throws a FunctionsFetchException', () {
+      final client = FunctionsClient(
+        'http://localhost/functions/v1',
+        {},
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            200,
+            request: request,
+            headers: {'content-type': 'application/json'},
+          ),
+        ),
+      );
+
+      return expectLater(
+        client.invoke('hello'),
+        throwsA(
+          isA<FunctionsFetchException>()
+              .having((error) => error.cause, 'cause', isA<ClientException>())
+              .having(
+                (error) => error.message,
+                'message',
+                'Failed to read the response of the Edge Function',
+              ),
+        ),
+      );
+    });
+
+    test('a body that fails to arrive on an error status keeps it', () {
+      final client = FunctionsClient(
+        'http://localhost/functions/v1',
+        {},
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            401,
+            request: request,
+            headers: {'sb-request-id': 'request-1'},
+          ),
+        ),
+      );
+
+      return expectLater(
+        client.invoke('hello'),
+        throwsA(
+          isA<FunctionsApiException>()
+              .having((error) => error.statusCode, 'statusCode', 401)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having((error) => error.body, 'body', isNull)
+              .having(
+                (error) => error.details,
+                'details',
+                isA<ClientException>(),
+              ),
         ),
       );
     });
@@ -103,6 +208,9 @@ void main() {
       const fetchError = FunctionsFetchException(message: 'Connection failed');
       const relayError = FunctionsRelayException(statusCode: 500);
       const apiError = FunctionsApiException(statusCode: 400);
+
+      expect(apiError.headers, isEmpty);
+      expect(apiError.body, isNull);
 
       expect(describeError(fetchError), 'fetch: Connection failed');
       expect(describeError(relayError), 'relay: 500');
@@ -881,7 +989,7 @@ void main() {
           'status code, statusCode: 500, requestId: request-1, details: boom)',
         );
         expect(
-          const FunctionsFetchException(details: 'offline').toString(),
+          const FunctionsFetchException(cause: 'offline').toString(),
           'FunctionsFetchException(message: Failed to send a request to the '
           'Edge Function, requestId: null, details: offline)',
         );
