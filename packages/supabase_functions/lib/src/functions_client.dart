@@ -250,7 +250,7 @@ class FunctionsClient {
     } on http.RequestAbortedException {
       rethrow;
     } catch (error) {
-      throw FunctionsFetchException(details: error);
+      throw FunctionsFetchException(cause: error);
     }
     final responseType = response.headers.mediaType ?? 'text/plain';
 
@@ -259,9 +259,20 @@ class FunctionsClient {
         isSuccessStatusCode(response.statusCode) && !isRelayError;
 
     final dynamic data;
+    final Uint8List bodyBytes;
 
+    if (responseType == 'text/event-stream' && isSuccessStatus) {
+      // Only a successful streaming response hands the live stream to the
+      // caller. On an error status there is nothing to stream, so the body is
+      // drained below to become the exception `details` and the connection
+      // isn't left open.
+      return FunctionResponse(
+        data: response.stream,
+        statusCode: response.statusCode,
+      );
+    }
+    bodyBytes = await response.stream.toBytes();
     if (responseType == 'application/json') {
-      final bodyBytes = await response.stream.toBytes();
       if (bodyBytes.isEmpty) {
         data = "";
       } else {
@@ -279,15 +290,8 @@ class FunctionsClient {
         data = decoded;
       }
     } else if (responseType == 'application/octet-stream') {
-      data = await response.stream.toBytes();
-    } else if (responseType == 'text/event-stream' && isSuccessStatus) {
-      // Only a successful streaming response hands the live stream to the
-      // caller. On an error status there is nothing to stream — fall through
-      // and drain the body so it becomes the exception `details` and the
-      // connection isn't left open.
-      data = response.stream;
+      data = bodyBytes;
     } else {
-      final bodyBytes = await response.stream.toBytes();
       data = utf8.decode(bodyBytes, allowMalformed: !isSuccessStatus);
     }
 
@@ -297,11 +301,14 @@ class FunctionsClient {
     // The reason phrase is the only message the response itself carries; when
     // it is absent, as it is over HTTP/2, each exception uses its own default.
     final requestId = response.headers.requestId;
+    final responseBody = utf8.decode(bodyBytes, allowMalformed: true);
     if (isRelayError) {
       throw FunctionsRelayException(
         statusCode: response.statusCode,
         details: data,
         requestId: requestId,
+        headers: response.headers,
+        body: responseBody,
         message: response.reasonPhrase,
       );
     }
@@ -309,6 +316,8 @@ class FunctionsClient {
       statusCode: response.statusCode,
       details: data,
       requestId: requestId,
+      headers: response.headers,
+      body: responseBody,
       message: response.reasonPhrase,
     );
   }

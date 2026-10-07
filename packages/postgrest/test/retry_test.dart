@@ -188,7 +188,13 @@ void main() {
 
       await expectLater(
         () => client.from('users').insert({'name': 'foo'}),
-        throwsA(isA<SocketException>()),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<SocketException>(),
+          ),
+        ),
       );
       expect(mock.callCount, 1);
     });
@@ -260,7 +266,13 @@ void main() {
 
         await expectLater(
           () => client.from('users').select(),
-          throwsA(isA<SocketException>()),
+          throwsA(
+            isA<PostgrestTransportException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<SocketException>(),
+            ),
+          ),
         );
         expect(mock.callCount, 4);
       },
@@ -414,7 +426,13 @@ void main() {
 
       await expectLater(
         () => client.from('users').select(),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
       );
       // Initial attempt plus 2 retries, so the timeout did not stop retrying.
       expect(mock.callCount, 3);
@@ -476,7 +494,13 @@ void main() {
             .from('users')
             .select()
             .requestTimeout(const Duration(milliseconds: 50)),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
       );
       // Initial attempt plus 1 retry.
       expect(mock.callCount, 2);
@@ -498,7 +522,13 @@ void main() {
               .requestTimeout(const Duration(milliseconds: 50))
               .select()
               .eq('username', 'supabot'),
-          throwsA(isA<TimeoutException>()),
+          throwsA(
+            isA<PostgrestTransportException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<TimeoutException>(),
+            ),
+          ),
         );
         expect(mock.callCount, 1);
       },
@@ -519,7 +549,13 @@ void main() {
             .requestTimeout(const Duration(milliseconds: 50))
             .eq('username', 'supabot')
             .limit(1),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
       );
       expect(mock.callCount, 1);
     });

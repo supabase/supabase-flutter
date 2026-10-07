@@ -230,8 +230,10 @@ class RealtimeChannel {
       unawaited(socket.connect());
     }
     if (_joinedOnce == true) {
-      throw "tried to subscribe multiple times. 'subscribe' can only be "
-          "called a single time per channel instance";
+      throw StateError(
+        "tried to subscribe multiple times. 'subscribe' can only be "
+        "called a single time per channel instance",
+      );
     }
     final broadcast = _parameters['config']['broadcast'];
     final presenceConfig = _parameters['config']['presence'];
@@ -259,7 +261,7 @@ class RealtimeChannel {
       if (payload is Map && payload['status'] == 'error') {
         _addStatus(
           RealtimeSubscribeStatus.channelError,
-          Exception(
+          RealtimeException(
             payload['message']?.toString() ??
                 'postgres_changes subscription failed',
           ),
@@ -295,14 +297,11 @@ class RealtimeChannel {
           ),
         )
         .receive('error', (error) {
+          final reply = error as Map<String, dynamic>;
           _addStatus(
             RealtimeSubscribeStatus.channelError,
-            Exception(
-              jsonEncode(
-                (error as Map<String, dynamic>).isNotEmpty
-                    ? (error).values.join(', ')
-                    : 'error',
-              ),
+            RealtimeException(
+              reply.isNotEmpty ? reply.values.join(', ') : 'error',
             ),
           );
         })
@@ -391,7 +390,7 @@ class RealtimeChannel {
         unawaited(unsubscribe());
         _addStatus(
           RealtimeSubscribeStatus.channelError,
-          Exception(
+          const RealtimeException(
             'mismatch between server and client bindings for postgres '
             'changes',
           ),
@@ -708,9 +707,9 @@ class RealtimeChannel {
     final typeLower = type.toLowerCase();
 
     if ((isJoined || isJoining) && typeLower == 'postgres_changes') {
-      final message =
-          'cannot add `$typeLower` callbacks for $topic after `subscribe()`.';
-      throw message;
+      throw StateError(
+        'cannot add `$typeLower` callbacks for $topic after `subscribe()`.',
+      );
     }
 
     final binding = Binding(typeLower, filter.toMap(), callback);
@@ -750,8 +749,10 @@ class RealtimeChannel {
     Duration? timeout,
   ]) {
     if (!_joinedOnce) {
-      throw "tried to push '${event.eventName()}' to '$topic' before joining. "
-          "Use channel.subscribe() before pushing events";
+      throw StateError(
+        "tried to push '${event.eventName()}' to '$topic' before joining. "
+        "Use channel.subscribe() before pushing events",
+      );
     }
     final pushEvent = Push(this, event, payload, timeout ?? _timeout);
     if (canPush) {
@@ -781,8 +782,10 @@ class RealtimeChannel {
   ///
   /// Requires a Realtime server running v2.97.0 or newer.
   ///
-  /// Returns a [Future] that resolves when the message is sent successfully,
-  /// or throws an error if the message fails to send.
+  /// Returns a [Future] that resolves when the message is sent successfully.
+  /// It throws a [RealtimeApiException] when the endpoint rejects the message
+  /// and a [RealtimeTransportException] when the request gets no response
+  /// within [timeout].
   ///
   /// ```dart
   /// try {
@@ -821,39 +824,48 @@ class RealtimeChannel {
 
     final body = isBinary ? _asBytes(payload) : json.encode(payload);
 
-    final response =
-        await (socket.httpClient?.post ?? post)(
-          url,
-          headers: headers,
-          body: body,
-        ).timeout(
-          timeout ?? _timeout,
-          onTimeout: () => throw TimeoutException('Request timeout'),
-        );
+    final Response response;
+    try {
+      response = await (socket.httpClient?.post ?? post)(
+        url,
+        headers: headers,
+        body: body,
+      ).timeout(timeout ?? _timeout);
+    } on Exception catch (error) {
+      throw RealtimeTransportException(
+        'Request failed: $error',
+        cause: error,
+      );
+    }
 
     if (response.statusCode == 202) {
       return;
     }
 
+    final requestId = response.headers.requestId;
     if (response.statusCode == 404) {
-      throw Exception(
+      throw RealtimeApiException(
         'httpSend() requires Realtime server v2.97.0 or newer; the endpoint '
         'returned 404. Update your Supabase CLI to a recent version, or '
         'upgrade the Realtime server in your self-hosted setup.',
+        statusCode: response.statusCode,
+        requestId: requestId,
+        headers: response.headers,
+        body: response.body,
       );
     }
 
-    String errorMessage = response.reasonPhrase ?? 'Unknown error';
-    try {
-      final errorBody = json.decode(response.body) as Map<String, dynamic>;
-      errorMessage =
-          (errorBody['error'] ?? errorBody['message'] ?? errorMessage)
-              as String;
-    } catch (_) {
-      // If JSON parsing fails, use the default error message
-    }
-
-    throw Exception(errorMessage);
+    final errorBody = tryDecodeJsonObject(response.body);
+    final reported = errorBody?['error'] ?? errorBody?['message'];
+    throw RealtimeApiException(
+      reported is String
+          ? reported
+          : (response.reasonPhrase ?? 'HTTP ${response.statusCode}'),
+      statusCode: response.statusCode,
+      requestId: requestId,
+      headers: response.headers,
+      body: response.body,
+    );
   }
 
   Uint8List _asBytes(Object payload) {
@@ -1085,8 +1097,10 @@ class RealtimeChannel {
 
     var handledPayload = onMessage(typeLower, payload, ref);
     if (payload != null && handledPayload == null) {
-      throw 'channel onMessage callbacks must return the payload, modified or '
-          'unmodified';
+      throw StateError(
+        'channel onMessage callbacks must return the payload, modified or '
+        'unmodified',
+      );
     }
 
     if (['insert', 'update', 'delete'].contains(typeLower)) {

@@ -2250,6 +2250,11 @@ features:
       - StorageApiException.fromJson
       - StorageApiException.statusCode
       - StorageException.StorageException
+      - StorageApiException.body
+      - StorageApiException.headers
+      - StorageTransportException
+      - StorageTransportException.StorageTransportException
+      - StorageTransportException.cause
 
   # realtime — channel
   realtime.channel.subscribe:
@@ -2764,6 +2769,8 @@ supporting_symbols:
   - AuthApiException.AuthApiException
   - AuthApiException.hashCode
   - AuthApiException.statusCode
+  - AuthApiException.body
+  - AuthApiException.headers
   - AuthClientOptions
   - AuthClientOptions.AuthClientOptions
   - AuthException
@@ -2784,8 +2791,12 @@ supporting_symbols:
   - AuthRetryableApiException.AuthRetryableApiException
   - AuthRetryableApiException.hashCode
   - AuthRetryableApiException.statusCode
+  - AuthRetryableApiException.body
+  - AuthRetryableApiException.headers
+  - AuthRetryableApiException.toString
   - AuthRetryableFetchException
   - AuthRetryableFetchException.AuthRetryableFetchException
+  - AuthRetryableFetchException.cause
   - AuthSessionMissingException
   - AuthSessionMissingException.AuthSessionMissingException
   - AuthUnknownException
@@ -2842,6 +2853,10 @@ supporting_symbols:
   - FunctionException.toString
   - FunctionsApiException.statusCode
   - FunctionsApiException.toString
+  - FunctionsApiException.body
+  - FunctionsApiException.headers
+  - FunctionsFetchException.cause
+  - FunctionsFetchException.toString
   - FunctionsClient
   - FunctionsClient.FunctionsClient
   - FunctionsClient.dispose
@@ -2873,6 +2888,8 @@ supporting_symbols:
   - IcebergApiException.fromResponse
   - IcebergApiException.statusCode
   - IcebergApiException.toString
+  - IcebergApiException.body
+  - IcebergApiException.headers
   - IcebergAuthenticationTimeoutException
   - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
   - IcebergCommitStateUnknownException
@@ -2885,6 +2902,8 @@ supporting_symbols:
   - IcebergException.details
   - IcebergNetworkException
   - IcebergNetworkException.IcebergNetworkException
+  - IcebergNetworkException.cause
+  - IcebergNetworkException.toString
   - IcebergNotFoundException
   - IcebergNotFoundException.IcebergNotFoundException
   - IcebergServerException
@@ -2985,6 +3004,13 @@ supporting_symbols:
   - PostgrestApiException.statusCode
   - PostgrestApiException.toJson
   - PostgrestApiException.toString
+  - PostgrestApiException.body
+  - PostgrestApiException.headers
+  - PostgrestException
+  - PostgrestException.PostgrestException
+  - PostgrestTransportException
+  - PostgrestTransportException.PostgrestTransportException
+  - PostgrestTransportException.cause
   - PostgrestClient
   - PostgrestClient.PostgrestClient
   - PostgrestClient.dispose
@@ -3040,6 +3066,16 @@ supporting_symbols:
   - RealtimeSubscribeException.details
   - RealtimeSubscribeException.status
   - RealtimeSubscribeException.toString
+  - RealtimeException
+  - RealtimeException.RealtimeException
+  - RealtimeApiException
+  - RealtimeApiException.RealtimeApiException
+  - RealtimeApiException.body
+  - RealtimeApiException.headers
+  - RealtimeApiException.statusCode
+  - RealtimeTransportException
+  - RealtimeTransportException.RealtimeTransportException
+  - RealtimeTransportException.cause
   - Session
   - Session.==
   - Session.Session

@@ -143,7 +143,7 @@ class IcebergRestCatalog {
     } catch (error) {
       throw IcebergNetworkException(
         'Network request failed: $error',
-        details: error,
+        cause: error,
       );
     }
 
@@ -159,7 +159,12 @@ class IcebergRestCatalog {
         : response.body;
 
     if (!isSuccessStatusCode(response.statusCode)) {
-      throw IcebergApiException.fromResponse(response.statusCode, decoded);
+      throw IcebergApiException.fromResponse(
+        response.statusCode,
+        decoded,
+        headers: response.headers,
+        body: response.body,
+      );
     }
 
     return _IcebergResponse(response.statusCode, response.headers, decoded);

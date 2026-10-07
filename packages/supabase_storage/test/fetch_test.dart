@@ -239,7 +239,13 @@ void main() {
               'folder/file.png',
               Uint8List.fromList([1, 2, 3]),
             ),
-        throwsA(isA<ClientException>()),
+        throwsA(
+          isA<StorageTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
       );
       expect(retryClient.attempts, 1);
     });
@@ -260,7 +266,13 @@ void main() {
               'folder/file.png',
               Uint8List.fromList([1, 2, 3]),
             ),
-        throwsA(isA<ClientException>()),
+        throwsA(
+          isA<StorageTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
       );
       expect(retryClient.attempts, 1);
     });
@@ -428,7 +440,13 @@ void main() {
               Stream.value([1, 2, 3]),
               contentLength: 3,
             ),
-        throwsA(isA<ClientException>()),
+        throwsA(
+          isA<StorageTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
       );
       expect(retryClient.attempts, 1);
     });

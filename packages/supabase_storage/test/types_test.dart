@@ -535,6 +535,24 @@ void main() {
     });
   });
 
+  group('StorageTransportException', () {
+    test('is a StorageException that reports the cause', () {
+      const SupabaseException exception = StorageTransportException(
+        'offline',
+        cause: 'no route',
+      );
+
+      expect(exception, isA<StorageException>());
+      expect(exception, isA<SupabaseTransportException>());
+      expect(exception, isNot(isA<SupabaseApiException>()));
+      expect(
+        exception.toString(),
+        'StorageTransportException(message: offline, errorCode: null, '
+        'requestId: null, cause: no route)',
+      );
+    });
+  });
+
   group('StorageApiException', () {
     test('is a StorageException that reports the response status', () {
       const SupabaseException exception = StorageApiException(
@@ -571,6 +589,25 @@ void main() {
         'StorageApiException(message: not found, statusCode: 404, '
         'errorCode: NoSuchKey, requestId: request-1)',
       );
+    });
+
+    test('fromJson keeps the response headers and body', () {
+      final exception = StorageApiException.fromJson(
+        {'message': 'not found', 'code': 'NoSuchKey'},
+        404,
+        headers: {'content-type': 'application/json'},
+        body: '{"message":"not found","code":"NoSuchKey"}',
+      );
+
+      expect(exception.headers, {'content-type': 'application/json'});
+      expect(exception.body, '{"message":"not found","code":"NoSuchKey"}');
+    });
+
+    test('built by hand it has no headers or body', () {
+      const exception = StorageApiException('boom', statusCode: 500);
+
+      expect(exception.headers, isEmpty);
+      expect(exception.body, isNull);
     });
 
     test('fromJson reads a stringified statusCode', () {

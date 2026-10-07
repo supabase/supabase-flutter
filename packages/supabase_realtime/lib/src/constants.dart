@@ -54,7 +54,7 @@ enum ChannelEvent {
         return event;
       }
     }
-    throw 'No type $type exists';
+    throw ArgumentError.value(type, 'type', 'No such channel event');
   }
 
   String eventName() => switch (this) {

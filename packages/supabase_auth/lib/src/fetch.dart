@@ -49,7 +49,10 @@ class AuthFetch {
 
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
-      throw AuthRetryableFetchException(message: error.toString());
+      throw AuthRetryableFetchException(
+        message: error.toString(),
+        cause: error,
+      );
     }
     final response = error;
     final requestId = response.headers.requestId;
@@ -68,6 +71,8 @@ class AuthFetch {
           message: _getStatusMessage(response),
           statusCode: response.statusCode,
           requestId: requestId,
+          headers: response.headers,
+          body: response.body,
         );
       }
       throw AuthUnknownException(
@@ -86,6 +91,8 @@ class AuthFetch {
           message: _getStatusMessage(response),
           statusCode: response.statusCode,
           requestId: requestId,
+          headers: response.headers,
+          body: response.body,
         );
       }
       throw AuthUnknownException(
@@ -100,6 +107,8 @@ class AuthFetch {
         message: _getErrorMessage(data),
         statusCode: response.statusCode,
         requestId: requestId,
+        headers: response.headers,
+        body: response.body,
       );
     }
 
@@ -111,6 +120,8 @@ class AuthFetch {
         statusCode: response.statusCode,
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
         requestId: requestId,
+        headers: response.headers,
+        body: response.body,
       );
     }
 
@@ -119,6 +130,8 @@ class AuthFetch {
       statusCode: response.statusCode,
       errorCode: errorCode,
       requestId: requestId,
+      headers: response.headers,
+      body: response.body,
     );
   }
 
@@ -190,6 +203,7 @@ class AuthFetch {
       throw AuthRetryableFetchException(
         message: error.toString(),
         requestId: response.headers.requestId,
+        cause: error,
       );
     }
   }
@@ -233,7 +247,10 @@ class AuthFetch {
       };
     } catch (error) {
       // fetch failed, likely due to a network or CORS error
-      throw AuthRetryableFetchException(message: error.toString());
+      throw AuthRetryableFetchException(
+        message: error.toString(),
+        cause: error,
+      );
     }
 
     if (!isSuccessStatusCode(response.statusCode)) {

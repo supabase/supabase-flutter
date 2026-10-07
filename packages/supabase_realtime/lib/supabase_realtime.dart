@@ -2,11 +2,15 @@
 /// changes, broadcast messages, and presence over a websocket connection.
 library;
 
+export 'package:supabase_common/supabase_common.dart'
+    show SupabaseApiException, SupabaseException, SupabaseTransportException;
+
 export 'src/constants.dart'
     show RealtimeLogLevel, RealtimeProtocolVersion, SocketState;
 export 'src/realtime_channel.dart';
 export 'src/realtime_client.dart';
 export 'src/realtime_constants.dart';
+export 'src/realtime_exception.dart';
 export 'src/realtime_message.dart';
 export 'src/realtime_presence.dart' show Presence;
 export 'src/retry_timer.dart' show TimerCalculation;

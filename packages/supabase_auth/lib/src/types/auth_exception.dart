@@ -49,11 +49,16 @@ class AuthSessionMissingException extends AuthException {
 ///
 /// A retryable 5xx is an [AuthRetryableApiException]. Catch this type to cover
 /// both.
-class AuthRetryableFetchException extends AuthException {
+class AuthRetryableFetchException extends AuthException
+    with SupabaseTransportException {
   AuthRetryableFetchException({
     String message = 'AuthRetryableFetchException',
     super.requestId,
+    this.cause,
   }) : super(message);
+
+  @override
+  final Object? cause;
 }
 
 /// Thrown when the auth service answered with a 5xx status, which is worth
@@ -64,9 +69,22 @@ class AuthRetryableApiException extends AuthRetryableFetchException
     required super.message,
     required this.statusCode,
     super.requestId,
+    this.headers = const {},
+    this.body,
   });
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
+
+  @override
+  String toString() =>
+      '$runtimeType(message: $message, statusCode: $statusCode, '
+      'errorCode: $errorCode, requestId: $requestId)';
 
   @override
   bool operator ==(Object other) =>
@@ -85,9 +103,17 @@ class AuthApiException extends AuthException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    this.headers = const {},
+    this.body,
   });
   @override
   final int statusCode;
+
+  @override
+  final Map<String, String> headers;
+
+  @override
+  final String? body;
 
   @override
   bool operator ==(Object other) =>
@@ -127,6 +153,8 @@ class AuthWeakPasswordException extends AuthApiException {
     required super.statusCode,
     required this.reasons,
     super.requestId,
+    super.headers,
+    super.body,
   }) : super(message, errorCode: ErrorCode.weakPassword.code);
 
   /// Why the password was rejected, for example `'characters'`.

@@ -46,7 +46,13 @@ void main() {
           isA<FunctionsApiException>()
               .having((e) => e.statusCode, 'statusCode', 420)
               .having((e) => e.message, 'message', 'Enhance Your Calm')
-              .having((e) => e.details, 'details', {'key': 'Hello World'}),
+              .having((e) => e.details, 'details', {'key': 'Hello World'})
+              .having((e) => e.body, 'body', '{"key":"Hello World"}')
+              .having(
+                (e) => e.headers['Content-Type'],
+                'Content-Type header',
+                'application/json',
+              ),
         ),
       );
     });
@@ -73,7 +79,9 @@ void main() {
                   'message',
                   'Failed to send a request to the Edge Function',
                 )
-                .having((e) => e.details, 'details', isA<ClientException>()),
+                .having((e) => e.details, 'details', isA<ClientException>())
+                .having((e) => e.cause, 'cause', isA<ClientException>()),
+            isA<SupabaseTransportException>(),
             isNot(isA<SupabaseApiException>()),
           ),
         ),
@@ -103,6 +111,9 @@ void main() {
       const fetchError = FunctionsFetchException(message: 'Connection failed');
       const relayError = FunctionsRelayException(statusCode: 500);
       const apiError = FunctionsApiException(statusCode: 400);
+
+      expect(apiError.headers, isEmpty);
+      expect(apiError.body, isNull);
 
       expect(describeError(fetchError), 'fetch: Connection failed');
       expect(describeError(relayError), 'relay: 500');
@@ -881,7 +892,7 @@ void main() {
           'status code, statusCode: 500, requestId: request-1, details: boom)',
         );
         expect(
-          const FunctionsFetchException(details: 'offline').toString(),
+          const FunctionsFetchException(cause: 'offline').toString(),
           'FunctionsFetchException(message: Failed to send a request to the '
           'Edge Function, requestId: null, details: offline)',
         );

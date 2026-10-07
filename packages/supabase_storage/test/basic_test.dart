@@ -1131,7 +1131,73 @@ void main() {
             file,
             retryOptions: const SupabaseRetryOptions(count: 1),
           );
-      await expectLater(uploadTask, throwsException);
+      await expectLater(
+        uploadTask,
+        throwsA(
+          isA<StorageTransportException>()
+              .having((error) => error.cause, 'cause', isA<ClientException>())
+              .having((error) => error.message, 'message', contains('Offline')),
+        ),
+      );
+    });
+
+    test('a read that gets no response throws a StorageTransportException', () {
+      final offlineClient = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {'Authorization': 'Bearer $supabaseKey'},
+        httpClient: MockSupabaseHttpClient()
+          ..stubError(ClientException('Offline')),
+      );
+
+      return expectLater(
+        offlineClient.from('public').list(),
+        throwsA(
+          isA<StorageTransportException>()
+              .having((error) => error.cause, 'cause', isA<ClientException>())
+              .having(
+                (error) => error,
+                'type',
+                isA<SupabaseTransportException>(),
+              )
+              .having(
+                (error) => error,
+                'type',
+                isNot(isA<SupabaseApiException>()),
+              ),
+        ),
+      );
+    });
+
+    test('an error response carries its headers and body', () {
+      final failingClient = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {'Authorization': 'Bearer $supabaseKey'},
+        httpClient: MockSupabaseHttpClient()
+          ..stub(
+            {'message': 'Object not found', 'code': 'NoSuchKey'},
+            statusCode: 404,
+            headers: {'sb-request-id': 'request-1'},
+          ),
+      );
+
+      return expectLater(
+        failingClient.from('public').list(),
+        throwsA(
+          isA<StorageApiException>()
+              .having((error) => error.errorCode, 'errorCode', 'NoSuchKey')
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having(
+                (error) => error.headers['sb-request-id'],
+                'request id header',
+                'request-1',
+              )
+              .having(
+                (error) => error.body,
+                'body',
+                '{"message":"Object not found","code":"NoSuchKey"}',
+              ),
+        ),
+      );
     });
 
     test('should upload file with few network failures', () async {

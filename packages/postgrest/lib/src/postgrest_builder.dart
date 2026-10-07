@@ -405,9 +405,9 @@ class PostgrestBuilder<T> implements Future<T> {
   /// timeout configured on [PostgrestClient].
   ///
   /// A timed-out attempt is retried like any other failure, and a
-  /// [TimeoutException] is thrown once the retries are exhausted. Use
-  /// [abortSignal] to cancel the request outright, which stops retrying
-  /// immediately.
+  /// [PostgrestTransportException] whose cause is a [TimeoutException] is
+  /// thrown once the retries are exhausted. Use [abortSignal] to cancel the
+  /// request outright, which stops retrying immediately.
   PostgrestBuilder<T> requestTimeout(Duration timeout) =>
       _copyWith(requestTimeout: timeout);
 
@@ -511,9 +511,9 @@ class PostgrestBuilder<T> implements Future<T> {
       // The request timeout bounds each individual attempt. It is implemented
       // on top of the abort mechanism so it actually cancels a stalled attempt
       // instead of leaving it running. A timed-out attempt surfaces as a
-      // [TimeoutException] so the retry loop treats it as a retryable failure,
-      // whereas the caller-provided [_abortSignal] keeps its
-      // [RequestAbortedException] and stops retries outright.
+      // [PostgrestTransportException] so the retry loop treats it as a
+      // retryable failure, whereas the caller-provided [_abortSignal] keeps
+      // its [RequestAbortedException] and stops retries outright.
       var timedOut = false;
       Timer? timeoutTimer;
       Future<void>? abortTrigger = _abortSignal;
@@ -549,9 +549,17 @@ class PostgrestBuilder<T> implements Future<T> {
         return await http.Response.fromStream(streamResponse);
       } on RequestAbortedException {
         if (timedOut) {
-          throw TimeoutException('Request timed out', requestTimeout);
+          throw PostgrestTransportException(
+            'Request timed out',
+            cause: TimeoutException('Request timed out', requestTimeout),
+          );
         }
         rethrow;
+      } on Exception catch (error) {
+        throw PostgrestTransportException(
+          'Request failed: $error',
+          cause: error,
+        );
       } finally {
         timeoutTimer?.cancel();
       }
@@ -592,10 +600,10 @@ class PostgrestBuilder<T> implements Future<T> {
         }
       } on RequestAbortedException catch (_) {
         // A manual abort stops retrying immediately. A per-attempt timeout is
-        // surfaced as a TimeoutException instead, so it falls through to the
-        // retryable branch below.
+        // surfaced as a PostgrestTransportException instead, so it falls
+        // through to the retryable branch below.
         rethrow;
-      } on Exception {
+      } on PostgrestTransportException {
         if (attempt == maxRetries) rethrow;
       }
 
@@ -650,6 +658,8 @@ class PostgrestBuilder<T> implements Future<T> {
               message: response.body,
               statusCode: response.statusCode,
               requestId: requestId,
+              headers: response.headers,
+              body: response.body,
               details: response.reasonPhrase,
             );
           }
@@ -665,6 +675,8 @@ class PostgrestBuilder<T> implements Future<T> {
             statusCode: 406,
             errorCode: 'PGRST116',
             requestId: requestId,
+            headers: response.headers,
+            body: response.body,
             details:
                 'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
@@ -699,6 +711,8 @@ class PostgrestBuilder<T> implements Future<T> {
           message: response.body,
           statusCode: response.statusCode,
           requestId: requestId,
+          headers: response.headers,
+          body: response.body,
           details: response.reasonPhrase,
         );
       } else {
@@ -708,6 +722,8 @@ class PostgrestBuilder<T> implements Future<T> {
           statusCode: response.statusCode,
           details: response.reasonPhrase,
           requestId: requestId,
+          headers: response.headers,
+          body: response.body,
         );
       }
     } else {
@@ -715,6 +731,8 @@ class PostgrestBuilder<T> implements Future<T> {
         statusCode: response.statusCode,
         message: response.body,
         requestId: requestId,
+        headers: response.headers,
+        body: response.body,
         details: 'Error in Postgrest response for method HEAD',
         hint: response.reasonPhrase,
       );

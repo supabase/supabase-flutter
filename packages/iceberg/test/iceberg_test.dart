@@ -618,21 +618,73 @@ void main() {
       expect(network, isNot(isA<SupabaseApiException>()));
     });
 
-    test('a network failure keeps the originating error in details', () async {
-      mockClient.handler = (request) =>
-          throw const SocketException('no route to host');
+    test(
+      'a network failure keeps the originating error as its cause',
+      () async {
+        mockClient.handler = (request) =>
+            throw const SocketException('no route to host');
 
-      await expectLater(
-        catalog.listNamespaces(),
-        throwsA(
-          isA<IcebergNetworkException>().having(
-            (error) => error.details,
-            'details',
-            isA<SocketException>(),
+        await expectLater(
+          catalog.listNamespaces(),
+          throwsA(
+            isA<IcebergNetworkException>()
+                .having((error) => error.cause, 'cause', isA<SocketException>())
+                .having(
+                  (error) => error.details,
+                  'details',
+                  isA<SocketException>(),
+                )
+                .having(
+                  (error) => error,
+                  'type',
+                  isA<SupabaseTransportException>(),
+                ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
+
+    test(
+      'an error response carries its headers, body and request id',
+      () async {
+        mockClient.handler = (request) => _json(
+          {
+            'error': {'message': 'gone', 'type': 'NoSuchTableException'},
+          },
+          404,
+          request,
+          headers: {'sb-request-id': 'request-1'},
+        );
+
+        await expectLater(
+          catalog.listNamespaces(),
+          throwsA(
+            isA<IcebergNotFoundException>()
+                .having((error) => error.requestId, 'requestId', 'request-1')
+                .having(
+                  (error) => error.headers['sb-request-id'],
+                  'request id header',
+                  'request-1',
+                )
+                .having(
+                  (error) => error.body,
+                  'body',
+                  '{"error":{"message":"gone","type":"NoSuchTableException"}}',
+                )
+                .having(
+                  (error) => error.details,
+                  'details',
+                  {
+                    'error': {
+                      'message': 'gone',
+                      'type': 'NoSuchTableException',
+                    },
+                  },
+                ),
+          ),
+        );
+      },
+    );
 
     test('TableUpdate raw escape hatch serializes the action', () {
       const update = TableUpdate.raw('add-snapshot', {

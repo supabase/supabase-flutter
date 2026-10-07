@@ -1203,7 +1203,13 @@ void main() {
             .select()
             .retry(enabled: false)
             .requestTimeout(const Duration(milliseconds: 20)),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
       );
     });
 
