@@ -1720,8 +1720,17 @@ class AuthClient {
   Future<Session> _refreshAccessToken(String refreshToken) async {
     final startedAt = DateTime.now();
     var attempt = 0;
-    Duration? retryAfterOf(Object outcome) =>
-        outcome is AuthRetryableApiException ? outcome.retryAfter : null;
+    Duration? retryAfterOf(Object outcome) {
+      final requested = outcome is AuthRetryableApiException
+          ? outcome.retryAfter
+          : null;
+      if (requested == null) {
+        return null;
+      }
+      final maxDelay = retryOptions.maxDelay;
+      return requested < maxDelay ? requested : maxDelay;
+    }
+
     return await retry(
       () async {
         attempt++;

@@ -79,6 +79,19 @@ void main() {
       );
     });
 
+    test('a Retry-After header is capped at maxDelay', () async {
+      expect(
+        await refreshAttemptsWith(
+          const SupabaseRetryOptions(
+            count: 1,
+            maxDelay: Duration(milliseconds: 10),
+          ),
+          headers: {'retry-after': '3600'},
+        ).timeout(const Duration(seconds: 5)),
+        2,
+      );
+    });
+
     test('disabled options refresh exactly once', () async {
       expect(
         await refreshAttemptsWith(const SupabaseRetryOptions(enabled: false)),

@@ -11,7 +11,9 @@ import 'package:supabase_common/src/retry_options.dart';
 ///
 /// A client that retries on what the server answered, a `503` for example,
 /// passes [retryIfResult]. A result it returns `true` for is retried like a
-/// thrown exception, and is returned as is once the retries run out.
+/// thrown exception, and is returned as is once the retries run out. A result
+/// that is retried is dropped without being read, so a streamed body has to be
+/// consumed or cancelled before [retryIfResult] returns `true`.
 ///
 /// [onRetry] is called with the error that caused the retry, before the delay
 /// is waited.
