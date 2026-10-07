@@ -1,4 +1,6 @@
-import 'package:http/http.dart' show ClientException, RequestAbortedException;
+import 'package:http/http.dart'
+    show ClientException, RequestAbortedException, StreamedResponse;
+import 'package:http/testing.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -151,6 +153,61 @@ void main() {
         exception.toString(),
         'PostgrestTransportException(message: offline, errorCode: null, '
         'requestId: null, cause: null)',
+      );
+    });
+
+    test('a body that fails to arrive on a success status is wrapped', () {
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            200,
+            request: request,
+          ),
+        ),
+        retryOptions: const SupabaseRetryOptions(enabled: false),
+      );
+
+      return expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
+      );
+    });
+
+    test('a body that fails to arrive on an error status keeps it', () {
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            401,
+            request: request,
+            headers: {'sb-request-id': 'request-1'},
+          ),
+        ),
+        retryOptions: const SupabaseRetryOptions(enabled: false),
+      );
+
+      return expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having((error) => error.statusCode, 'statusCode', 401)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having((error) => error.body, 'body', isNull)
+              .having(
+                (error) => error.details,
+                'details',
+                isA<ClientException>(),
+              ),
+        ),
       );
     });
 

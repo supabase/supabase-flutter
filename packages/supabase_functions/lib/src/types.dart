@@ -25,8 +25,8 @@ class FunctionResponse {
 
 /// Thrown when invoking an Edge Function fails.
 ///
-/// The response body, or the originating error when no response was received,
-/// is available in [details].
+/// The response body, or the originating error when no response or no body
+/// was received, is available in [details].
 ///
 /// Use pattern matching over the specific subtypes:
 /// - [FunctionsFetchException]: The request could not be sent (e.g. network
@@ -42,8 +42,8 @@ sealed class FunctionException extends SupabaseException {
     super.requestId,
   }) : super(message);
 
-  /// The response body, or the originating error when no response was
-  /// received.
+  /// The response body, or the originating error when no response or no body
+  /// was received.
   final dynamic details;
 
   @override
@@ -79,7 +79,8 @@ class FunctionsFetchException extends FunctionException
 /// Thrown when the Edge Function responded with a non-2xx status code.
 ///
 /// The decoded response body is available in [details], and the text it was
-/// decoded from in [body].
+/// decoded from in [body]. When the body stopped arriving, [details] is the
+/// error that cut it short and [body] is `null`.
 class FunctionsApiException extends FunctionException
     with SupabaseApiException {
   const FunctionsApiException({

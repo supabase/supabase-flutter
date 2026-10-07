@@ -1588,7 +1588,9 @@ Every package now wraps it in an exception of its own that mixes in
 | `iceberg`            | `IcebergNetworkException`     |
 
 A request aborted through its `abortSignal` is not wrapped and still throws
-`RequestAbortedException`.
+`RequestAbortedException`. A body that stops arriving after an error status keeps that status: it
+is reported as the package's API exception, with the read error named in the message or kept in
+`details` where the exception has one.
 
 ```dart
 // Before

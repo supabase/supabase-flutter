@@ -546,7 +546,24 @@ class PostgrestBuilder<T> implements Future<T> {
       }
       try {
         final streamResponse = await request.sendWith(_httpClient);
-        return await http.Response.fromStream(streamResponse);
+        try {
+          return await http.Response.fromStream(streamResponse);
+        } on RequestAbortedException {
+          rethrow;
+        } on Exception catch (error) {
+          // A body that stops arriving on a success status leaves the caller
+          // with nothing usable, so it is a transport failure. On an error
+          // status the status itself is the answer, so it is kept with the
+          // read error as the details.
+          if (isSuccessStatusCode(streamResponse.statusCode)) rethrow;
+          throw PostgrestApiException(
+            message: 'Failed to read the response: $error',
+            statusCode: streamResponse.statusCode,
+            requestId: streamResponse.headers.requestId,
+            headers: streamResponse.headers,
+            details: error,
+          );
+        }
       } on RequestAbortedException {
         if (timedOut) {
           throw PostgrestTransportException(

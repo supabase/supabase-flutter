@@ -61,34 +61,64 @@ class Fetch {
     return exception;
   }
 
-  /// Runs [action], wrapping a failure to get a response from [url] in a
+  StorageTransportException _transportException(
+    Uri? url,
+    Exception error,
+    StackTrace stackTrace,
+  ) {
+    storageLogger.fine(
+      'StorageTransportException for ${url?.redacted}',
+      error,
+      stackTrace,
+    );
+    return StorageTransportException('Request failed: $error', cause: error);
+  }
+
+  /// Sends [request], wrapping a failure to get a response in a
   /// [StorageTransportException]. An abort and an exception the HTTP client
   /// already classified keep their own type.
-  Future<T> _guardTransport<T>(Uri? url, Future<T> Function() action) async {
+  Future<http.StreamedResponse> _send(http.BaseRequest request) async {
     try {
-      return await action();
+      return await request.sendWith(httpClient);
     } on http.RequestAbortedException {
       rethrow;
     } on SupabaseException {
       rethrow;
     } on Exception catch (error, stackTrace) {
-      storageLogger.fine(
-        'StorageTransportException for ${url?.redacted}',
-        error,
-        stackTrace,
-      );
-      throw StorageTransportException('Request failed: $error', cause: error);
+      throw _transportException(request.url, error, stackTrace);
     }
   }
 
-  Future<http.StreamedResponse> _send(http.BaseRequest request) =>
-      _guardTransport(request.url, () => request.sendWith(httpClient));
-
-  Future<http.Response> _read(http.StreamedResponse streamedResponse) =>
-      _guardTransport(
-        streamedResponse.request?.url,
-        () => http.Response.fromStream(streamedResponse),
+  /// Reads the body of [streamedResponse].
+  ///
+  /// A body that stops arriving on a success status leaves the caller with
+  /// nothing usable, so it is a [StorageTransportException]. On an error
+  /// status the status itself is the answer, so it is kept as a
+  /// [StorageApiException] naming the read error.
+  Future<http.Response> _read(http.StreamedResponse streamedResponse) async {
+    try {
+      return await http.Response.fromStream(streamedResponse);
+    } on http.RequestAbortedException {
+      rethrow;
+    } on Exception catch (error, stackTrace) {
+      final url = streamedResponse.request?.url;
+      if (isSuccessStatusCode(streamedResponse.statusCode)) {
+        throw _transportException(url, error, stackTrace);
+      }
+      final exception = StorageApiException(
+        'Failed to read the response: $error',
+        statusCode: streamedResponse.statusCode,
+        requestId: streamedResponse.headers.requestId,
+        headers: streamedResponse.headers,
       );
+      storageLogger.fine(
+        'StorageException for ${url?.redacted}',
+        exception,
+        stackTrace,
+      );
+      throw exception;
+    }
+  }
 
   http.AbortableRequest _createRequest(
     HttpMethod method,

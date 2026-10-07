@@ -155,6 +155,36 @@ void main() {
       );
     });
 
+    test('a body that fails to arrive on an error status keeps it', () {
+      final client = FunctionsClient(
+        'http://localhost/functions/v1',
+        {},
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            401,
+            request: request,
+            headers: {'sb-request-id': 'request-1'},
+          ),
+        ),
+      );
+
+      return expectLater(
+        client.invoke('hello'),
+        throwsA(
+          isA<FunctionsApiException>()
+              .having((error) => error.statusCode, 'statusCode', 401)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having((error) => error.body, 'body', isNull)
+              .having(
+                (error) => error.details,
+                'details',
+                isA<ClientException>(),
+              ),
+        ),
+      );
+    });
+
     test('the subtypes remain catchable as FunctionException', () async {
       await expectLater(
         functionsCustomHttpClient.invoke('relay-error'),

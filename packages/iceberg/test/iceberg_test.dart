@@ -663,6 +663,49 @@ void main() {
       );
     });
 
+    test('a body that fails to arrive on an error status keeps it', () async {
+      mockClient.handler = (request) => StreamedResponse(
+        Stream.error(ClientException('Connection reset', request.url)),
+        401,
+        request: request,
+        headers: {'sb-request-id': 'request-1'},
+      );
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergUnknownException>()
+              .having((error) => error.statusCode, 'statusCode', 401)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having(
+                (error) => error.details,
+                'details',
+                isA<ClientException>(),
+              ),
+        ),
+      );
+    });
+
+    test('a body that fails to arrive on a success status is a network '
+        'failure', () async {
+      mockClient.handler = (request) => StreamedResponse(
+        Stream.error(ClientException('Connection reset', request.url)),
+        200,
+        request: request,
+      );
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergNetworkException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<ClientException>(),
+          ),
+        ),
+      );
+    });
+
     test(
       'an error response carries its headers, body and request id',
       () async {

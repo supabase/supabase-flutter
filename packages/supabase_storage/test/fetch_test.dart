@@ -687,6 +687,36 @@ void main() {
       );
     });
 
+    test('a body that fails to arrive on an error status keeps it', () {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            403,
+            request: request,
+            headers: {'sb-request-id': 'request-1'},
+          ),
+        ),
+      );
+
+      return expectLater(
+        client.from('bucket').list(),
+        throwsA(
+          isA<StorageApiException>()
+              .having((error) => error.statusCode, 'statusCode', 403)
+              .having((error) => error.requestId, 'requestId', 'request-1')
+              .having((error) => error.body, 'body', isNull)
+              .having(
+                (error) => error.message,
+                'message',
+                contains('Connection reset'),
+              ),
+        ),
+      );
+    });
+
     test(
       'a JSON body that is not an object surfaces as a StorageException',
       () {
