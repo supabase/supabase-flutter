@@ -1720,6 +1720,8 @@ class AuthClient {
   Future<Session> _refreshAccessToken(String refreshToken) async {
     final startedAt = DateTime.now();
     var attempt = 0;
+    Duration? retryAfterOf(Object outcome) =>
+        outcome is AuthRetryableApiException ? outcome.retryAfter : null;
     return await retry(
       () async {
         attempt++;
@@ -1737,11 +1739,12 @@ class AuthClient {
         return _sessionFromResponse(response);
       },
       options: retryOptions,
+      retryAfter: retryAfterOf,
       retryIf: (e) {
         // Do not retry if the next retry comes after the next tick. The
         // deadline is the real bound here, so the configured count only caps
         // how many attempts a short backoff can squeeze into the tick.
-        final nextBackOff = retryOptions.delay(attempt - 1);
+        final nextBackOff = retryAfterOf(e) ?? retryOptions.delay(attempt - 1);
 
         return e is AuthRetryableException &&
             (DateTime.now().millisecondsSinceEpoch +

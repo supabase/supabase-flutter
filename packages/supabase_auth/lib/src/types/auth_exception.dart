@@ -89,6 +89,10 @@ class AuthRetryableApiException extends AuthRetryableException
   @override
   final String? body;
 
+  /// How long the auth service asked the client to wait before trying again,
+  /// read from the `Retry-After` header of the response.
+  Duration? get retryAfter => parseRetryAfter(headers);
+
   @override
   bool operator ==(Object other) =>
       other is AuthRetryableApiException &&

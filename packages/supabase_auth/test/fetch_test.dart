@@ -310,6 +310,29 @@ void main() {
       );
     });
 
+    test(
+      'a Retry-After header is carried on a retryable api exception',
+      () async {
+        final client = MockSupabaseHttpClient()
+          ..stub(
+            {'msg': 'unavailable'},
+            statusCode: 503,
+            headers: {'retry-after': '7'},
+          );
+
+        await expectLater(
+          AuthFetch(client).request(_mockUrl, HttpMethod.get),
+          throwsA(
+            isA<AuthRetryableApiException>().having(
+              (e) => e.retryAfter,
+              'retryAfter',
+              const Duration(seconds: 7),
+            ),
+          ),
+        );
+      },
+    );
+
     test('is carried on an unknown exception', () async {
       final client = MockSupabaseHttpClient()
         ..stubText(

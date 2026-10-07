@@ -10,6 +10,7 @@ import 'package:postgrest/src/postgrest_typed_builder.dart'
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';
+import 'package:supabase_common/supabase_common.dart' as common show retry;
 
 part 'postgrest_filter_builder.dart';
 part 'postgrest_query_builder.dart';
@@ -594,44 +595,30 @@ class PostgrestBuilder<T> implements Future<T> {
     Future<http.Response> Function() send,
     HttpMethod method,
     Map<String, String> execHeaders,
-  ) async {
-    final maxRetries = _retry.count;
-
+  ) {
     final isRetryableMethod =
         method == HttpMethod.get || method == HttpMethod.head;
-
-    // A count below one means the request is sent exactly once, so the retry
-    // loop has nothing to add.
-    if (!_retry.enabled || !isRetryableMethod || maxRetries < 1) {
+    if (!isRetryableMethod) {
       return send();
     }
 
-    for (var attempt = 0; attempt <= maxRetries; attempt++) {
-      if (attempt > 0) {
-        execHeaders['X-Retry-Count'] = attempt.toString();
-      }
-
-      try {
-        final response = await send();
-        final isRetryable = PostgrestClient.retryableStatusCodes.contains(
-          response.statusCode,
-        );
-        if (!isRetryable || attempt == maxRetries) {
-          return response;
+    var attempt = 0;
+    return common.retry(
+      () {
+        if (attempt > 0) {
+          execHeaders['X-Retry-Count'] = attempt.toString();
         }
-      } on RequestAbortedException catch (_) {
-        // A manual abort stops retrying immediately. A per-attempt timeout is
-        // surfaced as a PostgrestTransportException instead, so it falls
-        // through to the retryable branch below.
-        rethrow;
-      } on PostgrestTransportException {
-        if (attempt == maxRetries) rethrow;
-      }
-
-      await Future.delayed(_retry.delay(attempt));
-    }
-
-    throw StateError('unreachable');
+        attempt++;
+        return send();
+      },
+      options: _retry,
+      retryIf: (error) => error is PostgrestTransportException,
+      retryIfResult: (response) =>
+          PostgrestClient.retryableStatusCodes.contains(response.statusCode),
+      retryAfter: (outcome) =>
+          outcome is http.Response ? parseRetryAfter(outcome.headers) : null,
+      abortSignal: _abortSignal,
+    );
   }
 
   /// Encodes the request body, on the codec when there is one so that a large
