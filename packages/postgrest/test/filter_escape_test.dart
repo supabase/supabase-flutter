@@ -93,4 +93,58 @@ void main() {
       expect(negated, 'not.$direct');
     },
   );
+
+  group('rpc with get', () {
+    setUp(() => httpClient.stub(null, path: '/rpc/f'));
+
+    test('encodes array elements as a Postgres array literal', () async {
+      await client.rpc<void>(
+        'f',
+        params: {
+          'tags': [
+            'Paris, France',
+            'Oslo',
+            'NULL',
+            '',
+            'a"b',
+            null,
+            ['x', 'y'],
+          ],
+        },
+        get: true,
+      );
+
+      expect(
+        httpClient.requests.last.queryParameters['tags'],
+        r'{"Paris, France",Oslo,"NULL","","a\"b",NULL,{x,y}}',
+      );
+    });
+
+    test('encodes a map as JSON', () async {
+      await client.rpc<void>(
+        'f',
+        params: {
+          'object': {'a': 1},
+        },
+        get: true,
+      );
+
+      expect(httpClient.requests.last.queryParameters['object'], '{"a":1}');
+    });
+
+    test('sends numeric arrays unquoted', () async {
+      await client.rpc<void>(
+        'f',
+        params: {
+          'numbers': [37, 420, 64],
+        },
+        get: true,
+      );
+
+      expect(
+        httpClient.requests.last.queryParameters['numbers'],
+        '{37,420,64}',
+      );
+    });
+  });
 }
