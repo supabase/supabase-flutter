@@ -396,6 +396,11 @@ String _renderFilterValue(Object? value) => switch (value) {
   _ => value.toString(),
 };
 
+/// Renders [value] as a query parameter value, the way PostgREST expects a
+/// function argument in a `GET` or `HEAD` call.
+@internal
+String renderPostgrestQueryValue(Object? value) => _renderFilterValue(value);
+
 /// `{a,b}`, the array literal the array operators and an array-typed
 /// comparison take. A nested list is a nested literal, and `null` is SQL
 /// `NULL`.

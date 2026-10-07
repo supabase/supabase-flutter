@@ -5,6 +5,8 @@ import 'dart:core';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:postgrest/src/logger.dart';
+import 'package:postgrest/src/postgrest_typed_builder.dart'
+    show renderPostgrestQueryValue;
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';

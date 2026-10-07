@@ -46,13 +46,9 @@ class PostgrestRpcBuilder {
             "RPC params map keys must be of type String",
           );
 
-          final MapEntry(:key, :value) = entry;
-          final formattedValue = value is List
-              ? '{${_cleanFilterList(value)}}'
-              : value;
           newUrl = newUrl.appendSearchParameters(
-            key.toString(),
-            '$formattedValue',
+            entry.key.toString(),
+            renderPostgrestQueryValue(entry.value),
           );
         }
       } else {
