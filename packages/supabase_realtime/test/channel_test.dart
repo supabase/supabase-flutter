@@ -399,6 +399,42 @@ void main() {
       },
     );
 
+    test(
+      'ignores a system error from a superseded join of the topic',
+      () async {
+        final statuses = <RealtimeSubscribeStatus>[];
+        channel.onStatusChange.listen((change) => statuses.add(change.status));
+        channel.subscribe();
+
+        channel.trigger(
+          'system',
+          {'status': 'error', 'message': 'stale'},
+          null,
+          'superseded-join-ref',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(statuses, isNot(contains(RealtimeSubscribeStatus.channelError)));
+      },
+    );
+
+    test('forwards a system error from the current join', () async {
+      RealtimeSubscribeStatus? status;
+      channel.onStatusChange.listen((change) => status = change.status);
+      channel.subscribe();
+      final currentJoinRef = channel.joinRef;
+
+      channel.trigger(
+        'system',
+        {'status': 'error', 'message': 'current'},
+        null,
+        currentJoinRef,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(status, RealtimeSubscribeStatus.channelError);
+    });
+
     test('does not surface a system ok event as an error', () async {
       RealtimeSubscribeStatus? status;
       channel.onStatusChange.listen((change) => status = change.status);

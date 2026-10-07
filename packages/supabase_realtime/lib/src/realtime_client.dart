@@ -882,6 +882,7 @@ class RealtimeClient {
         event,
         payload,
         messageRef,
+        message.joinRef,
       );
     }
     _messageController.add(message);
