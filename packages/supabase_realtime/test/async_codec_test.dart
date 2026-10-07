@@ -428,6 +428,18 @@ void main() {
       verify(() => channel.trigger('broadcast', any(), '1')).called(1);
     });
 
+    test('forwards the join ref of a message to its channel', () async {
+      final client = await createClient();
+
+      final channel = MockChannel();
+      when(() => channel.isMember('realtime:room')).thenReturn(true);
+      client.addChannelForTesting(channel);
+
+      client.onConnectionMessage('["5",null,"realtime:room","system",{}]');
+
+      verify(() => channel.trigger('system', any(), null, '5')).called(1);
+    });
+
     test('the built-in codec logs and swallows a dispatch failure', () async {
       final client = await createClient();
 

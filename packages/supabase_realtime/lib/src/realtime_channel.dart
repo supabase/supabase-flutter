@@ -1068,9 +1068,23 @@ class RealtimeChannel {
 
   /// Dispatches an incoming [type] event with [payload] to every matching
   /// binding registered through [onEvents].
+  ///
+  /// A `system` event whose [messageJoinRef] belongs to an earlier join of
+  /// this topic is dropped.
   @internal
-  void trigger(String type, [dynamic payload, String? ref]) {
+  void trigger(
+    String type, [
+    dynamic payload,
+    String? ref,
+    String? messageJoinRef,
+  ]) {
     final typeLower = type.toLowerCase();
+
+    if (typeLower == 'system' &&
+        messageJoinRef != null &&
+        messageJoinRef != joinRef) {
+      return;
+    }
 
     final events = [
       ChannelEvent.close,
