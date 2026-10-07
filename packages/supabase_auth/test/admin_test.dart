@@ -156,10 +156,10 @@ void main() {
     test('deleteUser() soft deletes a user, keeping its record', () async {
       final suffix = Random.secure().nextInt(4096);
       final softDeleted = await client.admin.createUser(
-        AdminUserAttributes(email: 'soft-$suffix@fake.org', password: 'pw'),
+        AdminUserAttributes(email: 'soft-$suffix@fake.org', password: password),
       );
       final hardDeleted = await client.admin.createUser(
-        AdminUserAttributes(email: 'hard-$suffix@fake.org', password: 'pw'),
+        AdminUserAttributes(email: 'hard-$suffix@fake.org', password: password),
       );
 
       await client.admin.deleteUser(
