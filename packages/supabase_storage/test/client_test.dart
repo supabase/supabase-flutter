@@ -229,7 +229,7 @@ void main() {
             .uploadToSignedUrl(response.path, response.token, file),
         throwsA(
           isA<StorageApiException>()
-              .having((e) => e.errorCode, 'errorCode', 'Duplicate')
+              .having((e) => e.errorCode, 'errorCode', 'KeyAlreadyExists')
               .having(
                 (e) => e.message,
                 'message',
