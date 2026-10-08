@@ -25,4 +25,7 @@ abstract final class HttpHeader {
   /// The preferences PostgREST applies to the request, such as how many rows
   /// to return or how to resolve a conflict.
   static const prefer = 'Prefer';
+
+  /// How long the server asks the client to wait before repeating a request.
+  static const retryAfter = 'Retry-After';
 }

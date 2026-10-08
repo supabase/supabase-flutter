@@ -2790,6 +2790,7 @@ supporting_symbols:
   - AuthRetryableApiException.==
   - AuthRetryableApiException.AuthRetryableApiException
   - AuthRetryableApiException.hashCode
+  - AuthRetryableApiException.retryAfter
   - AuthRetryableApiException.statusCode
   - AuthRetryableApiException.body
   - AuthRetryableApiException.headers

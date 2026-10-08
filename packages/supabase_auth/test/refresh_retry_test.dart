@@ -9,10 +9,13 @@ import 'utils.dart';
 void main() {
   const authUrl = 'http://localhost:9999';
 
-  Future<int> refreshAttemptsWith(SupabaseRetryOptions retryOptions) async {
+  Future<int> refreshAttemptsWith(
+    SupabaseRetryOptions retryOptions, {
+    Map<String, String> headers = const {},
+  }) async {
     // Every refresh is answered with a retryable server error.
     final httpClient = MockSupabaseHttpClient()
-      ..stub({'msg': 'unavailable'}, statusCode: 503);
+      ..stub({'msg': 'unavailable'}, statusCode: 503, headers: headers);
     final client = AuthClient(
       url: authUrl,
       asyncStorage: TestAsyncStorage(),
@@ -50,6 +53,42 @@ void main() {
           ),
         ),
         3,
+      );
+    });
+
+    test('a Retry-After header replaces the backoff', () async {
+      expect(
+        await refreshAttemptsWith(
+          const SupabaseRetryOptions(
+            count: 1,
+            initialDelay: Duration(hours: 1),
+          ),
+          headers: {'retry-after': '0'},
+        ).timeout(const Duration(seconds: 5)),
+        2,
+      );
+    });
+
+    test('a Retry-After past the next tick stops the retries', () async {
+      expect(
+        await refreshAttemptsWith(
+          const SupabaseRetryOptions(initialDelay: Duration(milliseconds: 1)),
+          headers: {'retry-after': '3600'},
+        ),
+        1,
+      );
+    });
+
+    test('a Retry-After header is capped at maxDelay', () async {
+      expect(
+        await refreshAttemptsWith(
+          const SupabaseRetryOptions(
+            count: 1,
+            maxDelay: Duration(milliseconds: 10),
+          ),
+          headers: {'retry-after': '3600'},
+        ).timeout(const Duration(seconds: 5)),
+        2,
       );
     });
 

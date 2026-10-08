@@ -9,6 +9,8 @@ const _fast = SupabaseRetryOptions(
   randomizationFactor: 0,
 );
 
+const _fiftyMilliseconds = Duration(milliseconds: 50);
+
 void main() {
   group('retry', () {
     test('retries until success and counts attempts', () async {
@@ -129,6 +131,161 @@ void main() {
 
       await expectLater(result, throwsA(isA<RequestAbortedException>()));
       expect(attempts, 1);
+    });
+
+    test('retries a result retryIfResult rejects', () async {
+      var attempts = 0;
+      final result = await retry(
+        () => ++attempts,
+        options: _fast,
+        retryIfResult: (attempt) => attempt < 3,
+      );
+      expect(result, 3);
+    });
+
+    test('returns the rejected result once the retries run out', () async {
+      var attempts = 0;
+      final result = await retry(
+        () => ++attempts,
+        options: _fast.copyWith(count: 2),
+        retryIfResult: (attempt) => true,
+      );
+      expect(result, 3);
+    });
+
+    test('passes the rejected result to retryAfter', () async {
+      final outcomes = <Object>[];
+      var attempts = 0;
+      await retry(
+        () => ++attempts,
+        options: _fast,
+        retryIfResult: (attempt) => attempt < 2,
+        retryAfter: (outcome) {
+          outcomes.add(outcome);
+          return Duration.zero;
+        },
+      );
+      expect(outcomes, [1]);
+    });
+
+    test('waits the delay retryAfter returns instead of the backoff', () async {
+      var attempts = 0;
+      final stopwatch = Stopwatch()..start();
+      final result = await retry(
+        () async {
+          attempts++;
+          if (attempts < 2) throw const FormatException('fail');
+          return 'ok';
+        },
+        options: const SupabaseRetryOptions(initialDelay: Duration(hours: 1)),
+        retryAfter: (error) => const Duration(milliseconds: 50),
+      );
+      stopwatch.stop();
+
+      expect(result, 'ok');
+      expect(stopwatch.elapsed, greaterThanOrEqualTo(_fiftyMilliseconds));
+      expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)));
+    });
+
+    test('falls back to the backoff when retryAfter returns null', () async {
+      var attempts = 0;
+      final stopwatch = Stopwatch()..start();
+      await retry(
+        () async {
+          attempts++;
+          if (attempts < 2) throw const FormatException('fail');
+          return 'ok';
+        },
+        options: _fast.copyWith(initialDelay: _fiftyMilliseconds),
+        retryAfter: (error) => null,
+      );
+      stopwatch.stop();
+
+      expect(stopwatch.elapsed, greaterThanOrEqualTo(_fiftyMilliseconds));
+    });
+
+    test('caps the delay retryAfter returns at maxDelay', () async {
+      var attempts = 0;
+      final stopwatch = Stopwatch()..start();
+      await retry(
+        () async {
+          attempts++;
+          if (attempts < 2) throw const FormatException('fail');
+          return 'ok';
+        },
+        options: _fast.copyWith(maxDelay: _fiftyMilliseconds),
+        retryAfter: (error) => const Duration(hours: 1),
+      );
+      stopwatch.stop();
+
+      expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)));
+    });
+
+    test('an abort during a retryAfter delay ends the loop', () async {
+      final abortSignal = Completer<void>();
+      var attempts = 0;
+      final result = retry(
+        () async {
+          attempts++;
+          throw const FormatException('fail');
+        },
+        options: const SupabaseRetryOptions(maxDelay: Duration(hours: 1)),
+        retryAfter: (error) => const Duration(hours: 1),
+        abortSignal: abortSignal.future,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      abortSignal.complete();
+
+      await expectLater(result, throwsA(isA<RequestAbortedException>()));
+      expect(attempts, 1);
+    });
+  });
+
+  group('parseRetryAfter', () {
+    final now = DateTime.utc(2015, 10, 21, 7, 28);
+
+    test('reads a number of seconds', () {
+      expect(
+        parseRetryAfter({'retry-after': '3'}, now: now),
+        const Duration(seconds: 3),
+      );
+    });
+
+    test('matches the header name regardless of case', () {
+      expect(
+        parseRetryAfter({'Retry-After': ' 2 '}, now: now),
+        const Duration(seconds: 2),
+      );
+    });
+
+    test('reads an HTTP date in the future', () {
+      expect(
+        parseRetryAfter({
+          'retry-after': 'Wed, 21 Oct 2015 07:28:10 GMT',
+        }, now: now),
+        const Duration(seconds: 10),
+      );
+    });
+
+    test('ignores an HTTP date that is not in the future', () {
+      expect(
+        parseRetryAfter({
+          'retry-after': 'Wed, 21 Oct 2015 07:27:00 GMT',
+        }, now: now),
+        isNull,
+      );
+      expect(
+        parseRetryAfter({
+          'retry-after': 'Wed, 21 Oct 2015 07:28:00 GMT',
+        }, now: now),
+        isNull,
+      );
+    });
+
+    test('ignores a missing, negative or unparseable value', () {
+      expect(parseRetryAfter({}, now: now), isNull);
+      expect(parseRetryAfter({'retry-after': '-5'}, now: now), isNull);
+      expect(parseRetryAfter({'retry-after': 'soon'}, now: now), isNull);
     });
   });
 

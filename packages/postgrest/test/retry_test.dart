@@ -19,7 +19,7 @@ _ResponseFactory _ok() =>
       ),
     );
 
-_ResponseFactory _status(int code) =>
+_ResponseFactory _status(int code, {Map<String, String> headers = const {}}) =>
     (request) => Future.value(
       StreamedResponse(
         Stream.value(
@@ -27,7 +27,7 @@ _ResponseFactory _status(int code) =>
         ),
         code,
         request: request,
-        headers: {'content-type': 'application/json'},
+        headers: {'content-type': 'application/json', ...headers},
       ),
     );
 
@@ -365,6 +365,85 @@ void main() {
 
       expect(mock.callCount, 2);
       expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(300));
+    });
+
+    test('a Retry-After header replaces the backoff', () async {
+      final mock = _MockRetryClient(
+        [
+          _status(503, headers: {'retry-after': '0'}),
+          _ok(),
+        ],
+        responseLatency: (_) => Duration.zero,
+      );
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryOptions: const SupabaseRetryOptions(
+          count: 1,
+          initialDelay: Duration(hours: 1),
+        ),
+      );
+
+      final result = await client
+          .from('users')
+          .select()
+          .timeout(const Duration(seconds: 5));
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 2);
+    });
+
+    test('a Retry-After header is capped at maxDelay', () async {
+      final mock = _MockRetryClient(
+        [
+          _status(503, headers: {'retry-after': '3600'}),
+          _ok(),
+        ],
+        responseLatency: (_) => Duration.zero,
+      );
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryOptions: const SupabaseRetryOptions(
+          count: 1,
+          maxDelay: Duration(milliseconds: 10),
+        ),
+      );
+
+      final result = await client
+          .from('users')
+          .select()
+          .timeout(const Duration(seconds: 5));
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 2);
+    });
+
+    test('an abort during the backoff ends the request at once', () async {
+      final mock = _MockRetryClient(
+        [_status(520), _ok()],
+        responseLatency: (_) => Duration.zero,
+      );
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryOptions: const SupabaseRetryOptions(
+          initialDelay: Duration(hours: 1),
+          maxDelay: Duration(hours: 1),
+        ),
+      );
+      final abort = Completer<void>();
+      Timer(const Duration(milliseconds: 50), abort.complete);
+
+      await expectLater(
+        () => client
+            .from('users')
+            .select()
+            .abortSignal(abort.future)
+            .timeout(const Duration(seconds: 5)),
+        throwsA(isA<RequestAbortedException>()),
+      );
+      expect(mock.callCount, 1);
     });
 
     test('the client keeps the retry options it was given', () {
