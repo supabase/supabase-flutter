@@ -1272,13 +1272,12 @@ void main() {
         );
 
         final channel = socket.channel('realtime:test');
-        channel.onStatusChange.listen((change) {
-          if (change.status == RealtimeSubscribeStatus.subscribed &&
+        channel.subscribe((status, error) {
+          if (status == RealtimeSubscribeStatus.subscribed &&
               !subscribed.isCompleted) {
             subscribed.complete();
           }
         });
-        channel.subscribe();
 
         // The join is buffered while the socket is still connecting and the
         // token has not resolved yet, so it carries no access_token.
@@ -1312,6 +1311,75 @@ void main() {
         await streamController.close();
       },
     );
+  });
+
+  group('rejoin while a join is pending', () {
+    test('resends the join of an errored channel with a fresh ref', () async {
+      final streamController = StreamController<dynamic>.broadcast();
+      final joinFrames = StreamController<List<dynamic>>();
+      final subscribed = Completer<void>();
+
+      final mockedChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      when(() => mockedChannel.sink).thenReturn(mockedSink);
+      when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+      when(
+        () => mockedChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
+      when(
+        () => mockedSink.close(any(), any()),
+      ).thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => mockedSink.add(any())).thenAnswer((invocation) {
+        final raw = invocation.positionalArguments.first as String;
+        final frame = json.decode(raw) as List;
+        if (frame[3] == ChannelEvents.join.eventName()) {
+          joinFrames.add(frame);
+        }
+      });
+
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedChannel,
+      );
+      final joins = StreamIterator(joinFrames.stream);
+
+      final channel = socket.channel('realtime:test');
+      channel.subscribe((status, error) {
+        if (status == RealtimeSubscribeStatus.subscribed &&
+            !subscribed.isCompleted) {
+          subscribed.complete();
+        }
+      });
+
+      expect(await joins.moveNext(), isTrue);
+      final firstJoin = joins.current;
+
+      channel.trigger(ChannelEvents.error.eventName(), {});
+      expect(channel.isErrored, isTrue);
+      channel.rejoin();
+
+      expect(await joins.moveNext(), isTrue);
+      final resentJoin = joins.current;
+      expect(resentJoin[1], isNotEmpty, reason: 'resent join has no ref');
+      expect(resentJoin[1], isNot(firstJoin[1]));
+
+      streamController.add(
+        json.encode([
+          resentJoin[0],
+          resentJoin[1],
+          resentJoin[2],
+          ChannelEvents.reply.eventName(),
+          {'status': 'ok', 'response': <String, dynamic>{}},
+        ]),
+      );
+      await subscribed.future.timeout(const Duration(seconds: 5));
+      expect(channel.isJoined, isTrue);
+
+      await joins.cancel();
+      await socket.disconnect();
+      await streamController.close();
+    });
   });
 
   group('sendHeartbeat', () {
