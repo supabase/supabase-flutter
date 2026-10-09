@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v2.13.1`](#realtime_client---v2131)
+ - [`supabase` - `v2.16.3`](#supabase---v2163)
+ - [`supabase_flutter` - `v2.18.1`](#supabase_flutter---v2181)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.16.3`
+ - `supabase_flutter` - `v2.18.1`
+
+---
+
+#### `realtime_client` - `v2.13.1`
+
+ - **FIX**(realtime): resend joins with a fresh ref and remove only the given channel ([#1933](https://github.com/supabase/supabase-flutter/issues/1933)). ([5d1e2973](https://github.com/supabase/supabase-flutter/commit/5d1e29739b41a394eba77e337c41d07caa93d937))
+
+
 ## 2026-09-30
 
 ### Changes
