@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -23,6 +24,9 @@ class FunctionsClient {
   /// example a session token that is refreshed. Returning `null` sends no
   /// bearer token. A header passed to [invoke] still wins over it, so a single
   /// call can be made with a different token.
+  ///
+  /// [requestTimeout] bounds how long an invocation may go without progress,
+  /// see [invoke].
   FunctionsClient(
     String url,
     Map<String, String> headers, {
@@ -30,6 +34,7 @@ class FunctionsClient {
     AsyncJsonCodec? jsonCodec,
     String? region,
     Future<String?> Function()? accessToken,
+    Duration? requestTimeout,
   }) : assert(
          accessToken == null ||
              headers.header(HttpHeader.authorization) == null,
@@ -46,7 +51,8 @@ class FunctionsClient {
        _httpClient = accessToken == null
            ? httpClient
            : AccessTokenClient(accessToken, httpClient),
-       _region = region {
+       _region = region,
+       _requestTimeout = requestTimeout {
     functionsLogger.config(
       "Initialize FunctionsClient v$version with url "
       "'${Uri.parse(url).redacted}' and region "
@@ -60,6 +66,7 @@ class FunctionsClient {
   final AsyncJsonCodec _jsonCodec;
   final bool _ownsJsonCodec;
   final String? _region;
+  final Duration? _requestTimeout;
 
   /// The headers sent with every invocation, as an unmodifiable view.
   ///
@@ -134,6 +141,14 @@ class FunctionsClient {
   /// );
   /// ```
   ///
+  /// [requestTimeout] bounds how long the invocation may go without progress,
+  /// overriding the timeout the client was created with. The timer restarts
+  /// whenever a chunk of the request body is sent or a chunk of the response
+  /// arrives, also on a streamed response while it is being listened to. A
+  /// timed-out invocation is cancelled and throws a [FunctionsFetchException]
+  /// caused by a `TimeoutException`, or emits the `TimeoutException` on the
+  /// stream of a streamed response.
+  ///
   /// ```dart
   /// // Call a standard function
   /// final response = await supabase.functions.invoke('hello-world');
@@ -167,8 +182,10 @@ class FunctionsClient {
     HttpMethod method = HttpMethod.post,
     String? region,
     Future<void>? abortSignal,
+    Duration? requestTimeout,
   }) async {
     final effectiveRegion = region ?? _region;
+    final idleTimeout = IdleTimeout(requestTimeout ?? _requestTimeout);
 
     final effectiveQueryParameters = <String, dynamic>{
       ...?queryParameters,
@@ -200,19 +217,19 @@ class FunctionsClient {
       // No content type is set here: a multipart request generates its own
       // boundary while it is being finalized and sets the header itself.
       request =
-          http.AbortableMultipartRequest(
+          idleTimeout.multipartRequest(
               method.value,
               uri,
-              abortTrigger: abortSignal,
+              abortSignal: abortSignal,
             )
             ..headers.addAll(finalHeaders)
             ..fields.addAll(fields ?? {})
             ..files.addAll(files);
     } else {
-      final bodyRequest = http.AbortableRequest(
+      final bodyRequest = idleTimeout.request(
         method.value,
         uri,
-        abortTrigger: abortSignal,
+        abortSignal: abortSignal,
       )..headers.addAll(finalHeaders);
 
       if (body != null) {
@@ -245,7 +262,7 @@ class FunctionsClient {
     );
 
     final response = await _guardTransport(
-      () => request.sendWith(_httpClient),
+      () => idleTimeout.send(request, _httpClient),
     );
     final responseType = response.headers.mediaType ?? 'text/plain';
 
@@ -270,10 +287,10 @@ class FunctionsClient {
       rethrow;
     } catch (error) {
       // A body that stops arriving on a success status leaves the caller with
-      // nothing usable, so it is a transport failure. On an error status the
-      // status itself is the answer, so it is kept with the read error as the
-      // details.
-      if (isSuccessStatus) {
+      // nothing usable, so it is a transport failure, and so is a timeout on
+      // any status. Otherwise, on an error status the status itself is the
+      // answer, so it is kept with the read error as the details.
+      if (isSuccessStatus || error is TimeoutException) {
         throw FunctionsFetchException(
           message: 'Failed to read the response of the Edge Function',
           cause: error,

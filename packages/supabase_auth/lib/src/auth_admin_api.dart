@@ -45,8 +45,10 @@ class AuthAdminApi {
     this._url, {
     Map<String, String>? headers,
     Client? httpClient,
+    Duration? requestTimeout,
   }) : _headers = headers ?? {},
-       _httpClient = httpClient {
+       _httpClient = httpClient,
+       _requestTimeout = requestTimeout {
     mfa = AuthAdminMFAApi(
       url: _url,
       headers: _headers,
@@ -72,7 +74,8 @@ class AuthAdminApi {
   final Map<String, String> _headers;
 
   final Client? _httpClient;
-  late final AuthFetch _fetch = AuthFetch(_httpClient);
+  final Duration? _requestTimeout;
+  late final AuthFetch _fetch = AuthFetch(_httpClient, _requestTimeout);
 
   /// Contains all MFA factor administration methods.
   late final AuthAdminMFAApi mfa;

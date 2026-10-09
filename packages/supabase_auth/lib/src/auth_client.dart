@@ -75,6 +75,10 @@ class _SessionState {
 /// service is retried. A refresh also stops retrying once the next backoff
 /// would fall after the next refresh tick, so the count only caps how many
 /// attempts a short backoff can squeeze into that window.
+///
+/// [requestTimeout] bounds how long a request to the auth service may go
+/// without progress. A timed-out request is cancelled and throws an
+/// [AuthRetryableFetchException] caused by a `TimeoutException`.
 /// {@endtemplate}
 class AuthClient {
   /// {@macro auth_client}
@@ -89,6 +93,7 @@ class AuthClient {
     AuthFlowType flowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
+    Duration? requestTimeout,
   }) : assert(
          flowType != AuthFlowType.pkce || asyncStorage != null,
          'You need to provide asyncStorage to perform pkce flow. Pass a '
@@ -102,6 +107,7 @@ class AuthClient {
        _url = url ?? AuthConstants.defaultAuthUrl,
        _headers = {...AuthConstants.defaultHeaders, ...?headers},
        _httpClient = httpClient,
+       _requestTimeout = requestTimeout,
        _asyncStorage = asyncStorage,
        _persistSession = persistSession,
        _storageKey =
@@ -127,6 +133,7 @@ class AuthClient {
       authUrl,
       headers: _headers,
       httpClient: httpClient,
+      requestTimeout: requestTimeout,
     );
     oauth = AuthOAuthApi(client: this, fetch: _fetch);
     mfa = AuthMFAApi(client: this, fetch: _fetch);
@@ -165,7 +172,8 @@ class AuthClient {
   final String _url;
   final Map<String, String> _headers;
   final Client? _httpClient;
-  late final AuthFetch _fetch = AuthFetch(_httpClient);
+  final Duration? _requestTimeout;
+  late final AuthFetch _fetch = AuthFetch(_httpClient, _requestTimeout);
 
   late bool _autoRefreshToken;
 

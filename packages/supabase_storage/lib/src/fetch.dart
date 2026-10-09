@@ -14,8 +14,11 @@ import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 @internal
 class Fetch {
-  const Fetch([this.httpClient]);
+  const Fetch([this.httpClient, this.requestTimeout]);
   final Client? httpClient;
+
+  /// How long a request may go without progress, `null` for no limit.
+  final Duration? requestTimeout;
 
   MediaType _parseMediaType(String path) {
     final mime = lookupMimeType(path);
@@ -74,12 +77,15 @@ class Fetch {
     return StorageTransportException('Request failed: $error', cause: error);
   }
 
-  /// Sends [request], wrapping a failure to get a response in a
-  /// [StorageTransportException]. An abort and an exception the HTTP client
-  /// already classified keep their own type.
-  Future<http.StreamedResponse> _send(http.BaseRequest request) async {
+  /// Sends [request] under [idleTimeout], wrapping a failure to get a
+  /// response in a [StorageTransportException]. An abort and an exception the
+  /// HTTP client already classified keep their own type.
+  Future<http.StreamedResponse> _send(
+    http.BaseRequest request,
+    IdleTimeout idleTimeout,
+  ) async {
     try {
-      return await request.sendWith(httpClient);
+      return await idleTimeout.send(request, httpClient);
     } on http.RequestAbortedException {
       rethrow;
     } on SupabaseException {
@@ -92,9 +98,10 @@ class Fetch {
   /// Reads the body of [streamedResponse].
   ///
   /// A body that stops arriving on a success status leaves the caller with
-  /// nothing usable, so it is a [StorageTransportException]. On an error
-  /// status the status itself is the answer, so it is kept as a
-  /// [StorageApiException] naming the read error.
+  /// nothing usable, so it is a [StorageTransportException], and so is a
+  /// timeout on any status. Otherwise, on an error status the status itself is
+  /// the answer, so it is kept as a [StorageApiException] naming the read
+  /// error.
   Future<http.Response> _read(http.StreamedResponse streamedResponse) async {
     try {
       return await http.Response.fromStream(streamedResponse);
@@ -102,7 +109,8 @@ class Fetch {
       rethrow;
     } on Exception catch (error, stackTrace) {
       final url = streamedResponse.request?.url;
-      if (isSuccessStatusCode(streamedResponse.statusCode)) {
+      if (isSuccessStatusCode(streamedResponse.statusCode) ||
+          error is TimeoutException) {
         throw _transportException(url, error, stackTrace);
       }
       final exception = StorageApiException(
@@ -120,16 +128,17 @@ class Fetch {
     }
   }
 
-  http.AbortableRequest _createRequest(
+  http.Request _createRequest(
     HttpMethod method,
     String url,
     FetchOptions? options,
+    IdleTimeout idleTimeout,
     Future<void>? abortSignal,
   ) {
-    return http.AbortableRequest(
+    return idleTimeout.request(
       method.value,
       Uri.parse(url),
-      abortTrigger: abortSignal,
+      abortSignal: abortSignal,
     )..headers.addAll({...?options?.headers});
   }
 
@@ -140,7 +149,14 @@ class Fetch {
     FetchOptions? options, {
     Future<void>? abortSignal,
   }) async {
-    final request = _createRequest(method, url, options, abortSignal);
+    final idleTimeout = IdleTimeout(requestTimeout);
+    final request = _createRequest(
+      method,
+      url,
+      options,
+      idleTimeout,
+      abortSignal,
+    );
     if (method != HttpMethod.get) {
       request.headers.putIfAbsent(
         HttpHeader.contentType,
@@ -155,7 +171,7 @@ class Fetch {
       'Request: ${method.value} ${Uri.parse(url).redacted} '
       '${request.headers.redacted}',
     );
-    final streamedResponse = await _send(request);
+    final streamedResponse = await _send(request, idleTimeout);
     return _handleResponse(streamedResponse, options);
   }
 
@@ -201,16 +217,17 @@ class Fetch {
           'Request: attempt: $attempts ${method.value} '
           '${Uri.parse(url).redacted} ${headers.redacted}',
         );
+        final idleTimeout = IdleTimeout(requestTimeout);
         final request = _UploadRequest(
           method.value,
           Uri.parse(url),
-          createBody,
-          abortTrigger: abortSignal,
+          () => idleTimeout.watchRequestBody(createBody()),
+          abortTrigger: idleTimeout.abortTrigger(abortSignal),
         );
         request
           ..headers.addAll(headers)
           ..contentLength = contentLength;
-        return _send(request);
+        return _send(request, idleTimeout);
       },
       options: retryOptions,
       retryIf: (error) => error is StorageTransportException,
@@ -288,13 +305,20 @@ class Fetch {
     FetchOptions? options,
     Future<void>? abortSignal,
   }) async* {
-    final request = _createRequest(HttpMethod.get, url, options, abortSignal);
+    final idleTimeout = IdleTimeout(requestTimeout);
+    final request = _createRequest(
+      HttpMethod.get,
+      url,
+      options,
+      idleTimeout,
+      abortSignal,
+    );
 
     storageLogger.finest(
       'Request: GET (stream) ${Uri.parse(url).redacted} '
       '${request.headers.redacted}',
     );
-    final streamedResponse = await _send(request);
+    final streamedResponse = await _send(request, idleTimeout);
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {
       final response = await _read(streamedResponse);

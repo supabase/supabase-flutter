@@ -937,6 +937,103 @@ void main() {
       });
     });
 
+    group('Request timeout', () {
+      Matcher throwsTimeout() => throwsA(
+        isA<FunctionsFetchException>().having(
+          (error) => error.cause,
+          'cause',
+          isA<TimeoutException>(),
+        ),
+      );
+
+      test('cancels an invocation that makes no progress', () async {
+        final client = FunctionsClient(
+          '',
+          {},
+          httpClient: customHttpClient,
+          requestTimeout: const Duration(milliseconds: 50),
+        );
+
+        await expectLater(client.invoke('slow'), throwsTimeout());
+      });
+
+      test('a per-call timeout overrides the client one', () async {
+        final client = FunctionsClient(
+          '',
+          {},
+          httpClient: customHttpClient,
+          requestTimeout: const Duration(minutes: 5),
+        );
+
+        await expectLater(
+          client.invoke(
+            'slow',
+            requestTimeout: const Duration(milliseconds: 50),
+          ),
+          throwsTimeout(),
+        );
+      });
+
+      test('a caller abort keeps its own exception', () async {
+        await expectLater(
+          functionsCustomHttpClient.invoke(
+            'slow',
+            requestTimeout: const Duration(minutes: 5),
+            abortSignal: Future.delayed(
+              const Duration(milliseconds: 50),
+            ),
+          ),
+          throwsA(isA<RequestAbortedException>()),
+        );
+      });
+
+      test('times out an error response whose body stops arriving', () async {
+        final body = StreamController<List<int>>();
+        addTearDown(body.close);
+        final client = FunctionsClient(
+          '',
+          {},
+          httpClient: MockClient.streaming(
+            (request, _) async => StreamedResponse(
+              body.stream,
+              500,
+              request: request,
+              headers: {'Content-Type': 'application/json'},
+            ),
+          ),
+          requestTimeout: const Duration(milliseconds: 50),
+        );
+
+        await expectLater(client.invoke('function'), throwsTimeout());
+      });
+
+      test('fails a streamed response that stops arriving', () async {
+        final events = StreamController<List<int>>();
+        addTearDown(events.close);
+        final client = FunctionsClient(
+          '',
+          {},
+          httpClient: MockClient.streaming(
+            (request, _) async => StreamedResponse(
+              events.stream,
+              200,
+              request: request,
+              headers: {'Content-Type': 'text/event-stream'},
+            ),
+          ),
+          requestTimeout: const Duration(milliseconds: 50),
+        );
+
+        final response = await client.invoke('sse');
+        events.add(utf8.encode('a'));
+
+        await expectLater(
+          (response.data as Stream<List<int>>).toList(),
+          throwsA(isA<TimeoutException>()),
+        );
+      });
+    });
+
     group('Response content types', () {
       test('handles application/octet-stream response', () async {
         final response = await functionsCustomHttpClient.invoke('binary');

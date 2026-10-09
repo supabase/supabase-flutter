@@ -36,6 +36,14 @@ import 'trace_http_client.dart';
 /// Set the `retryOptions` field of [storageOptions] to configure how an upload
 /// to Supabase storage that failed due to a network interruption is retried.
 ///
+/// [requestTimeout] bounds how long a request to the database, auth, storage or
+/// functions service may go without progress. The timer restarts whenever a
+/// chunk of a request or response body moves, so a large transfer that keeps
+/// moving is not cut short, and a timed-out request is cancelled. The
+/// `requestTimeout` of [postgrestOptions], [authOptions], [storageOptions] and
+/// [functionsOptions] overrides it for that client. `null` (the default)
+/// applies no timeout.
+///
 /// [realtimeClientOptions] specifies different options you can pass to
 /// `RealtimeClient`.
 ///
@@ -76,6 +84,7 @@ class SupabaseClient {
     Map<String, String>? headers,
     Client? httpClient,
     AsyncJsonCodec? jsonCodec,
+    Duration? requestTimeout,
   }) : _supabaseKey = supabaseKey,
        _functionsOptions = functionsOptions,
        _restUrl = '$supabaseUrl/rest/v1',
@@ -84,6 +93,7 @@ class SupabaseClient {
        _storageUrl = '$supabaseUrl/storage/v1',
        _functionsUrl = '$supabaseUrl/functions/v1',
        _postgrestOptions = postgrestOptions,
+       _requestTimeout = requestTimeout,
        _headers = {
          ...SupabaseConstants.defaultHeaders,
          ...?headers,
@@ -115,10 +125,7 @@ class SupabaseClient {
     warnOnUnrecognizedApiKey(_supabaseKey);
     _rest = _initRestClient();
     functions = _initFunctionsClient();
-    storage = _initStorageClient(
-      storageOptions.retryOptions,
-      storageOptions.useNewHostname,
-    );
+    storage = _initStorageClient(storageOptions);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
       clientLogger.config(
@@ -133,6 +140,7 @@ class SupabaseClient {
   }
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
+  final Duration? _requestTimeout;
   final FunctionsClientOptions _functionsOptions;
 
   final String _restUrl;
@@ -367,6 +375,7 @@ class SupabaseClient {
       flowType: authOptions.authFlowType,
       appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
       retryOptions: authOptions.retryOptions,
+      requestTimeout: authOptions.requestTimeout ?? _requestTimeout,
     );
   }
 
@@ -378,7 +387,7 @@ class SupabaseClient {
       httpClient: _authHttpClient,
       jsonCodec: _jsonCodec,
       retryOptions: _postgrestOptions.retryOptions,
-      requestTimeout: _postgrestOptions.requestTimeout,
+      requestTimeout: _postgrestOptions.requestTimeout ?? _requestTimeout,
     );
   }
 
@@ -389,19 +398,20 @@ class SupabaseClient {
       httpClient: _functionsHttpClient,
       jsonCodec: _jsonCodec,
       region: _functionsOptions.region,
+      requestTimeout: _functionsOptions.requestTimeout ?? _requestTimeout,
     );
   }
 
   SupabaseStorageClient _initStorageClient(
-    SupabaseRetryOptions storageRetryOptions,
-    bool useNewHostname,
+    StorageClientOptions storageOptions,
   ) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
-      retryOptions: storageRetryOptions,
-      useNewHostname: useNewHostname,
+      retryOptions: storageOptions.retryOptions,
+      useNewHostname: storageOptions.useNewHostname,
+      requestTimeout: storageOptions.requestTimeout ?? _requestTimeout,
     );
   }
 

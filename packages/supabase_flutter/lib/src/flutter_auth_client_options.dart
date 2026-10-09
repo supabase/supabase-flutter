@@ -14,6 +14,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     super.storageKey,
     super.appendPkceFlowIdToRedirects,
     super.retryOptions,
+    super.requestTimeout,
     this.detectSessionInUri = true,
     this.detectSessionInUriPredicate,
     this.oauthLauncher = const UrlLauncherOAuthLauncher(),
@@ -53,6 +54,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     String? storageKey,
     bool? appendPkceFlowIdToRedirects,
     SupabaseRetryOptions? retryOptions,
+    Duration? requestTimeout,
     bool? detectSessionInUri,
     bool Function(Uri uri)? detectSessionInUriPredicate,
     OAuthLauncher? oauthLauncher,
@@ -66,6 +68,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       appendPkceFlowIdToRedirects:
           appendPkceFlowIdToRedirects ?? this.appendPkceFlowIdToRedirects,
       retryOptions: retryOptions ?? this.retryOptions,
+      requestTimeout: requestTimeout ?? this.requestTimeout,
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
       detectSessionInUriPredicate:
           detectSessionInUriPredicate ?? this.detectSessionInUriPredicate,

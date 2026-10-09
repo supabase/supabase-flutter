@@ -404,13 +404,15 @@ class PostgrestBuilder<T> implements Future<T> {
     retry: _retry.copyWith(enabled: enabled, count: count),
   );
 
-  /// Bounds how long a single attempt of this request may take, overriding the
-  /// timeout configured on [PostgrestClient].
+  /// Bounds how long a single attempt of this request may go without
+  /// progress, overriding the timeout configured on [PostgrestClient].
   ///
-  /// A timed-out attempt is retried like any other failure, and a
-  /// [PostgrestTransportException] whose cause is a [TimeoutException] is
-  /// thrown once the retries are exhausted. Use [abortSignal] to cancel the
-  /// request outright, which stops retrying immediately.
+  /// The timer restarts whenever a chunk of the response arrives, so a large
+  /// response that keeps arriving is not cut short. A timed-out attempt is
+  /// retried like any other failure, and a [PostgrestTransportException] whose
+  /// cause is a [TimeoutException] is thrown once the retries are exhausted.
+  /// Use [abortSignal] to cancel the request outright, which stops retrying
+  /// immediately.
   PostgrestBuilder<T> requestTimeout(Duration timeout) =>
       _copyWith(requestTimeout: timeout);
 
@@ -511,33 +513,18 @@ class PostgrestBuilder<T> implements Future<T> {
     final requestTimeout = _requestTimeout;
 
     Future<http.Response> send() async {
-      // The request timeout bounds each individual attempt. It is implemented
-      // on top of the abort mechanism so it actually cancels a stalled attempt
-      // instead of leaving it running. A timed-out attempt surfaces as a
-      // [PostgrestTransportException] so the retry loop treats it as a
-      // retryable failure, whereas the caller-provided [_abortSignal] keeps
-      // its [RequestAbortedException] and stops retries outright.
-      var timedOut = false;
-      Timer? timeoutTimer;
-      Future<void>? abortTrigger = _abortSignal;
-      if (requestTimeout != null) {
-        final timeoutCompleter = Completer<void>();
-        timeoutTimer = Timer(requestTimeout, () {
-          timedOut = true;
-          if (!timeoutCompleter.isCompleted) {
-            timeoutCompleter.complete();
-          }
-        });
-        final abortSignal = _abortSignal;
-        abortTrigger = abortSignal == null
-            ? timeoutCompleter.future
-            : Future.any([abortSignal, timeoutCompleter.future]);
-      }
-
-      final AbortableRequest request = AbortableRequest(
+      // The request timeout bounds how long each individual attempt may go
+      // without progress. It is implemented on top of the abort mechanism so
+      // it actually cancels a stalled attempt instead of leaving it running. A
+      // timed-out attempt surfaces as a [PostgrestTransportException] so the
+      // retry loop treats it as a retryable failure, whereas the
+      // caller-provided [_abortSignal] keeps its [RequestAbortedException] and
+      // stops retries outright.
+      final idleTimeout = IdleTimeout(requestTimeout);
+      final request = idleTimeout.request(
         method.value,
         _url,
-        abortTrigger: abortTrigger,
+        abortSignal: _abortSignal,
       );
       request.headers.addAll(execHeaders);
       switch (method) {
@@ -548,17 +535,21 @@ class PostgrestBuilder<T> implements Future<T> {
           break;
       }
       try {
-        final streamResponse = await request.sendWith(_httpClient);
+        final streamResponse = await idleTimeout.send(request, _httpClient);
         try {
           return await http.Response.fromStream(streamResponse);
         } on RequestAbortedException {
           rethrow;
         } on Exception catch (error) {
           // A body that stops arriving on a success status leaves the caller
-          // with nothing usable, so it is a transport failure. On an error
-          // status the status itself is the answer, so it is kept with the
-          // read error as the details.
-          if (isSuccessStatusCode(streamResponse.statusCode)) rethrow;
+          // with nothing usable, so it is a transport failure, and so is a
+          // timeout on any status. Otherwise, on an error status the status
+          // itself is the answer, so it is kept with the read error as the
+          // details.
+          if (isSuccessStatusCode(streamResponse.statusCode) ||
+              error is TimeoutException) {
+            rethrow;
+          }
           throw PostgrestApiException(
             message: 'Failed to read the response: $error',
             statusCode: streamResponse.statusCode,
@@ -568,22 +559,16 @@ class PostgrestBuilder<T> implements Future<T> {
           );
         }
       } on RequestAbortedException {
-        if (timedOut) {
-          throw PostgrestTransportException(
-            'Request timed out',
-            cause: TimeoutException('Request timed out', requestTimeout),
-          );
-        }
         rethrow;
       } on SupabaseException {
         rethrow;
+      } on TimeoutException catch (error) {
+        throw PostgrestTransportException('Request timed out', cause: error);
       } on Exception catch (error) {
         throw PostgrestTransportException(
           'Request failed: $error',
           cause: error,
         );
-      } finally {
-        timeoutTimer?.cancel();
       }
     }
 

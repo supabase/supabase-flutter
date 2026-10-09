@@ -554,6 +554,112 @@ void main() {
       expect(mock.callCount, 1);
     });
 
+    test('does not cut short a response body that keeps arriving', () async {
+      // The body takes 400ms in total, far beyond the timeout, but a chunk
+      // arrives every 40ms, so the attempt keeps making progress.
+      Stream<List<int>> body() async* {
+        yield '['.codeUnits;
+        for (var index = 0; index < 10; index++) {
+          await Future<void>.delayed(const Duration(milliseconds: 40));
+          yield '${index == 0 ? '' : ','}{"id":$index}'.codeUnits;
+        }
+        yield ']'.codeUnits;
+      }
+
+      final mock = _MockRetryClient(
+        [
+          (request) => Future.value(
+            StreamedResponse(
+              body(),
+              200,
+              request: request,
+              headers: {'content-type': 'application/json'},
+            ),
+          ),
+        ],
+        responseLatency: (_) => Duration.zero,
+      );
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        requestTimeout: const Duration(milliseconds: 100),
+      );
+
+      final result = await client.from('users').select();
+
+      expect(result, List.generate(10, (index) => {'id': index}));
+      expect(mock.callCount, 1);
+    });
+
+    test('times out a response body that stops arriving', () async {
+      final body = StreamController<List<int>>();
+      addTearDown(body.close);
+      final mock = _MockRetryClient(
+        [
+          (request) => Future.value(
+            StreamedResponse(
+              body.stream,
+              200,
+              request: request,
+              headers: {'content-type': 'application/json'},
+            ),
+          ),
+        ],
+        responseLatency: (_) => Duration.zero,
+      );
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryOptions: SupabaseRetryOptions(count: 0),
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+      body.add('[1'.codeUnits);
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
+      );
+    });
+
+    test('retries an error response whose body stops arriving', () async {
+      final body = StreamController<List<int>>();
+      addTearDown(body.close);
+      final mock = _MockRetryClient(
+        [
+          (request) => Future.value(
+            StreamedResponse(
+              body.stream,
+              503,
+              request: request,
+              headers: {'content-type': 'application/json'},
+            ),
+          ),
+          _ok(),
+        ],
+        responseLatency: (_) => Duration.zero,
+      );
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryOptions: SupabaseRetryOptions(
+          count: 1,
+          initialDelay: Duration.zero,
+        ),
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+
+      final result = await client.from('users').select();
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 2);
+    });
+
     test('.requestTimeout() overrides the timeout per request', () async {
       // The client has no timeout, but the per-request override adds one that
       // is shorter than every attempt, so each attempt times out and is

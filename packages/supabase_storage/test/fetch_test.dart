@@ -608,6 +608,98 @@ void main() {
     });
   });
 
+  group('request timeout', () {
+    late MockSupabaseHttpClient mockClient;
+
+    setUp(() {
+      mockClient = MockSupabaseHttpClient()..stubStall();
+    });
+
+    Matcher throwsTimeout() => throwsA(
+      isA<StorageTransportException>().having(
+        (error) => error.cause,
+        'cause',
+        isA<TimeoutException>(),
+      ),
+    );
+
+    test('cancels a request that makes no progress', () async {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+
+      await expectLater(
+        client.from('bucket').download('a.txt'),
+        throwsTimeout(),
+      );
+    });
+
+    test('times out an error response whose body stops arriving', () async {
+      final body = StreamController<List<int>>();
+      addTearDown(body.close);
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockClient.streaming(
+          (request, _) async => StreamedResponse(
+            body.stream,
+            500,
+            request: request,
+          ),
+        ),
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+
+      await expectLater(
+        client.from('bucket').download('a.txt'),
+        throwsTimeout(),
+      );
+    });
+
+    test('retries a timed-out upload attempt', () async {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+        requestTimeout: const Duration(milliseconds: 50),
+        retryOptions: const SupabaseRetryOptions(
+          count: 1,
+          initialDelay: Duration.zero,
+        ),
+      );
+
+      await expectLater(
+        client.from('bucket').uploadBinary('a.txt', Uint8List(3)),
+        throwsTimeout(),
+      );
+      expect(mockClient.requests, hasLength(2));
+    });
+
+    test('keeps a caller abort apart from the timeout', () async {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+        requestTimeout: const Duration(seconds: 5),
+      );
+
+      await expectLater(
+        client
+            .from('bucket')
+            .download(
+              'a.txt',
+              abortSignal: Future.delayed(
+                const Duration(milliseconds: 50),
+              ),
+            ),
+        throwsA(isA<RequestAbortedException>()),
+      );
+    });
+  });
+
   group('path normalization', () {
     test(
       'removes leading, trailing and duplicate slashes from the path',
