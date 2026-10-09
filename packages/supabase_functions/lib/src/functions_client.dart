@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -142,10 +143,11 @@ class FunctionsClient {
   ///
   /// [requestTimeout] bounds how long the invocation may go without progress,
   /// overriding the timeout the client was created with. The timer restarts
-  /// whenever a chunk of the response arrives, also on a streamed response
-  /// while it is being listened to. A timed-out invocation is cancelled and
-  /// throws a [FunctionsFetchException] caused by a `TimeoutException`, or
-  /// emits the `TimeoutException` on the stream of a streamed response.
+  /// whenever a chunk of the request body is sent or a chunk of the response
+  /// arrives, also on a streamed response while it is being listened to. A
+  /// timed-out invocation is cancelled and throws a [FunctionsFetchException]
+  /// caused by a `TimeoutException`, or emits the `TimeoutException` on the
+  /// stream of a streamed response.
   ///
   /// ```dart
   /// // Call a standard function
@@ -184,7 +186,6 @@ class FunctionsClient {
   }) async {
     final effectiveRegion = region ?? _region;
     final idleTimeout = IdleTimeout(requestTimeout ?? _requestTimeout);
-    final abortTrigger = idleTimeout.abortTrigger(abortSignal);
 
     final effectiveQueryParameters = <String, dynamic>{
       ...?queryParameters,
@@ -216,19 +217,19 @@ class FunctionsClient {
       // No content type is set here: a multipart request generates its own
       // boundary while it is being finalized and sets the header itself.
       request =
-          http.AbortableMultipartRequest(
+          idleTimeout.multipartRequest(
               method.value,
               uri,
-              abortTrigger: abortTrigger,
+              abortSignal: abortSignal,
             )
             ..headers.addAll(finalHeaders)
             ..fields.addAll(fields ?? {})
             ..files.addAll(files);
     } else {
-      final bodyRequest = http.AbortableRequest(
+      final bodyRequest = idleTimeout.request(
         method.value,
         uri,
-        abortTrigger: abortTrigger,
+        abortSignal: abortSignal,
       )..headers.addAll(finalHeaders);
 
       if (body != null) {
@@ -286,10 +287,10 @@ class FunctionsClient {
       rethrow;
     } catch (error) {
       // A body that stops arriving on a success status leaves the caller with
-      // nothing usable, so it is a transport failure. On an error status the
-      // status itself is the answer, so it is kept with the read error as the
-      // details.
-      if (isSuccessStatus) {
+      // nothing usable, so it is a transport failure, and so is a timeout on
+      // any status. Otherwise, on an error status the status itself is the
+      // answer, so it is kept with the read error as the details.
+      if (isSuccessStatus || error is TimeoutException) {
         throw FunctionsFetchException(
           message: 'Failed to read the response of the Edge Function',
           cause: error,

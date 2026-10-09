@@ -521,10 +521,10 @@ class PostgrestBuilder<T> implements Future<T> {
       // caller-provided [_abortSignal] keeps its [RequestAbortedException] and
       // stops retries outright.
       final idleTimeout = IdleTimeout(requestTimeout);
-      final AbortableRequest request = AbortableRequest(
+      final request = idleTimeout.request(
         method.value,
         _url,
-        abortTrigger: idleTimeout.abortTrigger(_abortSignal),
+        abortSignal: _abortSignal,
       );
       request.headers.addAll(execHeaders);
       switch (method) {
@@ -542,10 +542,14 @@ class PostgrestBuilder<T> implements Future<T> {
           rethrow;
         } on Exception catch (error) {
           // A body that stops arriving on a success status leaves the caller
-          // with nothing usable, so it is a transport failure. On an error
-          // status the status itself is the answer, so it is kept with the
-          // read error as the details.
-          if (isSuccessStatusCode(streamResponse.statusCode)) rethrow;
+          // with nothing usable, so it is a transport failure, and so is a
+          // timeout on any status. Otherwise, on an error status the status
+          // itself is the answer, so it is kept with the read error as the
+          // details.
+          if (isSuccessStatusCode(streamResponse.statusCode) ||
+              error is TimeoutException) {
+            rethrow;
+          }
           throw PostgrestApiException(
             message: 'Failed to read the response: $error',
             statusCode: streamResponse.statusCode,

@@ -637,6 +637,28 @@ void main() {
       );
     });
 
+    test('times out an error response whose body stops arriving', () async {
+      final body = StreamController<List<int>>();
+      addTearDown(body.close);
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockClient.streaming(
+          (request, _) async => StreamedResponse(
+            body.stream,
+            500,
+            request: request,
+          ),
+        ),
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+
+      await expectLater(
+        client.from('bucket').download('a.txt'),
+        throwsTimeout(),
+      );
+    });
+
     test('retries a timed-out upload attempt', () async {
       final client = SupabaseStorageClient(
         storageUrl,

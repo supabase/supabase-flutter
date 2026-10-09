@@ -987,6 +987,26 @@ void main() {
         );
       });
 
+      test('times out an error response whose body stops arriving', () async {
+        final body = StreamController<List<int>>();
+        addTearDown(body.close);
+        final client = FunctionsClient(
+          '',
+          {},
+          httpClient: MockClient.streaming(
+            (request, _) async => StreamedResponse(
+              body.stream,
+              500,
+              request: request,
+              headers: {'Content-Type': 'application/json'},
+            ),
+          ),
+          requestTimeout: const Duration(milliseconds: 50),
+        );
+
+        await expectLater(client.invoke('function'), throwsTimeout());
+      });
+
       test('fails a streamed response that stops arriving', () async {
         final events = StreamController<List<int>>();
         addTearDown(events.close);

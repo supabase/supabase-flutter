@@ -98,9 +98,10 @@ class Fetch {
   /// Reads the body of [streamedResponse].
   ///
   /// A body that stops arriving on a success status leaves the caller with
-  /// nothing usable, so it is a [StorageTransportException]. On an error
-  /// status the status itself is the answer, so it is kept as a
-  /// [StorageApiException] naming the read error.
+  /// nothing usable, so it is a [StorageTransportException], and so is a
+  /// timeout on any status. Otherwise, on an error status the status itself is
+  /// the answer, so it is kept as a [StorageApiException] naming the read
+  /// error.
   Future<http.Response> _read(http.StreamedResponse streamedResponse) async {
     try {
       return await http.Response.fromStream(streamedResponse);
@@ -108,7 +109,8 @@ class Fetch {
       rethrow;
     } on Exception catch (error, stackTrace) {
       final url = streamedResponse.request?.url;
-      if (isSuccessStatusCode(streamedResponse.statusCode)) {
+      if (isSuccessStatusCode(streamedResponse.statusCode) ||
+          error is TimeoutException) {
         throw _transportException(url, error, stackTrace);
       }
       final exception = StorageApiException(
@@ -126,17 +128,17 @@ class Fetch {
     }
   }
 
-  http.AbortableRequest _createRequest(
+  http.Request _createRequest(
     HttpMethod method,
     String url,
     FetchOptions? options,
     IdleTimeout idleTimeout,
     Future<void>? abortSignal,
   ) {
-    return http.AbortableRequest(
+    return idleTimeout.request(
       method.value,
       Uri.parse(url),
-      abortTrigger: idleTimeout.abortTrigger(abortSignal),
+      abortSignal: abortSignal,
     )..headers.addAll({...?options?.headers});
   }
 

@@ -217,19 +217,13 @@ class AuthFetch {
     required AuthRequestOptions? options,
     required Map<String, String> headers,
   }) async {
-    final bodyString = json.encode(options?.body ?? {});
-
-    if (method != HttpMethod.get && method != HttpMethod.head) {
-      headers[HttpHeader.contentType] = 'application/json';
-    }
     final idleTimeout = IdleTimeout(requestTimeout);
-    final request = AbortableRequest(
-      method.value,
-      uri,
-      abortTrigger: idleTimeout.abortTrigger(null),
-    )..headers.addAll(headers);
+    final request = idleTimeout.request(method.value, uri)
+      ..headers.addAll(headers);
     if (method != HttpMethod.get && method != HttpMethod.head) {
-      request.body = bodyString;
+      request
+        ..headers[HttpHeader.contentType] = 'application/json'
+        ..body = json.encode(options?.body ?? {});
     }
     Response response;
     try {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -8,7 +9,7 @@ import 'package:test/test.dart';
 /// Answers every request with [respond], after reading the request body the
 /// way a real client does.
 class _FakeClient extends BaseClient {
-  _FakeClient(this.respond, {this.honorAbort = true});
+  _FakeClient(this.respond, {this.honorAbort = true, this.sendTime});
 
   final Future<StreamedResponse> Function(BaseRequest request, List<int> body)
   respond;
@@ -16,6 +17,10 @@ class _FakeClient extends BaseClient {
   /// Whether an abort trigger fails the request, as the clients of
   /// `package:http` do.
   final bool honorAbort;
+
+  /// How long putting a chunk of the request body on the wire takes, `null`
+  /// to read the body at once.
+  final Duration Function(List<int> chunk)? sendTime;
 
   bool aborted = false;
 
@@ -34,10 +39,12 @@ class _FakeClient extends BaseClient {
         }
       }),
     );
-    final body = await request.finalize().fold<List<int>>(
-      [],
-      (bytes, chunk) => bytes..addAll(chunk),
-    );
+    final body = <int>[];
+    await for (final chunk in request.finalize()) {
+      final sendTime = this.sendTime;
+      if (sendTime != null) await Future<void>.delayed(sendTime(chunk));
+      body.addAll(chunk);
+    }
     return Future.any([respond(request, body), abortCompleter.future]);
   }
 }
@@ -184,6 +191,52 @@ void main() {
       final response = await idleTimeout.send(request, client);
 
       expect(await response.stream.bytesToString(), '01234567');
+    });
+
+    test('does not cut short a large body sent as one chunk', () async {
+      final idleTimeout = IdleTimeout(const Duration(milliseconds: 100));
+      final client = _FakeClient(
+        (_, body) async => StreamedResponse(Stream.value(body), 200),
+        sendTime: (chunk) => Duration(milliseconds: chunk.length ~/ 2048),
+      );
+      final request = idleTimeout.request('POST', _url)
+        ..bodyBytes = Uint8List(512 * 1024);
+
+      final response = await idleTimeout.send(request, client);
+
+      expect(await response.stream.toBytes(), hasLength(512 * 1024));
+      expect(idleTimeout.expired, isFalse);
+    });
+
+    test('stops the timer when the request fails', () async {
+      final idleTimeout = IdleTimeout(const Duration(milliseconds: 30));
+      final client = _FakeClient(
+        (_, _) => Future.error(ClientException('Connection refused', _url)),
+      );
+
+      await expectLater(
+        idleTimeout.send(idleTimeout.request('GET', _url), client),
+        throwsA(isA<ClientException>()),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+
+      expect(idleTimeout.expired, isFalse);
+    });
+
+    test('cancels a response body nobody listened to', () async {
+      final idleTimeout = IdleTimeout(const Duration(milliseconds: 50));
+      final cancelled = Completer<void>();
+      final body = StreamController<List<int>>(onCancel: cancelled.complete);
+      final client = _FakeClient(
+        (_, _) async => StreamedResponse(body.stream, 200),
+      );
+
+      await idleTimeout.send(idleTimeout.request('GET', _url), client);
+
+      await expectLater(
+        cancelled.future.timeout(const Duration(seconds: 1)),
+        completes,
+      );
     });
 
     test('pauses while the consumer of the body pauses', () async {
