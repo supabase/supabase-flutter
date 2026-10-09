@@ -11,11 +11,11 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// {@macro postgrest_typed_query_builder}
-  const PostgrestTypedQueryBuilder(
+  PostgrestTypedQueryBuilder(
     this.table, {
-    required PostgrestTableExecutor executor,
+    required PostgrestClient client,
     String? schema,
-  }) : _executor = executor,
+  }) : _executor = PostgrestHttpTableExecutor(client),
        _schema = schema,
        _options = null;
 

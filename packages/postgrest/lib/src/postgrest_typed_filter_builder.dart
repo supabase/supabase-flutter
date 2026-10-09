@@ -8,16 +8,16 @@ part of 'postgrest_typed_builder.dart';
 class PostgrestTypedFilterBuilder<Row, T>
     extends PostgrestTypedTransformBuilder<Row, T> {
   const PostgrestTypedFilterBuilder._(
-    super.request,
+    super._request,
     super.executor,
     super.convert,
     super.rowFromJson,
   ) : super._();
 
   PostgrestTypedFilterBuilder<Row, T> _filtered(
-    PostgrestTableRequest request,
+    PostgrestTableRequest changed,
   ) => PostgrestTypedFilterBuilder._(
-    request,
+    changed,
     _executor,
     _convert,
     _rowFromJson,
@@ -27,19 +27,19 @@ class PostgrestTypedFilterBuilder<Row, T>
   PostgrestTypedFilterBuilder<Row, T> retry({
     bool enabled = true,
     int? count,
-  }) => _filtered(request._retry(enabled, count));
+  }) => _filtered(_request._retry(enabled, count));
 
   @override
   PostgrestTypedFilterBuilder<Row, T> requestTimeout(Duration timeout) =>
-      _filtered(request._requestTimeout(timeout));
+      _filtered(_request._requestTimeout(timeout));
 
   @override
   PostgrestTypedFilterBuilder<Row, T> abortSignal(Future<void> abortSignal) =>
-      _filtered(request._abortSignal(abortSignal));
+      _filtered(_request._abortSignal(abortSignal));
 
   @override
   PostgrestTypedFilterBuilder<Row, T> setHeader(String key, String value) =>
-      _filtered(request._header(key, value));
+      _filtered(_request._header(key, value));
 
   /// Only rows satisfying [filter].
   ///
@@ -65,9 +65,9 @@ class PostgrestTypedFilterBuilder<Row, T>
   ///
   /// Repeated [where] calls combine with logical AND.
   PostgrestTypedFilterBuilder<Row, T> where(PostgrestFilter<Row> filter) {
-    final current = request.filter;
+    final current = _request.filter;
     return _filtered(
-      request.copyWith(filter: current == null ? filter : current & filter),
+      _request.copyWith(filter: current == null ? filter : current & filter),
     );
   }
 }
