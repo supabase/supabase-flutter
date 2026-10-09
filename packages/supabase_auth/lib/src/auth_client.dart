@@ -1204,8 +1204,9 @@ class AuthClient {
     final userResponse = UserResponse.fromJson(response);
 
     final session = currentSession;
-    if (session != null) {
-      _saveSession(session.copyWith(user: userResponse.user));
+    final user = userResponse.user;
+    if (session != null && user != null && session.user.id == user.id) {
+      _saveSession(session.copyWith(user: user));
       notifyAllSubscribers(AuthChangeEvent.userUpdated);
     }
 
