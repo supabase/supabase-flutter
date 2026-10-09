@@ -41,8 +41,6 @@ SupabaseClient testSupabaseClient({
   String url = 'http://localhost:54321',
   String? apiKey,
   bool autoRefreshToken = false,
-  // ignore: experimental_member_use
-  List<SupabaseClientPlugin> plugins = const [],
 }) {
   return SupabaseClient(
     url,
@@ -53,7 +51,6 @@ SupabaseClient testSupabaseClient({
       asyncStorage: MemoryAuthAsyncStorage(),
     ),
     realtimeClientOptions: RealtimeClientOptions(transport: realtime?.call),
-    plugins: plugins,
   );
 }
 

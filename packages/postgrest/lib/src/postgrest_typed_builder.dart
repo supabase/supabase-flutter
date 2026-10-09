@@ -229,24 +229,22 @@ extension PostgrestTypedRowsBuilder<Row, Element>
 
 /// A typed PostgREST request that can be awaited.
 ///
-/// Holds the [request] the builder methods have collected so far and the
-/// [PostgrestTableExecutor] that runs it. Awaiting the builder executes the
-/// request and converts the result into [T], so awaiting it never exposes raw
-/// `Map<String, dynamic>` data.
+/// Holds the request the builder methods have collected so far. Awaiting the
+/// builder executes the request and converts the result into [T], so
+/// awaiting it never exposes raw `Map<String, dynamic>` data.
 @experimental
 class PostgrestTypedBuilder<T> implements Future<T> {
-  const PostgrestTypedBuilder._(this.request, this._executor, this._convert);
+  const PostgrestTypedBuilder._(this._request, this._executor, this._convert);
 
-  /// The request awaiting this builder executes.
-  final PostgrestTableRequest request;
+  final PostgrestTableRequest _request;
 
   final PostgrestTableExecutor _executor;
   final _ResultConverter<T> _convert;
 
-  /// Runs [request] on the executor, routing a synchronous throw into the
+  /// Runs [_request] on the executor, routing a synchronous throw into the
   /// returned future so the [Future] contract holds for every executor.
   Future<T> _execute() =>
-      Future.sync(() => _executor.execute(request)).then(_convert);
+      Future.sync(() => _executor.execute(_request)).then(_convert);
 
   PostgrestTypedBuilder<T> _with(PostgrestTableRequest changed) =>
       PostgrestTypedBuilder._(changed, _executor, _convert);
@@ -255,7 +253,7 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   ///
   /// See [PostgrestBuilder.retry] for [enabled] and [count].
   PostgrestTypedBuilder<T> retry({bool enabled = true, int? count}) =>
-      _with(request._retry(enabled, count));
+      _with(_request._retry(enabled, count));
 
   /// Bounds how long a single attempt of this request may take, overriding
   /// the timeout configured on [PostgrestClient].
@@ -263,7 +261,7 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   /// Unlike [timeout], which only stops waiting for the result, this cancels
   /// the attempt. See [PostgrestBuilder.requestTimeout].
   PostgrestTypedBuilder<T> requestTimeout(Duration timeout) =>
-      _with(request._requestTimeout(timeout));
+      _with(_request._requestTimeout(timeout));
 
   /// Cancels the request when [abortSignal] completes, throwing a
   /// [RequestAbortedException] and stopping any retries.
@@ -278,11 +276,11 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   ///
   /// See [PostgrestBuilder.abortSignal].
   PostgrestTypedBuilder<T> abortSignal(Future<void> abortSignal) =>
-      _with(request._abortSignal(abortSignal));
+      _with(_request._abortSignal(abortSignal));
 
   /// Sets [key] to [value] in the headers of this request.
   PostgrestTypedBuilder<T> setHeader(String key, String value) =>
-      _with(request._header(key, value));
+      _with(_request._header(key, value));
 
   /// A broadcast stream of the one result. The request runs when the first
   /// listener subscribes, so a listener added later still receives it.

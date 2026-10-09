@@ -168,9 +168,9 @@ not wrap untyped builders. Each method returns a copy holding an immutable `Post
 that describes the query as structured values (operation, columns, filter, orderings, payload, and
 `PostgrestRequestOptions` for headers, retry, timeout and abort signal). Awaiting the builder hands
 the request to a `PostgrestTableExecutor` and converts the `PostgrestTableResult` into the table's
-`Row` type. The default `PostgrestHttpTableExecutor` renders the request through the untyped
-builders at execution time, so both APIs send the same wire request; another executor (a
-`SupabaseClientPlugin` can wrap it) may cache, queue or answer from a local store instead.
+`Row` type. `PostgrestHttpTableExecutor` renders the request through the untyped builders at
+execution time, so both APIs send the same wire request. These types are internal to the postgrest
+package and not exported.
 
 ### Realtime Architecture
 
