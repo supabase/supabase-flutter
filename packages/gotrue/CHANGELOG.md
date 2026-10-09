@@ -1,3 +1,7 @@
+## 2.27.3
+
+ - **FIX**(gotrue): only apply an updateUser response to the session of the same user ([#1937](https://github.com/supabase/supabase-flutter/issues/1937)). ([f79f1e25](https://github.com/supabase/supabase-flutter/commit/f79f1e25db818aa91ce8f82005275794aba19d5a))
+
 ## 2.27.2
 
  - **FIX**(gotrue): parse expires_in as num in Session.fromJson ([#1719](https://github.com/supabase/supabase-flutter/issues/1719)). ([6c8047ee](https://github.com/supabase/supabase-flutter/commit/6c8047eefb82c76936a14eebe281276526e3037c))

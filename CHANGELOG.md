@@ -15,6 +15,36 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`gotrue` - `v2.27.3`](#gotrue---v2273)
+ - [`supabase` - `v2.16.4`](#supabase---v2164)
+ - [`supabase_flutter` - `v2.18.2`](#supabase_flutter---v2182)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.16.4`
+ - `supabase_flutter` - `v2.18.2`
+
+---
+
+#### `gotrue` - `v2.27.3`
+
+ - **FIX**(gotrue): only apply an updateUser response to the session of the same user ([#1937](https://github.com/supabase/supabase-flutter/issues/1937)). ([f79f1e25](https://github.com/supabase/supabase-flutter/commit/f79f1e25db818aa91ce8f82005275794aba19d5a))
+
+
+## 2026-10-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`realtime_client` - `v2.13.1`](#realtime_client---v2131)
  - [`supabase` - `v2.16.3`](#supabase---v2163)
  - [`supabase_flutter` - `v2.18.1`](#supabase_flutter---v2181)
