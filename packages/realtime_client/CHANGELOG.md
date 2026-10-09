@@ -1,3 +1,7 @@
+## 2.13.1
+
+ - **FIX**(realtime): resend joins with a fresh ref and remove only the given channel ([#1933](https://github.com/supabase/supabase-flutter/issues/1933)). ([5d1e2973](https://github.com/supabase/supabase-flutter/commit/5d1e29739b41a394eba77e337c41d07caa93d937))
+
 ## 2.13.0
 
  - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))

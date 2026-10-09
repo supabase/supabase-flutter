@@ -1,3 +1,7 @@
+## 2.18.1
+
+ - Update a dependency to the latest release.
+
 ## 2.18.0
 
  - **FEAT**(supabase_flutter): add RealtimeLifecycleOptions to delay or skip the realtime disconnect on pause ([#1900](https://github.com/supabase/supabase-flutter/issues/1900)). ([ea93c9a6](https://github.com/supabase/supabase-flutter/commit/ea93c9a6c3b19ad0adc6b8c32df27f36948ae714))
