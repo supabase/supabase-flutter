@@ -2240,6 +2240,10 @@ are checked against the column types at compile time, and writes only accept the
 and update types. `from()` keeps working, and both can be used on one client, so a codebase can move
 over one table at a time.
 
+Requests made through `table()` run through the executor that `SupabaseClientPlugin`s wrap, so
+features built as plugins, such as offline support, only apply to them. Requests made through
+`from()` bypass every plugin.
+
 The typed API is marked `@experimental` while it settles. Referencing an experimental type such as
 `PostgrestFilter` directly reports `experimental_member_use`, which an
 `// ignore_for_file: experimental_member_use` silences; the generated file already carries it.

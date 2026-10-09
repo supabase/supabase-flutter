@@ -165,12 +165,21 @@ class PostgrestClient {
   ///     .select()
   ///     .where(Books.id.gt(10));
   /// ```
+  ///
+  /// The builder collects a [PostgrestTableRequest] and hands it to
+  /// [executor] when awaited; without one the request is sent to PostgREST
+  /// through this client by a [PostgrestHttpTableExecutor].
   @experimental
   PostgrestTypedQueryBuilder<Row, Insert, Update> table<Row, Insert, Update>(
-    PostgrestTable<Row, Insert, Update> table,
-  ) {
+    PostgrestTable<Row, Insert, Update> table, {
+    PostgrestTableExecutor? executor,
+  }) {
     final schema = _schemaIsExplicit ? _schema : (table.schema ?? _schema);
-    return PostgrestTypedQueryBuilder(table, client: this, schema: schema);
+    return PostgrestTypedQueryBuilder(
+      table,
+      executor: executor ?? PostgrestHttpTableExecutor(this),
+      schema: schema,
+    );
   }
 
   /// Select a schema to query or perform an function (rpc) call.

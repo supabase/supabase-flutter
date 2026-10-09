@@ -13,13 +13,13 @@ class SupabaseTypedQueryBuilder<Row, Insert, Update>
   // The query builder is also kept as a field to expose [stream], so it
   // cannot become a super parameter.
   // ignore: use_super_parameters
-  SupabaseTypedQueryBuilder(
+  const SupabaseTypedQueryBuilder(
     SupabaseQueryBuilder queryBuilder,
     PostgrestTable<Row, Insert, Update> table, {
-    required PostgrestClient client,
+    required PostgrestTableExecutor executor,
     String? schema,
   }) : _queryBuilder = queryBuilder,
-       super(table, client: client, schema: schema);
+       super(table, executor: executor, schema: schema);
 
   final SupabaseQueryBuilder _queryBuilder;
 

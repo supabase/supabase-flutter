@@ -14,17 +14,6 @@ export 'package:yet_another_json_isolate/yet_another_json_isolate.dart'
 
 export 'src/postgrest.dart';
 export 'src/postgrest_builder.dart';
-export 'src/postgrest_typed_builder.dart'
-    hide
-        PostgrestEmbeddedPage,
-        PostgrestExplainOptions,
-        PostgrestHttpTableExecutor,
-        PostgrestRequestOptions,
-        PostgrestResultShape,
-        PostgrestTableExecutor,
-        PostgrestTableOperation,
-        PostgrestTableRequest,
-        PostgrestTableResult,
-        renderPostgrestQueryValue;
+export 'src/postgrest_typed_builder.dart' hide renderPostgrestQueryValue;
 export 'src/types.dart';
 export 'package:http/http.dart' show RequestAbortedException;

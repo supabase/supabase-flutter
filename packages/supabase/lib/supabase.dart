@@ -12,6 +12,7 @@ export 'package:supabase_storage/supabase_storage.dart';
 export 'src/realtime_client_options.dart';
 export 'src/supabase_client.dart';
 export 'src/supabase_client_options.dart';
+export 'src/supabase_client_plugin.dart';
 export 'src/supabase_query_builder.dart';
 export 'src/supabase_query_schema.dart';
 export 'src/supabase_stream_builder.dart';

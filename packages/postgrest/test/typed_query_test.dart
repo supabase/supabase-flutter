@@ -974,7 +974,7 @@ void main() {
       expect(requestParameters()['id'], 'eq.1');
     });
 
-    test('update and delete start unscoped and keep the row type', () async {
+    test('update and delete start unscoped and keep the row type', () {
       final PostgrestTypedUnscopedBuilder<Book> update = client
           .table(Books.table)
           .update(BookUpdate(title: 'b'));
@@ -987,14 +987,9 @@ void main() {
       );
       final PostgrestTypedFilterBuilder<Book, void> scopedDelete = delete.all();
 
+      expect(scopedUpdate.request.filter, isNotNull);
+      expect(scopedDelete.request.filter, isNull);
       expect(httpClient.requests, isEmpty);
-
-      httpClient.stub(null);
-      await scopedUpdate;
-      await scopedDelete;
-
-      expect(httpClient.requests.first.url.queryParameters['id'], 'eq.1');
-      expect(httpClient.requests.last.url.queryParameters, isEmpty);
     });
 
     test('all() updates every row without a filter', () async {
