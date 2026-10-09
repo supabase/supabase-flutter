@@ -612,6 +612,32 @@ void main() {
       final foundChannel = mockedSocket.channels[0];
       expect(foundChannel, channel2);
     });
+
+    test('keeps the other channels when none of them have joined', () {
+      // Channels that have never subscribed all share the empty join ref, so
+      // matching on it removed every one of them at once.
+      final socket = RealtimeClient(socketEndpoint);
+      final channel1 = socket.channel('topic-1');
+      socket.channel('topic-2');
+      socket.channel('topic-3');
+
+      socket.remove(channel1);
+
+      expect(
+        socket.channels.map((channel) => channel.topic),
+        ['realtime:topic-2', 'realtime:topic-3'],
+      );
+    });
+
+    test('removes only the given channel when topics are duplicated', () {
+      final socket = RealtimeClient(socketEndpoint);
+      final channel1 = socket.channel('topic');
+      final channel2 = socket.channel('topic');
+
+      socket.remove(channel1);
+
+      expect(socket.channels, [channel2]);
+    });
   });
 
   group('deferred disconnect', () {
@@ -1210,7 +1236,8 @@ void main() {
         final streamController = StreamController<dynamic>.broadcast();
         final readyCompleter = Completer<void>();
         final capturedMessages = <String>[];
-        final joinSent = Completer<Map<dynamic, dynamic>>();
+        final joinSent = Completer<List<dynamic>>();
+        final subscribed = Completer<void>();
 
         final mockedChannel = MockIOWebSocketChannel();
         final mockedSink = MockWebSocketSink();
@@ -1231,7 +1258,7 @@ void main() {
           final frame = json.decode(raw) as List;
           if (frame[3] == ChannelEvents.join.eventName() &&
               !joinSent.isCompleted) {
-            joinSent.complete(frame[4] as Map);
+            joinSent.complete(frame);
           }
         });
 
@@ -1245,7 +1272,12 @@ void main() {
         );
 
         final channel = socket.channel('realtime:test');
-        channel.subscribe();
+        channel.subscribe((status, error) {
+          if (status == RealtimeSubscribeStatus.subscribed &&
+              !subscribed.isCompleted) {
+            subscribed.complete();
+          }
+        });
 
         // The join is buffered while the socket is still connecting and the
         // token has not resolved yet, so it carries no access_token.
@@ -1255,18 +1287,99 @@ void main() {
         // Once the connection is ready the token is resolved and the buffered
         // join is re-sent with the token patched into its payload.
         readyCompleter.complete();
-        final joinPayload = await joinSent.future.timeout(
+        final joinFrame = await joinSent.future.timeout(
           const Duration(seconds: 5),
         );
 
         expect(tokenCallbackCalls, greaterThan(0));
         expect(socket.accessToken, token);
-        expect(joinPayload['access_token'], token);
+        expect((joinFrame[4] as Map)['access_token'], token);
+        expect(joinFrame[1], isNotEmpty, reason: 'resent join has no ref');
+
+        streamController.add(
+          json.encode([
+            joinFrame[0],
+            joinFrame[1],
+            joinFrame[2],
+            'phx_reply',
+            {'status': 'ok', 'response': <String, dynamic>{}},
+          ]),
+        );
+        await subscribed.future.timeout(const Duration(seconds: 5));
 
         await socket.disconnect();
         await streamController.close();
       },
     );
+  });
+
+  group('rejoin while a join is pending', () {
+    test('resends the join of an errored channel with a fresh ref', () async {
+      final streamController = StreamController<dynamic>.broadcast();
+      final joinFrames = StreamController<List<dynamic>>();
+      final subscribed = Completer<void>();
+
+      final mockedChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      when(() => mockedChannel.sink).thenReturn(mockedSink);
+      when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+      when(
+        () => mockedChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
+      when(
+        () => mockedSink.close(any(), any()),
+      ).thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => mockedSink.add(any())).thenAnswer((invocation) {
+        final raw = invocation.positionalArguments.first as String;
+        final frame = json.decode(raw) as List;
+        if (frame[3] == ChannelEvents.join.eventName()) {
+          joinFrames.add(frame);
+        }
+      });
+
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedChannel,
+      );
+      final joins = StreamIterator(joinFrames.stream);
+
+      final channel = socket.channel('realtime:test');
+      channel.subscribe((status, error) {
+        if (status == RealtimeSubscribeStatus.subscribed &&
+            !subscribed.isCompleted) {
+          subscribed.complete();
+        }
+      });
+
+      expect(await joins.moveNext(), isTrue);
+      final firstJoin = joins.current;
+
+      channel.trigger(ChannelEvents.error.eventName(), {});
+      expect(channel.isErrored, isTrue);
+      channel.rejoin();
+
+      expect(await joins.moveNext(), isTrue);
+      final resentJoin = joins.current;
+      expect(resentJoin[1], isNotEmpty, reason: 'resent join has no ref');
+      expect(resentJoin[1], isNot(firstJoin[1]));
+
+      streamController.add(
+        json.encode([
+          resentJoin[0],
+          resentJoin[1],
+          resentJoin[2],
+          ChannelEvents.reply.eventName(),
+          {'status': 'ok', 'response': <String, dynamic>{}},
+        ]),
+      );
+      await subscribed.future.timeout(const Duration(seconds: 5));
+      expect(channel.isJoined, isTrue);
+
+      await joins.cancel();
+      await socket.disconnect();
+      await streamController.close();
+    });
   });
 
   group('sendHeartbeat', () {
