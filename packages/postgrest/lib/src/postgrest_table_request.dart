@@ -162,7 +162,6 @@ final class PostgrestRequestOptions {
 /// else, against a local store for example, because the filters, orderings
 /// and payload are still structured values rather than URL text.
 @experimental
-@internal
 final class PostgrestTableRequest {
   PostgrestTableRequest({
     required this.table,

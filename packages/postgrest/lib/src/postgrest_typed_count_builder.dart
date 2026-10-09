@@ -15,7 +15,7 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 final class PostgrestTypedCountBuilder<Row> extends PostgrestTypedBuilder<int> {
   const PostgrestTypedCountBuilder._(
-    super._request,
+    super.request,
     super.executor,
     super.convert,
   ) : super._();
@@ -26,28 +26,28 @@ final class PostgrestTypedCountBuilder<Row> extends PostgrestTypedBuilder<int> {
 
   @override
   PostgrestTypedCountBuilder<Row> retry({bool enabled = true, int? count}) =>
-      _with(_request._retry(enabled, count));
+      _with(request._retry(enabled, count));
 
   @override
   PostgrestTypedCountBuilder<Row> requestTimeout(Duration timeout) =>
-      _with(_request._requestTimeout(timeout));
+      _with(request._requestTimeout(timeout));
 
   @override
   PostgrestTypedCountBuilder<Row> abortSignal(Future<void> abortSignal) =>
-      _with(_request._abortSignal(abortSignal));
+      _with(request._abortSignal(abortSignal));
 
   @override
   PostgrestTypedCountBuilder<Row> setHeader(String key, String value) =>
-      _with(_request._header(key, value));
+      _with(request._header(key, value));
 
   /// Only counts rows satisfying [filter].
   ///
   /// See [PostgrestTypedFilterBuilder.where] for composing filters. Repeated
   /// [where] calls combine with logical AND.
   PostgrestTypedCountBuilder<Row> where(PostgrestFilter<Row> filter) {
-    final current = _request.filter;
+    final current = request.filter;
     return _with(
-      _request.copyWith(filter: current == null ? filter : current & filter),
+      request.copyWith(filter: current == null ? filter : current & filter),
     );
   }
 }
