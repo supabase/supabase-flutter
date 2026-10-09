@@ -921,8 +921,11 @@ class GoTrueClient {
     );
     final userResponse = UserResponse.fromJson(response);
 
-    _currentSession = currentSession?.copyWith(user: userResponse.user);
-    notifyAllSubscribers(AuthChangeEvent.userUpdated);
+    final session = currentSession;
+    if (session == null || session.user.id == userResponse.user?.id) {
+      _currentSession = session?.copyWith(user: userResponse.user);
+      notifyAllSubscribers(AuthChangeEvent.userUpdated);
+    }
 
     return userResponse;
   }
