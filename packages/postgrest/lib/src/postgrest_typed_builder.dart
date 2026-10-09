@@ -255,8 +255,8 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   PostgrestTypedBuilder<T> retry({bool enabled = true, int? count}) =>
       _with(_request._retry(enabled, count));
 
-  /// Bounds how long a single attempt of this request may take, overriding
-  /// the timeout configured on [PostgrestClient].
+  /// Bounds how long a single attempt of this request may go without
+  /// progress, overriding the timeout configured on [PostgrestClient].
   ///
   /// Unlike [timeout], which only stops waiting for the result, this cancels
   /// the attempt. See [PostgrestBuilder.requestTimeout].

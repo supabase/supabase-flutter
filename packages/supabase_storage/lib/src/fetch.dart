@@ -14,8 +14,11 @@ import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 @internal
 class Fetch {
-  const Fetch([this.httpClient]);
+  const Fetch([this.httpClient, this.requestTimeout]);
   final Client? httpClient;
+
+  /// How long a request may go without progress, `null` for no limit.
+  final Duration? requestTimeout;
 
   MediaType _parseMediaType(String path) {
     final mime = lookupMimeType(path);
@@ -74,12 +77,15 @@ class Fetch {
     return StorageTransportException('Request failed: $error', cause: error);
   }
 
-  /// Sends [request], wrapping a failure to get a response in a
-  /// [StorageTransportException]. An abort and an exception the HTTP client
-  /// already classified keep their own type.
-  Future<http.StreamedResponse> _send(http.BaseRequest request) async {
+  /// Sends [request] under [idleTimeout], wrapping a failure to get a
+  /// response in a [StorageTransportException]. An abort and an exception the
+  /// HTTP client already classified keep their own type.
+  Future<http.StreamedResponse> _send(
+    http.BaseRequest request,
+    IdleTimeout idleTimeout,
+  ) async {
     try {
-      return await request.sendWith(httpClient);
+      return await idleTimeout.send(request, httpClient);
     } on http.RequestAbortedException {
       rethrow;
     } on SupabaseException {
@@ -124,12 +130,13 @@ class Fetch {
     HttpMethod method,
     String url,
     FetchOptions? options,
+    IdleTimeout idleTimeout,
     Future<void>? abortSignal,
   ) {
     return http.AbortableRequest(
       method.value,
       Uri.parse(url),
-      abortTrigger: abortSignal,
+      abortTrigger: idleTimeout.abortTrigger(abortSignal),
     )..headers.addAll({...?options?.headers});
   }
 
@@ -140,7 +147,14 @@ class Fetch {
     FetchOptions? options, {
     Future<void>? abortSignal,
   }) async {
-    final request = _createRequest(method, url, options, abortSignal);
+    final idleTimeout = IdleTimeout(requestTimeout);
+    final request = _createRequest(
+      method,
+      url,
+      options,
+      idleTimeout,
+      abortSignal,
+    );
     if (method != HttpMethod.get) {
       request.headers.putIfAbsent(
         HttpHeader.contentType,
@@ -155,7 +169,7 @@ class Fetch {
       'Request: ${method.value} ${Uri.parse(url).redacted} '
       '${request.headers.redacted}',
     );
-    final streamedResponse = await _send(request);
+    final streamedResponse = await _send(request, idleTimeout);
     return _handleResponse(streamedResponse, options);
   }
 
@@ -201,16 +215,17 @@ class Fetch {
           'Request: attempt: $attempts ${method.value} '
           '${Uri.parse(url).redacted} ${headers.redacted}',
         );
+        final idleTimeout = IdleTimeout(requestTimeout);
         final request = _UploadRequest(
           method.value,
           Uri.parse(url),
-          createBody,
-          abortTrigger: abortSignal,
+          () => idleTimeout.watchRequestBody(createBody()),
+          abortTrigger: idleTimeout.abortTrigger(abortSignal),
         );
         request
           ..headers.addAll(headers)
           ..contentLength = contentLength;
-        return _send(request);
+        return _send(request, idleTimeout);
       },
       options: retryOptions,
       retryIf: (error) => error is StorageTransportException,
@@ -288,13 +303,20 @@ class Fetch {
     FetchOptions? options,
     Future<void>? abortSignal,
   }) async* {
-    final request = _createRequest(HttpMethod.get, url, options, abortSignal);
+    final idleTimeout = IdleTimeout(requestTimeout);
+    final request = _createRequest(
+      HttpMethod.get,
+      url,
+      options,
+      idleTimeout,
+      abortSignal,
+    );
 
     storageLogger.finest(
       'Request: GET (stream) ${Uri.parse(url).redacted} '
       '${request.headers.redacted}',
     );
-    final streamedResponse = await _send(request);
+    final streamedResponse = await _send(request, idleTimeout);
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {
       final response = await _read(streamedResponse);

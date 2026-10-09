@@ -2556,8 +2556,10 @@ features:
     symbols:
       - FunctionsClientOptions.region
   functions.invocation.timeout:
-    status: not_applicable
-    note: "A genuine timeout that aborts the in-flight request is already expressible as `invoke(..., abortSignal: Future.delayed(duration))` via functions.invocation.request_cancellation, so a dedicated timeout option would add no capability over that."
+    status: implemented
+    symbols:
+      - FunctionsClient.invoke
+      - FunctionsClientOptions.requestTimeout
   functions.invocation.request_cancellation:
     status: implemented
     symbols:
@@ -2706,6 +2708,7 @@ supporting_symbols:
   - AuthApiException.headers
   - AuthClientOptions
   - AuthClientOptions.AuthClientOptions
+  - AuthClientOptions.requestTimeout
   - AuthException
   - AuthException.==
   - AuthException.AuthException
@@ -3074,6 +3077,7 @@ supporting_symbols:
   - StorageBucketApi.url
   - StorageClientOptions
   - StorageClientOptions.StorageClientOptions
+  - StorageClientOptions.requestTimeout
   - StorageClientOptions.useNewHostname
   - StorageCredential
   - StorageCredential.StorageCredential

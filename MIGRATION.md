@@ -38,6 +38,8 @@ explicitly:
   so on `dart:io` platforms a client installed with `runWithClient` is no longer picked up
 - [A request that gets no response throws a transport exception](#a-request-that-gets-no-response-throws-a-transport-exception),
   so a catch of `ClientException` or `TimeoutException` around a query or upload no longer matches
+- [The request timeout bounds idle time, not the whole request](#the-request-timeout-bounds-idle-time-not-the-whole-request),
+  so a response that keeps arriving can take longer than `requestTimeout`
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
@@ -1777,6 +1779,32 @@ postgrestOptions: const PostgrestClientOptions(
     randomizationFactor: 0,
   ),
 ),
+```
+
+### The request timeout bounds idle time, not the whole request
+
+`requestTimeout` used to be a deadline for a whole PostgREST attempt, however much of the response
+had already arrived. It now bounds how long an attempt may go without progress: the timer restarts
+whenever a chunk of the response arrives, so a large result that keeps arriving is no longer cut
+short. A request that stalls is cancelled just as before. The same option is now also available on
+auth, storage and functions, and as a default for all of them on `SupabaseClient`:
+
+```dart
+final supabase = SupabaseClient(
+  supabaseUrl,
+  supabaseKey,
+  requestTimeout: const Duration(seconds: 30),
+  storageOptions: const StorageClientOptions(
+    requestTimeout: Duration(minutes: 2),
+  ),
+);
+```
+
+To cap the total time a query may take, use `timeout()` on the builder, which stops waiting for
+the result without cancelling the request:
+
+```dart
+await supabase.from('countries').select().timeout(const Duration(seconds: 10));
 ```
 
 ### The retried status codes are no longer configurable

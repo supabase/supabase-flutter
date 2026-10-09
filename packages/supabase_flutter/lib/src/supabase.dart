@@ -76,6 +76,10 @@ class Supabase {
   /// `storageOptions.retryOptions` configures how an upload to Supabase
   /// storage that failed due to a network interruption is retried.
   ///
+  /// [requestTimeout] bounds how long a request to the database, auth,
+  /// storage or functions service may go without progress, unless the options
+  /// of that client set their own. See [SupabaseClient] for details.
+  ///
   /// [realtimeLifecycleOptions] controls how the realtime socket follows the
   /// app lifecycle. By default it is disconnected as soon as the app is paused
   /// and reconnected, with every joined channel rejoined, when the app is
@@ -111,6 +115,7 @@ class Supabase {
     TracePropagationOptions? tracePropagationOptions,
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
+    Duration? requestTimeout,
   }) async {
     if (_instance._isInitialized) {
       flutterLogger.info(
@@ -140,6 +145,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      requestTimeout: requestTimeout,
     );
 
     if (accessToken == null) {
@@ -290,6 +296,7 @@ class Supabase {
     required TracePropagationOptions? tracePropagationOptions,
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
+    required Duration? requestTimeout,
   }) {
     _realtimeLifecycleOptions = realtimeLifecycleOptions;
     final headers = {
@@ -308,6 +315,7 @@ class Supabase {
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
       jsonCodec: jsonCodec,
+      requestTimeout: requestTimeout,
     );
 
     // Close any previous realtime client that may still be connected due to

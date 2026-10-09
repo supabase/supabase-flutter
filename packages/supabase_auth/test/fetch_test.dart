@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/fetch.dart';
@@ -68,6 +70,47 @@ void main() {
           statusCode: 400,
         );
       await _testFetchRequest(client);
+    });
+  });
+
+  group('AuthFetch request timeout', () {
+    test('cancels a request that makes no progress', () async {
+      final client = MockSupabaseHttpClient()..stubStall();
+
+      await expectLater(
+        AuthFetch(
+          client,
+          const Duration(milliseconds: 50),
+        ).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthRetryableFetchException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
+      );
+    });
+
+    test('reaches every request of the auth client', () async {
+      final client = MockSupabaseHttpClient()..stubStall();
+      final auth = AuthClient(
+        url: _mockUrl,
+        httpClient: client,
+        autoRefreshToken: false,
+        asyncStorage: MemoryAuthAsyncStorage(),
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+      addTearDown(auth.dispose);
+
+      await expectLater(
+        auth.signInWithPassword(email: 'a@b.c', password: 'secret'),
+        throwsA(isA<AuthRetryableFetchException>()),
+      );
+      await expectLater(
+        auth.admin.listUsers(),
+        throwsA(isA<AuthRetryableFetchException>()),
+      );
     });
   });
 

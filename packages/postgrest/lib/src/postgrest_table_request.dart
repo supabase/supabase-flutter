@@ -131,8 +131,9 @@ final class PostgrestRequestOptions {
   /// [PostgrestClient.retryOptions].
   final int? retryCount;
 
-  /// How long a single attempt may take, or `null` for the client's
-  /// [PostgrestClient.requestTimeout], see [PostgrestBuilder.requestTimeout].
+  /// How long a single attempt may go without progress, or `null` for the
+  /// client's [PostgrestClient.requestTimeout], see
+  /// [PostgrestBuilder.requestTimeout].
   final Duration? requestTimeout;
 
   /// Cancels the request when it completes, see [PostgrestBuilder.abortSignal].

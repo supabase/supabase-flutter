@@ -10,8 +10,9 @@ class StorageBucketApi {
     this.url,
     Map<String, String> headers, {
     Client? httpClient,
+    Duration? requestTimeout,
   }) : _headers = {...headers} {
-    storageFetch = Fetch(httpClient);
+    storageFetch = Fetch(httpClient, requestTimeout);
   }
 
   /// The storage endpoint requests are sent to.

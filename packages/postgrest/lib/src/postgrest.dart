@@ -126,8 +126,8 @@ class PostgrestClient {
   /// Configures the automatic retry of GET and HEAD requests.
   final SupabaseRetryOptions retryOptions;
 
-  /// Bounds how long a single request attempt may take, `null` for no
-  /// timeout.
+  /// Bounds how long a single request attempt may go without progress,
+  /// `null` for no timeout.
   final Duration? requestTimeout;
 
   /// Perform a table operation.

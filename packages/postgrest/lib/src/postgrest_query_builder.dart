@@ -287,7 +287,7 @@ class PostgrestQueryBuilder {
   }
 
   /// Bounds how long a single attempt of the requests built by this builder
-  /// may take.
+  /// may go without progress.
   ///
   /// See [PostgrestBuilder.requestTimeout].
   PostgrestQueryBuilder requestTimeout(Duration timeout) {

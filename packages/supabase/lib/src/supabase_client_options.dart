@@ -18,13 +18,14 @@ class PostgrestClientOptions {
   /// Use `PostgrestBuilder.retry` to override it for a single request.
   final SupabaseRetryOptions retryOptions;
 
-  /// Bounds how long a single request attempt may take.
+  /// Bounds how long a single request attempt may go without progress,
+  /// overriding the `requestTimeout` of `SupabaseClient`.
   ///
-  /// Implemented on top of the abort mechanism, so it actually cancels a
-  /// stalled attempt instead of leaving it running. A timed-out attempt is
-  /// retried like any other failure, and a `TimeoutException` is thrown once
-  /// the retries are exhausted. When `null` (the default) no timeout is
-  /// applied.
+  /// The timer restarts whenever a chunk of the response arrives, and a
+  /// timed-out attempt is cancelled and retried like any other failure. A
+  /// `PostgrestTransportException` caused by a `TimeoutException` is thrown
+  /// once the retries are exhausted. Use `PostgrestBuilder.requestTimeout` to
+  /// override it for a single request.
   final Duration? requestTimeout;
 }
 
@@ -38,6 +39,7 @@ class AuthClientOptions {
     this.authFlowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
+    this.requestTimeout,
   });
 
   /// Whether an expiring session is refreshed automatically in the
@@ -50,6 +52,13 @@ class AuthClientOptions {
   /// next refresh tick, so the count only caps how many attempts a short
   /// backoff can squeeze into that window.
   final SupabaseRetryOptions retryOptions;
+
+  /// Bounds how long a request to the auth service may go without progress,
+  /// overriding the `requestTimeout` of `SupabaseClient`.
+  ///
+  /// A timed-out request is cancelled and throws an
+  /// `AuthRetryableFetchException` caused by a `TimeoutException`.
+  final Duration? requestTimeout;
 
   /// Storage for the session and the code verifiers of the pkce flow.
   ///
@@ -106,6 +115,7 @@ class StorageClientOptions {
   const StorageClientOptions({
     this.retryOptions = const SupabaseRetryOptions(count: 0),
     this.useNewHostname = false,
+    this.requestTimeout,
   });
 
   /// Configures how an upload that failed due to a network interruption is
@@ -123,14 +133,29 @@ class StorageClientOptions {
   /// enabled; otherwise every storage request will fail with an
   /// `Invalid Storage request` error. Defaults to `false` (opt-in).
   final bool useNewHostname;
+
+  /// Bounds how long a request to the storage service may go without
+  /// progress, overriding the `requestTimeout` of `SupabaseClient`.
+  ///
+  /// The timer restarts whenever a chunk of an upload is sent or a chunk of a
+  /// download arrives, so a large transfer that keeps moving is not cut short.
+  /// A timed-out request is cancelled and throws a
+  /// `StorageTransportException` caused by a `TimeoutException`. A timed-out
+  /// upload attempt is retried according to [retryOptions].
+  final Duration? requestTimeout;
 }
 
 /// Configuration for the Edge Functions client used by
 /// `SupabaseClient.functions`.
 class FunctionsClientOptions {
-  const FunctionsClientOptions({this.region});
+  const FunctionsClientOptions({this.region, this.requestTimeout});
 
   /// The region to invoke functions in by default, overridable per call with
   /// `FunctionsClient.invoke`'s own `region` parameter.
   final String? region;
+
+  /// Bounds how long an invocation may go without progress, overriding the
+  /// `requestTimeout` of `SupabaseClient`, overridable per call with
+  /// `FunctionsClient.invoke`'s own `requestTimeout` parameter.
+  final Duration? requestTimeout;
 }

@@ -10,8 +10,11 @@ import 'package:supabase_common/supabase_common.dart';
 
 @internal
 class AuthFetch {
-  const AuthFetch([this.httpClient]);
+  const AuthFetch([this.httpClient, this.requestTimeout]);
   final Client? httpClient;
+
+  /// How long a request may go without progress, `null` for no limit.
+  final Duration? requestTimeout;
 
   String _getErrorMessage(dynamic error) {
     if (error is Map) {
@@ -219,34 +222,22 @@ class AuthFetch {
     if (method != HttpMethod.get && method != HttpMethod.head) {
       headers[HttpHeader.contentType] = 'application/json';
     }
+    final idleTimeout = IdleTimeout(requestTimeout);
+    final request = AbortableRequest(
+      method.value,
+      uri,
+      abortTrigger: idleTimeout.abortTrigger(null),
+    )..headers.addAll(headers);
+    if (method != HttpMethod.get && method != HttpMethod.head) {
+      request.body = bodyString;
+    }
     Response response;
     try {
-      response = await switch (method) {
-        HttpMethod.get => (httpClient?.get ?? get)(uri, headers: headers),
-        HttpMethod.head => (httpClient?.head ?? head)(uri, headers: headers),
-        HttpMethod.post => (httpClient?.post ?? post)(
-          uri,
-          headers: headers,
-          body: bodyString,
-        ),
-        HttpMethod.put => (httpClient?.put ?? put)(
-          uri,
-          headers: headers,
-          body: bodyString,
-        ),
-        HttpMethod.patch => (httpClient?.patch ?? patch)(
-          uri,
-          headers: headers,
-          body: bodyString,
-        ),
-        HttpMethod.delete => (httpClient?.delete ?? delete)(
-          uri,
-          headers: headers,
-          body: bodyString,
-        ),
-      };
+      response = await Response.fromStream(
+        await idleTimeout.send(request, httpClient),
+      );
     } catch (error) {
-      // fetch failed, likely due to a network or CORS error
+      // fetch failed, likely due to a network or CORS error, or it timed out
       throw AuthRetryableFetchException(
         message: error.toString(),
         cause: error,

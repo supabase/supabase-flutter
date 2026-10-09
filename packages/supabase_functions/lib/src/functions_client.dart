@@ -23,6 +23,9 @@ class FunctionsClient {
   /// example a session token that is refreshed. Returning `null` sends no
   /// bearer token. A header passed to [invoke] still wins over it, so a single
   /// call can be made with a different token.
+  ///
+  /// [requestTimeout] bounds how long an invocation may go without progress,
+  /// see [invoke].
   FunctionsClient(
     String url,
     Map<String, String> headers, {
@@ -30,6 +33,7 @@ class FunctionsClient {
     AsyncJsonCodec? jsonCodec,
     String? region,
     Future<String?> Function()? accessToken,
+    Duration? requestTimeout,
   }) : assert(
          accessToken == null ||
              headers.header(HttpHeader.authorization) == null,
@@ -46,7 +50,8 @@ class FunctionsClient {
        _httpClient = accessToken == null
            ? httpClient
            : AccessTokenClient(accessToken, httpClient),
-       _region = region {
+       _region = region,
+       _requestTimeout = requestTimeout {
     functionsLogger.config(
       "Initialize FunctionsClient v$version with url "
       "'${Uri.parse(url).redacted}' and region "
@@ -60,6 +65,7 @@ class FunctionsClient {
   final AsyncJsonCodec _jsonCodec;
   final bool _ownsJsonCodec;
   final String? _region;
+  final Duration? _requestTimeout;
 
   /// The headers sent with every invocation, as an unmodifiable view.
   ///
@@ -134,6 +140,13 @@ class FunctionsClient {
   /// );
   /// ```
   ///
+  /// [requestTimeout] bounds how long the invocation may go without progress,
+  /// overriding the timeout the client was created with. The timer restarts
+  /// whenever a chunk of the response arrives, also on a streamed response
+  /// while it is being listened to. A timed-out invocation is cancelled and
+  /// throws a [FunctionsFetchException] caused by a `TimeoutException`, or
+  /// emits the `TimeoutException` on the stream of a streamed response.
+  ///
   /// ```dart
   /// // Call a standard function
   /// final response = await supabase.functions.invoke('hello-world');
@@ -167,8 +180,11 @@ class FunctionsClient {
     HttpMethod method = HttpMethod.post,
     String? region,
     Future<void>? abortSignal,
+    Duration? requestTimeout,
   }) async {
     final effectiveRegion = region ?? _region;
+    final idleTimeout = IdleTimeout(requestTimeout ?? _requestTimeout);
+    final abortTrigger = idleTimeout.abortTrigger(abortSignal);
 
     final effectiveQueryParameters = <String, dynamic>{
       ...?queryParameters,
@@ -203,7 +219,7 @@ class FunctionsClient {
           http.AbortableMultipartRequest(
               method.value,
               uri,
-              abortTrigger: abortSignal,
+              abortTrigger: abortTrigger,
             )
             ..headers.addAll(finalHeaders)
             ..fields.addAll(fields ?? {})
@@ -212,7 +228,7 @@ class FunctionsClient {
       final bodyRequest = http.AbortableRequest(
         method.value,
         uri,
-        abortTrigger: abortSignal,
+        abortTrigger: abortTrigger,
       )..headers.addAll(finalHeaders);
 
       if (body != null) {
@@ -245,7 +261,7 @@ class FunctionsClient {
     );
 
     final response = await _guardTransport(
-      () => request.sendWith(_httpClient),
+      () => idleTimeout.send(request, _httpClient),
     );
     final responseType = response.headers.mediaType ?? 'text/plain';
 

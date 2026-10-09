@@ -40,6 +40,13 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// only if your project has the dedicated storage host enabled; otherwise
   /// every storage request will fail with an `Invalid Storage request` error.
   /// Defaults to `false` (opt-in).
+  ///
+  /// [requestTimeout] bounds how long a request may go without progress. The
+  /// timer restarts whenever a chunk of an upload is sent or a chunk of a
+  /// download arrives, so a large transfer that keeps moving is not cut short.
+  /// A timed-out request is cancelled and throws a [StorageTransportException]
+  /// caused by a `TimeoutException`, and a timed-out upload attempt is retried
+  /// according to [retryOptions].
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {
@@ -47,6 +54,7 @@ class SupabaseStorageClient extends StorageBucketApi {
     this.retryOptions = const SupabaseRetryOptions(count: 0),
     bool useNewHostname = false,
     Future<String?> Function()? accessToken,
+    super.requestTimeout,
   }) : assert(
          accessToken == null ||
              headers.header(HttpHeader.authorization) == null,
