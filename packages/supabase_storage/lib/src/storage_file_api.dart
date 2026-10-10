@@ -61,6 +61,16 @@ class StorageFileApi {
     return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
   }
 
+  /// Normalizes a `listPaginated` prefix like an object path, but keeps a
+  /// trailing `/`.
+  ///
+  /// The server matches the prefix as a plain string: `folder/` lists what is
+  /// inside `folder`, while `folder` also matches `folder.png` and, with a
+  /// delimiter, returns `folder/` itself as a single folder entry.
+  String _normalizePrefix(String prefix) {
+    return prefix.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/'), '');
+  }
+
   FetchOptions get _fetchOptions => FetchOptions(_headers);
 
   UploadResponse _uploadResponse(String cleanPath, Map<String, dynamic> data) {
@@ -1019,7 +1029,7 @@ class StorageFileApi {
     final body = options.toMap();
     final prefix = body['prefix'] as String?;
     if (prefix != null) {
-      body['prefix'] = _removeEmptyFolders(prefix);
+      body['prefix'] = _normalizePrefix(prefix);
     }
     final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/list-v2/$bucketId',
