@@ -227,22 +227,6 @@ void main() {
         expect(body['prefix'], 'folder/file.txt');
       });
 
-      test('by listPaginated, in the request body', () async {
-        mockClient.stub({
-          'hasNext': false,
-          'objects': <dynamic>[],
-        });
-
-        await client
-            .from('bucket')
-            .listPaginated(
-              options: PaginatedSearchOptions(prefix: path),
-            );
-
-        final body = requestBody() as Map<String, dynamic>;
-        expect(body['prefix'], 'folder/file.txt');
-      });
-
       test('by uploadBinaryToSignedUrl, including the returned path', () async {
         mockClient.stub({
           'Key': 'bucket/folder/file.txt',
@@ -264,4 +248,38 @@ void main() {
       });
     });
   }
+
+  // The server matches a list-v2 prefix as a plain string, so a trailing `/`
+  // changes the result and has to be kept.
+  group('listPaginated prefix', () {
+    const prefixes = {
+      '/folder/file.txt': 'folder/file.txt',
+      'folder//file.txt': 'folder/file.txt',
+      'folder/': 'folder/',
+      'folder//': 'folder/',
+      '//folder//sub//': 'folder/sub/',
+      '/': '',
+    };
+
+    for (final MapEntry(key: prefix, value: expected) in prefixes.entries) {
+      test('"$prefix" is sent as "$expected"', () async {
+        mockClient.stub({
+          'hasNext': false,
+          'objects': <dynamic>[],
+        });
+
+        await client
+            .from('bucket')
+            .listPaginated(
+              options: PaginatedSearchOptions(
+                prefix: prefix,
+                withDelimiter: true,
+              ),
+            );
+
+        final body = requestBody() as Map<String, dynamic>;
+        expect(body['prefix'], expected);
+      });
+    }
+  });
 }
