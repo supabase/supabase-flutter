@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
@@ -66,5 +67,47 @@ void main() {
       () => client.getClaims('${parts[0]}.$forgedPayload.${parts[2]}'),
       throwsA(isA<AuthInvalidJwtException>()),
     );
+  });
+
+  test('getClaims() reuses the cached JWKS within its TTL', () async {
+    final token = _signEs256({'sub': 'user-id'});
+    final start = DateTime(2026, 10, 11, 12);
+
+    await withClock(Clock.fixed(start), () => client.getClaims(token));
+    await withClock(
+      Clock.fixed(start.add(const Duration(minutes: 9))),
+      () => client.getClaims(token),
+    );
+
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
+    expect(mockClient.requestsTo('/user'), isEmpty);
+  });
+
+  test('getClaims() refetches the JWKS once its TTL has passed', () async {
+    final token = _signEs256({'sub': 'user-id'});
+    final start = DateTime(2026, 10, 11, 12);
+    await withClock(Clock.fixed(start), () => client.getClaims(token));
+    mockClient
+      ..stub({
+        'keys': [
+          {..._publicJwk, 'kid': 'es256-rotated-key'},
+        ],
+      }, path: '/.well-known/jwks.json')
+      ..stub(
+        {'code': 'bad_jwt', 'msg': 'invalid JWT: signed with a revoked key'},
+        path: '/user',
+        statusCode: 401,
+      );
+
+    await expectLater(
+      () => withClock(
+        Clock.fixed(start.add(const Duration(minutes: 11))),
+        () => client.getClaims(token),
+      ),
+      throwsA(isA<AuthApiException>()),
+    );
+
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
+    expect(mockClient.requestsTo('/user'), hasLength(1));
   });
 }

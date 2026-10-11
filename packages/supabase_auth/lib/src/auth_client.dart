@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
@@ -2240,13 +2241,8 @@ class AuthClient {
     return exception;
   }
 
-  Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
-    final jwk = suppliedJwks.keys.firstWhereOrNull((key) => key.keyId == kid);
-    if (jwk != null) {
-      return jwk;
-    }
-
-    final now = DateTime.now();
+  Future<JWK?> _fetchJwk(String kid) async {
+    final now = clock.now();
 
     final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.keyId == kid);
 
@@ -2322,10 +2318,7 @@ class AuthClient {
         (decoded.header.algorithm.startsWith('HS') ||
             decoded.header.keyId == null)
         ? null
-        : await _fetchJwk(
-            decoded.header.keyId!,
-            _jwks ?? JWKSet(keys: []),
-          );
+        : await _fetchJwk(decoded.header.keyId!);
 
     // If symmetric algorithm, fallback to getUser()
     if (signingKey == null) {
