@@ -191,6 +191,7 @@ class AuthClient {
 
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
+  Future<JWKSet>? _pendingJwksFetch;
 
   /// When the JWKS used by [getClaims] was last fetched.
   @internal
@@ -2250,18 +2251,29 @@ class AuthClient {
   }
 
   Future<JWK?> _fetchJwk(String kid) async {
-    final now = DateTime.now();
-
-    final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.keyId == kid);
-
-    if (cachedJwk != null &&
-        _jwksCachedAt != null &&
-        _jwksCachedAt!.add(AuthConstants.jwksTtl).isAfter(now)) {
-      return cachedJwk;
+    final cachedAt = _jwksCachedAt;
+    if (cachedAt != null) {
+      final age = DateTime.now().difference(cachedAt);
+      final cachedJwk = _jwks?.keys.firstWhereOrNull(
+        (key) => key.keyId == kid,
+      );
+      if (cachedJwk != null && age < AuthConstants.jwksTtl) {
+        return cachedJwk;
+      }
+      if (cachedJwk == null &&
+          age < AuthConstants.jwksUnknownKeyRefetchInterval) {
+        return null;
+      }
     }
 
-    // jwk isn't cached in memory so we need to fetch it from the well-known
-    // endpoint
+    final jwks = await (_pendingJwksFetch ??= _fetchJwks().whenComplete(
+      () => _pendingJwksFetch = null,
+    ));
+    return jwks.keys.firstWhereOrNull((key) => key.keyId == kid);
+  }
+
+  Future<JWKSet> _fetchJwks() async {
+    final fetchedAt = DateTime.now();
     final jwksResponse = await _fetch.request(
       '$_url/.well-known/jwks.json',
       HttpMethod.get,
@@ -2269,15 +2281,11 @@ class AuthClient {
     );
 
     final jwks = JWKSet.fromJson(jwksResponse as Map<String, dynamic>);
-
-    if (jwks.keys.isEmpty) {
-      return null;
+    if (jwks.keys.isNotEmpty) {
+      _jwks = jwks;
+      _jwksCachedAt = fetchedAt;
     }
-
-    _jwks = jwks;
-    _jwksCachedAt = now;
-
-    return jwks.keys.firstWhereOrNull((key) => key.keyId == kid);
+    return jwks;
   }
 
   /// Extracts the JWT claims present in the access token by first verifying the
@@ -2293,7 +2301,10 @@ class AuthClient {
   /// For JWTs signed with an asymmetric algorithm (e.g. RS256 or ES256) that
   /// carry a `kid`, the JWKS is fetched from the server on the first call and
   /// cached for subsequent calls. The cache is refreshed automatically after
-  /// 10 minutes.
+  /// 10 minutes. Concurrent calls share a single JWKS request. A token whose
+  /// `kid` is not in the cache triggers a refetch, unless the JWKS was fetched
+  /// less than 30 seconds ago, in which case it is verified through the Auth
+  /// server like [getUser].
   ///
   /// [jwt] An optional specific JWT you wish to verify, not the one you
   ///       can obtain from [currentSession].

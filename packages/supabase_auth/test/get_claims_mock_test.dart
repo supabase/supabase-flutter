@@ -23,8 +23,8 @@ const _publicJwk = {
   'y': 'k_uxFaLt2Ad5gueJZGnzKBIid6mxfJYqjXssxE1vORA',
 };
 
-String _signEs256(Map<String, dynamic> payload) {
-  return JWT(payload, header: {'kid': _keyId}).sign(
+String _signEs256(Map<String, dynamic> payload, {String keyId = _keyId}) {
+  return JWT(payload, header: {'kid': keyId}).sign(
     ECPrivateKey(_privateKeyPem),
     algorithm: JWTAlgorithm.ES256,
     expiresIn: const Duration(hours: 1),
@@ -106,5 +106,71 @@ void main() {
 
     expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
     expect(mockClient.requestsTo('/user'), hasLength(1));
+  });
+
+  test('concurrent getClaims() calls share one JWKS request', () async {
+    final token = _signEs256({'sub': 'user-id'});
+
+    await Future.wait([
+      client.getClaims(token),
+      client.getClaims(token),
+      client.getClaims(token),
+    ]);
+
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
+    expect(mockClient.requestsTo('/user'), isEmpty);
+  });
+
+  test(
+    'concurrent getClaims() calls share one JWKS refetch after the TTL',
+    () async {
+      final token = _signEs256({'sub': 'user-id'});
+      await client.getClaims(token);
+      client.jwksCachedAt = client.jwksCachedAt!.subtract(
+        const Duration(minutes: 11),
+      );
+
+      await Future.wait([client.getClaims(token), client.getClaims(token)]);
+
+      expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
+    },
+  );
+
+  group('a token with an unknown kid', () {
+    late String unknownKeyToken;
+
+    setUp(() async {
+      await client.getClaims(_signEs256({'sub': 'user-id'}));
+      unknownKeyToken = _signEs256({
+        'sub': 'user-id',
+      }, keyId: 'es256-unknown-key');
+      mockClient.stubUser();
+    });
+
+    test('is verified through the Auth server right after a fetch', () async {
+      await client.getClaims(unknownKeyToken);
+      await client.getClaims(unknownKeyToken);
+
+      expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
+      expect(mockClient.requestsTo('/user'), hasLength(2));
+    });
+
+    test('refetches the JWKS once the refetch interval has passed', () async {
+      client.jwksCachedAt = client.jwksCachedAt!.subtract(
+        const Duration(seconds: 31),
+      );
+      mockClient.stub({
+        'keys': [
+          _publicJwk,
+          {..._publicJwk, 'kid': 'es256-unknown-key'},
+        ],
+      }, path: '/.well-known/jwks.json');
+
+      await client.getClaims(unknownKeyToken);
+      await client.getClaims(unknownKeyToken);
+
+      expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
+      expect(mockClient.requestsTo('/user'), isEmpty);
+    });
   });
 }
