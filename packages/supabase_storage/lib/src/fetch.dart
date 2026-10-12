@@ -270,15 +270,6 @@ class Fetch {
     );
   }
 
-  Future<void> head(String url, {FetchOptions? options}) {
-    return _handleRequest<dynamic>(
-      HttpMethod.head,
-      url,
-      null,
-      FetchOptions(options?.headers, noResolveJson: true),
-    );
-  }
-
   Future<T> get<T>(
     String url, {
     FetchOptions? options,

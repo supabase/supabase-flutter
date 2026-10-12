@@ -830,17 +830,16 @@ class StorageFileApi {
   }
 
   /// Checks the existence of a file
+  ///
+  /// Returns `false` only when the object is missing. Any other error, such as
+  /// a missing bucket or an invalid JWT, is thrown as a [StorageApiException].
   Future<bool> exists(String path) async {
-    final finalPath = _getFinalPath(path);
-    final options = _fetchOptions;
     try {
-      await _storageFetch.head(
-        '$url/object/$finalPath',
-        options: options,
-      );
+      await getMetadata(path);
       return true;
     } on StorageApiException catch (error) {
-      if (error.statusCode == 400 || error.statusCode == 404) {
+      if (error.errorCode == 'NoSuchKey' ||
+          (error.errorCode == null && error.statusCode == 404)) {
         return false;
       }
       rethrow;

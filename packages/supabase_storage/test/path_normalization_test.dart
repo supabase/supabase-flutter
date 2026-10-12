@@ -110,14 +110,20 @@ void main() {
       });
 
       test('by exists', () async {
-        mockClient.stub(Uint8List.fromList([]));
+        mockClient.stub({
+          'id': 'file-id',
+          'version': 'version-1',
+          'name': 'folder/file.txt',
+          'bucket_id': 'bucket',
+          'created_at': '2024-01-01T00:00:00.000Z',
+        });
 
         final exists = await client.from('bucket').exists(path);
 
         expect(exists, isTrue);
         expect(
           requestUrl().path,
-          '/storage/v1/object/bucket/folder/file.txt',
+          '/storage/v1/object/info/bucket/folder/file.txt',
         );
       });
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' show ClientException;
+import 'package:supabase_common/supabase_common.dart' show HttpMethod;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_test/internal.dart';
 import 'package:supabase_test/supabase_test.dart';
@@ -780,6 +781,88 @@ void main() {
       final response = await client.from('public').remove(['a.txt', 'b.txt']);
       expect(response, isA<List<dynamic>>());
       expect(response.length, 2);
+    });
+
+    group('exists', () {
+      test('reads the object info and is true when it is returned', () async {
+        customHttpClient.stub({
+          'id': 'file-id',
+          'version': 'version-1',
+          'name': 'a.txt',
+          'bucket_id': 'public',
+          'created_at': '2024-01-01T00:00:00.000Z',
+        });
+
+        final exists = await client.from('public').exists('a.txt');
+
+        expect(exists, isTrue);
+        final request = customHttpClient.requests.single;
+        expect(request.method, HttpMethod.get.value);
+        expect(request.url.path, endsWith('/object/info/public/a.txt'));
+      });
+
+      test('is false for a missing object', () async {
+        customHttpClient.stub({
+          'statusCode': '404',
+          'code': 'NoSuchKey',
+          'error': 'NoSuchKey',
+          'message': 'Object not found',
+        }, statusCode: 404);
+
+        expect(await client.from('public').exists('missing.txt'), isFalse);
+      });
+
+      test('is false for a 404 that carries no error code', () async {
+        customHttpClient.stub({
+          'statusCode': '404',
+          'message': 'Object not found',
+        }, statusCode: 404);
+
+        expect(await client.from('public').exists('missing.txt'), isFalse);
+      });
+
+      test(
+        'throws for an invalid JWT instead of reporting a missing object',
+        () async {
+          customHttpClient.stub({
+            'statusCode': '400',
+            'code': 'InvalidJWT',
+            'error': 'InvalidJWT',
+            'message': 'Invalid JWT',
+          }, statusCode: 400);
+
+          await expectLater(
+            client.from('public').exists('a.txt'),
+            throwsA(
+              isA<StorageApiException>().having(
+                (error) => error.errorCode,
+                'errorCode',
+                'InvalidJWT',
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws for a missing bucket', () async {
+        customHttpClient.stub({
+          'statusCode': '404',
+          'code': 'NoSuchBucket',
+          'error': 'NoSuchBucket',
+          'message': 'Bucket not found',
+        }, statusCode: 404);
+
+        await expectLater(
+          client.from('missing').exists('a.txt'),
+          throwsA(
+            isA<StorageApiException>().having(
+              (error) => error.errorCode,
+              'errorCode',
+              'NoSuchBucket',
+            ),
+          ),
+        );
+      });
     });
 
     group('object versioning', () {
