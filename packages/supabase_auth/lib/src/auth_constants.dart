@@ -36,4 +36,8 @@ class AuthConstants {
 
   /// The TTL for the JWKS cache.
   static const jwksTtl = Duration(minutes: 10);
+
+  /// How long after a JWKS fetch a token with an unknown key ID is verified
+  /// through the Auth server instead of fetching the JWKS again.
+  static const jwksUnknownKeyRefetchInterval = Duration(seconds: 30);
 }
