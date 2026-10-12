@@ -58,7 +58,12 @@ class StorageFileApi {
   }
 
   String _removeEmptyFolders(String path) {
-    return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
+    return _normalizePrefix(path).replaceAll(RegExp(r'/$'), '');
+  }
+
+  /// Normalizes [prefix] like an object path but keeps a trailing `/`.
+  String _normalizePrefix(String prefix) {
+    return prefix.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/'), '');
   }
 
   FetchOptions get _fetchOptions => FetchOptions(_headers);
@@ -1018,7 +1023,7 @@ class StorageFileApi {
     final body = options.toMap();
     final prefix = body['prefix'] as String?;
     if (prefix != null) {
-      body['prefix'] = _removeEmptyFolders(prefix);
+      body['prefix'] = _normalizePrefix(prefix);
     }
     final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/list-v2/$bucketId',

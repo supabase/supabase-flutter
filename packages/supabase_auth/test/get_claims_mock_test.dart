@@ -67,4 +67,44 @@ void main() {
       throwsA(isA<AuthInvalidJwtException>()),
     );
   });
+
+  test('getClaims() reuses the cached JWKS within its TTL', () async {
+    final token = _signEs256({'sub': 'user-id'});
+
+    await client.getClaims(token);
+    client.jwksCachedAt = client.jwksCachedAt!.subtract(
+      const Duration(minutes: 9),
+    );
+    await client.getClaims(token);
+
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
+    expect(mockClient.requestsTo('/user'), isEmpty);
+  });
+
+  test('getClaims() refetches the JWKS once its TTL has passed', () async {
+    final token = _signEs256({'sub': 'user-id'});
+    await client.getClaims(token);
+    client.jwksCachedAt = client.jwksCachedAt!.subtract(
+      const Duration(minutes: 11),
+    );
+    mockClient
+      ..stub({
+        'keys': [
+          {..._publicJwk, 'kid': 'es256-rotated-key'},
+        ],
+      }, path: '/.well-known/jwks.json')
+      ..stub(
+        {'code': 'bad_jwt', 'msg': 'invalid JWT: signed with a revoked key'},
+        path: '/user',
+        statusCode: 401,
+      );
+
+    await expectLater(
+      () => client.getClaims(token),
+      throwsA(isA<AuthApiException>()),
+    );
+
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
+    expect(mockClient.requestsTo('/user'), hasLength(1));
+  });
 }
