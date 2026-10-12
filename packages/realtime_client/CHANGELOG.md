@@ -1,3 +1,7 @@
+## 2.13.2
+
+ - **FIX**(realtime_client): keep a rejoining channel from unsubscribing itself ([#1950](https://github.com/supabase/supabase-flutter/issues/1950)). ([0f09fa47](https://github.com/supabase/supabase-flutter/commit/0f09fa47b4c9c6d19943e239c731a5e084ff003e))
+
 ## 2.13.1
 
  - **FIX**(realtime): resend joins with a fresh ref and remove only the given channel ([#1933](https://github.com/supabase/supabase-flutter/issues/1933)). ([5d1e2973](https://github.com/supabase/supabase-flutter/commit/5d1e29739b41a394eba77e337c41d07caa93d937))
