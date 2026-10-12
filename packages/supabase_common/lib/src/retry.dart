@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:clock/clock.dart';
 import 'package:http/http.dart' show RequestAbortedException;
 import 'package:http_parser/http_parser.dart' show parseHttpDate;
 import 'package:supabase_common/src/http_header.dart';
@@ -74,9 +75,11 @@ Future<T> retry<T extends Object>(
 /// is none or it carries no usable timing.
 ///
 /// The header holds either a number of seconds or an HTTP date. A date that is
-/// not after [now] is ignored, since waiting zero would make every client
-/// that saw it repeat its request at the same instant.
-Duration? parseRetryAfter(Map<String, String> headers, {DateTime? now}) {
+/// not after the current time is ignored, since waiting zero would make every
+/// client that saw it repeat its request at the same instant.
+Duration? parseRetryAfter(
+  Map<String, String> headers,
+) {
   final name = HttpHeader.retryAfter.toLowerCase();
   final value = headers.entries
       .where((header) => header.key.toLowerCase() == name)
@@ -96,7 +99,7 @@ Duration? parseRetryAfter(Map<String, String> headers, {DateTime? now}) {
   } on FormatException {
     return null;
   }
-  final delay = date.difference(now ?? DateTime.now());
+  final delay = date.difference(clock.now());
   return delay > Duration.zero ? delay : null;
 }
 
