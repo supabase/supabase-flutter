@@ -825,6 +825,9 @@ class StorageFileApi {
   }
 
   /// Checks the existence of a file
+  ///
+  /// Returns `false` only when the object is missing. Any other error, such as
+  /// a missing bucket or an invalid JWT, is thrown as a [StorageApiException].
   Future<bool> exists(String path) async {
     try {
       await getMetadata(path);

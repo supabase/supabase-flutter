@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' show ClientException;
+import 'package:supabase_common/supabase_common.dart' show HttpMethod;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_test/internal.dart';
 import 'package:supabase_test/supabase_test.dart';
@@ -796,7 +797,7 @@ void main() {
 
         expect(exists, isTrue);
         final request = customHttpClient.requests.single;
-        expect(request.method, 'GET');
+        expect(request.method, HttpMethod.get.value);
         expect(request.url.path, endsWith('/object/info/public/a.txt'));
       });
 
