@@ -58,15 +58,10 @@ class StorageFileApi {
   }
 
   String _removeEmptyFolders(String path) {
-    return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
+    return _normalizePrefix(path).replaceAll(RegExp(r'/$'), '');
   }
 
-  /// Normalizes a `listPaginated` prefix like an object path, but keeps a
-  /// trailing `/`.
-  ///
-  /// The server matches the prefix as a plain string: `folder/` lists what is
-  /// inside `folder`, while `folder` also matches `folder.png` and, with a
-  /// delimiter, returns `folder/` itself as a single folder entry.
+  /// Normalizes [prefix] like an object path but keeps a trailing `/`.
   String _normalizePrefix(String prefix) {
     return prefix.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/'), '');
   }

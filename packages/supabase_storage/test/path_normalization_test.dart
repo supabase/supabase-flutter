@@ -249,8 +249,6 @@ void main() {
     });
   }
 
-  // The server matches a list-v2 prefix as a plain string, so a trailing `/`
-  // changes the result and has to be kept.
   group('listPaginated prefix', () {
     const prefixes = {
       '/folder/file.txt': 'folder/file.txt',

@@ -916,6 +916,54 @@ void main() {
     );
   });
 
+  group('listPaginated prefix', () {
+    late String bucket;
+
+    setUpAll(() async {
+      storage = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
+      });
+      bucket = await findOrCreateBucket(
+        '${_bucketNamespace}prefix-${DateTime.now().millisecondsSinceEpoch}',
+      );
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      for (final key in ['folder/a.txt', 'folder/b.txt', 'folder.txt']) {
+        await storage.from(bucket).uploadBinary(key, bytes);
+      }
+    });
+
+    test('with a trailing slash lists the contents of the folder', () async {
+      final result = await storage
+          .from(bucket)
+          .listPaginated(
+            options: const PaginatedSearchOptions(
+              prefix: 'folder/',
+              withDelimiter: true,
+            ),
+          );
+
+      expect(
+        result.objects.map((object) => object.name),
+        unorderedEquals(['folder/a.txt', 'folder/b.txt']),
+      );
+      expect(result.folders, isEmpty);
+    });
+
+    test('without a trailing slash matches the folder and siblings', () async {
+      final result = await storage
+          .from(bucket)
+          .listPaginated(
+            options: const PaginatedSearchOptions(
+              prefix: 'folder',
+              withDelimiter: true,
+            ),
+          );
+
+      expect(result.objects.map((object) => object.name), ['folder.txt']);
+      expect(result.folders.map((folder) => folder.name), ['folder/']);
+    });
+  });
+
   group('object keys with reserved URL characters', () {
     // The SDK percent-encodes each object key segment (see _getFinalPath).
     // These tests confirm the round-trip against a real server: the storage
