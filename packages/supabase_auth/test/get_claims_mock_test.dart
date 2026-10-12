@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
@@ -71,13 +70,12 @@ void main() {
 
   test('getClaims() reuses the cached JWKS within its TTL', () async {
     final token = _signEs256({'sub': 'user-id'});
-    final start = DateTime(2026, 10, 11, 12);
 
-    await withClock(Clock.fixed(start), () => client.getClaims(token));
-    await withClock(
-      Clock.fixed(start.add(const Duration(minutes: 9))),
-      () => client.getClaims(token),
+    await client.getClaims(token);
+    client.jwksCachedAt = client.jwksCachedAt!.subtract(
+      const Duration(minutes: 9),
     );
+    await client.getClaims(token);
 
     expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
     expect(mockClient.requestsTo('/user'), isEmpty);
@@ -85,8 +83,10 @@ void main() {
 
   test('getClaims() refetches the JWKS once its TTL has passed', () async {
     final token = _signEs256({'sub': 'user-id'});
-    final start = DateTime(2026, 10, 11, 12);
-    await withClock(Clock.fixed(start), () => client.getClaims(token));
+    await client.getClaims(token);
+    client.jwksCachedAt = client.jwksCachedAt!.subtract(
+      const Duration(minutes: 11),
+    );
     mockClient
       ..stub({
         'keys': [
@@ -100,10 +100,7 @@ void main() {
       );
 
     await expectLater(
-      () => withClock(
-        Clock.fixed(start.add(const Duration(minutes: 11))),
-        () => client.getClaims(token),
-      ),
+      () => client.getClaims(token),
       throwsA(isA<AuthApiException>()),
     );
 

@@ -18,7 +18,6 @@ environment:
 resolution: workspace
 
 dependencies:
-  clock: ^1.1.1
   collection: ^1.19.0
   crypto: ^3.0.7
   http: ^1.6.0

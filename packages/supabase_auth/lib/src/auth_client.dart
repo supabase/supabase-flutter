@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
@@ -192,6 +191,15 @@ class AuthClient {
 
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
+
+  /// When the JWKS used by [getClaims] was last fetched.
+  @internal
+  @visibleForTesting
+  DateTime? get jwksCachedAt => _jwksCachedAt;
+
+  @internal
+  @visibleForTesting
+  set jwksCachedAt(DateTime? value) => _jwksCachedAt = value;
 
   final _onAuthStateChangeController = StreamController<AuthState>.broadcast();
   final _onAuthStateChangeControllerSync =
@@ -2242,7 +2250,7 @@ class AuthClient {
   }
 
   Future<JWK?> _fetchJwk(String kid) async {
-    final now = clock.now();
+    final now = DateTime.now();
 
     final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.keyId == kid);
 
@@ -2282,7 +2290,7 @@ class AuthClient {
   /// RSA), or the JWT header does not carry a `kid`, it always sends a
   /// request to the Auth server (similar to [getUser]) to verify the JWT.
   ///
-  /// For JWTs signed with an RSA-based asymmetric algorithm (e.g. RS256) that
+  /// For JWTs signed with an asymmetric algorithm (e.g. RS256 or ES256) that
   /// carry a `kid`, the JWKS is fetched from the server on the first call and
   /// cached for subsequent calls. The cache is refreshed automatically after
   /// 10 minutes.
