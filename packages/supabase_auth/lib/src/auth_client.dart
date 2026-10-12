@@ -2281,10 +2281,8 @@ class AuthClient {
     );
 
     final jwks = JWKSet.fromJson(jwksResponse as Map<String, dynamic>);
-    if (jwks.keys.isNotEmpty) {
-      _jwks = jwks;
-      _jwksCachedAt = fetchedAt;
-    }
+    _jwks = jwks;
+    _jwksCachedAt = fetchedAt;
     return jwks;
   }
 

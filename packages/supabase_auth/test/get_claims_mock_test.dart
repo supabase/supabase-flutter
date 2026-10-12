@@ -173,4 +173,34 @@ void main() {
       expect(mockClient.requestsTo('/user'), isEmpty);
     });
   });
+
+  test('an empty JWKS starts the unknown kid refetch interval', () async {
+    final token = _signEs256({'sub': 'user-id'});
+    mockClient
+      ..stub({'keys': <Object>[]}, path: '/.well-known/jwks.json')
+      ..stubUser();
+
+    await client.getClaims(token);
+    await client.getClaims(token);
+
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
+    expect(mockClient.requestsTo('/user'), hasLength(2));
+  });
+
+  test('an empty JWKS replaces the cached keys', () async {
+    final token = _signEs256({'sub': 'user-id'});
+    await client.getClaims(token);
+    client.jwksCachedAt = client.jwksCachedAt!.subtract(
+      const Duration(minutes: 11),
+    );
+    mockClient
+      ..stub({'keys': <Object>[]}, path: '/.well-known/jwks.json')
+      ..stubUser();
+
+    await client.getClaims(token);
+    await client.getClaims(token);
+
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
+    expect(mockClient.requestsTo('/user'), hasLength(2));
+  });
 }
