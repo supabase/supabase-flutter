@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-12
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v2.13.2`](#realtime_client---v2132)
+ - [`supabase` - `v2.16.5`](#supabase---v2165)
+ - [`supabase_flutter` - `v2.18.3`](#supabase_flutter---v2183)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.16.5`
+ - `supabase_flutter` - `v2.18.3`
+
+---
+
+#### `realtime_client` - `v2.13.2`
+
+ - **FIX**(realtime_client): keep a rejoining channel from unsubscribing itself ([#1950](https://github.com/supabase/supabase-flutter/issues/1950)). ([0f09fa47](https://github.com/supabase/supabase-flutter/commit/0f09fa47b4c9c6d19943e239c731a5e084ff003e))
+
+
 ## 2026-10-09
 
 ### Changes
