@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/types/user.dart';
@@ -110,7 +111,7 @@ class Session {
   bool get isExpired {
     final expiresAt = this.expiresAt;
     if (expiresAt == null) return false;
-    return DateTime.now().add(AuthConstants.expiryMargin).isAfter(expiresAt);
+    return clock.now().add(AuthConstants.expiryMargin).isAfter(expiresAt);
   }
 
   /// Returns `true` if the token is expired right now, without applying the
@@ -119,7 +120,7 @@ class Session {
   bool get isExpiredWithoutMargin {
     final expiresAt = this.expiresAt;
     if (expiresAt == null) return false;
-    return DateTime.now().isAfter(expiresAt);
+    return clock.now().isAfter(expiresAt);
   }
 
   Session copyWith({

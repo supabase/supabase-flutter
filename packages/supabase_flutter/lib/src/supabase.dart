@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
@@ -347,7 +348,7 @@ class Supabase {
               _enqueueLifecycle(state);
             } else {
               _cancelPendingPause();
-              _pausedAt = DateTime.now();
+              _pausedAt = clock.now();
               _pendingPause = Timer(delay, () {
                 _cancelPendingPause();
                 _enqueueLifecycle(AppLifecycleState.paused);
@@ -376,7 +377,7 @@ class Supabase {
   bool _pendingPauseExpired() {
     final pausedAt = _pausedAt;
     if (_pendingPause == null || pausedAt == null) return false;
-    return DateTime.now().difference(pausedAt) >=
+    return clock.now().difference(pausedAt) >=
         _realtimeLifecycleOptions.disconnectAfterPause;
   }
 

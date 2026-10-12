@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:http/http.dart' show RequestAbortedException;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
@@ -244,48 +245,51 @@ void main() {
   group('parseRetryAfter', () {
     final now = DateTime.utc(2015, 10, 21, 7, 28);
 
+    Duration? parse(Map<String, String> headers) =>
+        withClock(Clock.fixed(now), () => parseRetryAfter(headers));
+
     test('reads a number of seconds', () {
       expect(
-        parseRetryAfter({'retry-after': '3'}, now: now),
+        parse({'retry-after': '3'}),
         const Duration(seconds: 3),
       );
     });
 
     test('matches the header name regardless of case', () {
       expect(
-        parseRetryAfter({'Retry-After': ' 2 '}, now: now),
+        parse({'Retry-After': ' 2 '}),
         const Duration(seconds: 2),
       );
     });
 
     test('reads an HTTP date in the future', () {
       expect(
-        parseRetryAfter({
+        parse({
           'retry-after': 'Wed, 21 Oct 2015 07:28:10 GMT',
-        }, now: now),
+        }),
         const Duration(seconds: 10),
       );
     });
 
     test('ignores an HTTP date that is not in the future', () {
       expect(
-        parseRetryAfter({
+        parse({
           'retry-after': 'Wed, 21 Oct 2015 07:27:00 GMT',
-        }, now: now),
+        }),
         isNull,
       );
       expect(
-        parseRetryAfter({
+        parse({
           'retry-after': 'Wed, 21 Oct 2015 07:28:00 GMT',
-        }, now: now),
+        }),
         isNull,
       );
     });
 
     test('ignores a missing, negative or unparseable value', () {
-      expect(parseRetryAfter({}, now: now), isNull);
-      expect(parseRetryAfter({'retry-after': '-5'}, now: now), isNull);
-      expect(parseRetryAfter({'retry-after': 'soon'}, now: now), isNull);
+      expect(parse({}), isNull);
+      expect(parse({'retry-after': '-5'}), isNull);
+      expect(parse({'retry-after': 'soon'}), isNull);
     });
   });
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/jwt.dart';
 import 'package:meta/meta.dart';
@@ -129,7 +130,7 @@ void validateExpiration(int? expiresAt) {
   if (expiresAt == null) {
     throw AuthException('Missing exp claim');
   }
-  final timeNow = DateTime.now().millisecondsSinceEpoch / 1000;
+  final timeNow = clock.now().millisecondsSinceEpoch / 1000;
   if (expiresAt <= timeNow) {
     throw AuthException('JWT has expired');
   }

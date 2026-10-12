@@ -20,6 +20,7 @@ resolution: workspace
 
 dependencies:
   app_links: '>=6.4.1 <8.0.0'
+  clock: ^1.1.2
   flutter:
     sdk: flutter
   http: ^1.6.0

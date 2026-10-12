@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
@@ -1252,7 +1253,7 @@ class AuthClient {
       throw AuthSessionMissingException('Access token cannot be empty');
     }
 
-    final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final timeNow = clock.now().millisecondsSinceEpoch ~/ 1000;
 
     // Throws AuthInvalidJwtException if the token is malformed.
     final decoded = decodeJwt(accessToken);
@@ -1703,7 +1704,7 @@ class AuthClient {
     }
 
     try {
-      final now = DateTime.now();
+      final now = clock.now();
 
       // Read the session once to avoid TOCTOU: both refreshToken and
       // expiresAt must come from the same snapshot.
@@ -1737,7 +1738,7 @@ class AuthClient {
   /// Generates a new JWT.
   /// [refreshToken] A valid refresh token that was returned on login.
   Future<Session> _refreshAccessToken(String refreshToken) async {
-    final startedAt = DateTime.now();
+    final startedAt = clock.now();
     var attempt = 0;
     Duration? retryAfterOf(Object outcome) {
       final requested = outcome is AuthRetryableApiException
@@ -1775,7 +1776,7 @@ class AuthClient {
         final nextBackOff = retryAfterOf(e) ?? retryOptions.delay(attempt - 1);
 
         return e is AuthRetryableException &&
-            (DateTime.now().millisecondsSinceEpoch +
+            (clock.now().millisecondsSinceEpoch +
                     nextBackOff.inMilliseconds -
                     startedAt.millisecondsSinceEpoch) <
                 AuthConstants.autoRefreshTickDuration.inMilliseconds;
@@ -2253,7 +2254,7 @@ class AuthClient {
   Future<JWK?> _fetchJwk(String kid) async {
     final cachedAt = _jwksCachedAt;
     if (cachedAt != null) {
-      final age = DateTime.now().difference(cachedAt);
+      final age = clock.now().difference(cachedAt);
       final cachedJwk = _jwks?.keys.firstWhereOrNull(
         (key) => key.keyId == kid,
       );
@@ -2273,7 +2274,7 @@ class AuthClient {
   }
 
   Future<JWKSet> _fetchJwks() async {
-    final fetchedAt = DateTime.now();
+    final fetchedAt = clock.now();
     final jwksResponse = await _fetch.request(
       '$_url/.well-known/jwks.json',
       HttpMethod.get,
