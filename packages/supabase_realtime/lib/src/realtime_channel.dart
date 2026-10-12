@@ -189,10 +189,12 @@ class RealtimeChannel {
 
   /// Schedules a [rejoin] once the socket reconnects, retrying with backoff
   /// until it succeeds.
+  ///
+  /// A join that is still waiting for its reply is not sent again.
   @internal
   void rejoinUntilConnected() {
     _rejoinTimer.scheduleTimeout();
-    if (socket.isConnected) {
+    if (socket.isConnected && !(isJoining && _joinPush.isAwaitingReply)) {
       rejoin();
     }
   }
@@ -1058,7 +1060,7 @@ class RealtimeChannel {
     if (isLeaving) {
       return;
     }
-    socket.leaveOpenTopic(topic);
+    socket.leaveOpenTopic(topic, except: this);
     _state = ChannelState.joining;
     _joinPush.resend(timeout ?? _timeout);
   }
@@ -1066,11 +1068,8 @@ class RealtimeChannel {
   /// Resends [joinPush] to tell the server we join this channel again and marks
   /// the channel as [ChannelState.joining].
   ///
-  /// Usually [rejoin] only happens when the channel timeouts or errors out.
-  /// When manually disconnecting, the channel is still marked as
-  /// [ChannelState.joined]. Calling [RealtimeClient.leaveOpenTopic] will
-  /// unsubscribe itself, which causes issues when trying to rejoin. This method
-  /// therefore doesn't call [RealtimeClient.leaveOpenTopic].
+  /// Unlike [rejoin], this does not leave other channels open on the same
+  /// topic.
   @internal
   void forceRejoin([Duration? timeout]) {
     if (isLeaving) {

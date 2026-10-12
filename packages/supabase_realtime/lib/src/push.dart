@@ -50,6 +50,9 @@ class Push {
 
   Duration get timeout => _timeout;
 
+  /// Whether this push was sent and is still waiting for a reply or timeout.
+  bool get isAwaitingReply => _timeoutTimer != null;
+
   void resend(Duration newTimeout) {
     _timeout = newTimeout;
     _cancelRefEvent();
