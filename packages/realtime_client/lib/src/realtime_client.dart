@@ -637,11 +637,14 @@ class RealtimeClient {
     }
   }
 
-  /// Unsubscribe from joined or joining channels with the specified topic.
+  /// Unsubscribes a joined or joining channel on [topic] other than [except].
   @internal
-  void leaveOpenTopic(String topic) {
+  void leaveOpenTopic(String topic, {required RealtimeChannel except}) {
     final dupChannel = channels.firstWhereOrNull(
-      (c) => c.topic == topic && (c.isJoined || c.isJoining),
+      (c) =>
+          c.topic == topic &&
+          !identical(c, except) &&
+          (c.isJoined || c.isJoining),
     );
     if (dupChannel != null) {
       log('transport', 'leaving duplicate topic "$topic"');

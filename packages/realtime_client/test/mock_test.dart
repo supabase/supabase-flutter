@@ -282,18 +282,8 @@ void main() {
     });
 
     test("correct CHANNEL_ERROR data on heartbeat timeout", () async {
-      final subscribeCallback = expectAsync2((
-        RealtimeSubscribeStatus event,
-        error,
-      ) {
-        if (event == RealtimeSubscribeStatus.channelError) {
-          expect(error, isA<RealtimeCloseEvent>());
-          error as RealtimeCloseEvent;
-          expect(error.reason, "heartbeat timeout");
-        } else {
-          expect(event, RealtimeSubscribeStatus.closed);
-        }
-      }, count: 2);
+      final statuses = <RealtimeSubscribeStatus>[];
+      Object? channelError;
 
       final channel = client
           .channel('public:todos')
@@ -309,10 +299,22 @@ void main() {
             callback: (payload) {},
           );
 
-      channel.subscribe(subscribeCallback);
+      channel.subscribe((status, error) {
+        statuses.add(status);
+        if (status == RealtimeSubscribeStatus.channelError) {
+          channelError = error;
+        }
+      });
 
       await Future.delayed(Duration(milliseconds: 200));
       await webSocket?.close(Constants.wsCloseNormal, "heartbeat timeout");
+
+      // Long enough for the rejoin timer to tick while the rejoin is pending.
+      await Future.delayed(Duration(seconds: 4));
+      expect(statuses, [RealtimeSubscribeStatus.channelError]);
+      expect(channelError, isA<RealtimeCloseEvent>());
+      expect((channelError as RealtimeCloseEvent).reason, "heartbeat timeout");
+      expect(client.channels, [channel]);
     });
   });
 
