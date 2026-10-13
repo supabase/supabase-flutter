@@ -158,7 +158,7 @@ void main() {
       expect(mockClient.requests, hasLength(1));
     });
 
-    test('follows the next link past an empty page', () async {
+    test('ends at an empty page even when it links to another', () async {
       final mockClient = MockSupabaseHttpClient()
         ..stubHandler(
           (request) => request.queryParameters.containsKey('page')
@@ -173,8 +173,8 @@ void main() {
 
       final users = await clientWith(mockClient).admin.listAllUsers().toList();
 
-      expect(users.single.id, testUserId);
-      expect(mockClient.requests, hasLength(2));
+      expect(users, isEmpty);
+      expect(mockClient.requests, hasLength(1));
     });
 
     test('stops when the next link does not advance', () async {

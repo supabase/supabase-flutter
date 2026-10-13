@@ -203,7 +203,8 @@ class AuthAdminApi {
   ///
   /// Pages are offsets into the user list, so a user created or deleted while
   /// the stream is being read can make a user be emitted twice or skipped.
-  /// The stream ends when a `next` link does not point past the current page.
+  /// The stream ends at an empty page or when a `next` link does not point
+  /// past the current page.
   ///
   /// This function should only be called on a server. Never expose your
   /// `secret` key on the client.
@@ -211,6 +212,7 @@ class AuthAdminApi {
     int? page;
     while (true) {
       final response = await listUsers(page: page, perPage: perPage);
+      if (response.users.isEmpty) return;
       for (final user in response.users) {
         yield user;
       }
