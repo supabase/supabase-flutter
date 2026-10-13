@@ -86,6 +86,27 @@ void main() {
         expect(client.responseTypes, isEmpty);
       },
     );
+
+    test('fromJson decodes unrecognized enum values as unknown', () {
+      final client = OAuthClient.fromJson({
+        ...json,
+        'client_type': 'hybrid',
+        'registration_type': 'federated',
+        'grant_types': ['authorization_code', 'device_code'],
+        'response_types': ['code', 'id_token'],
+      });
+
+      expect(client.clientType, OAuthClientType.unknown);
+      expect(client.registrationType, OAuthClientRegistrationType.unknown);
+      expect(client.grantTypes, [
+        OAuthClientGrantType.authorizationCode,
+        OAuthClientGrantType.unknown,
+      ]);
+      expect(client.responseTypes, [
+        OAuthClientResponseType.code,
+        OAuthClientResponseType.unknown,
+      ]);
+    });
   });
 
   group('CreateOAuthClientOptions', () {
@@ -110,6 +131,20 @@ void main() {
   });
 
   group('UpdateOAuthClientOptions', () {
+    test('toJson rejects unknown grant and response types', () {
+      const grantOptions = CreateOAuthClientOptions(
+        clientName: 'Test OAuth Client',
+        redirectUris: ['https://example.com/callback'],
+        grantTypes: [OAuthClientGrantType.unknown],
+      );
+      const responseOptions = UpdateOAuthClientOptions(
+        responseTypes: [OAuthClientResponseType.unknown],
+      );
+
+      expect(grantOptions.toJson, throwsArgumentError);
+      expect(responseOptions.toJson, throwsArgumentError);
+    });
+
     test('toJson includes the logo URI', () {
       const options = UpdateOAuthClientOptions(
         logoUri: 'https://example.com/logo.png',

@@ -11,7 +11,12 @@ enum SortDirection {
   /// The value sent to and received from the API.
   final String value;
 
-  /// Returns the direction whose [value] matches, throwing if none does.
-  static SortDirection fromValue(String value) =>
-      values.firstWhere((direction) => direction.value == value);
+  /// Returns the direction whose [value] matches, or `null` when it is not
+  /// recognized.
+  static SortDirection? fromValue(Object? value) {
+    for (final direction in values) {
+      if (direction.value == value) return direction;
+    }
+    return null;
+  }
 }

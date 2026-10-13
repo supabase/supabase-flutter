@@ -258,7 +258,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                 _streamData.removeAt(deletedIndex);
                 _addStream();
               }
-            case PostgresChangeEvent.all:
+            case PostgresChangeEvent.all || PostgresChangeEvent.unknown:
               break;
           }
         });

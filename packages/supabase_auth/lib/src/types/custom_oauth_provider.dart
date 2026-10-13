@@ -11,11 +11,19 @@ enum CustomProviderType {
 
   /// An OpenID Connect provider, discoverable through its `.well-known`
   /// configuration document.
-  oidc;
+  oidc,
 
-  /// Parses the `type` field of a custom provider response.
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown;
+
+  /// Parses the `type` field of a custom provider response, defaulting to
+  /// [CustomProviderType.unknown].
   static CustomProviderType fromValue(String value) {
-    return CustomProviderType.values.firstWhere((e) => e.name == value);
+    return CustomProviderType.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => CustomProviderType.unknown,
+    );
   }
 }
 
@@ -310,6 +318,13 @@ class CreateCustomProviderOptions {
   final String? jwksUri;
 
   Map<String, dynamic> toJson() {
+    if (providerType == CustomProviderType.unknown) {
+      throw ArgumentError.value(
+        providerType,
+        'providerType',
+        'Cannot create a provider of an unknown type',
+      );
+    }
     return {
       'provider_type': providerType.name,
       'identifier': identifier,

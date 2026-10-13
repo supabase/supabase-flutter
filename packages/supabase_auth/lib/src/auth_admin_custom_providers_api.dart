@@ -28,6 +28,13 @@ class AuthAdminCustomProvidersApi {
   Future<List<CustomOAuthProvider>> listProviders({
     CustomProviderType? type,
   }) async {
+    if (type == CustomProviderType.unknown) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'Cannot filter by an unknown type',
+      );
+    }
     final data = await _fetch.request(
       '$_url/admin/custom-providers',
       HttpMethod.get,

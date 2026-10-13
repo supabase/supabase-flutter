@@ -21,6 +21,18 @@ void main() {
       expect(json['client_secret'], 'client-secret');
     });
 
+    test('rejects an unknown provider type', () {
+      final parameters = CreateCustomProviderOptions(
+        providerType: CustomProviderType.unknown,
+        identifier: 'custom:mycompany',
+        name: 'My Company',
+        clientId: 'client-id',
+        clientSecret: 'client-secret',
+      );
+
+      expect(parameters.toJson, throwsArgumentError);
+    });
+
     test('omits custom_claims_allowlist when not provided', () {
       final parameters = CreateCustomProviderOptions(
         providerType: CustomProviderType.oidc,
@@ -104,6 +116,14 @@ void main() {
       expect(provider.customClaimsAllowlist, ['groups', 'org_id', 'mail']);
       expect(provider.providerType, CustomProviderType.oidc);
       expect(provider.identifier, 'custom:mycompany');
+    });
+
+    test('decodes an unrecognized provider type as unknown', () {
+      final provider = CustomOAuthProvider.fromJson(
+        baseJson()..['provider_type'] = 'saml',
+      );
+
+      expect(provider.providerType, CustomProviderType.unknown);
     });
 
     test('leaves custom_claims_allowlist null when absent', () {

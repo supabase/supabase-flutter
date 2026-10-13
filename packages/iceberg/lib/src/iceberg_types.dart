@@ -23,27 +23,39 @@ class TableIdentifier {
 /// Where null values are ordered relative to non null values in a [SortField].
 enum NullOrder {
   nullsFirst('nulls-first'),
-  nullsLast('nulls-last');
+  nullsLast('nulls-last'),
+
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown('unknown');
 
   const NullOrder(this.value);
 
   final String value;
 
-  static NullOrder fromValue(String value) =>
-      values.firstWhere((order) => order.value == value);
+  static NullOrder fromValue(String value) => values.firstWhere(
+    (order) => order.value == value,
+    orElse: () => NullOrder.unknown,
+  );
 }
 
 /// The kind of reference a [SnapshotReference] points to.
 enum SnapshotReferenceType {
   tag('tag'),
-  branch('branch');
+  branch('branch'),
+
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown('unknown');
 
   const SnapshotReferenceType(this.value);
 
   final String value;
 
-  static SnapshotReferenceType fromValue(String value) =>
-      values.firstWhere((type) => type.value == value);
+  static SnapshotReferenceType fromValue(String value) => values.firstWhere(
+    (type) => type.value == value,
+    orElse: () => SnapshotReferenceType.unknown,
+  );
 }
 
 /// Access delegation mechanisms that can be requested from the server for
@@ -319,21 +331,41 @@ class SortField {
     return SortField(
       sourceId: json['source-id'] as int,
       transform: json['transform'] as String,
-      direction: SortDirection.fromValue(json['direction'] as String),
+      direction: SortDirection.fromValue(json['direction']),
       nullOrder: NullOrder.fromValue(json['null-order'] as String),
     );
   }
   final int sourceId;
   final String transform;
-  final SortDirection direction;
+
+  /// The direction of the sort, or `null` when the server reports a direction
+  /// this version of the client does not recognize.
+  final SortDirection? direction;
   final NullOrder nullOrder;
 
-  Map<String, dynamic> toJson() => {
-    'source-id': sourceId,
-    'transform': transform,
-    'direction': direction.value,
-    'null-order': nullOrder.value,
-  };
+  Map<String, dynamic> toJson() {
+    final direction = this.direction;
+    if (direction == null) {
+      throw ArgumentError.value(
+        direction,
+        'direction',
+        'Cannot send a sort field without a direction',
+      );
+    }
+    if (nullOrder == NullOrder.unknown) {
+      throw ArgumentError.value(
+        nullOrder,
+        'nullOrder',
+        'Cannot send a sort field with an unknown null order',
+      );
+    }
+    return {
+      'source-id': sourceId,
+      'transform': transform,
+      'direction': direction.value,
+      'null-order': nullOrder.value,
+    };
+  }
 }
 
 /// Describes how a table is sorted when written.
@@ -385,13 +417,22 @@ class SnapshotReference {
   final Duration? maxSnapshotAge;
   final int? minSnapshotsToKeep;
 
-  Map<String, dynamic> toJson() => {
-    'type': type.value,
-    'snapshot-id': snapshotId,
-    'max-ref-age-ms': ?maxReferenceAge?.inMilliseconds,
-    'max-snapshot-age-ms': ?maxSnapshotAge?.inMilliseconds,
-    'min-snapshots-to-keep': ?minSnapshotsToKeep,
-  };
+  Map<String, dynamic> toJson() {
+    if (type == SnapshotReferenceType.unknown) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'Cannot send a reference of an unknown type',
+      );
+    }
+    return {
+      'type': type.value,
+      'snapshot-id': snapshotId,
+      'max-ref-age-ms': ?maxReferenceAge?.inMilliseconds,
+      'max-snapshot-age-ms': ?maxSnapshotAge?.inMilliseconds,
+      'min-snapshots-to-keep': ?minSnapshotsToKeep,
+    };
+  }
 }
 
 /// A snapshot of a table at a point in time.

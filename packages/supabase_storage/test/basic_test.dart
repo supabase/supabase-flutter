@@ -945,6 +945,19 @@ void main() {
         );
       });
 
+      test(
+        'getBucketLifecycle decodes an unrecognized status as unknown',
+        () async {
+          customHttpClient.stub({
+            'rules': [lifecycleRuleJson()..['status'] = 'Paused'],
+          });
+
+          final rules = await client.getBucketLifecycle('test_bucket');
+
+          expect(rules.single.status, LifecycleRuleStatus.unknown);
+        },
+      );
+
       test('updateBucketLifecycle puts the whole policy', () async {
         customHttpClient.stub({
           'rules': [lifecycleRuleJson(id: 'generated-id', noncurrentDays: 7)],
@@ -972,6 +985,24 @@ void main() {
         });
         expect(rules.single.id, 'generated-id');
       });
+
+      test(
+        'updateBucketLifecycle rejects a rule with an unknown status',
+        () async {
+          await expectLater(
+            () => client.updateBucketLifecycle('test_bucket', [
+              const LifecycleRule(
+                status: LifecycleRuleStatus.unknown,
+                noncurrentVersionExpiration: NoncurrentVersionExpiration(
+                  noncurrentDays: 7,
+                ),
+              ),
+            ]),
+            throwsArgumentError,
+          );
+          expect(customHttpClient.requests, isEmpty);
+        },
+      );
 
       test('deleteBucketLifecycle deletes the policy', () async {
         customHttpClient.stub({'message': 'Successfully deleted'});

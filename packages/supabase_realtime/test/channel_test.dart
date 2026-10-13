@@ -212,6 +212,16 @@ void main() {
       channel = socket.channel('topic');
     });
 
+    test('rejects listening for an unknown event', () {
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.unknown,
+          schema: 'public',
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('subscribes when the server echoes back an `in` filter with escaped '
         'quotes and backslashes', () async {
       RealtimeSubscribeStatus? status;

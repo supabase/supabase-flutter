@@ -853,5 +853,49 @@ void main() {
       expect(parsed.fields.first.direction, SortDirection.descending);
       expect(parsed.fields.first.nullOrder, NullOrder.nullsLast);
     });
+
+    test('SortField decodes an unrecognized direction and null order', () {
+      final field = SortField.fromJson({
+        'source-id': 2,
+        'transform': 'identity',
+        'direction': 'random',
+        'null-order': 'nulls-middle',
+      });
+
+      expect(field.direction, isNull);
+      expect(field.nullOrder, NullOrder.unknown);
+    });
+
+    test('SortField refuses to send a missing direction', () {
+      const field = SortField(
+        sourceId: 2,
+        transform: 'identity',
+        direction: null,
+        nullOrder: NullOrder.nullsLast,
+      );
+
+      expect(field.toJson, throwsArgumentError);
+    });
+
+    test('SortField refuses to send an unknown null order', () {
+      const field = SortField(
+        sourceId: 2,
+        transform: 'identity',
+        direction: SortDirection.ascending,
+        nullOrder: NullOrder.unknown,
+      );
+
+      expect(field.toJson, throwsArgumentError);
+    });
+
+    test('SnapshotReference decodes an unrecognized type as unknown', () {
+      final reference = SnapshotReference.fromJson({
+        'type': 'bookmark',
+        'snapshot-id': 1,
+      });
+
+      expect(reference.type, SnapshotReferenceType.unknown);
+      expect(reference.toJson, throwsArgumentError);
+    });
   });
 }
