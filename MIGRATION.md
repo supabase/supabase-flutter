@@ -1387,50 +1387,6 @@ await supabase.storage.from('bucket').list(
 `SortBy(order: null)` no longer compiles; leave `order` out to sort ascending. `column` is
 unchanged.
 
-### Enums decoded from server responses have an `unknown` value
-
-A value the server sends that this version of the SDK does not know no longer throws while the
-response is decoded. These enums gained an `unknown` value that it decodes to instead:
-
-| Enum                          | Package             |
-| ----------------------------- | ------------------- |
-| `OAuthClientType`             | `supabase_auth`     |
-| `OAuthClientRegistrationType` | `supabase_auth`     |
-| `OAuthClientGrantType`        | `supabase_auth`     |
-| `OAuthClientResponseType`     | `supabase_auth`     |
-| `CustomProviderType`          | `supabase_auth`     |
-| `PostgresChangeEvent`         | `supabase_realtime` |
-| `PresenceEvent`               | `supabase_realtime` |
-| `NullOrder`                   | `iceberg`           |
-| `SnapshotReferenceType`       | `iceberg`           |
-
-An exhaustive `switch` over one of them needs a case for `unknown`:
-
-```dart
-// Before
-switch (payload.eventType) {
-  case PostgresChangeEvent.insert:
-  case PostgresChangeEvent.update:
-  case PostgresChangeEvent.delete:
-  case PostgresChangeEvent.all:
-}
-
-// After
-switch (payload.eventType) {
-  case PostgresChangeEvent.insert:
-  case PostgresChangeEvent.update:
-  case PostgresChangeEvent.delete:
-  case PostgresChangeEvent.all || PostgresChangeEvent.unknown:
-}
-```
-
-`unknown` cannot be sent back. Passing it to a request, including writing back a decoded value that
-holds it, throws an `ArgumentError` instead of sending `unknown` to the server.
-
-`SortDirection` is also used to build queries, so it has no `unknown` value. `SortField.direction`
-is nullable instead and is `null` when the server reports a direction the SDK does not know, and
-`SortDirection.fromValue` returns `null` rather than throwing.
-
 ### `HttpMethod` is one shared enum
 
 `supabase_functions` and `postgrest` each declared their own `HttpMethod`. There is now one, shaped
