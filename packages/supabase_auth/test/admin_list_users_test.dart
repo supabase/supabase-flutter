@@ -110,8 +110,6 @@ void main() {
   });
 
   group('listAllUsers()', () {
-    /// Serves [pageCount] pages of one user each, linking every page but the
-    /// last to the one after it.
     MockSupabaseHttpClient pagedClient(int pageCount) =>
         MockSupabaseHttpClient()..stubHandler((request) {
           final page = int.parse(request.queryParameters['page'] ?? '1');
@@ -177,6 +175,21 @@ void main() {
 
       expect(users.single.id, testUserId);
       expect(mockClient.requests, hasLength(2));
+    });
+
+    test('stops when the next link does not advance', () async {
+      final mockClient = MockSupabaseHttpClient()
+        ..stub(
+          {
+            'users': [testUserJson()],
+          },
+          headers: {'link': '</admin/users?page=1>; rel="next"'},
+        );
+
+      final users = await clientWith(mockClient).admin.listAllUsers().toList();
+
+      expect(users, hasLength(1));
+      expect(mockClient.requests, hasLength(1));
     });
 
     test('surfaces an error from a page request', () async {

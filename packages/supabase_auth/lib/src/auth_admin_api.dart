@@ -201,17 +201,23 @@ class AuthAdminApi {
   ///
   /// [perPage] defaults to the server's page size when omitted.
   ///
+  /// Pages are offsets into the user list, so a user created or deleted while
+  /// the stream is being read can make a user be emitted twice or skipped.
+  /// The stream ends when a `next` link does not point past the current page.
+  ///
   /// This function should only be called on a server. Never expose your
   /// `secret` key on the client.
   Stream<User> listAllUsers({int? perPage}) async* {
     int? page;
-    do {
+    while (true) {
       final response = await listUsers(page: page, perPage: perPage);
       for (final user in response.users) {
         yield user;
       }
-      page = response.nextPage;
-    } while (page != null);
+      final nextPage = response.nextPage;
+      if (nextPage == null || nextPage <= (page ?? 1)) return;
+      page = nextPage;
+    }
   }
 
   /// Sends an invite link to an email address.
