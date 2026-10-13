@@ -108,4 +108,98 @@ void main() {
       reason: 'a readable link is still used alongside a malformed one',
     );
   });
+
+  group('listAllUsers()', () {
+    MockSupabaseHttpClient pagedClient(int pageCount) =>
+        MockSupabaseHttpClient()..stubHandler((request) {
+          final page = int.parse(request.queryParameters['page'] ?? '1');
+          return jsonResponse(
+            {
+              'users': [
+                testUserJson(id: '00000000-0000-0000-0000-00000000000$page'),
+              ],
+            },
+            headers: {
+              if (page < pageCount)
+                'link':
+                    '</admin/users?page=${page + 1}&per_page=1>; rel="next"',
+            },
+          );
+        });
+
+    test('emits the users of every page in order', () async {
+      final mockClient = pagedClient(3);
+
+      final users = await clientWith(
+        mockClient,
+      ).admin.listAllUsers(perPage: 1).toList();
+
+      expect(users.map((user) => user.id), [
+        '00000000-0000-0000-0000-000000000001',
+        '00000000-0000-0000-0000-000000000002',
+        '00000000-0000-0000-0000-000000000003',
+      ]);
+      expect(
+        mockClient.requests.map((request) => request.queryParameters),
+        [
+          {'per_page': '1'},
+          {'page': '2', 'per_page': '1'},
+          {'page': '3', 'per_page': '1'},
+        ],
+      );
+    });
+
+    test('stops requesting pages once the caller stops listening', () async {
+      final mockClient = pagedClient(3);
+
+      final user = await clientWith(mockClient).admin.listAllUsers().first;
+
+      expect(user.id, '00000000-0000-0000-0000-000000000001');
+      expect(mockClient.requests, hasLength(1));
+    });
+
+    test('ends at an empty page even when it links to another', () async {
+      final mockClient = MockSupabaseHttpClient()
+        ..stubHandler(
+          (request) => request.queryParameters.containsKey('page')
+              ? jsonResponse({
+                  'users': [testUserJson()],
+                })
+              : jsonResponse(
+                  {'users': <Object>[]},
+                  headers: {'link': '</admin/users?page=2>; rel="next"'},
+                ),
+        );
+
+      final users = await clientWith(mockClient).admin.listAllUsers().toList();
+
+      expect(users, isEmpty);
+      expect(mockClient.requests, hasLength(1));
+    });
+
+    test('stops when the next link does not advance', () async {
+      final mockClient = MockSupabaseHttpClient()
+        ..stub(
+          {
+            'users': [testUserJson()],
+          },
+          headers: {'link': '</admin/users?page=1>; rel="next"'},
+        );
+
+      final users = await clientWith(mockClient).admin.listAllUsers().toList();
+
+      expect(users, hasLength(1));
+      expect(mockClient.requests, hasLength(1));
+    });
+
+    test('surfaces an error from a page request', () async {
+      final mockClient = MockSupabaseHttpClient()
+        ..stub({'message': 'boom'}, statusCode: 500);
+
+      await expectLater(
+        clientWith(mockClient).admin.listAllUsers().toList(),
+        throwsA(isA<AuthException>()),
+      );
+    });
+  });
 }
