@@ -575,6 +575,7 @@ features:
     status: implemented
     symbols:
       - AuthAdminApi.listUsers
+      - AuthAdminApi.listAllUsers
       - ListUsersResponse
       - ListUsersResponse.ListUsersResponse
       - ListUsersResponse.audience

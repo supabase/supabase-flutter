@@ -206,15 +206,12 @@ for (final user in response.users) {
 }
 ```
 
-`nextPage` is `null` on the last page, so you can walk every page without guessing where it ends:
+`nextPage` is `null` on the last page. To walk every page, use `listAllUsers()`, which requests
+the next page only once the previous one has been read:
 
 ```dart
-var response = await supabase.auth.admin.listUsers(perPage: 50);
-while (response.nextPage != null) {
-  response = await supabase.auth.admin.listUsers(
-    page: response.nextPage,
-    perPage: 50,
-  );
+await for (final user in supabase.auth.admin.listAllUsers(perPage: 50)) {
+  print(user.email);
 }
 ```
 

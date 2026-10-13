@@ -159,14 +159,8 @@ class AuthAdminApi {
   /// `secret` key on the client.
   ///
   /// The result is paginated. Use the [page] and [perPage] parameters to
-  /// paginate the result, and [ListUsersResponse.nextPage] to walk the pages:
-  ///
-  /// ```dart
-  /// var response = await admin.listUsers(perPage: 50);
-  /// while (response.nextPage != null) {
-  ///   response = await admin.listUsers(page: response.nextPage, perPage: 50);
-  /// }
-  /// ```
+  /// paginate the result, and [ListUsersResponse.nextPage] to find the page
+  /// after this one. [listAllUsers] walks every page for you.
   Future<ListUsersResponse> listUsers({int? page, int? perPage}) async {
     final options = AuthRequestOptions(
       headers: _headers,
@@ -191,6 +185,41 @@ class AuthAdminApi {
       lastPage: links['last'],
       audience: body['aud'] as String?,
     );
+  }
+
+  /// Every user in the project, fetched one page of [perPage] users at a time.
+  ///
+  /// A page is only requested once the previous one has been consumed, so
+  /// stopping early, for example with `break` in an `await for` loop or with
+  /// [Stream.take], does not fetch the remaining pages:
+  ///
+  /// ```dart
+  /// await for (final user in admin.listAllUsers(perPage: 100)) {
+  ///   print(user.email);
+  /// }
+  /// ```
+  ///
+  /// [perPage] defaults to the server's page size when omitted.
+  ///
+  /// Pages are offsets into the user list, so a user created or deleted while
+  /// the stream is being read can make a user be emitted twice or skipped.
+  /// The stream ends at an empty page or when a `next` link does not point
+  /// past the current page.
+  ///
+  /// This function should only be called on a server. Never expose your
+  /// `secret` key on the client.
+  Stream<User> listAllUsers({int? perPage}) async* {
+    int? page;
+    while (true) {
+      final response = await listUsers(page: page, perPage: perPage);
+      if (response.users.isEmpty) return;
+      for (final user in response.users) {
+        yield user;
+      }
+      final nextPage = response.nextPage;
+      if (nextPage == null || nextPage <= (page ?? 1)) return;
+      page = nextPage;
+    }
   }
 
   /// Sends an invite link to an email address.
