@@ -153,6 +153,10 @@ enum OAuthClientGrantType {
 
   /// Exchanges a refresh token for new tokens.
   refreshToken,
+
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown,
 }
 
 /// OAuth client response types supported by the OAuth 2.1 server.
@@ -160,6 +164,10 @@ enum OAuthClientGrantType {
 enum OAuthClientResponseType {
   /// Returns an authorization code, to be exchanged for tokens.
   code,
+
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown,
 }
 
 /// OAuth client type indicating whether the client can keep credentials
@@ -171,11 +179,19 @@ enum OAuthClientType {
   public,
 
   /// A client that can keep its credentials confidential, such as a server.
-  confidential;
+  confidential,
 
-  /// Parses the `client_type` field of an OAuth client response.
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown;
+
+  /// Parses the `client_type` field of an OAuth client response, defaulting
+  /// to [OAuthClientType.unknown].
   static OAuthClientType fromValue(String value) {
-    return OAuthClientType.values.firstWhere((e) => e.snakeCase == value);
+    return OAuthClientType.values.firstWhere(
+      (e) => e.snakeCase == value,
+      orElse: () => OAuthClientType.unknown,
+    );
   }
 }
 
@@ -187,12 +203,18 @@ enum OAuthClientRegistrationType {
   dynamic,
 
   /// The client was registered manually, for example through the dashboard.
-  manual;
+  manual,
 
-  /// Parses the `registration_type` field of an OAuth client response.
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown;
+
+  /// Parses the `registration_type` field of an OAuth client response,
+  /// defaulting to [OAuthClientRegistrationType.unknown].
   static OAuthClientRegistrationType fromValue(String value) {
     return OAuthClientRegistrationType.values.firstWhere(
       (e) => e.snakeCase == value,
+      orElse: () => OAuthClientRegistrationType.unknown,
     );
   }
 }
@@ -235,6 +257,7 @@ class OAuthClient {
           .map(
             (value) => OAuthClientGrantType.values.firstWhere(
               (grantType) => grantType.snakeCase == value,
+              orElse: () => OAuthClientGrantType.unknown,
             ),
           )
           .toList(),
@@ -243,6 +266,7 @@ class OAuthClient {
               .map(
                 (value) => OAuthClientResponseType.values.firstWhere(
                   (responseType) => responseType.snakeCase == value,
+                  orElse: () => OAuthClientResponseType.unknown,
                 ),
               )
               .toList(),

@@ -45,7 +45,11 @@ enum PostgresChangeEvent {
   update,
 
   /// Listen to delete events.
-  delete;
+  delete,
+
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown;
 
   /// The event name sent as the `event` filter parameter.
   @internal
@@ -62,10 +66,7 @@ enum PostgresChangeEvent {
     'INSERT' => PostgresChangeEvent.insert,
     'UPDATE' => PostgresChangeEvent.update,
     'DELETE' => PostgresChangeEvent.delete,
-    _ => throw ArgumentError(
-      'Only "INSERT", "UPDATE", or "DELETE" can be passed to the '
-      '`fromValue()` method.',
-    ),
+    _ => PostgresChangeEvent.unknown,
   };
 }
 
@@ -149,7 +150,11 @@ enum PresenceEvent {
   join,
 
   /// One or more clients left.
-  leave;
+  leave,
+
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown;
 
   /// Parses the `event` field of a presence payload.
   @internal
@@ -159,10 +164,7 @@ enum PresenceEvent {
         return event;
       }
     }
-    throw ArgumentError(
-      'Only "sync", "join", or "leave" can be passed to the `fromValue()` '
-      'method.',
-    );
+    return PresenceEvent.unknown;
   }
 }
 

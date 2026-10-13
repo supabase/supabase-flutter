@@ -106,6 +106,14 @@ void main() {
       expect(provider.identifier, 'custom:mycompany');
     });
 
+    test('decodes an unrecognized provider type as unknown', () {
+      final provider = CustomOAuthProvider.fromJson(
+        baseJson()..['provider_type'] = 'saml',
+      );
+
+      expect(provider.providerType, CustomProviderType.unknown);
+    });
+
     test('leaves custom_claims_allowlist null when absent', () {
       final provider = CustomOAuthProvider.fromJson(baseJson());
 

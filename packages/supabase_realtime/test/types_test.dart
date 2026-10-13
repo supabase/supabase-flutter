@@ -31,6 +31,15 @@ void main() {
       expect(payload.commitTimestamp.isUtc, isTrue);
     });
 
+    test('decodes an unrecognized event type as unknown', () {
+      final payload = PostgresChangePayload.fromPayload({
+        ...payloadWith('2022-09-21T04:59:30Z'),
+        'eventType': 'TRUNCATE',
+      });
+
+      expect(payload.eventType, PostgresChangeEvent.unknown);
+    });
+
     test('falls back to the UTC epoch when the timestamp is missing', () {
       final payload = PostgresChangePayload.fromPayload(payloadWith(null));
 

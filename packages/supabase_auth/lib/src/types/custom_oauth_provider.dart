@@ -11,11 +11,19 @@ enum CustomProviderType {
 
   /// An OpenID Connect provider, discoverable through its `.well-known`
   /// configuration document.
-  oidc;
+  oidc,
 
-  /// Parses the `type` field of a custom provider response.
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown;
+
+  /// Parses the `type` field of a custom provider response, defaulting to
+  /// [CustomProviderType.unknown].
   static CustomProviderType fromValue(String value) {
-    return CustomProviderType.values.firstWhere((e) => e.name == value);
+    return CustomProviderType.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => CustomProviderType.unknown,
+    );
   }
 }
 

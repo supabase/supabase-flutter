@@ -240,7 +240,7 @@ void main() {
                     if (!updates.isCompleted) updates.complete(payload);
                   case PostgresChangeEvent.delete:
                     if (!deletes.isCompleted) deletes.complete(payload);
-                  case PostgresChangeEvent.all:
+                  case PostgresChangeEvent.all || PostgresChangeEvent.unknown:
                     break;
                 }
               });

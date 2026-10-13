@@ -86,6 +86,27 @@ void main() {
         expect(client.responseTypes, isEmpty);
       },
     );
+
+    test('fromJson decodes unrecognized enum values as unknown', () {
+      final client = OAuthClient.fromJson({
+        ...json,
+        'client_type': 'hybrid',
+        'registration_type': 'federated',
+        'grant_types': ['authorization_code', 'device_code'],
+        'response_types': ['code', 'id_token'],
+      });
+
+      expect(client.clientType, OAuthClientType.unknown);
+      expect(client.registrationType, OAuthClientRegistrationType.unknown);
+      expect(client.grantTypes, [
+        OAuthClientGrantType.authorizationCode,
+        OAuthClientGrantType.unknown,
+      ]);
+      expect(client.responseTypes, [
+        OAuthClientResponseType.code,
+        OAuthClientResponseType.unknown,
+      ]);
+    });
   });
 
   group('CreateOAuthClientOptions', () {

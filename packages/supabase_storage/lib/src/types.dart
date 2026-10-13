@@ -95,12 +95,19 @@ enum LifecycleRuleStatus {
   enabled,
 
   /// The rule is stored but not applied.
-  disabled;
+  disabled,
+
+  /// Returned when the server sends a value this version of the client does
+  /// not recognize.
+  unknown;
 
   String get _json => '${name[0].toUpperCase()}${name.substring(1)}';
 
   static LifecycleRuleStatus _fromJson(String value) {
-    return values.firstWhere((status) => status._json == value);
+    return values.firstWhere(
+      (status) => status._json == value,
+      orElse: () => LifecycleRuleStatus.unknown,
+    );
   }
 }
 
