@@ -1061,36 +1061,48 @@ features:
       - PostgrestFilterBuilder.eq
       - SupabaseStreamFilterBuilder.eq
       - PostgrestFilterableExpression.eq
+    supporting_symbols:
+      - PostgrestFilterBuilder.equals
   database.using_filters.neq:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.neq
       - SupabaseStreamFilterBuilder.neq
       - PostgrestFilterableExpression.neq
+    supporting_symbols:
+      - PostgrestFilterBuilder.notEquals
   database.using_filters.gt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gt
       - SupabaseStreamFilterBuilder.gt
       - PostgrestFilterableExpression.gt
+    supporting_symbols:
+      - PostgrestFilterBuilder.greaterThan
   database.using_filters.gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gte
       - SupabaseStreamFilterBuilder.gte
       - PostgrestFilterableExpression.gte
+    supporting_symbols:
+      - PostgrestFilterBuilder.greaterThanOrEqualTo
   database.using_filters.lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lt
       - SupabaseStreamFilterBuilder.lt
       - PostgrestFilterableExpression.lt
+    supporting_symbols:
+      - PostgrestFilterBuilder.lessThan
   database.using_filters.lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lte
       - SupabaseStreamFilterBuilder.lte
       - PostgrestFilterableExpression.lte
+    supporting_symbols:
+      - PostgrestFilterBuilder.lessThanOrEqualTo
   database.using_filters.like:
     status: implemented
     symbols:
@@ -1196,21 +1208,29 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeGt
       - PostgrestRangeFilters.rangeGt
+    supporting_symbols:
+      - PostgrestFilterBuilder.rangeGreaterThan
   database.using_filters.range_gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGte
       - PostgrestRangeFilters.rangeGte
+    supporting_symbols:
+      - PostgrestFilterBuilder.rangeGreaterThanOrEqualTo
   database.using_filters.range_lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLt
       - PostgrestRangeFilters.rangeLt
+    supporting_symbols:
+      - PostgrestFilterBuilder.rangeLessThan
   database.using_filters.range_lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLte
       - PostgrestRangeFilters.rangeLte
+    supporting_symbols:
+      - PostgrestFilterBuilder.rangeLessThanOrEqualTo
   database.using_filters.range_adjacent:
     status: implemented
     symbols:

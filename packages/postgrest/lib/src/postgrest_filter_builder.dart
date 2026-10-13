@@ -66,6 +66,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   ///
   /// For `null` equality, use [isFilter] instead.
+  ///
+  /// See also [equals].
   PostgrestFilterBuilder<T> eq(String column, Object value) {
     final Uri url;
     if (value is List) {
@@ -79,6 +81,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
+  /// Same as [eq], spelled out.
+  PostgrestFilterBuilder<T> equals(String column, Object value) =>
+      eq(column, value);
+
   /// Finds all rows whose value on the stated [column] doesn't match the
   /// specified [value].
   ///
@@ -88,6 +94,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .neq('username', 'supabot');
   /// ```
+  ///
+  /// See also [notEquals].
   PostgrestFilterBuilder<T> neq(String column, Object value) {
     final Uri url;
     if (value is List) {
@@ -101,6 +109,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
+  /// Same as [neq], spelled out.
+  PostgrestFilterBuilder<T> notEquals(String column, Object value) =>
+      neq(column, value);
+
   /// Finds all rows whose value on the stated [column] is greater than the
   /// specified [value].
   ///
@@ -110,9 +122,15 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .gt('id', 1);
   /// ```
+  ///
+  /// See also [greaterThan].
   PostgrestFilterBuilder<T> gt(String column, Object value) {
     return copyWithUrl(_url.appendSearchParameters(column, 'gt.$value'));
   }
+
+  /// Same as [gt], spelled out.
+  PostgrestFilterBuilder<T> greaterThan(String column, Object value) =>
+      gt(column, value);
 
   /// Finds all rows whose value on the stated [column] is greater than or equal
   /// to the specified [value].
@@ -123,9 +141,15 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .gte('id', 1);
   /// ```
+  ///
+  /// See also [greaterThanOrEqualTo].
   PostgrestFilterBuilder<T> gte(String column, Object value) {
     return copyWithUrl(_url.appendSearchParameters(column, 'gte.$value'));
   }
+
+  /// Same as [gte], spelled out.
+  PostgrestFilterBuilder<T> greaterThanOrEqualTo(String column, Object value) =>
+      gte(column, value);
 
   /// Finds all rows whose value on the stated [column] is less than the
   /// specified [value].
@@ -136,9 +160,15 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .lt('id', 2);
   /// ```
+  ///
+  /// See also [lessThan].
   PostgrestFilterBuilder<T> lt(String column, Object value) {
     return copyWithUrl(_url.appendSearchParameters(column, 'lt.$value'));
   }
+
+  /// Same as [lt], spelled out.
+  PostgrestFilterBuilder<T> lessThan(String column, Object value) =>
+      lt(column, value);
 
   /// Finds all rows whose value on the stated [column] is less than or equal to
   /// the specified [value].
@@ -149,9 +179,15 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .lte('id', 2);
   /// ```
+  ///
+  /// See also [lessThanOrEqualTo].
   PostgrestFilterBuilder<T> lte(String column, Object value) {
     return copyWithUrl(_url.appendSearchParameters(column, 'lte.$value'));
   }
+
+  /// Same as [lte], spelled out.
+  PostgrestFilterBuilder<T> lessThanOrEqualTo(String column, Object value) =>
+      lte(column, value);
 
   /// Finds all rows whose value in the stated [column] matches the supplied
   /// [pattern] (case sensitive).
@@ -408,9 +444,15 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .rangeLt('age_range', '[2,25)');
   /// ```
+  ///
+  /// See also [rangeLessThan].
   PostgrestFilterBuilder<T> rangeLt(String column, String range) {
     return copyWithUrl(_url.appendSearchParameters(column, 'sl.$range'));
   }
+
+  /// Same as [rangeLt], spelled out.
+  PostgrestFilterBuilder<T> rangeLessThan(String column, String range) =>
+      rangeLt(column, range);
 
   /// Finds all rows whose range value on the stated [column] is strictly to the
   /// right of the specified [range].
@@ -421,9 +463,15 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .rangeGt('age_range', '[2,25)');
   /// ```
+  ///
+  /// See also [rangeGreaterThan].
   PostgrestFilterBuilder<T> rangeGt(String column, String range) {
     return copyWithUrl(_url.appendSearchParameters(column, 'sr.$range'));
   }
+
+  /// Same as [rangeGt], spelled out.
+  PostgrestFilterBuilder<T> rangeGreaterThan(String column, String range) =>
+      rangeGt(column, range);
 
   /// Finds all rows whose range value on the stated [column] does not extend to
   /// the left of the specified [range].
@@ -434,9 +482,17 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .rangeGte('age_range', '[2,25)');
   /// ```
+  ///
+  /// See also [rangeGreaterThanOrEqualTo].
   PostgrestFilterBuilder<T> rangeGte(String column, String range) {
     return copyWithUrl(_url.appendSearchParameters(column, 'nxl.$range'));
   }
+
+  /// Same as [rangeGte], spelled out.
+  PostgrestFilterBuilder<T> rangeGreaterThanOrEqualTo(
+    String column,
+    String range,
+  ) => rangeGte(column, range);
 
   /// Finds all rows whose range value on the stated [column] does not extend to
   /// the right of the specified [range].
@@ -447,9 +503,17 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .rangeLte('age_range', '[2,25)');
   /// ```
+  ///
+  /// See also [rangeLessThanOrEqualTo].
   PostgrestFilterBuilder<T> rangeLte(String column, String range) {
     return copyWithUrl(_url.appendSearchParameters(column, 'nxr.$range'));
   }
+
+  /// Same as [rangeLte], spelled out.
+  PostgrestFilterBuilder<T> rangeLessThanOrEqualTo(
+    String column,
+    String range,
+  ) => rangeLte(column, range);
 
   /// Finds all rows whose range value on the stated [column] is adjacent to the
   /// specified [range].
