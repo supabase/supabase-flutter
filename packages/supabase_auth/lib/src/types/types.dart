@@ -319,6 +319,18 @@ class OAuthClient {
   final DateTime updatedAt;
 }
 
+List<String>? _encodeKnownValues<T extends Enum>(
+  List<T>? values,
+  T unknown,
+  String name,
+) {
+  if (values == null) return null;
+  if (values.contains(unknown)) {
+    throw ArgumentError.value(values, name, 'Cannot contain ${unknown.name}');
+  }
+  return values.map((value) => value.snakeCase).toList();
+}
+
 /// Parameters for creating a new OAuth client.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class CreateOAuthClientOptions {
@@ -360,8 +372,16 @@ class CreateOAuthClientOptions {
       'client_uri': ?clientUri,
       'logo_uri': ?logoUri,
       'redirect_uris': redirectUris,
-      'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
-      'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
+      'grant_types': ?_encodeKnownValues(
+        grantTypes,
+        OAuthClientGrantType.unknown,
+        'grantTypes',
+      ),
+      'response_types': ?_encodeKnownValues(
+        responseTypes,
+        OAuthClientResponseType.unknown,
+        'responseTypes',
+      ),
       'scope': ?scope,
     };
   }
@@ -407,8 +427,16 @@ class UpdateOAuthClientOptions {
       'client_uri': ?clientUri,
       'logo_uri': ?logoUri,
       'redirect_uris': ?redirectUris,
-      'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
-      'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
+      'grant_types': ?_encodeKnownValues(
+        grantTypes,
+        OAuthClientGrantType.unknown,
+        'grantTypes',
+      ),
+      'response_types': ?_encodeKnownValues(
+        responseTypes,
+        OAuthClientResponseType.unknown,
+        'responseTypes',
+      ),
       'scope': ?scope,
     };
   }

@@ -131,6 +131,20 @@ void main() {
   });
 
   group('UpdateOAuthClientOptions', () {
+    test('toJson rejects unknown grant and response types', () {
+      const grantOptions = CreateOAuthClientOptions(
+        clientName: 'Test OAuth Client',
+        redirectUris: ['https://example.com/callback'],
+        grantTypes: [OAuthClientGrantType.unknown],
+      );
+      const responseOptions = UpdateOAuthClientOptions(
+        responseTypes: [OAuthClientResponseType.unknown],
+      );
+
+      expect(grantOptions.toJson, throwsArgumentError);
+      expect(responseOptions.toJson, throwsArgumentError);
+    });
+
     test('toJson includes the logo URI', () {
       const options = UpdateOAuthClientOptions(
         logoUri: 'https://example.com/logo.png',

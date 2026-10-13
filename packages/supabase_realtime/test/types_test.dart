@@ -67,4 +67,14 @@ void main() {
       expect(payload.commitTimestamp.isUtc, isTrue);
     });
   });
+
+  group('RealtimePresencePayload', () {
+    test('decodes an unrecognized event as unknown', () {
+      final payload = RealtimePresenceSyncPayload.fromJson({
+        'event': 'resync',
+      });
+
+      expect(payload.event, PresenceEvent.unknown);
+    });
+  });
 }

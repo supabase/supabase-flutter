@@ -1424,6 +1424,9 @@ switch (payload.eventType) {
 }
 ```
 
+`unknown` cannot be sent back. Passing it to a request, including writing back a decoded value that
+holds it, throws an `ArgumentError` instead of sending `unknown` to the server.
+
 `SortDirection` is also used to build queries, so it has no `unknown` value. `SortField.direction`
 is nullable instead and is `null` when the server reports a direction the SDK does not know, and
 `SortDirection.fromValue` returns `null` rather than throwing.

@@ -185,6 +185,13 @@ class LifecycleRule {
 
   @internal
   Map<String, dynamic> toJson() {
+    if (status == LifecycleRuleStatus.unknown) {
+      throw ArgumentError.value(
+        status,
+        'status',
+        'Cannot send a rule with an unknown status',
+      );
+    }
     return {
       'id': ?id,
       'status': status._json,

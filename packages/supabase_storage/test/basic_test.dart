@@ -986,6 +986,24 @@ void main() {
         expect(rules.single.id, 'generated-id');
       });
 
+      test(
+        'updateBucketLifecycle rejects a rule with an unknown status',
+        () async {
+          await expectLater(
+            () => client.updateBucketLifecycle('test_bucket', [
+              const LifecycleRule(
+                status: LifecycleRuleStatus.unknown,
+                noncurrentVersionExpiration: NoncurrentVersionExpiration(
+                  noncurrentDays: 7,
+                ),
+              ),
+            ]),
+            throwsArgumentError,
+          );
+          expect(customHttpClient.requests, isEmpty);
+        },
+      );
+
       test('deleteBucketLifecycle deletes the policy', () async {
         customHttpClient.stub({'message': 'Successfully deleted'});
 

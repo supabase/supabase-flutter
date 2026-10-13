@@ -54,6 +54,13 @@ enum PostgresChangeEvent {
   /// The event name sent as the `event` filter parameter.
   @internal
   String toRealtimeEvent() {
+    if (this == PostgresChangeEvent.unknown) {
+      throw ArgumentError.value(
+        this,
+        'event',
+        'Cannot listen for an unknown event',
+      );
+    }
     if (this == PostgresChangeEvent.all) {
       return '*';
     }

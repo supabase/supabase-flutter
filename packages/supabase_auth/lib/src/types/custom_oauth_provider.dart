@@ -318,6 +318,13 @@ class CreateCustomProviderOptions {
   final String? jwksUri;
 
   Map<String, dynamic> toJson() {
+    if (providerType == CustomProviderType.unknown) {
+      throw ArgumentError.value(
+        providerType,
+        'providerType',
+        'Cannot create a provider of an unknown type',
+      );
+    }
     return {
       'provider_type': providerType.name,
       'identifier': identifier,

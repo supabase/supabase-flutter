@@ -21,6 +21,18 @@ void main() {
       expect(json['client_secret'], 'client-secret');
     });
 
+    test('rejects an unknown provider type', () {
+      final parameters = CreateCustomProviderOptions(
+        providerType: CustomProviderType.unknown,
+        identifier: 'custom:mycompany',
+        name: 'My Company',
+        clientId: 'client-id',
+        clientSecret: 'client-secret',
+      );
+
+      expect(parameters.toJson, throwsArgumentError);
+    });
+
     test('omits custom_claims_allowlist when not provided', () {
       final parameters = CreateCustomProviderOptions(
         providerType: CustomProviderType.oidc,

@@ -866,6 +866,28 @@ void main() {
       expect(field.nullOrder, NullOrder.unknown);
     });
 
+    test('SortField refuses to send a missing direction', () {
+      const field = SortField(
+        sourceId: 2,
+        transform: 'identity',
+        direction: null,
+        nullOrder: NullOrder.nullsLast,
+      );
+
+      expect(field.toJson, throwsArgumentError);
+    });
+
+    test('SortField refuses to send an unknown null order', () {
+      const field = SortField(
+        sourceId: 2,
+        transform: 'identity',
+        direction: SortDirection.ascending,
+        nullOrder: NullOrder.unknown,
+      );
+
+      expect(field.toJson, throwsArgumentError);
+    });
+
     test('SnapshotReference decodes an unrecognized type as unknown', () {
       final reference = SnapshotReference.fromJson({
         'type': 'bookmark',
@@ -873,6 +895,7 @@ void main() {
       });
 
       expect(reference.type, SnapshotReferenceType.unknown);
+      expect(reference.toJson, throwsArgumentError);
     });
   });
 }

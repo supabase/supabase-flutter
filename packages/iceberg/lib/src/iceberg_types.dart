@@ -343,12 +343,29 @@ class SortField {
   final SortDirection? direction;
   final NullOrder nullOrder;
 
-  Map<String, dynamic> toJson() => {
-    'source-id': sourceId,
-    'transform': transform,
-    'direction': ?direction?.value,
-    'null-order': nullOrder.value,
-  };
+  Map<String, dynamic> toJson() {
+    final direction = this.direction;
+    if (direction == null) {
+      throw ArgumentError.value(
+        direction,
+        'direction',
+        'Cannot send a sort field without a direction',
+      );
+    }
+    if (nullOrder == NullOrder.unknown) {
+      throw ArgumentError.value(
+        nullOrder,
+        'nullOrder',
+        'Cannot send a sort field with an unknown null order',
+      );
+    }
+    return {
+      'source-id': sourceId,
+      'transform': transform,
+      'direction': direction.value,
+      'null-order': nullOrder.value,
+    };
+  }
 }
 
 /// Describes how a table is sorted when written.
@@ -400,13 +417,22 @@ class SnapshotReference {
   final Duration? maxSnapshotAge;
   final int? minSnapshotsToKeep;
 
-  Map<String, dynamic> toJson() => {
-    'type': type.value,
-    'snapshot-id': snapshotId,
-    'max-ref-age-ms': ?maxReferenceAge?.inMilliseconds,
-    'max-snapshot-age-ms': ?maxSnapshotAge?.inMilliseconds,
-    'min-snapshots-to-keep': ?minSnapshotsToKeep,
-  };
+  Map<String, dynamic> toJson() {
+    if (type == SnapshotReferenceType.unknown) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'Cannot send a reference of an unknown type',
+      );
+    }
+    return {
+      'type': type.value,
+      'snapshot-id': snapshotId,
+      'max-ref-age-ms': ?maxReferenceAge?.inMilliseconds,
+      'max-snapshot-age-ms': ?maxSnapshotAge?.inMilliseconds,
+      'min-snapshots-to-keep': ?minSnapshotsToKeep,
+    };
+  }
 }
 
 /// A snapshot of a table at a point in time.
