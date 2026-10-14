@@ -142,6 +142,25 @@ void main() {
       expect(response.count, 2);
     });
 
+    test('sends the arguments of a head request as query parameters', () async {
+      httpClient.stub(null);
+
+      await client.rpc
+          .rows(
+            'search_books',
+            arguments: {'query': 'dart'},
+            rowFromJson: Book.new,
+          )
+          .where(Books.id.gt(1))
+          .head();
+
+      expect(lastRequest().method, HttpMethod.head.value);
+      expect(lastRequest().url.queryParameters, {
+        'query': 'dart',
+        'id': 'gt.1',
+      });
+    });
+
     test('calls in the schema it is given', () async {
       httpClient.stub(bookRows);
 
