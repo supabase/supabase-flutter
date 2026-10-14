@@ -259,10 +259,34 @@ final OAuthClientRegistrationType type = client.registrationType;
 final OAuthClientRegistrationType? type = client.registrationType;
 ```
 
-### `OAuthClient.scope` is gone
+### OAuth clients no longer have a `scope`
 
-Auth never returns a scope for an OAuth client, so `OAuthClient.scope` was always `null`. Remove
-any reads of it. The scopes a client requests are on `OAuthAuthorizationDetailsResponse.scope`.
+Auth does not store a scope on an OAuth client, so `OAuthClient.scope`,
+`CreateOAuthClientOptions.scope` and `UpdateOAuthClientOptions.scope` are gone. `OAuthClient.scope`
+was always `null`, and Auth ignored the scope sent when creating or updating a client.
+
+Scopes belong to each authorization request instead. A client asks for them with the `scope`
+query parameter on `/oauth/authorize`, and the scopes it asked for are on
+`OAuthAuthorizationDetailsResponse.scope`.
+
+```dart
+// Before
+await supabase.auth.admin.oauth.createClient(
+  CreateOAuthClientOptions(
+    clientName: 'My App',
+    redirectUris: ['https://example.com/callback'],
+    scope: 'openid email',
+  ),
+);
+
+// After
+await supabase.auth.admin.oauth.createClient(
+  CreateOAuthClientOptions(
+    clientName: 'My App',
+    redirectUris: ['https://example.com/callback'],
+  ),
+);
+```
 
 ### `JWK.publicKey` returns a `JWTKey`
 

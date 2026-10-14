@@ -337,7 +337,6 @@ class CreateOAuthClientOptions {
     required this.redirectUris,
     this.grantTypes,
     this.responseTypes,
-    this.scope,
   });
 
   /// Human-readable name of the OAuth client
@@ -359,9 +358,6 @@ class CreateOAuthClientOptions {
   /// Array of allowed response types (optional, defaults to code)
   final List<OAuthClientResponseType>? responseTypes;
 
-  /// Scope of the OAuth client
-  final String? scope;
-
   Map<String, dynamic> toJson() {
     return {
       'client_name': clientName,
@@ -378,7 +374,6 @@ class CreateOAuthClientOptions {
         OAuthClientResponseType.unknown,
         'responseTypes',
       ),
-      'scope': ?scope,
     };
   }
 }
@@ -393,7 +388,6 @@ class UpdateOAuthClientOptions {
     this.redirectUris,
     this.grantTypes,
     this.responseTypes,
-    this.scope,
   });
 
   /// Human-readable name of the OAuth client
@@ -414,9 +408,6 @@ class UpdateOAuthClientOptions {
   /// Array of allowed response types
   final List<OAuthClientResponseType>? responseTypes;
 
-  /// Scope of the OAuth client
-  final String? scope;
-
   Map<String, dynamic> toJson() {
     return {
       'client_name': ?clientName,
@@ -433,7 +424,6 @@ class UpdateOAuthClientOptions {
         OAuthClientResponseType.unknown,
         'responseTypes',
       ),
-      'scope': ?scope,
     };
   }
 }

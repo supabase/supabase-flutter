@@ -750,7 +750,6 @@ features:
       - CreateOAuthClientOptions.logoUri
       - CreateOAuthClientOptions.redirectUris
       - CreateOAuthClientOptions.responseTypes
-      - CreateOAuthClientOptions.scope
       - CreateOAuthClientOptions.toJson
   auth.oauth_admin.get_client:
     status: implemented
@@ -769,7 +768,6 @@ features:
       - UpdateOAuthClientOptions.logoUri
       - UpdateOAuthClientOptions.redirectUris
       - UpdateOAuthClientOptions.responseTypes
-      - UpdateOAuthClientOptions.scope
       - UpdateOAuthClientOptions.toJson
   auth.oauth_admin.delete_client:
     status: implemented
