@@ -19,12 +19,17 @@ enum PostgrestTableOperation {
   delete,
 
   /// Counts the matching rows without reading them.
-  count;
+  count,
 
-  /// Whether the operation writes to the table.
+  /// Calls the Postgres function the request's table is named after, with
+  /// the payload as its arguments.
+  rpc;
+
+  /// Whether the operation may write to the database. A function call
+  /// counts as one, since nothing on the client tells whether it does.
   bool get isMutation => switch (this) {
     select || count => false,
-    insert || upsert || update || delete => true,
+    insert || upsert || update || delete || rpc => true,
   };
 }
 
@@ -54,6 +59,9 @@ enum PostgrestResultShape {
 
   /// The query plan instead of the rows.
   explain,
+
+  /// The response body of a function call as decoded, whatever its shape.
+  value,
 }
 
 /// A `limit` or `range` applied to an embedded relation rather than to the
@@ -200,6 +208,9 @@ final class PostgrestTableRequest {
        onConflict = onConflict == null ? null : List.unmodifiable(onConflict);
 
   /// The table the request addresses.
+  ///
+  /// For [PostgrestTableOperation.rpc] it describes the function instead:
+  /// its name, and the row type of the rows it returns.
   final PostgrestTable<Object?, Object?, Object?> table;
 
   /// What the request does to [table].
@@ -239,7 +250,8 @@ final class PostgrestTableRequest {
   /// `null` means exact.
   final CountOption? countOption;
 
-  /// The rows a mutation sends: one JSON object, or a list of them.
+  /// The rows a mutation sends: one JSON object, or a list of them. For
+  /// [PostgrestTableOperation.rpc] the arguments of the function call.
   ///
   /// Kept as the caller passed it, not copied: the builders never modify it
   /// and an executor must not either. An executor that stores a request for
@@ -335,7 +347,8 @@ final class PostgrestTableRequest {
 /// `List<Map<String, dynamic>>` for rows, a `Map<String, dynamic>` (or
 /// `null`) for a single row, a `String` for csv and explain, a
 /// `Map<String, dynamic>` for GeoJSON, and `null` when nothing was asked
-/// back. The typed builder converts it into the table's row type.
+/// back. A [PostgrestResultShape.value] request gets the decoded response body
+/// as it is. The typed builder converts it into the table's row type.
 @experimental
 final class PostgrestTableResult {
   const PostgrestTableResult({this.data, this.count});

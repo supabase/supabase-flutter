@@ -190,31 +190,37 @@ class PostgrestClient {
     );
   }
 
-  /// {@template postgrest_rpc}
-  /// Performs a stored procedure call.
+  /// Calls Postgres functions in the schema of this client.
   ///
-  /// [fn] is the name of the function to call.
-  ///
-  /// [params] is an optional object to pass as arguments to the function call.
-  ///
-  /// When [get] is set to `true`, the function will be called with read-only
-  /// access mode.
-  ///
-  /// {@endtemplate}
+  /// Calling the result performs an untyped call, see [PostgrestRpc.call]:
   ///
   /// ```dart
-  /// supabase.rpc('get_status', params: {'name_param': 'supabot'})
+  /// client.rpc('get_status', params: {'name_param': 'supabot'})
   /// ```
-  PostgrestFilterBuilder<T> rpc<T>(
-    String fn, {
-    Map<dynamic, dynamic>? params,
+  ///
+  /// The extension methods `package:supabase_typegen` generates on
+  /// [PostgrestRpc] call the functions of the database with typed arguments
+  /// and results, `client.rpc.searchBooks(query: 'dart')`.
+  PostgrestRpc get rpc => PostgrestRpc(
+    this,
+    schema: _schema,
+    schemaIsExplicit: _schemaIsExplicit,
+  );
+
+  /// Like [rpc], but with the call scoped to [schema] instead of the schema
+  /// this client was created with; `null` keeps the client's schema.
+  @internal
+  PostgrestFilterBuilder<T> rpcInSchema<T>(
+    String fn,
+    String? schema, {
+    Object? params,
     bool get = false,
   }) {
     final requestUrl = '$url/rpc/$fn';
     return PostgrestRpcBuilder(
       requestUrl,
       headers: headers,
-      schema: _schema,
+      schema: schema ?? _schema,
       httpClient: httpClient,
       jsonCodec: _jsonCodec,
       retryOptions: retryOptions,

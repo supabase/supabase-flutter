@@ -52,8 +52,11 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
       return PostgrestTableResult(count: await counted);
     }
 
+    final operation = request.operation == PostgrestTableOperation.rpc
+        ? _applyFilter(_call(request), request)
+        : _operation(query, request);
     final terminal = _applyOptions(
-      _terminal(_transforms(_operation(query, request), request), request),
+      _terminal(_transforms(operation, request), request),
       request.options,
     );
 
@@ -130,7 +133,30 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
         );
       case PostgrestTableOperation.count:
         throw StateError('count is rendered before the other operations');
+      case PostgrestTableOperation.rpc:
+        throw StateError('a function call is rendered by _call');
     }
+  }
+
+  /// The function call of [request], decoding a response read as rows into
+  /// a [PostgrestList] the way a select does.
+  PostgrestFilterBuilder<Object?> _call(PostgrestTableRequest request) {
+    final name = request.table.name;
+    final arguments = request.payload;
+    if (request.shape == PostgrestResultShape.value) {
+      // ignore: invalid_use_of_internal_member
+      return client.rpcInSchema(
+        name,
+        request.schema,
+        params: arguments,
+      );
+    }
+    // ignore: invalid_use_of_internal_member
+    return client.rpcInSchema<PostgrestList>(
+      name,
+      request.schema,
+      params: arguments,
+    );
   }
 
   static void _rejectFilter(
@@ -178,7 +204,10 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     PostgrestTableRequest request,
   ) {
     var transformed = operation;
-    if (request.operation.isMutation && request.returning) {
+    final selects = request.operation == PostgrestTableOperation.rpc
+        ? request.columns.isNotEmpty
+        : request.operation.isMutation && request.returning;
+    if (selects) {
       transformed = transformed.select(_selectList(request.columns));
     }
     for (final ordering in request.orderings) {
@@ -218,7 +247,9 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     PostgrestTransformBuilder<Object?> transformed,
     PostgrestTableRequest request,
   ) => switch (request.shape) {
-    PostgrestResultShape.rows || PostgrestResultShape.none => transformed,
+    PostgrestResultShape.rows ||
+    PostgrestResultShape.none ||
+    PostgrestResultShape.value => transformed,
     PostgrestResultShape.single => transformed.single(),
     PostgrestResultShape.maybeSingle => transformed.maybeSingle(),
     PostgrestResultShape.head => transformed.head(),
