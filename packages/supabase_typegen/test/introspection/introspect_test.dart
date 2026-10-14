@@ -37,7 +37,13 @@ Map<String, dynamic> _function(String name, String returnType) => {
   'id': 1,
   'schema': 'public',
   'name': name,
+  'args': <Map<String, dynamic>>[],
+  'argument_types': '',
+  'return_type_id': 2249,
   'return_type': returnType,
+  'return_type_relation_id': null,
+  'is_set_returning_function': false,
+  'prorows': null,
 };
 
 void main() {
@@ -93,7 +99,19 @@ void main() {
       'relationships',
       'functions',
       'types',
+      'rpcFunctions',
     ]);
+  });
+
+  test('resolves the functions callable through /rpc', () async {
+    final document = await introspect(database);
+
+    expect(
+      (document['rpcFunctions'] as List<dynamic>).map(
+        (function) => function['name'],
+      ),
+      ['search_books'],
+    );
   });
 
   test('appends the view derived relationships to the foreign keys', () async {

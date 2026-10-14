@@ -43,7 +43,21 @@ For every table the generator emits:
   column, and a computed relationship named like the table of a foreign key
   embed replaces that embed, since PostgREST resolves the name to the
   function,
-- Dart enums for Postgres enums, with wire-name mapping.
+- Dart enums for Postgres enums, with wire-name mapping,
+- an extension method on `PostgrestRpc` for every function PostgREST exposes
+  under `/rpc`, so `client.rpc.searchBooks(query: 'dart')` takes the
+  arguments as typed parameters, optional where the function declares a
+  default, and resolves to a typed result. A function returning rows of a
+  generated table resolves to those rows and can be filtered, ordered and
+  paged with the table's column tokens; a `RETURNS TABLE (…)` function gets a
+  row type and column tokens of its own; a scalar comes back converted and
+  nullable, since a function can always return `NULL`. Functions of a schema
+  other than `public` carry the schema as a prefix, `inventoryRestock`. Of
+  overloaded functions, the overload with the fewest arguments is named after
+  the function and every other one spells out its arguments,
+  `booksOfWithAuthorNameAndMaxPrice`; an overload PostgREST cannot resolve
+  gets no method, only a comment saying why. `client.rpc('fn', params: …)`
+  still makes an untyped call.
 
 The schemas are generated into one file. Objects of the `public` schema are
 named after themselves, `books` becomes `Books`, `BooksRow`, `BooksInsert`
@@ -189,4 +203,11 @@ final archived = await client
 - Foreign keys into another schema get no relation member, since PostgREST
   only embeds tables of the schema a request addresses. The foreign key
   itself is still described, so the column is typed like any other.
-- Typed functions (rpc) are not generated yet.
+- A function taking an unnamed parameter gets a method only when that is its
+  sole parameter and of type `json` or `jsonb`, which PostgREST passes as the
+  whole request body. Call one taking a sole unnamed `text` parameter through
+  `client.rpc('fn', params: …)`; one taking a sole unnamed row parameter is a
+  computed field or relationship, reached through its table.
+- The parameters of a function are typed non-nullable unless they have a
+  default, matching the supabase-js type generator; pass SQL NULL to a
+  function without a default through `client.rpc`.

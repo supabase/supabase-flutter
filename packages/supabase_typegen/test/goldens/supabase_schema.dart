@@ -794,6 +794,173 @@ class Books {
   );
 }
 
+/// A row returned by the `author_book_counts` function.
+extension type const AuthorBookCountsRow(Map<String, dynamic> _json)
+    implements Object {
+  String? get authorName => _json['author_name'] as String?;
+  int? get bookCount => _json['book_count'] as int?;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Column tokens of the rows the `author_book_counts` function returns, for
+/// filtering and ordering them.
+class AuthorBookCounts {
+  const AuthorBookCounts._();
+
+  static const authorName =
+      PostgrestNullableColumn<AuthorBookCountsRow, String>('author_name');
+  static const bookCount = PostgrestNullableColumn<AuthorBookCountsRow, int>(
+    'book_count',
+  );
+}
+
+/// Typed calls of the database functions, `client.rpc.functionName(…)`.
+///
+/// `price_label(amount int4)` has no method: Could not choose the best
+/// candidate function between: public.price_label(amount => int4),
+/// public.price_label(amount => numeric). Try renaming the parameters or the
+/// function itself in the database so function overloading can be resolved
+///
+/// `price_label(amount numeric)` has no method: Could not choose the best
+/// candidate function between: public.price_label(amount => int4),
+/// public.price_label(amount => numeric). Try renaming the parameters or the
+/// function itself in the database so function overloading can be resolved
+///
+/// `title(books)` has no method: the function public.title with parameter or
+/// with a single unnamed json/jsonb parameter, but no matches were found in the
+/// schema cache
+extension DatabaseFunctions on PostgrestRpc {
+  /// Calls the `inventory.restock` function.
+  PostgrestTypedBuilder<int?> inventoryRestock({
+    required int amount,
+    required int stockId,
+  }) => value(
+    'restock',
+    arguments: {'amount': amount, 'stock_id': stockId},
+    fromJson: (json) => json as int?,
+    schema: 'inventory',
+  );
+
+  /// Calls the `author_book_counts` function, which returns rows filterable
+  /// through `AuthorBookCounts`.
+  PostgrestTypedFilterBuilder<AuthorBookCountsRow, List<AuthorBookCountsRow>>
+  authorBookCounts({int? minBooks}) => rows(
+    'author_book_counts',
+    arguments: {'min_books': ?minBooks},
+    rowFromJson: AuthorBookCountsRow.new,
+    schema: 'public',
+  );
+
+  /// Calls the `book_by_id` function, which returns a row of `books`.
+  PostgrestTypedBuilder<BooksRow> bookById({required int bookId}) => value(
+    'book_by_id',
+    arguments: {'book_id': bookId},
+    fromJson: (json) => BooksRow(json! as Map<String, dynamic>),
+    schema: 'public',
+  );
+
+  /// Calls the `books_of` function, which returns rows of `books` filterable
+  /// through `Books`.
+  PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksOf({
+    required int authorId,
+  }) => rows(
+    'books_of',
+    arguments: {'author_id': authorId},
+    rowFromJson: BooksRow.new,
+    schema: 'public',
+  );
+
+  /// Calls the `books_of` function, which returns rows of `books` filterable
+  /// through `Books`.
+  PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>>
+  booksOfWithAuthorNameAndMaxPrice({
+    required String authorName,
+    required num maxPrice,
+  }) => rows(
+    'books_of',
+    arguments: {'author_name': authorName, 'max_price': maxPrice},
+    rowFromJson: BooksRow.new,
+    schema: 'public',
+  );
+
+  /// Calls the `books_with_tags` function, which returns rows of `books`
+  /// filterable through `Books`.
+  PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksWithTags({
+    required List<String> tags,
+  }) => rows(
+    'books_with_tags',
+    arguments: {'tags': tags},
+    rowFromJson: BooksRow.new,
+    schema: 'public',
+  );
+
+  /// Calls the `count_books` function.
+  PostgrestTypedBuilder<int?> countBooks() =>
+      value('count_books', fromJson: (json) => json as int?, schema: 'public');
+
+  /// Calls the `echo` function.
+  PostgrestTypedBuilder<Object?> echo(Object? body) => value(
+    'echo',
+    arguments: body,
+    fromJson: (json) => json,
+    schema: 'public',
+  );
+
+  /// Calls the `mood_or_default` function.
+  PostgrestTypedBuilder<Mood?> moodOrDefault({required BooksRow book}) => value(
+    'mood_or_default',
+    arguments: {'book': book.toJson()},
+    fromJson: (json) => json == null ? null : _moodFromJson(json),
+    schema: 'public',
+  );
+
+  /// Calls the `publication_dates` function.
+  PostgrestTypedBuilder<List<PostgrestDate?>> publicationDates({
+    required int authorId,
+  }) => value(
+    'publication_dates',
+    arguments: {'author_id': authorId},
+    fromJson: (json) => [
+      for (final element in json! as List<dynamic>)
+        element == null ? null : _postgrestDateFromJson(element),
+    ],
+    schema: 'public',
+  );
+
+  /// Calls the `search_books` function, which returns rows of `books`
+  /// filterable through `Books`.
+  PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> searchBooks({
+    required String query,
+    num? maxPrice,
+    Mood? mood,
+  }) => rows(
+    'search_books',
+    arguments: {
+      'max_price': ?maxPrice,
+      'mood': ?mood?.wireName,
+      'query': query,
+    },
+    rowFromJson: BooksRow.new,
+    schema: 'public',
+  );
+
+  /// Calls the `touch_book` function.
+  PostgrestTypedBuilder<void> touchBook({
+    required int bookId,
+    DateTime? touchedAt,
+  }) => value(
+    'touch_book',
+    arguments: {
+      'book_id': bookId,
+      'touched_at': ?touchedAt?.toUtc().toIso8601String(),
+    },
+    fromJson: (_) {},
+    schema: 'public',
+  );
+}
+
 DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
 
 double _doubleFromJson(Object json) => (json as num).toDouble();

@@ -11,8 +11,10 @@ import 'collation.dart';
 /// their declared column order kept, relationships by foreign key name,
 /// referenced relation and referenced columns and then by referenced schema,
 /// schema, relation and columns, functions by schema, name and signature with
-/// their arguments by name. Names compare with [localeCompare]. The sort is
-/// stable, so the primary keys of one table keep their declared order.
+/// their arguments by name, and the `rpcFunctions` entries by schema and name
+/// with the arguments and `RETURNS TABLE` columns of each overload by name.
+/// Names compare with [localeCompare]. The sort is stable, so the primary keys
+/// of one table keep their declared order.
 Map<String, dynamic> sortGeneratorMetadata(Map<String, dynamic> document) {
   int bySchemaName(Map<String, dynamic> a, Map<String, dynamic> b) =>
       _firstNonZero([
@@ -101,8 +103,44 @@ Map<String, dynamic> sortGeneratorMetadata(Map<String, dynamic> document) {
         },
     ],
     'types': _sorted(document['types'], bySchemaName),
+    // The resolver orders the overloads of a function by signature, and that
+    // order is kept; the entries, their args and their table columns are
+    // addressed by name.
+    if (document['rpcFunctions'] case final List<dynamic> rpcFunctions)
+      'rpcFunctions': [
+        for (final function in _sorted(
+          rpcFunctions,
+          (a, b) => _firstNonZero([
+            () => localeCompare(a['schema'] as String, b['schema'] as String),
+            () => localeCompare(a['name'] as String, b['name'] as String),
+          ]),
+        ))
+          {
+            ...function,
+            'overloads': [
+              for (final overload
+                  in (function['overloads'] as List<dynamic>)
+                      .cast<Map<String, dynamic>>())
+                {
+                  ...overload,
+                  'args': _sorted(overload['args'], _byName),
+                  'returns': {
+                    ...overload['returns'] as Map<String, dynamic>,
+                    'columns': switch ((overload['returns']
+                        as Map<String, dynamic>)['columns']) {
+                      null => null,
+                      final Object columns => _sorted(columns, _byName),
+                    },
+                  },
+                },
+            ],
+          },
+      ],
   };
 }
+
+int _byName(Map<String, dynamic> a, Map<String, dynamic> b) =>
+    localeCompare(a['name'] as String, b['name'] as String);
 
 List<Map<String, dynamic>> _sorted(
   Object? collection,

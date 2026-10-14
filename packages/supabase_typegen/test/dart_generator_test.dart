@@ -181,7 +181,7 @@ void main() {
     expect(hostile, contains('class EvilMultilineSchemaNamePostgrestColumn {'));
     expect(
       hostile,
-      isNot(contains('EvilMultilineSchemaNamePostgrestColumnRow>')),
+      isNot(contains('EvilMultilineSchemaNamePostgrestColumnRow>(')),
     );
   });
 
@@ -1628,5 +1628,137 @@ void main() {
 
     expect(code, contains("import 'dart:typed_data';"));
     expect(code, contains('PostgrestComputedField<TodosRow, Uint8List>'));
+  });
+
+  group('functions', () {
+    const integer = ValueTypeDescription(
+      postgresFormat: 'int4',
+      typeKind: ColumnTypeKind.integer,
+    );
+
+    FunctionArgumentDescription argument(String name) =>
+        FunctionArgumentDescription(
+          name: name,
+          type: integer,
+          hasDefault: false,
+        );
+
+    DatabaseDescription withFunctions(List<FunctionDescription> functions) =>
+        DatabaseDescription(
+          schemaNames: const ['public'],
+          tables: const [],
+          enums: const [],
+          functions: functions,
+        );
+
+    test('no extension is generated without functions', () {
+      expect(generateDartCode(schema), contains('extension DatabaseFunctions'));
+      expect(
+        generateDartCode(withFunctions(const [])),
+        isNot(contains('extension DatabaseFunctions')),
+      );
+    });
+
+    test('the overload with the fewest arguments keeps the plain name', () {
+      final code = _normalize(
+        generateDartCode(
+          withFunctions([
+            FunctionDescription(
+              schema: 'public',
+              name: 'find_books',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [argument('author_id'), argument('limit')],
+                  result: const FunctionNoResult(),
+                ),
+                FunctionOverloadDescription(
+                  arguments: [argument('title')],
+                  result: const FunctionNoResult(),
+                ),
+              ],
+            ),
+          ]),
+        ),
+      );
+
+      expect(
+        code,
+        contains(
+          'findBooksWithAuthorIdAndLimit({ required int authorId, '
+          'required int limit, })',
+        ),
+      );
+      expect(code, contains('findBooks({required int title})'));
+    });
+
+    test('an overload that cannot be called is noted, a computed field '
+        'reached through its table is not', () {
+      final code = generateDartCode(
+        withFunctions([
+          FunctionDescription(
+            schema: 'public',
+            name: 'label',
+            overloads: [
+              FunctionOverloadDescription(
+                arguments: [argument('amount')],
+                result: const FunctionNoResult(),
+                error: 'Could not choose the best candidate function',
+              ),
+            ],
+          ),
+          FunctionDescription(
+            schema: 'public',
+            name: 'title_upper',
+            overloads: [
+              FunctionOverloadDescription(
+                arguments: [argument('')],
+                result: const FunctionNoResult(),
+                error: 'no matches were found in the schema cache',
+                isComputedField: true,
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      expect(
+        code,
+        contains(
+          '/// `label(amount int4)` has no method: Could not choose the best '
+          'candidate\n/// function\nextension DatabaseFunctions',
+        ),
+      );
+      expect(code, isNot(contains('title_upper')));
+      expect(code, isNot(contains('label()')));
+    });
+
+    test('a bytea argument alone brings the typed_data import', () {
+      final code = generateDartCode(
+        withFunctions([
+          const FunctionDescription(
+            schema: 'public',
+            name: 'store',
+            overloads: [
+              FunctionOverloadDescription(
+                arguments: [
+                  FunctionArgumentDescription(
+                    name: 'data',
+                    type: ValueTypeDescription(
+                      postgresFormat: 'bytea',
+                      typeKind: ColumnTypeKind.binary,
+                    ),
+                    hasDefault: false,
+                  ),
+                ],
+                result: FunctionNoResult(),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      expect(code, contains("import 'dart:typed_data';"));
+      expect(code, contains("'data': postgrestBytea.encode(data)"));
+    });
   });
 }

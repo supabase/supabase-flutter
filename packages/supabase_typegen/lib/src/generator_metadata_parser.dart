@@ -1,3 +1,4 @@
+import 'rpc_functions.dart';
 import 'schema_description.dart';
 
 const _integerFormats = {'int2', 'int4', 'int8', 'oid'};
@@ -73,7 +74,10 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
 /// `primaryKeys`, `relationships`, `functions` and `types`. Of `functions`,
 /// only the computed fields and computed relationships are read: functions
 /// whose single input argument is the row type of a described relation of
-/// the same schema. Fields the generator does not need are ignored.
+/// the same schema. The functions callable through `/rpc` come from the
+/// optional `rpcFunctions` collection, resolved with [resolveRpcFunctions]
+/// when the document predates it. Fields the generator does not need are
+/// ignored.
 ///
 /// Tables and foreign tables are always insertable and updatable. Views use
 /// the `is_insert_enabled` and `is_update_enabled` flags, falling back to
@@ -310,6 +314,16 @@ DatabaseDescription _parseGeneratorMetadata(
     );
   }
 
+  final functions = _functions(
+    document,
+    schemas,
+    typesById: typesById,
+    enumTypes: enumTypes,
+    enumsByType: enumsByType,
+    relationsById: relationsById,
+    generatedRelations: generatedRelations,
+  );
+
   tables.sort(
     (a, b) => a.schema == b.schema
         ? a.name.compareTo(b.name)
@@ -330,6 +344,7 @@ DatabaseDescription _parseGeneratorMetadata(
     relationships: _relationships(document, {
       for (final table in tables) (table.schema, table.name),
     }),
+    functions: functions,
   );
 }
 
@@ -546,22 +561,40 @@ ComputedFieldDescription _computedField(
   Map<(String, String), List<String>> enumTypes,
   Map<(String, String), EnumDescription> enumsByType,
 ) {
-  if (returnType == null) {
-    return ComputedFieldDescription(
-      name: name,
+  final type = _valueType(returnType, enumTypes, enumsByType);
+  return ComputedFieldDescription(
+    name: name,
+    postgresFormat: type.postgresFormat,
+    typeKind: type.typeKind,
+    elementTypeKind: type.elementTypeKind,
+    boundTypeKind: type.boundTypeKind,
+    enumType: type.enumType,
+  );
+}
+
+/// The value type of [type], a record of the `types` collection, or of an
+/// unknown kind for `null`, a type the document does not list. An enum it
+/// names is registered in [enumsByType].
+ValueTypeDescription _valueType(
+  Map<String, dynamic>? type,
+  Map<(String, String), List<String>> enumTypes,
+  Map<(String, String), EnumDescription> enumsByType,
+) {
+  if (type == null) {
+    return const ValueTypeDescription(
       postgresFormat: 'unknown',
       typeKind: ColumnTypeKind.unknown,
     );
   }
-  final format = returnType['name'] as String;
-  final typeSchema = returnType['schema'] as String;
+  final format = type['name'] as String;
+  final typeSchema = type['schema'] as String;
   final isArray = format.startsWith('_');
   final elementFormat = isArray ? format.substring(1) : format;
   // The array type of an enum carries no values itself; its element type
   // does.
   final enumValues = isArray
       ? (enumTypes[(typeSchema, elementFormat)] ?? const <String>[])
-      : (returnType['enums'] as List<dynamic>? ?? const []).cast<String>();
+      : (type['enums'] as List<dynamic>? ?? const []).cast<String>();
   final isEnum = enumValues.isNotEmpty;
   EnumDescription? enumDescription;
   if (isEnum) {
@@ -576,8 +609,7 @@ ComputedFieldDescription _computedField(
       () => described,
     );
   }
-  return ComputedFieldDescription(
-    name: name,
+  return ValueTypeDescription(
     postgresFormat: isEnum && !isArray
         ? enumDescription!.qualifiedName
         : format,
@@ -587,3 +619,115 @@ ComputedFieldDescription _computedField(
     enumType: enumDescription,
   );
 }
+
+/// The functions of [schemas] callable through `/rpc`, from the
+/// `rpcFunctions` collection of [document], or resolved from its `functions`
+/// when the document predates the collection.
+List<FunctionDescription> _functions(
+  Map<String, dynamic> document,
+  Set<String> schemas, {
+  required Map<int, Map<String, dynamic>> typesById,
+  required Map<(String, String), List<String>> enumTypes,
+  required Map<(String, String), EnumDescription> enumsByType,
+  required Map<int, (String, String)> relationsById,
+  required Set<(String, String)> generatedRelations,
+}) {
+  final rpcFunctions =
+      (document['rpcFunctions'] as List<dynamic>?)
+          ?.cast<Map<String, dynamic>>() ??
+      resolveRpcFunctions(document);
+
+  ValueTypeDescription valueType(Map<String, dynamic> reference) => _valueType(
+    typesById[reference['type_id'] as int],
+    enumTypes,
+    enumsByType,
+  );
+
+  (String, String)? generatedRelation(int? relationId) =>
+      switch (relationsById[relationId]) {
+        final relation? when generatedRelations.contains(relation) => relation,
+        _ => null,
+      };
+
+  FunctionResultDescription result(Map<String, dynamic> overload) {
+    final returns = overload['returns'] as Map<String, dynamic>;
+    final isSetReturning = overload['is_set_returning'] as bool;
+    final columns = (returns['columns'] as List<dynamic>?)
+        ?.cast<Map<String, dynamic>>();
+    if (columns != null) {
+      return FunctionColumnsResult([
+        for (final column in columns) _resultColumn(column, valueType(column)),
+      ]);
+    }
+    if (generatedRelation(returns['relation_id'] as int?) case (
+      final schema,
+      final table,
+    )) {
+      return FunctionTableRowsResult(
+        schema: schema,
+        table: table,
+        isSetReturning: isSetReturning,
+      );
+    }
+    if (returns['format'] == 'void') return const FunctionNoResult();
+    // Rows of a relation that is not generated, a composite type or a
+    // record read as JSON.
+    final type = returns['relation_id'] != null || returns['format'] == 'record'
+        ? const ValueTypeDescription(
+            postgresFormat: 'json',
+            typeKind: ColumnTypeKind.json,
+          )
+        : valueType(returns);
+    return FunctionValueResult(type, isSetReturning: isSetReturning);
+  }
+
+  return [
+    for (final function in rpcFunctions)
+      if (schemas.contains(function['schema']))
+        FunctionDescription(
+          schema: function['schema'] as String,
+          name: function['name'] as String,
+          overloads: [
+            for (final overload
+                in (function['overloads'] as List<dynamic>)
+                    .cast<Map<String, dynamic>>())
+              FunctionOverloadDescription(
+                arguments: [
+                  for (final argument
+                      in (overload['args'] as List<dynamic>)
+                          .cast<Map<String, dynamic>>())
+                    FunctionArgumentDescription(
+                      name: argument['name'] as String,
+                      type: valueType(argument),
+                      hasDefault: argument['has_default'] as bool,
+                      rowOf: generatedRelation(
+                        argument['relation_id'] as int?,
+                      ),
+                    ),
+                ],
+                result: result(overload),
+                error: overload['error'] as String?,
+                isComputedField: overload['computed_field_of'] != null,
+              ),
+          ],
+        ),
+  ];
+}
+
+/// A column of a `RETURNS TABLE` result, which can always be `NULL`.
+ColumnDescription _resultColumn(
+  Map<String, dynamic> column,
+  ValueTypeDescription type,
+) => ColumnDescription(
+  name: column['name'] as String,
+  postgresFormat: type.postgresFormat,
+  typeKind: type.typeKind,
+  elementTypeKind: type.elementTypeKind,
+  boundTypeKind: type.boundTypeKind,
+  enumType: type.enumType,
+  enumValues: type.enumType?.values,
+  isRequired: false,
+  hasDefault: false,
+  isNullable: true,
+  isReadOnly: true,
+);

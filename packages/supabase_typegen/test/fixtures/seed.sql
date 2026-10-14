@@ -147,3 +147,92 @@ LANGUAGE sql STABLE AS $$ SELECT 'shadowed'; $$;
 -- A computed field on a view.
 CREATE FUNCTION public.discount(public.book_prices) RETURNS numeric
 LANGUAGE sql STABLE AS $$ SELECT $1.price - $1.discounted_price; $$;
+
+-- Functions called through /rpc. A set of rows of a table, with a required
+-- argument and defaulted ones, one of them an enum.
+CREATE FUNCTION public.search_books(
+  query text,
+  mood public.mood DEFAULT NULL,
+  max_price numeric DEFAULT NULL
+) RETURNS SETOF public.books
+LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.books
+  WHERE books.title ILIKE '%' || query || '%'
+    AND (search_books.mood IS NULL OR books.mood = search_books.mood)
+    AND (max_price IS NULL OR books.price <= max_price);
+$$;
+
+-- A single row of a table.
+CREATE FUNCTION public.book_by_id(book_id bigint) RETURNS public.books
+LANGUAGE sql STABLE AS $$ SELECT * FROM public.books WHERE id = book_id; $$;
+
+-- Rows of their own shape.
+CREATE FUNCTION public.author_book_counts(min_books integer DEFAULT 0)
+RETURNS TABLE (author_name text, book_count bigint)
+LANGUAGE sql STABLE AS $$
+  SELECT authors.name, count(books.id)
+  FROM public.authors
+  LEFT JOIN public.books ON books.author_id = authors.id
+  GROUP BY authors.name
+  HAVING count(books.id) >= min_books;
+$$;
+
+-- A scalar without arguments, and a set of scalars that need a conversion.
+CREATE FUNCTION public.count_books() RETURNS bigint
+LANGUAGE sql STABLE AS $$ SELECT count(*) FROM public.books; $$;
+
+CREATE FUNCTION public.publication_dates(author_id bigint) RETURNS SETOF date
+LANGUAGE sql STABLE AS $$
+  SELECT published_on FROM public.books
+  WHERE books.author_id = publication_dates.author_id;
+$$;
+
+-- No result, and a timestamp argument with a default.
+CREATE FUNCTION public.touch_book(
+  book_id bigint,
+  touched_at timestamptz DEFAULT now()
+) RETURNS void
+LANGUAGE sql AS $$
+  UPDATE public.books SET updated_at = touched_at WHERE id = book_id;
+$$;
+
+-- An array argument.
+CREATE FUNCTION public.books_with_tags(tags text[]) RETURNS SETOF public.books
+LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.books WHERE books.tags @> books_with_tags.tags;
+$$;
+
+-- Overloads PostgREST tells apart by their argument names.
+CREATE FUNCTION public.books_of(author_id bigint) RETURNS SETOF public.books
+LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.books WHERE books.author_id = books_of.author_id;
+$$;
+
+CREATE FUNCTION public.books_of(author_name text, max_price numeric)
+RETURNS SETOF public.books
+LANGUAGE sql STABLE AS $$
+  SELECT books.* FROM public.books
+  JOIN public.authors ON authors.id = books.author_id
+  WHERE authors.name = author_name AND books.price <= max_price;
+$$;
+
+-- Overloads PostgREST cannot tell apart: the same argument name with
+-- different types.
+CREATE FUNCTION public.price_label(amount numeric) RETURNS text
+LANGUAGE sql IMMUTABLE AS $$ SELECT amount::text; $$;
+
+CREATE FUNCTION public.price_label(amount integer) RETURNS text
+LANGUAGE sql IMMUTABLE AS $$ SELECT amount::text; $$;
+
+-- A sole unnamed json parameter takes the whole request body.
+CREATE FUNCTION public.echo(json) RETURNS json
+LANGUAGE sql IMMUTABLE AS $$ SELECT $1; $$;
+
+-- A function of the second schema.
+CREATE FUNCTION inventory.restock(stock_id bigint, amount integer)
+RETURNS integer
+LANGUAGE sql AS $$
+  UPDATE inventory.stock SET quantity = quantity + amount
+  WHERE id = stock_id
+  RETURNING quantity;
+$$;

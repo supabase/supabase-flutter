@@ -1220,6 +1220,195 @@ void main() {
       expect(publicTable(publicOnly, 'todos').computedRelationships, isEmpty);
     });
   });
+
+  group('functions', () {
+    FunctionDescription function(String name) =>
+        schema.functions.singleWhere((function) => function.name == name);
+
+    FunctionOverloadDescription overload(String name) =>
+        function(name).overloads.single;
+
+    test('lists the functions callable through /rpc by schema and name', () {
+      expect(
+        schema.functions.map(
+          (function) => '${function.schema}.${function.name}',
+        ),
+        [
+          'inventory.restock',
+          'public.author_book_counts',
+          'public.book_by_id',
+          'public.books_of',
+          'public.books_with_tags',
+          'public.count_books',
+          'public.discount',
+          'public.echo',
+          'public.latest_book',
+          'public.mood_or_default',
+          'public.price_label',
+          'public.publication_dates',
+          'public.recent_books',
+          'public.search_books',
+          'public.title',
+          'public.title_upper',
+          'public.touch_book',
+        ],
+      );
+      expect(function('books_of').overloads, hasLength(2));
+    });
+
+    test('reads the arguments with their types and defaults', () {
+      final arguments = overload('search_books').arguments;
+
+      expect(arguments.map((argument) => argument.name), [
+        'max_price',
+        'mood',
+        'query',
+      ]);
+      expect(arguments.map((argument) => argument.hasDefault), [
+        true,
+        true,
+        false,
+      ]);
+      expect(arguments[1].type.typeKind, ColumnTypeKind.enumType);
+      expect(arguments[1].type.enumType?.qualifiedName, 'public.mood');
+      expect(
+        overload('books_with_tags').arguments.single.type.elementTypeKind,
+        ColumnTypeKind.text,
+      );
+      expect(overload('mood_or_default').arguments.single.rowOf, (
+        'public',
+        'books',
+      ));
+    });
+
+    test('reads every result shape', () {
+      expect(
+        overload('search_books').result,
+        isA<FunctionTableRowsResult>()
+            .having((result) => result.table, 'table', 'books')
+            .having((result) => result.isSetReturning, 'isSetReturning', true),
+      );
+      expect(
+        overload('book_by_id').result,
+        isA<FunctionTableRowsResult>().having(
+          (result) => result.isSetReturning,
+          'isSetReturning',
+          false,
+        ),
+      );
+      expect(
+        overload('author_book_counts').result,
+        isA<FunctionColumnsResult>().having(
+          (result) => [
+            for (final column in result.columns)
+              (column.name, column.typeKind, column.isNullable),
+          ],
+          'columns',
+          [
+            ('author_name', ColumnTypeKind.text, true),
+            ('book_count', ColumnTypeKind.integer, true),
+          ],
+        ),
+      );
+      expect(
+        overload('publication_dates').result,
+        isA<FunctionValueResult>()
+            .having(
+              (result) => result.type.typeKind,
+              'kind',
+              ColumnTypeKind.date,
+            )
+            .having((result) => result.isSetReturning, 'isSetReturning', true),
+      );
+      expect(overload('touch_book').result, isA<FunctionNoResult>());
+      expect(
+        overload('echo').result,
+        isA<FunctionValueResult>().having(
+          (result) => result.type.typeKind,
+          'kind',
+          ColumnTypeKind.json,
+        ),
+      );
+    });
+
+    test('keeps the error of an overload PostgREST cannot resolve', () {
+      expect(
+        function('price_label').overloads.map((overload) => overload.error),
+        everyElement(startsWith('Could not choose the best candidate')),
+      );
+      expect(overload('title_upper').error, isNotNull);
+      expect(overload('title_upper').isComputedField, isTrue);
+      expect(overload('search_books').error, isNull);
+    });
+
+    test('resolves a document that predates rpcFunctions the same way', () {
+      final legacy = parseGeneratorMetadata(
+        {...document}..remove('rpcFunctions'),
+      );
+
+      expect(
+        legacy.functions.map((function) => function.name),
+        schema.functions.map((function) => function.name),
+      );
+    });
+
+    test('lists the functions of the named schemas only', () {
+      final public = parseGeneratorMetadata(document, schemaNames: ['public']);
+
+      expect(
+        public.functions.map((function) => function.schema).toSet(),
+        {'public'},
+      );
+    });
+
+    test('reads rows of a relation that is not generated as JSON', () {
+      final inventoryOnly = parseGeneratorMetadata(
+        document,
+        schemaNames: ['inventory'],
+      );
+      final publicRows = parseGeneratorMetadata(
+        {
+          ...document,
+          'rpcFunctions': [
+            for (final entry
+                in (document['rpcFunctions'] as List<dynamic>)
+                    .cast<Map<String, dynamic>>())
+              if (entry['name'] == 'search_books')
+                {...entry, 'schema': 'inventory'},
+          ],
+        },
+        schemaNames: ['inventory'],
+      );
+
+      expect(inventoryOnly.functions.single.name, 'restock');
+      expect(
+        publicRows.functions.single.overloads.single.result,
+        isA<FunctionValueResult>()
+            .having(
+              (result) => result.type.typeKind,
+              'kind',
+              ColumnTypeKind.json,
+            )
+            .having((result) => result.isSetReturning, 'isSetReturning', true),
+      );
+    });
+
+    test('collects an enum only a function refers to', () {
+      final parsed = parseGeneratorMetadata(
+        {
+          ...document,
+          'tables': <dynamic>[],
+          'views': <dynamic>[],
+          'materializedViews': <dynamic>[],
+        },
+        schemaNames: ['public'],
+      );
+
+      expect(parsed.enums.map((enumType) => enumType.qualifiedName), [
+        'public.mood',
+      ]);
+    });
+  });
 }
 
 /// The table [name] of the `public` schema.

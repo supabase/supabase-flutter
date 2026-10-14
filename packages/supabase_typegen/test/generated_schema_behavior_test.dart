@@ -623,4 +623,137 @@ void main() {
       Authors.recentBooks,
     ]);
   });
+
+  group('functions', () {
+    RecordedRequest lastRequest() => httpClient.requests.last;
+
+    test('a set of rows takes typed arguments and reads typed rows', () async {
+      httpClient.stub([
+        {'id': 1, 'title': 'A typed row', 'mood': 'very happy'},
+      ], path: '/rest/v1/rpc/search_books');
+
+      final List<BooksRow> books = await client.rpc
+          .searchBooks(query: 'typed', mood: Mood.veryHappy)
+          .where(Books.id.gt(0))
+          .order(Books.title.asc());
+
+      expect(books.single.mood, Mood.veryHappy);
+      expect(lastRequest().method, HttpMethod.post.value);
+      expect(lastRequest().jsonBody, {'query': 'typed', 'mood': 'very happy'});
+      expect(lastRequest().url.queryParameters, {
+        'id': 'gt.0',
+        'order': 'title.asc',
+      });
+      expect(lastRequest().headers['content-profile'], 'public');
+    });
+
+    test('a function of another schema is called in its schema', () async {
+      httpClient.stub(5);
+
+      final int? quantity = await client.rpc.inventoryRestock(
+        stockId: 1,
+        amount: 4,
+      );
+
+      expect(quantity, 5);
+      expect(lastRequest().url.path, '/rest/v1/rpc/restock');
+      expect(lastRequest().headers['content-profile'], 'inventory');
+      expect(lastRequest().jsonBody, {'stock_id': 1, 'amount': 4});
+    });
+
+    test('a single row reads the row', () async {
+      httpClient.stub({'id': 3, 'title': 'One'});
+
+      final BooksRow book = await client.rpc.bookById(bookId: 3);
+
+      expect(book.title, 'One');
+    });
+
+    test('RETURNS TABLE rows are read and filtered through their own '
+        'column tokens', () async {
+      httpClient.stub([
+        {'author_name': 'Ada', 'book_count': 2},
+      ]);
+
+      final rows = await client.rpc
+          .authorBookCounts()
+          .where(AuthorBookCounts.bookCount.gte(2))
+          .order(AuthorBookCounts.authorName.asc());
+
+      expect(rows.single.authorName, 'Ada');
+      expect(rows.single.bookCount, 2);
+      expect(lastRequest().url.queryParameters, {
+        'book_count': 'gte.2',
+        'order': 'author_name.asc',
+      });
+    });
+
+    test('scalars and sets of scalars are converted', () async {
+      httpClient.stub(['2026-07-23', null]);
+      final List<PostgrestDate?> dates = await client.rpc.publicationDates(
+        authorId: 1,
+      );
+      expect(dates, [PostgrestDate(2026, 7, 23), null]);
+
+      httpClient.stub('sad');
+      final Mood? mood = await client.rpc.moodOrDefault(
+        book: BooksRow({'id': 1, 'title': 'A typed row'}),
+      );
+      expect(mood, Mood.sad);
+      expect(lastRequest().jsonBody, {
+        'book': {'id': 1, 'title': 'A typed row'},
+      });
+
+      httpClient.stub(null);
+      final int? count = await client.rpc.countBooks();
+      expect(count, isNull);
+    });
+
+    test('optional arguments left out are not sent', () async {
+      httpClient.stub(null);
+
+      await client.rpc.touchBook(bookId: 2);
+      expect(lastRequest().jsonBody, {'book_id': 2});
+
+      await client.rpc.touchBook(
+        bookId: 2,
+        touchedAt: DateTime.utc(2026, 7, 23, 10),
+      );
+      expect(lastRequest().jsonBody, {
+        'book_id': 2,
+        'touched_at': '2026-07-23T10:00:00.000Z',
+      });
+    });
+
+    test('overloads get a method each', () async {
+      httpClient.stub([]);
+
+      await client.rpc.booksOf(authorId: 1);
+      expect(lastRequest().jsonBody, {'author_id': 1});
+
+      await client.rpc.booksOfWithAuthorNameAndMaxPrice(
+        authorName: 'Ada',
+        maxPrice: 10,
+      );
+      expect(lastRequest().jsonBody, {'author_name': 'Ada', 'max_price': 10});
+    });
+
+    test('a sole unnamed json parameter is sent as the whole body', () async {
+      httpClient.stub({'echoed': true});
+      final echoed = await client.rpc.echo({'echoed': true});
+      expect(echoed, {'echoed': true});
+      expect(lastRequest().jsonBody, {'echoed': true});
+    });
+
+    test(
+      'the untyped call still works next to the generated methods',
+      () async {
+        httpClient.stub(3);
+
+        final count = await client.rpc('count_books');
+
+        expect(count, 3);
+      },
+    );
+  });
 }

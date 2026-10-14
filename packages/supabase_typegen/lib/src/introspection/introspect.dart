@@ -1,3 +1,4 @@
+import '../rpc_functions.dart';
 import 'queryable.dart';
 import 'relationships.dart';
 import 'sort.dart';
@@ -16,10 +17,10 @@ import 'sql/views_sql.dart';
 import 'supabase_cli_io.dart';
 
 /// The supabase/sdk revision of `@supabase/postgrest-typegen` whose
-/// introspection this library ports, a commit or a `postgrest-typegen-v*`
-/// tag. `tool/check_introspection_drift.ts` compares the SQL of the port
-/// against it and `tool/regenerate_fixture.ts` expects a checkout of it.
-const postgrestTypegenRevision = 'postgrest-typegen-v0.2.2';
+/// introspection this library ports, a commit or a release tag.
+/// `tool/check_introspection_drift.ts` compares the SQL of the port against
+/// it and `tool/regenerate_fixture.ts` expects a checkout of it.
+const postgrestTypegenRevision = 'postgrest-typegen/v0.5.0';
 
 /// The `version` field of the emitted `GeneratorMetadata` document.
 const generatorMetadataVersion = 1;
@@ -99,7 +100,7 @@ Future<Map<String, dynamic>> introspect(
     ),
   ];
 
-  return {
+  final document = {
     'version': generatorMetadataVersion,
     'schemas': rows('schemas'),
     'tables': rows('tables'),
@@ -119,4 +120,5 @@ Future<Map<String, dynamic>> introspect(
     ],
     'types': rows('types'),
   };
+  return {...document, 'rpcFunctions': resolveRpcFunctions(document)};
 }
