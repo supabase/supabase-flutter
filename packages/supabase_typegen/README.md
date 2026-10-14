@@ -49,7 +49,8 @@ For every table the generator emits:
   arguments as typed parameters, optional where the function declares a
   default, and resolves to a typed result. A function returning rows of a
   generated table resolves to those rows and can be filtered, ordered and
-  paged with the table's column tokens; a `RETURNS TABLE (…)` function gets a
+  paged with the table's column tokens, and one returning a single row to
+  that row, or `null` when it finds none; a `RETURNS TABLE (…)` function gets a
   row type and column tokens of its own; a scalar comes back converted and
   nullable, since a function can always return `NULL`. Functions of a schema
   other than `public` carry the schema as a prefix, `inventoryRestock`. Of

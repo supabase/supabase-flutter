@@ -853,11 +853,17 @@ extension DatabaseFunctions on PostgrestRpc {
     schema: 'public',
   );
 
-  /// Calls the `book_by_id` function, which returns a row of `books`.
-  PostgrestTypedBuilder<BooksRow> bookById({required int bookId}) => value(
+  /// Calls the `book_by_id` function, which returns a row of `books`, or `null`
+  /// when it finds none.
+  PostgrestTypedBuilder<BooksRow?> bookById({required int bookId}) => value(
     'book_by_id',
     arguments: {'book_id': bookId},
-    fromJson: (json) => BooksRow(json! as Map<String, dynamic>),
+    fromJson: (json) => switch (json) {
+      final Map<String, dynamic> row
+          when row.values.any((value) => value != null) =>
+        BooksRow(row),
+      _ => null,
+    },
     schema: 'public',
   );
 

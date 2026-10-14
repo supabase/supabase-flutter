@@ -1440,6 +1440,9 @@ Iterable<_TypeShape> _functionShapes(FunctionDescription function) sync* {
 /// generated method bodies refer to.
 const _rpcMembers = {'call', 'rows', 'value'};
 
+/// The top-level codecs the generated conversions call unqualified.
+const _codecs = {'postgrestBytea', 'postgrestVector'};
+
 /// One overload of a function that gets a generated method.
 class _FunctionMethod {
   const _FunctionMethod(this.function, this.overload, this.name);
@@ -1469,14 +1472,19 @@ String? _unsupportedReason(FunctionOverloadDescription overload) {
 }
 
 /// The method names of the callable overloads of [functions], unique among
-/// each other and apart from the members of `PostgrestRpc`.
+/// each other and apart from the members of `PostgrestRpc` and the [reserved]
+/// names the generated method bodies refer to.
 ///
 /// A function with one callable overload is named after the function, with
 /// the schema as a prefix outside `public`. Of several overloads, the first
 /// one with the fewest arguments keeps that name and every other one spells
-/// out its arguments, `booksOfWithAuthorNameAndMaxPrice`.
-List<_FunctionMethod> _functionMethods(List<FunctionDescription> functions) {
-  final used = {..._rpcMembers};
+/// out its arguments, `booksOfWithAuthorNameAndMaxPrice`, or `body` for the
+/// unnamed one.
+List<_FunctionMethod> _functionMethods(
+  List<FunctionDescription> functions, {
+  required Set<String> reserved,
+}) {
+  final used = {..._rpcMembers, ...reserved};
   final methods = <_FunctionMethod>[];
   for (final function in functions) {
     final callable = [
@@ -1496,7 +1504,7 @@ List<_FunctionMethod> _functionMethods(List<FunctionDescription> functions) {
     );
     for (final overload in callable) {
       final argumentNames = overload.arguments.map(
-        (argument) => argument.name,
+        (argument) => argument.name.isEmpty ? 'body' : argument.name,
       );
       final name = identical(overload, plain)
           ? baseName
@@ -1530,7 +1538,10 @@ void _writeFunctions(
   Map<(String, String), String> enumTypeNames,
   _DecoderRegistry decoders,
 ) {
-  final methods = _functionMethods(functions);
+  final methods = _functionMethods(
+    functions,
+    reserved: {...typeNames.taken, ..._codecs},
+  );
   // A computed field or relationship the generated code cannot call is
   // reached through the members of its table instead, so it goes
   // unmentioned.
@@ -1552,7 +1563,7 @@ void _writeFunctions(
       final names = [for (final column in columns) column.name];
       final rowMembers = _uniqueMemberNames(
         names,
-        reserved: {...typeNames.taken, 'toJson'},
+        reserved: {...typeNames.taken, 'toJson', ..._codecs},
       );
       resultRows[method] = _ResultRowNames(
         rowType: rowType,
@@ -1678,12 +1689,7 @@ void _writeFunctionMethod(
   final arguments = overload.arguments;
   final parameterNames = _uniqueMemberNames(
     [for (final argument in arguments) argument.name],
-    reserved: {
-      ...typeNames,
-      ..._rpcMembers,
-      'postgrestBytea',
-      'postgrestVector',
-    },
+    reserved: {...typeNames, ..._rpcMembers, ..._codecs},
   );
 
   String? rowTypeOf(FunctionArgumentDescription argument) =>
@@ -1706,7 +1712,6 @@ void _writeFunctionMethod(
         rowType ??
         (binding.kind == ColumnTypeKind.json ? 'Object' : binding.dartType);
     if (argument.name == '') {
-      // A sole unnamed json parameter takes the whole request body.
       requiredParameters.add('Object? body');
       body = 'body';
       continue;
@@ -1828,10 +1833,15 @@ _FunctionCall _functionCall(
           '`${names.namespaceType}`',
         );
       }
+      // PostgREST answers a function that finds no row with an object whose
+      // every column is null.
       return value(
-        rowType,
-        '(json) => $rowType(json! as Map<String, dynamic>)',
-        'which returns a row of `${names.displayName}`',
+        '$rowType?',
+        '(json) => switch (json) { final Map<String, dynamic> row '
+            'when row.values.any((value) => value != null) => $rowType(row), '
+            '_ => null }',
+        'which returns a row of `${names.displayName}`, or `null` when it '
+            'finds none',
       );
     case FunctionValueResult(:final type, :final isSetReturning):
       final binding = _bindingFor(

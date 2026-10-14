@@ -664,9 +664,19 @@ void main() {
     test('a single row reads the row', () async {
       httpClient.stub({'id': 3, 'title': 'One'});
 
-      final BooksRow book = await client.rpc.bookById(bookId: 3);
+      final BooksRow? book = await client.rpc.bookById(bookId: 3);
 
-      expect(book.title, 'One');
+      expect(book?.title, 'One');
+    });
+
+    test('a single row that is not found reads as null', () async {
+      httpClient.stub({'id': null, 'title': null});
+      final BooksRow? allNull = await client.rpc.bookById(bookId: 999);
+      expect(allNull == null, isTrue);
+
+      httpClient.stub(null);
+      final BooksRow? missing = await client.rpc.bookById(bookId: 999);
+      expect(missing == null, isTrue);
     });
 
     test('RETURNS TABLE rows are read and filtered through their own '

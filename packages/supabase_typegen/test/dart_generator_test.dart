@@ -1760,5 +1760,96 @@ void main() {
       expect(code, contains("import 'dart:typed_data';"));
       expect(code, contains("'data': postgrestBytea.encode(data)"));
     });
+
+    test('method names keep clear of the types and codecs the bodies use', () {
+      final code = generateDartCode(
+        withFunctions([
+          const FunctionDescription(
+            schema: 'public',
+            name: 'int',
+            overloads: [
+              FunctionOverloadDescription(
+                arguments: [],
+                result: FunctionValueResult(integer, isSetReturning: false),
+              ),
+            ],
+          ),
+          const FunctionDescription(
+            schema: 'public',
+            name: 'postgrest_bytea',
+            overloads: [
+              FunctionOverloadDescription(
+                arguments: [],
+                result: FunctionNoResult(),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      expect(code, contains('PostgrestTypedBuilder<int?> int\$()'));
+      expect(code, contains('PostgrestTypedBuilder<void> postgrestBytea\$()'));
+    });
+
+    test('result row getters keep clear of the codecs', () {
+      final code = generateDartCode(
+        withFunctions([
+          const FunctionDescription(
+            schema: 'public',
+            name: 'neighbours',
+            overloads: [
+              FunctionOverloadDescription(
+                arguments: [],
+                result: FunctionColumnsResult([
+                  ColumnDescription(
+                    name: 'postgrest_vector',
+                    postgresFormat: 'text',
+                    typeKind: ColumnTypeKind.text,
+                    isRequired: false,
+                    hasDefault: false,
+                    isNullable: true,
+                    isReadOnly: true,
+                  ),
+                ]),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      expect(code, contains('String? get postgrestVector\$ =>'));
+    });
+
+    test('an overload taking the unnamed body is named after it', () {
+      final code = generateDartCode(
+        withFunctions([
+          FunctionDescription(
+            schema: 'public',
+            name: 'echo',
+            overloads: [
+              const FunctionOverloadDescription(
+                arguments: [],
+                result: FunctionNoResult(),
+              ),
+              FunctionOverloadDescription(
+                arguments: [
+                  FunctionArgumentDescription(
+                    name: '',
+                    type: const ValueTypeDescription(
+                      postgresFormat: 'jsonb',
+                      typeKind: ColumnTypeKind.json,
+                    ),
+                    hasDefault: false,
+                  ),
+                ],
+                result: const FunctionNoResult(),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      expect(code, contains('echoWithBody(Object? body)'));
+    });
   });
 }

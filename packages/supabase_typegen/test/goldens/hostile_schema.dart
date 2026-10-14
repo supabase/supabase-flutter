@@ -1042,14 +1042,20 @@ extension DatabaseFunctions on PostgrestRpc {
   PostgrestTypedBuilder<void> privateRestock$() =>
       value('restock', fromJson: (_) {}, schema: 'private');
 
-  /// Calls the `private.restock` function, which returns a row of `orders`.
-  PostgrestTypedBuilder<OrdersRow> privateRestockWithItemAndNote({
+  /// Calls the `private.restock` function, which returns a row of `orders`, or
+  /// `null` when it finds none.
+  PostgrestTypedBuilder<OrdersRow?> privateRestockWithItemAndNote({
     required PrivateAchievementItemProgressTblRow item,
     Object? note,
   }) => value(
     'restock',
     arguments: {'item': item.toJson(), 'note': ?note},
-    fromJson: (json) => OrdersRow(json! as Map<String, dynamic>),
+    fromJson: (json) => switch (json) {
+      final Map<String, dynamic> row
+          when row.values.any((value) => value != null) =>
+        OrdersRow(row),
+      _ => null,
+    },
     schema: 'private',
   );
 
