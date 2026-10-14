@@ -2509,9 +2509,6 @@ features:
       - RealtimeMessage.toJson
       - RealtimeMessage.toString
       - RealtimeMessage.topic
-      - RealtimeProtocolVersion
-      - RealtimeProtocolVersion.RealtimeProtocolVersion
-      - RealtimeProtocolVersion.wireVersion
   realtime.configuration.deferred_disconnect:
     status: implemented
     symbols:
@@ -2993,7 +2990,6 @@ supporting_symbols:
   - RealtimeClient.endpointUrl
   - RealtimeClient.parameters
   - RealtimeClient.timeout
-  - RealtimeClient.version
   - RealtimeClientOptions
   - RealtimeClientOptions.RealtimeClientOptions
   - RealtimeClientOptions.timeout

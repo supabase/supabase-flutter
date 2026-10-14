@@ -45,8 +45,7 @@ dart test -x integration
 
 The integration tests in `test/realtime_integration_test.dart` run against a
 real Supabase Realtime server. Start the local Supabase stack with the CLI first
-(from the repository root), then run the full suite (it exercises both protocol
-versions, `1.0.0` and `2.0.0`):
+(from the repository root), then run the full suite:
 
 ```bash
 supabase start

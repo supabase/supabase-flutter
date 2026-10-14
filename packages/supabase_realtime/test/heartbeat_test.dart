@@ -29,10 +29,6 @@ void main() {
     client = RealtimeClient(
       'wss://localhost:0/',
       transport: (url, headers) => mockedChannel,
-      decode: (rawMessage) async => RealtimeMessage.fromJson(
-        jsonDecode(rawMessage as String),
-        RealtimeProtocolVersion.v1,
-      ),
     );
     statuses = [];
     subscription = client.onHeartbeat.listen(statuses.add);
@@ -44,12 +40,13 @@ void main() {
   });
 
   String heartbeatReply(String? ref, String status) {
-    return jsonEncode({
-      'topic': 'phoenix',
-      'event': 'phoenix_reply',
-      'payload': {'status': status, 'response': <String, dynamic>{}},
-      'ref': ref,
-    });
+    return jsonEncode([
+      null,
+      ref,
+      'phoenix',
+      'phoenix_reply',
+      {'status': status, 'response': <String, dynamic>{}},
+    ]);
   }
 
   test('emits nothing when the socket is not connected', () async {

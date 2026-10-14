@@ -154,38 +154,6 @@ void main() {
 
       expect(message.toJson(), [null, null, 'phoenix', 'heartbeat', {}]);
     });
-
-    test('uses an object for 1.0.0', () {
-      const message = RealtimeMessage(
-        topic: 'realtime:room',
-        event: 'phx_join',
-        payload: {'foo': 'bar'},
-        ref: '2',
-        joinRef: '1',
-      );
-
-      expect(message.toJson(RealtimeProtocolVersion.v1), {
-        'topic': 'realtime:room',
-        'event': 'phx_join',
-        'payload': {'foo': 'bar'},
-        'ref': '2',
-        'join_ref': '1',
-      });
-    });
-
-    test('leaves out the references it has none of for 1.0.0', () {
-      const message = RealtimeMessage(
-        topic: 'phoenix',
-        event: 'heartbeat',
-        payload: <String, dynamic>{},
-        ref: '1',
-      );
-
-      final json = message.toJson(RealtimeProtocolVersion.v1) as Map;
-
-      expect(json['ref'], '1');
-      expect(json.containsKey('join_ref'), isFalse);
-    });
   });
 
   group('fromJson', () {
@@ -205,22 +173,7 @@ void main() {
       expect(message.payload, {'status': 'ok'});
     });
 
-    test('reads an object 1.0.0 frame', () {
-      final message = RealtimeMessage.fromJson({
-        'topic': 'realtime:room',
-        'event': 'phx_reply',
-        'payload': {'status': 'ok'},
-        'ref': '2',
-      }, RealtimeProtocolVersion.v1);
-
-      expect(message.topic, 'realtime:room');
-      expect(message.event, 'phx_reply');
-      expect(message.payload, {'status': 'ok'});
-      expect(message.ref, '2');
-      expect(message.joinRef, isNull);
-    });
-
-    test('throws when the frame does not match the protocol version', () {
+    test('throws when the frame is not a positional array', () {
       expect(
         () => RealtimeMessage.fromJson({'not': 'an array'}),
         throwsFormatException,
@@ -229,28 +182,9 @@ void main() {
         () => RealtimeMessage.fromJson(['too', 'short']),
         throwsFormatException,
       );
-      expect(
-        () => RealtimeMessage.fromJson([], RealtimeProtocolVersion.v1),
-        throwsFormatException,
-      );
     });
 
     test('throws a FormatException when a field has the wrong type', () {
-      expect(
-        () => RealtimeMessage.fromJson({
-          'topic': 1,
-          'event': 'phx_reply',
-        }, RealtimeProtocolVersion.v1),
-        throwsFormatException,
-      );
-      expect(
-        () => RealtimeMessage.fromJson({
-          'topic': 'realtime:room',
-          'event': 'phx_reply',
-          'ref': 2,
-        }, RealtimeProtocolVersion.v1),
-        throwsFormatException,
-      );
       expect(
         () => RealtimeMessage.fromJson([
           '1',
@@ -273,7 +207,7 @@ void main() {
       );
     });
 
-    test('round trips through toJson for every protocol version', () {
+    test('round trips through toJson', () {
       const message = RealtimeMessage(
         topic: 'realtime:room',
         event: 'broadcast',
@@ -282,12 +216,7 @@ void main() {
         joinRef: '1',
       );
 
-      for (final version in RealtimeProtocolVersion.values) {
-        expect(
-          RealtimeMessage.fromJson(message.toJson(version), version),
-          message,
-        );
-      }
+      expect(RealtimeMessage.fromJson(message.toJson()), message);
     });
   });
 }

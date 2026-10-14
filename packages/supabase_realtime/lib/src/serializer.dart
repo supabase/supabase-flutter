@@ -7,9 +7,8 @@ import 'package:supabase_realtime/src/realtime_message.dart';
 /// Encodes and decodes Realtime protocol `2.0.0` frames.
 ///
 /// Text frames use the positional JSON array
-/// `[joinRef, ref, topic, event, payload]` instead of the `1.0.0` object
-/// layout. This lets the server skip part of the JSON encoding/decoding work,
-/// lowering latency.
+/// `[joinRef, ref, topic, event, payload]`. This lets the server skip part of
+/// the JSON encoding/decoding work, lowering latency.
 ///
 /// Broadcast messages whose user payload is binary are sent as binary
 /// WebSocket frames so that raw bytes can be forwarded without JSON encoding.
