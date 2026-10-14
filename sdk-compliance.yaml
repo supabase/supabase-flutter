@@ -2894,7 +2894,6 @@ supporting_symbols:
   - OAuthClient.redirectUris
   - OAuthClient.registrationType
   - OAuthClient.responseTypes
-  - OAuthClient.scope
   - OAuthClient.tokenEndpointAuthenticationMethod
   - OAuthClient.updatedAt
   - OAuthClientGrantType

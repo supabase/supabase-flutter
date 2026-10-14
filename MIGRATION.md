@@ -245,6 +245,25 @@ final String name = client.clientName ?? client.clientId;
 `admin.oauth.createClient` always have one. Clients that register themselves through the dynamic
 client registration API, where the name is optional, may not.
 
+### `OAuthClient.tokenEndpointAuthenticationMethod` and `registrationType` are nullable
+
+Auth leaves `token_endpoint_auth_method` and `registration_type` out of a client response when they
+are empty, so `OAuthClient.tokenEndpointAuthenticationMethod` is a `String?` and
+`OAuthClient.registrationType` is an `OAuthClientRegistrationType?`.
+
+```dart
+// Before
+final OAuthClientRegistrationType type = client.registrationType;
+
+// After
+final OAuthClientRegistrationType? type = client.registrationType;
+```
+
+### `OAuthClient.scope` is gone
+
+Auth never returns a scope for an OAuth client, so `OAuthClient.scope` was always `null`. Remove
+any reads of it. The scopes a client requests are on `OAuthAuthorizationDetailsResponse.scope`.
+
 ### `JWK.publicKey` returns a `JWTKey`
 
 `JWK.publicKey` supports EC keys as well as RSA keys, so it returns a `JWTKey`: an `RSAPublicKey`
