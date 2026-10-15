@@ -3,8 +3,9 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 /// A schema built from valid but pathological database names: identifiers
 /// that shadow core and imported types, comments and values carrying every
 /// line terminator and Dart string metacharacter, array element kinds with
-/// dedicated conversions, and pgvector columns, which the fixture database
-/// cannot load.
+/// dedicated conversions, pgvector columns, which the fixture database
+/// cannot load, and functions named like the members their generated
+/// methods sit next to.
 ///
 /// The golden generated from it, `hostile_schema.dart`, is checked in so the
 /// package's own `dart analyze` run proves the generated code stays valid,
@@ -472,6 +473,216 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       targetTable: 'map',
       targetColumns: ['list'],
       isOneToOne: true,
+    ),
+  ],
+  functions: [
+    // Named like the method a call of `client.rpc` goes through.
+    FunctionDescription(
+      schema: 'public',
+      name: 'call',
+      overloads: [
+        FunctionOverloadDescription(
+          arguments: [],
+          result: FunctionValueResult(
+            ValueTypeDescription(
+              postgresFormat: 'int8',
+              typeKind: ColumnTypeKind.integer,
+            ),
+            isSetReturning: false,
+          ),
+        ),
+      ],
+    ),
+    // Named like the generated method body's callee, with parameters named
+    // like it and like the codecs the body refers to.
+    FunctionDescription(
+      schema: 'public',
+      name: 'rows',
+      overloads: [
+        FunctionOverloadDescription(
+          arguments: [
+            FunctionArgumentDescription(
+              name: 'postgrest_bytea',
+              type: ValueTypeDescription(
+                postgresFormat: 'bytea',
+                typeKind: ColumnTypeKind.binary,
+              ),
+              hasDefault: true,
+            ),
+            FunctionArgumentDescription(
+              name: 'rows',
+              type: ValueTypeDescription(
+                postgresFormat: 'int4range',
+                typeKind: ColumnTypeKind.range,
+                boundTypeKind: ColumnTypeKind.integer,
+              ),
+              hasDefault: false,
+            ),
+            FunctionArgumentDescription(
+              name: 'value',
+              type: ValueTypeDescription(
+                postgresFormat: 'public.string',
+                typeKind: ColumnTypeKind.enumType,
+                enumType: EnumDescription(
+                  schema: 'public',
+                  name: 'string',
+                  values: ["it's \$a\u2028trap", 'plain'],
+                ),
+              ),
+              hasDefault: false,
+            ),
+          ],
+          result: FunctionValueResult(
+            ValueTypeDescription(
+              postgresFormat: 'vector',
+              typeKind: ColumnTypeKind.vector,
+            ),
+            isSetReturning: true,
+          ),
+        ),
+      ],
+    ),
+    // A reserved word returning rows of its own shape, one column of a
+    // shadowing enum.
+    FunctionDescription(
+      schema: 'public',
+      name: 'class',
+      overloads: [
+        FunctionOverloadDescription(
+          arguments: [],
+          result: FunctionColumnsResult([
+            ColumnDescription(
+              name: 'string',
+              postgresFormat: 'public.string',
+              typeKind: ColumnTypeKind.enumType,
+              enumType: EnumDescription(
+                schema: 'public',
+                name: 'string',
+                values: ["it's \$a\u2028trap", 'plain'],
+              ),
+              isRequired: false,
+              hasDefault: false,
+              isNullable: true,
+              isReadOnly: true,
+            ),
+          ]),
+        ),
+      ],
+    ),
+    // Returning rows of its own shape, named like a core type and a
+    // generated table at once, and taking a row of that table.
+    FunctionDescription(
+      schema: 'public',
+      name: 'map',
+      overloads: [
+        FunctionOverloadDescription(
+          arguments: [
+            FunctionArgumentDescription(
+              name: 'map',
+              type: ValueTypeDescription(
+                postgresFormat: 'map',
+                typeKind: ColumnTypeKind.unknown,
+              ),
+              hasDefault: false,
+              rowOf: ('public', 'map'),
+            ),
+          ],
+          result: FunctionColumnsResult([
+            ColumnDescription(
+              name: 'list',
+              postgresFormat: '_float8',
+              typeKind: ColumnTypeKind.array,
+              elementTypeKind: ColumnTypeKind.floating,
+              isRequired: false,
+              hasDefault: false,
+              isNullable: true,
+              isReadOnly: true,
+            ),
+          ]),
+        ),
+      ],
+    ),
+    // Named like the schema-prefixed name of `private.restock`.
+    FunctionDescription(
+      schema: 'public',
+      name: 'private_restock',
+      overloads: [
+        FunctionOverloadDescription(arguments: [], result: FunctionNoResult()),
+      ],
+    ),
+    FunctionDescription(
+      schema: 'private',
+      name: 'restock',
+      overloads: [
+        FunctionOverloadDescription(arguments: [], result: FunctionNoResult()),
+        // An overload spelling its arguments out, with a row of a table of
+        // another schema and an unknown type.
+        FunctionOverloadDescription(
+          arguments: [
+            FunctionArgumentDescription(
+              name: 'item',
+              type: ValueTypeDescription(
+                postgresFormat: 'achievement_item_progress_tbl',
+                typeKind: ColumnTypeKind.unknown,
+              ),
+              hasDefault: false,
+              rowOf: ('private', 'achievement_item_progress_tbl'),
+            ),
+            FunctionArgumentDescription(
+              name: 'note',
+              type: ValueTypeDescription(
+                postgresFormat: 'tsquery_custom',
+                typeKind: ColumnTypeKind.unknown,
+              ),
+              hasDefault: true,
+            ),
+          ],
+          result: FunctionTableRowsResult(
+            schema: 'public',
+            table: 'orders',
+            isSetReturning: false,
+          ),
+        ),
+      ],
+    ),
+    // A schema name with line terminators and quotes, in a method name, a
+    // string literal and the note of an overload the generated code cannot
+    // call.
+    FunctionDescription(
+      schema: 'evil\nmultiline "schema" name',
+      name: 'it\'s',
+      overloads: [
+        FunctionOverloadDescription(
+          arguments: [
+            FunctionArgumentDescription(
+              name: '',
+              type: ValueTypeDescription(
+                postgresFormat: 'text',
+                typeKind: ColumnTypeKind.text,
+              ),
+              hasDefault: false,
+            ),
+          ],
+          result: FunctionNoResult(),
+        ),
+        FunctionOverloadDescription(
+          arguments: [
+            FunctionArgumentDescription(
+              name: 'at',
+              type: ValueTypeDescription(
+                postgresFormat: 'timestamp',
+                typeKind: ColumnTypeKind.timestamp,
+              ),
+              hasDefault: false,
+            ),
+          ],
+          result: FunctionTableRowsResult(
+            schema: 'evil\nmultiline "schema" name',
+            table: 'postgrest_column',
+            isSetReturning: true,
+          ),
+        ),
+      ],
     ),
   ],
   enums: [

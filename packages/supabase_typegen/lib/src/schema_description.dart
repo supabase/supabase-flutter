@@ -69,6 +69,7 @@ class DatabaseDescription {
     required this.tables,
     required this.enums,
     this.relationships = const [],
+    this.functions = const [],
     this.metadataVersion = 1,
   });
 
@@ -86,6 +87,10 @@ class DatabaseDescription {
 
   /// Foreign keys between the tables, in database order.
   final List<RelationshipDescription> relationships;
+
+  /// The functions of the schemas PostgREST exposes under `/rpc`, sorted by
+  /// schema and name.
+  final List<FunctionDescription> functions;
 }
 
 /// A foreign key from [sourceTable] to [targetTable].
@@ -348,4 +353,152 @@ class ComputedRelationshipDescription {
   /// Whether the function returns a set of more than one row, so the embed is
   /// a list. A single row and a set declared `ROWS 1` embed as one object.
   final bool isToMany;
+}
+
+/// The Dart-relevant type of a function argument, a function result or an
+/// element of a set-returning function.
+class ValueTypeDescription {
+  const ValueTypeDescription({
+    required this.postgresFormat,
+    required this.typeKind,
+    this.elementTypeKind,
+    this.boundTypeKind,
+    this.enumType,
+  });
+
+  /// The Postgres type, for example `int8`, `_text` or `public.mood`.
+  final String postgresFormat;
+
+  /// The kind of Dart type the value maps to.
+  final ColumnTypeKind typeKind;
+
+  /// The kind of Dart type of the array elements for [ColumnTypeKind.array]
+  /// types.
+  final ColumnTypeKind? elementTypeKind;
+
+  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] types and
+  /// for arrays of a range type.
+  final ColumnTypeKind? boundTypeKind;
+
+  /// The Postgres enum of an enum type or an array of one; `null` otherwise.
+  final EnumDescription? enumType;
+}
+
+/// A function PostgREST exposes under `/rpc`, with its overloads.
+class FunctionDescription {
+  const FunctionDescription({
+    required this.schema,
+    required this.name,
+    required this.overloads,
+  });
+
+  /// The schema of the function, for example `public`.
+  final String schema;
+
+  /// The name of the function, which it is called by.
+  final String name;
+
+  /// The definitions of the function, ordered by argument list and then by
+  /// return type. Never empty.
+  final List<FunctionOverloadDescription> overloads;
+}
+
+/// One definition of a [FunctionDescription].
+class FunctionOverloadDescription {
+  const FunctionOverloadDescription({
+    required this.arguments,
+    required this.result,
+    this.error,
+    this.isComputedField = false,
+  });
+
+  /// The input parameters, in name order.
+  final List<FunctionArgumentDescription> arguments;
+
+  /// What a call returns.
+  final FunctionResultDescription result;
+
+  /// Why PostgREST cannot resolve a call to this overload, when it cannot:
+  /// it conflicts with another overload, or it is a computed field that
+  /// returns no rows. Such an overload gets no method.
+  final String? error;
+
+  /// Whether the function is a computed field of a relation of its schema,
+  /// selectable through the relation's computed fields.
+  final bool isComputedField;
+}
+
+/// An input parameter of a [FunctionOverloadDescription].
+class FunctionArgumentDescription {
+  const FunctionArgumentDescription({
+    required this.name,
+    required this.type,
+    required this.hasDefault,
+    this.rowOf,
+  });
+
+  /// The parameter name, empty for an unnamed parameter.
+  final String name;
+
+  /// The type of the parameter.
+  final ValueTypeDescription type;
+
+  /// Whether the parameter has a default, which makes it optional.
+  final bool hasDefault;
+
+  /// The described table whose row type the parameter has, as schema and
+  /// name, or `null` for any other type.
+  final (String, String)? rowOf;
+}
+
+/// What a call of a [FunctionOverloadDescription] returns.
+sealed class FunctionResultDescription {
+  const FunctionResultDescription();
+}
+
+/// The function returns nothing (`void`).
+class FunctionNoResult extends FunctionResultDescription {
+  const FunctionNoResult();
+}
+
+/// The function returns a value of [type], or a set of them when
+/// [isSetReturning]. A function can always return `NULL`, so the value is
+/// nullable whatever the type.
+class FunctionValueResult extends FunctionResultDescription {
+  const FunctionValueResult(this.type, {required this.isSetReturning});
+
+  /// The type of the value, or of each element of the set.
+  final ValueTypeDescription type;
+
+  /// Whether the response is a list of values.
+  final bool isSetReturning;
+}
+
+/// The function returns rows of the described table [schema].[table], a
+/// list of them when [isSetReturning] and one row otherwise.
+class FunctionTableRowsResult extends FunctionResultDescription {
+  const FunctionTableRowsResult({
+    required this.schema,
+    required this.table,
+    required this.isSetReturning,
+  });
+
+  /// The schema of [table].
+  final String schema;
+
+  /// The table whose rows the function returns.
+  final String table;
+
+  /// Whether the response is a list of rows.
+  final bool isSetReturning;
+}
+
+/// The function returns rows of its own shape, `RETURNS TABLE (…)`. Nothing
+/// on the catalog says whether a column can be `NULL`, so every column is
+/// nullable.
+class FunctionColumnsResult extends FunctionResultDescription {
+  const FunctionColumnsResult(this.columns);
+
+  /// The columns of the rows, in name order.
+  final List<ColumnDescription> columns;
 }

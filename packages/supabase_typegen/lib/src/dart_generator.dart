@@ -28,7 +28,8 @@ final minimumLanguageVersion = Version(3, 8, 0);
 
 /// Generates a Dart source file with typed table definitions, row extension
 /// types, insert and update value types, column tokens, computed fields,
-/// relations and Postgres enums for the schemas of [database].
+/// relations, Postgres enums and typed function calls for the schemas of
+/// [database].
 ///
 /// Objects of the `public` schema are named after themselves, `books` becomes
 /// `Books` and `BooksRow`; objects of any other schema carry the schema as a
@@ -40,8 +41,9 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
 /// `PostgrestNullableVectorColumn`, `PostgrestComputedField`,
 /// `PostgrestRange`, `PostgrestDate`, `PostgrestTime`, `PostgrestInterval`,
-/// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `postgrestBytea` and
-/// `postgrestVector`); pass the library [packageImportUri] finds for the
+/// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
+/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, `postgrestBytea`
+/// and `postgrestVector`); pass the library [packageImportUri] finds for the
 /// project the file is written into.
 ///
 /// The code is formatted for [languageVersion], so it uses no syntax a
@@ -59,17 +61,18 @@ String generateDartCode(
       languageVersion == null || languageVersion < minimumLanguageVersion
       ? minimumLanguageVersion
       : languageVersion;
-  final usesBinaryColumns = database.tables.any(
-    (table) =>
-        [
+  final usesBinaryColumns =
+      [
+        for (final table in database.tables) ...[
           for (final column in table.columns) _columnShape(column),
           for (final field in table.computedFields) _computedFieldShape(field),
-        ].any(
-          (shape) =>
-              shape.typeKind == ColumnTypeKind.binary ||
-              shape.elementTypeKind == ColumnTypeKind.binary,
-        ),
-  );
+        ],
+        for (final function in database.functions) ..._functionShapes(function),
+      ].any(
+        (shape) =>
+            shape.typeKind == ColumnTypeKind.binary ||
+            shape.elementTypeKind == ColumnTypeKind.binary,
+      );
   // Caller-provided values are encoded before they are written into source:
   // a line terminator in a schema name would escape the comment, and a
   // quote in the import URI would escape the import string.
@@ -136,6 +139,14 @@ String generateDartCode(
       decoders,
     );
   }
+  _writeFunctions(
+    buffer,
+    database.functions,
+    tableNames,
+    typeNames,
+    enumTypeNames,
+    decoders,
+  );
   decoders.write(buffer);
 
   return DartFormatter(
@@ -187,6 +198,9 @@ class _TypeNameRegistry {
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
+    'PostgrestRpc',
+    'PostgrestTypedBuilder',
+    'PostgrestTypedFilterBuilder',
   };
 
   String claim(String name) => _claimName(_taken, name);
@@ -582,7 +596,16 @@ void _writeTable(
   final relationNames = _relationNames(typeNames, members, relations);
   final relationKeys = _embedKeys(relations, relationNames);
 
-  _writeRow(buffer, table, names, memberNames, bindings);
+  _writeRow(
+    buffer,
+    table,
+    names.rowType,
+    memberNames,
+    bindings,
+    docLine:
+        'A row of the `${names.displayName}` table, as `select()` reads it '
+        'with every column.',
+  );
   if (insertType != null) {
     _writeValues(
       buffer,
@@ -697,16 +720,12 @@ String _claimAlias(Set<String> used, String candidate) {
 void _writeRow(
   StringBuffer buffer,
   TableDescription table,
-  _TableNames names,
+  String rowType,
   Map<String, String> memberNames,
-  Map<String, _Binding> bindings,
-) {
-  final rowType = names.rowType;
-  _writeDocComment(
-    buffer,
-    'A row of the `${names.displayName}` table, as `select()` reads it with '
-    'every column.',
-  );
+  Map<String, _Binding> bindings, {
+  required String docLine,
+}) {
+  _writeDocComment(buffer, docLine);
   _writeDocComment(buffer, table.comment);
   buffer
     ..writeln('extension type const $rowType(Map<String, dynamic> _json)')
@@ -848,25 +867,14 @@ void _writeNamespace(
   buffer
     ..writeln('  );')
     ..writeln();
-  for (final column in table.columns) {
-    final binding = bindings[column.name]!;
-    final columnType = switch ((binding.kind, column.isNullable)) {
-      (ColumnTypeKind.vector, true) =>
-        'PostgrestNullableVectorColumn<$rowType>',
-      (ColumnTypeKind.vector, false) => 'PostgrestVectorColumn<$rowType>',
-      (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
-      (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
-    };
-    // A vector column decodes its literal itself.
-    final decoder = binding.kind == ColumnTypeKind.vector
-        ? null
-        : decoders.claim(binding);
-    final arguments = decoder == null ? '' : ', fromJson: $decoder';
-    buffer.writeln(
-      '  static const ${columnMembers[column.name]} = '
-      '$columnType(${_stringLiteral(column.name)}$arguments);',
-    );
-  }
+  _writeColumnTokens(
+    buffer,
+    table.columns,
+    rowType,
+    columnMembers,
+    bindings,
+    decoders,
+  );
   for (final field in table.computedFields) {
     final binding = computedFieldBindings[field.name]!;
     final decoder = decoders.claim(binding);
@@ -911,6 +919,37 @@ void _writeNamespace(
   buffer
     ..writeln('}')
     ..writeln();
+}
+
+/// Writes a column token constant of the row type [rowType] for each of
+/// [columns].
+void _writeColumnTokens(
+  StringBuffer buffer,
+  List<ColumnDescription> columns,
+  String rowType,
+  Map<String, String> columnMembers,
+  Map<String, _Binding> bindings,
+  _DecoderRegistry decoders,
+) {
+  for (final column in columns) {
+    final binding = bindings[column.name]!;
+    final columnType = switch ((binding.kind, column.isNullable)) {
+      (ColumnTypeKind.vector, true) =>
+        'PostgrestNullableVectorColumn<$rowType>',
+      (ColumnTypeKind.vector, false) => 'PostgrestVectorColumn<$rowType>',
+      (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
+      (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
+    };
+    // A vector column decodes its literal itself.
+    final decoder = binding.kind == ColumnTypeKind.vector
+        ? null
+        : decoders.claim(binding);
+    final arguments = decoder == null ? '' : ', fromJson: $decoder';
+    buffer.writeln(
+      '  static const ${columnMembers[column.name]} = '
+      '$columnType(${_stringLiteral(column.name)}$arguments);',
+    );
+  }
 }
 
 /// The private top-level functions the column tokens decode their values
@@ -1369,4 +1408,463 @@ String _stringLiteral(String value) {
       .replaceAll('\u2028', r'\u{2028}')
       .replaceAll('\u2029', r'\u{2029}');
   return "'$escaped'";
+}
+
+_TypeShape _valueShape(String name, ValueTypeDescription type) => (
+  name: name,
+  typeKind: type.typeKind,
+  elementTypeKind: type.elementTypeKind,
+  boundTypeKind: type.boundTypeKind,
+  enumType: type.enumType,
+);
+
+/// The shapes of every argument and result type of [function].
+Iterable<_TypeShape> _functionShapes(FunctionDescription function) sync* {
+  for (final overload in function.overloads) {
+    for (final argument in overload.arguments) {
+      yield _valueShape(argument.name, argument.type);
+    }
+    switch (overload.result) {
+      case FunctionValueResult(:final type):
+        yield _valueShape(function.name, type);
+      case FunctionColumnsResult(:final columns):
+        yield* columns.map(_columnShape);
+      case FunctionNoResult() || FunctionTableRowsResult():
+        break;
+    }
+  }
+}
+
+/// The members of [PostgrestRpc] a generated method may not be named like,
+/// since an instance member wins over an extension member, and the names the
+/// generated method bodies refer to.
+const _rpcMembers = {'call', 'rows', 'value'};
+
+/// The top-level codecs the generated conversions call unqualified.
+const _codecs = {'postgrestBytea', 'postgrestVector'};
+
+/// One overload of a function that gets a generated method.
+class _FunctionMethod {
+  const _FunctionMethod(this.function, this.overload, this.name);
+
+  final FunctionDescription function;
+  final FunctionOverloadDescription overload;
+  final String name;
+}
+
+/// Why the generated code cannot call [overload], or `null` when it can.
+///
+/// PostgREST passes an unnamed parameter only when it is the sole parameter
+/// and of type `json` or `jsonb`, as the whole request body; a sole unnamed
+/// `text` one needs a body of its own content type, and a sole unnamed row
+/// parameter is not callable under `/rpc` at all.
+String? _unsupportedReason(FunctionOverloadDescription overload) {
+  if (overload.error case final error?) return error;
+  final unnamed = overload.arguments.where((argument) => argument.name == '');
+  if (unnamed.isEmpty) return null;
+  if (overload.arguments case [final argument]
+      when argument.rowOf == null &&
+          argument.type.typeKind == ColumnTypeKind.json) {
+    return null;
+  }
+  return 'PostgREST only passes an unnamed parameter that is the sole one and '
+      'of type json or jsonb; call it through `client.rpc` instead';
+}
+
+/// The method names of the callable overloads of [functions], unique among
+/// each other and apart from the members of `PostgrestRpc` and the [reserved]
+/// names the generated method bodies refer to.
+///
+/// A function with one callable overload is named after the function, with
+/// the schema as a prefix outside `public`. Of several overloads, the first
+/// one with the fewest arguments keeps that name and every other one spells
+/// out its arguments, `booksOfWithAuthorNameAndMaxPrice`, or `body` for the
+/// unnamed one.
+List<_FunctionMethod> _functionMethods(
+  List<FunctionDescription> functions, {
+  required Set<String> reserved,
+}) {
+  final used = {..._rpcMembers, ...reserved};
+  final methods = <_FunctionMethod>[];
+  for (final function in functions) {
+    final callable = [
+      for (final overload in function.overloads)
+        if (_unsupportedReason(overload) == null) overload,
+    ];
+    if (callable.isEmpty) continue;
+    final baseName = memberIdentifier(
+      function.schema == 'public'
+          ? function.name
+          : '${function.schema}_${function.name}',
+    );
+    final plain = callable.reduce(
+      (fewest, overload) => overload.arguments.length < fewest.arguments.length
+          ? overload
+          : fewest,
+    );
+    for (final overload in callable) {
+      final argumentNames = overload.arguments.map(
+        (argument) => argument.name.isEmpty ? 'body' : argument.name,
+      );
+      final name = identical(overload, plain)
+          ? baseName
+          : '${baseName}With${pascalCase(argumentNames.join('_and_'))}';
+      methods.add(_FunctionMethod(function, overload, _claimName(used, name)));
+    }
+  }
+  return methods;
+}
+
+/// The generated names of the rows a `RETURNS TABLE` function returns.
+class _ResultRowNames {
+  const _ResultRowNames({
+    required this.rowType,
+    required this.namespaceType,
+    required this.rowMembers,
+    required this.columnMembers,
+  });
+
+  final String rowType;
+  final String namespaceType;
+  final Map<String, String> rowMembers;
+  final Map<String, String> columnMembers;
+}
+
+void _writeFunctions(
+  StringBuffer buffer,
+  List<FunctionDescription> functions,
+  Map<(String, String), _TableNames> tableNames,
+  _TypeNameRegistry typeNames,
+  Map<(String, String), String> enumTypeNames,
+  _DecoderRegistry decoders,
+) {
+  final methods = _functionMethods(
+    functions,
+    reserved: {...typeNames.taken, ..._codecs},
+  );
+  // A computed field or relationship the generated code cannot call is
+  // reached through the members of its table instead, so it goes
+  // unmentioned.
+  final unsupported = [
+    for (final function in functions)
+      for (final overload in function.overloads)
+        if (!overload.isComputedField)
+          if (_unsupportedReason(overload) case final reason?)
+            (function, overload, reason),
+  ];
+  if (methods.isEmpty && unsupported.isEmpty) return;
+
+  final resultRows = <_FunctionMethod, _ResultRowNames>{};
+  for (final method in methods) {
+    if (method.overload.result case FunctionColumnsResult(:final columns)) {
+      final baseName = pascalCase(method.name);
+      final rowType = typeNames.claim('${baseName}Row');
+      final namespaceType = typeNames.claim(baseName);
+      final names = [for (final column in columns) column.name];
+      final rowMembers = _uniqueMemberNames(
+        names,
+        reserved: {...typeNames.taken, 'toJson', ..._codecs},
+      );
+      resultRows[method] = _ResultRowNames(
+        rowType: rowType,
+        namespaceType: namespaceType,
+        rowMembers: rowMembers,
+        columnMembers: _uniqueMemberNames(
+          names,
+          reserved: typeNames.taken,
+          existing: rowMembers,
+        ),
+      );
+    }
+  }
+  for (final MapEntry(key: method, value: names) in resultRows.entries) {
+    _writeResultRows(
+      buffer,
+      method,
+      names,
+      enumTypeNames,
+      decoders,
+    );
+  }
+
+  final extensionName = typeNames.claim('DatabaseFunctions');
+  _writeDocComment(
+    buffer,
+    'Typed calls of the database functions, `client.rpc.functionName(…)`.',
+  );
+  for (final (function, overload, reason) in unsupported) {
+    final signature = overload.arguments
+        .map(
+          (argument) => argument.name.isEmpty
+              ? argument.type.postgresFormat
+              : '${argument.name} ${argument.type.postgresFormat}',
+        )
+        .join(', ');
+    buffer.writeln('///');
+    _writeDocComment(
+      buffer,
+      '`${_displayName(function.schema, function.name)}($signature)` has no '
+              'method: $reason'
+          .replaceAll(_lineTerminators, ' '),
+    );
+  }
+  buffer.writeln('extension $extensionName on PostgrestRpc {');
+  for (final (index, method) in methods.indexed) {
+    if (index > 0) buffer.writeln();
+    _writeFunctionMethod(
+      buffer,
+      method,
+      tableNames,
+      typeNames.taken,
+      resultRows[method],
+      enumTypeNames,
+      decoders,
+    );
+  }
+  buffer
+    ..writeln('}')
+    ..writeln();
+}
+
+/// Writes the row type and the column tokens of the rows the
+/// `RETURNS TABLE` function of [method] returns.
+void _writeResultRows(
+  StringBuffer buffer,
+  _FunctionMethod method,
+  _ResultRowNames names,
+  Map<(String, String), String> enumTypeNames,
+  _DecoderRegistry decoders,
+) {
+  final function = method.function;
+  final columns = (method.overload.result as FunctionColumnsResult).columns;
+  final bindings = {
+    for (final column in columns)
+      column.name: _bindingFor(_columnShape(column), enumTypeNames),
+  };
+  final displayName = _displayName(function.schema, function.name);
+  _writeRow(
+    buffer,
+    TableDescription(
+      schema: function.schema,
+      name: function.name,
+      columns: columns,
+    ),
+    names.rowType,
+    names.rowMembers,
+    bindings,
+    docLine: 'A row returned by the `$displayName` function.',
+  );
+  _writeDocComment(
+    buffer,
+    'Column tokens of the rows the `$displayName` function returns, for '
+    'filtering and ordering them.',
+  );
+  buffer
+    ..writeln('class ${names.namespaceType} {')
+    ..writeln('  const ${names.namespaceType}._();')
+    ..writeln();
+  _writeColumnTokens(
+    buffer,
+    columns,
+    names.rowType,
+    names.columnMembers,
+    bindings,
+    decoders,
+  );
+  buffer
+    ..writeln('}')
+    ..writeln();
+}
+
+void _writeFunctionMethod(
+  StringBuffer buffer,
+  _FunctionMethod method,
+  Map<(String, String), _TableNames> tableNames,
+  Set<String> typeNames,
+  _ResultRowNames? resultRows,
+  Map<(String, String), String> enumTypeNames,
+  _DecoderRegistry decoders,
+) {
+  final _FunctionMethod(:function, :overload) = method;
+  final arguments = overload.arguments;
+  final parameterNames = _uniqueMemberNames(
+    [for (final argument in arguments) argument.name],
+    reserved: {...typeNames, ..._rpcMembers, ..._codecs},
+  );
+
+  String? rowTypeOf(FunctionArgumentDescription argument) =>
+      switch (argument.rowOf) {
+        final relation? => tableNames[relation]?.rowType,
+        null => null,
+      };
+
+  final requiredParameters = <String>[];
+  final optionalParameters = <String>[];
+  final entries = <String>[];
+  String? body;
+  for (final argument in arguments) {
+    final rowType = rowTypeOf(argument);
+    final binding = _bindingFor(
+      _valueShape(argument.name, argument.type),
+      enumTypeNames,
+    );
+    final dartType =
+        rowType ??
+        (binding.kind == ColumnTypeKind.json ? 'Object' : binding.dartType);
+    if (argument.name == '') {
+      requiredParameters.add('Object? body');
+      body = 'body';
+      continue;
+    }
+    final name = parameterNames[argument.name]!;
+    final key = _stringLiteral(argument.name);
+    if (argument.hasDefault) {
+      optionalParameters.add('$dartType? $name');
+      final value = rowType == null
+          ? _writeExpression(name, binding, nullable: true)
+          : '$name?.toJson()';
+      entries.add('$key: ?$value');
+    } else {
+      requiredParameters.add('required $dartType $name');
+      final value = rowType == null
+          ? _writeExpression(name, binding, nullable: false)
+          : '$name.toJson()';
+      entries.add('$key: $value');
+    }
+  }
+  final parameters = [...requiredParameters, ...optionalParameters];
+  final unnamed = arguments.isNotEmpty && arguments.first.name == '';
+  final parameterList = parameters.isEmpty
+      ? ''
+      : unnamed
+      ? parameters.single
+      : '{${parameters.join(', ')}}';
+  final argumentsValue =
+      body ?? (entries.isEmpty ? null : '{${entries.join(', ')}}');
+
+  final call = _functionCall(
+    method,
+    tableNames,
+    resultRows,
+    enumTypeNames,
+    decoders,
+  );
+  final displayName = _displayName(function.schema, function.name);
+  _writeDocComment(
+    buffer,
+    'Calls the `$displayName` function'
+    '${call.description.isEmpty ? '' : ', ${call.description}'}.',
+    indent: '  ',
+  );
+  buffer
+    ..writeln('  ${call.returnType} ${method.name}($parameterList) =>')
+    ..writeln('      ${call.method}(')
+    ..writeln('        ${_stringLiteral(function.name)},');
+  if (argumentsValue != null) {
+    buffer.writeln('        arguments: $argumentsValue,');
+  }
+  buffer
+    ..writeln('        ${call.converter},')
+    ..writeln('        schema: ${_stringLiteral(function.schema)},')
+    ..writeln('      );');
+}
+
+/// How the generated method of a function calls `PostgrestRpc`: the type it
+/// returns, the `rows` or `value` method it calls with the converter argument
+/// for it, and what the result is in its documentation, empty when the
+/// return type says it all.
+typedef _FunctionCall = ({
+  String returnType,
+  String method,
+  String converter,
+  String description,
+});
+
+/// The [_FunctionCall] of the generated method of [method].
+_FunctionCall _functionCall(
+  _FunctionMethod method,
+  Map<(String, String), _TableNames> tableNames,
+  _ResultRowNames? resultRows,
+  Map<(String, String), String> enumTypeNames,
+  _DecoderRegistry decoders,
+) {
+  _FunctionCall rows(String rowType, String description) => (
+    returnType: 'PostgrestTypedFilterBuilder<$rowType, List<$rowType>>',
+    method: 'rows',
+    converter: 'rowFromJson: $rowType.new',
+    description: description,
+  );
+
+  _FunctionCall value(
+    String type,
+    String fromJson, [
+    String description = '',
+  ]) => (
+    returnType: 'PostgrestTypedBuilder<$type>',
+    method: 'value',
+    converter: 'fromJson: $fromJson',
+    description: description,
+  );
+
+  _FunctionCall json(bool isSetReturning) => isSetReturning
+      ? value('List<Object?>', '(json) => (json! as List<dynamic>).cast()')
+      : value('Object?', '(json) => json');
+
+  switch (method.overload.result) {
+    case FunctionNoResult():
+      return value('void', '(_) {}');
+    case FunctionColumnsResult():
+      return rows(
+        resultRows!.rowType,
+        'which returns rows filterable through `${resultRows.namespaceType}`',
+      );
+    case FunctionTableRowsResult(
+      :final schema,
+      :final table,
+      :final isSetReturning,
+    ):
+      final names = tableNames[(schema, table)];
+      if (names == null) return json(isSetReturning);
+      final rowType = names.rowType;
+      if (isSetReturning) {
+        return rows(
+          rowType,
+          'which returns rows of `${names.displayName}` filterable through '
+          '`${names.namespaceType}`',
+        );
+      }
+      // PostgREST answers a function that finds no row with an object whose
+      // every column is null.
+      return value(
+        '$rowType?',
+        '(json) => switch (json) { final Map<String, dynamic> row '
+            'when row.values.any((value) => value != null) => $rowType(row), '
+            '_ => null }',
+        'which returns a row of `${names.displayName}`, or `null` when it '
+            'finds none',
+      );
+    case FunctionValueResult(:final type, :final isSetReturning):
+      final binding = _bindingFor(
+        _valueShape(method.function.name, type),
+        enumTypeNames,
+      );
+      if (binding.kind == ColumnTypeKind.json) return json(isSetReturning);
+      final dartType = '${binding.dartType}?';
+      final decoder = decoders.claim(binding);
+      if (isSetReturning) {
+        return value(
+          'List<$dartType>',
+          decoder == null
+              ? '(json) => (json! as List<dynamic>).cast()'
+              : '(json) => [for (final element in json! as List<dynamic>) '
+                    'element == null ? null : $decoder(element)]',
+        );
+      }
+      return value(
+        dartType,
+        decoder == null
+            ? '(json) => json as $dartType'
+            : '(json) => json == null ? null : $decoder(json)',
+      );
+  }
 }

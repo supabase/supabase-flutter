@@ -945,6 +945,136 @@ class PrivateAchievementItemProgressTbl {
       PostgrestColumn<PrivateAchievementItemProgressTblRow, String>('name');
 }
 
+/// A row returned by the `class` function.
+extension type const ClassRow(Map<String, dynamic> _json) implements Object {
+  String$? get string => switch (_json['string']) {
+    null => null,
+    final Object value => String$.fromWire(value as String),
+  };
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Column tokens of the rows the `class` function returns, for filtering and
+/// ordering them.
+class Class {
+  const Class._();
+
+  static const string = PostgrestNullableColumn<ClassRow, String$>(
+    'string',
+    fromJson: _stringFromJson,
+  );
+}
+
+/// A row returned by the `map` function.
+extension type const MapRow$(Map<String, dynamic> _json) implements Object {
+  List<double>? get list => (_json['list'] as List<dynamic>?)
+      ?.map((element) => (element as num).toDouble())
+      .toList();
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Column tokens of the rows the `map` function returns, for filtering and
+/// ordering them.
+class Map$$ {
+  const Map$$._();
+
+  static const list = PostgrestNullableColumn<MapRow$, List<double>>(
+    'list',
+    fromJson: _doubleListFromJson,
+  );
+}
+
+/// Typed calls of the database functions, `client.rpc.functionName(…)`.
+///
+/// `evil multiline "schema" name.it's(text)` has no method: PostgREST only
+/// passes an unnamed parameter that is the sole one and of type json or jsonb;
+/// call it through `client.rpc` instead
+extension DatabaseFunctions on PostgrestRpc {
+  /// Calls the `call` function.
+  PostgrestTypedBuilder<int?> call$() =>
+      value('call', fromJson: (json) => json as int?, schema: 'public');
+
+  /// Calls the `rows` function.
+  PostgrestTypedBuilder<List<List<double>?>> rows$({
+    required PostgrestRange<int> rows$,
+    required String$ value$,
+    Uint8List? postgrestBytea$,
+  }) => value(
+    'rows',
+    arguments: {
+      'postgrest_bytea': ?switch (postgrestBytea$) {
+        null => null,
+        final value => postgrestBytea.encode(value),
+      },
+      'rows': rows$.literal,
+      'value': value$.wireName,
+    },
+    fromJson: (json) => [
+      for (final element in json! as List<dynamic>)
+        element == null ? null : _doubleListFromJson$(element),
+    ],
+    schema: 'public',
+  );
+
+  /// Calls the `class` function, which returns rows filterable through `Class`.
+  PostgrestTypedFilterBuilder<ClassRow, List<ClassRow>> class$() =>
+      rows('class', rowFromJson: ClassRow.new, schema: 'public');
+
+  /// Calls the `map` function, which returns rows filterable through `Map$$`.
+  PostgrestTypedFilterBuilder<MapRow$, List<MapRow$>> map({
+    required MapRow map,
+  }) => rows(
+    'map',
+    arguments: {'map': map.toJson()},
+    rowFromJson: MapRow$.new,
+    schema: 'public',
+  );
+
+  /// Calls the `private_restock` function.
+  PostgrestTypedBuilder<void> privateRestock() =>
+      value('private_restock', fromJson: (_) {}, schema: 'public');
+
+  /// Calls the `private.restock` function.
+  PostgrestTypedBuilder<void> privateRestock$() =>
+      value('restock', fromJson: (_) {}, schema: 'private');
+
+  /// Calls the `private.restock` function, which returns a row of `orders`, or
+  /// `null` when it finds none.
+  PostgrestTypedBuilder<OrdersRow?> privateRestockWithItemAndNote({
+    required PrivateAchievementItemProgressTblRow item,
+    Object? note,
+  }) => value(
+    'restock',
+    arguments: {'item': item.toJson(), 'note': ?note},
+    fromJson: (json) => switch (json) {
+      final Map<String, dynamic> row
+          when row.values.any((value) => value != null) =>
+        OrdersRow(row),
+      _ => null,
+    },
+    schema: 'private',
+  );
+
+  /// Calls the `evil
+  /// multiline "schema" name.it's` function, which returns rows of `evil
+  /// multiline "schema" name.postgrest_column` filterable through
+  /// `EvilMultilineSchemaNamePostgrestColumn`.
+  PostgrestTypedFilterBuilder<
+    EvilMultilineSchemaNamePostgrestColumnRow,
+    List<EvilMultilineSchemaNamePostgrestColumnRow>
+  >
+  evilMultilineSchemaNameItS({required DateTime at}) => rows(
+    'it\'s',
+    arguments: {'at': at.toIso8601String()},
+    rowFromJson: EvilMultilineSchemaNamePostgrestColumnRow.new,
+    schema: 'evil\nmultiline "schema" name',
+  );
+}
+
 DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
 
 List<DateTime> _dateTimeListFromJson(Object json) => (json as List<dynamic>)
@@ -956,6 +1086,9 @@ double _doubleFromJson(Object json) => (json as num).toDouble();
 List<double> _doubleListFromJson(Object json) => (json as List<dynamic>)
     .map((element) => (element as num).toDouble())
     .toList();
+
+List<double> _doubleListFromJson$(Object json) =>
+    postgrestVector.decode(json as String);
 
 $ _fromJson(Object json) => $.fromWire(json as String);
 
