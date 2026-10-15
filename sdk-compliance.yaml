@@ -1312,7 +1312,7 @@ features:
       - PostgrestTypedTransformBuilder.geojson
   database.using_modifiers.relationship_embed:
     status: implemented
-    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Filtering inside an embed is not on the typed surface; embeddedFilterName is the form it will use."
+    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Ordering and limiting the rows inside a to-many embed is a scope on the builder, `.embedded(Authors.books, (books) => books.order(Books.createdAt.desc()).limit(1))`, typed against the embedded table; scopes nest into dotted paths. Filtering inside an embed and the `!inner` counterpart are not on the typed surface yet; embeddedFilterName is the form filtering will use."
     symbols:
       - PostgrestTransformBuilder.select
       - PostgrestToOneRelation.call
@@ -1320,7 +1320,13 @@ features:
       - PostgrestRelation.select
       - PostgrestToOneRelation.select
       - PostgrestToManyRelation.select
+      - PostgrestTypedTransformBuilder.embedded
     supporting_symbols:
+      - PostgrestEmbeddedScope
+      - PostgrestEmbeddedScope.order
+      - PostgrestEmbeddedScope.limit
+      - PostgrestEmbeddedScope.range
+      - PostgrestEmbeddedScope.embedded
       - PostgrestEmbed
       - PostgrestEmbed.relation
       - PostgrestEmbed.selections

@@ -13,6 +13,7 @@ part 'postgrest_column_expression.dart';
 part 'postgrest_date.dart';
 part 'postgrest_derived_expression.dart';
 part 'postgrest_embedded_relation.dart';
+part 'postgrest_embedded_scope.dart';
 part 'postgrest_filter.dart';
 part 'postgrest_filter_operators.dart';
 part 'postgrest_interval.dart';

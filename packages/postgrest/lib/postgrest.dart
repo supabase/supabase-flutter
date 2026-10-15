@@ -16,7 +16,6 @@ export 'src/postgrest.dart';
 export 'src/postgrest_builder.dart';
 export 'src/postgrest_typed_builder.dart'
     hide
-        PostgrestEmbeddedPage,
         PostgrestExplainOptions,
         PostgrestHttpTableExecutor,
         PostgrestRequestOptions,

@@ -64,22 +64,6 @@ enum PostgrestResultShape {
   value,
 }
 
-/// A `limit` or `range` applied to an embedded relation rather than to the
-/// table itself.
-@experimental
-final class PostgrestEmbeddedPage {
-  const PostgrestEmbeddedPage(this.referencedTable, {this.limit, this.offset});
-
-  /// The embedded relation the page applies to.
-  final String referencedTable;
-
-  /// The maximum number of embedded rows.
-  final int? limit;
-
-  /// The number of embedded rows to skip.
-  final int? offset;
-}
-
 /// The options of a [PostgrestResultShape.explain] request, see
 /// [PostgrestTransformBuilder.explain].
 @experimental
@@ -178,6 +162,7 @@ final class PostgrestRequestOptions {
 /// else, against a local store for example, because the filters, orderings
 /// and payload are still structured values rather than URL text.
 @experimental
+@internal
 final class PostgrestTableRequest {
   PostgrestTableRequest({
     required this.table,
@@ -188,7 +173,7 @@ final class PostgrestTableRequest {
     List<PostgrestOrdering<Object?>> orderings = const [],
     this.limit,
     this.offset,
-    List<PostgrestEmbeddedPage> embeddedPages = const [],
+    List<PostgrestEmbeddedScope<Object?>> embeddedScopes = const [],
     this.shape = PostgrestResultShape.rows,
     this.countOption,
     this.payload,
@@ -204,7 +189,7 @@ final class PostgrestTableRequest {
   }) : options = options ?? PostgrestRequestOptions(),
        columns = List.unmodifiable(columns),
        orderings = List.unmodifiable(orderings),
-       embeddedPages = List.unmodifiable(embeddedPages),
+       embeddedScopes = List.unmodifiable(embeddedScopes),
        onConflict = onConflict == null ? null : List.unmodifiable(onConflict);
 
   /// The table the request addresses.
@@ -238,8 +223,8 @@ final class PostgrestTableRequest {
   /// The number of rows to skip.
   final int? offset;
 
-  /// Limits and offsets applied to embedded relations.
-  final List<PostgrestEmbeddedPage> embeddedPages;
+  /// The sort keys and row windows applied inside to-many embeds.
+  final List<PostgrestEmbeddedScope<Object?>> embeddedScopes;
 
   /// The form the result is asked back in.
   final PostgrestResultShape shape;
@@ -303,7 +288,7 @@ final class PostgrestTableRequest {
     List<PostgrestOrdering<Object?>>? orderings,
     int? limit,
     int? offset,
-    List<PostgrestEmbeddedPage>? embeddedPages,
+    List<PostgrestEmbeddedScope<Object?>>? embeddedScopes,
     PostgrestResultShape? shape,
     CountOption? countOption,
     Object? payload,
@@ -325,7 +310,7 @@ final class PostgrestTableRequest {
     orderings: orderings ?? this.orderings,
     limit: limit ?? this.limit,
     offset: offset ?? this.offset,
-    embeddedPages: embeddedPages ?? this.embeddedPages,
+    embeddedScopes: embeddedScopes ?? this.embeddedScopes,
     shape: shape ?? this.shape,
     countOption: countOption ?? this.countOption,
     payload: payload ?? this.payload,

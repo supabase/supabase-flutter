@@ -175,9 +175,8 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     }
   }
 
-  /// Applies the filter of [request] and every offset that comes without a
-  /// limit, on the table or on an embedded relation, which the transforms
-  /// have no method for.
+  /// Applies the filter of [request] and an offset that comes without a
+  /// limit, which the transforms have no method for.
   static PostgrestFilterBuilder<T> _applyFilter<T>(
     PostgrestFilterBuilder<T> builder,
     PostgrestTableRequest request,
@@ -189,15 +188,6 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     final offset = request.offset;
     if (offset != null && request.limit == null) {
       filtered = filtered.appendSearchParameter('offset', '$offset');
-    }
-    for (final page in request.embeddedPages) {
-      final pageOffset = page.offset;
-      if (pageOffset != null && page.limit == null) {
-        filtered = filtered.appendSearchParameter(
-          '${page.referencedTable}.offset',
-          '$pageOffset',
-        );
-      }
     }
     return filtered;
   }
@@ -220,20 +210,23 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     } else if (limit != null) {
       transformed = transformed.limit(limit);
     }
-    for (final page in request.embeddedPages) {
-      final pageLimit = page.limit;
-      final pageOffset = page.offset;
-      if (pageOffset != null && pageLimit != null) {
-        transformed = transformed.range(
-          pageOffset,
-          pageOffset + pageLimit - 1,
-          referencedTable: page.referencedTable,
-        );
-      } else if (pageLimit != null) {
-        transformed = transformed.limit(
-          pageLimit,
-          referencedTable: page.referencedTable,
-        );
+    for (final scope in request.embeddedScopes) {
+      for (final transforms in scope._flattened()) {
+        final path = transforms.path;
+        for (final key in transforms.orderKeys) {
+          transformed = transformed.appendOrderKey(key, referencedTable: path);
+        }
+        final scopeLimit = transforms.limit;
+        final scopeOffset = transforms.offset;
+        if (scopeOffset != null && scopeLimit != null) {
+          transformed = transformed.range(
+            scopeOffset,
+            scopeOffset + scopeLimit - 1,
+            referencedTable: path,
+          );
+        } else if (scopeLimit != null) {
+          transformed = transformed.limit(scopeLimit, referencedTable: path);
+        }
       }
     }
     if (request.stripNulls) transformed = transformed.stripNulls();

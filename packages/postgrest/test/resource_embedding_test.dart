@@ -35,6 +35,7 @@ class Messages {
   );
   static const id = PostgrestColumn<Message, int>('id');
   static const message = PostgrestColumn<Message, String>('message');
+  static const channelId = PostgrestColumn<Message, int>('channel_id');
   static const username = PostgrestColumn<Message, String>('username');
   static const data = PostgrestNullableColumn<Message, Object>('data');
   static const user = PostgrestToOneRelation<Message, User>(
@@ -223,6 +224,48 @@ void main() {
       expect(messages, hasLength(3));
       expect(messages.first.toJson(), containsPair('channel_id', isA<int>()));
       expect(messages.first.toJson(), contains('inserted_at'));
+    });
+
+    test('embedded orders and limits the embedded rows', () async {
+      Future<List<int>> messageIds(
+        PostgrestEmbeddedScope<Message> Function(
+          PostgrestEmbeddedScope<Message> messages,
+        )
+        scope,
+      ) async {
+        final users = await postgrest
+            .table(Users.table)
+            .selectOnly([
+              Users.username,
+              Users.messages(Messages.id),
+            ])
+            .where(Users.username.eq('supabot'))
+            .embedded(Users.messages, scope);
+        return [
+          for (final message in users.single.read(Users.messages))
+            message.read(Messages.id),
+        ];
+      }
+
+      expect(
+        await messageIds(
+          (messages) =>
+              messages.order(Messages.channelId).order(Messages.id.desc()),
+        ),
+        [3, 1, 2],
+      );
+      expect(
+        await messageIds(
+          (messages) => messages.order(Messages.id.desc()).limit(1),
+        ),
+        [3],
+      );
+      expect(
+        await messageIds(
+          (messages) => messages.order(Messages.id.desc()).range(1, 2),
+        ),
+        [2, 1],
+      );
     });
 
     test('a to-one embed returns one object', () async {

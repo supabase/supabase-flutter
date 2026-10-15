@@ -119,14 +119,21 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
-  /// Merges the rendered sort key [key] into the `order` parameter, which
-  /// PostgREST reads once, adding nothing to [key].
+  /// Merges the rendered sort key [key] into the `order` parameter, or into
+  /// `referencedTable.order` when [referencedTable] is given, which PostgREST
+  /// reads once, adding nothing to [key].
   @internal
-  PostgrestTransformBuilder<T> appendOrderKey(String key) {
-    final existingOrder = _url.queryParameters['order'];
+  PostgrestTransformBuilder<T> appendOrderKey(
+    String key, {
+    String? referencedTable,
+  }) {
+    final parameter = referencedTable == null
+        ? 'order'
+        : '$referencedTable.order';
+    final existingOrder = _url.queryParameters[parameter];
     final value = existingOrder == null ? key : '$existingOrder,$key';
     return PostgrestTransformBuilder(
-      copyWithUrl(_url.overrideSearchParameters('order', value)),
+      copyWithUrl(_url.overrideSearchParameters(parameter, value)),
     );
   }
 

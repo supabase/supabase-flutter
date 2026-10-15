@@ -2504,8 +2504,9 @@ Both APIs only send what was asked for, so `.order('price', ascending: false)` m
 `.order(Books.price.desc())` and `.order('price', ascending: false, nullsFirst: false)` matches
 `.order(Books.price.desc().nullsLast())`. Repeated `order()` calls append on both APIs.
 
-`limit()` and `range()` take the same arguments as before, including `referencedTable` for an
-embedded table. `single()` and `maybeSingle()` resolve to the row type:
+`limit()` and `range()` take the same arguments as before, apart from `referencedTable`: the rows
+of an embed are sorted and limited with `embedded()`, see [embedded selects](#embedded-selects).
+`single()` and `maybeSingle()` resolve to the row type:
 
 ```dart
 // Before
@@ -2670,7 +2671,7 @@ final authors = await supabase
       Authors.name,
       Authors.books.select([Books.title]),
     ])
-    .limit(3, referencedTable: 'books');
+    .embedded(Authors.books, (books) => books.limit(3));
 final List<String> titles = [
   for (final book in authors.first.read(Authors.books))
     book.read(Books.title),
@@ -2678,6 +2679,35 @@ final List<String> titles = [
 ```
 
 A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
+
+`embedded()` replaces `referencedTable` on `order()`, `limit()` and `range()`. Its callback receives
+a scope typed against the embedded table, so ordering by a column of another table does not compile,
+and a scope can reach an embed nested in it:
+
+```dart
+// Before
+await supabase
+    .from('authors')
+    .select('name, books(title, reviews(rating))')
+    .order('created_at', referencedTable: 'books', ascending: false)
+    .limit(1, referencedTable: 'books')
+    .limit(3, referencedTable: 'books.reviews');
+
+// After
+await supabase
+    .table(Authors.table)
+    .selectOnly([
+      Authors.name,
+      Authors.books.select([Books.title, Books.reviews.select([Reviews.rating])]),
+    ])
+    .embedded(
+      Authors.books,
+      (books) => books
+          .order(Books.createdAt.desc())
+          .limit(1)
+          .embedded(Books.reviews, (reviews) => reviews.limit(3)),
+    );
+```
 When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
 so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.
 
