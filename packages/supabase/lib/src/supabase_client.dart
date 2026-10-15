@@ -158,6 +158,7 @@ class SupabaseClient {
         'Initialize SupabaseClient v$version with custom access token',
       );
     }
+    final attached = <SupabaseClientInterceptor>[];
     try {
       _tableExecutor = interceptors.fold<PostgrestTableExecutor>(
         _RestTableExecutor(this),
@@ -165,11 +166,14 @@ class SupabaseClient {
       );
       for (final interceptor in interceptors) {
         interceptor.attach(this);
+        attached.add(interceptor);
       }
     } catch (_) {
       // The caller never receives the client, so nothing else can free what
-      // the constructor already opened.
-      unawaited(_disposeOwnResources());
+      // the constructor and the attached interceptors already opened.
+      unawaited(
+        _disposeInterceptors(attached).then((_) => _disposeOwnResources()),
+      );
       rethrow;
     }
   }
@@ -384,7 +388,16 @@ class SupabaseClient {
   /// client it created itself.
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
-    for (final interceptor in interceptors.reversed) {
+    await _disposeInterceptors(interceptors);
+    await _disposeOwnResources();
+  }
+
+  /// Disposes [attached] in reverse order, logging rather than throwing an
+  /// error one of them fails with.
+  Future<void> _disposeInterceptors(
+    List<SupabaseClientInterceptor> attached,
+  ) async {
+    for (final interceptor in attached.reversed) {
       try {
         await interceptor.dispose();
       } catch (error, stackTrace) {
@@ -395,7 +408,6 @@ class SupabaseClient {
         );
       }
     }
-    await _disposeOwnResources();
   }
 
   Future<void> _disposeOwnResources() async {
