@@ -227,14 +227,13 @@ class OAuthClient {
     this.clientName,
     this.clientSecret,
     required this.clientType,
-    required this.tokenEndpointAuthenticationMethod,
-    required this.registrationType,
+    this.tokenEndpointAuthenticationMethod,
+    this.registrationType,
     this.clientUri,
     this.logoUri,
     required this.redirectUris,
     required this.grantTypes,
     required this.responseTypes,
-    this.scope,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -246,10 +245,11 @@ class OAuthClient {
       clientSecret: json['client_secret'] as String?,
       clientType: OAuthClientType.fromValue(json['client_type'] as String),
       tokenEndpointAuthenticationMethod:
-          json['token_endpoint_auth_method'] as String,
-      registrationType: OAuthClientRegistrationType.fromValue(
-        json['registration_type'] as String,
-      ),
+          json['token_endpoint_auth_method'] as String?,
+      registrationType: switch (json['registration_type']) {
+        final String value => OAuthClientRegistrationType.fromValue(value),
+        _ => null,
+      },
       clientUri: json['client_uri'] as String?,
       logoUri: json['logo_uri'] as String?,
       redirectUris: (json['redirect_uris'] as List?)?.cast() ?? const [],
@@ -270,7 +270,6 @@ class OAuthClient {
                 ),
               )
               .toList(),
-      scope: json['scope'] as String?,
       createdAt: parseIso8601(json, 'created_at'),
       updatedAt: parseIso8601(json, 'updated_at'),
     );
@@ -288,11 +287,11 @@ class OAuthClient {
   /// Type of OAuth client
   final OAuthClientType clientType;
 
-  /// Token endpoint authentication method
-  final String tokenEndpointAuthenticationMethod;
+  /// Token endpoint authentication method, if the server returned one
+  final String? tokenEndpointAuthenticationMethod;
 
-  /// Registration type of the client
-  final OAuthClientRegistrationType registrationType;
+  /// Registration type of the client, if the server returned one
+  final OAuthClientRegistrationType? registrationType;
 
   /// URI of the OAuth client
   final String? clientUri;
@@ -308,9 +307,6 @@ class OAuthClient {
 
   /// Array of allowed response types
   final List<OAuthClientResponseType> responseTypes;
-
-  /// Scope of the OAuth client
-  final String? scope;
 
   /// Timestamp when the client was created
   final DateTime createdAt;
@@ -341,7 +337,6 @@ class CreateOAuthClientOptions {
     required this.redirectUris,
     this.grantTypes,
     this.responseTypes,
-    this.scope,
   });
 
   /// Human-readable name of the OAuth client
@@ -363,9 +358,6 @@ class CreateOAuthClientOptions {
   /// Array of allowed response types (optional, defaults to code)
   final List<OAuthClientResponseType>? responseTypes;
 
-  /// Scope of the OAuth client
-  final String? scope;
-
   Map<String, dynamic> toJson() {
     return {
       'client_name': clientName,
@@ -382,7 +374,6 @@ class CreateOAuthClientOptions {
         OAuthClientResponseType.unknown,
         'responseTypes',
       ),
-      'scope': ?scope,
     };
   }
 }
@@ -397,7 +388,6 @@ class UpdateOAuthClientOptions {
     this.redirectUris,
     this.grantTypes,
     this.responseTypes,
-    this.scope,
   });
 
   /// Human-readable name of the OAuth client
@@ -418,9 +408,6 @@ class UpdateOAuthClientOptions {
   /// Array of allowed response types
   final List<OAuthClientResponseType>? responseTypes;
 
-  /// Scope of the OAuth client
-  final String? scope;
-
   Map<String, dynamic> toJson() {
     return {
       'client_name': ?clientName,
@@ -437,7 +424,6 @@ class UpdateOAuthClientOptions {
         OAuthClientResponseType.unknown,
         'responseTypes',
       ),
-      'scope': ?scope,
     };
   }
 }

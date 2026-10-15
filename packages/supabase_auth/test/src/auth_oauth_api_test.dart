@@ -205,7 +205,6 @@ void main() {
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
-        scope: 'email',
       );
       final oauthClient = await fixture.createOAuthClient(clientParameters);
       final auth = await fixture.logIn(password: password, email: email1);
@@ -218,7 +217,7 @@ void main() {
       expect(response, isA<OAuthAuthorizationDetailsResponse>());
       final details = response as OAuthAuthorizationDetailsResponse;
       expect(details.authorizationId, equals(authorizationId));
-      expect(details.scope, equals(clientParameters.scope));
+      expect(details.scope, equals('email'));
       expect(details.redirectUri, equals(clientParameters.redirectUris.first));
       expect(details.client.clientId, equals(oauthClient.clientId));
       expect(details.client.clientName, equals(oauthClient.clientName));
@@ -320,7 +319,6 @@ void main() {
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
-        scope: 'email',
       );
       final oauthClient = await fixture.createOAuthClient(clientParameters);
       await fixture.logIn(password: password, email: email1);
@@ -341,7 +339,6 @@ void main() {
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
-        scope: 'email',
       );
       final oauthClient = await fixture.createOAuthClient(clientParameters);
       await fixture.logIn(password: password, email: email1);
@@ -364,7 +361,6 @@ void main() {
           clientName: 'Test OAuth Client',
           redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
           responseTypes: [OAuthClientResponseType.code],
-          scope: 'email',
         );
         final oauthClient = await fixture.createOAuthClient(clientParameters);
         await fixture.logIn(password: password, email: email1);
@@ -441,6 +437,7 @@ class AuthOauthApiFixture {
           'redirect_uri': client.redirectUris.first,
           'code_challenge': 'pkqGrzhFuuBOcRoR4elYl2ki1EiR3KtBdtQsEZdv8rM',
           'code_challenge_method': 'S256',
+          'scope': 'email',
         },
       ),
     )..followRedirects = false;

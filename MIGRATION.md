@@ -245,6 +245,49 @@ final String name = client.clientName ?? client.clientId;
 `admin.oauth.createClient` always have one. Clients that register themselves through the dynamic
 client registration API, where the name is optional, may not.
 
+### `OAuthClient.tokenEndpointAuthenticationMethod` and `registrationType` are nullable
+
+Auth leaves `token_endpoint_auth_method` and `registration_type` out of a client response when they
+are empty, so `OAuthClient.tokenEndpointAuthenticationMethod` is a `String?` and
+`OAuthClient.registrationType` is an `OAuthClientRegistrationType?`.
+
+```dart
+// Before
+final OAuthClientRegistrationType type = client.registrationType;
+
+// After
+final OAuthClientRegistrationType? type = client.registrationType;
+```
+
+### OAuth clients no longer have a `scope`
+
+Auth does not store a scope on an OAuth client, so `OAuthClient.scope`,
+`CreateOAuthClientOptions.scope` and `UpdateOAuthClientOptions.scope` are gone. `OAuthClient.scope`
+was always `null`, and Auth ignored the scope sent when creating or updating a client.
+
+Scopes belong to each authorization request instead. A client asks for them with the `scope`
+query parameter on `/oauth/authorize`, and the scopes it asked for are on
+`OAuthAuthorizationDetailsResponse.scope`.
+
+```dart
+// Before
+await supabase.auth.admin.oauth.createClient(
+  CreateOAuthClientOptions(
+    clientName: 'My App',
+    redirectUris: ['https://example.com/callback'],
+    scope: 'openid email',
+  ),
+);
+
+// After
+await supabase.auth.admin.oauth.createClient(
+  CreateOAuthClientOptions(
+    clientName: 'My App',
+    redirectUris: ['https://example.com/callback'],
+  ),
+);
+```
+
 ### `JWK.publicKey` returns a `JWTKey`
 
 `JWK.publicKey` supports EC keys as well as RSA keys, so it returns a `JWTKey`: an `RSAPublicKey`

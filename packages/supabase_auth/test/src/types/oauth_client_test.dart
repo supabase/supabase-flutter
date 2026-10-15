@@ -14,7 +14,6 @@ void main() {
       'redirect_uris': ['https://example.com/callback'],
       'grant_types': ['authorization_code', 'refresh_token'],
       'response_types': ['code'],
-      'scope': 'openid profile email',
       'created_at': '2025-01-01T00:00:00.000Z',
       'updated_at': '2025-01-02T03:04:05.000Z',
     };
@@ -35,7 +34,6 @@ void main() {
         OAuthClientGrantType.refreshToken,
       ]);
       expect(client.responseTypes, [OAuthClientResponseType.code]);
-      expect(client.scope, 'openid profile email');
       expect(client.createdAt, DateTime.parse('2025-01-01T00:00:00.000Z'));
       expect(client.updatedAt, DateTime.parse('2025-01-02T03:04:05.000Z'));
     });
@@ -52,6 +50,21 @@ void main() {
 
       expect(client.logoUri, isNull);
     });
+
+    test(
+      'fromJson parses a client without a token endpoint authentication '
+      'method or registration type',
+      () {
+        final client = OAuthClient.fromJson(
+          {...json}
+            ..remove('token_endpoint_auth_method')
+            ..remove('registration_type'),
+        );
+
+        expect(client.tokenEndpointAuthenticationMethod, isNull);
+        expect(client.registrationType, isNull);
+      },
+    );
 
     test(
       'fromJson parses a client without redirect URIs, grant types or '

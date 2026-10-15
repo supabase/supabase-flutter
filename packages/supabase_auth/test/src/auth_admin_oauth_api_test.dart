@@ -43,7 +43,6 @@ void main() {
         clientName: 'Test OAuth Client',
         redirectUris: ['https://example.com/callback'],
         clientUri: 'https://example.com',
-        scope: 'openid profile email',
       );
 
       final response = await client.admin.oauth.createClient(parameters);
