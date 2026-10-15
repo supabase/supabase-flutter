@@ -251,6 +251,21 @@ void main() {
         'parent_todo(orders(id))',
       );
     });
+
+    test('addresses a hinted embed without an alias by its table name', () {
+      const hintedTodo = PostgrestToOneRelation<Order, Todo>(
+        'todo!orders_parent_id_fkey',
+        columns: [Orders.parentId],
+        referencedTable: 'todos',
+        referencedColumns: [Todos.id],
+      );
+      expect(
+        hintedTodo(Todos.title).expression,
+        'todo!orders_parent_id_fkey(title)',
+      );
+      expect(hintedTodo(Todos.title).desc().orderKey, 'todo(title).desc');
+      expect(hintedTodo(Todos.title).embeddedFilterName, 'todo.title');
+    });
   });
 
   group('select', () {

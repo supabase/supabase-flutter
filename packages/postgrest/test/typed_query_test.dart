@@ -720,6 +720,26 @@ void main() {
       });
     });
 
+    test('a hinted embed without an alias is addressed by its table', () async {
+      const hintedBooks = PostgrestToManyRelation<Author, Book>(
+        'books!books_editor_id_fkey',
+        columns: [Authors.id],
+        referencedTable: 'books',
+        referencedColumns: [Books.editorId],
+      );
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            hintedBooks.select([Books.title]),
+          ])
+          .embedded(hintedBooks, (books) => books.limit(1));
+
+      expect(requestParameters(), {
+        'select': 'books!books_editor_id_fkey(title)',
+        'books.limit': '1',
+      });
+    });
+
     test('repeated scopes of one embed append orderings', () async {
       await client
           .table(Authors.table)

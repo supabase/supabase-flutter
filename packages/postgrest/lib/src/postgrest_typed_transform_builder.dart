@@ -145,7 +145,8 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// ```
   ///
   /// [relation] has to be in the `select` list. Repeated calls for the same
-  /// embed append their sort keys, and the last limit or range wins. See
+  /// embed append their sort keys, a later limit replaces the limit and a
+  /// later range replaces both the offset and the limit. See
   /// [PostgrestEmbeddedScope] for what a scope offers.
   PostgrestTypedTransformBuilder<Row, T> embedded<Target>(
     PostgrestToManyRelation<Row, Target> relation,

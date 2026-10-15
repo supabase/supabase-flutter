@@ -105,18 +105,15 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     bool? nullsFirst,
     String? referencedTable,
   }) {
-    final key = referencedTable == null ? 'order' : '$referencedTable.order';
-    final existingOrder = _url.queryParameters[key];
     final placement = switch (nullsFirst) {
       null => '',
       true => '.nullsfirst',
       false => '.nullslast',
     };
-    final value =
-        '${existingOrder == null ? '' : '$existingOrder,'}$column.'
-        '${ascending ? 'asc' : 'desc'}$placement';
-    final url = _url.overrideSearchParameters(key, value);
-    return PostgrestTransformBuilder(copyWithUrl(url));
+    return appendOrderKey(
+      '$column.${ascending ? 'asc' : 'desc'}$placement',
+      referencedTable: referencedTable,
+    );
   }
 
   /// Merges the rendered sort key [key] into the `order` parameter, or into
