@@ -194,6 +194,28 @@ void main() {
     );
   });
 
+  test('a failed attach disposes the interceptors already attached', () async {
+    final first = LoggingInterceptor('first', log);
+    final second = LoggingInterceptor('second', log);
+
+    expect(
+      () => testSupabaseClient(
+        httpClient: httpClient,
+        interceptors: [first, second, const FailingAttachInterceptor()],
+      ),
+      throwsStateError,
+    );
+    await pumpEventQueue();
+
+    expect(log, [
+      'a attached',
+      'first attached',
+      'second attached',
+      'second disposed',
+      'first disposed',
+    ]);
+  });
+
   test('dispose runs each interceptor once', () async {
     await supabase.dispose();
 
