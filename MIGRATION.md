@@ -2680,6 +2680,9 @@ final List<String> titles = [
 
 A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
 
+When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
+so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.
+
 `embedded()` replaces `referencedTable` on `order()`, `limit()` and `range()`. Its callback receives
 a scope typed against the embedded table, so ordering by a column of another table does not compile,
 and a scope can reach an embed nested in it:
@@ -2698,7 +2701,10 @@ await supabase
     .table(Authors.table)
     .selectOnly([
       Authors.name,
-      Authors.books.select([Books.title, Books.reviews.select([Reviews.rating])]),
+      Authors.books.select([
+        Books.title,
+        Books.reviews.select([Reviews.rating]),
+      ]),
     ])
     .embedded(
       Authors.books,
@@ -2708,8 +2714,6 @@ await supabase
           .embedded(Books.reviews, (reviews) => reviews.limit(3)),
     );
 ```
-When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
-so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.
 
 The generated table definition also lists `primaryKey` and `relations`. Neither changes how a
 request is sent; they describe the table to code that handles requests itself, such as a plugin

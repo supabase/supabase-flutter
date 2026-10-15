@@ -57,7 +57,7 @@ sealed class PostgrestRelation<Row, Target> {
   }) : columns = const [],
        referencedColumns = const [];
 
-  /// The name PostgREST addresses the embed by: the table name, including
+  /// The name the embed is selected by: the table name, including
   /// any disambiguating foreign key hint such as
   /// `authors!books_author_id_fkey`, or the function name of a computed
   /// relationship.
@@ -95,8 +95,9 @@ sealed class PostgrestRelation<Row, Target> {
   /// How the embed is spelled in the `select` list.
   String get _selectName => alias == null ? name : '$alias:$name';
 
-  /// How the embed is addressed outside the `select` list.
-  String get _reference => alias ?? name;
+  /// How the embed is addressed outside the `select` list, where PostgREST
+  /// matches the alias or the table name but not a foreign key hint.
+  String get _reference => key;
 
   /// The columns of this table the relation joins on; empty for a computed
   /// relationship.
