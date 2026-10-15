@@ -1,4 +1,4 @@
 import 'package:meta/meta.dart';
 
 @internal
-const version = '0.5.1';
+const version = '0.5.2';

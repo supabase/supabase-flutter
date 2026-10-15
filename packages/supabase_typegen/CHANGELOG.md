@@ -1,3 +1,7 @@
+## 0.5.2
+
+ - **FEAT**(typegen): generate typed RPC methods from rpcFunctions ([#1959](https://github.com/supabase/supabase-flutter/issues/1959)). ([82e457bb](https://github.com/supabase/supabase-flutter/commit/82e457bb197e698d21796ae1cb5fb6c09de8a6c5))
+
 ## 0.5.1
 
  - **FIX**(typegen): suffix a member named like a generated type ([#1921](https://github.com/supabase/supabase-flutter/issues/1921)). ([cf5624fa](https://github.com/supabase/supabase-flutter/commit/cf5624faff47f50546ce00348afb24cebc6b81ec))

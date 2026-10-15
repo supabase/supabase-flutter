@@ -1,3 +1,10 @@
+## 0.2.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
 ## 0.1.5
 
  - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))

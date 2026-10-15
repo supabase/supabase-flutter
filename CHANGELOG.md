@@ -3,6 +3,118 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`iceberg` - `v0.2.0`](#iceberg---v020)
+ - [`postgrest` - `v3.0.0-dev.10`](#postgrest---v300-dev10)
+ - [`supabase` - `v3.0.0-dev.10`](#supabase---v300-dev10)
+ - [`supabase_auth` - `v3.0.0-dev.9`](#supabase_auth---v300-dev9)
+ - [`supabase_common` - `v3.0.0-dev.7`](#supabase_common---v300-dev7)
+ - [`supabase_flutter` - `v3.0.0-dev.10`](#supabase_flutter---v300-dev10)
+ - [`supabase_functions` - `v3.0.0-dev.8`](#supabase_functions---v300-dev8)
+ - [`supabase_realtime` - `v3.0.0-dev.9`](#supabase_realtime---v300-dev9)
+ - [`supabase_storage` - `v3.0.0-dev.8`](#supabase_storage---v300-dev8)
+ - [`supabase_test` - `v0.5.0`](#supabase_test---v050)
+
+Packages with other changes:
+
+ - [`supabase_typegen` - `v0.5.2`](#supabase_typegen---v052)
+ - [`supabase_flutter_web_auth` - `v0.1.8`](#supabase_flutter_web_auth---v018)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter_web_auth` - `v0.1.8`
+
+---
+
+#### `iceberg` - `v0.2.0`
+
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `postgrest` - `v3.0.0-dev.10`
+
+ - **FIX**: honor Retry-After and abort signals in retries, and share one retry loop ([#1929](https://github.com/supabase/supabase-flutter/issues/1929)). ([7b74d7e5](https://github.com/supabase/supabase-flutter/commit/7b74d7e5cd994ecf68d8595b59a5119d049424db))
+ - **FIX**(postgrest): encode null, nested list and map values in rpc GET parameters ([#1926](https://github.com/supabase/supabase-flutter/issues/1926)). ([6c39e248](https://github.com/supabase/supabase-flutter/commit/6c39e2484f101cbe976eb4690bae4dcf54eb66be))
+ - **BREAKING** **REFACTOR**: remove SupabaseClientPlugin and the public PostgrestTableExecutor ([#1939](https://github.com/supabase/supabase-flutter/issues/1939)). ([d5da36c0](https://github.com/supabase/supabase-flutter/commit/d5da36c01a9d03b111d9e46c1063017c2ad38dcd))
+ - **BREAKING** **FEAT**(postgrest): order and limit inside a to-many embed on the typed surface ([#1960](https://github.com/supabase/supabase-flutter/issues/1960)). ([973de4f9](https://github.com/supabase/supabase-flutter/commit/973de4f9b66237239f774bbdd00b8c0f8f4ffecd))
+ - **BREAKING** **FEAT**(postgrest): make rpc a PostgrestRpc getter with typed entry points ([#1958](https://github.com/supabase/supabase-flutter/issues/1958)). ([08392a90](https://github.com/supabase/supabase-flutter/commit/08392a9005cf5aa49f20724bffd0c9a76f9fe931))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `supabase` - `v3.0.0-dev.10`
+
+ - **BREAKING** **REFACTOR**: remove SupabaseClientPlugin and the public PostgrestTableExecutor ([#1939](https://github.com/supabase/supabase-flutter/issues/1939)). ([d5da36c0](https://github.com/supabase/supabase-flutter/commit/d5da36c01a9d03b111d9e46c1063017c2ad38dcd))
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**(postgrest): make rpc a PostgrestRpc getter with typed entry points ([#1958](https://github.com/supabase/supabase-flutter/issues/1958)). ([08392a90](https://github.com/supabase/supabase-flutter/commit/08392a9005cf5aa49f20724bffd0c9a76f9fe931))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `supabase_auth` - `v3.0.0-dev.9`
+
+ - **REFACTOR**(auth): use package:clock for session expiry checks ([#1952](https://github.com/supabase/supabase-flutter/issues/1952)). ([e79ccbc5](https://github.com/supabase/supabase-flutter/commit/e79ccbc5e0de7dfb459eae9a161559d4116dc0e4))
+ - **FIX**(auth): share JWKS fetches in getClaims and limit refetches for unknown kids ([#1948](https://github.com/supabase/supabase-flutter/issues/1948)). ([4a6084d8](https://github.com/supabase/supabase-flutter/commit/4a6084d8b46debed2e47acf4c92e75b03ea2085c))
+ - **FIX**(auth): expire the cached JWKS in getClaims after its TTL ([#1946](https://github.com/supabase/supabase-flutter/issues/1946)). ([e180f412](https://github.com/supabase/supabase-flutter/commit/e180f412352273230f46ceae5c4a8fc732c4ec9d))
+ - **FIX**(auth): only apply an updateUser response to the session of the same user ([#1936](https://github.com/supabase/supabase-flutter/issues/1936)). ([f09fbf93](https://github.com/supabase/supabase-flutter/commit/f09fbf93b7d5b2a59cdf9fbab675b54860eea6e6))
+ - **FIX**: honor Retry-After and abort signals in retries, and share one retry loop ([#1929](https://github.com/supabase/supabase-flutter/issues/1929)). ([7b74d7e5](https://github.com/supabase/supabase-flutter/commit/7b74d7e5cd994ecf68d8595b59a5119d049424db))
+ - **FEAT**(auth): add a lazy Stream<User> paginator over admin listUsers ([#1954](https://github.com/supabase/supabase-flutter/issues/1954)). ([9602dbed](https://github.com/supabase/supabase-flutter/commit/9602dbedd8a609fc74abd3710c84805628f313ac))
+ - **BREAKING** **FIX**(auth): decode omitted OAuthClient fields and drop the unused scope ([#1957](https://github.com/supabase/supabase-flutter/issues/1957)). ([b223d074](https://github.com/supabase/supabase-flutter/commit/b223d074f455ecb35c9a37585a5e64eb829c1388))
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `supabase_common` - `v3.0.0-dev.7`
+
+ - **REFACTOR**(auth): use package:clock for session expiry checks ([#1952](https://github.com/supabase/supabase-flutter/issues/1952)). ([e79ccbc5](https://github.com/supabase/supabase-flutter/commit/e79ccbc5e0de7dfb459eae9a161559d4116dc0e4))
+ - **FIX**: honor Retry-After and abort signals in retries, and share one retry loop ([#1929](https://github.com/supabase/supabase-flutter/issues/1929)). ([7b74d7e5](https://github.com/supabase/supabase-flutter/commit/7b74d7e5cd994ecf68d8595b59a5119d049424db))
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `supabase_flutter` - `v3.0.0-dev.10`
+
+ - **REFACTOR**(auth): use package:clock for session expiry checks ([#1952](https://github.com/supabase/supabase-flutter/issues/1952)). ([e79ccbc5](https://github.com/supabase/supabase-flutter/commit/e79ccbc5e0de7dfb459eae9a161559d4116dc0e4))
+ - **BREAKING** **REFACTOR**: remove SupabaseClientPlugin and the public PostgrestTableExecutor ([#1939](https://github.com/supabase/supabase-flutter/issues/1939)). ([d5da36c0](https://github.com/supabase/supabase-flutter/commit/d5da36c01a9d03b111d9e46c1063017c2ad38dcd))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+
+#### `supabase_functions` - `v3.0.0-dev.8`
+
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `supabase_realtime` - `v3.0.0-dev.9`
+
+ - **FIX**(realtime): keep a rejoining channel from unsubscribing itself ([#1949](https://github.com/supabase/supabase-flutter/issues/1949)). ([8a8eb1fc](https://github.com/supabase/supabase-flutter/commit/8a8eb1fc3ac08d7fa1578254d3ac075ae9171493))
+ - **FIX**(realtime): ignore system errors from a superseded channel join ([#1927](https://github.com/supabase/supabase-flutter/issues/1927)). ([ba3647fc](https://github.com/supabase/supabase-flutter/commit/ba3647fcfbe4b9a59dbf18aa6c5b468fd4a5ada8))
+ - **BREAKING** **REFACTOR**(realtime): drop the legacy 1.0.0 protocol ([#1956](https://github.com/supabase/supabase-flutter/issues/1956)). ([0b9d5e4c](https://github.com/supabase/supabase-flutter/commit/0b9d5e4c21eeb30200c8164767bda27d70b0f1ff))
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `supabase_storage` - `v3.0.0-dev.8`
+
+ - **FIX**(storage): exists reads the object info and is false only for a missing key ([#1947](https://github.com/supabase/supabase-flutter/issues/1947)). ([7c3f187f](https://github.com/supabase/supabase-flutter/commit/7c3f187fbac6ef3ce24418952ae387a744afb5c6))
+ - **FIX**(storage): keep the trailing slash of the listPaginated prefix ([#1943](https://github.com/supabase/supabase-flutter/issues/1943)). ([76e3c0a8](https://github.com/supabase/supabase-flutter/commit/76e3c0a83cc08ce65ff854934354efe3b2ea59c2))
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
+#### `supabase_test` - `v0.5.0`
+
+ - **BREAKING** **REFACTOR**: remove SupabaseClientPlugin and the public PostgrestTableExecutor ([#1939](https://github.com/supabase/supabase-flutter/issues/1939)). ([d5da36c0](https://github.com/supabase/supabase-flutter/commit/d5da36c01a9d03b111d9e46c1063017c2ad38dcd))
+
+#### `supabase_typegen` - `v0.5.2`
+
+ - **FEAT**(typegen): generate typed RPC methods from rpcFunctions ([#1959](https://github.com/supabase/supabase-flutter/issues/1959)). ([82e457bb](https://github.com/supabase/supabase-flutter/commit/82e457bb197e698d21796ae1cb5fb6c09de8a6c5))
+
+
 ## 2026-10-06
 
 ### Changes
