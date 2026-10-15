@@ -1,3 +1,11 @@
+## 3.0.0-dev.10
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**(auth): use package:clock for session expiry checks ([#1952](https://github.com/supabase/supabase-flutter/issues/1952)). ([e79ccbc5](https://github.com/supabase/supabase-flutter/commit/e79ccbc5e0de7dfb459eae9a161559d4116dc0e4))
+ - **BREAKING** **REFACTOR**: remove SupabaseClientPlugin and the public PostgrestTableExecutor ([#1939](https://github.com/supabase/supabase-flutter/issues/1939)). ([d5da36c0](https://github.com/supabase/supabase-flutter/commit/d5da36c01a9d03b111d9e46c1063017c2ad38dcd))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+
 ## 3.0.0-dev.9
 
  - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))

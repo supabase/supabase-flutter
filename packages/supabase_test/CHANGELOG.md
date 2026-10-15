@@ -1,3 +1,9 @@
+## 0.5.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **REFACTOR**: remove SupabaseClientPlugin and the public PostgrestTableExecutor ([#1939](https://github.com/supabase/supabase-flutter/issues/1939)). ([d5da36c0](https://github.com/supabase/supabase-flutter/commit/d5da36c01a9d03b111d9e46c1063017c2ad38dcd))
+
 ## 0.4.3
 
  - Update a dependency to the latest release.

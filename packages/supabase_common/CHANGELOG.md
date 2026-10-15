@@ -1,3 +1,13 @@
+## 3.0.0-dev.7
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**(auth): use package:clock for session expiry checks ([#1952](https://github.com/supabase/supabase-flutter/issues/1952)). ([e79ccbc5](https://github.com/supabase/supabase-flutter/commit/e79ccbc5e0de7dfb459eae9a161559d4116dc0e4))
+ - **FIX**: honor Retry-After and abort signals in retries, and share one retry loop ([#1929](https://github.com/supabase/supabase-flutter/issues/1929)). ([7b74d7e5](https://github.com/supabase/supabase-flutter/commit/7b74d7e5cd994ecf68d8595b59a5119d049424db))
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
 ## 3.0.0-dev.6
 
  - **REFACTOR**: define shared HTTP header names in supabase_common ([#1917](https://github.com/supabase/supabase-flutter/issues/1917)). ([625d7c7c](https://github.com/supabase/supabase-flutter/commit/625d7c7c15c4c8ceb670e5ff7e9c5d18b42daa4f))

@@ -1,3 +1,13 @@
+## 3.0.0-dev.9
+
+> Note: This release has breaking changes.
+
+ - **FIX**(realtime): keep a rejoining channel from unsubscribing itself ([#1949](https://github.com/supabase/supabase-flutter/issues/1949)). ([8a8eb1fc](https://github.com/supabase/supabase-flutter/commit/8a8eb1fc3ac08d7fa1578254d3ac075ae9171493))
+ - **FIX**(realtime): ignore system errors from a superseded channel join ([#1927](https://github.com/supabase/supabase-flutter/issues/1927)). ([ba3647fc](https://github.com/supabase/supabase-flutter/commit/ba3647fcfbe4b9a59dbf18aa6c5b468fd4a5ada8))
+ - **BREAKING** **REFACTOR**(realtime): drop the legacy 1.0.0 protocol ([#1956](https://github.com/supabase/supabase-flutter/issues/1956)). ([0b9d5e4c](https://github.com/supabase/supabase-flutter/commit/0b9d5e4c21eeb30200c8164767bda27d70b0f1ff))
+ - **BREAKING** **FIX**: decode unknown server values for open-set enums instead of throwing ([#1953](https://github.com/supabase/supabase-flutter/issues/1953)). ([7d22a986](https://github.com/supabase/supabase-flutter/commit/7d22a9861ee1a8aabdc1e834280c8233e24cc5f3))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
 ## 3.0.0-dev.8
 
 > Note: This release has breaking changes.

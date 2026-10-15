@@ -1,3 +1,15 @@
+## 3.0.0-dev.10
+
+> Note: This release has breaking changes.
+
+ - **FIX**: honor Retry-After and abort signals in retries, and share one retry loop ([#1929](https://github.com/supabase/supabase-flutter/issues/1929)). ([7b74d7e5](https://github.com/supabase/supabase-flutter/commit/7b74d7e5cd994ecf68d8595b59a5119d049424db))
+ - **FIX**(postgrest): encode null, nested list and map values in rpc GET parameters ([#1926](https://github.com/supabase/supabase-flutter/issues/1926)). ([6c39e248](https://github.com/supabase/supabase-flutter/commit/6c39e2484f101cbe976eb4690bae4dcf54eb66be))
+ - **BREAKING** **REFACTOR**: remove SupabaseClientPlugin and the public PostgrestTableExecutor ([#1939](https://github.com/supabase/supabase-flutter/issues/1939)). ([d5da36c0](https://github.com/supabase/supabase-flutter/commit/d5da36c01a9d03b111d9e46c1063017c2ad38dcd))
+ - **BREAKING** **FEAT**(postgrest): order and limit inside a to-many embed on the typed surface ([#1960](https://github.com/supabase/supabase-flutter/issues/1960)). ([973de4f9](https://github.com/supabase/supabase-flutter/commit/973de4f9b66237239f774bbdd00b8c0f8f4ffecd))
+ - **BREAKING** **FEAT**(postgrest): make rpc a PostgrestRpc getter with typed entry points ([#1958](https://github.com/supabase/supabase-flutter/issues/1958)). ([08392a90](https://github.com/supabase/supabase-flutter/commit/08392a9005cf5aa49f20724bffd0c9a76f9fe931))
+ - **BREAKING** **FEAT**: make the request timeout an idle timeout and add it to auth, storage and functions ([#1938](https://github.com/supabase/supabase-flutter/issues/1938)). ([e312f31a](https://github.com/supabase/supabase-flutter/commit/e312f31a5e5d013b334c941bd66804521d783e41))
+ - **BREAKING** **FEAT**: wrap transport failures and bring realtime into the SupabaseException hierarchy ([#1928](https://github.com/supabase/supabase-flutter/issues/1928)). ([c090fc98](https://github.com/supabase/supabase-flutter/commit/c090fc98bcb96bc9019df2ffbe3d3c40b8f3f759))
+
 ## 3.0.0-dev.9
 
 > Note: This release has breaking changes.
