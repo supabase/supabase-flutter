@@ -974,6 +974,10 @@ features:
       - SupabaseClient.rpc
     supporting_symbols:
       - PostgrestQueryBuilder.count
+      - PostgrestRpc
+      - PostgrestRpc.call
+      - PostgrestRpc.rows
+      - PostgrestRpc.value
       - PostgrestRpcBuilder.rpc
       - PostgrestBuilder.count
       - PostgrestTransformBuilder.head

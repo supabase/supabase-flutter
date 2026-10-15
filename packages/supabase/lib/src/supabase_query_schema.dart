@@ -62,18 +62,11 @@ class SupabaseQuerySchema {
     );
   }
 
-  /// {@macro postgrest_rpc}
-  PostgrestFilterBuilder<T> rpc<T>(
-    String fn, {
-    Map<String, dynamic>? params,
-    bool get = false,
-  }) {
-    return _rest.rpc(
-      fn,
-      params: params,
-      get: get,
-    );
-  }
+  /// Calls Postgres functions in this schema, see [PostgrestClient.rpc].
+  ///
+  /// The schema of this object wins over the schema a generated function
+  /// method addresses.
+  PostgrestRpc get rpc => _rest.rpc;
 
   /// Returns a copy of this scoped to [schema] instead.
   SupabaseQuerySchema schema(String schema) {

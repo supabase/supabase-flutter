@@ -289,14 +289,12 @@ class SupabaseClient {
   /// The schema needs to be on the list of exposed schemas inside Supabase.
   SupabaseQuerySchema schema(String schema) => _defaultSchema.schema(schema);
 
-  /// {@macro postgrest_rpc}
-  PostgrestFilterBuilder<T> rpc<T>(
-    String fn, {
-    Map<String, dynamic>? params,
-    get = false,
-  }) {
-    return _defaultSchema.rpc(fn, params: params, get: get);
-  }
+  /// Calls Postgres functions, see [PostgrestClient.rpc].
+  ///
+  /// ```dart
+  /// await supabase.rpc('get_status', params: {'name_param': 'supabot'});
+  /// ```
+  PostgrestRpc get rpc => _defaultSchema.rpc;
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
   RealtimeChannel channel(

@@ -839,6 +839,25 @@ await supabase.from('countries');
 await supabase.from('countries').select();
 ```
 
+### `rpc` is a getter
+
+`PostgrestClient.rpc`, `SupabaseClient.rpc` and `SupabaseQuerySchema.rpc` are getters returning a
+`PostgrestRpc` instead of methods. Calling the result makes the same untyped call as before, so
+`supabase.rpc('fn', params: {...})` and `supabase.rpc<int>('fn')` are unchanged. The extension
+methods `supabase_typegen` generates on `PostgrestRpc` are what make
+`supabase.rpc.searchBooks(query: 'dart')` typed.
+
+Code that passes `rpc` itself around as a function no longer compiles, since the getter returns an
+object rather than a function. Wrap it in a closure instead.
+
+```dart
+// Before
+final call = supabase.rpc;
+
+// After
+PostgrestFilterBuilder<dynamic> call(String fn) => supabase.rpc(fn);
+```
+
 ### `insert()` and `upsert()` no longer take filters
 
 `insert()` and `upsert()` return a `PostgrestTransformBuilder` instead of a

@@ -38,13 +38,10 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
 
   @override
   Future<PostgrestTableResult> execute(PostgrestTableRequest request) async {
-    // ignore: invalid_use_of_internal_member
-    final query = client.fromInSchema(request.table.name, request.schema);
-
     if (request.operation == PostgrestTableOperation.count) {
       final counted = _applyOptions(
         _applyFilter(
-          query.count(request.countOption ?? CountOption.exact),
+          _query(request).count(request.countOption ?? CountOption.exact),
           request,
         ),
         request.options,
@@ -53,7 +50,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     }
 
     final terminal = _applyOptions(
-      _terminal(_transforms(_operation(query, request), request), request),
+      _terminal(_transforms(_operation(request), request), request),
       request.options,
     );
 
@@ -97,30 +94,27 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   /// An insert or upsert takes no filter, the same way the untyped builders
   /// offer none after them; a hand-built request that carries one is
   /// rejected rather than sent with the filter silently dropped.
-  static PostgrestTransformBuilder<Object?> _operation(
-    PostgrestQueryBuilder query,
-    PostgrestTableRequest request,
-  ) {
+  PostgrestTransformBuilder<Object?> _operation(PostgrestTableRequest request) {
     final filter = request.filter;
     switch (request.operation) {
       case PostgrestTableOperation.select:
         return _applyFilter(
-          query.select(_selectList(request.columns)),
+          _query(request).select(_selectList(request.columns)),
           request,
         );
       case PostgrestTableOperation.update:
-        return _applyFilter(query.update(request.payload!), request);
+        return _applyFilter(_query(request).update(request.payload!), request);
       case PostgrestTableOperation.delete:
-        return _applyFilter(query.delete(), request);
+        return _applyFilter(_query(request).delete(), request);
       case PostgrestTableOperation.insert:
         _rejectFilter(filter, request.operation);
-        return query.insert(
+        return _query(request).insert(
           request.payload!,
           defaultToNull: request.defaultToNull,
         );
       case PostgrestTableOperation.upsert:
         _rejectFilter(filter, request.operation);
-        return query.upsert(
+        return _query(request).upsert(
           request.payload!,
           onConflict: request.onConflict
               ?.map((column) => column.name)
@@ -128,9 +122,44 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
           ignoreDuplicates: request.ignoreDuplicates,
           defaultToNull: request.defaultToNull,
         );
+      case PostgrestTableOperation.rpc:
+        return _applyFilter(_call(request), request);
       case PostgrestTableOperation.count:
         throw StateError('count is rendered before the other operations');
     }
+  }
+
+  /// The table builder of [request], in its schema.
+  PostgrestQueryBuilder _query(PostgrestTableRequest request) =>
+      // ignore: invalid_use_of_internal_member
+      client.fromInSchema(request.table.name, request.schema);
+
+  /// The function call of [request], decoding a response read as rows into
+  /// a [PostgrestList] the way a select does.
+  ///
+  /// A HEAD request has no body, so a call read with
+  /// [PostgrestResultShape.head] sends its arguments as query parameters.
+  PostgrestFilterBuilder<Object?> _call(PostgrestTableRequest request) {
+    final name = request.table.name;
+    final head = request.shape == PostgrestResultShape.head;
+    final arguments = head
+        ? (request.payload ?? const <String, Object?>{})
+        : request.payload;
+    if (request.shape == PostgrestResultShape.value) {
+      // ignore: invalid_use_of_internal_member
+      return client.rpcInSchema(
+        name,
+        request.schema,
+        params: arguments,
+      );
+    }
+    // ignore: invalid_use_of_internal_member
+    return client.rpcInSchema<PostgrestList>(
+      name,
+      request.schema,
+      params: arguments,
+      get: head,
+    );
   }
 
   static void _rejectFilter(
@@ -218,7 +247,9 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     PostgrestTransformBuilder<Object?> transformed,
     PostgrestTableRequest request,
   ) => switch (request.shape) {
-    PostgrestResultShape.rows || PostgrestResultShape.none => transformed,
+    PostgrestResultShape.rows ||
+    PostgrestResultShape.none ||
+    PostgrestResultShape.value => transformed,
     PostgrestResultShape.single => transformed.single(),
     PostgrestResultShape.maybeSingle => transformed.maybeSingle(),
     PostgrestResultShape.head => transformed.head(),

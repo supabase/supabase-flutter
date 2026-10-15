@@ -19,6 +19,7 @@ part 'postgrest_interval.dart';
 part 'postgrest_ordering.dart';
 part 'postgrest_partial_row.dart';
 part 'postgrest_range.dart';
+part 'postgrest_rpc.dart';
 part 'postgrest_table.dart';
 part 'postgrest_table_executor.dart';
 part 'postgrest_table_request.dart';
