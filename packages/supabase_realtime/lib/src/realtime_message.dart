@@ -9,8 +9,8 @@ import 'package:supabase_realtime/src/types.dart';
 ///
 /// This is what a custom `RealtimeEncode` is handed and what a custom
 /// `RealtimeDecode` returns. [toJson] and [RealtimeMessage.fromJson] convert
-/// between a message and its shape on the wire for a protocol version, so a
-/// codec only has to turn that shape into bytes and back:
+/// between a message and its shape on the wire, so a codec only has to turn
+/// that shape into bytes and back:
 ///
 /// ```dart
 /// RealtimeClient(
@@ -29,18 +29,31 @@ class RealtimeMessage {
     this.joinRef,
   });
 
-  /// Reads a message from the JSON structure of a [version] frame.
+  /// Reads a message from the positional JSON array of a text frame.
   ///
-  /// Throws a [FormatException] when [json] does not have the shape [version]
-  /// prescribes.
-  factory RealtimeMessage.fromJson(
-    Object? json, [
-    RealtimeProtocolVersion version = RealtimeProtocolVersion.v2,
-  ]) {
-    return switch (version) {
-      RealtimeProtocolVersion.v1 => _fromObject(json),
-      RealtimeProtocolVersion.v2 => _fromArray(json),
-    };
+  /// Throws a [FormatException] when [json] is not a
+  /// `[joinRef, ref, topic, event, payload]` array.
+  factory RealtimeMessage.fromJson(Object? json) {
+    if (json is! List || json.length < 5) {
+      throw FormatException('Invalid 2.0.0 message', json);
+    }
+    final joinRef = json[0];
+    final ref = json[1];
+    final topic = json[2];
+    final event = json[3];
+    if (joinRef is! String? ||
+        ref is! String? ||
+        topic is! String ||
+        event is! String) {
+      throw FormatException('Invalid 2.0.0 message', json);
+    }
+    return RealtimeMessage(
+      joinRef: joinRef,
+      ref: ref,
+      topic: topic,
+      event: event,
+      payload: json[4],
+    );
   }
 
   /// Reference of the channel join this message belongs to.
@@ -84,71 +97,9 @@ class RealtimeMessage {
     );
   }
 
-  /// The JSON structure of this message for [version].
-  ///
-  /// Protocol `2.0.0` puts the fields in a positional array, the legacy
-  /// `1.0.0` protocol uses an object and leaves out the references it has none
-  /// of.
-  Object toJson([
-    RealtimeProtocolVersion version = RealtimeProtocolVersion.v2,
-  ]) {
-    return switch (version) {
-      RealtimeProtocolVersion.v1 => {
-        'topic': topic,
-        'event': event,
-        'payload': payload,
-        'ref': ?ref,
-        'join_ref': ?joinRef,
-      },
-      RealtimeProtocolVersion.v2 => [joinRef, ref, topic, event, payload],
-    };
-  }
-
-  static RealtimeMessage _fromObject(Object? json) {
-    if (json is! Map) {
-      throw FormatException('Invalid 1.0.0 message', json);
-    }
-    final topic = json['topic'];
-    final event = json['event'];
-    final ref = json['ref'];
-    final joinRef = json['join_ref'];
-    if (topic is! String ||
-        event is! String ||
-        ref is! String? ||
-        joinRef is! String?) {
-      throw FormatException('Invalid 1.0.0 message', json);
-    }
-    return RealtimeMessage(
-      topic: topic,
-      event: event,
-      payload: json['payload'],
-      ref: ref,
-      joinRef: joinRef,
-    );
-  }
-
-  static RealtimeMessage _fromArray(Object? json) {
-    if (json is! List || json.length < 5) {
-      throw FormatException('Invalid 2.0.0 message', json);
-    }
-    final joinRef = json[0];
-    final ref = json[1];
-    final topic = json[2];
-    final event = json[3];
-    if (joinRef is! String? ||
-        ref is! String? ||
-        topic is! String ||
-        event is! String) {
-      throw FormatException('Invalid 2.0.0 message', json);
-    }
-    return RealtimeMessage(
-      joinRef: joinRef,
-      ref: ref,
-      topic: topic,
-      event: event,
-      payload: json[4],
-    );
-  }
+  /// The JSON structure of this message: the positional array
+  /// `[joinRef, ref, topic, event, payload]`.
+  List<Object?> toJson() => [joinRef, ref, topic, event, payload];
 
   static Object? _withoutBindings(Object? payload) {
     if (payload is Binding) {

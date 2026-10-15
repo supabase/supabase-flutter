@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:core';
 
 import 'package:collection/collection.dart';
@@ -172,20 +171,16 @@ class RealtimeClient {
   /// the heartbeat interval.
   ///
   /// [encode] Overrides how outgoing messages are serialized, for example to
-  /// serialize on a background isolate. Defaults to the codec for [version].
+  /// serialize on a background isolate. Defaults to the built-in codec.
   ///
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
-  /// codec for [version].
+  /// built-in codec.
   ///
   /// [reconnectAfter] The optional function that returns the reconnect
   /// interval. Defaults to the stepped backoff of
   /// [RetryTimer.createRetryFunction].
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
-  ///
-  /// [version] The Realtime protocol version. Defaults to
-  /// [RealtimeProtocolVersion.v2]; pass [RealtimeProtocolVersion.v1] for the
-  /// legacy object-shaped JSON frames.
   RealtimeClient(
     String endpoint, {
     WebSocketTransport? transport,
@@ -202,7 +197,6 @@ class RealtimeClient {
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
-    this.version = RealtimeProtocolVersion.v2,
   }) : endpoint = Uri.parse('$endpoint/websocket')
            .replace(
              queryParameters: logLevel == null
@@ -215,13 +209,7 @@ class RealtimeClient {
          ...?headers,
        },
        parameters = Map.unmodifiable(parameters),
-       transport = transport ?? createWebSocketClient,
-       _builtInEncode = version == RealtimeProtocolVersion.v1
-           ? _encodeLegacy
-           : _serializer.encode,
-       _builtInDecode = version == RealtimeProtocolVersion.v1
-           ? _decodeLegacy
-           : _serializer.decode {
+       transport = transport ?? createWebSocketClient {
     realtimeLogger.config(
       'Initialize RealtimeClient with endpoint: '
       '${Uri.parse(this.endpoint).redacted}, timeout: $timeout, '
@@ -275,9 +263,6 @@ class RealtimeClient {
 
   /// The query parameters sent when connecting, as an unmodifiable map.
   final Map<String, String> parameters;
-
-  /// The Realtime protocol version used by this client.
-  final RealtimeProtocolVersion version;
 
   /// The timeout to wait for the connection to close before dismissing the
   /// result.
@@ -334,22 +319,16 @@ class RealtimeClient {
   set ref(int value) => _ref = value;
 
   late final RetryTimer _reconnectTimer;
-  static final Serializer _serializer = Serializer();
+  static const Serializer _serializer = Serializer();
 
-  /// Serializes outgoing messages, or `null` to use the built-in codec for
-  /// [version].
+  /// The Realtime wire protocol version, sent as the `vsn` parameter.
+  static const String _protocolVersion = '2.0.0';
+
+  /// Serializes outgoing messages, or `null` to use the built-in codec.
   final RealtimeEncode? encode;
 
-  /// Deserializes incoming frames, or `null` to use the built-in codec for
-  /// [version].
+  /// Deserializes incoming frames, or `null` to use the built-in codec.
   final RealtimeDecode? decode;
-
-  /// Codec used while [encode] and [decode] are `null`.
-  ///
-  /// It is synchronous, so a client that does not override the codec writes
-  /// and dispatches without a microtask hop.
-  final Object Function(RealtimeMessage) _builtInEncode;
-  final RealtimeMessage Function(Object) _builtInDecode;
 
   /// Returns the delay before the next reconnect attempt.
   late final TimerCalculation reconnectAfter;
@@ -689,7 +668,7 @@ class RealtimeClient {
     if (encode == null) {
       Object frame;
       try {
-        frame = _builtInEncode(message);
+        frame = _serializer.encode(message);
       } catch (error) {
         realtimeLogger.warning('Failed to encode message', error);
         return;
@@ -773,7 +752,7 @@ class RealtimeClient {
     if (decode == null) {
       final RealtimeMessage message;
       try {
-        message = _builtInDecode(rawMessage);
+        message = _serializer.decode(rawMessage);
       } catch (error) {
         realtimeLogger.warning('Failed to decode message', error);
         return;
@@ -888,20 +867,11 @@ class RealtimeClient {
     _messageController.add(message);
   }
 
-  static Object _encodeLegacy(RealtimeMessage message) =>
-      jsonEncode(message.toJson(RealtimeProtocolVersion.v1));
-
-  static RealtimeMessage _decodeLegacy(Object frame) =>
-      RealtimeMessage.fromJson(
-        jsonDecode(frame as String),
-        RealtimeProtocolVersion.v1,
-      );
-
   /// Returns the URL of the websocket.
   String get endpointUrl {
     return _appendParameters(endpoint, {
       ...parameters,
-      'vsn': version.wireVersion,
+      'vsn': _protocolVersion,
     });
   }
 

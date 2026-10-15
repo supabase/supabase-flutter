@@ -5,8 +5,7 @@ library;
 export 'package:supabase_common/supabase_common.dart'
     show SupabaseApiException, SupabaseException, SupabaseTransportException;
 
-export 'src/constants.dart'
-    show RealtimeLogLevel, RealtimeProtocolVersion, SocketState;
+export 'src/constants.dart' show RealtimeLogLevel, SocketState;
 export 'src/realtime_channel.dart';
 export 'src/realtime_client.dart';
 export 'src/realtime_constants.dart';

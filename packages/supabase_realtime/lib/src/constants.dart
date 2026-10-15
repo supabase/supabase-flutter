@@ -1,19 +1,5 @@
 import 'package:meta/meta.dart';
 
-/// The wire protocol version negotiated with the Realtime server.
-enum RealtimeProtocolVersion {
-  /// Legacy protocol: object-shaped JSON text frames only.
-  v1('1.0.0'),
-
-  /// Positional JSON array text frames plus binary frames.
-  v2('2.0.0');
-
-  const RealtimeProtocolVersion(this.wireVersion);
-
-  /// The value sent as the `vsn` connection parameter.
-  final String wireVersion;
-}
-
 /// The connection state of a [RealtimeClient]'s underlying socket.
 enum SocketState {
   /// Client attempting to establish a connection

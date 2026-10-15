@@ -1187,9 +1187,8 @@ final client = RealtimeClient(
 ```
 
 `RealtimeMessage` carries the `joinRef`, `ref`, `topic`, `event` and `payload` of a message, and
-converts to and from the shape a protocol version puts on the wire. `toJson` and
-`RealtimeMessage.fromJson` default to protocol `2.0.0`; pass `RealtimeProtocolVersion.v1` to either
-when the client runs on the legacy protocol.
+converts to and from the positional array the protocol puts on the wire with `toJson` and
+`RealtimeMessage.fromJson`.
 
 `RealtimeClient.onMessage` emits `RealtimeMessage` instead of `Map<String, dynamic>`, so a listener
 that reads fields off the map needs to switch to properties:
@@ -1231,6 +1230,23 @@ final RealtimeMessage message = await client.decode!(frame);
 A codec replaces the built-in one completely, so the one above handles text frames only. Handle a
 `Uint8List` frame as well if you send or receive binary broadcasts. A codec call that never
 completes fails after `RealtimeClient.timeout`.
+
+### Realtime only speaks protocol `2.0.0`
+
+The legacy `1.0.0` Realtime protocol, with its object-shaped JSON frames, is no longer supported.
+`RealtimeClient` always connects with `vsn=2.0.0`, so the `version` constructor parameter, the
+`RealtimeClient.version` getter and the `RealtimeProtocolVersion` enum are removed.
+`RealtimeMessage.toJson` and `RealtimeMessage.fromJson` no longer take a protocol version.
+
+```dart
+// Before
+final client = RealtimeClient(url, version: RealtimeProtocolVersion.v1);
+final frame = message.toJson(RealtimeProtocolVersion.v1);
+
+// After
+final client = RealtimeClient(url);
+final frame = message.toJson();
+```
 
 ### `RealtimeClient.logger` and `RealtimeClient.log` are gone
 
@@ -2067,7 +2083,6 @@ Across every package:
 | `RealtimeClient.endPoint`                   | `RealtimeClient.endpoint`                   |
 | `RealtimeClient.endPointURL`                | `RealtimeClient.endpointUrl`                |
 | `RealtimeConstants.wsCloseNormal`           | `RealtimeConstants.webSocketCloseNormal`    |
-| `RealtimeProtocolVersion.vsn`               | `RealtimeProtocolVersion.wireVersion`       |
 | `RealtimeChannel(topic, socket, params: …)` | `RealtimeChannel(topic, socket, config: …)` |
 | `Presence.presenceRef`                      | `Presence.presenceReference`                |
 

@@ -29,15 +29,11 @@ String generateRealtimeToken({String role = 'anon'}) {
 }
 
 /// Creates a [RealtimeClient] connected to the local Supabase CLI Realtime
-/// service using the given protocol [version].
-RealtimeClient createRealtimeClient(
-  RealtimeProtocolVersion version, {
-  String? token,
-}) {
+/// service.
+RealtimeClient createRealtimeClient({String? token}) {
   final apikey = token ?? generateRealtimeToken();
   return RealtimeClient(
     localStackRealtimeUrl,
-    version: version,
     parameters: {'apikey': apikey},
     heartbeatInterval: const Duration(seconds: 5),
   );
@@ -88,7 +84,7 @@ Future<void> primePostgresChanges({
   Duration timeout = const Duration(seconds: 90),
 }) async {
   final deadline = DateTime.now().add(timeout);
-  final client = createRealtimeClient(RealtimeProtocolVersion.v1);
+  final client = createRealtimeClient();
   final database = await openPostgresConnection();
   final received = Completer<void>();
 
@@ -161,7 +157,7 @@ Future<void> waitForRealtimeServer({
     attempts++;
     httpReachable = await _isRealtimeHttpReachable();
 
-    final client = createRealtimeClient(RealtimeProtocolVersion.v1);
+    final client = createRealtimeClient();
     client.onStatusChange.listen(
       (_) {},
       onError: (Object error) => lastError = error,
