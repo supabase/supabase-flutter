@@ -119,38 +119,47 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ) => _with(_request.copyWith(orderings: [..._request.orderings, ordering]));
 
   /// Limits the result with the specified [count].
-  PostgrestTypedTransformBuilder<Row, T> limit(
-    int count, {
-    String? referencedTable,
-  }) => _with(
-    referencedTable == null
-        ? _request.copyWith(limit: count)
-        : _request.copyWith(
-            embeddedPages: [
-              ..._request.embeddedPages,
-              PostgrestEmbeddedPage(referencedTable, limit: count),
-            ],
-          ),
-  );
+  ///
+  /// See [embedded] to limit the rows of an embed instead.
+  PostgrestTypedTransformBuilder<Row, T> limit(int count) =>
+      _with(_request.copyWith(limit: count));
 
   /// Limits the result to rows within the specified range, inclusive.
-  PostgrestTypedTransformBuilder<Row, T> range(
-    int from,
-    int to, {
-    String? referencedTable,
-  }) => _with(
-    referencedTable == null
-        ? _request.copyWith(offset: from, limit: to - from + 1)
-        : _request.copyWith(
-            embeddedPages: [
-              ..._request.embeddedPages,
-              PostgrestEmbeddedPage(
-                referencedTable,
-                limit: to - from + 1,
-                offset: from,
-              ),
-            ],
-          ),
+  ///
+  /// See [embedded] to limit the rows of an embed instead.
+  PostgrestTypedTransformBuilder<Row, T> range(int from, int to) =>
+      _with(_request.copyWith(offset: from, limit: to - from + 1));
+
+  /// Sorts and limits the rows of the to-many embed [relation] with [scope],
+  /// leaving the parent rows as they are.
+  ///
+  /// ```dart
+  /// final authors = await client
+  ///     .table(Authors.table)
+  ///     .selectOnly([Authors.name, Authors.books.select([Books.title])])
+  ///     .embedded(
+  ///       Authors.books,
+  ///       (books) => books.order(Books.createdAt.desc()).limit(1),
+  ///     );
+  /// // books.order=created_at.desc&books.limit=1
+  /// ```
+  ///
+  /// [relation] has to be in the `select` list. Repeated calls for the same
+  /// embed append their sort keys, and the last limit or range wins. See
+  /// [PostgrestEmbeddedScope] for what a scope offers.
+  PostgrestTypedTransformBuilder<Row, T> embedded<Target>(
+    PostgrestToManyRelation<Row, Target> relation,
+    PostgrestEmbeddedScope<Target> Function(
+      PostgrestEmbeddedScope<Target> scope,
+    )
+    scope,
+  ) => _with(
+    _request.copyWith(
+      embeddedScopes: [
+        ..._request.embeddedScopes,
+        scope(PostgrestEmbeddedScope._(relation)),
+      ],
+    ),
   );
 
   /// Omits `null`-valued properties from the response objects.

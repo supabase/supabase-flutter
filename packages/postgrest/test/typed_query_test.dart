@@ -24,6 +24,9 @@ extension type const BookUpdate._(Map<String, dynamic> _json)
 extension type const Author(Map<String, dynamic> _json)
     implements Map<String, dynamic> {}
 
+extension type const Review(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {}
+
 const bookRows = [
   {'id': 1, 'title': 'a'},
   {'id': 2, 'title': 'b'},
@@ -63,6 +66,17 @@ class Books {
     referencedColumns: [Authors.id],
     alias: 'editor',
   );
+  static const reviews = PostgrestToManyRelation<Book, Review>(
+    'reviews',
+    columns: [id],
+    referencedTable: 'reviews',
+    referencedColumns: [Reviews.bookId],
+  );
+}
+
+class Reviews {
+  static const bookId = PostgrestColumn<Review, int>('book_id');
+  static const rating = PostgrestColumn<Review, int>('rating');
 }
 
 class Authors {
@@ -79,6 +93,13 @@ class Authors {
     columns: [id],
     referencedTable: 'books',
     referencedColumns: [Books.authorId],
+  );
+  static const editedBooks = PostgrestToManyRelation<Author, Book>(
+    'books!books_editor_id_fkey',
+    columns: [id],
+    referencedTable: 'books',
+    referencedColumns: [Books.editorId],
+    alias: 'edited_books',
   );
 }
 
@@ -614,6 +635,113 @@ void main() {
       expect(requestParameters()['offset'], '0');
       expect(requestParameters()['limit'], '2');
       expect(ranged.map((book) => book.id), [1, 2]);
+    });
+  });
+
+  group('embedded', () {
+    test('orders and limits the rows of a to-many embed', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.name,
+            Authors.books.select([Books.title]),
+          ])
+          .order(Authors.name)
+          .limit(10)
+          .embedded(
+            Authors.books,
+            (books) => books.order(Books.title.desc()).order(Books.id).limit(1),
+          );
+
+      expect(requestParameters(), {
+        'select': 'name,books(title)',
+        'order': 'name',
+        'limit': '10',
+        'books.order': 'title.desc,id',
+        'books.limit': '1',
+      });
+    });
+
+    test('range sets the offset and limit of the embed', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([Authors.books.select()])
+          .range(0, 4)
+          .embedded(Authors.books, (books) => books.range(10, 19));
+
+      expect(requestParameters(), {
+        'select': 'books(*)',
+        'offset': '0',
+        'limit': '5',
+        'books.offset': '10',
+        'books.limit': '10',
+      });
+    });
+
+    test('nested scopes render dotted paths', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.books.select([Books.title, Books.reviews.select()]),
+          ])
+          .embedded(
+            Authors.books,
+            (books) => books
+                .limit(2)
+                .embedded(
+                  Books.reviews,
+                  (reviews) => reviews.order(Reviews.rating.desc()).limit(3),
+                ),
+          );
+
+      expect(requestParameters(), {
+        'select': 'books(title,reviews(*))',
+        'books.limit': '2',
+        'books.reviews.order': 'rating.desc',
+        'books.reviews.limit': '3',
+      });
+    });
+
+    test('an aliased embed is addressed by its alias', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.editedBooks.select([Books.title]),
+          ])
+          .embedded(
+            Authors.editedBooks,
+            (books) => books.order(Books.title).limit(1),
+          );
+
+      expect(requestParameters(), {
+        'select': 'edited_books:books!books_editor_id_fkey(title)',
+        'edited_books.order': 'title',
+        'edited_books.limit': '1',
+      });
+    });
+
+    test('repeated scopes of one embed append orderings', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([Authors.books.select()])
+          .embedded(Authors.books, (books) => books.order(Books.title).limit(5))
+          .embedded(Authors.books, (books) => books.order(Books.id).limit(1));
+
+      expect(requestParameters()['books.order'], 'title,id');
+      expect(requestParameters()['books.limit'], '1');
+    });
+
+    test('applies to the rows a mutation returns', () async {
+      await client
+          .table(Books.table)
+          .insert(BookInsert(title: 'a'))
+          .selectOnly([Books.title, Books.reviews.select()])
+          .embedded(Books.reviews, (reviews) => reviews.limit(1));
+
+      expect(requestParameters(), {
+        'select': 'title,reviews(*)',
+        'reviews.limit': '1',
+      });
     });
   });
 

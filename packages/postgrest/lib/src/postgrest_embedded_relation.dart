@@ -204,7 +204,8 @@ final class PostgrestToOneRelation<Row, Target>
 /// whose rows are [Row], pointing at the table whose rows are [Target].
 ///
 /// Its projections are select position only: PostgREST answers
-/// `order=children(amount).desc` with PGRST118.
+/// `order=children(amount).desc` with PGRST118. The embedded rows themselves
+/// are sorted and limited with [PostgrestTypedTransformBuilder.embedded].
 @experimental
 final class PostgrestToManyRelation<Row, Target>
     extends PostgrestRelation<Row, Target>
