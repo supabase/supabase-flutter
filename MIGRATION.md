@@ -2367,20 +2367,17 @@ create table books (
 
 ### Generate the table definitions
 
-Add `supabase_typegen` as a dev dependency and run it against your database. With `--local` it reads
-the database of the running local stack, which the Supabase CLI builds from the migrations in your
-`supabase/` directory:
+Add `supabase_typegen` as a dev dependency and generate the types with the Supabase CLI. With
+`--local` it reads the database of the running local stack, which the CLI builds from the
+migrations in your `supabase/` directory:
 
 ```sh
 dart pub add dev:supabase_typegen
-dart run supabase_typegen --local
+supabase gen types --lang dart --local > lib/supabase_schema.g.dart
 ```
 
-This writes `lib/supabase_schema.g.dart`. `--linked`, `--project-ref` and `--db-url` generate from
-a hosted project instead; see the
-[`supabase_typegen` README](packages/supabase_typegen/README.md) for every option. Once the Supabase
-CLI ships Dart support, `supabase gen types --lang dart --local > lib/supabase_schema.g.dart`
-replaces the direct connection.
+`--linked` and `--project-id` generate from a hosted project instead; see the
+[`supabase_typegen` README](packages/supabase_typegen/README.md) for details.
 
 For every table the file holds a row type (`BooksRow`), an insert type (`BooksInsert`), an update
 type (`BooksUpdate`), and a class (`Books`) with the table definition and one constant per column

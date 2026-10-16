@@ -142,7 +142,7 @@ jobs:
         run: dart analyze --fatal-infos .
 
       - name: Setup Supabase CLI
-        if: ${{ matrix.package.backend || matrix.package.name == 'supabase_typegen' }}
+        if: ${{ matrix.package.backend }}
         uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
           version: 2.120.0
@@ -191,29 +191,8 @@ jobs:
                 docker save "$image" -o "/tmp/supabase-images/${file}.tar"
               done
 
-      # Port 14432 sits next to the test stack's 14420 to 14429 block, below
-      # Linux's default ephemeral port range, so an outgoing connection the
-      # runner opens while the container starts cannot claim it first.
-      - name: Start Postgres for the typegen parity test
-        if: ${{ matrix.package.name == 'supabase_typegen' }}
-        run: |
-          docker run --detach --name supabase_typegen_parity \
-            --env POSTGRES_PASSWORD=postgres --publish 14432:5432 postgres:15 \
-            -c autovacuum=off
-          for _ in $(seq 1 30); do
-            if docker exec supabase_typegen_parity pg_isready --host localhost --username postgres; then
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "Postgres did not become ready in time." >&2
-          docker logs supabase_typegen_parity
-          exit 1
-
       - name: Run tests
         working-directory: packages/${{ matrix.package.name }}
-        env:
-          SUPABASE_TYPEGEN_PARITY_DATABASE_URL: ${{ matrix.package.name == 'supabase_typegen' && 'postgresql://postgres:postgres@localhost:14432/postgres?sslmode=disable' || '' }}
         run: |
           CONCURRENCY=""
           if [ "${{ matrix.package.concurrency }}" = "1" ]; then
