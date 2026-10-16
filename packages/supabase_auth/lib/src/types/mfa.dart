@@ -331,6 +331,18 @@ class AuthMFAAdminDeleteFactorResponse {
   final String id;
 }
 
+/// The response of `AuthAdminMFAApi.updateFactor`.
+class AuthMFAAdminUpdateFactorResponse {
+  const AuthMFAAdminUpdateFactorResponse({required this.factor});
+
+  factory AuthMFAAdminUpdateFactorResponse.fromJson(Map<String, dynamic> json) {
+    return AuthMFAAdminUpdateFactorResponse(factor: Factor.fromJson(json));
+  }
+
+  /// The factor after the update.
+  final Factor factor;
+}
+
 /// Whether an MFA [Factor] can be used to satisfy a challenge.
 enum FactorStatus {
   /// The factor completed enrollment and can be used to verify a challenge.
