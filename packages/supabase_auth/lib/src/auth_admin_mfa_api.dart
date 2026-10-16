@@ -36,6 +36,35 @@ class AuthAdminMFAApi {
     );
   }
 
+  /// Updates the MFA factor identified by [factorId] on the user identified
+  /// by [userId].
+  ///
+  /// Only the fields that are given are changed. The server ignores [phone]
+  /// on any factor that is not a phone factor.
+  Future<AuthMFAAdminUpdateFactorResponse> updateFactor({
+    required String userId,
+    required String factorId,
+    String? friendlyName,
+    String? phone,
+  }) async {
+    validateUuid(userId);
+    validateUuid(factorId);
+
+    final data = await _fetch.request(
+      '$_url/admin/users/$userId/factors/$factorId',
+      HttpMethod.put,
+      options: AuthRequestOptions(
+        headers: _headers,
+        body: {
+          'friendly_name': ?friendlyName,
+          'phone': ?phone,
+        },
+      ),
+    );
+
+    return AuthMFAAdminUpdateFactorResponse.fromJson(data);
+  }
+
   /// Deletes the MFA factor identified by [factorId] from the user
   /// identified by [userId].
   Future<AuthMFAAdminDeleteFactorResponse> deleteFactor({

@@ -214,6 +214,26 @@ void main() {
       );
     });
 
+    test('updateFactor() validates ids', () {
+      expect(
+        () => client.admin.mfa.updateFactor(
+          userId: 'invalid-id',
+          factorId: factorId2,
+          friendlyName: 'name',
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        () => client.admin.mfa.updateFactor(
+          userId: userId1,
+          factorId: 'invalid-factor-id',
+          friendlyName: 'name',
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
     test('deleteFactor() validates ids', () {
       expect(
         () => client.admin.mfa.deleteFactor(

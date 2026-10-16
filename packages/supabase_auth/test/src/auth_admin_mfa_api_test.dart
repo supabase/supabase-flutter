@@ -52,6 +52,30 @@ void main() {
     expect(factor.id, factorId2);
   });
 
+  test('update factor friendly name', () async {
+    final response = await client.admin.mfa.updateFactor(
+      userId: userId2,
+      factorId: factorId2,
+      friendlyName: 'Renamed factor',
+    );
+
+    expect(response.factor.id, factorId2);
+    expect(response.factor.friendlyName, 'Renamed factor');
+
+    final listResponse = await client.admin.mfa.listFactors(userId: userId2);
+    expect(listResponse.factors.single.friendlyName, 'Renamed factor');
+  });
+
+  test('update factor with no fields leaves it unchanged', () async {
+    final response = await client.admin.mfa.updateFactor(
+      userId: userId2,
+      factorId: factorId2,
+    );
+
+    expect(response.factor.id, factorId2);
+    expect(response.factor.friendlyName, 'VerifiedFactor');
+  });
+
   test('delete factor', () async {
     final response = await client.admin.mfa.deleteFactor(
       userId: userId2,
