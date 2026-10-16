@@ -67,7 +67,9 @@ import 'trace_http_client.dart';
 /// before the code comes back, which covers every email link and every
 /// redirect to an OAuth provider. `MemoryAuthAsyncStorage` only suits flows
 /// that start and complete in the same process, such as tests and command line
-/// tools that keep a redirect listener open.
+/// tools that keep a redirect listener open. Without an `asyncStorage` the
+/// constructor throws an [ArgumentError], unless the implicit flow or an
+/// [accessToken] is used.
 /// {@endtemplate}
 class SupabaseClient {
   /// {@macro supabase_client}
@@ -101,6 +103,14 @@ class SupabaseClient {
        _httpClient = httpClient,
        _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
        _ownsJsonCodec = jsonCodec == null {
+    if (accessToken == null &&
+        authOptions.authFlowType == AuthFlowType.pkce &&
+        authOptions.asyncStorage == null) {
+      if (_ownsJsonCodec) {
+        unawaited(_jsonCodec.dispose());
+      }
+      throw ArgumentError(_missingAsyncStorageMessage());
+    }
     final baseHttpClient = httpClient ?? createDefaultHttpClient();
     final tracedHttpClient = tracePropagationOptions == null
         ? baseHttpClient
@@ -110,7 +120,9 @@ class SupabaseClient {
             supabaseUrl,
           );
     _authApiHttpClient = tracedHttpClient;
-    _authInstance = _initSupabaseAuthClient(authOptions);
+    if (accessToken == null) {
+      _authInstance = _initSupabaseAuthClient(authOptions);
+    }
     _authHttpClient = AuthHttpClient(
       _supabaseKey,
       tracedHttpClient,
@@ -368,7 +380,7 @@ class SupabaseClient {
       autoRefreshToken: authOptions.autoRefreshToken,
       httpClient: _authApiHttpClient,
       asyncStorage: authOptions.asyncStorage,
-      persistSession: accessToken == null && authOptions.persistSession,
+      persistSession: authOptions.persistSession,
       storageKey: authOptions.storageKey,
       flowType: authOptions.authFlowType,
       appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
@@ -484,4 +496,20 @@ class SupabaseClient {
       await realtime.setAccessToken(_supabaseKey);
     }
   }
+}
+
+String _missingAsyncStorageMessage() {
+  final message =
+      'SupabaseClient uses the pkce flow by default, which needs an '
+      'asyncStorage to keep its code verifiers in. Pass one through '
+      'authOptions, for example '
+      '`authOptions: AuthClientOptions(asyncStorage: '
+      'MemoryAuthAsyncStorage())` when the verifiers do not need to outlive '
+      'the process, or set `authFlowType: AuthFlowType.implicit`.';
+  if (Zone.current[#test.invoker] == null) {
+    return message;
+  }
+  return '$message In a test, `testSupabaseClient` from '
+      'package:supabase_test builds a client with the storage already '
+      'configured.';
 }
