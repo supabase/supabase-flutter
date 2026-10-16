@@ -1449,6 +1449,27 @@ features:
       - PostgrestTypedQueryBuilder.setHeader
       - PostgrestTypedTransformBuilder.setHeader
 
+  # database — generated types
+  database.generated_types.typed_queries:
+    status: implemented
+    symbols:
+      - PostgrestClient.table
+      - SupabaseClient.table
+      - SupabaseQuerySchema.table
+    supporting_symbols:
+      - PostgrestTable
+      - PostgrestTypedQueryBuilder
+      - PostgrestTypedFilterBuilder
+      - PostgrestTypedTransformBuilder
+      - PostgrestTypedBuilder
+  database.generated_types.typed_rpc:
+    status: implemented
+    symbols:
+      - PostgrestRpc.rows
+      - PostgrestRpc.value
+    supporting_symbols:
+      - PostgrestRpc
+
   # storage — file buckets
   storage.file_buckets.access_bucket:
     status: implemented
