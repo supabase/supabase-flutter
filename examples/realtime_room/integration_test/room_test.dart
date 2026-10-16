@@ -66,7 +66,11 @@ void main() {
     await _pumpUntil(tester, find.text('hello from alice'));
 
     // A second client stands in for another person in the room.
-    final bobClient = SupabaseClient(supabaseUrl, supabasePublishableKey);
+    final bobClient = SupabaseClient(
+      supabaseUrl,
+      supabasePublishableKey,
+      authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
+    );
     addTearDown(bobClient.dispose);
     final bobRepository = RoomRepository(bobClient);
     final bob = bobRepository.joinRoom(username: 'bob');

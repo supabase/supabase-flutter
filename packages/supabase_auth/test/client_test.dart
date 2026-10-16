@@ -1002,6 +1002,26 @@ void main() {
         returnsNormally,
       );
     });
+
+    test('throws an AuthException when exchanging a code', () async {
+      final client = AuthClient(
+        url: authUrl,
+        headers: {'apikey': anonToken},
+        flowType: AuthFlowType.implicit,
+      );
+      addTearDown(client.dispose);
+
+      await expectLater(
+        () => client.exchangeCodeForSession('code'),
+        throwsA(
+          isA<AuthException>().having(
+            (error) => error.message,
+            'message',
+            contains('Exchanging a code needs the asyncStorage'),
+          ),
+        ),
+      );
+    });
   });
 }
 

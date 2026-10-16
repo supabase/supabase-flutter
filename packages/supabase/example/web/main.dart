@@ -7,7 +7,11 @@ import 'package:web/web.dart' as web;
 void main() {
   const supabaseUrl = 'YOUR_SUPABASE_URL';
   const supabaseKey = 'YOUR_SUPABASE_KEY';
-  final supabase = SupabaseClient(supabaseUrl, supabaseKey);
+  final supabase = SupabaseClient(
+    supabaseUrl,
+    supabaseKey,
+    authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
+  );
 
   final element = web.document.querySelector('#output');
   element?.textContent = 'Supabase Dart Web Example';

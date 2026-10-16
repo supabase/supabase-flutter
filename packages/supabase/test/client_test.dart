@@ -242,6 +242,26 @@ void main() {
       );
     });
 
+    test('a persisted session throws when no asyncStorage is given', () {
+      expect(
+        () => real.SupabaseClient(
+          'http://localhost:1',
+          'supabaseKey',
+          authOptions: const AuthClientOptions(
+            authFlowType: AuthFlowType.implicit,
+            persistSession: true,
+          ),
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('SupabaseClient needs an asyncStorage to persist'),
+          ),
+        ),
+      );
+    });
+
     test('the implicit flow needs no asyncStorage', () async {
       final supabase = real.SupabaseClient(
         'http://localhost:1',

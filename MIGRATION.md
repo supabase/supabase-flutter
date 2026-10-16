@@ -538,8 +538,8 @@ the upgrade still completes after it.
 The pkce flow, which is the default, keeps its code verifiers in the `asyncStorage` of
 `AuthClientOptions`. A `SupabaseClient` or `AuthClient` created without one used to fail an assert,
 so `dart run` and AOT builds only failed at the first pkce call. Both now throw an `ArgumentError`
-when they are created, in debug and release builds alike. So does an `AuthClient` that persists the
-session without an `asyncStorage`.
+when they are created, in debug and release builds alike. So does either client when it persists
+the session without an `asyncStorage`.
 
 `Supabase.initialize` configures a storage for you. A standalone script or a server builds its own
 client and has to pass one, or use the implicit flow:
