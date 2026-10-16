@@ -173,7 +173,7 @@ class AuthPasskeyApi {
     required String challengeId,
     required Map<String, dynamic> credential,
   }) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestWithResponse(
       '${_client._url}/passkeys/authentication/verify',
       HttpMethod.post,
       options: AuthRequestOptions(

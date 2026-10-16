@@ -459,7 +459,7 @@ class AuthClient {
     Map<String, dynamic>? data,
     String? captchaToken,
   }) async {
-    final response = await _fetch.request(
+    final response = await _fetch.requestWithResponse(
       '$_url/signup',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -576,10 +576,10 @@ class AuthClient {
     required String password,
     String? captchaToken,
   }) async {
-    final Map<String, dynamic> response;
+    final ({dynamic body, Response response}) response;
 
     if (email != null) {
-      response = await _fetch.request(
+      response = await _fetch.requestWithResponse(
         '$_url/token',
         HttpMethod.post,
         options: AuthRequestOptions(
@@ -593,7 +593,7 @@ class AuthClient {
         ),
       );
     } else if (phone != null) {
-      response = await _fetch.request(
+      response = await _fetch.requestWithResponse(
         '$_url/token',
         HttpMethod.post,
         options: AuthRequestOptions(
@@ -783,7 +783,7 @@ class AuthClient {
     String? nonce,
     String? captchaToken,
   }) async {
-    final response = await _fetch.request(
+    final response = await _fetch.requestWithResponse(
       '$_url/token',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -825,7 +825,7 @@ class AuthClient {
     required String signature,
     String? captchaToken,
   }) async {
-    final response = await _fetch.request(
+    final response = await _fetch.requestWithResponse(
       '$_url/token',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -1242,7 +1242,9 @@ class AuthClient {
     String? accessToken,
   }) async {
     if (refreshToken.isEmpty) {
-      throw AuthSessionMissingException('Refresh token cannot be empty');
+      throw AuthSessionMissingException(
+        message: 'Refresh token cannot be empty',
+      );
     }
 
     if (accessToken == null) {
@@ -1250,7 +1252,9 @@ class AuthClient {
     }
 
     if (accessToken.isEmpty) {
-      throw AuthSessionMissingException('Access token cannot be empty');
+      throw AuthSessionMissingException(
+        message: 'Access token cannot be empty',
+      );
     }
 
     final timeNow = clock.now().millisecondsSinceEpoch ~/ 1000;
@@ -1500,7 +1504,7 @@ class AuthClient {
     String? nonce,
     String? captchaToken,
   }) async {
-    final response = await _fetch.request(
+    final response = await _fetch.requestWithResponse(
       '$_url/token',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -1760,7 +1764,7 @@ class AuthClient {
           body: {'refresh_token': refreshToken},
           query: {'grant_type': 'refresh_token'},
         );
-        final response = await _fetch.request(
+        final response = await _fetch.requestWithResponse(
           '$_url/token',
           HttpMethod.post,
           options: options,
@@ -1833,10 +1837,13 @@ class AuthClient {
 
   /// Parses the session out of a token response, failing when the server
   /// answered without one.
-  Session _sessionFromResponse(Map<String, dynamic> response) {
-    final session = Session.fromJson(response);
+  Session _sessionFromResponse(({dynamic body, Response response}) result) {
+    final session = Session.fromJson(result.body);
     if (session == null) {
-      throw AuthException('The server response did not contain a session.');
+      throw AuthSessionMissingException(
+        message: 'The server response did not contain a session.',
+        requestId: result.response.headers.requestId,
+      );
     }
     return session;
   }
@@ -2321,7 +2328,7 @@ class AuthClient {
     if (token.isEmpty) {
       final session = currentSession;
       if (session == null) {
-        throw AuthSessionMissingException('No session found');
+        throw AuthSessionMissingException(message: 'No session found');
       }
       token = session.accessToken;
     }
