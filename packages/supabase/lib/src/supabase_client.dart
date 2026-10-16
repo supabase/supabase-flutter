@@ -68,8 +68,8 @@ import 'trace_http_client.dart';
 /// redirect to an OAuth provider. `MemoryAuthAsyncStorage` only suits flows
 /// that start and complete in the same process, such as tests and command line
 /// tools that keep a redirect listener open. Without an `asyncStorage` the
-/// constructor throws an [ArgumentError], unless the implicit flow or an
-/// [accessToken] is used.
+/// constructor throws an [ArgumentError] for the pkce flow or a persisted
+/// session, unless an [accessToken] is used.
 /// {@endtemplate}
 class SupabaseClient {
   /// {@macro supabase_client}
@@ -104,12 +104,10 @@ class SupabaseClient {
        _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
        _ownsJsonCodec = jsonCodec == null {
     if (accessToken == null &&
-        authOptions.authFlowType == AuthFlowType.pkce &&
-        authOptions.asyncStorage == null) {
-      if (_ownsJsonCodec) {
-        unawaited(_jsonCodec.dispose());
-      }
-      throw ArgumentError(_missingAsyncStorageMessage());
+        authOptions.asyncStorage == null &&
+        (authOptions.authFlowType == AuthFlowType.pkce ||
+            authOptions.persistSession)) {
+      throw ArgumentError(_missingAsyncStorageMessage(authOptions));
     }
     final baseHttpClient = httpClient ?? createDefaultHttpClient();
     final tracedHttpClient = tracePropagationOptions == null
@@ -498,14 +496,19 @@ class SupabaseClient {
   }
 }
 
-String _missingAsyncStorageMessage() {
-  final message =
-      'SupabaseClient uses the pkce flow by default, which needs an '
-      'asyncStorage to keep its code verifiers in. Pass one through '
-      'authOptions, for example '
-      '`authOptions: AuthClientOptions(asyncStorage: '
-      'MemoryAuthAsyncStorage())` when the verifiers do not need to outlive '
-      'the process, or set `authFlowType: AuthFlowType.implicit`.';
+String _missingAsyncStorageMessage(AuthClientOptions authOptions) {
+  final message = authOptions.authFlowType == AuthFlowType.pkce
+      ? 'SupabaseClient uses the pkce flow by default, which needs an '
+            'asyncStorage to keep its code verifiers in. Pass one through '
+            'authOptions, for example '
+            '`authOptions: AuthClientOptions(asyncStorage: '
+            'MemoryAuthAsyncStorage())` when the verifiers do not need to '
+            'outlive the process, or set '
+            '`authFlowType: AuthFlowType.implicit`.'
+      : 'SupabaseClient needs an asyncStorage to persist the session in. Pass '
+            'one through authOptions, for example '
+            '`authOptions: AuthClientOptions(asyncStorage: '
+            'MemoryAuthAsyncStorage())`, or set `persistSession: false`.';
   if (Zone.current[#test.invoker] == null) {
     return message;
   }
