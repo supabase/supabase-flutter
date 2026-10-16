@@ -28,6 +28,8 @@ explicitly:
 - [`RealtimeClient.connectionState` is now typed](#realtimeclientconnectionstate-is-now-typed)
 - [`HttpMethod` is one shared enum](#httpmethod-is-one-shared-enum), where the enum `index` shifted
 - [Confirming an email or phone change emits `userUpdated`](#confirming-an-email-or-phone-change-emits-userupdated)
+- [A client without an `asyncStorage` throws when it is created](#a-client-without-an-asyncstorage-throws-when-it-is-created),
+  where release builds used to skip the assert
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),
@@ -530,6 +532,29 @@ yourself when you construct a client directly.
 verifier keys and names the channel that keeps the tabs of a web app in sync. Verifiers under the
 old `supabase.auth.token-…` prefix are still read and cleaned up, so a sign-in link requested before
 the upgrade still completes after it.
+
+### A client without an `asyncStorage` throws when it is created
+
+The pkce flow, which is the default, keeps its code verifiers in the `asyncStorage` of
+`AuthClientOptions`. A `SupabaseClient` or `AuthClient` created without one used to fail an assert,
+so `dart run` and AOT builds only failed at the first pkce call. Both now throw an `ArgumentError`
+when they are created, in debug and release builds alike. So does an `AuthClient` that persists the
+session without an `asyncStorage`.
+
+`Supabase.initialize` configures a storage for you. A standalone script or a server builds its own
+client and has to pass one, or use the implicit flow:
+
+```dart
+final client = SupabaseClient(
+  url,
+  publishableKey,
+  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
+);
+```
+
+`MemoryAuthAsyncStorage` only suits flows that start and complete in the same process. In tests,
+`testSupabaseClient` from `supabase_test` already configures one. A client with a third-party
+`accessToken` does not use the auth client, so it needs no `asyncStorage`.
 
 ### `AuthChangeEvent.initialSession` is emitted to every subscriber
 

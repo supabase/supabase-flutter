@@ -207,17 +207,63 @@ void main() {
   });
 
   group('auth', () {
-    test('the pkce flow asserts when no asyncStorage is given', () {
+    test('the pkce flow throws when no asyncStorage is given', () {
       expect(
         () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
         throwsA(
-          isA<AssertionError>().having(
+          isA<ArgumentError>().having(
             (error) => error.message,
             'message',
-            contains('You need to provide asyncStorage to perform pkce flow.'),
+            allOf(
+              contains('SupabaseClient uses the pkce flow by default'),
+              contains(
+                'authOptions: AuthClientOptions(asyncStorage: '
+                'MemoryAuthAsyncStorage())',
+              ),
+              contains('testSupabaseClient'),
+            ),
           ),
         ),
       );
+    });
+
+    test('the testSupabaseClient hint is left out outside of a test', () {
+      expect(
+        () => Zone.root.run(
+          () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            isNot(contains('testSupabaseClient')),
+          ),
+        ),
+      );
+    });
+
+    test('the implicit flow needs no asyncStorage', () async {
+      final supabase = real.SupabaseClient(
+        'http://localhost:1',
+        'supabaseKey',
+        authOptions: const AuthClientOptions(
+          authFlowType: AuthFlowType.implicit,
+        ),
+      );
+      addTearDown(supabase.dispose);
+
+      expect(supabase.auth.currentSession, isNull);
+    });
+
+    test('a third-party accessToken needs no asyncStorage', () async {
+      final supabase = real.SupabaseClient(
+        'http://localhost:1',
+        'supabaseKey',
+        accessToken: () async => 'jwt',
+      );
+      addTearDown(supabase.dispose);
+
+      expect(() => supabase.auth, throwsA(isA<AuthException>()));
     });
 
     test('the pkce flow works with a MemoryAuthAsyncStorage', () async {

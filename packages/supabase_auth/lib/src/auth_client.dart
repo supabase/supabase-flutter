@@ -47,7 +47,8 @@ class _SessionState {
 /// [httpClient] custom http client.
 ///
 /// [asyncStorage] storage for the session and the pkce code verifiers.
-/// Required when using the pkce flow or persisting the session. Pass a
+/// Required when using the pkce flow or persisting the session, the
+/// constructor throws an [ArgumentError] otherwise. Pass a
 /// [MemoryAuthAsyncStorage] when neither needs to outlive the process.
 ///
 /// [persistSession] whether the session is written to [asyncStorage] whenever
@@ -95,17 +96,7 @@ class AuthClient {
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
     Duration? requestTimeout,
-  }) : assert(
-         flowType != AuthFlowType.pkce || asyncStorage != null,
-         'You need to provide asyncStorage to perform pkce flow. Pass a '
-         'MemoryAuthAsyncStorage when the code verifiers do not need to '
-         'outlive the process.',
-       ),
-       assert(
-         !persistSession || asyncStorage != null,
-         'You need to provide asyncStorage to persist the session.',
-       ),
-       _url = url ?? AuthConstants.defaultAuthUrl,
+  }) : _url = url ?? AuthConstants.defaultAuthUrl,
        _headers = {...AuthConstants.defaultHeaders, ...?headers},
        _httpClient = httpClient,
        _requestTimeout = requestTimeout,
@@ -115,6 +106,18 @@ class AuthClient {
            storageKey ??
            defaultPersistSessionKey(url ?? AuthConstants.defaultAuthUrl),
        _flowType = flowType {
+    if (flowType == AuthFlowType.pkce && asyncStorage == null) {
+      throw ArgumentError(
+        'The pkce flow needs an asyncStorage to keep its code verifiers in. '
+        'Pass one, such as a MemoryAuthAsyncStorage when the verifiers do not '
+        'need to outlive the process, or use AuthFlowType.implicit.',
+      );
+    }
+    if (persistSession && asyncStorage == null) {
+      throw ArgumentError(
+        'persistSession needs an asyncStorage to persist the session in.',
+      );
+    }
     _pkceVerifierStore = asyncStorage == null
         ? null
         : PKCEVerifierStore(asyncStorage, storageKey: _storageKey);
@@ -664,10 +667,13 @@ class AuthClient {
     String authCode, {
     String? flowId,
   }) async {
-    assert(
-      _pkceVerifierStore != null,
-      'You need to provide asyncStorage to perform pkce flow.',
-    );
+    final pkceVerifierStore = _pkceVerifierStore;
+    if (pkceVerifierStore == null) {
+      throw AuthException(
+        'Exchanging a code needs the asyncStorage the pkce flow keeps its '
+        'code verifiers in.',
+      );
+    }
 
     final requestedFlowId = PKCEVerifierStore.validateFlowId(flowId);
     if (flowId != null && requestedFlowId == null) {
@@ -679,7 +685,7 @@ class AuthClient {
       );
     }
 
-    final codeVerifierRawString = await _pkceVerifierStore!.retrieve(
+    final codeVerifierRawString = await pkceVerifierStore.retrieve(
       flowId: requestedFlowId,
     );
     if (codeVerifierRawString == null) {
@@ -699,7 +705,7 @@ class AuthClient {
       ),
     );
 
-    await _pkceVerifierStore.remove(flowId: requestedFlowId);
+    await pkceVerifierStore.remove(flowId: requestedFlowId);
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
       session: Session.fromJson(response)!,
@@ -728,10 +734,6 @@ class AuthClient {
     if (_flowType != AuthFlowType.pkce) {
       return null;
     }
-    assert(
-      _pkceVerifierStore != null,
-      'You need to provide asyncStorage to perform pkce flow.',
-    );
     final codeVerifier = generatePKCEVerifier();
     final flowId = PKCEVerifierStore.generateFlowId();
     final evicted = await _pkceVerifierStore!.store(

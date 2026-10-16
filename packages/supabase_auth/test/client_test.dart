@@ -961,14 +961,32 @@ void main() {
   });
 
   group('Constructing a client without an asyncStorage', () {
-    test('asserts when the pkce flow is used', () {
+    test('throws when the pkce flow is used', () {
       expect(
         () => AuthClient(url: authUrl, headers: {'apikey': anonToken}),
         throwsA(
-          isA<AssertionError>().having(
+          isA<ArgumentError>().having(
             (error) => error.message,
             'message',
-            contains('You need to provide asyncStorage to perform pkce flow.'),
+            contains('The pkce flow needs an asyncStorage'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when the session is persisted', () {
+      expect(
+        () => AuthClient(
+          url: authUrl,
+          headers: {'apikey': anonToken},
+          flowType: AuthFlowType.implicit,
+          persistSession: true,
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            contains('persistSession needs an asyncStorage'),
           ),
         ),
       );
