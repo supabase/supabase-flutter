@@ -35,9 +35,10 @@ class AuthPKCEGrantCodeExchangeError extends AuthException {
 }
 
 /// Thrown when required session data is unavailable, such as when no session
-/// is active or a required access or refresh token is empty.
+/// is active, a required access or refresh token is empty, or a response that
+/// should have issued a session came without one.
 class AuthSessionMissingException extends AuthException {
-  AuthSessionMissingException([String? message])
+  AuthSessionMissingException({String? message, super.requestId})
     : super(
         message ?? 'Auth session missing!',
         errorCode: ErrorCode.sessionMissing.code,

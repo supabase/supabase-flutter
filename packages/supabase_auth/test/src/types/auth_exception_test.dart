@@ -77,10 +77,18 @@ void main() {
     });
 
     test('keeps the error code when given a custom message', () {
-      final exception = AuthSessionMissingException('Custom session error');
+      final exception = AuthSessionMissingException(
+        message: 'Custom session error',
+      );
 
       expect(exception.message, 'Custom session error');
       expect(exception.errorCode, ErrorCode.sessionMissing.code);
+    });
+
+    test('carries the request id of the response it was raised for', () {
+      final exception = AuthSessionMissingException(requestId: 'request-id');
+
+      expect(exception.requestId, 'request-id');
     });
   });
 

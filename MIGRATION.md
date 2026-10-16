@@ -182,8 +182,9 @@ final user = session.user;
 ```
 
 `signInAnonymously()`, `signInWithPassword()` and `passkey.verifyAuthentication()` used to resolve
-with `session` set to `null` when the response carried no session. They now throw an
-`AuthException` in that case, as the other methods in the list already did.
+with `session` set to `null` when the response carried no session. Every method in the list now
+throws an `AuthSessionMissingException` in that case, with the `errorCode` `session_missing` and the
+`requestId` of the response.
 
 `signUp()` and `verifyOTP()` keep returning an `AuthResponse`, since both can legitimately complete
 without a session: a sign-up that needs email confirmation first, and the first step of a secure
@@ -1585,8 +1586,10 @@ Four changes go beyond a rename:
   only ever the HTTP status, where `PostgrestException.code` held either. A duplicate key violation
   reads as `statusCode: 409, errorCode: '23505'`.
 - `AuthSessionMissingException` and `AuthInvalidJwtException` report no status, since they are
-  raised without making a request. They report `errorCode` values of `session_missing` and
-  `invalid_jwt` instead.
+  raised by the client rather than reported by the service. They report `errorCode` values of
+  `session_missing` and `invalid_jwt` instead. `AuthSessionMissingException` takes its `message` as
+  a named parameter, next to a `requestId` set when a response came without the session it should
+  have issued.
 - `AuthRetryableFetchException` covers only the transport case, where the request never reached the
   service. A retryable 5xx the service answered is an `AuthRetryableApiException`, which carries the
   status. Both extend `AuthRetryableException`, so catch that to get both.
