@@ -862,7 +862,17 @@ void main() {
       'author_id',
       'book_count',
     ]);
-    expect(authorStats.columns.first.isNullable, isTrue);
+    expect(authorStats.columns.first.isNullable, isFalse);
+    expect(authorStats.columns.last.isNullable, isTrue);
+  });
+
+  test('non-null view columns are not required on insert', () {
+    final bookPrices = schema.tables.singleWhere(
+      (table) => table.name == 'book_prices',
+    );
+    final id = bookPrices.columns.singleWhere((column) => column.name == 'id');
+    expect(id.isNullable, isFalse);
+    expect(id.isRequired, isFalse);
   });
 
   test('foreign tables are insertable and updatable', () {

@@ -125,13 +125,18 @@ DatabaseDescription _parseGeneratorMetadata(
 
   final relations = [
     for (final table in _relationsOf(document, 'tables', schemas))
-      (relation: table, isInsertable: true, isUpdatable: true),
+      (relation: table, isInsertable: true, isUpdatable: true, isView: false),
     for (final foreignTable in _relationsOf(
       document,
       'foreignTables',
       schemas,
     ))
-      (relation: foreignTable, isInsertable: true, isUpdatable: true),
+      (
+        relation: foreignTable,
+        isInsertable: true,
+        isUpdatable: true,
+        isView: false,
+      ),
     for (final view in _relationsOf(document, 'views', schemas))
       (
         relation: view,
@@ -139,13 +144,19 @@ DatabaseDescription _parseGeneratorMetadata(
             (view['is_insert_enabled'] ?? view['is_updatable']) as bool,
         isUpdatable:
             (view['is_update_enabled'] ?? view['is_updatable']) as bool,
+        isView: true,
       ),
     for (final materializedView in _relationsOf(
       document,
       'materializedViews',
       schemas,
     ))
-      (relation: materializedView, isInsertable: false, isUpdatable: false),
+      (
+        relation: materializedView,
+        isInsertable: false,
+        isUpdatable: false,
+        isView: true,
+      ),
   ];
 
   // Document order is kept: `sortGeneratorMetadata` orders columns by name
@@ -180,7 +191,8 @@ DatabaseDescription _parseGeneratorMetadata(
         ),
   };
   final generatedRelations = {
-    for (final (:relation, isInsertable: _, isUpdatable: _) in relations)
+    for (final (:relation, isInsertable: _, isUpdatable: _, isView: _)
+        in relations)
       (relation['schema'] as String, relation['name'] as String),
   };
   final functionsByRelationId = _functionsByRelationId(document, typesById);
@@ -188,7 +200,7 @@ DatabaseDescription _parseGeneratorMetadata(
   final tables = <TableDescription>[];
   final enumsByType = <(String, String), EnumDescription>{};
 
-  for (final (:relation, :isInsertable, :isUpdatable) in relations) {
+  for (final (:relation, :isInsertable, :isUpdatable, :isView) in relations) {
     final relationSchema = relation['schema'] as String;
     final relationName = relation['name'] as String;
 
@@ -242,7 +254,9 @@ DatabaseDescription _parseGeneratorMetadata(
               _rangeBoundKinds[isArray ? format.substring(1) : format],
           enumValues: isEnum ? enumValues : null,
           enumType: enumDescription,
-          isRequired: !isNullable && !hasDefault,
+          // A view column does not carry the default of the column it reads,
+          // so an insert through the view may still omit it.
+          isRequired: !isView && !isNullable && !hasDefault,
           hasDefault: hasDefault,
           isNullable: isNullable,
           isReadOnly:
