@@ -627,6 +627,15 @@ features:
       - AuthMFAAdminDeleteFactorResponse.AuthMFAAdminDeleteFactorResponse
       - AuthMFAAdminDeleteFactorResponse.fromJson
       - AuthMFAAdminDeleteFactorResponse.id
+  auth.admin.update_mfa_factor:
+    status: implemented
+    symbols:
+      - AuthAdminMFAApi.updateFactor
+    supporting_symbols:
+      - AuthMFAAdminUpdateFactorResponse
+      - AuthMFAAdminUpdateFactorResponse.AuthMFAAdminUpdateFactorResponse
+      - AuthMFAAdminUpdateFactorResponse.factor
+      - AuthMFAAdminUpdateFactorResponse.fromJson
   auth.admin.create_provider:
     status: implemented
     symbols:
