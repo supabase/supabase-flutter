@@ -76,6 +76,18 @@ void main() {
     expect(response.factor.friendlyName, 'VerifiedFactor');
   });
 
+  test('update factor ignores the phone on a totp factor', () async {
+    final response = await client.admin.mfa.updateFactor(
+      userId: userId2,
+      factorId: factorId2,
+      phone: '+15555550100',
+    );
+
+    expect(response.factor.id, factorId2);
+    expect(response.factor.factorType, FactorType.totp);
+    expect(response.factor.friendlyName, 'VerifiedFactor');
+  });
+
   test('delete factor', () async {
     final response = await client.admin.mfa.deleteFactor(
       userId: userId2,
