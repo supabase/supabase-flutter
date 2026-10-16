@@ -69,6 +69,11 @@ class AuthAdminApi {
       headers: _headers,
       fetch: _fetch,
     );
+    sso = AuthAdminSSOApi(
+      url: _url,
+      headers: _headers,
+      fetch: _fetch,
+    );
   }
   final String _url;
   final Map<String, String> _headers;
@@ -91,6 +96,10 @@ class AuthAdminApi {
   /// Only relevant when passkeys are enabled in Supabase Auth.
   @experimental
   late final AuthAdminPasskeyApi passkey;
+
+  /// Contains all single sign-on (SAML 2.0) identity provider administration
+  /// methods.
+  late final AuthAdminSSOApi sso;
 
   /// Removes a logged-in session.
   Future<void> signOut(

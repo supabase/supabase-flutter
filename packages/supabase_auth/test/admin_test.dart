@@ -232,4 +232,116 @@ void main() {
       );
     });
   });
+
+  group('SSO providers', () {
+    const resourceId = 'sdk-test-sso';
+    const entityId = 'https://idp.example.com/sdk-test';
+    const metadataXml =
+        '<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" '
+        'entityID="$entityId">'
+        '<IDPSSODescriptor '
+        'protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">'
+        '<SingleSignOnService '
+        'Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" '
+        'Location="https://idp.example.com/sso"/>'
+        '</IDPSSODescriptor>'
+        '</EntityDescriptor>';
+
+    Future<void> deleteTestProviders() async {
+      final providers = await client.admin.sso.listProviders(
+        resourceId: resourceId,
+      );
+      for (final provider in providers) {
+        await client.admin.sso.deleteProvider(provider.id);
+      }
+    }
+
+    setUp(deleteTestProviders);
+    tearDown(deleteTestProviders);
+
+    Future<SSOProvider> createTestProvider() {
+      return client.admin.sso.createProvider(
+        const CreateSSOProviderOptions(
+          metadata: SAMLMetadata.xml(metadataXml),
+          domains: ['sdk-test.example'],
+          attributeMapping: SAMLAttributeMapping({
+            'email': SAMLAttribute(name: 'mail'),
+          }),
+          nameIdFormat: SAMLNameIdFormat.persistent,
+          resourceId: resourceId,
+        ),
+      );
+    }
+
+    test('creates, gets, lists and deletes a provider', () async {
+      final created = await createTestProvider();
+
+      expect(created.resourceId, resourceId);
+      expect(created.disabled, isFalse);
+      expect(created.domains, ['sdk-test.example']);
+      expect(created.saml!.entityId, entityId);
+      expect(created.saml!.metadataXml, metadataXml);
+      expect(created.saml!.nameIdFormat, SAMLNameIdFormat.persistent);
+      expect(created.saml!.attributeMapping!.keys['email']!.name, 'mail');
+
+      final fetched = await client.admin.sso.getProvider(
+        'resource_$resourceId',
+      );
+      expect(fetched.id, created.id);
+      expect(fetched.saml!.metadataXml, metadataXml);
+
+      final listed = await client.admin.sso.listProviders(
+        resourceIdPrefix: 'sdk-test',
+      );
+      expect(listed.map((provider) => provider.id), contains(created.id));
+      expect(listed.single.saml!.metadataXml, isNull);
+
+      await client.admin.sso.deleteProvider(created.id);
+
+      await expectLater(
+        client.admin.sso.getProvider(created.id),
+        throwsA(
+          isA<AuthApiException>().having(
+            (exception) => exception.errorCode,
+            'errorCode',
+            ErrorCode.ssoProviderNotFound.code,
+          ),
+        ),
+      );
+    });
+
+    test('updateProvider() keeps the fields it leaves out', () async {
+      final created = await createTestProvider();
+
+      final disabled = await client.admin.sso.updateProvider(
+        created.id,
+        UpdateSSOProviderOptions(
+          nameIdFormat: created.saml!.nameIdFormat,
+          disabled: true,
+        ),
+      );
+
+      expect(disabled.disabled, isTrue);
+      expect(disabled.domains, ['sdk-test.example']);
+      expect(disabled.saml!.nameIdFormat, SAMLNameIdFormat.persistent);
+      expect(disabled.saml!.attributeMapping!.keys, contains('email'));
+    });
+
+    test('updateProvider() clears what it is given empty', () async {
+      final created = await createTestProvider();
+
+      final cleared = await client.admin.sso.updateProvider(
+        created.id,
+        const UpdateSSOProviderOptions(
+          nameIdFormat: null,
+          domains: [],
+          attributeMapping: SAMLAttributeMapping({}),
+        ),
+      );
+
+      expect(cleared.domains, isEmpty);
+      expect(cleared.saml!.nameIdFormat, isNull);
+      expect(cleared.saml!.attributeMapping?.keys ?? {}, isEmpty);
+    });
+  });
 }

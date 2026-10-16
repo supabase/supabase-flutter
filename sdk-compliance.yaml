@@ -796,6 +796,99 @@ features:
     symbols:
       - AuthAdminPasskeyApi.deletePasskey
 
+  # auth — admin SSO providers
+  auth.sso_admin.create_provider:
+    status: implemented
+    symbols:
+      - AuthAdminSSOApi.createProvider
+    supporting_symbols:
+      - AuthAdminApi.sso
+      - AuthAdminSSOApi
+      - AuthAdminSSOApi.AuthAdminSSOApi
+      - CreateSSOProviderOptions
+      - CreateSSOProviderOptions.CreateSSOProviderOptions
+      - CreateSSOProviderOptions.attributeMapping
+      - CreateSSOProviderOptions.disabled
+      - CreateSSOProviderOptions.domains
+      - CreateSSOProviderOptions.metadata
+      - CreateSSOProviderOptions.nameIdFormat
+      - CreateSSOProviderOptions.resourceId
+      - CreateSSOProviderOptions.toJson
+      - SAMLAttribute
+      - SAMLAttribute.SAMLAttribute
+      - SAMLAttribute.array
+      - SAMLAttribute.defaultValue
+      - SAMLAttribute.fromJson
+      - SAMLAttribute.name
+      - SAMLAttribute.names
+      - SAMLAttribute.toJson
+      - SAMLAttributeMapping
+      - SAMLAttributeMapping.SAMLAttributeMapping
+      - SAMLAttributeMapping.fromJson
+      - SAMLAttributeMapping.keys
+      - SAMLAttributeMapping.toJson
+      - SAMLMetadata
+      - SAMLMetadata.SAMLMetadata
+      - SAMLMetadata.toJson
+      - SAMLMetadata.url
+      - SAMLMetadata.xml
+      - SAMLMetadataUrl
+      - SAMLMetadataUrl.SAMLMetadataUrl
+      - SAMLMetadataUrl.toJson
+      - SAMLMetadataUrl.url
+      - SAMLMetadataXml
+      - SAMLMetadataXml.SAMLMetadataXml
+      - SAMLMetadataXml.toJson
+      - SAMLMetadataXml.xml
+      - SAMLNameIdFormat
+      - SAMLNameIdFormat.SAMLNameIdFormat
+      - SAMLNameIdFormat.fromUrn
+      - SAMLNameIdFormat.urn
+      - SAMLProvider
+      - SAMLProvider.SAMLProvider
+      - SAMLProvider.attributeMapping
+      - SAMLProvider.entityId
+      - SAMLProvider.fromJson
+      - SAMLProvider.metadataUrl
+      - SAMLProvider.metadataXml
+      - SAMLProvider.nameIdFormat
+      - SSOProvider
+      - SSOProvider.SSOProvider
+      - SSOProvider.createdAt
+      - SSOProvider.disabled
+      - SSOProvider.domains
+      - SSOProvider.fromJson
+      - SSOProvider.id
+      - SSOProvider.resourceId
+      - SSOProvider.saml
+      - SSOProvider.updatedAt
+  auth.sso_admin.get_provider:
+    status: implemented
+    symbols:
+      - AuthAdminSSOApi.getProvider
+  auth.sso_admin.list_providers:
+    status: implemented
+    symbols:
+      - AuthAdminSSOApi.listProviders
+  auth.sso_admin.update_provider:
+    status: implemented
+    symbols:
+      - AuthAdminSSOApi.updateProvider
+    supporting_symbols:
+      - UpdateSSOProviderOptions
+      - UpdateSSOProviderOptions.UpdateSSOProviderOptions
+      - UpdateSSOProviderOptions.attributeMapping
+      - UpdateSSOProviderOptions.disabled
+      - UpdateSSOProviderOptions.domains
+      - UpdateSSOProviderOptions.metadata
+      - UpdateSSOProviderOptions.nameIdFormat
+      - UpdateSSOProviderOptions.resourceId
+      - UpdateSSOProviderOptions.toJson
+  auth.sso_admin.delete_provider:
+    status: implemented
+    symbols:
+      - AuthAdminSSOApi.deleteProvider
+
   # database — query
   database.query.from_table:
     status: implemented
