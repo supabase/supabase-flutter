@@ -1,3 +1,6 @@
+// The interceptor seam is @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 
 import 'package:clock/clock.dart';
@@ -97,6 +100,10 @@ class Supabase {
   /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
+  /// [interceptors] extend the client from the outside, see
+  /// [SupabaseClientInterceptor]. Each interceptor is resumed when the app
+  /// returns to the foreground and disposed together with the client.
+  ///
   /// All Supabase packages log through `package:logging` using loggers under
   /// the `supabase` hierarchy (for example `supabase.auth` or
   /// `supabase.realtime`). Nothing is printed by default; attach a listener
@@ -117,6 +124,7 @@ class Supabase {
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
+    List<SupabaseClientInterceptor> interceptors = const [],
   }) async {
     if (_instance._isInitialized) {
       flutterLogger.info(
@@ -147,6 +155,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      interceptors: interceptors,
     );
 
     if (accessToken == null) {
@@ -224,6 +233,11 @@ class Supabase {
   /// appends via `.then()` so operations never overlap.
   Future<void> _pendingLifecycleOperation = Future.value();
 
+  /// The resume work of each interceptor, one chain per interceptor so a
+  /// resume never overlaps the previous one of the same interceptor. [dispose]
+  /// waits for the chains before disposing the client.
+  final _interceptorResumes = <SupabaseClientInterceptor, Future<void>>{};
+
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
   /// (e.g. abort a reconnect if the app went back to background).
@@ -240,6 +254,8 @@ class Supabase {
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
     final pendingLifecycleOperation = _pendingLifecycleOperation;
+    final interceptorResumes = _interceptorResumes.values.toList();
+    _interceptorResumes.clear();
 
     _client = null;
     _supabaseAuth = null;
@@ -256,6 +272,7 @@ class Supabase {
     await _disposeAll([
       () => supabaseAuth?.dispose(),
       () => pendingLifecycleOperation,
+      () => Future.wait(interceptorResumes),
       currentClient.dispose,
     ]);
   }
@@ -298,6 +315,7 @@ class Supabase {
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
     required Duration? requestTimeout,
+    required List<SupabaseClientInterceptor> interceptors,
   }) {
     _realtimeLifecycleOptions = realtimeLifecycleOptions;
     final headers = {
@@ -317,6 +335,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      interceptors: interceptors,
     );
 
     // Close any previous realtime client that may still be connected due to
@@ -407,6 +426,20 @@ class Supabase {
     final realtime = currentClient.realtime;
 
     if (captured == AppLifecycleState.resumed) {
+      for (final interceptor in currentClient.interceptors) {
+        final previous =
+            _interceptorResumes[interceptor] ?? Future<void>.value();
+        _interceptorResumes[interceptor] = previous
+            .then((_) => Future.sync(interceptor.resume))
+            .catchError((Object error, StackTrace stackTrace) {
+              flutterLogger.warning(
+                'Interceptor ${interceptor.runtimeType} failed to resume',
+                error,
+                stackTrace,
+              );
+            });
+      }
+
       if (!_realtimeLifecycleOptions.managed) return;
 
       // No channels subscribed — nothing to reconnect.
