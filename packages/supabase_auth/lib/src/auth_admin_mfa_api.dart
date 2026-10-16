@@ -39,8 +39,9 @@ class AuthAdminMFAApi {
   /// Updates the MFA factor identified by [factorId] on the user identified
   /// by [userId].
   ///
-  /// Only the fields that are given are changed. The server ignores [phone]
-  /// on any factor that is not a phone factor.
+  /// Only the fields that are given are changed. The server treats an empty
+  /// string as not given, so a friendly name cannot be cleared, and it
+  /// ignores [phone] on any factor that is not a phone factor.
   Future<AuthMFAAdminUpdateFactorResponse> updateFactor({
     required String userId,
     required String factorId,
