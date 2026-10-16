@@ -1,0 +1,333 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
+import 'package:supabase_openapi_generator/supabase_openapi_generator.dart';
+import 'package:test/test.dart';
+
+/// A test double that records the outgoing request and returns a canned
+/// response. It never touches the network.
+class _RecordingClient extends http.BaseClient {
+  _RecordingClient(this._handler);
+
+  final Future<http.StreamedResponse> Function(http.BaseRequest request)
+      _handler;
+
+  http.BaseRequest? lastRequest;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    lastRequest = request;
+    return _handler(request);
+  }
+}
+
+http.StreamedResponse _json(Object body, {int status = 200}) {
+  final bytes = utf8.encode(jsonEncode(body));
+  return http.StreamedResponse(
+    Stream.value(bytes),
+    status,
+    headers: {'content-type': 'application/json'},
+  );
+}
+
+void main() {
+  group('JSON operations', () {
+    test('listBuckets decodes into models', () async {
+      final http = _RecordingClient(
+        (_) async => _json({
+          'items': [
+            {'id': 'avatars', 'name': 'avatars', 'public': true},
+          ],
+        }),
+      );
+      final api = StorageApi(ApiClient(baseUrl: 'https://x', httpClient: http));
+
+      final result = await api.listBuckets();
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.id, 'avatars');
+      expect(result.items.first.public, isTrue);
+      expect(http.lastRequest!.method, 'GET');
+      expect(http.lastRequest!.url.path, '/bucket');
+    });
+
+    test('createBucket serializes the request model', () async {
+      Map<String, dynamic>? sentBody;
+      final client = _RecordingClient((request) async {
+        sentBody = jsonDecode(
+          await (request as http.Request).finalize().bytesToString(),
+        ) as Map<String, dynamic>;
+        return _json({'name': 'photos'});
+      });
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      await api.createBucket(
+        body: CreateBucketRequestContent(
+          id: 'photos',
+          name: 'photos',
+          public: false,
+        ),
+      );
+
+      expect(sentBody, {'id': 'photos', 'name': 'photos', 'public': false});
+    });
+
+    test('non-2xx maps to ApiException with decoded body', () async {
+      final api = StorageApi(
+        ApiClient(
+          baseUrl: 'https://x',
+          httpClient: _RecordingClient(
+            (_) async => _json({'message': 'not found'}, status: 404),
+          ),
+        ),
+      );
+
+      await expectLater(
+        api.getBucket(id: 'missing'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.statusCode, 'statusCode', 404)
+              .having((e) => (e.body as Map)['message'], 'body', 'not found'),
+        ),
+      );
+    });
+  });
+
+  group('Streaming', () {
+    test('upload streams the request body without buffering (question 1)',
+        () async {
+      final received = <int>[];
+      final client = _RecordingClient((request) async {
+        // Pull the finalized body chunk by chunk; nothing was collected into a
+        // Uint8List by the generated client before this point.
+        await for (final chunk in request.finalize()) {
+          received.addAll(chunk);
+        }
+        return http.StreamedResponse(
+          const Stream.empty(),
+          204,
+          headers: {'upload-offset': '9'},
+        );
+      });
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final source = Stream<List<int>>.fromIterable([
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+      ]);
+
+      final result = await api.uploadChunk(
+        uploadId: 'abc',
+        tusResumable: '1.0.0',
+        uploadOffset: 0,
+        body: source,
+        contentLength: 9,
+      );
+
+      expect(client.lastRequest, isA<http.StreamedRequest>());
+      expect(received, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(result['uploadOffset'], 9);
+      expect(client.lastRequest!.headers['Upload-Offset'], '0');
+      expect(client.lastRequest!.headers['Tus-Resumable'], '1.0.0');
+    });
+
+    test('response is handed back as a live stream (question 2)', () async {
+      final controller = StreamController<List<int>>();
+      final api = FunctionsApi(
+        ApiClient(
+          baseUrl: 'https://x',
+          httpClient: _RecordingClient(
+            (_) async => http.StreamedResponse(controller.stream, 200),
+          ),
+        ),
+      );
+
+      final response = await api.invokeFunctionGet(functionName: 'sse');
+      expect(response, isA<StreamedApiResponse>());
+
+      final received = <String>[];
+      final done = response.stream
+          .transform(utf8.decoder)
+          .listen(received.add)
+          .asFuture<void>();
+
+      // Emit events over time; the caller receives them incrementally.
+      controller.add(utf8.encode('event-1'));
+      await Future<void>.delayed(Duration.zero);
+      expect(received, ['event-1']);
+      controller.add(utf8.encode('event-2'));
+      await controller.close();
+      await done;
+
+      expect(received, ['event-1', 'event-2']);
+    });
+
+    test('multipart upload streams the file part (question 3)', () async {
+      http.BaseRequest? captured;
+      final client = _RecordingClient((request) async {
+        captured = request;
+        await request.finalize().drain<void>();
+        return _json({'Key': 'avatars/a.png', 'Id': 'uuid'});
+      });
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final result = await api.uploadObject(
+        bucketId: 'avatars',
+        wildcardPath: 'a.png',
+        file: Stream.value(Uint8List.fromList([1, 2, 3])),
+        fileLength: 3,
+        fileName: 'a.png',
+        cacheControl: '3600',
+      );
+
+      expect(captured, isA<http.MultipartRequest>());
+      expect(result.key, 'avatars/a.png');
+    });
+  });
+
+  group('Correctness fixes', () {
+    test('path parameters are percent-encoded, wildcard keeps slashes',
+        () async {
+      final client = _RecordingClient((_) async => _json({}));
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      await api.getObjectInfo(
+        bucketId: 'my bucket',
+        wildcardPath: 'sub dir/a?b.png',
+      );
+
+      final url = client.lastRequest!.url;
+      // Decoded segments round-trip to the original values, and the `?` did not
+      // leak into the query string.
+      expect(url.pathSegments, [
+        'object',
+        'info',
+        'my bucket',
+        'sub dir',
+        'a?b.png',
+      ]);
+      expect(url.query, isEmpty);
+    });
+
+    test('operation content-type wins over provider headers', () async {
+      final client = _RecordingClient((_) async => _json({'name': 'photos'}));
+      final api = StorageApi(
+        ApiClient(
+          baseUrl: 'https://x',
+          httpClient: client,
+          headerProvider: () => {'content-type': 'text/plain'},
+        ),
+      );
+
+      await api.createBucket(
+        body: CreateBucketRequestContent(
+          id: 'photos',
+          name: 'photos',
+          public: false,
+        ),
+      );
+
+      expect(client.lastRequest!.headers['content-type'], 'application/json');
+    });
+
+    test('missing numeric response header yields null instead of crashing',
+        () async {
+      final client = _RecordingClient(
+        (_) async => http.StreamedResponse(const Stream.empty(), 200),
+      );
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final result =
+          await api.getUploadOffset(uploadId: 'abc', tusResumable: '1.0.0');
+
+      expect(result['uploadOffset'], isNull);
+    });
+
+    test('a body-stream error surfaces as a catchable exception', () async {
+      final client = _RecordingClient((request) async {
+        await request.finalize().drain<void>();
+        return http.StreamedResponse(const Stream.empty(), 204);
+      });
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final failing = Stream<List<int>>.error(StateError('read failed'));
+
+      await expectLater(
+        api.uploadChunk(
+          uploadId: 'abc',
+          tusResumable: '1.0.0',
+          uploadOffset: 0,
+          body: failing,
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
+  group('PostgREST (DatabaseService) transport', () {
+    test('selectRows serializes typed query params and streams the response',
+        () async {
+      final client = _RecordingClient(
+        (_) async => http.StreamedResponse(
+          Stream.value(utf8.encode('[{"id":1}]')),
+          200,
+        ),
+      );
+      final api =
+          DatabaseApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final response = await api.selectRows(
+        table: 'my table',
+        select: 'id,name',
+        limit: 10,
+        offset: 20,
+      );
+
+      final url = client.lastRequest!.url;
+      expect(url.pathSegments, ['my table']);
+      expect(url.queryParameters['select'], 'id,name');
+      expect(url.queryParameters['limit'], '10');
+      expect(url.queryParameters['offset'], '20');
+      expect(response, isA<StreamedApiResponse>());
+      expect(
+        await response.stream.transform(utf8.decoder).join(),
+        '[{"id":1}]',
+      );
+    });
+  });
+
+  group('Middleware / header injection (question 4)', () {
+    test('headerProvider is invoked per request for fresh auth tokens',
+        () async {
+      // The token lives in a mutable holder so the provider closure reads the
+      // latest value on every request.
+      final token = ['first'];
+      final client = _RecordingClient((_) async => _json({'items': []}));
+      final api = StorageApi(
+        ApiClient(
+          baseUrl: 'https://x',
+          httpClient: client,
+          defaultHeaders: {'apikey': 'anon'},
+          headerProvider: () => {'Authorization': 'Bearer ${token.first}'},
+        ),
+      );
+
+      await api.listBuckets();
+      expect(client.lastRequest!.headers['Authorization'], 'Bearer first');
+      expect(client.lastRequest!.headers['apikey'], 'anon');
+
+      token[0] = 'refreshed';
+      await api.listBuckets();
+      expect(client.lastRequest!.headers['Authorization'], 'Bearer refreshed');
+    });
+  });
+}
