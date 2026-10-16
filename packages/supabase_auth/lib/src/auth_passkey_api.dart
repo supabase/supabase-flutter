@@ -173,7 +173,7 @@ class AuthPasskeyApi {
     required String challengeId,
     required Map<String, dynamic> credential,
   }) async {
-    final data = await _fetch.requestWithResponse(
+    final result = await _fetch.requestWithResponse(
       '${_client._url}/passkeys/authentication/verify',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -185,7 +185,7 @@ class AuthPasskeyApi {
       ),
     );
 
-    final session = _client._sessionFromResponse(data);
+    final session = _client._sessionFromResponse(result);
     _client._saveSession(session);
     _client.notifyAllSubscribers(AuthChangeEvent.signedIn);
     return session;

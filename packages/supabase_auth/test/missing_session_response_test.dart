@@ -143,13 +143,22 @@ void main() {
       },
     );
 
-    test('makes refreshSession throw', () async {
-      await expectLater(
-        client.refreshSession('refresh-token'),
-        throwsSessionMissing,
+    test('makes refreshSession throw and sign out', () async {
+      await signInTestUser(client);
+      final signedOut = client.onAuthStateChange.firstWhere(
+        (state) => state is AuthSignedOut,
       );
-      await pumpEventQueue();
 
+      await expectLater(client.refreshSession(), throwsSessionMissing);
+
+      expect(
+        await signedOut,
+        isA<AuthSignedOut>().having(
+          (state) => state.reason,
+          'reason',
+          SignOutReason.sessionExpired,
+        ),
+      );
       expect(client.currentSession, isNull);
     });
   });

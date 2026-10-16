@@ -1583,9 +1583,8 @@ class AuthClient {
         reason: SignOutReason.sessionMissing,
       );
       throw notifyException(
-        AuthException(
-          'Initial session is missing data.',
-          errorCode: ErrorCode.sessionMissing.code,
+        AuthSessionMissingException(
+          message: 'Initial session is missing data.',
         ),
       );
     }
@@ -1609,9 +1608,8 @@ class AuthClient {
         );
         // The `catch` below notifies subscribers, so throw without notifying
         // here to avoid emitting the error onto the stream twice.
-        throw AuthException(
-          'Current session is missing data.',
-          errorCode: ErrorCode.sessionMissing.code,
+        throw AuthSessionMissingException(
+          message: 'Current session is missing data.',
         );
       }
 
