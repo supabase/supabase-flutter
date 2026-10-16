@@ -1,7 +1,7 @@
 // Regenerates test/fixtures/generator_metadata.json by introspecting a fresh
 // Postgres database seeded with test/fixtures/seed.sql, using the
 // @supabase/postgrest-typegen sources of a supabase/sdk checkout at the
-// revision lib/src/introspection/introspect.dart pins.
+// revision the Supabase CLI bundles.
 //
 // Run from the package root (Bun resolves the checkout's own dependencies):
 //

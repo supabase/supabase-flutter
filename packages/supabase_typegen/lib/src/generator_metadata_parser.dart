@@ -1,4 +1,3 @@
-import 'rpc_functions.dart';
 import 'schema_description.dart';
 
 const _integerFormats = {'int2', 'int4', 'int8', 'oid'};
@@ -75,9 +74,8 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
 /// only the computed fields and computed relationships are read: functions
 /// whose single input argument is the row type of a described relation of
 /// the same schema. The functions callable through `/rpc` come from the
-/// optional `rpcFunctions` collection, resolved with [resolveRpcFunctions]
-/// when the document predates it. Fields the generator does not need are
-/// ignored.
+/// `rpcFunctions` collection; a document without it describes none. Fields
+/// the generator does not need are ignored.
 ///
 /// Tables and foreign tables are always insertable and updatable. Views use
 /// the `is_insert_enabled` and `is_update_enabled` flags, falling back to
@@ -621,8 +619,7 @@ ValueTypeDescription _valueType(
 }
 
 /// The functions of [schemas] callable through `/rpc`, from the
-/// `rpcFunctions` collection of [document], or resolved from its `functions`
-/// when the document predates the collection.
+/// `rpcFunctions` collection of [document].
 List<FunctionDescription> _functions(
   Map<String, dynamic> document,
   Set<String> schemas, {
@@ -632,10 +629,8 @@ List<FunctionDescription> _functions(
   required Map<int, (String, String)> relationsById,
   required Set<(String, String)> generatedRelations,
 }) {
-  final rpcFunctions =
-      (document['rpcFunctions'] as List<dynamic>?)
-          ?.cast<Map<String, dynamic>>() ??
-      resolveRpcFunctions(document);
+  final rpcFunctions = (document['rpcFunctions'] as List<dynamic>? ?? const [])
+      .cast<Map<String, dynamic>>();
 
   ValueTypeDescription valueType(Map<String, dynamic> reference) => _valueType(
     typesById[reference['type_id'] as int],

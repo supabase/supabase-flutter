@@ -1341,17 +1341,6 @@ void main() {
       expect(overload('search_books').error, isNull);
     });
 
-    test('resolves a document that predates rpcFunctions the same way', () {
-      final legacy = parseGeneratorMetadata(
-        {...document}..remove('rpcFunctions'),
-      );
-
-      expect(
-        legacy.functions.map((function) => function.name),
-        schema.functions.map((function) => function.name),
-      );
-    });
-
     test('lists the functions of the named schemas only', () {
       final public = parseGeneratorMetadata(document, schemaNames: ['public']);
 

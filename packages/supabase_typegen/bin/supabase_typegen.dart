@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:supabase_typegen/introspection.dart';
 import 'package:supabase_typegen/supabase_typegen.dart';
 
 final _argParser = ArgParser()
@@ -12,9 +11,8 @@ final _argParser = ArgParser()
     valueHelp: 'name',
     help:
         'A database schema to generate types for; repeat the option or '
-        'separate names with commas for several. Defaults to public and the '
-        'api.schemas of the nearest supabase/config.toml, like '
-        '`supabase gen types`.',
+        'separate names with commas for several. Defaults to every schema '
+        'of the document.',
   )
   ..addOption(
     'output',
@@ -31,37 +29,6 @@ final _argParser = ArgParser()
         'supabase or postgrest, preferred in that order, that the '
         'pubspec.yaml nearest to the output lists under dependencies, or to '
         'package:postgrest/postgrest.dart when it lists none of them.',
-  )
-  ..addFlag(
-    'local',
-    negatable: false,
-    help: 'Introspect the database of the running local Supabase stack.',
-  )
-  ..addFlag(
-    'linked',
-    negatable: false,
-    help:
-        'Introspect the database of the project linked with `supabase link`, '
-        'through the Management API.',
-  )
-  ..addOption(
-    'project-ref',
-    valueHelp: 'ref',
-    help:
-        'Introspect the database of this Supabase project instead of the '
-        'linked one; implies --linked.',
-  )
-  ..addOption(
-    'db-url',
-    valueHelp: 'postgresql://…',
-    help: 'Introspect the Postgres database at this connection string.',
-  )
-  ..addFlag(
-    'dump-metadata',
-    negatable: false,
-    help:
-        'Write the introspected GeneratorMetadata document as JSON instead '
-        'of generated Dart code. Defaults --output to stdout.',
   )
   ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this usage.');
 
@@ -85,111 +52,52 @@ Future<int> _run(List<String> arguments) async {
   if (options.flag('help')) {
     stdout
       ..writeln(
-        'Generates typed Supabase table definitions from a database, '
-        'either by introspecting it through the Supabase CLI (--local, '
-        '--linked, --project-ref or --db-url) or from the GeneratorMetadata '
-        'document that postgrest-typegen emits, read from stdin.',
+        'Generates typed Supabase table definitions from the '
+        'GeneratorMetadata document that `supabase gen types --lang dart` '
+        'pipes in on stdin.',
       )
       ..writeln()
-      ..writeln('Usage: dart run supabase_typegen --local')
-      ..writeln('       dart run supabase_typegen --linked')
-      ..writeln('       dart run supabase_typegen --project-ref <ref>')
-      ..writeln('       dart run supabase_typegen --db-url <connection string>')
-      ..writeln('       dart run supabase_typegen < <metadata document>')
+      ..writeln('Usage: supabase gen types --lang dart --local')
       ..writeln(_argParser.usage);
     return 0;
   }
 
-  final namedSchemas = options.multiOption('schema');
-  final dumpMetadata = options.flag('dump-metadata');
-
+  if (stdin.hasTerminal) {
+    stderr.writeln(
+      'Expected a GeneratorMetadata document on stdin. Run '
+      '`supabase gen types --lang dart` to generate types.',
+    );
+    return 64;
+  }
   final Map<String, dynamic> document;
-  // The schemas to describe: the named ones, or for a database the default
-  // set; a document on stdin already holds the schemas its producer chose.
-  var requestedSchemas = namedSchemas;
-  switch (_resolveTarget(options)) {
-    case _Failure(:final message):
-      stderr.writeln(message);
-      return 64;
-    case _Introspect(:final target):
-      final List<String> schemaNames;
-      try {
-        schemaNames = namedSchemas.isEmpty ? defaultSchemas() : namedSchemas;
-      } on FormatException catch (error) {
-        stderr.writeln(error.message);
-        return 78;
-      }
-      requestedSchemas = schemaNames;
-      try {
-        document = await introspectDatabase(
-          target,
-          includedSchemas: schemaNames,
-        );
-      } on SupabaseCliException catch (error) {
-        stderr.writeln(error.message);
-        return 69;
-      }
-    case _Stdin():
-      if (dumpMetadata) {
-        stderr.writeln(
-          '--dump-metadata requires --local, --linked, --project-ref or '
-          '--db-url.',
-        );
-        return 64;
-      }
-      if (stdin.hasTerminal) {
-        stderr.writeln(
-          'Expected a GeneratorMetadata document of '
-          '@supabase/postgrest-typegen on stdin. Pass --local, --linked, '
-          '--project-ref or --db-url to introspect a database instead.',
-        );
-        return 64;
-      }
-      try {
-        final contents = await utf8.decodeStream(stdin);
-        final decoded = jsonDecode(contents);
-        if (decoded is! Map<String, dynamic>) {
-          throw const FormatException(
-            'expected a JSON object with the GeneratorMetadata shape.',
-          );
-        }
-        document = decoded;
-      } on FormatException catch (error) {
-        stderr.writeln(
-          'Could not parse the document on stdin: ${error.message}',
-        );
-        return 65;
-      }
+  try {
+    final contents = await utf8.decodeStream(stdin);
+    final decoded = jsonDecode(contents);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'expected a JSON object with the GeneratorMetadata shape.',
+      );
+    }
+    document = decoded;
+  } on FormatException catch (error) {
+    stderr.writeln('Could not parse the document on stdin: ${error.message}');
+    return 65;
   }
 
-  final output = options.wasParsed('output') || !dumpMetadata
-      ? options.option('output')!
-      : '-';
+  final namedSchemas = options.multiOption('schema');
+  final output = options.option('output')!;
   final summarySink = output == '-' ? stderr : stdout;
-
-  if (dumpMetadata) {
-    final generatedInto = _write(
-      output,
-      '${const JsonEncoder.withIndent('  ').convert(document)}\n',
-    );
-    summarySink.writeln(
-      'Wrote the GeneratorMetadata document to $generatedInto.',
-    );
-    return 0;
-  }
 
   final DatabaseDescription database;
   try {
     database = parseGeneratorMetadata(
       document,
-      schemaNames: requestedSchemas.isEmpty ? null : requestedSchemas,
+      schemaNames: namedSchemas.isEmpty ? null : namedSchemas,
     );
   } on FormatException catch (error) {
     stderr.writeln('Could not parse the document: ${error.message}');
     return 65;
   }
-  // Only schemas named on the command line are worth a warning; a default
-  // taken from the configuration may well be absent from the database.
   for (final schema in namedSchemas) {
     if (!database.schemaNames.contains(schema)) {
       stderr.writeln('The database has no schema "$schema".');
@@ -268,40 +176,4 @@ String _write(String output, String contents) {
   outputFile.parent.createSync(recursive: true);
   outputFile.writeAsStringSync(contents);
   return outputFile.path;
-}
-
-sealed class _MetadataSource {}
-
-final class _Stdin implements _MetadataSource {
-  const _Stdin();
-}
-
-final class _Introspect implements _MetadataSource {
-  const _Introspect(this.target);
-
-  final DatabaseTarget target;
-}
-
-final class _Failure implements _MetadataSource {
-  const _Failure(this.message);
-
-  final String message;
-}
-
-_MetadataSource _resolveTarget(ArgResults options) {
-  final databaseUrl = options.option('db-url');
-  final projectRef = options.option('project-ref');
-  final targets = <DatabaseTarget>[
-    if (options.flag('local')) const LocalDatabase(),
-    if (options.flag('linked') || projectRef != null)
-      LinkedProject(projectRef: projectRef),
-    if (databaseUrl != null) DatabaseUrl(databaseUrl),
-  ];
-  return switch (targets) {
-    [] => const _Stdin(),
-    [final target] => _Introspect(target),
-    _ => const _Failure(
-      'Pass only one of --local, --linked (or --project-ref) and --db-url.',
-    ),
-  };
 }
