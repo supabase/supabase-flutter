@@ -27,6 +27,8 @@ class AuthAdminSSOApi {
   /// Lists the registered providers, optionally only those whose resource ID
   /// is [resourceId] or starts with [resourceIdPrefix].
   ///
+  /// When both are given, the server filters by [resourceId] alone.
+  ///
   /// The listed providers leave out [SAMLProvider.metadataXml], fetch a single
   /// provider with [getProvider] to read it.
   ///
