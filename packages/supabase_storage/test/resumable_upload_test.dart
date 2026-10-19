@@ -385,6 +385,39 @@ void main() {
     );
   });
 
+  test(
+    'fails when the upload is gone again right after starting over',
+    () async {
+      httpClient.stubText(
+        'Not Found',
+        statusCode: 404,
+        method: HttpMethod.patch.value,
+      );
+      final upload = storage
+          .from('videos')
+          .resumableUploadBinary('clip.mp4', data);
+
+      await expectLater(
+        upload.done,
+        throwsA(
+          isA<StorageApiException>().having(
+            (error) => error.statusCode,
+            'statusCode',
+            404,
+          ),
+        ),
+      );
+      expect(
+        httpClient.requestsTo(
+          '/upload/resumable',
+          method: HttpMethod.post.value,
+        ),
+        hasLength(2),
+      );
+      expect(await storage.resumableUploads(), isEmpty);
+    },
+  );
+
   test('surfaces an existing object like a single-request upload', () async {
     httpClient.stubText(
       'The resource already exists',

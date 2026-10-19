@@ -688,6 +688,7 @@ class ResumableUpload {
     if (!_isCurrent(generation)) return;
     var step = _record == null ? _Step.create : _Step.resync;
     var retries = 0;
+    var restarted = false;
     Stopwatch? failing;
     try {
       if (_totalBytes == null) {
@@ -707,6 +708,7 @@ class ResumableUpload {
             case _Step.append:
               if (await _append(abort.future)) return;
               retries = 0;
+              restarted = false;
               failing = null;
           }
         } on http.RequestAbortedException {
@@ -714,6 +716,8 @@ class ResumableUpload {
           rethrow;
         } on Exception catch (error) {
           if (step != _Step.create && _isGone(error)) {
+            if (restarted) rethrow;
+            restarted = true;
             storageLogger.fine('Resumable upload $id expired, starting over');
             await _registry._remove(id);
             _record = null;
