@@ -124,8 +124,10 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// Comparison is numeric for numbers, so `data->"n"=gt.2` includes a row
   /// where `n` is `10`.
   ///
+  /// {@template postgrest_json_object_value}
   /// The result keeps this expression's [Value], but `->` returns `jsonb`;
   /// chain [jsonText] or [cast] to reach a scalar.
+  /// {@endtemplate}
   ///
   /// {@macro postgrest_json_path_key}
   ///
@@ -133,6 +135,8 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   PostgrestColumnExpression<Row, Value> jsonObject(String key);
 
   /// Reads a `json`/`jsonb` array element as JSON, with `->`.
+  ///
+  /// {@macro postgrest_json_object_value}
   ///
   /// {@macro postgrest_json_path_index}
   ///
