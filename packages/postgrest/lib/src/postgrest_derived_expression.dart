@@ -69,12 +69,20 @@ sealed class PostgrestDerivedExpression<Row, Value extends Object>
       const _Derivation._('count()', 'count', null);
 
   @override
-  PostgrestDerivedExpression<Row, String> jsonText(String path) =>
-      _derive('->>$path', key: null, fromJson: null);
+  PostgrestDerivedExpression<Row, String> jsonText(String key) =>
+      _derive('->>${_quoted(key)}', key: null, fromJson: null);
 
   @override
-  PostgrestDerivedExpression<Row, Value> jsonObject(String path) =>
-      _derive('->$path', key: null, fromJson: null);
+  PostgrestDerivedExpression<Row, String> jsonTextAt(int index) =>
+      _derive('->>$index', key: null, fromJson: null);
+
+  @override
+  PostgrestDerivedExpression<Row, Value> jsonObject(String key) =>
+      _derive('->${_quoted(key)}', key: null, fromJson: null);
+
+  @override
+  PostgrestDerivedExpression<Row, Value> jsonObjectAt(int index) =>
+      _derive('->$index', key: null, fromJson: null);
 
   @override
   bool get _selectedByStar => false;
@@ -164,14 +172,15 @@ final class _EmbeddedDerivation<Row, Value extends Object>
 /// A JSON path read from a stored column, at every position the column is.
 ///
 /// Filters and orders like the column it was read from, and is null-testable
-/// whatever the column's own nullability: `data->>name` is `NULL` when the
+/// whatever the column's own nullability: `data->>"name"` is `NULL` when the
 /// key is absent, even on a `NOT NULL` `jsonb` column. Read from a
 /// [PostgrestPartialRow] as `Value?` for the same reason.
 ///
 /// The `select` list sends the path under an alias of its own [expression],
-/// `"data->>name":data->>name`, so it never shares a key with the column or
-/// another path of it. An expression longer than the 63 bytes Postgres keeps
-/// of a name is shortened to a prefix and a digest of the whole.
+/// `"data->>\"name\"":data->>"name"`, so it never shares a key with the
+/// column or another path of it. An expression longer than the 63 bytes
+/// Postgres keeps of a name is shortened to a prefix and a digest of the
+/// whole.
 @experimental
 final class PostgrestJsonPath<Row, Value extends Object>
     extends PostgrestColumnExpression<Row, Value>
@@ -198,12 +207,20 @@ final class PostgrestJsonPath<Row, Value extends Object>
   Value Function(Object json)? get _fromJson => null;
 
   @override
-  PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$expression->>$path');
+  PostgrestJsonPath<Row, String> jsonText(String key) =>
+      PostgrestJsonPath._('$expression->>${_quoted(key)}');
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$expression->$path');
+  PostgrestJsonPath<Row, String> jsonTextAt(int index) =>
+      PostgrestJsonPath._('$expression->>$index');
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObject(String key) =>
+      PostgrestJsonPath._('$expression->${_quoted(key)}');
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObjectAt(int index) =>
+      PostgrestJsonPath._('$expression->$index');
 
   @override
   bool get _selectedByStar => false;
@@ -237,10 +254,12 @@ String _expressionKey(String expression) {
 }
 
 /// [expression] renamed to its [_expressionKey] in a `select` list.
-String _aliased(String expression) {
-  final key = _expressionKey(expression).replaceAllMapped(
-    RegExp(r'["\\]'),
-    (match) => '\\${match[0]}',
-  );
-  return '"$key":$expression';
-}
+String _aliased(String expression) =>
+    '${_quoted(_expressionKey(expression))}:$expression';
+
+/// [text] in double quotes, with `\` and `"` escaped by a backslash, the
+/// way PostgREST reads a quoted alias or JSON key. A JSON key is always
+/// quoted, since PostgREST reads a bare operand of digits as an array index
+/// and stops a bare one at a `.`.
+String _quoted(String text) =>
+    '"${text.replaceAllMapped(RegExp(r'["\\]'), (match) => '\\${match[0]}')}"';

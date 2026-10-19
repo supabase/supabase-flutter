@@ -402,6 +402,52 @@ class Fetch {
     return _handleRequest(HttpMethod.delete, url, body, options);
   }
 
+  /// Sends one request of the tus protocol and returns the response whatever
+  /// its status, so the caller can tell the statuses tus gives a meaning
+  /// apart. [createBody] streams the request body, and [abortSignal] aborts
+  /// the request.
+  ///
+  /// A request that never receives a response throws a
+  /// [StorageTransportException].
+  Future<http.Response> sendTus(
+    HttpMethod method,
+    Uri url,
+    Map<String, String> headers, {
+    Stream<List<int>> Function()? createBody,
+    int? contentLength,
+    Future<void>? abortSignal,
+  }) async {
+    final idleTimeout = IdleTimeout(requestTimeout);
+    final request = _UploadRequest(
+      method.value,
+      url,
+      () => idleTimeout.watchRequestBody(
+        createBody?.call() ?? const Stream.empty(),
+      ),
+      abortTrigger: idleTimeout.abortTrigger(abortSignal),
+    );
+    request
+      ..headers.addAll(headers)
+      ..contentLength = contentLength ?? (createBody == null ? 0 : null);
+    storageLogger.finest(
+      'Request: ${method.value} ${url.redacted} ${headers.redacted}',
+    );
+    return _read(await _send(request, idleTimeout));
+  }
+
+  /// The [StorageApiException] for an error [response], whose body is the
+  /// JSON error envelope of storage or, as the tus routes answer, plain text.
+  StorageApiException apiException(http.Response response) => _handleError(
+    response,
+    StackTrace.current,
+    response.request?.url,
+    null,
+  );
+
+  /// The media type a file at [path] is stored with unless the upload names
+  /// one.
+  String contentTypeFor(String path) => _parseMediaType(path).toString();
+
   /// Uploads [file] with [method], streaming it from disk.
   Future<Map<String, dynamic>> uploadFile(
     HttpMethod method,

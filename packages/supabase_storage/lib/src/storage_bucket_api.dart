@@ -229,8 +229,8 @@ class StorageBucketApi {
   /// `DELETE /cdn/{bucket}` on the storage server.
   ///
   /// When [transformations] is `true`, only the resized/formatted variants are
-  /// purged, leaving the original cached files intact. When omitted the bucket
-  /// cache is purged.
+  /// purged, leaving the original cached files intact. Otherwise both the
+  /// originals and their resized/formatted variants are purged.
   ///
   /// Requires the service-role key and the tenant `purgeCache` feature to be
   /// enabled on the storage server.

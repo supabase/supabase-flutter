@@ -53,15 +53,16 @@ void main() {
     test(
       'a JSON path chained onto a cast inherits its select-only position',
       () {
-        // PostgREST rejects `cost::text->>k` in every position, so select-only
-        // is as tight as the type system gets without forbidding the chain.
+        // PostgREST rejects `cost::text->>"k"` in every position, so
+        // select-only is as tight as the type system gets without forbidding
+        // the chain.
         final Object composed = Items.cost
             .cast(PostgrestCastTarget.text)
             .jsonText('k');
 
         expect(
           Items.cost.cast(PostgrestCastTarget.text).jsonText('k').expression,
-          'cost::text->>k',
+          'cost::text->>"k"',
         );
         expect(
           composed,
@@ -87,36 +88,58 @@ void main() {
 
   group('JSON paths', () {
     test('render their arrows', () {
-      expect(Items.data.jsonText('name').expression, 'data->>name');
-      expect(Items.data.jsonObject('meta').expression, 'data->meta');
+      expect(Items.data.jsonText('name').expression, 'data->>"name"');
+      expect(Items.data.jsonObject('meta').expression, 'data->"meta"');
       expect(
         Items.data.jsonObject('meta').jsonText('name').expression,
-        'data->meta->>name',
+        'data->"meta"->>"name"',
+      );
+    });
+
+    test('always quote a key', () {
+      // Bare, `->>0` is an array index and `->a.b` does not parse.
+      expect(Items.data.jsonText('0').expression, 'data->>"0"');
+      expect(Items.data.jsonObject('a.b').expression, 'data->"a.b"');
+      expect(Items.data.jsonText('p(q),r').expression, 'data->>"p(q),r"');
+      expect(Items.data.jsonText('').expression, 'data->>""');
+    });
+
+    test('escape quotes and backslashes in a key', () {
+      expect(Items.data.jsonText('q"t').expression, r'data->>"q\"t"');
+      expect(Items.data.jsonText(r'b\s').expression, r'data->>"b\\s"');
+    });
+
+    test('send an index bare', () {
+      expect(Items.data.jsonObjectAt(0).expression, 'data->0');
+      expect(Items.data.jsonTextAt(-1).expression, 'data->>-1');
+      expect(
+        Items.data.jsonObject('tags').jsonTextAt(1).expression,
+        'data->"tags"->>1',
       );
     });
 
     test('compose with every operator', () {
       final name = Items.data.jsonText('name');
 
-      expect(rendered(name.eq('Ada')), 'data->>name=eq.Ada');
-      expect(rendered(name.like('A%')), 'data->>name=like.A%');
+      expect(rendered(name.eq('Ada')), 'data->>"name"=eq.Ada');
+      expect(rendered(name.like('A%')), 'data->>"name"=like.A%');
       expect(
         rendered(name.inFilter(['Ada', 'Bob'])),
-        'data->>name=in.(Ada,Bob)',
+        'data->>"name"=in.(Ada,Bob)',
       );
-      expect(name.asc().orderKey, 'data->>name.asc');
+      expect(name.asc().orderKey, 'data->>"name".asc');
     });
 
     test('are null-testable on a NOT NULL column', () {
-      // `data` is a NOT NULL column here and `data->>name` is still NULL when
-      // the key is absent.
+      // `data` is a NOT NULL column here and `data->>"name"` is still NULL
+      // when the key is absent.
       expect(
         rendered(Items.data.jsonText('name').isNull()),
-        'data->>name=is.null',
+        'data->>"name"=is.null',
       );
       expect(
         rendered(Items.data.jsonText('name').isNull().not()),
-        'data->>name=not.is.null',
+        'data->>"name"=not.is.null',
       );
     });
 
@@ -135,16 +158,16 @@ void main() {
       // what the SDK sends.
       final filter = Items.data.jsonText('name').eq('Ada') | Items.cost.eq(2);
 
-      expect(rendered(filter), 'or=(data->>name.eq.Ada,cost.eq.2.0)');
+      expect(rendered(filter), 'or=(data->>"name".eq.Ada,cost.eq.2.0)');
     });
 
     test('are keyed and aliased by their own expression', () {
-      final path = Items.data.jsonObject('tags').jsonText('0');
+      final path = Items.data.jsonObject('tags').jsonTextAt(0);
 
-      expect(path.responseKey, 'data->tags->>0');
+      expect(path.responseKey, 'data->"tags"->>0');
       expect(
         Items.data.jsonText('n').cast(PostgrestCastTarget.integer).responseKey,
-        'data->>n::int',
+        'data->>"n"::int',
       );
       expect(Items.cost.cast(PostgrestCastTarget.text).responseKey, 'cost');
     });
@@ -154,7 +177,7 @@ void main() {
       final other = Items.data.jsonText('${'a' * 69}b');
 
       expect(utf8.encode(long.responseKey), hasLength(lessThanOrEqualTo(63)));
-      expect(long.responseKey, startsWith('data->>aaaa'));
+      expect(long.responseKey, startsWith('data->>"aaaa'));
       expect(long.responseKey, isNot(other.responseKey));
       expect(
         utf8.encode(Items.data.jsonText('é' * 40).responseKey),

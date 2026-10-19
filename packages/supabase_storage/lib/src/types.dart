@@ -926,6 +926,7 @@ class UploadResponse {
     this.id,
     required this.path,
     required this.fullPath,
+    this.versionId,
   });
 
   /// The identifier of the stored object.
@@ -940,9 +941,15 @@ class UploadResponse {
   /// The path of the object prefixed with the bucket id.
   final String fullPath;
 
+  /// The identifier of the version the upload stored.
+  ///
+  /// Only a resumable upload reports it, so it is `null` for the others.
+  final String? versionId;
+
   @override
   String toString() =>
-      'UploadResponse(id: $id, path: $path, fullPath: $fullPath)';
+      'UploadResponse(id: $id, path: $path, fullPath: $fullPath, '
+      'versionId: $versionId)';
 }
 
 /// The response of `StorageFileApi.createSignedUploadUrl`.
@@ -979,6 +986,16 @@ class StorageTransportException extends StorageException
 
   @override
   final Object? cause;
+}
+
+/// Thrown by a resumable upload that was cancelled with
+/// `ResumableUpload.cancel`.
+class ResumableUploadCancelledException extends StorageException {
+  const ResumableUploadCancelledException(this.uploadId)
+    : super('Resumable upload $uploadId was cancelled');
+
+  /// The id of the cancelled upload.
+  final String uploadId;
 }
 
 /// Thrown when storage answered with an error.

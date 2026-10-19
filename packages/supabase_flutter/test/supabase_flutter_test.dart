@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -61,6 +63,40 @@ void main() {
     );
 
     expect(() => supabase.client.auth, throwsA(isA<AuthException>()));
+  });
+
+  test('records resumable uploads in the session storage', () async {
+    mockAppLink();
+    const uploadUrl =
+        'https://project.supabase.co/storage/v1/upload/resumable/upload-1';
+    final asyncStorage = MockAsyncStorage();
+    final httpClient = MockSupabaseHttpClient()
+      ..stub(
+        null,
+        method: HttpMethod.post.value,
+        path: '/storage/v1/upload/resumable',
+        statusCode: 201,
+        headers: {'location': uploadUrl},
+      )
+      ..stubStall(method: HttpMethod.patch.value);
+    final supabase = await Supabase.initialize(
+      url: 'https://project.supabase.co',
+      publishableKey: supabaseKey,
+      httpClient: httpClient,
+      authOptions: FlutterAuthClientOptions(asyncStorage: asyncStorage),
+    );
+
+    final upload = supabase.client.storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', Uint8List(10));
+    await upload.progress.first;
+    await pumpEventQueue();
+
+    final records = await asyncStorage.getItem(
+      'sb-project-resumable-uploads',
+    );
+    expect(records, contains(upload.id));
+    upload.pause();
   });
 
   group("Expired session", () {

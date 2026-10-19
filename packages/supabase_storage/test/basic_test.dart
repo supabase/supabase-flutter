@@ -821,6 +821,37 @@ void main() {
       expect(request.url.queryParameters, {'cacheNonce': 'v2'});
     });
 
+    test('createSignedUrl omits an empty transform from the body', () async {
+      customHttpClient.stub({
+        'signedURL': '/object/sign/public/b.txt?token=abc',
+      });
+
+      await client
+          .from('public')
+          .createSignedUrl('b.txt', 60, transform: const TransformOptions());
+
+      expect(customHttpClient.requests.single.jsonBody, {'expiresIn': 60});
+    });
+
+    test('createSignedUrl sends a non-empty transform in the body', () async {
+      customHttpClient.stub({
+        'signedURL': '/object/sign/public/b.txt?token=abc',
+      });
+
+      await client
+          .from('public')
+          .createSignedUrl(
+            'b.txt',
+            60,
+            transform: const TransformOptions(width: 200),
+          );
+
+      expect(customHttpClient.requests.single.jsonBody, {
+        'expiresIn': 60,
+        'transform': {'width': '200'},
+      });
+    });
+
     test('createSignedUrl appends cacheNonce to the token query', () async {
       customHttpClient.stub({
         'signedURL': '/object/sign/public/b.txt?token=abc',

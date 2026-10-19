@@ -160,7 +160,7 @@ void main() {
 
       expect(
         requestParameters()['select'],
-        'id,title::text,"metadata->>isbn":metadata->>isbn',
+        r'id,title::text,"metadata->>\"isbn\"":metadata->>"isbn"',
       );
     });
 
@@ -168,7 +168,7 @@ void main() {
       httpClient.stub(bookRows);
 
       await client.table(Books.table).selectOnly([
-        Books.metadata.jsonText(r'"a b\"c"'),
+        Books.metadata.jsonText('a b"c'),
       ]);
 
       expect(
@@ -599,7 +599,7 @@ void main() {
           .select()
           .order(Books.metadata.jsonText('isbn').asc());
 
-      expect(requestParameters()['order'], 'metadata->>isbn.asc');
+      expect(requestParameters()['order'], 'metadata->>"isbn".asc');
     });
 
     test('repeated order calls merge into one parameter', () async {

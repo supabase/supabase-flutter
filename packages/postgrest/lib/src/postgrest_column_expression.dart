@@ -87,34 +87,61 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
     fromJson: target._fromJson,
   );
 
-  /// Reads a `json`/`jsonb` path as text, with `->>`.
+  /// Reads a `json`/`jsonb` object key as text, with `->>`.
   ///
   /// ```dart
-  /// .where(Items.data.jsonText('name').eq('Ada')) // data->>name=eq.Ada
+  /// .where(Items.data.jsonText('name').eq('Ada')) // data->>"name"=eq.Ada
   /// ```
   ///
-  /// Comparison is textual, so `data->>n=gt.2` excludes a row where `n` is
+  /// Comparison is textual, so `data->>"n"=gt.2` excludes a row where `n` is
   /// `10`; use [jsonObject] for numeric comparison. The result keeps the
   /// positions of what it was applied to.
   ///
   /// {@template postgrest_json_path_key}
-  /// [path] is sent as written, so it can be a key, an array index or
-  /// several of them, `tags->0`. The value comes back under the whole
-  /// expression, `data->>name`, which the `select` list sends as an alias,
-  /// so a path never collides with its column or another path of it.
+  /// [key] is always sent as a quoted object key, even when it looks like a
+  /// number, so `jsonText('0')` reads the key `"0"`. Chain calls to go
+  /// deeper, `jsonObject('tags').jsonTextAt(0)`.
   /// {@endtemplate}
-  PostgrestColumnExpression<Row, String> jsonText(String path);
-
-  /// Reads a `json`/`jsonb` path as JSON, with `->`.
   ///
-  /// Comparison is numeric for numbers, so `data->n=gt.2` includes a row
+  /// {@template postgrest_json_path_response_key}
+  /// The value comes back under the whole expression, `data->>"name"`, which
+  /// the `select` list sends as an alias, so a path never collides with its
+  /// column or another path of it.
+  /// {@endtemplate}
+  PostgrestColumnExpression<Row, String> jsonText(String key);
+
+  /// Reads a `json`/`jsonb` array element as text, with `->>`.
+  ///
+  /// {@template postgrest_json_path_index}
+  /// [index] is zero-based, and a negative index counts from the end.
+  /// {@endtemplate}
+  ///
+  /// {@macro postgrest_json_path_response_key}
+  PostgrestColumnExpression<Row, String> jsonTextAt(int index);
+
+  /// Reads a `json`/`jsonb` object key as JSON, with `->`.
+  ///
+  /// Comparison is numeric for numbers, so `data->"n"=gt.2` includes a row
   /// where `n` is `10`.
   ///
+  /// {@template postgrest_json_object_value}
   /// The result keeps this expression's [Value], but `->` returns `jsonb`;
   /// chain [jsonText] or [cast] to reach a scalar.
+  /// {@endtemplate}
   ///
   /// {@macro postgrest_json_path_key}
-  PostgrestColumnExpression<Row, Value> jsonObject(String path);
+  ///
+  /// {@macro postgrest_json_path_response_key}
+  PostgrestColumnExpression<Row, Value> jsonObject(String key);
+
+  /// Reads a `json`/`jsonb` array element as JSON, with `->`.
+  ///
+  /// {@macro postgrest_json_object_value}
+  ///
+  /// {@macro postgrest_json_path_index}
+  ///
+  /// {@macro postgrest_json_path_response_key}
+  PostgrestColumnExpression<Row, Value> jsonObjectAt(int index);
 
   /// The sum of this expression across the group, typed [double] whatever
   /// the column's type. Past 2^53 the value rounds silently.
@@ -424,12 +451,20 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
   };
 
   @override
-  PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$name->>$path');
+  PostgrestJsonPath<Row, String> jsonText(String key) =>
+      PostgrestJsonPath._('$name->>${_quoted(key)}');
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$name->$path');
+  PostgrestJsonPath<Row, String> jsonTextAt(int index) =>
+      PostgrestJsonPath._('$name->>$index');
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObject(String key) =>
+      PostgrestJsonPath._('$name->${_quoted(key)}');
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObjectAt(int index) =>
+      PostgrestJsonPath._('$name->$index');
 }
 
 /// A stored `NOT NULL` column, see [PostgrestStoredColumn].
@@ -536,12 +571,20 @@ final class PostgrestComputedField<Row, Value extends Object>
   String get responseKey => name;
 
   @override
-  PostgrestJsonPath<Row, String> jsonText(String path) =>
-      PostgrestJsonPath._('$name->>$path');
+  PostgrestJsonPath<Row, String> jsonText(String key) =>
+      PostgrestJsonPath._('$name->>${_quoted(key)}');
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObject(String path) =>
-      PostgrestJsonPath._('$name->$path');
+  PostgrestJsonPath<Row, String> jsonTextAt(int index) =>
+      PostgrestJsonPath._('$name->>$index');
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObject(String key) =>
+      PostgrestJsonPath._('$name->${_quoted(key)}');
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObjectAt(int index) =>
+      PostgrestJsonPath._('$name->$index');
 
   @override
   Value? _read(Object? json, _NestedSelection nested) => switch (json) {
