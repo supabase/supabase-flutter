@@ -304,11 +304,16 @@ class ResumableUploadRegistry {
   final Fetch fetch;
   final ResumableUploadStorage _storage;
 
-  /// The uploads of this process that are uploading or paused, by id, so an
-  /// upload reattached while it runs is the same handle.
+  /// The uploads of this process that are uploading, paused, or failed with
+  /// their record kept, by id, so an upload reattached while it runs is the
+  /// same handle.
   final _live = <String, ResumableUpload>{};
 
   Future<void> _operations = Future.value();
+
+  /// The stored entries the last read could not parse, such as those of a
+  /// newer version of this package, kept so that writing does not drop them.
+  Map<String, Object?> _unreadable = {};
 
   Future<T> _serialize<T>(Future<T> Function() operation) {
     final result = _operations.then((_) => operation());
@@ -317,32 +322,47 @@ class ResumableUploadRegistry {
   }
 
   Future<Map<String, ResumableUploadRecord>> _read() async {
-    final value = await _storage.getItem(storageKey);
-    if (value == null) return {};
-    final records = <String, ResumableUploadRecord>{};
+    _unreadable = {};
+    final stored = await _storage.getItem(storageKey);
+    if (stored == null) return {};
+    final Map<String, dynamic> json;
     try {
-      final json = jsonDecode(value) as Map<String, dynamic>;
-      for (final entry in json.values) {
-        final record = ResumableUploadRecord._fromJson(
-          entry as Map<String, dynamic>,
-        );
-        records[record.id] = record;
-      }
+      json = jsonDecode(stored) as Map<String, dynamic>;
     } on Object catch (error, stackTrace) {
       storageLogger.warning(
         'Discarding unreadable resumable upload records',
         error,
         stackTrace,
       );
+      return {};
+    }
+    final records = <String, ResumableUploadRecord>{};
+    for (final MapEntry(:key, :value) in json.entries) {
+      try {
+        final record = ResumableUploadRecord._fromJson(
+          value as Map<String, dynamic>,
+        );
+        records[record.id] = record;
+      } on Object catch (error, stackTrace) {
+        storageLogger.warning(
+          'Skipping unreadable resumable upload record $key',
+          error,
+          stackTrace,
+        );
+        _unreadable[key] = value;
+      }
     }
     return records;
   }
 
   Future<void> _write(Map<String, ResumableUploadRecord> records) {
-    if (records.isEmpty) return _storage.removeItem(storageKey);
+    if (records.isEmpty && _unreadable.isEmpty) {
+      return _storage.removeItem(storageKey);
+    }
     return _storage.setItem(
       storageKey,
       jsonEncode({
+        ..._unreadable,
         for (final record in records.values) record.id: record._toJson(),
       }),
     );
@@ -436,7 +456,7 @@ class ResumableUploadRegistry {
       bucketId: record.bucketId,
       path: record.path,
       source: source,
-      headers: headers,
+      headers: record._token == null ? headers : const {},
       upsert: record._upsert,
       contentType: record._contentType,
       cacheControl: record._cacheControl,
@@ -456,7 +476,7 @@ class ResumableUploadRegistry {
     if (live != null) return live.cancel();
     final record = await _record(id);
     if (record == null) return;
-    await _terminate(record, headers);
+    await _terminate(record, record._token == null ? headers : const {});
     await _remove(id);
   }
 
@@ -579,6 +599,7 @@ class ResumableUpload {
   Completer<void>? _abort;
   Future<void> _running = Future.value();
   int _generation = 0;
+  Future<void>? _cancellation;
   Completer<UploadResponse> _done = Completer();
   final _progress = ReplaySubject<ResumableUploadProgress>(sync: true);
 
@@ -600,7 +621,9 @@ class ResumableUpload {
   /// Stops sending chunks. The chunk in flight is aborted, and [resume]
   /// continues from the offset the server confirmed.
   void pause() {
-    if (_status != ResumableUploadStatus.uploading) return;
+    if (_status != ResumableUploadStatus.uploading || _cancellation != null) {
+      return;
+    }
     _setStatus(ResumableUploadStatus.paused);
     _stopRun();
   }
@@ -609,7 +632,8 @@ class ResumableUpload {
   /// confirmed.
   void resume() {
     if (_status != ResumableUploadStatus.paused &&
-        _status != ResumableUploadStatus.failed) {
+            _status != ResumableUploadStatus.failed ||
+        _cancellation != null) {
       return;
     }
     _registry._live[id] = this;
@@ -618,15 +642,21 @@ class ResumableUpload {
 
   /// Aborts the upload, deletes what the server holds of it, and forgets its
   /// record. [done] completes with a [ResumableUploadCancelledException].
-  Future<void> cancel() async {
+  ///
+  /// When the response that completes the upload is already in, the upload
+  /// completes instead, and [done] with it.
+  Future<void> cancel() => _cancellation ??= _cancel();
+
+  Future<void> _cancel() async {
     if (_status == ResumableUploadStatus.completed ||
         _status == ResumableUploadStatus.cancelled) {
       return;
     }
-    _setStatus(ResumableUploadStatus.cancelled);
     _stopRun();
-    _finish();
     await _running;
+    if (_status == ResumableUploadStatus.completed) return;
+    _setStatus(ResumableUploadStatus.cancelled);
+    _finish();
     final record = _record;
     if (record != null) {
       await _registry._terminate(record, _headers);
@@ -743,11 +773,21 @@ class ResumableUpload {
     } on Object catch (error, stackTrace) {
       if (!_isCurrent(generation)) return;
       if (error is StorageApiException && !_isTransient(error)) {
-        await _registry._remove(id);
         _record = null;
+        await _registry
+            ._remove(id)
+            .onError<Object>(
+              (removeError, removeStackTrace) => storageLogger.warning(
+                'Could not forget resumable upload $id',
+                removeError,
+                removeStackTrace,
+              ),
+            );
       }
       storageLogger.fine('Resumable upload $id failed', error, stackTrace);
-      _registry._live.remove(id);
+      if (_record == null && _registry._live[id] == this) {
+        _registry._live.remove(id);
+      }
       _setStatus(ResumableUploadStatus.failed);
       _done.completeError(error, stackTrace);
     }
@@ -926,7 +966,6 @@ class ResumableUpload {
   Future<void> _complete(http.Response response) async {
     if (_record != null) await _registry._remove(id);
     _record = null;
-    if (_status == ResumableUploadStatus.cancelled) return;
     _bytesUploaded = _totalBytes!;
     _setStatus(ResumableUploadStatus.completed);
     _finish();

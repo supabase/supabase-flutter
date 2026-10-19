@@ -7,4 +7,9 @@
 /// The other Supabase client libraries derive the key the same way, so a
 /// session written by one of them is found by the others.
 String defaultPersistSessionKey(String supabaseUrl) =>
-    'sb-${Uri.parse(supabaseUrl).host.split('.').first}-auth-token';
+    'sb-${projectRef(supabaseUrl)}-auth-token';
+
+/// The project ref of [supabaseUrl], the first label of its host, which the
+/// keys the clients persist data under are derived from.
+String projectRef(String supabaseUrl) =>
+    Uri.parse(supabaseUrl).host.split('.').first;

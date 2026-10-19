@@ -336,6 +336,28 @@ void main() {
     expect(server.received.toBytes(), data);
   });
 
+  test('resumes a failed upload through the same handle', () async {
+    httpClient.stubError(
+      ClientException('Offline'),
+      method: HttpMethod.patch.value,
+      times: 3,
+    );
+    final upload = storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', data);
+    await expectLater(
+      upload.done,
+      throwsA(isA<StorageTransportException>()),
+    );
+
+    final resumed = await storage.resumeUploadBinary(upload.id, data);
+    await resumed.done;
+
+    expect(resumed, same(upload));
+    expect(upload.status, ResumableUploadStatus.completed);
+    expect(server.received.toBytes(), data);
+  });
+
   test('fails without a record when the server refuses a chunk', () async {
     httpClient.stubText(
       'Forbidden',
@@ -494,6 +516,67 @@ void main() {
     expect(
       (await progress).last.status,
       ResumableUploadStatus.cancelled,
+    );
+  });
+
+  test('completes instead of cancelling once the last chunk landed', () async {
+    final answer = Completer<void>();
+    httpClient.stubHandler(
+      (request) async {
+        await answer.future;
+        server.received.add(request.bodyBytes);
+        return Response(
+          '',
+          204,
+          headers: {
+            'upload-offset': '10',
+            'tus-complete': '1',
+            'supabase-object-id': 'object-1',
+          },
+        );
+      },
+      method: HttpMethod.patch.value,
+      times: 1,
+    );
+    final upload = storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', data);
+    await upload.progress.first;
+    await pumpEventQueue();
+
+    final cancellation = upload.cancel();
+    answer.complete();
+    await cancellation;
+
+    expect(upload.status, ResumableUploadStatus.completed);
+    expect((await upload.done).id, 'object-1');
+    expect(
+      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete.value),
+      isEmpty,
+    );
+  });
+
+  test('keeps a stored record it cannot read', () async {
+    const key = 'sb-localhost-resumable-uploads';
+    const unreadable = {'future-upload': 'from a newer version'};
+    await recordStorage.setItem(key, jsonEncode(unreadable));
+    httpClient.stubStall(method: HttpMethod.patch.value, times: 1);
+
+    final upload = storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', data);
+    await upload.progress.first;
+    await pumpEventQueue();
+
+    expect((await storage.resumableUploads()).single.id, upload.id);
+    final stored =
+        jsonDecode((await recordStorage.getItem(key))!) as Map<String, dynamic>;
+    expect(stored, containsPair('future-upload', 'from a newer version'));
+
+    await upload.cancel();
+    expect(
+      jsonDecode((await recordStorage.getItem(key))!),
+      unreadable,
     );
   });
 
