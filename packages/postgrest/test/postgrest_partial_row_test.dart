@@ -236,8 +236,8 @@ void main() {
     test('a JSON path reads under its own expression', () async {
       httpClient.stub({
         'id': 1,
-        'metadata->>gift': 'true',
-        'metadata->tags': null,
+        'metadata->>"gift"': 'true',
+        'metadata->"tags"': null,
       });
 
       final row = await client.table(Orders.table).selectOnly([
@@ -250,11 +250,12 @@ void main() {
       expect(row.read(Orders.metadata.jsonObject('tags')), isNull);
       expect(
         () => row.read(Orders.metadata.jsonText('wrapping')),
-        throwsNotSelected('metadata->>wrapping'),
+        throwsNotSelected('metadata->>"wrapping"'),
       );
       expect(
         httpClient.requests.last.url.queryParameters['select'],
-        'id,"metadata->>gift":metadata->>gift,"metadata->tags":metadata->tags',
+        r'id,"metadata->>\"gift\"":metadata->>"gift",'
+        r'"metadata->\"tags\"":metadata->"tags"',
       );
     });
 
@@ -263,11 +264,11 @@ void main() {
         'metadata': {
           'tags': ['urgent', 'later'],
         },
-        'metadata->tags->>0': 'urgent',
-        'metadata->tags->>1': 'later',
+        'metadata->"tags"->>0': 'urgent',
+        'metadata->"tags"->>1': 'later',
       });
-      final firstTag = Orders.metadata.jsonObject('tags').jsonText('0');
-      final secondTag = Orders.metadata.jsonObject('tags').jsonText('1');
+      final firstTag = Orders.metadata.jsonObject('tags').jsonTextAt(0);
+      final secondTag = Orders.metadata.jsonObject('tags').jsonTextAt(1);
 
       final row = await client.table(Orders.table).selectOnly([
         Orders.metadata,
@@ -286,12 +287,12 @@ void main() {
       httpClient.stub({'metadata->>0': 'first'});
 
       final row = await client.table(Orders.table).selectOnly([
-        Orders.metadata.jsonText('0'),
+        Orders.metadata.jsonTextAt(0),
       ]).single();
 
       expect(() => row.read(Orders.metadata), throwsNotSelected('metadata'));
       expect(
-        () => row.read(Orders.metadata.jsonText('1')),
+        () => row.read(Orders.metadata.jsonTextAt(1)),
         throwsNotSelected('metadata->>1'),
       );
     });
@@ -301,7 +302,7 @@ void main() {
     test('a derivation inside an embed reads under the embedded key', () async {
       httpClient.stub({
         'items': [
-          {'sku': 'A1', 'sku->>k': 'v'},
+          {'sku': 'A1', 'sku->>"k"': 'v'},
         ],
       });
 

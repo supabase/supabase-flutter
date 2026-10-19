@@ -294,6 +294,9 @@ void main() {
             'data': {
               'tags': ['urgent', 'later'],
               'a,b': 'comma',
+              'a.b': 'dotted',
+              '0': 'zero-key',
+              'n': 10,
               'say "hi"': 'quoted',
               longKey: 'long',
               '${longKey}aB': 'first',
@@ -304,20 +307,26 @@ void main() {
             },
           })
           .eq('username', 'supabot');
-      final firstTag = Messages.data.jsonObject('tags').jsonText('0');
-      final secondTag = Messages.data.jsonObject('tags').jsonText('1');
-      final commaKey = Messages.data.jsonText('"a,b"');
-      final quotedKey = Messages.data.jsonText(r'"say \"hi\""');
+      final firstTag = Messages.data.jsonObject('tags').jsonTextAt(0);
+      final secondTag = Messages.data.jsonObject('tags').jsonTextAt(1);
+      final lastTag = Messages.data.jsonObject('tags').jsonTextAt(-1);
+      final commaKey = Messages.data.jsonText('a,b');
+      final dottedKey = Messages.data.jsonText('a.b');
+      final digitKey = Messages.data.jsonText('0');
+      final quotedKey = Messages.data.jsonText('say "hi"');
       final longPath = Messages.data.jsonText(longKey);
       final firstLongPath = Messages.data.jsonText('${longKey}aB');
       final secondLongPath = Messages.data.jsonText('${longKey}b#');
-      final firstSku = Messages.data.jsonObject('items->0').jsonText('sku');
+      final firstSku = Messages.data
+          .jsonObject('items')
+          .jsonObjectAt(0)
+          .jsonText('sku');
       final embeddedTag = Users.messages(
         Messages.data,
-      ).jsonObject('tags').jsonText('1');
+      ).jsonObject('tags').jsonTextAt(1);
       final embeddedItem = Users.messages(
         Messages.data,
-      ).jsonObject('items->0');
+      ).jsonObject('items').jsonObjectAt(0);
 
       final messages = await postgrest
           .table(Messages.table)
@@ -325,7 +334,10 @@ void main() {
             Messages.data,
             firstTag,
             secondTag,
+            lastTag,
             commaKey,
+            dottedKey,
+            digitKey,
             quotedKey,
             longPath,
             firstLongPath,
@@ -333,6 +345,9 @@ void main() {
             firstSku,
           ])
           .where(Messages.username.eq('supabot'))
+          .where(digitKey.eq('zero-key'))
+          .where(Messages.data.jsonObject('n').gt(2))
+          .order(dottedKey.asc())
           .order(Messages.id);
       final users = await postgrest
           .table(Users.table)
@@ -343,7 +358,10 @@ void main() {
       expect(message.read(Messages.data), containsPair('a,b', 'comma'));
       expect(message.read(firstTag), 'urgent');
       expect(message.read(secondTag), 'later');
+      expect(message.read(lastTag), 'later');
       expect(message.read(commaKey), 'comma');
+      expect(message.read(dottedKey), 'dotted');
+      expect(message.read(digitKey), 'zero-key');
       expect(message.read(quotedKey), 'quoted');
       expect(message.read(longPath), 'long');
       expect(firstLongPath.responseKey, isNot(secondLongPath.responseKey));
@@ -352,10 +370,10 @@ void main() {
       expect(message.read(firstSku), 'A1');
       final embedded = users.single.read(Users.messages).first;
       expect(
-        embedded.read(Messages.data.jsonObject('tags').jsonText('1')),
+        embedded.read(Messages.data.jsonObject('tags').jsonTextAt(1)),
         'later',
       );
-      expect(embedded.read(Messages.data.jsonObject('items->0')), {
+      expect(embedded.read(Messages.data.jsonObject('items').jsonObjectAt(0)), {
         'sku': 'A1',
       });
     });
