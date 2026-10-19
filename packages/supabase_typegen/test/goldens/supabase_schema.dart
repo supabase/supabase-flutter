@@ -819,6 +819,7 @@ extension DatabaseFunctions on PostgrestRpc {
     arguments: {'min_books': ?minBooks},
     rowFromJson: AuthorBookCountsRow.new,
     schema: 'public',
+    get: true,
   );
 
   /// Calls the `book_by_id` function, which returns a row of `books`, or `null`
@@ -833,6 +834,7 @@ extension DatabaseFunctions on PostgrestRpc {
       _ => null,
     },
     schema: 'public',
+    get: true,
   );
 
   /// Calls the `books_of` function, which returns rows of `books` filterable
@@ -844,6 +846,7 @@ extension DatabaseFunctions on PostgrestRpc {
     arguments: {'author_id': authorId},
     rowFromJson: BooksRow.new,
     schema: 'public',
+    get: true,
   );
 
   /// Calls the `books_of` function, which returns rows of `books` filterable
@@ -857,6 +860,7 @@ extension DatabaseFunctions on PostgrestRpc {
     arguments: {'author_name': authorName, 'max_price': maxPrice},
     rowFromJson: BooksRow.new,
     schema: 'public',
+    get: true,
   );
 
   /// Calls the `books_with_tags` function, which returns rows of `books`
@@ -868,11 +872,16 @@ extension DatabaseFunctions on PostgrestRpc {
     arguments: {'tags': tags},
     rowFromJson: BooksRow.new,
     schema: 'public',
+    get: true,
   );
 
   /// Calls the `count_books` function.
-  PostgrestTypedBuilder<int?> countBooks() =>
-      value('count_books', fromJson: (json) => json as int?, schema: 'public');
+  PostgrestTypedBuilder<int?> countBooks() => value(
+    'count_books',
+    fromJson: (json) => json as int?,
+    schema: 'public',
+    get: true,
+  );
 
   /// Calls the `echo` function.
   PostgrestTypedBuilder<Object?> echo(Object? body) => value(
@@ -901,6 +910,7 @@ extension DatabaseFunctions on PostgrestRpc {
         element == null ? null : _postgrestDateFromJson(element),
     ],
     schema: 'public',
+    get: true,
   );
 
   /// Calls the `search_books` function, which returns rows of `books`
@@ -918,6 +928,7 @@ extension DatabaseFunctions on PostgrestRpc {
     },
     rowFromJson: BooksRow.new,
     schema: 'public',
+    get: true,
   );
 
   /// Calls the `touch_book` function.

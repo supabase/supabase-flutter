@@ -410,6 +410,7 @@ class FunctionOverloadDescription {
     required this.result,
     this.error,
     this.isComputedField = false,
+    this.isVolatile = true,
   });
 
   /// The input parameters, in name order.
@@ -426,6 +427,10 @@ class FunctionOverloadDescription {
   /// Whether the function is a computed field of a relation of its schema,
   /// selectable through the relation's computed fields.
   final bool isComputedField;
+
+  /// Whether the function is declared `VOLATILE`, so it may write to the
+  /// database, rather than `STABLE` or `IMMUTABLE`.
+  final bool isVolatile;
 }
 
 /// An input parameter of a [FunctionOverloadDescription].

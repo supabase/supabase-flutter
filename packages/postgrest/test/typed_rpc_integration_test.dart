@@ -94,6 +94,29 @@ void main() {
     await postgrest.rpc.value('void_func', fromJson: (json) {});
   });
 
+  test('calls a function read-only with its arguments in the query', () async {
+    final rows = await postgrest.rpc
+        .rows(
+          'get_username_and_status',
+          arguments: {'name_param': 'supabot'},
+          rowFromJson: UserStatus.new,
+          get: true,
+        )
+        .where(UserStatuses.status.eq('ONLINE'));
+    expect(rows.single.username, 'supabot');
+
+    final element = await postgrest.rpc.value(
+      'get_array_element',
+      arguments: {
+        'arr': [37, 420, 64],
+        'index': 2,
+      },
+      fromJson: (json) => json as int?,
+      get: true,
+    );
+    expect(element, 420);
+  });
+
   test('calls a function of the schema it is given', () async {
     final status = await postgrest.rpc.value(
       'get_status',

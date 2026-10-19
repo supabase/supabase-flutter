@@ -638,13 +638,47 @@ void main() {
           .order(Books.title.asc());
 
       expect(books.single.mood, Mood.veryHappy);
-      expect(lastRequest().method, HttpMethod.post.value);
-      expect(lastRequest().jsonBody, {'query': 'typed', 'mood': 'very happy'});
+      expect(lastRequest().method, HttpMethod.get.value);
       expect(lastRequest().url.queryParameters, {
+        'mood': 'very happy',
+        'query': 'typed',
         'id': 'gt.0',
         'order': 'title.asc',
       });
-      expect(lastRequest().headers['content-profile'], 'public');
+      expect(lastRequest().headers['accept-profile'], 'public');
+    });
+
+    test('a stable function is called read-only and retried', () async {
+      httpClient.stubStatuses([503, 200], body: 3);
+      final retrying = PostgrestClient(
+        'http://localhost/rest/v1',
+        httpClient: httpClient,
+        retryOptions: const SupabaseRetryOptions(initialDelay: Duration.zero),
+      );
+      addTearDown(retrying.dispose);
+
+      final int? count = await retrying.rpc.countBooks().retry(count: 1);
+
+      expect(count, 3);
+      expect(httpClient.requests, hasLength(2));
+      expect(lastRequest().method, HttpMethod.get.value);
+    });
+
+    test('a volatile function is not retried', () async {
+      httpClient.stubStatuses([503, 200], body: null);
+      final retrying = PostgrestClient(
+        'http://localhost/rest/v1',
+        httpClient: httpClient,
+        retryOptions: const SupabaseRetryOptions(initialDelay: Duration.zero),
+      );
+      addTearDown(retrying.dispose);
+
+      await expectLater(
+        () => retrying.rpc.touchBook(bookId: 2).retry(count: 1),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(httpClient.requests, hasLength(1));
+      expect(lastRequest().method, HttpMethod.post.value);
     });
 
     test('a function of another schema is called in its schema', () async {
@@ -710,6 +744,7 @@ void main() {
         book: BooksRow({'id': 1, 'title': 'A typed row'}),
       );
       expect(mood, Mood.sad);
+      expect(lastRequest().method, HttpMethod.post.value);
       expect(lastRequest().jsonBody, {
         'book': {'id': 1, 'title': 'A typed row'},
       });
@@ -739,19 +774,23 @@ void main() {
       httpClient.stub([]);
 
       await client.rpc.booksOf(authorId: 1);
-      expect(lastRequest().jsonBody, {'author_id': 1});
+      expect(lastRequest().url.queryParameters, {'author_id': '1'});
 
       await client.rpc.booksOfWithAuthorNameAndMaxPrice(
         authorName: 'Ada',
         maxPrice: 10,
       );
-      expect(lastRequest().jsonBody, {'author_name': 'Ada', 'max_price': 10});
+      expect(lastRequest().url.queryParameters, {
+        'author_name': 'Ada',
+        'max_price': '10',
+      });
     });
 
     test('a sole unnamed json parameter is sent as the whole body', () async {
       httpClient.stub({'echoed': true});
       final echoed = await client.rpc.echo({'echoed': true});
       expect(echoed, {'echoed': true});
+      expect(lastRequest().method, HttpMethod.post.value);
       expect(lastRequest().jsonBody, {'echoed': true});
     });
 

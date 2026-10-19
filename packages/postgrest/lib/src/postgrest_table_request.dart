@@ -177,6 +177,7 @@ final class PostgrestTableRequest {
     this.shape = PostgrestResultShape.rows,
     this.countOption,
     this.payload,
+    this.readOnly = false,
     List<PostgrestStoredColumn<Object?, Object>>? onConflict,
     this.ignoreDuplicates = false,
     this.defaultToNull = true,
@@ -243,6 +244,13 @@ final class PostgrestTableRequest {
   /// later, an outbox for example, serializes the payload when it takes it.
   final Object? payload;
 
+  /// Whether a [PostgrestTableOperation.rpc] call only reads, so that it can
+  /// run in a read-only transaction and be retried like a select.
+  ///
+  /// [PostgrestHttpTableExecutor] sends such a call as a `GET`, with
+  /// [payload] as query parameters.
+  final bool readOnly;
+
   /// The columns of the unique constraint an upsert merges on, or `null` for
   /// the primary key.
   final List<PostgrestStoredColumn<Object?, Object>>? onConflict;
@@ -292,6 +300,7 @@ final class PostgrestTableRequest {
     PostgrestResultShape? shape,
     CountOption? countOption,
     Object? payload,
+    bool? readOnly,
     List<PostgrestStoredColumn<Object?, Object>>? onConflict,
     bool? ignoreDuplicates,
     bool? defaultToNull,
@@ -314,6 +323,7 @@ final class PostgrestTableRequest {
     shape: shape ?? this.shape,
     countOption: countOption ?? this.countOption,
     payload: payload ?? this.payload,
+    readOnly: readOnly ?? this.readOnly,
     onConflict: onConflict ?? this.onConflict,
     ignoreDuplicates: ignoreDuplicates ?? this.ignoreDuplicates,
     defaultToNull: defaultToNull ?? this.defaultToNull,

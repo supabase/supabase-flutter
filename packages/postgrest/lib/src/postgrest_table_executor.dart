@@ -137,12 +137,13 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   /// The function call of [request], decoding a response read as rows into
   /// a [PostgrestList] the way a select does.
   ///
-  /// A HEAD request has no body, so a call read with
-  /// [PostgrestResultShape.head] sends its arguments as query parameters.
+  /// A GET or HEAD request has no body, so a [PostgrestTableRequest.readOnly]
+  /// call, and a call read with [PostgrestResultShape.head], sends its
+  /// arguments as query parameters.
   PostgrestFilterBuilder<Object?> _call(PostgrestTableRequest request) {
     final name = request.table.name;
-    final head = request.shape == PostgrestResultShape.head;
-    final arguments = head
+    final get = request.readOnly || request.shape == PostgrestResultShape.head;
+    final arguments = get
         ? (request.payload ?? const <String, Object?>{})
         : request.payload;
     if (request.shape == PostgrestResultShape.value) {
@@ -151,6 +152,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
         name,
         request.schema,
         params: arguments,
+        get: get,
       );
     }
     // ignore: invalid_use_of_internal_member
@@ -158,7 +160,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
       name,
       request.schema,
       params: arguments,
-      get: head,
+      get: get,
     );
   }
 

@@ -161,6 +161,76 @@ void main() {
       });
     });
 
+    test('sends a read-only call as a get request', () async {
+      httpClient.stub(bookRows);
+
+      await client.rpc
+          .rows(
+            'search_books',
+            arguments: {
+              'query': 'dart',
+              'tags': ['a', 'b,c'],
+            },
+            rowFromJson: Book.new,
+            get: true,
+          )
+          .where(Books.id.gt(1));
+
+      expect(lastRequest().method, HttpMethod.get.value);
+      expect(lastRequest().url.queryParameters, {
+        'query': 'dart',
+        'tags': '{a,"b,c"}',
+        'id': 'gt.1',
+      });
+    });
+
+    test('retries a read-only call', () async {
+      httpClient.stubStatuses([503, 200], body: bookRows);
+      final retrying = PostgrestClient(
+        'http://localhost/rest/v1',
+        httpClient: httpClient,
+        retryOptions: const SupabaseRetryOptions(initialDelay: Duration.zero),
+      );
+      addTearDown(retrying.dispose);
+
+      final books = await retrying.rpc
+          .rows('search_books', rowFromJson: Book.new, get: true)
+          .retry(count: 1);
+
+      expect(books, hasLength(2));
+      expect(httpClient.requests, hasLength(2));
+    });
+
+    test('does not retry a call that is not read-only', () async {
+      httpClient.stubStatuses([503, 200], body: bookRows);
+      final retrying = PostgrestClient(
+        'http://localhost/rest/v1',
+        httpClient: httpClient,
+        retryOptions: const SupabaseRetryOptions(initialDelay: Duration.zero),
+      );
+      addTearDown(retrying.dispose);
+
+      await expectLater(
+        () => retrying.rpc
+            .rows('search_books', rowFromJson: Book.new)
+            .retry(count: 1),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(httpClient.requests, hasLength(1));
+    });
+
+    test('rejects a read-only call with arguments that are not a map', () {
+      expect(
+        () => client.rpc.rows(
+          'search_books',
+          arguments: ['dart'],
+          rowFromJson: Book.new,
+          get: true,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('calls in the schema it is given', () async {
       httpClient.stub(bookRows);
 
@@ -209,6 +279,33 @@ void main() {
       );
 
       expect(lastRequest().jsonBody, {'kind': 'click'});
+    });
+
+    test('sends a read-only call as a get request', () async {
+      httpClient.stub(3);
+
+      await client.rpc.value(
+        'count_books',
+        arguments: {'author_id': 1},
+        fromJson: (json) => json as int?,
+        get: true,
+      );
+
+      expect(lastRequest().method, HttpMethod.get.value);
+      expect(lastRequest().url.queryParameters, {'author_id': '1'});
+    });
+
+    test('sends a read-only call without arguments as a get request', () async {
+      httpClient.stub(3);
+
+      await client
+          .schema('inventory')
+          .rpc
+          .value('count_books', fromJson: (json) => json as int?, get: true);
+
+      expect(lastRequest().method, HttpMethod.get.value);
+      expect(lastRequest().url.queryParameters, isEmpty);
+      expect(lastRequest().headers['accept-profile'], 'inventory');
     });
 
     test('converts a list of scalars', () async {

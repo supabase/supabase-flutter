@@ -1351,6 +1351,13 @@ void main() {
       expect(overload('search_books').error, isNull);
     });
 
+    test('reads the volatility of every overload', () {
+      expect(overload('restock').isVolatile, isTrue);
+      expect(overload('touch_book').isVolatile, isTrue);
+      expect(overload('search_books').isVolatile, isFalse);
+      expect(overload('echo').isVolatile, isFalse);
+    });
+
     test('lists the functions of the named schemas only', () {
       final public = parseGeneratorMetadata(document, schemaNames: ['public']);
 

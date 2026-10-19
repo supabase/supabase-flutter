@@ -1773,8 +1773,24 @@ void _writeFunctionMethod(
   }
   buffer
     ..writeln('        ${call.converter},')
-    ..writeln('        schema: ${_stringLiteral(function.schema)},')
-    ..writeln('      );');
+    ..writeln('        schema: ${_stringLiteral(function.schema)},');
+  if (!overload.isVolatile && arguments.every(_isQueryParameter)) {
+    buffer.writeln('        get: true,');
+  }
+  buffer.writeln('      );');
+}
+
+/// Whether [argument] can be sent as a query parameter, as a read-only call
+/// sends its arguments: it is named, and neither a row nor `json`, which only
+/// a request body carries as JSON.
+bool _isQueryParameter(FunctionArgumentDescription argument) {
+  bool isJson(ColumnTypeKind? kind) =>
+      kind == ColumnTypeKind.json || kind == ColumnTypeKind.unknown;
+  final type = argument.type;
+  return argument.name.isNotEmpty &&
+      argument.rowOf == null &&
+      !isJson(type.typeKind) &&
+      !isJson(type.elementTypeKind);
 }
 
 /// How the generated method of a function calls `PostgrestRpc`: the type it
