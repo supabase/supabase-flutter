@@ -1168,12 +1168,11 @@ void main() {
         'traceparent': '00-$traceId-00f067aa0ba902b7-00',
       };
 
-      FunctionsClient buildClient(MockSupabaseHttpClient httpClient) =>
-          FunctionsClient(
-            'http://localhost/functions/v1',
-            tracedHeaders,
-            httpClient: httpClient,
-          );
+      FunctionsClient buildClient(Client httpClient) => FunctionsClient(
+        'http://localhost/functions/v1',
+        tracedHeaders,
+        httpClient: httpClient,
+      );
 
       test('is carried on a FunctionsApiException', () async {
         final client = buildClient(
@@ -1201,6 +1200,29 @@ void main() {
           client.invoke('failing'),
           throwsA(
             isA<FunctionsFetchException>().having(
+              (e) => e.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is read from the request when the response omits it', () async {
+        final client = buildClient(
+          MockClient.streaming(
+            (_, _) async => StreamedResponse(
+              Stream.value(utf8.encode('boom')),
+              500,
+              headers: {'content-type': 'text/plain'},
+            ),
+          ),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsApiException>().having(
               (e) => e.traceId,
               'traceId',
               traceId,

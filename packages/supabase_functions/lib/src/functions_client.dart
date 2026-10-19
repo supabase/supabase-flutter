@@ -295,7 +295,12 @@ class FunctionsClient {
           cause: error,
         );
       }
-      throw _apiException(response, isRelayError, details: error);
+      throw _apiException(
+        response,
+        isRelayError,
+        traceId: request.headers.traceId,
+        details: error,
+      );
     }
     final dynamic data;
     if (responseType == 'application/json') {
@@ -327,24 +332,25 @@ class FunctionsClient {
     throw _apiException(
       response,
       isRelayError,
+      traceId: request.headers.traceId,
       details: data,
       body: utf8.decode(bodyBytes, allowMalformed: true),
     );
   }
 
   /// Builds the exception for an error [response], a relay one when
-  /// [isRelayError].
+  /// [isRelayError], to the request that carried [traceId].
   ///
   /// The reason phrase is the only message the response itself carries; when
   /// it is absent, as it is over HTTP/2, each exception uses its own default.
   FunctionsApiException _apiException(
     http.StreamedResponse response,
     bool isRelayError, {
+    required String? traceId,
     required Object? details,
     String? body,
   }) {
     final requestId = response.headers.requestId;
-    final traceId = response.request?.headers.traceId;
     if (isRelayError) {
       return FunctionsRelayException(
         statusCode: response.statusCode,
