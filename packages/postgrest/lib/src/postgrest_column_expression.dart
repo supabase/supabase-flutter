@@ -57,7 +57,6 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
 
   /// The key a cast of this expression comes back under, or `null` when the
   /// cast is keyed by its own expression, as a JSON path is.
-  // ignore: avoid-unnecessary-nullable-return-type
   String? get _castKey => responseKey;
 
   /// Applies [derivation] where PostgREST expects it: appended, or inside an
@@ -413,11 +412,9 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
   final Value Function(Object json)? _fromJson;
 
   @override
-  // ignore: match-getter-setter-field-names
   String get expression => name;
 
   @override
-  // ignore: match-getter-setter-field-names
   String get responseKey => name;
 
   /// [json], the decoded JSON of a present value, as [Value].
@@ -533,11 +530,9 @@ final class PostgrestComputedField<Row, Value extends Object>
   final Value Function(Object json)? _fromJson;
 
   @override
-  // ignore: match-getter-setter-field-names
   String get expression => name;
 
   @override
-  // ignore: match-getter-setter-field-names
   String get responseKey => name;
 
   @override

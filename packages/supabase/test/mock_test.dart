@@ -449,32 +449,32 @@ void main() {
         expect(
           stream,
           emitsInOrder([
-            containsAllInOrder([
-              [
+            contains(
+              equals([
                 {'id': 1, 'task': 'task 1', 'status': true},
                 {'id': 2, 'task': 'task 2', 'status': false},
-              ],
-            ]),
-            containsAllInOrder([
-              [
+              ]),
+            ),
+            contains(
+              equals([
                 {'id': 1, 'task': 'task 1', 'status': true},
                 {'id': 2, 'task': 'task 2', 'status': false},
                 {'id': 3, 'task': 'task 3', 'status': true},
-              ],
-            ]),
-            containsAllInOrder([
-              [
+              ]),
+            ),
+            contains(
+              equals([
                 {'id': 1, 'task': 'task 1', 'status': true},
                 {'id': 2, 'task': 'task 2 updated', 'status': false},
                 {'id': 3, 'task': 'task 3', 'status': true},
-              ],
-            ]),
-            containsAllInOrder([
-              [
+              ]),
+            ),
+            contains(
+              equals([
                 {'id': 1, 'task': 'task 1', 'status': true},
                 {'id': 3, 'task': 'task 3', 'status': true},
-              ],
-            ]),
+              ]),
+            ),
           ]),
         );
       });
@@ -657,9 +657,7 @@ void main() {
       expect(
         stream,
         emitsInOrder([
-          containsAllInOrder([
-            {'id': 1, 'task': 'task 1', 'status': true},
-          ]),
+          contains(equals({'id': 1, 'task': 'task 1', 'status': true})),
           containsAllInOrder([
             {'id': 1, 'task': 'task 1', 'status': true},
             {'id': 3, 'task': 'task 3', 'status': true},
@@ -910,9 +908,7 @@ void main() {
       expect(
         stream,
         emitsInOrder([
-          containsAllInOrder([
-            {'id': 1, 'task': 'task 1', 'status': true},
-          ]),
+          contains(equals({'id': 1, 'task': 'task 1', 'status': true})),
           containsAllInOrder([
             {'id': 1, 'task': 'task 1', 'status': true},
             {'id': 3, 'task': 'task 3', 'status': true},
