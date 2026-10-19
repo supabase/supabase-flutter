@@ -950,7 +950,7 @@ void main() {
           client.from('bucket').list(),
           throwsA(
             isA<StorageApiException>().having(
-              (e) => e.traceId,
+              (exception) => exception.traceId,
               'traceId',
               traceId,
             ),
@@ -971,7 +971,7 @@ void main() {
           client.from('bucket').list(),
           throwsA(
             isA<StorageTransportException>().having(
-              (e) => e.traceId,
+              (exception) => exception.traceId,
               'traceId',
               traceId,
             ),
@@ -995,7 +995,7 @@ void main() {
           client.from('bucket').list(),
           throwsA(
             isA<StorageApiException>().having(
-              (e) => e.traceId,
+              (exception) => exception.traceId,
               'traceId',
               isNull,
             ),

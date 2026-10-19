@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:supabase/src/trace_context_format.dart';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
@@ -123,33 +121,15 @@ void main() {
 
   group('generated ids', () {
     test('are valid W3C ids', () {
-      final random = Random(1);
       for (var i = 0; i < 100; i++) {
-        expect(isValidTraceId(generateTraceId(random)), isTrue);
-        expect(isValidParentId(generateParentId(random)), isTrue);
+        expect(isValidTraceId(generateTraceId()), isTrue);
+        expect(isValidParentId(generateParentId()), isTrue);
       }
     });
 
-    test('are never all zeros', () {
-      expect(generateTraceId(_ZeroThenOneRandom(16)), isNot(invalidTraceId));
-      expect(generateParentId(_ZeroThenOneRandom(8)), isNot(invalidParentId));
+    test('differ between calls', () {
+      expect(generateTraceId(), isNot(generateTraceId()));
+      expect(generateParentId(), isNot(generateParentId()));
     });
   });
-}
-
-/// Returns zeros for the first [zeros] bytes it generates, then ones.
-class _ZeroThenOneRandom implements Random {
-  _ZeroThenOneRandom(this.zeros);
-
-  final int zeros;
-  var _calls = 0;
-
-  @override
-  int nextInt(int max) => _calls++ < zeros ? 0 : 1;
-
-  @override
-  bool nextBool() => throw UnimplementedError();
-
-  @override
-  double nextDouble() => throw UnimplementedError();
 }

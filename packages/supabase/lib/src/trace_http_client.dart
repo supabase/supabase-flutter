@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 
@@ -15,8 +13,6 @@ class TracePropagationClient extends BaseClient {
   final TracePropagationOptions _options;
   final Set<String> _exactHosts;
   bool _warnedOnMalformedTraceparent = false;
-
-  static final _random = Random.secure();
 
   static const _wildcardDomains = ['supabase.co', 'supabase.in'];
 
@@ -163,8 +159,8 @@ class TracePropagationClient extends BaseClient {
   /// A new unsampled trace context for a request without an active trace.
   static TraceContext _originateTraceContext() => TraceContext(
     traceparent: formatTraceparent(
-      traceId: generateTraceId(_random),
-      spanId: generateParentId(_random),
+      traceId: generateTraceId(),
+      spanId: generateParentId(),
       sampled: false,
     ),
   );

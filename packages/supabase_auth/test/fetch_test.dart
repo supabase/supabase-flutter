@@ -298,9 +298,9 @@ void main() {
         AuthFetch(client).request(_mockUrl, HttpMethod.get, options: options),
         throwsA(
           isA<AuthApiException>()
-              .having((e) => e.traceId, 'traceId', traceId)
+              .having((exception) => exception.traceId, 'traceId', traceId)
               .having(
-                (e) => e.toString(),
+                (exception) => exception.toString(),
                 'toString()',
                 contains('traceId: $traceId'),
               ),
@@ -316,7 +316,7 @@ void main() {
         AuthFetch(client).request(_mockUrl, HttpMethod.get, options: options),
         throwsA(
           isA<AuthRetryableFetchException>().having(
-            (e) => e.traceId,
+            (exception) => exception.traceId,
             'traceId',
             traceId,
           ),
@@ -334,7 +334,11 @@ void main() {
       await expectLater(
         AuthFetch(client).request(_mockUrl, HttpMethod.get),
         throwsA(
-          isA<AuthApiException>().having((e) => e.traceId, 'traceId', isNull),
+          isA<AuthApiException>().having(
+            (exception) => exception.traceId,
+            'traceId',
+            isNull,
+          ),
         ),
       );
     });

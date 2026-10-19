@@ -169,7 +169,8 @@ sealed class IcebergApiException extends IcebergException
   @override
   String toString() =>
       '$runtimeType(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode, code: $code)';
+      'errorCode: $errorCode, code: $code, requestId: $requestId, '
+      'traceId: $traceId)';
 }
 
 /// The requested namespace or table does not exist (HTTP 404).

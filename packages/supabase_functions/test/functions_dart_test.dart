@@ -1183,7 +1183,7 @@ void main() {
           client.invoke('failing'),
           throwsA(
             isA<FunctionsApiException>().having(
-              (e) => e.traceId,
+              (exception) => exception.traceId,
               'traceId',
               traceId,
             ),
@@ -1200,7 +1200,7 @@ void main() {
           client.invoke('failing'),
           throwsA(
             isA<FunctionsFetchException>().having(
-              (e) => e.traceId,
+              (exception) => exception.traceId,
               'traceId',
               traceId,
             ),
@@ -1223,7 +1223,7 @@ void main() {
           client.invoke('failing'),
           throwsA(
             isA<FunctionsApiException>().having(
-              (e) => e.traceId,
+              (exception) => exception.traceId,
               'traceId',
               traceId,
             ),
@@ -1243,7 +1243,7 @@ void main() {
           client.invoke('failing'),
           throwsA(
             isA<FunctionsApiException>().having(
-              (e) => e.traceId,
+              (exception) => exception.traceId,
               'traceId',
               isNull,
             ),
