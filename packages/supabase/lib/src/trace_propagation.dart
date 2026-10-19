@@ -95,6 +95,8 @@ class TraceContext {
   final String? baggage;
 }
 
+const _isWeb = bool.fromEnvironment('dart.library.js_interop');
+
 /// Options controlling W3C trace context propagation onto outgoing Supabase
 /// requests.
 ///
@@ -108,7 +110,7 @@ class TraceContext {
 class TracePropagationOptions {
   const TracePropagationOptions({
     this.traceContextProvider,
-    this.originateTraces = true,
+    this.originateTraces = !_isWeb,
     this.respectSamplingDecision = true,
   });
 
@@ -117,7 +119,12 @@ class TracePropagationOptions {
   ///
   /// Each request gets its own trace, flagged as not sampled, so nothing
   /// downstream records it as sampled. The trace id of a failed request is on
-  /// `SupabaseException.traceId`. Defaults to `true`.
+  /// `SupabaseException.traceId`.
+  ///
+  /// Defaults to `true`, except on the web, where a `traceparent` makes the
+  /// browser send a CORS preflight that an Edge Function only passes when its
+  /// `Access-Control-Allow-Headers` lists the header. Set it to `true` on the
+  /// web once your functions allow `traceparent`.
   final bool originateTraces;
 
   /// Whether an unsampled trace, one whose `traceparent` carries a sampled

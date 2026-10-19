@@ -245,7 +245,7 @@ void main() {
 
     test('originates an unsampled traceparent without a provider', () async {
       await client(
-        const TracePropagationOptions(),
+        const TracePropagationOptions(originateTraces: true),
       ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
       final traceparent = captured().headers['traceparent']!;
@@ -256,7 +256,9 @@ void main() {
     });
 
     test('gives every request its own trace', () async {
-      final traced = client(const TracePropagationOptions());
+      final traced = client(
+        const TracePropagationOptions(originateTraces: true),
+      );
       await traced.get(Uri.parse('$_supabaseUrl/rest/v1/table'));
       await traced.get(Uri.parse('$_supabaseUrl/rest/v1/table'));
 
@@ -307,13 +309,13 @@ void main() {
 
     test('does not originate a trace for third-party hosts', () async {
       await client(
-        const TracePropagationOptions(),
+        const TracePropagationOptions(originateTraces: true),
       ).get(Uri.parse('https://evil.com/api'));
 
       expect(captured().headers.containsKey('traceparent'), isFalse);
     });
 
-    test('SupabaseClient originates traces by default', () async {
+    test('SupabaseClient originates traces by default', testOn: 'vm', () async {
       final supabase = SupabaseClient(
         _supabaseUrl,
         'anon-key',
@@ -327,10 +329,31 @@ void main() {
       expect(captured().headers['traceparent'], matches(originated));
     });
 
+    test(
+      'SupabaseClient does not originate traces on the web by default',
+      testOn: 'browser',
+      () async {
+        final supabase = SupabaseClient(
+          _supabaseUrl,
+          'anon-key',
+          authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
+          httpClient: httpClient..stubTable('table', rows: []),
+        );
+        addTearDown(supabase.dispose);
+
+        await supabase.from('table').select();
+
+        expect(captured().headers.containsKey('traceparent'), isFalse);
+      },
+    );
+
     test('a failed request reports its originated trace id', () async {
       final supabase = SupabaseClient(
         _supabaseUrl,
         'anon-key',
+        tracePropagationOptions: const TracePropagationOptions(
+          originateTraces: true,
+        ),
         authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
         httpClient: httpClient
           ..stub(

@@ -658,11 +658,15 @@ The exceptions also carry the `traceId` of the [W3C trace context](https://www.w
 
 ### Trace propagation
 
-Every request the client sends to a Supabase host carries a [W3C trace context](https://www.w3.org/TR/trace-context/) `traceparent`, so the Supabase logs of that request carry a trace id.
+Outside the web, every request the client sends to a Supabase host carries a [W3C trace context](https://www.w3.org/TR/trace-context/) `traceparent`, so the Supabase logs of that request carry a trace id.
 
 If your app already records traces with a tool like Sentry or OpenTelemetry, pass `TracePropagationOptions` with a `traceContextProvider`, which the client calls before each request to read the active trace, so the logs carry the trace id of the span that made it. Return `null` when there is no active trace.
 
-Without a provider, or when it returns no `traceparent`, the client originates one with a new random trace id for each request, flagged as not sampled so nothing downstream records it as sampled. To send no trace headers at all, turn origination off:
+Without a provider, or when it returns no `traceparent`, the client originates one with a new random trace id for each request, flagged as not sampled so nothing downstream records it as sampled.
+
+On the web, origination is off by default. A `traceparent` header makes the browser send a CORS preflight, and an Edge Function only passes it when its `Access-Control-Allow-Headers` lists `traceparent`, which a hand-written allow-list or the `corsHeaders` of `@supabase/supabase-js` before v2.112.3 does not. Once your functions allow the trace context headers, turn it on with `TracePropagationOptions(originateTraces: true)`. A trace from your `traceContextProvider` is sent on the web either way.
+
+To send no trace headers at all on any platform, turn origination off:
 
 ```dart
 await Supabase.initialize(

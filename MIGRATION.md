@@ -2343,8 +2343,8 @@ await supabase.storage.from('avatars').uploadStream(
 
 ### Requests carry a `traceparent` by default
 
-`TracePropagationOptions.enabled` is gone. Every request to a Supabase host now carries a
-`traceparent`: the one your `traceContextProvider` returns, or, when there is no provider or it
+`TracePropagationOptions.enabled` is gone. Outside the web, every request to a Supabase host now
+carries a `traceparent`: the one your `traceContextProvider` returns, or, when there is no provider or it
 returns no `traceparent`, one the client originates with a new random trace id. An originated
 trace is flagged as not sampled, and its id is on `SupabaseException.traceId` when the request
 fails.
@@ -2361,6 +2361,10 @@ tracePropagationOptions: TracePropagationOptions(
   traceContextProvider: () => TraceContext.fromCarrier(carrier),
 ),
 ```
+
+On the web, origination is off by default, since an Edge Function whose CORS allow-list does not
+include `traceparent` would reject the browser's preflight. Pass `originateTraces: true` once your
+functions allow it.
 
 To send no trace headers at all, as v2 did by default, turn origination off and pass no provider:
 
