@@ -145,7 +145,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     final name = request.table.name;
     final get =
         request.shape == PostgrestResultShape.head ||
-        (request.readOnly && !_hasFilterSyntax(request.payload));
+        (request.readOnly && _fitsQueryParameters(request.payload));
     final arguments = get
         ? (request.payload ?? const <String, Object?>{})
         : request.payload;
@@ -167,14 +167,29 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     );
   }
 
-  /// Whether a value of [arguments], as a query parameter, starts like a
-  /// filter, `eq.foo` or `not.in.(1)`, which PostgREST applies to the result
-  /// instead of passing it to the function.
-  static bool _hasFilterSyntax(Object? arguments) =>
-      arguments is Map &&
-      arguments.values.any(
-        (value) => _filterSyntax.hasMatch(renderPostgrestQueryValue(value)),
+  /// Whether PostgREST passes every one of [arguments] to the function when
+  /// they are sent as query parameters. It does not when a name is an option
+  /// of the request, `limit`, or an embed path, or when a value starts like a
+  /// filter, `eq.foo` or `not.in.(1)`, which it applies to the result instead.
+  static bool _fitsQueryParameters(Object? arguments) =>
+      arguments is! Map ||
+      arguments.entries.every(
+        (argument) =>
+            !_reservedQueryParameters.contains(argument.key) &&
+            !'${argument.key}'.contains('.') &&
+            !_filterSyntax.hasMatch(renderPostgrestQueryValue(argument.value)),
       );
+
+  static const _reservedQueryParameters = {
+    'select',
+    'columns',
+    'on_conflict',
+    'order',
+    'limit',
+    'offset',
+    'and',
+    'or',
+  };
 
   static final _filterSyntax = RegExp(
     r'^(not\.)?(eq|gte?|lte?|neq|i?like|i?match|cs|cd|ov|sl|sr|nx[lr]|adj|'

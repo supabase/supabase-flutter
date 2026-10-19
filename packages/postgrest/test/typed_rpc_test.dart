@@ -184,8 +184,8 @@ void main() {
       });
     });
 
-    test('sends a read-only call with a value PostgREST would read as a '
-        'filter as a post request', () async {
+    test('sends a read-only call with an argument PostgREST would read as '
+        'an option or a filter as a post request', () async {
       httpClient.stub(bookRows);
 
       for (final query in ['eq.dart', 'not.in.(a)', 'fts(english).dart']) {
@@ -199,6 +199,15 @@ void main() {
         expect(lastRequest().method, HttpMethod.post.value);
         expect(lastRequest().jsonBody, {'query': query});
       }
+
+      await client.rpc.rows(
+        'search_books',
+        arguments: {'limit': 2},
+        rowFromJson: Book.new,
+        get: true,
+      );
+      expect(lastRequest().method, HttpMethod.post.value);
+      expect(lastRequest().jsonBody, {'limit': 2});
 
       await client.rpc.rows(
         'search_books',

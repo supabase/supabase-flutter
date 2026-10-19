@@ -248,8 +248,8 @@ final class PostgrestTableRequest {
   /// run in a read-only transaction and be retried like a select.
   ///
   /// [PostgrestHttpTableExecutor] sends such a call as a `GET`, with
-  /// [payload] as query parameters, unless a value of it would be read as a
-  /// filter.
+  /// [payload] as query parameters, unless PostgREST would read one of them
+  /// as an option of the request or as a filter.
   final bool readOnly;
 
   /// The columns of the unique constraint an upsert merges on, or `null` for
