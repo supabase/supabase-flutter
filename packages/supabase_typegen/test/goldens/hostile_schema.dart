@@ -469,8 +469,7 @@ class PostgrestTable$ {
     referencedTable: 'map',
   );
 
-  /// The `evil
-  /// multiline "schema" name.postgrest_column` rows computed by
+  /// The `evil multiline "schema" name.postgrest_column` rows computed by
   /// `postgrest_column`.
   static const postgrestColumn =
       PostgrestToManyRelation<
@@ -824,9 +823,8 @@ class Orders {
   );
 }
 
-/// A row of the `evil
-/// multiline "schema" name.postgrest_column` table, as `select()` reads it with
-/// every column.
+/// A row of the `evil multiline "schema" name.postgrest_column` table, as
+/// `select()` reads it with every column.
 extension type const EvilMultilineSchemaNamePostgrestColumnRow(
   Map<String, dynamic> _json
 )
@@ -837,12 +835,12 @@ extension type const EvilMultilineSchemaNamePostgrestColumnRow(
   Map<String, dynamic> toJson() => _json;
 }
 
-/// Values for inserting a row into `evil
-/// multiline "schema" name.postgrest_column`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// Values for inserting a row into `evil multiline "schema"
+/// name.postgrest_column`. Columns that are nullable, identity, or covered by a
+/// database default are optional; passing `null` omits the column so the
+/// database default applies. Columns the database always generates itself are
+/// left out entirely. Use the `set…ToNull` methods to insert SQL NULL
+/// explicitly.
 extension type const EvilMultilineSchemaNamePostgrestColumnInsert._(
   Map<String, dynamic> _json
 )
@@ -851,10 +849,9 @@ extension type const EvilMultilineSchemaNamePostgrestColumnInsert._(
     : this._({'id': id});
 }
 
-/// Values for updating rows of `evil
-/// multiline "schema" name.postgrest_column`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+/// Values for updating rows of `evil multiline "schema" name.postgrest_column`.
+/// All columns are optional; passing `null` omits the column, leaving it
+/// unchanged. Use the `set…ToNull` methods to write SQL NULL explicitly.
 extension type const EvilMultilineSchemaNamePostgrestColumnUpdate._(
   Map<String, dynamic> _json
 )
@@ -862,8 +859,7 @@ extension type const EvilMultilineSchemaNamePostgrestColumnUpdate._(
   EvilMultilineSchemaNamePostgrestColumnUpdate({int? id}) : this._({'id': ?id});
 }
 
-/// Typed access to the `evil
-/// multiline "schema" name.postgrest_column` table.
+/// Typed access to the `evil multiline "schema" name.postgrest_column` table.
 class EvilMultilineSchemaNamePostgrestColumn {
   const EvilMultilineSchemaNamePostgrestColumn._();
 
@@ -1059,9 +1055,8 @@ extension DatabaseFunctions on PostgrestRpc {
     schema: 'private',
   );
 
-  /// Calls the `evil
-  /// multiline "schema" name.it's` function, which returns rows of `evil
-  /// multiline "schema" name.postgrest_column` filterable through
+  /// Calls the `evil multiline "schema" name.it's` function, which returns rows
+  /// of `evil multiline "schema" name.postgrest_column` filterable through
   /// `EvilMultilineSchemaNamePostgrestColumn`.
   PostgrestTypedFilterBuilder<
     EvilMultilineSchemaNamePostgrestColumnRow,
