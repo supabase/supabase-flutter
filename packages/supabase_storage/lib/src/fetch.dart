@@ -148,6 +148,7 @@ class Fetch {
     Map<String, dynamic>? body,
     FetchOptions? options, {
     Future<void>? abortSignal,
+    bool partialContent = false,
   }) async {
     final idleTimeout = IdleTimeout(requestTimeout);
     final request = _createRequest(
@@ -172,6 +173,7 @@ class Fetch {
       '${request.headers.redacted}',
     );
     final streamedResponse = await _send(request, idleTimeout);
+    if (partialContent) await _requirePartialContent(streamedResponse);
     return _handleResponse(streamedResponse, options);
   }
 
@@ -183,6 +185,9 @@ class Fetch {
   /// `x-upsert` and `x-metadata` carry what the multipart form fields used to.
   /// [contentLength] is sent as `Content-Length` when known; otherwise the
   /// body goes out with chunked transfer encoding.
+  ///
+  /// [onProgress] is called as the body is handed to the HTTP client. An
+  /// exception it throws fails the upload without a retry.
   Future<Map<String, dynamic>> _handleUploadRequest(
     HttpMethod method,
     String url,
@@ -193,6 +198,7 @@ class Fetch {
     FetchOptions? options,
     SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   ) async {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
@@ -209,30 +215,48 @@ class Fetch {
       ...?fileOptions.headers,
     };
 
+    final progress = onProgress == null
+        ? null
+        : _UploadProgress(onProgress, contentLength);
+    Stream<List<int>> createWatchedBody() {
+      final body = createBody();
+      return progress?.watch(body) ?? body;
+    }
+
     var attempts = 0;
-    final streamedResponse = await retry<http.StreamedResponse>(
-      () async {
-        attempts++;
-        storageLogger.finest(
-          'Request: attempt: $attempts ${method.value} '
-          '${Uri.parse(url).redacted} ${headers.redacted}',
-        );
-        final idleTimeout = IdleTimeout(requestTimeout);
-        final request = _UploadRequest(
-          method.value,
-          Uri.parse(url),
-          () => idleTimeout.watchRequestBody(createBody()),
-          abortTrigger: idleTimeout.abortTrigger(abortSignal),
-        );
-        request
-          ..headers.addAll(headers)
-          ..contentLength = contentLength;
-        return _send(request, idleTimeout);
-      },
-      options: retryOptions,
-      retryIf: (error) => error is StorageTransportException,
-      abortSignal: abortSignal,
-    );
+    final http.StreamedResponse streamedResponse;
+    try {
+      streamedResponse = await retry<http.StreamedResponse>(
+        () async {
+          attempts++;
+          storageLogger.finest(
+            'Request: attempt: $attempts ${method.value} '
+            '${Uri.parse(url).redacted} ${headers.redacted}',
+          );
+          final idleTimeout = IdleTimeout(requestTimeout);
+          final request = _UploadRequest(
+            method.value,
+            Uri.parse(url),
+            () => idleTimeout.watchRequestBody(createWatchedBody()),
+            abortTrigger: idleTimeout.abortTrigger(abortSignal),
+          );
+          request
+            ..headers.addAll(headers)
+            ..contentLength = contentLength;
+          return _send(request, idleTimeout);
+        },
+        options: retryOptions,
+        retryIf: (error) =>
+            error is StorageTransportException &&
+            progress?.callbackError == null,
+        abortSignal: abortSignal,
+      );
+    } on Object {
+      progress?.rethrowCallbackError();
+      rethrow;
+    } finally {
+      progress?.finish();
+    }
 
     return _handleResponse(streamedResponse, options);
   }
@@ -270,10 +294,18 @@ class Fetch {
     );
   }
 
+  /// Performs a GET request.
+  ///
+  /// {@template storage_fetch_partial_content}
+  /// With [partialContent], the request asks for a byte range, and a success
+  /// response other than 206 Partial Content throws a [StorageException],
+  /// since its body is the whole file instead of the range.
+  /// {@endtemplate}
   Future<T> get<T>(
     String url, {
     FetchOptions? options,
     Future<void>? abortSignal,
+    bool partialContent = false,
   }) {
     return _handleRequest(
       HttpMethod.get,
@@ -281,6 +313,22 @@ class Fetch {
       null,
       options,
       abortSignal: abortSignal,
+      partialContent: partialContent,
+    );
+  }
+
+  /// Throws when [streamedResponse] is a success other than 206 Partial
+  /// Content, after releasing its body.
+  Future<void> _requirePartialContent(
+    http.StreamedResponse streamedResponse,
+  ) async {
+    final statusCode = streamedResponse.statusCode;
+    if (!isSuccessStatusCode(statusCode) || statusCode == 206) return;
+    await streamedResponse.stream.listen(null).cancel();
+    throw StorageException(
+      'Expected the requested byte range with status 206, but got the whole '
+      'file with status $statusCode',
+      requestId: streamedResponse.headers.requestId,
     );
   }
 
@@ -290,11 +338,14 @@ class Fetch {
   /// The status code is inspected before the body is yielded, so a non-success
   /// response surfaces as a [StorageException] on the stream before any bytes
   /// are emitted.
+  ///
+  /// {@macro storage_fetch_partial_content}
   @internal
   Stream<Uint8List> getStream(
     String url, {
     FetchOptions? options,
     Future<void>? abortSignal,
+    bool partialContent = false,
   }) async* {
     final idleTimeout = IdleTimeout(requestTimeout);
     final request = _createRequest(
@@ -321,6 +372,7 @@ class Fetch {
       );
     }
 
+    if (partialContent) await _requirePartialContent(streamedResponse);
     yield* streamedResponse.stream.map(
       (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
     );
@@ -405,6 +457,7 @@ class Fetch {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final int contentLength = await file.length();
     return _handleUploadRequest(
@@ -417,6 +470,7 @@ class Fetch {
       options,
       retryOptions,
       abortSignal,
+      onProgress,
     );
   }
 
@@ -429,6 +483,7 @@ class Fetch {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) {
     return _handleUploadRequest(
       method,
@@ -440,6 +495,7 @@ class Fetch {
       options,
       retryOptions,
       abortSignal,
+      onProgress,
     );
   }
 
@@ -454,6 +510,7 @@ class Fetch {
     FileOptions fileOptions, {
     FetchOptions? options,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) {
     return _handleUploadRequest(
       method,
@@ -465,6 +522,7 @@ class Fetch {
       options,
       const SupabaseRetryOptions(enabled: false),
       abortSignal,
+      onProgress,
     );
   }
 }
@@ -488,5 +546,62 @@ final class _UploadRequest extends http.BaseRequest with http.Abortable {
   http.ByteStream finalize() {
     super.finalize();
     return http.ByteStream(_createBody());
+  }
+}
+
+/// Reports the progress of the bodies an upload sends, one per attempt.
+///
+/// Only the body of the latest attempt reports, and nothing reports once the
+/// upload is [finish]ed. A body sent after an earlier one has reported starts
+/// with a report of `0`, and a body that yields no bytes reports `0` once.
+final class _UploadProgress {
+  _UploadProgress(this._onProgress, this._totalBytes);
+
+  final UploadProgressCallback _onProgress;
+  final int? _totalBytes;
+  var _attempt = 0;
+  var _reported = false;
+  var _finished = false;
+
+  /// What the callback threw, which fails the upload instead of an error of
+  /// the HTTP client.
+  (Object, StackTrace)? callbackError;
+
+  Stream<List<int>> watch(Stream<List<int>> body) =>
+      _watch(++_attempt, sliceRequestBody(body));
+
+  Stream<List<int>> _watch(int attempt, Stream<List<int>> body) async* {
+    var reported = false;
+    if (_reported) {
+      reported = _report(attempt, 0);
+    }
+    var sentBytes = 0;
+    await for (final chunk in body) {
+      yield chunk;
+      if (chunk.isEmpty) continue;
+      sentBytes += chunk.length;
+      reported = _report(attempt, sentBytes);
+    }
+    if (!reported) _report(attempt, 0);
+  }
+
+  bool _report(int attempt, int sentBytes) {
+    if (_finished || attempt != _attempt) return false;
+    _reported = true;
+    try {
+      _onProgress(sentBytes, _totalBytes);
+    } catch (error, stackTrace) {
+      callbackError ??= (error, stackTrace);
+      rethrow;
+    }
+    return true;
+  }
+
+  void finish() => _finished = true;
+
+  void rethrowCallbackError() {
+    final callbackError = this.callbackError;
+    if (callbackError == null) return;
+    Error.throwWithStackTrace(callbackError.$1, callbackError.$2);
   }
 }

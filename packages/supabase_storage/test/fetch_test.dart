@@ -487,6 +487,141 @@ void main() {
     });
   });
 
+  group('upload progress', () {
+    late MockSupabaseHttpClient mockClient;
+    late SupabaseStorageClient client;
+    late List<(int, int?)> reports;
+
+    void recordProgress(int sentBytes, int? totalBytes) {
+      reports.add((sentBytes, totalBytes));
+    }
+
+    setUp(() {
+      reports = [];
+      mockClient = MockSupabaseHttpClient()..stub({'Key': 'bucket/a.bin'});
+      client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: mockClient,
+        retryOptions: const SupabaseRetryOptions(
+          count: 2,
+          initialDelay: Duration(milliseconds: 1),
+        ),
+      );
+    });
+
+    test('reports a large body in slices up to its length', () async {
+      final data = Uint8List(150 * 1024);
+
+      await client
+          .from('bucket')
+          .uploadBinary('a.bin', data, onProgress: recordProgress);
+
+      expect(reports, [
+        (64 * 1024, data.length),
+        (128 * 1024, data.length),
+        (data.length, data.length),
+      ]);
+      expect(mockClient.requests.single.bodyBytes, data);
+    });
+
+    test('reports the size of a file as the total', () async {
+      final directory = Directory.systemTemp.createTempSync('storage_test');
+      addTearDown(() => directory.deleteSync(recursive: true));
+      final file = File('${directory.path}/a.bin')..writeAsBytesSync([1, 2, 3]);
+
+      await client
+          .from('bucket')
+          .update('a.bin', file, onProgress: recordProgress);
+
+      expect(reports, [(3, 3)]);
+    });
+
+    test('reports an unknown total for a stream without a length', () async {
+      await client
+          .from('bucket')
+          .uploadStream(
+            'a.bin',
+            Stream.fromIterable([
+              [1, 2],
+              [3],
+            ]),
+            onProgress: recordProgress,
+          );
+
+      expect(reports, [(2, null), (3, null)]);
+    });
+
+    test('reports an empty body once', () async {
+      await client
+          .from('bucket')
+          .uploadBinary('a.bin', Uint8List(0), onProgress: recordProgress);
+
+      expect(reports, [(0, 0)]);
+    });
+
+    test('reports an empty stream once', () async {
+      await client
+          .from('bucket')
+          .uploadStream(
+            'a.bin',
+            const Stream.empty(),
+            contentLength: 0,
+            onProgress: recordProgress,
+          );
+
+      expect(reports, [(0, 0)]);
+    });
+
+    test('reports a reset before a retry sends the body again', () async {
+      mockClient.stubError(ClientException('Offline'), times: 1);
+
+      await client
+          .from('bucket')
+          .uploadBinary(
+            'a.bin',
+            Uint8List(5),
+            onProgress: recordProgress,
+          );
+
+      expect(mockClient.requests, hasLength(2));
+      expect(reports, [(5, 5), (0, 5), (5, 5)]);
+    });
+
+    test('fails with what the callback throws, without a retry', () async {
+      const error = FormatException('widget disposed');
+      var calls = 0;
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadBinary(
+              'a.bin',
+              Uint8List(5),
+              onProgress: (sentBytes, totalBytes) {
+                calls++;
+                throw error;
+              },
+            ),
+        throwsA(same(error)),
+      );
+      expect(calls, 1);
+    });
+
+    test('reports the progress of a signed URL upload', () async {
+      await client
+          .from('bucket')
+          .uploadBinaryToSignedUrl(
+            'a.bin',
+            'token',
+            Uint8List(4),
+            onProgress: recordProgress,
+          );
+
+      expect(reports, [(4, 4)]);
+    });
+  });
+
   group('request cancellation', () {
     late MockSupabaseHttpClient mockClient;
     late SupabaseStorageClient client;
@@ -547,9 +682,7 @@ void main() {
               'a.txt',
               'signed-token',
               Uint8List.fromList([1, 2, 3]),
-              const FileOptions(),
-              null,
-              abortSignal,
+              abortSignal: abortSignal,
             ),
         throwsA(isA<RequestAbortedException>()),
       );

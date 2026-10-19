@@ -547,6 +547,79 @@ void main() {
       expect(request.url.queryParameters, {'width': '200', 'cacheNonce': 'v2'});
     });
 
+    test('download sends a byte range as a Range header', () async {
+      customHttpClient.stub(Uint8List.fromList([1, 2]), statusCode: 206);
+
+      final response = await client
+          .from('public_bucket')
+          .download('b.txt', range: ByteRange(10, 11));
+
+      expect(response, [1, 2]);
+      expect(customHttpClient.requests.single.headers['range'], 'bytes=10-11');
+    });
+
+    test('downloadStream sends a range that runs to the end', () async {
+      customHttpClient.stub(Uint8List.fromList([1, 2]), statusCode: 206);
+
+      final bytes = await client
+          .from('public_bucket')
+          .downloadStream('b.txt', range: ByteRange(10))
+          .expand((chunk) => chunk)
+          .toList();
+
+      expect(bytes, [1, 2]);
+      expect(customHttpClient.requests.single.headers['range'], 'bytes=10-');
+    });
+
+    test('a range answered with the whole file fails the download', () async {
+      customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
+
+      await expectLater(
+        client.from('public_bucket').download('b.txt', range: ByteRange(1, 2)),
+        throwsA(isA<StorageException>()),
+      );
+    });
+
+    test('a range answered with the whole file fails the stream', () async {
+      customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
+
+      await expectLater(
+        client
+            .from('public_bucket')
+            .downloadStream('b.txt', range: ByteRange(1))
+            .drain<void>(),
+        throwsA(isA<StorageException>()),
+      );
+    });
+
+    test('a range of a transformed image is rejected before sending', () {
+      expect(
+        () => client
+            .from('public_bucket')
+            .download(
+              'b.png',
+              transform: const TransformOptions(width: 200),
+              range: ByteRange(0, 1023),
+            ),
+        throwsArgumentError,
+      );
+      expect(customHttpClient.requests, isEmpty);
+    });
+
+    test('download sends no Range header without a range', () async {
+      customHttpClient.stub(Uint8List.fromList([1, 2]));
+
+      await client.from('public_bucket').download('b.txt');
+
+      expect(customHttpClient.requests.single.headers['range'], isNull);
+    });
+
+    test('a range with a negative start or an end before it is rejected', () {
+      expect(() => ByteRange(-1, 10), throwsRangeError);
+      expect(() => ByteRange(10, 9), throwsRangeError);
+      expect(ByteRange(10, 10).end, 10);
+    });
+
     test('downloadStream surfaces an error status on the stream', () async {
       customHttpClient.stub({'message': 'Object not found'}, statusCode: 404);
 

@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:http/http.dart';
 
 import 'http.dart';
+import 'request_body.dart';
 
 /// Aborts a request once it makes no progress for [duration].
 ///
@@ -65,27 +64,10 @@ final class IdleTimeout {
   /// a single chunk also shows its progress while it is being sent.
   Stream<List<int>> watchRequestBody(Stream<List<int>> body) {
     if (duration == null) return body;
-    return body.asyncExpand(_slices).map((chunk) {
+    return sliceRequestBody(body).map((chunk) {
       _restart();
       return chunk;
     });
-  }
-
-  static const _sliceLength = 64 * 1024;
-
-  static Stream<List<int>> _slices(List<int> chunk) {
-    if (chunk.length <= _sliceLength) return Stream.value(chunk);
-    return Stream.fromIterable([
-      for (var start = 0; start < chunk.length; start += _sliceLength)
-        if (chunk is Uint8List)
-          Uint8List.sublistView(
-            chunk,
-            start,
-            min(start + _sliceLength, chunk.length),
-          )
-        else
-          chunk.sublist(start, min(start + _sliceLength, chunk.length)),
-    ]);
   }
 
   /// Sends [request] over [httpClient] and returns a response whose body

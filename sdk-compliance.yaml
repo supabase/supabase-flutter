@@ -1602,6 +1602,7 @@ features:
       - UploadResponse.path
       - UploadResponse.fullPath
       - UploadResponse.toString
+      - UploadProgressCallback
   storage.file_buckets.upload_with_metadata:
     status: implemented
     symbols:
@@ -1682,6 +1683,12 @@ features:
     status: implemented
     symbols:
       - StorageFileApi.download
+    supporting_symbols:
+      - ByteRange
+      - ByteRange.ByteRange
+      - ByteRange.end
+      - ByteRange.start
+      - ByteRange.toString
   storage.file_buckets.download_with_transform:
     status: implemented
     symbols:
