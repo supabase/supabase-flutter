@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_flutter/src/auth_async_resumable_upload_storage.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
 import 'package:supabase_flutter/src/shared_preferences_auth_async_storage.dart';
@@ -75,7 +76,10 @@ class Supabase {
   /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
   /// configure their respective underlying clients, for example
   /// `storageOptions.retryOptions` configures how an upload to Supabase
-  /// storage that failed due to a network interruption is retried.
+  /// storage that failed due to a network interruption is retried. The
+  /// records that let a resumable upload continue after a restart are kept
+  /// in the storage of the session unless
+  /// `storageOptions.resumableUploadOptions.storage` names another.
   ///
   /// [requestTimeout] bounds how long a request to the database, auth,
   /// storage or functions service may go without progress, unless the options
@@ -130,6 +134,13 @@ class Supabase {
     if (authOptions.asyncStorage == null) {
       authOptions = authOptions.copyWith(
         asyncStorage: SharedPreferencesAuthAsyncStorage(),
+      );
+    }
+    if (storageOptions.resumableUploadOptions.storage == null) {
+      storageOptions = storageOptions.copyWith(
+        resumableUploadOptions: storageOptions.resumableUploadOptions.copyWith(
+          storage: AuthAsyncResumableUploadStorage(authOptions.asyncStorage!),
+        ),
       );
     }
     _instance._oauthLauncher = authOptions.oauthLauncher;

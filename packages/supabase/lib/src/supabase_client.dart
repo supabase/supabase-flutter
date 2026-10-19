@@ -420,6 +420,7 @@ class SupabaseClient {
       retryOptions: storageOptions.retryOptions,
       useNewHostname: storageOptions.useNewHostname,
       requestTimeout: storageOptions.requestTimeout ?? _requestTimeout,
+      resumableUploadOptions: storageOptions.resumableUploadOptions,
     );
   }
 

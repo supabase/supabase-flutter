@@ -1598,6 +1598,66 @@ features:
       - StorageFileApi.uploadToSignedUrl
       - StorageFileApi.uploadBinaryToSignedUrl
       - StorageFileApi.uploadStreamToSignedUrl
+  storage.file_buckets.resumable_upload:
+    status: implemented
+    symbols:
+      - StorageFileApi.resumableUpload
+      - StorageFileApi.resumableUploadBinary
+      - SupabaseStorageClient.resumableUploads
+      - SupabaseStorageClient.resumeUpload
+      - SupabaseStorageClient.resumeUploadBinary
+      - SupabaseStorageClient.discardResumableUpload
+    supporting_symbols:
+      - MemoryResumableUploadStorage
+      - MemoryResumableUploadStorage.getItem
+      - MemoryResumableUploadStorage.removeItem
+      - MemoryResumableUploadStorage.setItem
+      - ResumableUpload
+      - ResumableUpload.bucketId
+      - ResumableUpload.cancel
+      - ResumableUpload.done
+      - ResumableUpload.id
+      - ResumableUpload.path
+      - ResumableUpload.pause
+      - ResumableUpload.progress
+      - ResumableUpload.resume
+      - ResumableUpload.status
+      - ResumableUploadCancelledException
+      - ResumableUploadCancelledException.ResumableUploadCancelledException
+      - ResumableUploadCancelledException.uploadId
+      - ResumableUploadOptions
+      - ResumableUploadOptions.ResumableUploadOptions
+      - ResumableUploadOptions.chunkSize
+      - ResumableUploadOptions.copyWith
+      - ResumableUploadOptions.defaultChunkSize
+      - ResumableUploadOptions.defaultRetryDelays
+      - ResumableUploadOptions.retryDelays
+      - ResumableUploadOptions.retryTimeout
+      - ResumableUploadOptions.storage
+      - ResumableUploadProgress
+      - ResumableUploadProgress.==
+      - ResumableUploadProgress.ResumableUploadProgress
+      - ResumableUploadProgress.bytesUploaded
+      - ResumableUploadProgress.hashCode
+      - ResumableUploadProgress.status
+      - ResumableUploadProgress.toString
+      - ResumableUploadProgress.totalBytes
+      - ResumableUploadRecord
+      - ResumableUploadRecord.bucketId
+      - ResumableUploadRecord.createdAt
+      - ResumableUploadRecord.id
+      - ResumableUploadRecord.path
+      - ResumableUploadRecord.toString
+      - ResumableUploadRecord.totalBytes
+      - ResumableUploadStatus
+      - ResumableUploadStorage
+      - ResumableUploadStorage.ResumableUploadStorage
+      - ResumableUploadStorage.getItem
+      - ResumableUploadStorage.removeItem
+      - ResumableUploadStorage.setItem
+      - StorageClientOptions.copyWith
+      - StorageClientOptions.resumableUploadOptions
+      - UploadResponse.versionId
   storage.file_buckets.update_file:
     status: implemented
     symbols:

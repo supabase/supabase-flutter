@@ -1,13 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:http/http.dart';
 import 'package:iceberg/iceberg.dart';
 import 'package:supabase_storage/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
+import 'package:supabase_storage/src/resumable_upload.dart';
 import 'package:supabase_storage/src/storage_constants.dart';
 import 'package:supabase_storage/src/storage_bucket_api.dart';
 import 'package:supabase_storage/src/storage_file_api.dart';
 import 'package:supabase_storage/src/vector_client.dart';
 import 'package:supabase_storage/src/version.dart';
+
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 /// Client for Supabase Storage, exposed on `SupabaseClient.storage`.
 class SupabaseStorageClient extends StorageBucketApi {
@@ -49,6 +54,10 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// [StorageFileApi.downloadStream] once bytes are flowing, which emits the
   /// `TimeoutException` itself. A timed-out upload attempt is retried
   /// according to [retryOptions].
+  ///
+  /// [resumableUploadOptions] configures how
+  /// [StorageFileApi.resumableUpload] chunks, retries, and where it records
+  /// uploads so they can continue after a restart.
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {
@@ -57,6 +66,8 @@ class SupabaseStorageClient extends StorageBucketApi {
     bool useNewHostname = false,
     Future<String?> Function()? accessToken,
     super.requestTimeout,
+    ResumableUploadOptions resumableUploadOptions =
+        const ResumableUploadOptions(),
   }) : assert(
          accessToken == null ||
              headers.header(HttpHeader.authorization) == null,
@@ -76,7 +87,16 @@ class SupabaseStorageClient extends StorageBucketApi {
       'retryOptions: $retryOptions',
     );
     storageLogger.finest('Initialize with headers: ${headers.redacted}');
+    _resumableUploadRegistry = ResumableUploadRegistry(
+      url: this.url,
+      options: resumableUploadOptions,
+      storageKey:
+          'sb-${Uri.parse(this.url).host.split('.').first}-resumable-uploads',
+      fetch: storageFetch,
+    );
   }
+
+  late final ResumableUploadRegistry _resumableUploadRegistry;
 
   /// Configures the automatic retry of uploads.
   final SupabaseRetryOptions retryOptions;
@@ -140,8 +160,49 @@ class SupabaseStorageClient extends StorageBucketApi {
       id,
       retryOptions,
       storageFetch,
+      resumableUploadRegistry: _resumableUploadRegistry,
     );
   }
+
+  /// The resumable uploads that are recorded, oldest first: those running or
+  /// paused, and those an earlier run of the app left unfinished.
+  ///
+  /// Pass the id of one to [resumeUpload] to continue it.
+  Future<List<ResumableUploadRecord>> resumableUploads() =>
+      _resumableUploadRegistry.records();
+
+  /// Continues the resumable upload recorded under [id] with [file], from
+  /// the offset the server confirmed.
+  ///
+  /// {@template storage_resume_upload}
+  /// Supply the same file the upload was started with; one of another size
+  /// throws an [ArgumentError]. An upload still running in this process is
+  /// returned as is, and resumed if it was paused or failed. Throws a
+  /// [StorageException] when no upload is recorded under [id].
+  /// {@endtemplate}
+  Future<ResumableUpload> resumeUpload(String id, File file) =>
+      _resumableUploadRegistry.resume(
+        id,
+        ResumableUploadSource.file(file),
+        headers,
+      );
+
+  /// Continues the resumable upload recorded under [id] with [data], from
+  /// the offset the server confirmed.
+  ///
+  /// {@macro storage_resume_upload}
+  Future<ResumableUpload> resumeUploadBinary(String id, Uint8List data) =>
+      _resumableUploadRegistry.resume(
+        id,
+        ResumableUploadSource.bytes(data),
+        headers,
+      );
+
+  /// Cancels the resumable upload recorded under [id] without the file it
+  /// was started with: what the server holds of it is deleted, and so is its
+  /// record. Does nothing when no upload is recorded under [id].
+  Future<void> discardResumableUpload(String id) =>
+      _resumableUploadRegistry.discard(id, headers);
 
   /// Returns an Iceberg REST Catalog client for an analytics bucket.
   ///
