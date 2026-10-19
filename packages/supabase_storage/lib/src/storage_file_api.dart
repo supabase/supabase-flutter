@@ -613,11 +613,13 @@ class StorageFileApi {
   }) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
+    final transformParameters = transform?.toQueryParameters;
     final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/sign/$finalPath',
       {
         'expiresIn': expiresIn,
-        'transform': ?transform?.toQueryParameters,
+        if (transformParameters != null && transformParameters.isNotEmpty)
+          'transform': transformParameters,
         'versionId': ?versionId,
       },
       options: options,
