@@ -23,6 +23,7 @@ export 'src/platform/platform_info.dart';
 export 'src/random.dart';
 export 'src/redaction.dart';
 export 'src/replay_subject.dart';
+export 'src/request_body.dart';
 export 'src/retry.dart';
 export 'src/retry_options.dart';
 export 'src/snake_case.dart';

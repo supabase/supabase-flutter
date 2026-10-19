@@ -266,12 +266,12 @@ class StorageFileApi {
   Future<UploadResponse> uploadToSignedUrl(
     String path,
     String token,
-    File file, [
+    File file, {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
     UploadProgressCallback? onProgress,
-  ]) async {
+  }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
@@ -313,12 +313,12 @@ class StorageFileApi {
   Future<UploadResponse> uploadBinaryToSignedUrl(
     String path,
     String token,
-    Uint8List data, [
+    Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
     UploadProgressCallback? onProgress,
-  ]) async {
+  }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
@@ -748,7 +748,10 @@ class StorageFileApi {
   /// one.
   ///
   /// {@template storage_download_range}
-  /// [range] downloads only those bytes of the file. See [ByteRange].
+  /// [range] downloads only those bytes of the file. See [ByteRange]. A
+  /// server or cache that ignores the range and answers with the whole file
+  /// fails the download with a [StorageException]. A range of a transformed
+  /// image throws an [ArgumentError].
   /// {@endtemplate}
   Future<Uint8List> download(
     String path, {
@@ -765,12 +768,14 @@ class StorageFileApi {
       queryParameters: queryParameters,
       cacheNonce: cacheNonce,
       versionId: versionId,
+      range: range,
     );
 
     return _storageFetch.get(
       fetchUrl.toString(),
       options: _downloadOptions(range),
       abortSignal: abortSignal,
+      partialContent: range != null,
     );
   }
 
@@ -784,15 +789,24 @@ class StorageFileApi {
   /// Builds the download URL shared by [download] and [downloadStream],
   /// selecting the render endpoint when an image transformation is requested
   /// and appending transform, [queryParameters], [cacheNonce] and [versionId]
-  /// query parameters.
+  /// query parameters. Throws an [ArgumentError] for a [range] of a
+  /// transformed image.
   Uri _downloadUri(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
     String? versionId,
+    ByteRange? range,
   }) {
     final transformationQuery = transform?.toQueryParameters ?? {};
+    if (range != null && transformationQuery.isNotEmpty) {
+      throw ArgumentError.value(
+        range,
+        'range',
+        'cannot be combined with an image transformation',
+      );
+    }
     final renderPath = transformationQuery.isNotEmpty
         ? 'render/image/authenticated'
         : 'object';
@@ -853,12 +867,14 @@ class StorageFileApi {
       queryParameters: queryParameters,
       cacheNonce: cacheNonce,
       versionId: versionId,
+      range: range,
     );
 
     return _storageFetch.getStream(
       fetchUrl.toString(),
       options: _downloadOptions(range),
       abortSignal: abortSignal,
+      partialContent: range != null,
     );
   }
 

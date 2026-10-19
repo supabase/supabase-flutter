@@ -571,6 +571,41 @@ void main() {
       expect(customHttpClient.requests.single.headers['range'], 'bytes=10-');
     });
 
+    test('a range answered with the whole file fails the download', () async {
+      customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
+
+      await expectLater(
+        client.from('public_bucket').download('b.txt', range: ByteRange(1, 2)),
+        throwsA(isA<StorageException>()),
+      );
+    });
+
+    test('a range answered with the whole file fails the stream', () async {
+      customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
+
+      await expectLater(
+        client
+            .from('public_bucket')
+            .downloadStream('b.txt', range: ByteRange(1))
+            .drain<void>(),
+        throwsA(isA<StorageException>()),
+      );
+    });
+
+    test('a range of a transformed image is rejected before sending', () {
+      expect(
+        () => client
+            .from('public_bucket')
+            .download(
+              'b.png',
+              transform: const TransformOptions(width: 200),
+              range: ByteRange(0, 1023),
+            ),
+        throwsArgumentError,
+      );
+      expect(customHttpClient.requests, isEmpty);
+    });
+
     test('download sends no Range header without a range', () async {
       customHttpClient.stub(Uint8List.fromList([1, 2]));
 

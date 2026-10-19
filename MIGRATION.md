@@ -2295,9 +2295,31 @@ try {
 }
 ```
 
-`uploadToSignedUrl` and `uploadBinaryToSignedUrl` take the signal in the positional slot the
-controller used to occupy. `download` and `downloadStream` gain the parameter; on the stream the
-abort surfaces as a `RequestAbortedException` error.
+`download` and `downloadStream` gain the parameter; on the stream the abort surfaces as a
+`RequestAbortedException` error.
+
+### Signed URL uploads take named options
+
+`uploadToSignedUrl` and `uploadBinaryToSignedUrl` took their options as optional positional
+parameters. They are named now, like on every other upload method, so passing one no longer
+means passing `null` for the ones before it.
+
+```dart
+// Before
+await supabase.storage
+    .from('avatars')
+    .uploadToSignedUrl(path, token, file, const FileOptions(upsert: true));
+
+// After
+await supabase.storage
+    .from('avatars')
+    .uploadToSignedUrl(
+      path,
+      token,
+      file,
+      fileOptions: const FileOptions(upsert: true),
+    );
+```
 
 ### Storage uploads send the raw file body
 

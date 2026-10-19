@@ -1144,10 +1144,11 @@ class DownloadBehavior {
 /// the first 100 bytes. Without an [end], the range runs to the end of the
 /// file, which resumes a download that stopped after [start] bytes.
 ///
-/// The server answers a satisfied range with status 206 and only those bytes.
-/// A cache in front of it may ignore the header and send the whole file, and
-/// a [start] at or past the end of the file fails with a [StorageApiException]
-/// whose code is `InvalidRange`.
+/// A download with a range only succeeds when the server answers with status
+/// 206 and only those bytes. When a cache in front of it ignores the range and
+/// sends the whole file, the download throws a [StorageException] instead of
+/// returning it. A [start] at or past the end of the file fails with a
+/// [StorageApiException] whose code is `InvalidRange`.
 ///
 /// ```dart
 /// final firstKilobyte = await storage
@@ -1186,10 +1187,15 @@ class ByteRange {
 /// [totalBytes] is the size of the body, or `null` when an upload from a
 /// stream is given no content length.
 ///
-/// The last report has every byte sent, and an empty body gets one report of
-/// `0`. A retried upload sends its body again, so it reports `0` before it
-/// starts over. Every byte being sent does not mean the upload succeeded; only
-/// the result of the upload says that.
+/// Once every byte is sent, the last report has [sentBytes] equal to
+/// [totalBytes], and an empty body gets one report of `0`. An upload that
+/// fails, is aborted, or is answered before its whole body is sent stops
+/// reporting where it is. A retried upload sends its body again, so it
+/// reports `0` before it starts over. Every byte being sent does not mean the
+/// upload succeeded; only the result of the upload says that.
+///
+/// An exception the callback throws fails the upload with that exception,
+/// and the upload is not retried.
 ///
 /// On the web the browser takes the whole body before it sends any of it, so
 /// the count reaches the total right away.

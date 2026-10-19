@@ -588,6 +588,26 @@ void main() {
       expect(reports, [(5, 5), (0, 5), (5, 5)]);
     });
 
+    test('fails with what the callback throws, without a retry', () async {
+      const error = FormatException('widget disposed');
+      var calls = 0;
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadBinary(
+              'a.bin',
+              Uint8List(5),
+              onProgress: (sentBytes, totalBytes) {
+                calls++;
+                throw error;
+              },
+            ),
+        throwsA(same(error)),
+      );
+      expect(calls, 1);
+    });
+
     test('reports the progress of a signed URL upload', () async {
       await client
           .from('bucket')
@@ -595,10 +615,7 @@ void main() {
             'a.bin',
             'token',
             Uint8List(4),
-            const FileOptions(),
-            null,
-            null,
-            recordProgress,
+            onProgress: recordProgress,
           );
 
       expect(reports, [(4, 4)]);
@@ -665,9 +682,7 @@ void main() {
               'a.txt',
               'signed-token',
               Uint8List.fromList([1, 2, 3]),
-              const FileOptions(),
-              null,
-              abortSignal,
+              abortSignal: abortSignal,
             ),
         throwsA(isA<RequestAbortedException>()),
       );
