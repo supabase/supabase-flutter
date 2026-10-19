@@ -261,9 +261,7 @@ class FunctionsClient {
       '${request.headers.redacted}',
     );
 
-    final response = await _guardTransport(
-      () => idleTimeout.send(request, _httpClient),
-    );
+    final response = await _send(request, idleTimeout);
     final responseType = response.headers.mediaType ?? 'text/plain';
 
     final isRelayError = response.headers['x-relay-error'] == 'true';
@@ -293,6 +291,7 @@ class FunctionsClient {
       if (isSuccessStatus || error is TimeoutException) {
         throw FunctionsFetchException(
           message: 'Failed to read the response of the Edge Function',
+          traceId: request.headers.traceId,
           cause: error,
         );
       }
@@ -345,11 +344,13 @@ class FunctionsClient {
     String? body,
   }) {
     final requestId = response.headers.requestId;
+    final traceId = response.request?.headers.traceId;
     if (isRelayError) {
       return FunctionsRelayException(
         statusCode: response.statusCode,
         details: details,
         requestId: requestId,
+        traceId: traceId,
         headers: response.headers,
         body: body,
         message: response.reasonPhrase,
@@ -359,24 +360,31 @@ class FunctionsClient {
       statusCode: response.statusCode,
       details: details,
       requestId: requestId,
+      traceId: traceId,
       headers: response.headers,
       body: body,
       message: response.reasonPhrase,
     );
   }
 
-  /// Runs [action], wrapping a failure to get a response in a
-  /// [FunctionsFetchException]. An abort and an exception the HTTP client
-  /// already classified keep their own type.
-  Future<T> _guardTransport<T>(Future<T> Function() action) async {
+  /// Sends [request] under [idleTimeout], wrapping a failure to get a
+  /// response in a [FunctionsFetchException]. An abort and an exception the
+  /// HTTP client already classified keep their own type.
+  Future<http.StreamedResponse> _send(
+    http.BaseRequest request,
+    IdleTimeout idleTimeout,
+  ) async {
     try {
-      return await action();
+      return await idleTimeout.send(request, _httpClient);
     } on http.RequestAbortedException {
       rethrow;
     } on SupabaseException {
       rethrow;
     } catch (error) {
-      throw FunctionsFetchException(cause: error);
+      throw FunctionsFetchException(
+        traceId: request.headers.traceId,
+        cause: error,
+      );
     }
   }
 

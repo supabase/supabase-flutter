@@ -79,6 +79,38 @@ void main() {
     });
   });
 
+  group('traceId', () {
+    test('reads the trace id of the traceparent', () {
+      const headers = {
+        'traceparent':
+            '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00',
+      };
+
+      expect(headers.traceId, '4bf92f3577b34da6a3ce929d0e0e4736');
+    });
+
+    test('matches the header name case insensitively', () {
+      const headers = {
+        'Traceparent':
+            '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
+      };
+
+      expect(headers.traceId, '4bf92f3577b34da6a3ce929d0e0e4736');
+    });
+
+    test('returns null without a traceparent', () {
+      expect(const <String, String>{}.traceId, isNull);
+    });
+
+    test('returns null when the traceparent is not well-formed', () {
+      expect(const {'traceparent': 'garbage'}.traceId, isNull);
+      expect(
+        const {'traceparent': '00-abc-00f067aa0ba902b7-01'}.traceId,
+        isNull,
+      );
+    });
+  });
+
   group('redacted', () {
     test('replaces credential values but keeps the names', () {
       const headers = {

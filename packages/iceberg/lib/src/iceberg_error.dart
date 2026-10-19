@@ -25,6 +25,7 @@ sealed class IcebergException extends SupabaseException {
     super.message, {
     super.errorCode,
     super.requestId,
+    super.traceId,
     this.code,
     this.details,
   });
@@ -42,7 +43,7 @@ sealed class IcebergException extends SupabaseException {
 /// non-idempotent operation is unknown. The originating error is in [cause].
 final class IcebergNetworkException extends IcebergException
     with SupabaseTransportException {
-  const IcebergNetworkException(super.message, {this.cause})
+  const IcebergNetworkException(super.message, {super.traceId, this.cause})
     : super(details: cause);
 
   @override
@@ -61,6 +62,7 @@ sealed class IcebergApiException extends IcebergException
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    super.traceId,
     super.code,
     super.details,
     this.headers = const {},
@@ -74,6 +76,7 @@ sealed class IcebergApiException extends IcebergException
     Object? details, {
     Map<String, String> headers = const {},
     String? body,
+    String? traceId,
   }) {
     final requestId = headers.requestId;
     var message = 'Request failed with status $statusCode';
@@ -95,6 +98,7 @@ sealed class IcebergApiException extends IcebergException
         headers: headers,
         body: body,
         requestId: requestId,
+        traceId: traceId,
       );
     }
 
@@ -107,6 +111,7 @@ sealed class IcebergApiException extends IcebergException
         headers: headers,
         body: body,
         requestId: requestId,
+        traceId: traceId,
       ),
       409 => IcebergConflictException(
         message,
@@ -116,6 +121,7 @@ sealed class IcebergApiException extends IcebergException
         headers: headers,
         body: body,
         requestId: requestId,
+        traceId: traceId,
       ),
       419 => IcebergAuthenticationTimeoutException(
         message,
@@ -125,6 +131,7 @@ sealed class IcebergApiException extends IcebergException
         headers: headers,
         body: body,
         requestId: requestId,
+        traceId: traceId,
       ),
       >= 500 => IcebergServerException(
         message,
@@ -135,6 +142,7 @@ sealed class IcebergApiException extends IcebergException
         headers: headers,
         body: body,
         requestId: requestId,
+        traceId: traceId,
       ),
       _ => IcebergUnknownException(
         message,
@@ -145,6 +153,7 @@ sealed class IcebergApiException extends IcebergException
         headers: headers,
         body: body,
         requestId: requestId,
+        traceId: traceId,
       ),
     };
   }
@@ -173,6 +182,7 @@ final class IcebergNotFoundException extends IcebergApiException {
     super.headers,
     super.body,
     super.requestId,
+    super.traceId,
   }) : super(statusCode: 404);
 }
 
@@ -187,6 +197,7 @@ final class IcebergConflictException extends IcebergApiException {
     super.headers,
     super.body,
     super.requestId,
+    super.traceId,
   }) : super(statusCode: 409);
 }
 
@@ -201,6 +212,7 @@ final class IcebergAuthenticationTimeoutException extends IcebergApiException {
     super.headers,
     super.body,
     super.requestId,
+    super.traceId,
   }) : super(statusCode: 419);
 }
 
@@ -215,6 +227,7 @@ final class IcebergCommitStateUnknownException extends IcebergApiException {
     super.headers,
     super.body,
     super.requestId,
+    super.traceId,
   }) : super(errorCode: 'CommitStateUnknownException');
 }
 
@@ -229,6 +242,7 @@ final class IcebergServerException extends IcebergApiException {
     super.headers,
     super.body,
     super.requestId,
+    super.traceId,
   });
 }
 
@@ -243,5 +257,6 @@ final class IcebergUnknownException extends IcebergApiException {
     super.headers,
     super.body,
     super.requestId,
+    super.traceId,
   });
 }

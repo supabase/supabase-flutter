@@ -16,7 +16,12 @@
 /// }
 /// ```
 abstract class SupabaseException implements Exception {
-  const SupabaseException(this.message, {this.errorCode, this.requestId});
+  const SupabaseException(
+    this.message, {
+    this.errorCode,
+    this.requestId,
+    this.traceId,
+  });
 
   /// Human readable error message associated with the error.
   final String message;
@@ -37,10 +42,20 @@ abstract class SupabaseException implements Exception {
   /// request id, as one from a self-hosted stack without a gateway does.
   final String? requestId;
 
+  /// The trace id of the W3C `traceparent` the request was sent with.
+  ///
+  /// It is the trace id of the active trace the `traceContextProvider`
+  /// returned, or of the one the client originated when there was none, and
+  /// finds the request in the logs of your project and in your own traces.
+  ///
+  /// `null` when the request was sent without a `traceparent`, or when the
+  /// failure was raised before a request was sent.
+  final String? traceId;
+
   @override
   String toString() =>
       '$runtimeType(message: $message, errorCode: $errorCode, '
-      'requestId: $requestId)';
+      'requestId: $requestId, traceId: $traceId)';
 }
 
 /// Mixed into the exceptions that report a response from a Supabase service.
@@ -74,7 +89,7 @@ mixin SupabaseApiException on SupabaseException {
   @override
   String toString() =>
       '$runtimeType(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode, requestId: $requestId)';
+      'errorCode: $errorCode, requestId: $requestId, traceId: $traceId)';
 }
 
 /// Mixed into the exceptions thrown when a request never received a response,
@@ -101,5 +116,5 @@ mixin SupabaseTransportException on SupabaseException {
   @override
   String toString() =>
       '$runtimeType(message: $message, errorCode: $errorCode, '
-      'requestId: $requestId, cause: $cause)';
+      'requestId: $requestId, traceId: $traceId, cause: $cause)';
 }

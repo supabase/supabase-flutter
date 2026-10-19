@@ -113,7 +113,8 @@ class Supabase {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
-    TracePropagationOptions? tracePropagationOptions,
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
@@ -294,7 +295,7 @@ class Supabase {
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
     required AuthClientOptions authOptions,
-    required TracePropagationOptions? tracePropagationOptions,
+    required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
     required Duration? requestTimeout,

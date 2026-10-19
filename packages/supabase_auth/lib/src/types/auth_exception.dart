@@ -11,7 +11,12 @@ import 'package:supabase_common/supabase_common.dart';
 /// Find the full list of error codes in our documentation.
 /// https://supabase.com/docs/guides/auth/debugging/error-codes
 class AuthException extends SupabaseException {
-  const AuthException(super.message, {super.errorCode, super.requestId});
+  const AuthException(
+    super.message, {
+    super.errorCode,
+    super.requestId,
+    super.traceId,
+  });
 
   @override
   bool operator ==(Object other) {
@@ -21,11 +26,13 @@ class AuthException extends SupabaseException {
         other.runtimeType == runtimeType &&
         other.message == message &&
         other.errorCode == errorCode &&
-        other.requestId == requestId;
+        other.requestId == requestId &&
+        other.traceId == traceId;
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, message, errorCode, requestId);
+  int get hashCode =>
+      Object.hash(runtimeType, message, errorCode, requestId, traceId);
 }
 
 /// Thrown when a PKCE flow deep link is missing the `code` query parameter
@@ -38,11 +45,14 @@ class AuthPKCEGrantCodeExchangeError extends AuthException {
 /// is active, a required access or refresh token is empty, or a response that
 /// should have issued a session came without one.
 class AuthSessionMissingException extends AuthException {
-  AuthSessionMissingException({String? message, super.requestId})
-    : super(
-        message ?? 'Auth session missing!',
-        errorCode: ErrorCode.sessionMissing.code,
-      );
+  AuthSessionMissingException({
+    String? message,
+    super.requestId,
+    super.traceId,
+  }) : super(
+         message ?? 'Auth session missing!',
+         errorCode: ErrorCode.sessionMissing.code,
+       );
 }
 
 /// Thrown when an auth request failed in a way that is worth retrying.
@@ -51,8 +61,11 @@ class AuthSessionMissingException extends AuthException {
 /// [AuthRetryableFetchException], and a 5xx the service answered is an
 /// [AuthRetryableApiException]. Catch this type to cover both.
 abstract class AuthRetryableException extends AuthException {
-  const AuthRetryableException({required String message, super.requestId})
-    : super(message);
+  const AuthRetryableException({
+    required String message,
+    super.requestId,
+    super.traceId,
+  }) : super(message);
 }
 
 /// Thrown when a request never reached the auth service, for example on a
@@ -63,6 +76,7 @@ class AuthRetryableFetchException extends AuthRetryableException
   AuthRetryableFetchException({
     super.message = 'AuthRetryableFetchException',
     super.requestId,
+    super.traceId,
     this.cause,
   });
 
@@ -78,6 +92,7 @@ class AuthRetryableApiException extends AuthRetryableException
     required super.message,
     required this.statusCode,
     super.requestId,
+    super.traceId,
     this.headers = const {},
     this.body,
   });
@@ -111,6 +126,7 @@ class AuthApiException extends AuthException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    super.traceId,
     this.headers = const {},
     this.body,
   });
@@ -143,6 +159,7 @@ class AuthUnknownException extends AuthException {
     required String message,
     required this.originalError,
     super.requestId,
+    super.traceId,
   }) : super(message);
 
   /// May contain a non 2xx [http.Response] object or the original thrown error.
@@ -151,7 +168,8 @@ class AuthUnknownException extends AuthException {
   @override
   String toString() =>
       '$runtimeType(message: $message, errorCode: $errorCode, '
-      'requestId: $requestId, originalError: $originalError)';
+      'requestId: $requestId, traceId: $traceId, '
+      'originalError: $originalError)';
 }
 
 /// Thrown when a password fails the project's strength requirements.
@@ -161,6 +179,7 @@ class AuthWeakPasswordException extends AuthApiException {
     required super.statusCode,
     required this.reasons,
     super.requestId,
+    super.traceId,
     super.headers,
     super.body,
   }) : super(message, errorCode: ErrorCode.weakPassword.code);
@@ -171,7 +190,8 @@ class AuthWeakPasswordException extends AuthApiException {
   @override
   String toString() =>
       '$runtimeType(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode, requestId: $requestId, reasons: $reasons)';
+      'errorCode: $errorCode, requestId: $requestId, traceId: $traceId, '
+      'reasons: $reasons)';
 }
 
 /// Thrown when a JWT could not be parsed or verified, for example by

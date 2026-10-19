@@ -12,18 +12,21 @@ void main() {
           'Test error',
           errorCode: 'validation_failed',
           requestId: 'request-1',
+          traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
         ).toString(),
         'AuthException(message: Test error, errorCode: validation_failed, '
-        'requestId: request-1)',
+        'requestId: request-1, traceId: 4bf92f3577b34da6a3ce929d0e0e4736)',
       );
       expect(
         const AuthException('Test error').toString(),
-        'AuthException(message: Test error, errorCode: null, requestId: null)',
+        'AuthException(message: Test error, errorCode: null, requestId: null, '
+        'traceId: null)',
       );
     });
 
     test(
-      'equality compares the message, the error code and the request id',
+      'equality compares the message, the error code, the request id and the '
+      'trace id',
       () {
         const exception = AuthException(
           'Test error',
@@ -50,12 +53,19 @@ void main() {
           errorCode: 'bad_json',
           requestId: 'request-2',
         );
+        const otherTrace = AuthException(
+          'Test error',
+          errorCode: 'bad_json',
+          requestId: 'request-1',
+          traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
+        );
 
         expect(exception, equals(same));
         expect(exception.hashCode, equals(same.hashCode));
         expect(exception, isNot(equals(otherMessage)));
         expect(exception, isNot(equals(otherCode)));
         expect(exception, isNot(equals(otherRequest)));
+        expect(exception, isNot(equals(otherTrace)));
       },
     );
 
@@ -180,7 +190,7 @@ void main() {
           requestId: 'request-1',
         ).toString(),
         'AuthApiException(message: API error, statusCode: 422, '
-        'errorCode: bad_json, requestId: request-1)',
+        'errorCode: bad_json, requestId: request-1, traceId: null)',
       );
     });
 
@@ -221,7 +231,7 @@ void main() {
         string,
         startsWith(
           'AuthUnknownException(message: Unknown error, errorCode: null, '
-          'requestId: null, originalError:',
+          'requestId: null, traceId: null, originalError:',
         ),
       );
       expect(string, isNot(contains('statusCode:')));
@@ -251,7 +261,7 @@ void main() {
         exception.toString(),
         'AuthWeakPasswordException(message: Password too weak, '
         'statusCode: 422, errorCode: weak_password, requestId: request-1, '
-        'reasons: [too_short, no_special_chars])',
+        'traceId: null, reasons: [too_short, no_special_chars])',
       );
     });
   });

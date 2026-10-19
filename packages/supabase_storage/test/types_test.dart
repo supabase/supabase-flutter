@@ -548,7 +548,7 @@ void main() {
       expect(
         exception.toString(),
         'StorageTransportException(message: offline, errorCode: null, '
-        'requestId: null, cause: no route)',
+        'requestId: null, traceId: null, cause: no route)',
       );
     });
   });
@@ -587,7 +587,7 @@ void main() {
       expect(
         exception.toString(),
         'StorageApiException(message: not found, statusCode: 404, '
-        'errorCode: NoSuchKey, requestId: request-1)',
+        'errorCode: NoSuchKey, requestId: request-1, traceId: null)',
       );
     });
 

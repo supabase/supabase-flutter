@@ -2777,7 +2777,7 @@ features:
       - SupabaseStorageClient.setHeader
   client.observability.trace_propagation:
     status: implemented
-    note: "Opt-in W3C trace context propagation (traceparent/tracestate/baggage) to Supabase hosts only, with sampling-decision respect. The active context is supplied through a traceContextProvider callback, the idiomatic Dart equivalent of supabase-js's automatic extraction from the OpenTelemetry global API, since Dart has no ubiquitous ambient trace context. A traceparent that is not well-formed is dropped with a warning rather than propagated as supabase-js does, since here the header comes from application code rather than from the OpenTelemetry API."
+    note: "W3C trace context propagation (traceparent/tracestate/baggage) to Supabase hosts only, with sampling-decision respect. When no trace is active the client originates an unsampled traceparent per request, unless originateTraces is false, and exposes its trace id on SupabaseException.traceId. The active context is supplied through a traceContextProvider callback, the idiomatic Dart equivalent of supabase-js's automatic extraction from the OpenTelemetry global API, since Dart has no ubiquitous ambient trace context. A traceparent that is not well-formed is dropped with a warning rather than propagated as supabase-js does, since here the header comes from application code rather than from the OpenTelemetry API."
     symbols:
       - TraceContext
       - TraceContext.TraceContext
@@ -2789,6 +2789,7 @@ features:
       - TraceContextProvider
       - TracePropagationOptions
       - TracePropagationOptions.TracePropagationOptions
+      - TracePropagationOptions.originateTraces
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
   client.observability.diagnostic_logging:

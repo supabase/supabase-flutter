@@ -53,7 +53,23 @@ extension HeaderMap on Map<String, String> {
   /// fallback for a self-hosted stack behind a reverse proxy that assigns its
   /// own. Returns `null` when the response carries neither.
   String? get requestId => header('sb-request-id') ?? header('x-request-id');
+
+  /// The trace id of the `traceparent` header, the W3C trace context a
+  /// request was sent with.
+  ///
+  /// Returns `null` when there is no `traceparent` or its trace id field is
+  /// not 32 hexadecimal digits.
+  String? get traceId {
+    final parts = header('traceparent')?.split('-');
+    if (parts == null || parts.length < 4) {
+      return null;
+    }
+    final id = parts[1];
+    return _traceIdPattern.hasMatch(id) ? id : null;
+  }
 }
+
+final _traceIdPattern = RegExp(r'^[0-9a-f]{32}$');
 
 /// Decodes [body] as a JSON object, or returns `null` when it is empty, is not
 /// valid JSON, or is valid JSON that is not an object.

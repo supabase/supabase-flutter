@@ -2,7 +2,12 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 class TestException extends SupabaseException {
-  const TestException(super.message, {super.errorCode, super.requestId});
+  const TestException(
+    super.message, {
+    super.errorCode,
+    super.requestId,
+    super.traceId,
+  });
 }
 
 class TestApiException extends SupabaseException with SupabaseApiException {
@@ -11,6 +16,7 @@ class TestApiException extends SupabaseException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    super.traceId,
     this.headers = const {},
     this.body,
   });
@@ -43,7 +49,8 @@ void main() {
 
     expect(
       exception.toString(),
-      'TestException(message: boom, errorCode: server_error, requestId: null)',
+      'TestException(message: boom, errorCode: server_error, requestId: null, '
+      'traceId: null)',
     );
   });
 
@@ -58,7 +65,21 @@ void main() {
     expect(
       exception.toString(),
       'TestException(message: boom, errorCode: server_error, '
-      'requestId: 01a0d2ea-2094-72da-ae7f-a390251e6909)',
+      'requestId: 01a0d2ea-2094-72da-ae7f-a390251e6909, traceId: null)',
+    );
+  });
+
+  test('toString lists the trace id the request was sent with', () {
+    const exception = TestException(
+      'boom',
+      traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
+    );
+
+    expect(exception.traceId, '4bf92f3577b34da6a3ce929d0e0e4736');
+    expect(
+      exception.toString(),
+      'TestException(message: boom, errorCode: null, requestId: null, '
+      'traceId: 4bf92f3577b34da6a3ce929d0e0e4736)',
     );
   });
 
@@ -68,12 +89,14 @@ void main() {
       statusCode: 500,
       errorCode: 'server_error',
       requestId: 'request-1',
+      traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
     );
 
     expect(
       exception.toString(),
       'TestApiException(message: boom, statusCode: 500, '
-      'errorCode: server_error, requestId: request-1)',
+      'errorCode: server_error, requestId: request-1, '
+      'traceId: 4bf92f3577b34da6a3ce929d0e0e4736)',
     );
   });
 
@@ -98,7 +121,7 @@ void main() {
     expect(
       exception.toString(),
       'TestTransportException(message: offline, errorCode: null, '
-      'requestId: null, cause: no route)',
+      'requestId: null, traceId: null, cause: no route)',
     );
   });
 

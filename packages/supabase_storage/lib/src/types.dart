@@ -964,7 +964,12 @@ class SignedUploadURLResponse extends SignedUrl {
 /// reported is a [StorageApiException], and a request that never received a
 /// response is a [StorageTransportException].
 class StorageException extends SupabaseException {
-  const StorageException(super.message, {super.errorCode, super.requestId});
+  const StorageException(
+    super.message, {
+    super.errorCode,
+    super.requestId,
+    super.traceId,
+  });
 }
 
 /// Thrown when a request never received a response from storage, because the
@@ -975,7 +980,7 @@ class StorageException extends SupabaseException {
 /// surfaces as a `RequestAbortedException`.
 class StorageTransportException extends StorageException
     with SupabaseTransportException {
-  const StorageTransportException(super.message, {this.cause});
+  const StorageTransportException(super.message, {super.traceId, this.cause});
 
   @override
   final Object? cause;
@@ -988,6 +993,7 @@ class StorageApiException extends StorageException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    super.traceId,
     this.headers = const {},
     this.body,
   });
@@ -997,8 +1003,8 @@ class StorageApiException extends StorageException with SupabaseApiException {
   /// A JSON object is no guarantee that its fields carry the types the storage
   /// API documents, since a proxy or gateway in front of it can answer with a
   /// shape of its own, so every field is read defensively. [statusCode] is used
-  /// when the body reports none, and [requestId] is the one the response
-  /// headers carried.
+  /// when the body reports none, [requestId] is the one the response headers
+  /// carried, and [traceId] the one the request was sent with.
   ///
   /// [SupabaseException.errorCode] is read from the body's `code`, the
   /// documented storage error code such as `NoSuchKey` or `AccessDenied`. The
@@ -1013,6 +1019,7 @@ class StorageApiException extends StorageException with SupabaseApiException {
     Map<String, dynamic> json,
     int statusCode, {
     String? requestId,
+    String? traceId,
     Map<String, String> headers = const {},
     String? body,
   }) {
@@ -1022,6 +1029,7 @@ class StorageApiException extends StorageException with SupabaseApiException {
       errorCode: (json['code'] ?? json['error'])?.toString(),
       statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
       requestId: requestId,
+      traceId: traceId,
       headers: headers,
       body: body,
     );

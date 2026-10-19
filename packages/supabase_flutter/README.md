@@ -654,11 +654,25 @@ try {
 
 It is read from the `sb-request-id` response header, falling back to `x-request-id` for a self-hosted stack behind a reverse proxy that assigns its own. It is `null` when no response was received, for example on a network failure, or when the response carried neither header. Realtime errors do not carry a request id.
 
+The exceptions also carry the `traceId` of the [W3C trace context](https://www.w3.org/TR/trace-context/) the request was sent with, which finds the request in the logs of your project even when no response was received. It is the trace id of your own trace when you [propagate one](#trace-propagation), and otherwise the one the client originated for the request.
+
 ### Trace propagation
 
-If your app already records traces with a tool like Sentry or OpenTelemetry, the client can send the active [W3C trace context](https://www.w3.org/TR/trace-context/) along with each request, so the Supabase logs of that request carry the trace id of the span that made it.
+Every request the client sends to a Supabase host carries a [W3C trace context](https://www.w3.org/TR/trace-context/) `traceparent`, so the Supabase logs of that request carry a trace id.
 
-Propagation is off by default. Turn it on by passing `TracePropagationOptions` with a `traceContextProvider`, which the client calls before each request to read the active trace. Return `null` when there is no active trace and the request is sent without trace headers.
+If your app already records traces with a tool like Sentry or OpenTelemetry, pass `TracePropagationOptions` with a `traceContextProvider`, which the client calls before each request to read the active trace, so the logs carry the trace id of the span that made it. Return `null` when there is no active trace.
+
+Without a provider, or when it returns no `traceparent`, the client originates one with a new random trace id for each request, flagged as not sampled so nothing downstream records it as sampled. To send no trace headers at all, turn origination off:
+
+```dart
+await Supabase.initialize(
+  url: 'SUPABASE_URL',
+  publishableKey: 'SUPABASE_PUBLISHABLE_KEY',
+  tracePropagationOptions: const TracePropagationOptions(
+    originateTraces: false,
+  ),
+);
+```
 
 #### Sentry
 

@@ -98,18 +98,27 @@ class TraceContext {
 /// Options controlling W3C trace context propagation onto outgoing Supabase
 /// requests.
 ///
-/// Propagation is opt-in: a client created without these options sends no
-/// additional headers. When given, the trace context returned by
-/// [traceContextProvider] is injected into requests targeting Supabase hosts
-/// (`*.supabase.co`, `*.supabase.in`, the project host, and loopback addresses
-/// for local development). Third-party hosts never receive trace headers,
-/// and a redirect to one is followed without them, except on the web, where
-/// the browser follows redirects itself.
+/// The trace context returned by [traceContextProvider] is injected into
+/// requests targeting Supabase hosts (`*.supabase.co`, `*.supabase.in`, the
+/// project host, and loopback addresses for local development). When it
+/// returns no `traceparent`, or there is no provider, the client originates
+/// one for the request unless [originateTraces] is `false`. Third-party hosts
+/// never receive trace headers, and a redirect to one is followed without
+/// them, except on the web, where the browser follows redirects itself.
 class TracePropagationOptions {
   const TracePropagationOptions({
-    required this.traceContextProvider,
+    this.traceContextProvider,
+    this.originateTraces = true,
     this.respectSamplingDecision = true,
   });
+
+  /// Whether a request without an active trace gets a `traceparent` with a
+  /// new random trace id, so the Supabase logs can correlate it.
+  ///
+  /// Each request gets its own trace, flagged as not sampled, so nothing
+  /// downstream records it as sampled. The trace id of a failed request is on
+  /// `SupabaseException.traceId`. Defaults to `true`.
+  final bool originateTraces;
 
   /// Whether an unsampled trace, one whose `traceparent` carries a sampled
   /// flag of `0`, withholds [TraceContext.tracestate] and
@@ -123,5 +132,7 @@ class TracePropagationOptions {
   final bool respectSamplingDecision;
 
   /// Supplies the current trace context for each outgoing request.
-  final TraceContextProvider traceContextProvider;
+  ///
+  /// `null` when the application has no tracer to propagate.
+  final TraceContextProvider? traceContextProvider;
 }

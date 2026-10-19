@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:meta/meta.dart';
 
 final _hexadecimal = RegExp(r'^[0-9a-f]+$', caseSensitive: false);
@@ -76,3 +78,30 @@ String formatTraceparent({
 }) =>
     '00-${traceId.toLowerCase()}-${spanId.toLowerCase()}-'
     '${sampled ? '01' : '00'}';
+
+/// Generates a random W3C trace id, 32 hexadecimal digits and not all zeros.
+@internal
+String generateTraceId(Random random) =>
+    _generateId(random, length: 16, invalid: invalidTraceId);
+
+/// Generates a random W3C parent id, 16 hexadecimal digits and not all zeros.
+@internal
+String generateParentId(Random random) =>
+    _generateId(random, length: 8, invalid: invalidParentId);
+
+String _generateId(
+  Random random, {
+  required int length,
+  required String invalid,
+}) {
+  while (true) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < length; i++) {
+      buffer.write(random.nextInt(256).toRadixString(16).padLeft(2, '0'));
+    }
+    final id = buffer.toString();
+    if (id != invalid) {
+      return id;
+    }
+  }
+}

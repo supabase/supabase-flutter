@@ -554,6 +554,7 @@ class PostgrestBuilder<T> implements Future<T> {
             message: 'Failed to read the response: $error',
             statusCode: streamResponse.statusCode,
             requestId: streamResponse.headers.requestId,
+            traceId: request.headers.traceId,
             headers: streamResponse.headers,
             details: error,
           );
@@ -563,10 +564,15 @@ class PostgrestBuilder<T> implements Future<T> {
       } on SupabaseException {
         rethrow;
       } on TimeoutException catch (error) {
-        throw PostgrestTransportException('Request timed out', cause: error);
+        throw PostgrestTransportException(
+          'Request timed out',
+          traceId: request.headers.traceId,
+          cause: error,
+        );
       } on Exception catch (error) {
         throw PostgrestTransportException(
           'Request failed: $error',
+          traceId: request.headers.traceId,
           cause: error,
         );
       }
@@ -619,6 +625,7 @@ class PostgrestBuilder<T> implements Future<T> {
   /// Parse request response to json object if possible
   Future<T> _parseResponse(http.Response response, HttpMethod method) async {
     final requestId = response.headers.requestId;
+    final traceId = response.request?.headers.traceId;
     if (isSuccessStatusCode(response.statusCode)) {
       Object? body;
       int? count;
@@ -651,6 +658,7 @@ class PostgrestBuilder<T> implements Future<T> {
               message: response.body,
               statusCode: response.statusCode,
               requestId: requestId,
+              traceId: traceId,
               headers: response.headers,
               body: response.body,
               details: response.reasonPhrase,
@@ -668,6 +676,7 @@ class PostgrestBuilder<T> implements Future<T> {
             statusCode: 406,
             errorCode: 'PGRST116',
             requestId: requestId,
+            traceId: traceId,
             headers: response.headers,
             body: response.body,
             details:
@@ -704,6 +713,7 @@ class PostgrestBuilder<T> implements Future<T> {
           message: response.body,
           statusCode: response.statusCode,
           requestId: requestId,
+          traceId: traceId,
           headers: response.headers,
           body: response.body,
           details: response.reasonPhrase,
@@ -715,6 +725,7 @@ class PostgrestBuilder<T> implements Future<T> {
           statusCode: response.statusCode,
           details: response.reasonPhrase,
           requestId: requestId,
+          traceId: traceId,
           headers: response.headers,
           body: response.body,
         );
@@ -724,6 +735,7 @@ class PostgrestBuilder<T> implements Future<T> {
         statusCode: response.statusCode,
         message: response.body,
         requestId: requestId,
+        traceId: traceId,
         headers: response.headers,
         body: response.body,
         details: 'Error in Postgrest response for method HEAD',

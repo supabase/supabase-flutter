@@ -6,6 +6,8 @@ import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 const _requestIdHeaders = {'sb-request-id': 'request-1'};
+const _traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+const _traceHeaders = {'traceparent': '00-$_traceId-00f067aa0ba902b7-00'};
 
 PostgrestClient _buildClient(MockSupabaseHttpClient httpClient) =>
     PostgrestClient('http://localhost:3000', httpClient: httpClient);
@@ -18,6 +20,7 @@ void main() {
         statusCode: 400,
         errorCode: 'PGRST100',
         requestId: 'request-1',
+        traceId: _traceId,
         details: 'unexpected token',
         hint: 'check the filter',
       );
@@ -25,7 +28,7 @@ void main() {
       expect(
         exception.toString(),
         'PostgrestApiException(message: boom, statusCode: 400, '
-        'errorCode: PGRST100, requestId: request-1, '
+        'errorCode: PGRST100, requestId: request-1, traceId: $_traceId, '
         'details: unexpected token, hint: check the filter)',
       );
       expect(exception.toJson(), {
@@ -33,6 +36,7 @@ void main() {
         'statusCode': 400,
         'errorCode': 'PGRST100',
         'requestId': 'request-1',
+        'traceId': _traceId,
         'details': 'unexpected token',
         'hint': 'check the filter',
       });
@@ -152,7 +156,7 @@ void main() {
       expect(
         exception.toString(),
         'PostgrestTransportException(message: offline, errorCode: null, '
-        'requestId: null, cause: null)',
+        'requestId: null, traceId: null, cause: null)',
       );
     });
 
@@ -334,6 +338,66 @@ void main() {
           isA<PostgrestApiException>().having(
             (e) => e.requestId,
             'requestId',
+            isNull,
+          ),
+        ),
+      );
+    });
+  });
+
+  group('trace id', () {
+    test('is read from the request of an error response', () async {
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        headers: _traceHeaders,
+        httpClient: MockSupabaseHttpClient()
+          ..stub({'message': 'boom'}, statusCode: 400),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (error) => error.traceId,
+            'traceId',
+            _traceId,
+          ),
+        ),
+      );
+    });
+
+    test('is read from the request that got no response', () async {
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        headers: _traceHeaders,
+        httpClient: MockSupabaseHttpClient()
+          ..stubError(ClientException('Offline')),
+        retryOptions: const SupabaseRetryOptions(enabled: false),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (error) => error.traceId,
+            'traceId',
+            _traceId,
+          ),
+        ),
+      );
+    });
+
+    test('is null when the request carried no traceparent', () async {
+      final client = _buildClient(
+        MockSupabaseHttpClient()..stub({'message': 'boom'}, statusCode: 400),
+      );
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (error) => error.traceId,
+            'traceId',
             isNull,
           ),
         ),

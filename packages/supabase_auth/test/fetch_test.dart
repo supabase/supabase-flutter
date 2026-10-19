@@ -281,6 +281,65 @@ void main() {
     });
   });
 
+  group('AuthFetch trace id', () {
+    const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+    final options = AuthRequestOptions(
+      headers: {'traceparent': '00-$traceId-00f067aa0ba902b7-00'},
+    );
+
+    test('is carried on an api exception', () async {
+      final client = MockSupabaseHttpClient()
+        ..stub(
+          {'code': 'bad_json', 'message': 'error_message'},
+          statusCode: 400,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get, options: options),
+        throwsA(
+          isA<AuthApiException>()
+              .having((e) => e.traceId, 'traceId', traceId)
+              .having(
+                (e) => e.toString(),
+                'toString()',
+                contains('traceId: $traceId'),
+              ),
+        ),
+      );
+    });
+
+    test('is carried on a request that gets no response', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubError(ClientException('Offline'));
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get, options: options),
+        throwsA(
+          isA<AuthRetryableFetchException>().having(
+            (e) => e.traceId,
+            'traceId',
+            traceId,
+          ),
+        ),
+      );
+    });
+
+    test('is null when the request carried no traceparent', () async {
+      final client = MockSupabaseHttpClient()
+        ..stub(
+          {'code': 'bad_json', 'message': 'error_message'},
+          statusCode: 400,
+        );
+
+      await expectLater(
+        AuthFetch(client).request(_mockUrl, HttpMethod.get),
+        throwsA(
+          isA<AuthApiException>().having((e) => e.traceId, 'traceId', isNull),
+        ),
+      );
+    });
+  });
+
   group('AuthFetch request id', () {
     const requestIdHeaders = {'sb-request-id': 'request-1'};
 

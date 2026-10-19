@@ -748,6 +748,60 @@ void main() {
       },
     );
 
+    group('trace id', () {
+      const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+      late IcebergRestCatalog tracedCatalog;
+
+      setUp(() {
+        tracedCatalog = IcebergRestCatalog(
+          baseUrl: '$supabaseUrl/storage/v1/iceberg',
+          headers: {
+            'Authorization': 'Bearer $supabaseKey',
+            'traceparent': '00-$traceId-00f067aa0ba902b7-00',
+          },
+          warehouse: 'warehouse',
+          httpClient: mockClient,
+        );
+      });
+
+      test('is carried on an error response', () async {
+        mockClient.handler = (request) => _json(
+          {
+            'error': {'message': 'gone', 'type': 'NoSuchTableException'},
+          },
+          404,
+          request,
+        );
+
+        await expectLater(
+          tracedCatalog.listNamespaces(),
+          throwsA(
+            isA<IcebergNotFoundException>().having(
+              (error) => error.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is carried on a request that gets no response', () async {
+        mockClient.handler = (request) =>
+            throw ClientException('Offline', request.url);
+
+        await expectLater(
+          tracedCatalog.listNamespaces(),
+          throwsA(
+            isA<IcebergNetworkException>().having(
+              (error) => error.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+    });
+
     test('TableUpdate raw escape hatch serializes the action', () {
       const update = TableUpdate.raw('add-snapshot', {
         'snapshot': {'snapshot-id': 1},
