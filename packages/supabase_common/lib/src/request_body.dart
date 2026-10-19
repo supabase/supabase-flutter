@@ -11,15 +11,14 @@ Stream<List<int>> sliceRequestBody(Stream<List<int>> body) =>
 
 Stream<List<int>> _slices(List<int> chunk) {
   if (chunk.length <= _sliceLength) return Stream.value(chunk);
-  return Stream.fromIterable([
-    for (var start = 0; start < chunk.length; start += _sliceLength)
-      if (chunk is Uint8List)
-        Uint8List.sublistView(
-          chunk,
-          start,
-          min(start + _sliceLength, chunk.length),
-        )
-      else
-        chunk.sublist(start, min(start + _sliceLength, chunk.length)),
-  ]);
+  return Stream.fromIterable(_lazySlices(chunk));
+}
+
+Iterable<List<int>> _lazySlices(List<int> chunk) sync* {
+  for (var start = 0; start < chunk.length; start += _sliceLength) {
+    final end = min(start + _sliceLength, chunk.length);
+    yield chunk is Uint8List
+        ? Uint8List.sublistView(chunk, start, end)
+        : chunk.sublist(start, end);
+  }
 }
