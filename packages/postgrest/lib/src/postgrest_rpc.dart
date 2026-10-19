@@ -79,14 +79,23 @@ final class PostgrestRpc {
   /// arguments, or the value of a function's sole unnamed `json` or `jsonb`
   /// parameter. The call addresses [schema] unless this object was scoped
   /// with [PostgrestClient.schema].
+  ///
+  /// When [get] is set, the function is called with a `GET` request in
+  /// read-only access mode, so that it is retried like a select.
+  /// [arguments] are then sent as query parameters, so they have to be a
+  /// [Map] of values a query parameter can hold, and not rows or `json`. A
+  /// call with an argument PostgREST would read as an option of the request,
+  /// such as `limit`, a `null` value, or a value it would read as a filter,
+  /// such as `eq.foo`, is sent as a `POST` instead and not retried.
   @experimental
   PostgrestTypedFilterBuilder<Row, List<Row>> rows<Row>(
     String function, {
     Object? arguments,
     required RowConverter<Row> rowFromJson,
     String? schema,
+    bool get = false,
   }) => PostgrestTypedFilterBuilder._(
-    _request(function, arguments, rowFromJson, schema),
+    _request(function, arguments, rowFromJson, schema, get),
     PostgrestHttpTableExecutor(_client),
     (result) => [
       for (final row in result.data! as List<dynamic>)
@@ -105,19 +114,21 @@ final class PostgrestRpc {
   /// );
   /// ```
   ///
-  /// See [rows] for [arguments] and [schema].
+  /// See [rows] for [arguments], [schema] and [get].
   @experimental
   PostgrestTypedBuilder<T> value<T>(
     String function, {
     Object? arguments,
     required T Function(Object? json) fromJson,
     String? schema,
+    bool get = false,
   }) => PostgrestTypedBuilder._(
     _request(
       function,
       arguments,
       _noRows,
       schema,
+      get,
     ).copyWith(shape: PostgrestResultShape.value),
     PostgrestHttpTableExecutor(_client),
     (result) => fromJson(result.data),
@@ -128,16 +139,27 @@ final class PostgrestRpc {
     Object? arguments,
     RowConverter<Row> rowFromJson,
     String? schema,
-  ) => PostgrestTableRequest(
-    table: PostgrestTable<Row, Never, Never>(
-      function,
-      rowFromJson,
-      primaryKey: const [],
-    ),
-    operation: PostgrestTableOperation.rpc,
-    schema: _schemaIsExplicit ? _schema : (schema ?? _schema),
-    payload: arguments,
-  );
+    bool get,
+  ) {
+    if (get && arguments is! Map?) {
+      throw ArgumentError.value(
+        arguments,
+        'arguments',
+        'A call with get set takes a map of named arguments',
+      );
+    }
+    return PostgrestTableRequest(
+      table: PostgrestTable<Row, Never, Never>(
+        function,
+        rowFromJson,
+        primaryKey: const [],
+      ),
+      operation: PostgrestTableOperation.rpc,
+      schema: _schemaIsExplicit ? _schema : (schema ?? _schema),
+      payload: arguments,
+      readOnly: get,
+    );
+  }
 }
 
 Never _noRows(Map<String, dynamic> json) =>

@@ -137,12 +137,16 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   /// The function call of [request], decoding a response read as rows into
   /// a [PostgrestList] the way a select does.
   ///
-  /// A HEAD request has no body, so a call read with
-  /// [PostgrestResultShape.head] sends its arguments as query parameters.
+  /// A GET or HEAD request has no body, so a [PostgrestTableRequest.readOnly]
+  /// call, and a call read with [PostgrestResultShape.head], sends its
+  /// arguments as query parameters. A read-only call whose arguments
+  /// PostgREST would read as filters is sent as a POST instead.
   PostgrestFilterBuilder<Object?> _call(PostgrestTableRequest request) {
     final name = request.table.name;
-    final head = request.shape == PostgrestResultShape.head;
-    final arguments = head
+    final get =
+        request.shape == PostgrestResultShape.head ||
+        (request.readOnly && _fitsQueryParameters(request.payload));
+    final arguments = get
         ? (request.payload ?? const <String, Object?>{})
         : request.payload;
     if (request.shape == PostgrestResultShape.value) {
@@ -151,6 +155,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
         name,
         request.schema,
         params: arguments,
+        get: get,
       );
     }
     // ignore: invalid_use_of_internal_member
@@ -158,9 +163,41 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
       name,
       request.schema,
       params: arguments,
-      get: head,
+      get: get,
     );
   }
+
+  /// Whether PostgREST passes every one of [arguments] to the function when
+  /// they are sent as query parameters. It does not when a name is an option
+  /// of the request, `limit`, or an embed path, when a value is `null`, which
+  /// a query parameter can only carry as the text `null`, or when a value
+  /// starts like a filter, `eq.foo` or `not.in.(1)`, which it applies to the
+  /// result instead.
+  static bool _fitsQueryParameters(Object? arguments) =>
+      arguments is! Map ||
+      arguments.entries.every(
+        (argument) =>
+            !_reservedQueryParameters.contains(argument.key) &&
+            !'${argument.key}'.contains('.') &&
+            argument.value != null &&
+            !_filterSyntax.hasMatch(renderPostgrestQueryValue(argument.value)),
+      );
+
+  static const _reservedQueryParameters = {
+    'select',
+    'columns',
+    'on_conflict',
+    'order',
+    'limit',
+    'offset',
+    'and',
+    'or',
+  };
+
+  static final _filterSyntax = RegExp(
+    r'^(not\.)?(eq|gte?|lte?|neq|i?like|i?match|cs|cd|ov|sl|sr|nx[lr]|adj|'
+    r'in|is|isdistinct|(pl|ph|w)?fts)(\([^)]*\))?\.',
+  );
 
   static void _rejectFilter(
     PostgrestFilter<Object?>? filter,

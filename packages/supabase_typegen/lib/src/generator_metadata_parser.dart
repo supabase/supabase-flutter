@@ -74,8 +74,10 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
 /// only the computed fields and computed relationships are read: functions
 /// whose single input argument is the row type of a described relation of
 /// the same schema. The functions callable through `/rpc` come from the
-/// `rpcFunctions` collection; a document without it describes none. Fields
-/// the generator does not need are ignored.
+/// `rpcFunctions` collection; a document without it describes none. Their
+/// volatility is the `behavior` of the `functions` entry an overload's
+/// `function_id` names, and volatile when there is none. Fields the
+/// generator does not need are ignored.
 ///
 /// Tables and foreign tables are always insertable and updatable. Views use
 /// the `is_insert_enabled` and `is_update_enabled` flags, falling back to
@@ -645,6 +647,12 @@ List<FunctionDescription> _functions(
 }) {
   final rpcFunctions = (document['rpcFunctions'] as List<dynamic>? ?? const [])
       .cast<Map<String, dynamic>>();
+  final behaviorsById = {
+    for (final function
+        in (document['functions'] as List<dynamic>? ?? const [])
+            .cast<Map<String, dynamic>>())
+      function['id'] as int: function['behavior'] as String?,
+  };
 
   ValueTypeDescription valueType(Map<String, dynamic> reference) => _valueType(
     typesById[reference['type_id'] as int],
@@ -717,6 +725,13 @@ List<FunctionDescription> _functions(
                 result: result(overload),
                 error: overload['error'] as String?,
                 isComputedField: overload['computed_field_of'] != null,
+                isVolatile: switch (overload['function_id']) {
+                  final int id => switch (behaviorsById[id]) {
+                    'STABLE' || 'IMMUTABLE' => false,
+                    _ => true,
+                  },
+                  _ => true,
+                },
               ),
           ],
         ),

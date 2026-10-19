@@ -1659,6 +1659,90 @@ void main() {
       );
     });
 
+    test('a stable function is called read-only unless an argument only '
+        'fits in a request body', () {
+      FunctionDescription stable(
+        String name,
+        ValueTypeDescription type,
+      ) => FunctionDescription(
+        schema: 'public',
+        name: name,
+        overloads: [
+          FunctionOverloadDescription(
+            arguments: [
+              argument('id'),
+              FunctionArgumentDescription(
+                name: 'extra',
+                type: type,
+                hasDefault: true,
+              ),
+            ],
+            result: const FunctionNoResult(),
+            isVolatile: false,
+          ),
+        ],
+      );
+
+      final code = _normalize(
+        generateDartCode(
+          withFunctions([
+            stable('with_integers', integer),
+            stable(
+              'with_json',
+              const ValueTypeDescription(
+                postgresFormat: 'jsonb',
+                typeKind: ColumnTypeKind.json,
+              ),
+            ),
+            stable(
+              'with_json_array',
+              const ValueTypeDescription(
+                postgresFormat: '_jsonb',
+                typeKind: ColumnTypeKind.array,
+                elementTypeKind: ColumnTypeKind.json,
+              ),
+            ),
+            FunctionDescription(
+              schema: 'public',
+              name: 'volatile',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [argument('id')],
+                  result: const FunctionNoResult(),
+                ),
+              ],
+            ),
+          ]),
+        ),
+      );
+
+      final limited = _normalize(
+        generateDartCode(
+          withFunctions([
+            FunctionDescription(
+              schema: 'public',
+              name: 'with_limit',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [argument('limit')],
+                  result: const FunctionNoResult(),
+                  isVolatile: false,
+                ),
+              ],
+            ),
+          ]),
+        ),
+      );
+      expect(limited, isNot(contains('get:')));
+
+      String call(String name) =>
+          RegExp("value\\( '$name'.*?\\);").firstMatch(code)![0]!;
+      expect(call('with_integers'), contains('get: true'));
+      expect(call('with_json'), isNot(contains('get:')));
+      expect(call('with_json_array'), isNot(contains('get:')));
+      expect(call('volatile'), isNot(contains('get:')));
+    });
+
     test('the overload with the fewest arguments keeps the plain name', () {
       final code = _normalize(
         generateDartCode(
