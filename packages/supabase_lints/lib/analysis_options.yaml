@@ -80,6 +80,10 @@ dcm:
     prefer-prefixed-global-constants: false
     prefer-switch-with-enums: false
 
+    # DCM 1.40.0 flags public fields of private classes even when a method
+    # assigns them.
+    avoid-unassigned-fields: false
+
     # Blocked until dot shorthands stabilize. They are still an experimental
     # language feature, so code targeting our 3.9.0 floor cannot use them.
     prefer-returning-shorthands: false # needs dot shorthands (experimental)
