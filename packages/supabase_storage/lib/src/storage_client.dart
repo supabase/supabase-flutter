@@ -90,8 +90,7 @@ class SupabaseStorageClient extends StorageBucketApi {
     _resumableUploadRegistry = ResumableUploadRegistry(
       url: this.url,
       options: resumableUploadOptions,
-      storageKey:
-          'sb-${Uri.parse(this.url).host.split('.').first}-resumable-uploads',
+      storageKey: 'sb-${projectRef(this.url)}-resumable-uploads',
       fetch: storageFetch,
     );
   }
