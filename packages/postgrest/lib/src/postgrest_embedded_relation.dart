@@ -397,12 +397,20 @@ final class PostgrestToOneColumn<Row, Value extends Object>
   const PostgrestToOneColumn._(super.relation, super.inner);
 
   @override
-  PostgrestToOneColumn<Row, String> jsonText(String path) =>
-      PostgrestToOneColumn._(relation, _inner.jsonText(path));
+  PostgrestToOneColumn<Row, String> jsonText(String key) =>
+      PostgrestToOneColumn._(relation, _inner.jsonText(key));
 
   @override
-  PostgrestToOneColumn<Row, Value> jsonObject(String path) =>
-      PostgrestToOneColumn._(relation, _inner.jsonObject(path));
+  PostgrestToOneColumn<Row, String> jsonTextAt(int index) =>
+      PostgrestToOneColumn._(relation, _inner.jsonTextAt(index));
+
+  @override
+  PostgrestToOneColumn<Row, Value> jsonObject(String key) =>
+      PostgrestToOneColumn._(relation, _inner.jsonObject(key));
+
+  @override
+  PostgrestToOneColumn<Row, Value> jsonObjectAt(int index) =>
+      PostgrestToOneColumn._(relation, _inner.jsonObjectAt(index));
 }
 
 /// A column of a to-many embedded relation, seen from the parent.
@@ -415,10 +423,18 @@ final class PostgrestToManyColumn<Row, Value extends Object>
   const PostgrestToManyColumn._(super.relation, super.inner);
 
   @override
-  PostgrestToManyColumn<Row, String> jsonText(String path) =>
-      PostgrestToManyColumn._(relation, _inner.jsonText(path));
+  PostgrestToManyColumn<Row, String> jsonText(String key) =>
+      PostgrestToManyColumn._(relation, _inner.jsonText(key));
 
   @override
-  PostgrestToManyColumn<Row, Value> jsonObject(String path) =>
-      PostgrestToManyColumn._(relation, _inner.jsonObject(path));
+  PostgrestToManyColumn<Row, String> jsonTextAt(int index) =>
+      PostgrestToManyColumn._(relation, _inner.jsonTextAt(index));
+
+  @override
+  PostgrestToManyColumn<Row, Value> jsonObject(String key) =>
+      PostgrestToManyColumn._(relation, _inner.jsonObject(key));
+
+  @override
+  PostgrestToManyColumn<Row, Value> jsonObjectAt(int index) =>
+      PostgrestToManyColumn._(relation, _inner.jsonObjectAt(index));
 }

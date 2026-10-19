@@ -937,7 +937,9 @@ features:
       - PostgrestComputedField.expression
       - PostgrestComputedField.responseKey
       - PostgrestComputedField.jsonText
+      - PostgrestComputedField.jsonTextAt
       - PostgrestComputedField.jsonObject
+      - PostgrestComputedField.jsonObjectAt
       - PostgrestReadable
       - PostgrestReadable.responseKey
       - PostgrestPartialRow
@@ -1044,9 +1046,13 @@ features:
     supporting_symbols:
       - PostgrestColumnExpression.cast
       - PostgrestColumnExpression.jsonText
+      - PostgrestColumnExpression.jsonTextAt
       - PostgrestColumnExpression.jsonObject
+      - PostgrestColumnExpression.jsonObjectAt
       - PostgrestStoredColumn.jsonText
+      - PostgrestStoredColumn.jsonTextAt
       - PostgrestStoredColumn.jsonObject
+      - PostgrestStoredColumn.jsonObjectAt
       - PostgrestCastTarget
       - PostgrestCastTarget.PostgrestCastTarget
       - PostgrestCastTarget.sqlType
@@ -1062,12 +1068,16 @@ features:
       - PostgrestDerivedExpression
       - PostgrestDerivedExpression.countAll
       - PostgrestDerivedExpression.jsonText
+      - PostgrestDerivedExpression.jsonTextAt
       - PostgrestDerivedExpression.jsonObject
+      - PostgrestDerivedExpression.jsonObjectAt
       - PostgrestJsonPath
       - PostgrestJsonPath.expression
       - PostgrestJsonPath.responseKey
       - PostgrestJsonPath.jsonText
+      - PostgrestJsonPath.jsonTextAt
       - PostgrestJsonPath.jsonObject
+      - PostgrestJsonPath.jsonObjectAt
   database.query.rpc:
     status: implemented
     note: "head and count are applied via type-safe chaining (.head()/.count()) rather than inline call options, which is the idiomatic Dart builder pattern; inline options cannot preserve the distinct return types."
@@ -1453,10 +1463,14 @@ features:
       - PostgrestToManyRelation.computed
       - PostgrestToOneColumn
       - PostgrestToOneColumn.jsonText
+      - PostgrestToOneColumn.jsonTextAt
       - PostgrestToOneColumn.jsonObject
+      - PostgrestToOneColumn.jsonObjectAt
       - PostgrestToManyColumn
       - PostgrestToManyColumn.jsonText
+      - PostgrestToManyColumn.jsonTextAt
       - PostgrestToManyColumn.jsonObject
+      - PostgrestToManyColumn.jsonObjectAt
   database.using_modifiers.explain:
     status: implemented
     symbols:
