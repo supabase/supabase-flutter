@@ -957,8 +957,8 @@ class StorageFileApi {
   /// object to invalidate. For example: `purgeCache('folder/avatar.png')`.
   ///
   /// When [transformations] is `true`, only the resized/formatted variants are
-  /// purged, leaving the original cached file intact. When omitted the object
-  /// cache is purged.
+  /// purged, leaving the original cached file intact. Otherwise both the
+  /// original and its resized/formatted variants are purged.
   ///
   /// Requires the service-role key and the tenant `purgeCache` feature to be
   /// enabled on the storage server.
