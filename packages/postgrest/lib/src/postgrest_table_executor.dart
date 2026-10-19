@@ -169,14 +169,17 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
 
   /// Whether PostgREST passes every one of [arguments] to the function when
   /// they are sent as query parameters. It does not when a name is an option
-  /// of the request, `limit`, or an embed path, or when a value starts like a
-  /// filter, `eq.foo` or `not.in.(1)`, which it applies to the result instead.
+  /// of the request, `limit`, or an embed path, when a value is `null`, which
+  /// a query parameter can only carry as the text `null`, or when a value
+  /// starts like a filter, `eq.foo` or `not.in.(1)`, which it applies to the
+  /// result instead.
   static bool _fitsQueryParameters(Object? arguments) =>
       arguments is! Map ||
       arguments.entries.every(
         (argument) =>
             !_reservedQueryParameters.contains(argument.key) &&
             !'${argument.key}'.contains('.') &&
+            argument.value != null &&
             !_filterSyntax.hasMatch(renderPostgrestQueryValue(argument.value)),
       );
 

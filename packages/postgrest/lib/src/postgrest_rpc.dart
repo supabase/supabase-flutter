@@ -85,8 +85,8 @@ final class PostgrestRpc {
   /// [arguments] are then sent as query parameters, so they have to be a
   /// [Map] of values a query parameter can hold, and not rows or `json`. A
   /// call with an argument PostgREST would read as an option of the request,
-  /// such as `limit`, or a value it would read as a filter, such as `eq.foo`,
-  /// is sent as a `POST` instead and not retried.
+  /// such as `limit`, a `null` value, or a value it would read as a filter,
+  /// such as `eq.foo`, is sent as a `POST` instead and not retried.
   @experimental
   PostgrestTypedFilterBuilder<Row, List<Row>> rows<Row>(
     String function, {
