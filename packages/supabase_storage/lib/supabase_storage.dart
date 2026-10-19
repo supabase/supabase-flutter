@@ -11,6 +11,15 @@ export 'package:supabase_common/supabase_common.dart'
         SupabaseTransportException,
         SupabaseRetryOptions;
 
+export 'src/resumable_upload.dart'
+    show
+        MemoryResumableUploadStorage,
+        ResumableUpload,
+        ResumableUploadOptions,
+        ResumableUploadProgress,
+        ResumableUploadRecord,
+        ResumableUploadStatus,
+        ResumableUploadStorage;
 export 'src/storage_client.dart';
 export 'src/storage_file_api.dart';
 export 'src/types.dart';

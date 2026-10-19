@@ -116,6 +116,7 @@ class StorageClientOptions {
     this.retryOptions = const SupabaseRetryOptions(count: 0),
     this.useNewHostname = false,
     this.requestTimeout,
+    this.resumableUploadOptions = const ResumableUploadOptions(),
   });
 
   /// Configures how an upload that failed due to a network interruption is
@@ -145,6 +146,29 @@ class StorageClientOptions {
   /// `TimeoutException` itself. A timed-out upload attempt is retried
   /// according to [retryOptions].
   final Duration? requestTimeout;
+
+  /// How `StorageFileApi.resumableUpload` chunks and retries, and where it
+  /// records uploads so they can continue after a restart.
+  ///
+  /// `supabase_flutter` records them in the storage of the session unless
+  /// [ResumableUploadOptions.storage] is set.
+  final ResumableUploadOptions resumableUploadOptions;
+
+  /// Returns a copy with the given fields replaced.
+  StorageClientOptions copyWith({
+    SupabaseRetryOptions? retryOptions,
+    bool? useNewHostname,
+    Duration? requestTimeout,
+    ResumableUploadOptions? resumableUploadOptions,
+  }) {
+    return StorageClientOptions(
+      retryOptions: retryOptions ?? this.retryOptions,
+      useNewHostname: useNewHostname ?? this.useNewHostname,
+      requestTimeout: requestTimeout ?? this.requestTimeout,
+      resumableUploadOptions:
+          resumableUploadOptions ?? this.resumableUploadOptions,
+    );
+  }
 }
 
 /// Configuration for the Edge Functions client used by
