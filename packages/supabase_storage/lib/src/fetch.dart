@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -183,6 +184,9 @@ class Fetch {
   /// `x-upsert` and `x-metadata` carry what the multipart form fields used to.
   /// [contentLength] is sent as `Content-Length` when known; otherwise the
   /// body goes out with chunked transfer encoding.
+  ///
+  /// [onProgress] is called as the body is handed to the HTTP client, and is
+  /// never called once the upload has returned or failed.
   Future<Map<String, dynamic>> _handleUploadRequest(
     HttpMethod method,
     String url,
@@ -193,6 +197,7 @@ class Fetch {
     FetchOptions? options,
     SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   ) async {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
@@ -209,6 +214,21 @@ class Fetch {
       ...?fileOptions.headers,
     };
 
+    var finished = false;
+    var bodiesSent = 0;
+    Stream<List<int>> createReportedBody() {
+      final body = createBody();
+      if (onProgress == null) return body;
+      return _reportProgress(
+        body,
+        contentLength,
+        restarted: bodiesSent++ > 0,
+        onProgress: (sentBytes, totalBytes) {
+          if (!finished) onProgress(sentBytes, totalBytes);
+        },
+      );
+    }
+
     var attempts = 0;
     final streamedResponse = await retry<http.StreamedResponse>(
       () async {
@@ -221,7 +241,7 @@ class Fetch {
         final request = _UploadRequest(
           method.value,
           Uri.parse(url),
-          () => idleTimeout.watchRequestBody(createBody()),
+          () => idleTimeout.watchRequestBody(createReportedBody()),
           abortTrigger: idleTimeout.abortTrigger(abortSignal),
         );
         request
@@ -232,9 +252,39 @@ class Fetch {
       options: retryOptions,
       retryIf: (error) => error is StorageTransportException,
       abortSignal: abortSignal,
-    );
+    ).whenComplete(() => finished = true);
 
     return _handleResponse(streamedResponse, options);
+  }
+
+  static const _progressSliceLength = 64 * 1024;
+
+  /// Passes [body] through in slices of at most [_progressSliceLength] bytes,
+  /// reporting the bytes passed so far after each one.
+  ///
+  /// A [restarted] body reports `0` before its first byte, and a body that
+  /// yields no bytes reports `0` once.
+  static Stream<List<int>> _reportProgress(
+    Stream<List<int>> body,
+    int? totalBytes, {
+    required bool restarted,
+    required UploadProgressCallback onProgress,
+  }) async* {
+    var reported = restarted;
+    if (restarted) onProgress(0, totalBytes);
+    var sentBytes = 0;
+    await for (final chunk in body) {
+      for (var start = 0; start < chunk.length; start += _progressSliceLength) {
+        final end = min(start + _progressSliceLength, chunk.length);
+        yield chunk is Uint8List
+            ? Uint8List.sublistView(chunk, start, end)
+            : chunk.sublist(start, end);
+        sentBytes += end - start;
+        reported = true;
+        onProgress(sentBytes, totalBytes);
+      }
+    }
+    if (!reported) onProgress(0, totalBytes);
   }
 
   /// Reads the response body and returns it as a [T]: [Uint8List] when
@@ -359,6 +409,7 @@ class Fetch {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final int contentLength = await file.length();
     return _handleUploadRequest(
@@ -371,6 +422,7 @@ class Fetch {
       options,
       retryOptions,
       abortSignal,
+      onProgress,
     );
   }
 
@@ -383,6 +435,7 @@ class Fetch {
     FetchOptions? options,
     required SupabaseRetryOptions retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) {
     return _handleUploadRequest(
       method,
@@ -394,6 +447,7 @@ class Fetch {
       options,
       retryOptions,
       abortSignal,
+      onProgress,
     );
   }
 
@@ -408,6 +462,7 @@ class Fetch {
     FileOptions fileOptions, {
     FetchOptions? options,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) {
     return _handleUploadRequest(
       method,
@@ -419,6 +474,7 @@ class Fetch {
       options,
       const SupabaseRetryOptions(enabled: false),
       abortSignal,
+      onProgress,
     );
   }
 }

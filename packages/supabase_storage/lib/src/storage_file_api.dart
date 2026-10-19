@@ -90,6 +90,11 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
+  /// {@template storage_upload_progress}
+  /// [onProgress] is called as the file is sent with the bytes sent so far and
+  /// the total. See [UploadProgressCallback].
+  /// {@endtemplate}
+  ///
   /// {@template storage_abort_signal}
   /// [abortSignal] aborts the in-flight request when the provided [Future]
   /// completes, and stops any remaining retries. It must not complete with an
@@ -126,6 +131,7 @@ class StorageFileApi {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -137,6 +143,7 @@ class StorageFileApi {
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -155,6 +162,8 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
@@ -165,6 +174,7 @@ class StorageFileApi {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -176,6 +186,7 @@ class StorageFileApi {
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -202,6 +213,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
@@ -212,6 +225,7 @@ class StorageFileApi {
     int? contentLength,
     FileOptions fileOptions = const FileOptions(),
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -223,6 +237,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -245,6 +260,8 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   Future<UploadResponse> uploadToSignedUrl(
     String path,
@@ -253,6 +270,7 @@ class StorageFileApi {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   ]) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -266,6 +284,7 @@ class StorageFileApi {
       fileOptions,
       retryOptions: retryOptions ?? _retryOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -288,6 +307,8 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   Future<UploadResponse> uploadBinaryToSignedUrl(
     String path,
@@ -296,6 +317,7 @@ class StorageFileApi {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   ]) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -309,6 +331,7 @@ class StorageFileApi {
       fileOptions,
       retryOptions: retryOptions ?? _retryOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -331,6 +354,8 @@ class StorageFileApi {
   /// object. [UploadResponse.id] is `null`, because the server does not
   /// report it for uploads through a signed URL.
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   Future<UploadResponse> uploadStreamToSignedUrl(
     String path,
@@ -339,6 +364,7 @@ class StorageFileApi {
     int? contentLength,
     FileOptions fileOptions = const FileOptions(),
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -352,6 +378,7 @@ class StorageFileApi {
       contentLength,
       fileOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -410,6 +437,8 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
@@ -420,6 +449,7 @@ class StorageFileApi {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -431,6 +461,7 @@ class StorageFileApi {
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -450,6 +481,8 @@ class StorageFileApi {
   /// [retryOptions] overrides the retry configuration of the storage client
   /// for this upload.
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
@@ -460,6 +493,7 @@ class StorageFileApi {
     FileOptions fileOptions = const FileOptions(),
     SupabaseRetryOptions? retryOptions,
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -471,6 +505,7 @@ class StorageFileApi {
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -489,6 +524,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
+  /// {@macro storage_upload_progress}
+  ///
   /// {@macro storage_abort_signal}
   ///
   /// Returns an [UploadResponse] with the id, path and full path of the
@@ -499,6 +536,7 @@ class StorageFileApi {
     int? contentLength,
     FileOptions fileOptions = const FileOptions(),
     Future<void>? abortSignal,
+    UploadProgressCallback? onProgress,
   }) async {
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -510,6 +548,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       abortSignal: abortSignal,
+      onProgress: onProgress,
     );
 
     return _uploadResponse(cleanPath, response);
@@ -707,6 +746,10 @@ class StorageFileApi {
   ///
   /// [versionId] downloads that version of the file instead of the current
   /// one.
+  ///
+  /// {@template storage_download_range}
+  /// [range] downloads only those bytes of the file. See [ByteRange].
+  /// {@endtemplate}
   Future<Uint8List> download(
     String path, {
     TransformOptions? transform,
@@ -714,6 +757,7 @@ class StorageFileApi {
     String? cacheNonce,
     Future<void>? abortSignal,
     String? versionId,
+    ByteRange? range,
   }) {
     final fetchUrl = _downloadUri(
       path,
@@ -725,9 +769,16 @@ class StorageFileApi {
 
     return _storageFetch.get(
       fetchUrl.toString(),
-      options: FetchOptions(_headers, noResolveJson: true),
+      options: _downloadOptions(range),
       abortSignal: abortSignal,
     );
+  }
+
+  FetchOptions _downloadOptions(ByteRange? range) {
+    return FetchOptions({
+      ..._headers,
+      'Range': ?range?.headerValue,
+    }, noResolveJson: true);
   }
 
   /// Builds the download URL shared by [download] and [downloadStream],
@@ -785,6 +836,8 @@ class StorageFileApi {
   ///
   /// [versionId] downloads that version of the file instead of the current
   /// one.
+  ///
+  /// {@macro storage_download_range}
   Stream<Uint8List> downloadStream(
     String path, {
     TransformOptions? transform,
@@ -792,6 +845,7 @@ class StorageFileApi {
     String? cacheNonce,
     Future<void>? abortSignal,
     String? versionId,
+    ByteRange? range,
   }) {
     final fetchUrl = _downloadUri(
       path,
@@ -803,7 +857,7 @@ class StorageFileApi {
 
     return _storageFetch.getStream(
       fetchUrl.toString(),
-      options: FetchOptions(_headers, noResolveJson: true),
+      options: _downloadOptions(range),
       abortSignal: abortSignal,
     );
   }
