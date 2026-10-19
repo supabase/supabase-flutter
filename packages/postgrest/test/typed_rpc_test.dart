@@ -184,6 +184,31 @@ void main() {
       });
     });
 
+    test('sends a read-only call with a value PostgREST would read as a '
+        'filter as a post request', () async {
+      httpClient.stub(bookRows);
+
+      for (final query in ['eq.dart', 'not.in.(a)', 'fts(english).dart']) {
+        await client.rpc.rows(
+          'search_books',
+          arguments: {'query': query},
+          rowFromJson: Book.new,
+          get: true,
+        );
+
+        expect(lastRequest().method, HttpMethod.post.value);
+        expect(lastRequest().jsonBody, {'query': query});
+      }
+
+      await client.rpc.rows(
+        'search_books',
+        arguments: {'query': 'equal.parts'},
+        rowFromJson: Book.new,
+        get: true,
+      );
+      expect(lastRequest().method, HttpMethod.get.value);
+    });
+
     test('retries a read-only call', () async {
       httpClient.stubStatuses([503, 200], body: bookRows);
       final retrying = PostgrestClient(

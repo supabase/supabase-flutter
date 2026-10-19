@@ -1716,6 +1716,25 @@ void main() {
         ),
       );
 
+      final limited = _normalize(
+        generateDartCode(
+          withFunctions([
+            FunctionDescription(
+              schema: 'public',
+              name: 'with_limit',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [argument('limit')],
+                  result: const FunctionNoResult(),
+                  isVolatile: false,
+                ),
+              ],
+            ),
+          ]),
+        ),
+      );
+      expect(limited, isNot(contains('get:')));
+
       String call(String name) =>
           RegExp("value\\( '$name'.*?\\);").firstMatch(code)![0]!;
       expect(call('with_integers'), contains('get: true'));

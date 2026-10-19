@@ -83,7 +83,9 @@ final class PostgrestRpc {
   /// When [get] is set, the function is called with a `GET` request in
   /// read-only access mode, so that it is retried like a select.
   /// [arguments] are then sent as query parameters, so they have to be a
-  /// [Map] of values a query parameter can hold, and not rows or `json`.
+  /// [Map] of values a query parameter can hold, and not rows or `json`. A
+  /// call with a value PostgREST would read as a filter, such as `eq.foo`,
+  /// is sent as a `POST` instead and not retried.
   @experimental
   PostgrestTypedFilterBuilder<Row, List<Row>> rows<Row>(
     String function, {

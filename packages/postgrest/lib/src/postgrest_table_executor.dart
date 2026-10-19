@@ -139,10 +139,13 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   ///
   /// A GET or HEAD request has no body, so a [PostgrestTableRequest.readOnly]
   /// call, and a call read with [PostgrestResultShape.head], sends its
-  /// arguments as query parameters.
+  /// arguments as query parameters. A read-only call whose arguments
+  /// PostgREST would read as filters is sent as a POST instead.
   PostgrestFilterBuilder<Object?> _call(PostgrestTableRequest request) {
     final name = request.table.name;
-    final get = request.readOnly || request.shape == PostgrestResultShape.head;
+    final get =
+        request.shape == PostgrestResultShape.head ||
+        (request.readOnly && !_hasFilterSyntax(request.payload));
     final arguments = get
         ? (request.payload ?? const <String, Object?>{})
         : request.payload;
@@ -163,6 +166,20 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
       get: get,
     );
   }
+
+  /// Whether a value of [arguments], as a query parameter, starts like a
+  /// filter, `eq.foo` or `not.in.(1)`, which PostgREST applies to the result
+  /// instead of passing it to the function.
+  static bool _hasFilterSyntax(Object? arguments) =>
+      arguments is Map &&
+      arguments.values.any(
+        (value) => _filterSyntax.hasMatch(renderPostgrestQueryValue(value)),
+      );
+
+  static final _filterSyntax = RegExp(
+    r'^(not\.)?(eq|gte?|lte?|neq|i?like|i?match|cs|cd|ov|sl|sr|nx[lr]|adj|'
+    r'in|is|isdistinct|(pl|ph|w)?fts)(\([^)]*\))?\.',
+  );
 
   static void _rejectFilter(
     PostgrestFilter<Object?>? filter,

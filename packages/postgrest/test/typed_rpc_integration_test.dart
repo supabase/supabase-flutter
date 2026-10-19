@@ -117,6 +117,18 @@ void main() {
     expect(element, 420);
   });
 
+  test('calls a function read-only with an argument that looks like a '
+      'filter', () async {
+    final status = await postgrest.rpc.value(
+      'get_status',
+      arguments: {'name_param': 'eq.supabot'},
+      fromJson: (json) => json as String?,
+      get: true,
+    );
+
+    expect(status, isNull);
+  });
+
   test('calls a function of the schema it is given', () async {
     final status = await postgrest.rpc.value(
       'get_status',
