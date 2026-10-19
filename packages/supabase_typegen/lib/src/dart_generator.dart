@@ -160,9 +160,13 @@ String _typeBaseName(String schema, String name) =>
     schema == 'public' ? pascalCase(name) : pascalCase('${schema}_$name');
 
 /// The name a schema object is referred to by in documentation: bare for
-/// `public`, schema-qualified otherwise.
+/// `public`, schema-qualified otherwise, with line terminators replaced so
+/// it stays on one doc comment line.
 String _displayName(String schema, String name) =>
-    schema == 'public' ? name : '$schema.$name';
+    (schema == 'public' ? name : '$schema.$name').replaceAll(
+      _lineTerminators,
+      ' ',
+    );
 
 /// Hands out unique top level type names, suffixing `$` on collisions.
 ///
@@ -229,7 +233,11 @@ void _writeEnum(
     },
   );
 
-  _writeDocComment(buffer, 'Postgres enum `${enumDescription.qualifiedName}`.');
+  _writeDocComment(
+    buffer,
+    'Postgres enum '
+    '`${enumDescription.qualifiedName.replaceAll(_lineTerminators, ' ')}`.',
+  );
   buffer.writeln('enum $typeName {');
   for (final value in enumDescription.values) {
     buffer.writeln("  ${valueNames[value]}(${_stringLiteral(value)}),");
