@@ -1732,12 +1732,12 @@ The three packages that already wrapped the failure changed how they expose the 
 
 ### A failing `accessToken` callback throws `AccessTokenException`
 
-When the `accessToken` callback of a client throws, the request is no longer sent. postgrest,
-storage and functions used to report an exception from the callback as a transport exception,
-which postgrest retried, and let a thrown `Error` through unwrapped. All three now throw an `AccessTokenException`
-with the callback's error in `cause`, and never retry it. An exception the callback throws that is
-already a `SupabaseException`, such as an `AuthException` from a failed session refresh, is
-thrown as is.
+postgrest, storage and functions used to report an exception from the `accessToken` callback as a
+transport exception, which postgrest and a storage client with retries enabled retried. postgrest
+and storage let a thrown `Error` through unwrapped. All three now throw an `AccessTokenException`
+with the callback's error in `cause`, never retry it, and never send the request. An exception the
+callback throws that is already a `SupabaseException`, such as an `AuthException` from a failed
+session refresh, is thrown as is.
 
 ```dart
 // Before

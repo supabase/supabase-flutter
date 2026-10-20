@@ -17,6 +17,7 @@ void main() {
           throw error;
         },
       );
+      addTearDown(postgrest.dispose);
 
       await expectLater(
         () => postgrest.from('users').select(),
