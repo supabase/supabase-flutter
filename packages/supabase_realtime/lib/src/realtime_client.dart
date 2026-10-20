@@ -341,13 +341,15 @@ class RealtimeClient {
 
   /// Messages pushed while the socket was not connected, sent out once a
   /// connection is next established.
-  final List<void Function()> _sendBuffer = [];
+  ///
+  /// A join that its channel has since resent is dropped instead of sent.
+  final List<RealtimeMessage> _sendBuffer = [];
 
   /// Messages pushed while the socket was not connected, as an unmodifiable
   /// view.
   @internal
   @visibleForTesting
-  List<void Function()> get sendBuffer => List.unmodifiable(_sendBuffer);
+  List<RealtimeMessage> get sendBuffer => List.unmodifiable(_sendBuffer);
 
   final _statusController =
       StreamController<RealtimeConnectionStatusChange>.broadcast();
@@ -652,7 +654,7 @@ class RealtimeClient {
     if (isConnected) {
       _write(message);
     } else {
-      _sendBuffer.add(() => _write(message));
+      _sendBuffer.add(message);
     }
   }
 
@@ -1021,11 +1023,27 @@ class RealtimeClient {
 
   void _flushSendBuffer() {
     if (isConnected && _sendBuffer.isNotEmpty) {
-      for (final callback in _sendBuffer) {
-        callback();
-      }
+      final messages = _sendBuffer.toList();
       _sendBuffer.clear();
+      for (final message in messages) {
+        if (!_isSupersededJoin(message)) {
+          _write(message);
+        }
+      }
     }
+  }
+
+  /// Whether [message] is a join that no channel on its topic is waiting for
+  /// any more, because the channel was removed or has resent its join.
+  ///
+  /// Sending it after the current join would make the server replace the
+  /// current join with the stale one.
+  bool _isSupersededJoin(RealtimeMessage message) {
+    return message.event == ChannelEvent.join.eventName() &&
+        !_channels.any(
+          (channel) =>
+              channel.topic == message.topic && channel.joinRef == message.ref,
+        );
   }
 
   /// Resolves the access token before rejoining errored channels and flushing

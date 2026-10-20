@@ -799,7 +799,7 @@ void main() {
 
   group('push', () {
     const topic = 'topic';
-    const event = ChannelEvent.join;
+    const event = ChannelEvent.leave;
     const payload = 'payload';
     const ref = 'ref';
     // Protocol 2.0.0 text frames are positional arrays:
