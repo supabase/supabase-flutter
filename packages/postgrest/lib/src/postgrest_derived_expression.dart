@@ -59,30 +59,31 @@ sealed class PostgrestDerivedExpression<Row, Value extends Object>
   /// `count()`, which counts rows rather than the values of a column.
   ///
   /// ```dart
+  /// // select="count()":count()
   /// final rows = await client
   ///     .table(Orders.table)
-  ///     .selectOnly([PostgrestDerivedExpression.countAll()]); // select=count()
+  ///     .selectOnly([PostgrestDerivedExpression.countAll()]);
   /// ```
   ///
   /// {@macro postgrest_aggregate}
   static PostgrestDerivedExpression<Row, int> countAll<Row>() =>
-      const _Derivation._('count()', 'count', null);
+      const _Derivation._('count()', null);
 
   @override
   PostgrestDerivedExpression<Row, String> jsonText(String key) =>
-      _derive('->>${_quoted(key)}', key: null, fromJson: null);
+      _derive('->>${_quoted(key)}', fromJson: null);
 
   @override
   PostgrestDerivedExpression<Row, String> jsonTextAt(int index) =>
-      _derive('->>$index', key: null, fromJson: null);
+      _derive('->>$index', fromJson: null);
 
   @override
   PostgrestDerivedExpression<Row, Value> jsonObject(String key) =>
-      _derive('->${_quoted(key)}', key: null, fromJson: null);
+      _derive('->${_quoted(key)}', fromJson: null);
 
   @override
   PostgrestDerivedExpression<Row, Value> jsonObjectAt(int index) =>
-      _derive('->$index', key: null, fromJson: null);
+      _derive('->$index', fromJson: null);
 
   @override
   bool get _selectedByStar => false;
@@ -99,25 +100,20 @@ sealed class PostgrestDerivedExpression<Row, Value extends Object>
 
 /// A derivation of a value of this table, kept as the text PostgREST reads.
 ///
-/// Without a key, it is keyed by its own expression and sent under that
-/// alias, see [PostgrestJsonPath].
+/// Keyed by its own expression and sent under that alias, see
+/// [PostgrestJsonPath].
 final class _Derivation<Row, Value extends Object>
     extends PostgrestDerivedExpression<Row, Value> {
-  const _Derivation._(this.expression, this._castKey, this._fromJson)
-    : super._();
+  const _Derivation._(this.expression, this._fromJson) : super._();
 
   @override
   final String expression;
 
   @override
-  final String? _castKey;
+  String get responseKey => _expressionKey(expression);
 
   @override
-  String get responseKey => _castKey ?? _expressionKey(expression);
-
-  @override
-  String get _selectExpression =>
-      _castKey == null ? _aliased(expression) : expression;
+  String get _selectExpression => _aliased(expression);
 
   @override
   final Value Function(Object json)? _fromJson;
@@ -125,9 +121,8 @@ final class _Derivation<Row, Value extends Object>
   @override
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
     String derivation, {
-    required String? key,
     required Derived Function(Object json)? fromJson,
-  }) => _Derivation._('$expression$derivation', key, fromJson);
+  }) => _Derivation._('$expression$derivation', fromJson);
 }
 
 /// A derivation applied inside an embed's parentheses, `todo(amount.sum())`.
@@ -151,16 +146,12 @@ final class _EmbeddedDerivation<Row, Value extends Object>
   Value Function(Object json)? get _fromJson => _inner._fromJson;
 
   @override
-  String? get _castKey => _inner._castKey;
-
-  @override
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
     String derivation, {
-    required String? key,
     required Derived Function(Object json)? fromJson,
   }) => _EmbeddedDerivation._(
     relation,
-    _inner._derive(derivation, key: key, fromJson: fromJson),
+    _inner._derive(derivation, fromJson: fromJson),
   );
 
   @override
@@ -199,9 +190,6 @@ final class PostgrestJsonPath<Row, Value extends Object>
 
   @override
   String get _selectExpression => _aliased(expression);
-
-  @override
-  String? get _castKey => null;
 
   @override
   Value Function(Object json)? get _fromJson => null;

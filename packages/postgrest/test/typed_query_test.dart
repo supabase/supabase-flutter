@@ -160,7 +160,7 @@ void main() {
 
       expect(
         requestParameters()['select'],
-        r'id,title::text,"metadata->>\"isbn\"":metadata->>"isbn"',
+        r'id,"title::text":title::text,"metadata->>\"isbn\"":metadata->>"isbn"',
       );
     });
 
@@ -187,7 +187,10 @@ void main() {
         Books.title.max(),
       ]);
 
-      expect(requestParameters()['select'], 'count(),title.max()');
+      expect(
+        requestParameters()['select'],
+        '"count()":count(),"title.max()":title.max()',
+      );
     });
 
     test('selects and orders by embedded columns', () async {
@@ -211,7 +214,10 @@ void main() {
         Authors.books(Books.id).count(),
       ]);
 
-      expect(requestParameters()['select'], 'id,books(id.count())');
+      expect(
+        requestParameters()['select'],
+        'id,books("id.count()":id.count())',
+      );
     });
 
     test('projections of one relation are sent as a single embed', () async {
@@ -231,7 +237,10 @@ void main() {
         Authors.books(Books.title),
       ]);
 
-      expect(requestParameters()['select'], 'books(id.count(),title)');
+      expect(
+        requestParameters()['select'],
+        'books("id.count()":id.count(),title)',
+      );
     });
 
     test('selects a whole embed', () async {

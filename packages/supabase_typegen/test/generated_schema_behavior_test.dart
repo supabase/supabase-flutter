@@ -215,7 +215,7 @@ void main() {
 
     expect(
       httpClient.requests.last.queryParameters['select'],
-      'id,books(id.count())',
+      'id,books("id.count()":id.count())',
     );
   });
 

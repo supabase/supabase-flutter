@@ -14,12 +14,12 @@ sealed class PostgrestSelectable<Row> {
   const PostgrestSelectable._();
 
   /// The text PostgREST expects in a `select` list and, for a column
-  /// expression, on the left of an operator. A JSON path is renamed to its
-  /// [responseKey] in a `select` list.
+  /// expression, on the left of an operator. A JSON path, cast or aggregate
+  /// is renamed to its [responseKey] in a `select` list.
   String get expression;
 
   /// The key the entry comes back under in a response row: the column name,
-  /// the function name of an aggregate, the expression of a JSON path, or the
+  /// the expression of a JSON path, cast or aggregate, or the
   /// [PostgrestRelation.key] of an embed.
   String get responseKey;
 
@@ -55,19 +55,13 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// when the decoded JSON is the value.
   Value Function(Object json)? get _fromJson;
 
-  /// The key a cast of this expression comes back under, or `null` when the
-  /// cast is keyed by its own expression, as a JSON path is.
-  String? get _castKey => responseKey;
-
   /// Applies [derivation] where PostgREST expects it: appended, or inside an
-  /// embedded projection's parentheses. The result comes back under [key],
-  /// or under its own expression sent as an alias when [key] is `null`, and
-  /// is decoded with [fromJson].
+  /// embedded projection's parentheses. The result comes back under its own
+  /// expression, sent as an alias, and is decoded with [fromJson].
   PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
     String derivation, {
-    required String? key,
     required Derived Function(Object json)? fromJson,
-  }) => _Derivation._('$expression$derivation', key, fromJson);
+  }) => _Derivation._('$expression$derivation', fromJson);
 
   /// Casts this expression to another Postgres type, `cost::text`.
   ///
@@ -76,16 +70,14 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// `order`. Make it the last step in a chain, since PostgREST applies only
   /// the first of two casts and rejects a JSON path on a cast.
   ///
-  /// The cast value comes back under the key of what was cast, so a column
-  /// and its cast in one `select` collide. A cast JSON path is keyed by its
-  /// own expression instead.
+  /// {@template postgrest_derived_response_key}
+  /// The value comes back under the whole expression, which the `select`
+  /// list sends as an alias, so it never collides with what it was derived
+  /// from or another derivation of it.
+  /// {@endtemplate}
   PostgrestDerivedExpression<Row, Target> cast<Target extends Object>(
     PostgrestCastTarget<Target> target,
-  ) => _derive(
-    '::${target.sqlType}',
-    key: _castKey,
-    fromJson: target._fromJson,
-  );
+  ) => _derive('::${target.sqlType}', fromJson: target._fromJson);
 
   /// Reads a `json`/`jsonb` object key as text, with `->>`.
   ///
@@ -150,56 +142,41 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// Select position only: PostgREST has no `HAVING` and rejects an aggregate
   /// in `order`. Selecting a plain column alongside an aggregate groups by
   /// it. Needs PostgREST's `db-aggregates-enabled` setting, which is on for
-  /// hosted Supabase. The response is keyed by the function name alone, so
-  /// two aggregates of the same function in one `select` collide. `sum`,
-  /// `avg`, `min` and `max` are `null` when no row matches; the type
-  /// parameter describes a present value.
+  /// hosted Supabase. `sum`, `avg`, `min` and `max` are `null` when no row
+  /// matches; the type parameter describes a present value.
+  ///
+  /// {@macro postgrest_derived_response_key}
   /// {@endtemplate}
-  PostgrestDerivedExpression<Row, double> sum() => _derive(
-    _AggregateFunction.sum.suffix,
-    key: _AggregateFunction.sum.name,
-    fromJson: _toDouble,
-  );
+  PostgrestDerivedExpression<Row, double> sum() =>
+      _derive(_AggregateFunction.sum.suffix, fromJson: _toDouble);
 
   /// The mean of this expression across the group.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, double> avg() => _derive(
-    _AggregateFunction.avg.suffix,
-    key: _AggregateFunction.avg.name,
-    fromJson: _toDouble,
-  );
+  PostgrestDerivedExpression<Row, double> avg() =>
+      _derive(_AggregateFunction.avg.suffix, fromJson: _toDouble);
 
   /// The smallest value of this expression in the group, keeping the
   /// expression's own type.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, Value> min() => _derive(
-    _AggregateFunction.min.suffix,
-    key: _AggregateFunction.min.name,
-    fromJson: _fromJson,
-  );
+  PostgrestDerivedExpression<Row, Value> min() =>
+      _derive(_AggregateFunction.min.suffix, fromJson: _fromJson);
 
   /// The largest value of this expression in the group, keeping the
   /// expression's own type.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, Value> max() => _derive(
-    _AggregateFunction.max.suffix,
-    key: _AggregateFunction.max.name,
-    fromJson: _fromJson,
-  );
+  PostgrestDerivedExpression<Row, Value> max() =>
+      _derive(_AggregateFunction.max.suffix, fromJson: _fromJson);
 
   /// How many non-null values of this expression are in the group.
   ///
   /// Use [PostgrestDerivedExpression.countAll] to count rows instead.
   ///
   /// {@macro postgrest_aggregate}
-  PostgrestDerivedExpression<Row, int> count() => _derive(
-    _AggregateFunction.count.suffix,
-    key: _AggregateFunction.count.name,
-    fromJson: null,
-  );
+  PostgrestDerivedExpression<Row, int> count() =>
+      _derive(_AggregateFunction.count.suffix, fromJson: null);
 }
 
 /// Reads a number PostgREST may have sent as a JSON integer as a [double].
