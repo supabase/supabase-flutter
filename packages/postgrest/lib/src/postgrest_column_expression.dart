@@ -73,7 +73,9 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// {@template postgrest_derived_response_key}
   /// The value comes back under the whole expression, which the `select`
   /// list sends as an alias, so it never collides with what it was derived
-  /// from or another derivation of it.
+  /// from or another derivation of it. An expression longer than the 63
+  /// bytes Postgres keeps of a name is shortened to a prefix and a digest of
+  /// the whole.
   /// {@endtemplate}
   PostgrestDerivedExpression<Row, Target> cast<Target extends Object>(
     PostgrestCastTarget<Target> target,

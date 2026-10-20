@@ -45,7 +45,7 @@ final class PostgrestCastTarget<Value extends Object> {
 /// PostgREST drops a cast from a filter, has no `HAVING` for an aggregate and
 /// rejects both in `order`. A JSON path chained onto one stays select-only,
 /// and a derivation of an embedded column stays inside the embed's
-/// parentheses, `todo(amount::text)`.
+/// parentheses, `todo("amount::text":amount::text)`.
 ///
 /// Read from a [PostgrestPartialRow] as `Value?`: `sum`, `avg`, `min` and
 /// `max` are `NULL` when no row matches, and a cast keeps the nullability of
@@ -117,15 +117,10 @@ final class _Derivation<Row, Value extends Object>
 
   @override
   final Value Function(Object json)? _fromJson;
-
-  @override
-  PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
-    String derivation, {
-    required Derived Function(Object json)? fromJson,
-  }) => _Derivation._('$expression$derivation', fromJson);
 }
 
-/// A derivation applied inside an embed's parentheses, `todo(amount.sum())`.
+/// A derivation applied inside an embed's parentheses,
+/// `todo("amount.sum()":amount.sum())`.
 ///
 /// Keeps the relation, so a chained derivation stays inside the parentheses
 /// and the entry merges with the other entries of the same embed.
