@@ -191,12 +191,12 @@ void main() {
   });
 
   group('derived expressions', () {
-    test('aggregates read under the function name, nullable', () async {
+    test('aggregates read under their own expression, nullable', () async {
       httpClient.stub({
-        'count': 3,
-        'sum': 40,
-        'avg': 13.5,
-        'max': '2026-09-29T10:00:00Z',
+        'count()': 3,
+        'amount.sum()': 40,
+        'amount.avg()': 13.5,
+        'placed_at.max()': '2026-09-29T10:00:00Z',
       });
 
       final row = await client.table(Orders.table).selectOnly([
@@ -216,22 +216,42 @@ void main() {
       expect(latest, DateTime.utc(2026, 9, 29, 10));
     });
 
-    test('a cast reads under the key of what was cast', () async {
-      httpClient.stub({'id': '7', 'amount': 12});
+    test('two aggregates of the same function read apart', () async {
+      httpClient.stub({'id.sum()': 6, 'amount.sum()': 40});
 
       final row = await client.table(Orders.table).selectOnly([
-        Orders.id.cast(PostgrestCastTarget.text),
-        Orders.amount.cast(PostgrestCastTarget.doublePrecision),
+        Orders.id.sum(),
+        Orders.amount.sum(),
       ]).single();
 
-      final String? id = row.read(Orders.id.cast(PostgrestCastTarget.text));
-      final double? amount = row.read(
-        Orders.amount.cast(PostgrestCastTarget.doublePrecision),
+      expect(
+        httpClient.requests.last.queryParameters['select'],
+        '"id.sum()":id.sum(),"amount.sum()":amount.sum()',
       );
-      expect(id, '7');
-      expect(amount, 12.0);
-      expect(() => row.read(Orders.id), throwsA(isA<TypeError>()));
+      expect(row.read(Orders.id.sum()), 6.0);
+      expect(row.read(Orders.amount.sum()), 40.0);
     });
+
+    test(
+      'a cast reads under its own expression, apart from its column',
+      () async {
+        httpClient.stub({'id': 7, 'id::text': '7', 'amount::float8': 12});
+
+        final row = await client.table(Orders.table).selectOnly([
+          Orders.id,
+          Orders.id.cast(PostgrestCastTarget.text),
+          Orders.amount.cast(PostgrestCastTarget.doublePrecision),
+        ]).single();
+
+        final String? id = row.read(Orders.id.cast(PostgrestCastTarget.text));
+        final double? amount = row.read(
+          Orders.amount.cast(PostgrestCastTarget.doublePrecision),
+        );
+        expect(row.read(Orders.id), 7);
+        expect(id, '7');
+        expect(amount, 12.0);
+      },
+    );
 
     test('a JSON path reads under its own expression', () async {
       httpClient.stub({
@@ -302,7 +322,7 @@ void main() {
     test('a derivation inside an embed reads under the embedded key', () async {
       httpClient.stub({
         'items': [
-          {'sku': 'A1', 'sku->>"k"': 'v'},
+          {'sku::text': 'A1', 'sku->>"k"': 'v'},
         ],
       });
 
@@ -380,7 +400,7 @@ void main() {
       httpClient.stub({
         'id': 1,
         'items': [
-          {'id': 9, 'sku': 'a', 'quantity': 2, 'order_id': 1, 'count': 1},
+          {'id': 9, 'sku': 'a', 'quantity': 2, 'order_id': 1, 'id.count()': 1},
         ],
       });
 
@@ -425,14 +445,17 @@ void main() {
 
       final item = order.read(Orders.items).single;
       expect(item.read(Items.id), 9);
-      expect(() => item.read(Items.id.count()), throwsNotSelected('count'));
+      expect(
+        () => item.read(Items.id.count()),
+        throwsNotSelected('id.count()'),
+      );
     });
 
     test('an embedded entry is read through its relation', () async {
       httpClient.stub({
         'id': 1,
         'items': [
-          {'count': 2},
+          {'id.count()': 2},
         ],
       });
 

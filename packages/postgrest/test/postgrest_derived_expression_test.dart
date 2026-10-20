@@ -169,7 +169,10 @@ void main() {
         Items.data.jsonText('n').cast(PostgrestCastTarget.integer).responseKey,
         'data->>"n"::int',
       );
-      expect(Items.cost.cast(PostgrestCastTarget.text).responseKey, 'cost');
+      expect(
+        Items.cost.cast(PostgrestCastTarget.text).responseKey,
+        'cost::text',
+      );
     });
 
     test('shorten a key past the 63 bytes Postgres keeps of a name', () {

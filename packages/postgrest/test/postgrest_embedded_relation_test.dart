@@ -81,26 +81,35 @@ void main() {
     // `orders(amount).sum()` is a 200 with the `.sum()` silently ignored.
     expect(
       Todos.orders(Orders.amount).sum().expression,
-      'orders(amount.sum())',
+      'orders("amount.sum()":amount.sum())',
     );
-    expect(Todos.orders(Orders.id).count().expression, 'orders(id.count())');
+    expect(
+      Todos.orders(Orders.id).count().expression,
+      'orders("id.count()":id.count())',
+    );
     expect(
       Todos.orders(Orders.amount).avg().expression,
-      'orders(amount.avg())',
+      'orders("amount.avg()":amount.avg())',
     );
-    expect(Todos.orders(Orders.id).min().expression, 'orders(id.min())');
-    expect(Todos.orders(Orders.id).max().expression, 'orders(id.max())');
-    expect(Orders.todo(Todos.id).sum().expression, 'todo(id.sum())');
+    expect(
+      Todos.orders(Orders.id).min().expression,
+      'orders("id.min()":id.min())',
+    );
+    expect(
+      Todos.orders(Orders.id).max().expression,
+      'orders("id.max()":id.max())',
+    );
+    expect(Orders.todo(Todos.id).sum().expression, 'todo("id.sum()":id.sum())');
   });
 
   test('a cast over an embed renders inside the parentheses', () {
     expect(
       Todos.orders(Orders.amount).cast(PostgrestCastTarget.text).expression,
-      'orders(amount::text)',
+      'orders("amount::text":amount::text)',
     );
     expect(
       Orders.todo(Todos.id).cast(PostgrestCastTarget.text).expression,
-      'todo(id::text)',
+      'todo("id::text":id::text)',
     );
   });
 
@@ -147,7 +156,7 @@ void main() {
   test('a derivation chained onto a derivation stays inside the embed', () {
     expect(
       Orders.todo(Todos.amount).sum().cast(PostgrestCastTarget.text).expression,
-      'todo(amount.sum()::text)',
+      'todo("amount.sum()::text":amount.sum()::text)',
     );
   });
 
@@ -202,7 +211,7 @@ void main() {
   test('a derivation of a nested projection lands on the innermost column', () {
     expect(
       Orders.todo(Todos.orders(Orders.amount)).sum().expression,
-      'todo(orders(amount.sum()))',
+      'todo(orders("amount.sum()":amount.sum()))',
     );
     expect(
       Orders.todo(Todos.orders(Orders.amount)).sum().jsonText('k').expression,
@@ -236,7 +245,7 @@ void main() {
       );
       expect(
         Orders.parentTodo(Todos.title).sum().expression,
-        'parent_todo:todo!orders_parent_id_fkey(title.sum())',
+        'parent_todo:todo!orders_parent_id_fkey("title.sum()":title.sum())',
       );
     });
 
@@ -280,7 +289,7 @@ void main() {
       );
       expect(
         Todos.orders.select([Orders.id, Orders.amount.sum()]).expression,
-        'orders(id,amount.sum())',
+        'orders(id,"amount.sum()":amount.sum())',
       );
     });
 
