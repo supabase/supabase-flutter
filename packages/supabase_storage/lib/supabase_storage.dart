@@ -5,6 +5,7 @@ export 'package:http/http.dart' show RequestAbortedException;
 export 'package:iceberg/iceberg.dart';
 export 'package:supabase_common/supabase_common.dart'
     show
+        AccessTokenException,
         SortDirection,
         SupabaseApiException,
         SupabaseException,

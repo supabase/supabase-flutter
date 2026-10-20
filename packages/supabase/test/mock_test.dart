@@ -833,10 +833,9 @@ void main() {
           ),
         );
 
-        // Should handle token errors gracefully
         await expectLater(
           () => clientWithFailingToken.from('test').select(),
-          throwsA(isA<Exception>()),
+          throwsA(isA<AccessTokenException>()),
         );
 
         await clientWithFailingToken.dispose();

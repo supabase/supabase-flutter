@@ -5,6 +5,7 @@ export 'package:http/http.dart'
     show ByteStream, MultipartFile, RequestAbortedException;
 export 'package:supabase_common/supabase_common.dart'
     show
+        AccessTokenException,
         HttpMethod,
         SupabaseApiException,
         SupabaseException,
