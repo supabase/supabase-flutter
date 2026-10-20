@@ -23,7 +23,7 @@ class AuthHttpClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    final accessToken = await _getAccessToken();
+    final accessToken = await resolveAccessToken(_getAccessToken);
 
     if (accessToken != null) {
       request.headers.putIfAbsent(

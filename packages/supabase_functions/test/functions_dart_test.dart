@@ -711,6 +711,30 @@ void main() {
         );
       });
 
+      test('a throwing accessToken fails before sending', () async {
+        final httpClient = MockSupabaseHttpClient();
+        final error = StateError('refresh failed');
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: httpClient,
+          accessToken: () async => throw error,
+        );
+        addTearDown(client.dispose);
+
+        await expectLater(
+          client.invoke('function'),
+          throwsA(
+            isA<AccessTokenException>().having(
+              (exception) => exception.cause,
+              'cause',
+              same(error),
+            ),
+          ),
+        );
+        expect(httpClient.requests, isEmpty);
+      });
+
       test('accessToken together with an Authorization header asserts', () {
         expect(
           () => FunctionsClient(

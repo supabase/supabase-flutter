@@ -14,6 +14,10 @@ class _Capture extends BaseClient {
   }
 }
 
+class RefreshException extends SupabaseException {
+  const RefreshException(super.message);
+}
+
 void main() {
   late _Capture inner;
 
@@ -60,10 +64,28 @@ void main() {
     );
   });
 
-  test('propagates an error from the token callback', () async {
-    final client = AccessTokenClient(() async => throw StateError('no'), inner);
+  test('wraps an error from the token callback', () async {
+    final error = StateError('no');
+    final client = AccessTokenClient(() async => throw error, inner);
 
-    await expectLater(sendThrough(client), throwsStateError);
+    await expectLater(
+      sendThrough(client),
+      throwsA(
+        isA<AccessTokenException>().having(
+          (exception) => exception.cause,
+          'cause',
+          same(error),
+        ),
+      ),
+    );
+    expect(inner.requests, isEmpty);
+  });
+
+  test('rethrows a SupabaseException from the token callback', () async {
+    const error = RefreshException('refresh failed');
+    final client = AccessTokenClient(() async => throw error, inner);
+
+    await expectLater(sendThrough(client), throwsA(same(error)));
     expect(inner.requests, isEmpty);
   });
 }

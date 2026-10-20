@@ -183,6 +183,30 @@ void main() {
       expect(response, 'success');
     });
 
+    test('should purgeProjectCache issuing DELETE to /cdn/', () async {
+      customHttpClient.stub({'message': 'success'});
+
+      final response = await client.purgeProjectCache();
+
+      final request = customHttpClient.requests.last;
+      expect(request.method, HttpMethod.delete.value);
+      expect(request.url.toString(), endsWith('/storage/v1/cdn/'));
+      expect(request.url.query, isEmpty);
+      expect(response, 'success');
+    });
+
+    test('should purgeProjectCache with transformations query param', () async {
+      customHttpClient.stub({'message': 'success'});
+
+      final response = await client.purgeProjectCache(transformations: true);
+
+      final request = customHttpClient.requests.last;
+      expect(request.method, HttpMethod.delete.value);
+      expect(request.url.path, endsWith('/storage/v1/cdn/'));
+      expect(request.url.queryParameters['transformations'], 'true');
+      expect(response, 'success');
+    });
+
     test('should create analytics bucket', () async {
       customHttpClient.stub(testAnalyticsBucketJson);
 
@@ -1593,6 +1617,37 @@ void main() {
         customHttpClient.requests.last.headers['Authorization'],
         'Bearer pinned',
       );
+    });
+
+    test('that throws fails before sending and is not retried', () async {
+      final error = Exception('refresh failed');
+      var calls = 0;
+      final storage = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {},
+        httpClient: customHttpClient,
+        retryOptions: const SupabaseRetryOptions(
+          count: 2,
+          initialDelay: Duration.zero,
+        ),
+        accessToken: () async {
+          calls++;
+          throw error;
+        },
+      );
+
+      await expectLater(
+        storage.from('bucket').uploadBinary('a.txt', Uint8List(1)),
+        throwsA(
+          isA<AccessTokenException>().having(
+            (exception) => exception.cause,
+            'cause',
+            same(error),
+          ),
+        ),
+      );
+      expect(calls, 1);
+      expect(customHttpClient.requests, isEmpty);
     });
 
     test('together with an Authorization header asserts', () {

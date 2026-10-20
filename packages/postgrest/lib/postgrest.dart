@@ -3,6 +3,7 @@ library;
 
 export 'package:supabase_common/supabase_common.dart'
     show
+        AccessTokenException,
         HttpMethod,
         SupabaseApiException,
         SupabaseException,

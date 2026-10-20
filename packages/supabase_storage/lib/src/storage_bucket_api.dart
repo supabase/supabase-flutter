@@ -252,6 +252,32 @@ class StorageBucketApi {
     return (response as Map<String, dynamic>)['message'] as String;
   }
 
+  /// Purges the CDN cache for every bucket in the project.
+  ///
+  /// Invalidates the CDN cache for every object in every bucket. Maps to
+  /// `DELETE /cdn/` on the storage server.
+  ///
+  /// When [transformations] is `true`, only the resized/formatted variants are
+  /// purged, leaving the original cached files intact. Otherwise both the
+  /// originals and their resized/formatted variants are purged.
+  ///
+  /// Requires the service-role key and the tenant `purgeCache` feature to be
+  /// enabled on the storage server.
+  Future<String> purgeProjectCache({bool transformations = false}) async {
+    final response = await storageFetch.delete(
+      Uri.parse('$url/cdn/')
+          .replace(
+            queryParameters: transformations
+                ? const {'transformations': 'true'}
+                : null,
+          )
+          .toString(),
+      {},
+      options: FetchOptions(_headers),
+    );
+    return (response as Map<String, dynamic>)['message'] as String;
+  }
+
   /// Creates a new analytics bucket backed by the Apache Iceberg table format.
   ///
   /// [id] is the unique identifier for the bucket you are creating.
