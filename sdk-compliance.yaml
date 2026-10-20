@@ -1802,6 +1802,10 @@ features:
     status: implemented
     symbols:
       - StorageBucketApi.purgeBucketCache
+  storage.file_buckets.purge_project_cache:
+    status: implemented
+    symbols:
+      - StorageBucketApi.purgeProjectCache
   storage.file_buckets.create_signed_url:
     status: implemented
     symbols:

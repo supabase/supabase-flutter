@@ -183,6 +183,30 @@ void main() {
       expect(response, 'success');
     });
 
+    test('should purgeProjectCache issuing DELETE to /cdn/', () async {
+      customHttpClient.stub({'message': 'success'});
+
+      final response = await client.purgeProjectCache();
+
+      final request = customHttpClient.requests.last;
+      expect(request.method, HttpMethod.delete.value);
+      expect(request.url.toString(), endsWith('/storage/v1/cdn/'));
+      expect(request.url.query, isEmpty);
+      expect(response, 'success');
+    });
+
+    test('should purgeProjectCache with transformations query param', () async {
+      customHttpClient.stub({'message': 'success'});
+
+      final response = await client.purgeProjectCache(transformations: true);
+
+      final request = customHttpClient.requests.last;
+      expect(request.method, HttpMethod.delete.value);
+      expect(request.url.path, endsWith('/storage/v1/cdn/'));
+      expect(request.url.queryParameters['transformations'], 'true');
+      expect(response, 'success');
+    });
+
     test('should create analytics bucket', () async {
       customHttpClient.stub(testAnalyticsBucketJson);
 
