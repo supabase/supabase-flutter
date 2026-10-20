@@ -103,3 +103,29 @@ mixin SupabaseTransportException on SupabaseException {
       '$runtimeType(message: $message, errorCode: $errorCode, '
       'requestId: $requestId, cause: $cause)';
 }
+
+/// Thrown when the `accessToken` callback a client was created with fails.
+///
+/// The request is not sent and not retried. An exception the callback throws
+/// that is already a [SupabaseException], such as an `AuthException` from a
+/// failed session refresh, is thrown as is instead.
+///
+/// ```dart
+/// try {
+///   await supabase.from('countries').select();
+/// } on AccessTokenException catch (error) {
+///   print('Could not get a token: ${error.cause}');
+/// }
+/// ```
+class AccessTokenException extends SupabaseException {
+  AccessTokenException(this.cause)
+    : super('Failed to resolve the access token: $cause');
+
+  /// The error the `accessToken` callback threw.
+  final Object cause;
+
+  @override
+  String toString() =>
+      '$runtimeType(message: $message, errorCode: $errorCode, '
+      'requestId: $requestId, cause: $cause)';
+}

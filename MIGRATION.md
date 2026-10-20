@@ -40,6 +40,8 @@ explicitly:
   so on `dart:io` platforms a client installed with `runWithClient` is no longer picked up
 - [A request that gets no response throws a transport exception](#a-request-that-gets-no-response-throws-a-transport-exception),
   so a catch of `ClientException` or `TimeoutException` around a query or upload no longer matches
+- [A failing `accessToken` callback throws `AccessTokenException`](#a-failing-accesstoken-callback-throws-accesstokenexception),
+  so a catch of the transport exception no longer matches a token failure
 - [The request timeout bounds idle time, not the whole request](#the-request-timeout-bounds-idle-time-not-the-whole-request),
   so a response that keeps arriving can take longer than `requestTimeout`
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
@@ -1727,6 +1729,31 @@ The three packages that already wrapped the failure changed how they expose the 
 | `FunctionsFetchException(details:)`        | `FunctionsFetchException(cause:)`; `details` still returns it |
 | `IcebergNetworkException(details:)`        | `IcebergNetworkException(cause:)`; `details` still returns it |
 | `AuthRetryableFetchException.message` only | `cause` added, with the error the message was built from      |
+
+### A failing `accessToken` callback throws `AccessTokenException`
+
+When the `accessToken` callback of a client throws, the request is no longer sent. postgrest,
+storage and functions used to report an exception from the callback as a transport exception,
+which postgrest retried, and let a thrown `Error` through unwrapped. All three now throw an `AccessTokenException`
+with the callback's error in `cause`, and never retry it. An exception the callback throws that is
+already a `SupabaseException`, such as an `AuthException` from a failed session refresh, is
+thrown as is.
+
+```dart
+// Before
+try {
+  await supabase.from('countries').select();
+} on PostgrestTransportException catch (error) {
+  // the token callback failed, or the network did
+}
+
+// After
+try {
+  await supabase.from('countries').select();
+} on AccessTokenException catch (error) {
+  // the token callback failed; error.cause holds why
+}
+```
 
 ### Realtime throws exceptions instead of strings
 

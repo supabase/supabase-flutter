@@ -1595,6 +1595,37 @@ void main() {
       );
     });
 
+    test('that throws fails before sending and is not retried', () async {
+      final error = Exception('refresh failed');
+      var calls = 0;
+      final storage = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {},
+        httpClient: customHttpClient,
+        retryOptions: const SupabaseRetryOptions(
+          count: 2,
+          initialDelay: Duration.zero,
+        ),
+        accessToken: () async {
+          calls++;
+          throw error;
+        },
+      );
+
+      await expectLater(
+        storage.from('bucket').uploadBinary('a.txt', Uint8List(1)),
+        throwsA(
+          isA<AccessTokenException>().having(
+            (exception) => exception.cause,
+            'cause',
+            same(error),
+          ),
+        ),
+      );
+      expect(calls, 1);
+      expect(customHttpClient.requests, isEmpty);
+    });
+
     test('together with an Authorization header asserts', () {
       expect(
         () => SupabaseStorageClient(
