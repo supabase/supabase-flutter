@@ -717,6 +717,12 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       name: 'string',
       values: ["it's \$a\u2028trap", 'plain'],
     ),
+    // Named like the core type the xid8 column of `map` decodes into.
+    EnumDescription(
+      schema: 'public',
+      name: 'big_int',
+      values: ['small', 'large'],
+    ),
     EnumDescription(
       schema: 'public',
       name: 'статус',

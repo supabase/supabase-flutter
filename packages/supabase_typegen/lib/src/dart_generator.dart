@@ -182,6 +182,7 @@ class _TypeNameRegistry {
     'List',
     'DateTime',
     'Uint8List',
+    'BigInt',
     'int',
     'double',
     'num',

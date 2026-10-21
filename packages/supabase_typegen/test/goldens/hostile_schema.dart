@@ -34,6 +34,30 @@ enum String$ {
   String toString() => wireName;
 }
 
+/// Postgres enum `public.big_int`.
+enum BigInt$ {
+  small('small'),
+  large('large');
+
+  const BigInt$(this.wireName);
+
+  /// The value as stored in the database.
+  final String wireName;
+
+  /// Parses the database representation of the enum.
+  static BigInt$ fromWire(String wireName) => values.firstWhere(
+    (value) => value.wireName == wireName,
+    orElse: () => throw ArgumentError.value(
+      wireName,
+      'wireName',
+      'No BigInt\$ value with this wire name',
+    ),
+  );
+
+  @override
+  String toString() => wireName;
+}
+
 /// Postgres enum `public.статус`.
 enum $ {
   $$('новый'),

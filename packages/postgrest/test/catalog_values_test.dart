@@ -37,23 +37,32 @@ BigInt _bigIntFromJson(Object json) => BigInt.parse(json as String);
 
 void main() {
   late PostgrestClient postgrest;
+  int? insertedId;
 
   setUp(() {
     postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
   });
 
   tearDown(() async {
-    await postgrest.from('catalog_values').delete().gte('id', 0);
+    if (insertedId case final id?) {
+      await postgrest.from('catalog_values').delete().eq('id', id);
+      insertedId = null;
+    }
     await postgrest.dispose();
   });
 
   test('oid and xid8 columns read, write and filter as numbers', () async {
     final transaction = BigInt.parse('18446744073709551615');
-    await postgrest.from('catalog_values').insert({
-      'relation': 4294967295,
-      'relations': [1, 4294967295],
-      'transaction': transaction.toString(),
-    });
+    final inserted = await postgrest
+        .from('catalog_values')
+        .insert({
+          'relation': 4294967295,
+          'relations': [1, 4294967295],
+          'transaction': transaction.toString(),
+        })
+        .select('id')
+        .single();
+    insertedId = inserted['id'] as int;
 
     final row = await postgrest
         .table(CatalogValues.table)
