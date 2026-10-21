@@ -1,47 +1,47 @@
-part of 'postgrest_typed_builder.dart';
+part of 'postgres_values.dart';
 
 /// A Postgres range value, such as an `int4range` or a `tstzrange`, with
 /// bounds of type [Bound].
 ///
 /// ```dart
-/// PostgrestRange.closedOpen(2, 25).literal       // [2,25)
-/// PostgrestRange<int>.closed(2, null).literal    // [2,)
-/// PostgrestRange<int>.empty().literal            // empty
+/// PostgresRange.closedOpen(2, 25).literal       // [2,25)
+/// PostgresRange<int>.closed(2, null).literal    // [2,)
+/// PostgresRange<int>.empty().literal            // empty
 /// ```
 ///
 /// A `null` bound is unbounded and always exclusive, the form Postgres
 /// canonicalizes an omitted bound to, so a parsed value compares equal to the
-/// one that was written. Bounds render through the same rules as filter
-/// values, so a `DateTime` bound is sent in ISO 8601.
+/// one that was written. A [PostgresValue] bound renders as its literal and a
+/// `DateTime` bound in ISO 8601.
 @experimental
-final class PostgrestRange<Bound extends Object> {
+final class PostgresRange<Bound extends Object> implements PostgresValue {
   /// A range including [lower] and excluding [upper], `[lower,upper)`, the
   /// canonical form Postgres stores discrete ranges in.
-  const PostgrestRange.closedOpen(this.lower, this.upper)
+  const PostgresRange.closedOpen(this.lower, this.upper)
     : lowerInclusive = lower != null,
       upperInclusive = false,
       isEmpty = false;
 
   /// A range including both bounds, `[lower,upper]`.
-  const PostgrestRange.closed(this.lower, this.upper)
+  const PostgresRange.closed(this.lower, this.upper)
     : lowerInclusive = lower != null,
       upperInclusive = upper != null,
       isEmpty = false;
 
   /// A range excluding both bounds, `(lower,upper)`.
-  const PostgrestRange.open(this.lower, this.upper)
+  const PostgresRange.open(this.lower, this.upper)
     : lowerInclusive = false,
       upperInclusive = false,
       isEmpty = false;
 
   /// A range excluding [lower] and including [upper], `(lower,upper]`.
-  const PostgrestRange.openClosed(this.lower, this.upper)
+  const PostgresRange.openClosed(this.lower, this.upper)
     : lowerInclusive = false,
       upperInclusive = upper != null,
       isEmpty = false;
 
   /// The empty range, `empty`.
-  const PostgrestRange.empty()
+  const PostgresRange.empty()
     : lower = null,
       upper = null,
       lowerInclusive = false,
@@ -53,17 +53,17 @@ final class PostgrestRange<Bound extends Object> {
   ///
   /// A missing bound is unbounded, `null`, so [parseBound] never sees it. An
   /// `infinity` or `-infinity` bound is handed to [parseBound] and kept when
-  /// the bound type has a value for it, as [PostgrestDate] and `num` have;
+  /// the bound type has a value for it, as [PostgresDate] and `num` have;
   /// when [parseBound] rejects it with a [FormatException], as
   /// `DateTime.parse` and `int.parse` do, the side is unbounded as well.
   ///
   /// Throws a [FormatException] when [literal] is not a range.
-  factory PostgrestRange.parse(
+  factory PostgresRange.parse(
     String literal,
     Bound Function(String bound) parseBound,
   ) {
     final trimmed = literal.trim();
-    if (trimmed.toLowerCase() == 'empty') return PostgrestRange.empty();
+    if (trimmed.toLowerCase() == 'empty') return PostgresRange.empty();
     if (trimmed.length < 3 ||
         !'[('.contains(trimmed[0]) ||
         !'])'.contains(trimmed[trimmed.length - 1])) {
@@ -89,10 +89,10 @@ final class PostgrestRange<Bound extends Object> {
     final lowerBound = side(lower);
     final upperBound = side(upper);
     return switch ((lowerInclusive, upperInclusive)) {
-      (true, false) => PostgrestRange.closedOpen(lowerBound, upperBound),
-      (true, true) => PostgrestRange.closed(lowerBound, upperBound),
-      (false, false) => PostgrestRange.open(lowerBound, upperBound),
-      (false, true) => PostgrestRange.openClosed(lowerBound, upperBound),
+      (true, false) => PostgresRange.closedOpen(lowerBound, upperBound),
+      (true, true) => PostgresRange.closed(lowerBound, upperBound),
+      (false, false) => PostgresRange.open(lowerBound, upperBound),
+      (false, true) => PostgresRange.openClosed(lowerBound, upperBound),
     };
   }
 
@@ -124,15 +124,18 @@ final class PostgrestRange<Bound extends Object> {
         '${upperInclusive ? ']' : ')'}';
   }
 
-  /// The Postgres literal with bounds rendered like filter values.
-  String get literal => render(_renderFilterValue);
+  /// The Postgres literal, with a [PostgresValue] bound rendered as its
+  /// literal, a `DateTime` bound in ISO 8601 and any other through
+  /// [Object.toString].
+  @override
+  String get literal => render(_renderBound);
 
   @override
   String toString() => literal;
 
   @override
   bool operator ==(Object other) =>
-      other is PostgrestRange<Bound> &&
+      other is PostgresRange<Bound> &&
       other.isEmpty == isEmpty &&
       other.lower == lower &&
       other.upper == upper &&
@@ -207,5 +210,13 @@ String _quoteRangeBound(String raw) {
       _infiniteBounds.contains(raw.toLowerCase()) ||
       _rangeReservedCharacters.any(raw.contains) ||
       raw.contains(RegExp(r'\s'));
-  return needsQuoting ? _quote(raw) : raw;
+  return needsQuoting
+      ? '"${raw.replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"'
+      : raw;
 }
+
+String _renderBound(Object bound) => switch (bound) {
+  PostgresValue() => bound.literal,
+  DateTime() => bound.toIso8601String(),
+  _ => bound.toString(),
+};

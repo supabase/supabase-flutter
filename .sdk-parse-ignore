@@ -12,11 +12,13 @@
 # symbols are imported by the other packages, so they cannot be marked
 # @internal (that would trigger invalid_use_of_internal_member in the
 # consumers). Exclude its sources from the public-API scan instead, except for
-# the retry options and the sort direction, which the clients re-export as user
-# facing API and so are registered in the capability matrix.
+# the retry options, the sort direction and the Postgres value types, which the
+# clients re-export as user facing API and so are registered in the capability
+# matrix.
 packages/supabase_common/lib/
 !packages/supabase_common/lib/src/retry_options.dart
 !packages/supabase_common/lib/src/sort_direction.dart
+!packages/supabase_common/lib/src/postgres/
 
 # supabase_typegen is a development-time code generator, not SDK client surface,
 # so its public symbols are not capability-matrix symbols.

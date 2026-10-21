@@ -115,16 +115,16 @@ extension PostgrestArrayFilters<Row, Element>
       );
 }
 
-/// Filters that only apply to range columns, typed `PostgrestRange<Bound>`.
+/// Filters that only apply to range columns, typed `PostgresRange<Bound>`.
 ///
-/// Every operand is a [PostgrestRange] with the column's bound type, so
-/// `during.rangeLt(PostgrestRange.closedOpen(2, 25))` on a `tstzrange` column
+/// Every operand is a [PostgresRange] with the column's bound type, so
+/// `during.rangeLt(PostgresRange.closedOpen(2, 25))` on a `tstzrange` column
 /// does not compile.
 @experimental
 extension PostgrestRangeFilters<Row, Bound extends Object>
-    on PostgrestFilterableExpression<Row, PostgrestRange<Bound>> {
+    on PostgrestFilterableExpression<Row, PostgresRange<Bound>> {
   /// Only rows whose range contains every value of [range].
-  PostgrestFilter<Row> contains(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> contains(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.contains,
@@ -140,7 +140,7 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
       );
 
   /// Only rows whose range lies within [range].
-  PostgrestFilter<Row> containedBy(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> containedBy(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.containedBy,
@@ -148,7 +148,7 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
       );
 
   /// Only rows whose range shares at least one value with [range].
-  PostgrestFilter<Row> overlaps(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> overlaps(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.overlaps,
@@ -156,7 +156,7 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
       );
 
   /// Only rows whose range is strictly to the left of [range].
-  PostgrestFilter<Row> rangeLt(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> rangeLt(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.rangeLt,
@@ -164,7 +164,7 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
       );
 
   /// Only rows whose range is strictly to the right of [range].
-  PostgrestFilter<Row> rangeGt(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> rangeGt(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.rangeGt,
@@ -172,7 +172,7 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
       );
 
   /// Only rows whose range does not extend to the left of [range].
-  PostgrestFilter<Row> rangeGte(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> rangeGte(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.rangeGte,
@@ -180,7 +180,7 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
       );
 
   /// Only rows whose range does not extend to the right of [range].
-  PostgrestFilter<Row> rangeLte(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> rangeLte(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.rangeLte,
@@ -188,7 +188,7 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
       );
 
   /// Only rows whose range is adjacent to [range].
-  PostgrestFilter<Row> rangeAdjacent(PostgrestRange<Bound> range) =>
+  PostgrestFilter<Row> rangeAdjacent(PostgresRange<Bound> range) =>
       PostgrestFilter._comparison(
         this,
         PostgrestFilterOperator.rangeAdjacent,

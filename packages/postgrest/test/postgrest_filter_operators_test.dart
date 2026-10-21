@@ -1,3 +1,6 @@
+// The Postgres value types under test are annotated @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:typed_data';
 
 import 'package:postgrest/postgrest.dart';
@@ -10,10 +13,10 @@ class Posts {
   static const id = PostgrestColumn<Post, int>('id');
   static const tags = PostgrestColumn<Post, List<String>>('tags');
   static const labels = PostgrestColumn<Post, List<String?>>('labels');
-  static const scheduled = PostgrestColumn<Post, PostgrestRange<int>>(
+  static const scheduled = PostgrestColumn<Post, PostgresRange<int>>(
     'scheduled',
   );
-  static const during = PostgrestColumn<Post, PostgrestRange<DateTime>>(
+  static const during = PostgrestColumn<Post, PostgresRange<DateTime>>(
     'during',
   );
   static const content = PostgrestColumn<Post, String>('content');
@@ -25,12 +28,12 @@ class Posts {
   static const samples = PostgrestColumn<Post, List<double>>('samples');
   static const embedding = PostgrestVectorColumn<Post>('embedding');
   static const draft = PostgrestNullableVectorColumn<Post>('draft');
-  static const publishedOn = PostgrestColumn<Post, PostgrestDate>(
+  static const publishedOn = PostgrestColumn<Post, PostgresDate>(
     'published_on',
   );
-  static const opensAt = PostgrestColumn<Post, PostgrestTime>('opens_at');
-  static const ttl = PostgrestColumn<Post, PostgrestInterval>('ttl');
-  static const season = PostgrestColumn<Post, PostgrestRange<PostgrestDate>>(
+  static const opensAt = PostgrestColumn<Post, PostgresTime>('opens_at');
+  static const ttl = PostgrestColumn<Post, PostgresInterval>('ttl');
+  static const season = PostgrestColumn<Post, PostgresRange<PostgresDate>>(
     'season',
   );
 }
@@ -151,7 +154,7 @@ void main() {
 
   group('range operators', () {
     test('render their abbreviation', () {
-      const range = PostgrestRange.closedOpen(2, 25);
+      const range = PostgresRange.closedOpen(2, 25);
       expect(rendered(Posts.scheduled.rangeLt(range)), 'scheduled=sl.[2,25)');
       expect(rendered(Posts.scheduled.rangeGt(range)), 'scheduled=sr.[2,25)');
       expect(rendered(Posts.scheduled.rangeGte(range)), 'scheduled=nxl.[2,25)');
@@ -167,19 +170,19 @@ void main() {
       // only with a range of the column's bound type.
       expect(
         rendered(
-          Posts.scheduled.contains(const PostgrestRange.closedOpen(21, 22)),
+          Posts.scheduled.contains(const PostgresRange.closedOpen(21, 22)),
         ),
         'scheduled=cs.[21,22)',
       );
       expect(rendered(Posts.scheduled.containsElement(21)), 'scheduled=cs.21');
       expect(
         rendered(
-          Posts.scheduled.containedBy(const PostgrestRange.closed(21, 22)),
+          Posts.scheduled.containedBy(const PostgresRange.closed(21, 22)),
         ),
         'scheduled=cd.[21,22]',
       );
       expect(
-        rendered(Posts.scheduled.overlaps(const PostgrestRange.open(25, 35))),
+        rendered(Posts.scheduled.overlaps(const PostgresRange.open(25, 35))),
         'scheduled=ov.(25,35)',
       );
     });
@@ -188,7 +191,7 @@ void main() {
       expect(
         rendered(
           Posts.during.overlaps(
-            PostgrestRange.closedOpen(DateTime.utc(2024), DateTime.utc(2025)),
+            PostgresRange.closedOpen(DateTime.utc(2024), DateTime.utc(2025)),
           ),
         ),
         'during=ov.[2024-01-01T00:00:00.000Z,2025-01-01T00:00:00.000Z)',
@@ -204,7 +207,7 @@ void main() {
       // group early and 400s.
       expect(
         rendered(
-          Posts.scheduled.overlaps(const PostgrestRange.closedOpen(25, 35)) |
+          Posts.scheduled.overlaps(const PostgresRange.closedOpen(25, 35)) |
               Posts.id.eq(3),
         ),
         'or=(scheduled.ov."[25,35)",id.eq.3)',
@@ -213,7 +216,7 @@ void main() {
 
     test('a range column compares against a range', () {
       expect(
-        rendered(Posts.scheduled.eq(const PostgrestRange.closedOpen(2, 25))),
+        rendered(Posts.scheduled.eq(const PostgresRange.closedOpen(2, 25))),
         'scheduled=eq.[2,25)',
       );
     });
@@ -297,17 +300,17 @@ void main() {
   group('date, time and interval', () {
     test('render their literal', () {
       expect(
-        rendered(Posts.publishedOn.eq(PostgrestDate(2024, 2, 29))),
+        rendered(Posts.publishedOn.eq(PostgresDate(2024, 2, 29))),
         'published_on=eq.2024-02-29',
       );
       expect(
-        rendered(Posts.publishedOn.lt(PostgrestDate.infinity)),
+        rendered(Posts.publishedOn.lt(PostgresDate.infinity)),
         'published_on=lt.infinity',
       );
       expect(
         rendered(
           Posts.opensAt.gte(
-            PostgrestTime(
+            PostgresTime(
               hour: 9,
               minute: 30,
               offset: const Duration(hours: 2),
@@ -317,7 +320,7 @@ void main() {
         'opens_at=gte.09:30:00+02',
       );
       expect(
-        rendered(Posts.ttl.eq(const PostgrestInterval(months: 1, days: 3))),
+        rendered(Posts.ttl.eq(const PostgresInterval(months: 1, days: 3))),
         'ttl=eq.1 mon 3 days',
       );
     });
@@ -326,15 +329,15 @@ void main() {
       expect(
         rendered(
           Posts.publishedOn.inFilter([
-            PostgrestDate(2024, 2, 29),
-            PostgrestDate(-43, 3, 15),
+            PostgresDate(2024, 2, 29),
+            PostgresDate(-43, 3, 15),
           ]),
         ),
         'published_on=in.(2024-02-29,0044-03-15 BC)',
       );
       expect(
         rendered(
-          Posts.ttl.eq(const PostgrestInterval(days: 2)) | Posts.id.eq(1),
+          Posts.ttl.eq(const PostgresInterval(days: 2)) | Posts.id.eq(1),
         ),
         'or=(ttl.eq.2 days,id.eq.1)',
       );
@@ -344,22 +347,22 @@ void main() {
       expect(
         rendered(
           Posts.season.overlaps(
-            PostgrestRange.closedOpen(
-              PostgrestDate(2024, 1, 1),
-              PostgrestDate(2024, 2, 1),
+            PostgresRange.closedOpen(
+              PostgresDate(2024, 1, 1),
+              PostgresDate(2024, 2, 1),
             ),
           ),
         ),
         'season=ov.[2024-01-01,2024-02-01)',
       );
       expect(
-        rendered(Posts.season.containsElement(PostgrestDate(2024, 1, 15))),
+        rendered(Posts.season.containsElement(PostgresDate(2024, 1, 15))),
         'season=cs.2024-01-15',
       );
       expect(
-        PostgrestRange.parse(
+        PostgresRange.parse(
           '[2024-01-01,2024-02-01)',
-          PostgrestDate.parse,
+          PostgresDate.parse,
         ).literal,
         '[2024-01-01,2024-02-01)',
       );

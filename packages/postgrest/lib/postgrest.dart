@@ -1,3 +1,6 @@
+// The Postgres value types of supabase_common are experimental with this API.
+// ignore_for_file: experimental_member_use
+
 /// PostgREST client for Dart. Provides an ORM interface to PostgREST.
 library;
 
@@ -5,10 +8,19 @@ export 'package:supabase_common/supabase_common.dart'
     show
         AccessTokenException,
         HttpMethod,
+        PostgresByteaCodec,
+        PostgresDate,
+        PostgresInterval,
+        PostgresRange,
+        PostgresTime,
+        PostgresValue,
+        PostgresVectorCodec,
         SupabaseApiException,
         SupabaseException,
         SupabaseTransportException,
-        SupabaseRetryOptions;
+        SupabaseRetryOptions,
+        postgresBytea,
+        postgresVector;
 
 export 'package:yet_another_json_isolate/yet_another_json_isolate.dart'
     show AsyncJsonCodec;

@@ -16,6 +16,7 @@ resolution: workspace
 
 dependencies:
   clock: ^1.1.2
+  convert: ^3.1.1
   crypto: ^3.0.7
   http: ^1.6.0
   http_parser: ^4.1.2

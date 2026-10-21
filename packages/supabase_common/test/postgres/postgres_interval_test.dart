@@ -1,10 +1,10 @@
-import 'package:postgrest/postgrest.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('construction', () {
     test('folds the components into months, days and microseconds', () {
-      const interval = PostgrestInterval(
+      const interval = PostgresInterval(
         years: 1,
         months: 2,
         weeks: 1,
@@ -29,7 +29,7 @@ void main() {
     });
 
     test('fromDuration keeps the whole span as clock time', () {
-      final interval = PostgrestInterval.fromDuration(
+      final interval = PostgresInterval.fromDuration(
         const Duration(days: 2, hours: 3),
       );
 
@@ -40,15 +40,15 @@ void main() {
     });
 
     test('zero has no length', () {
-      expect(PostgrestInterval.zero, const PostgrestInterval());
-      expect(PostgrestInterval.zero.literal, '00:00:00');
+      expect(PostgresInterval.zero, const PostgresInterval());
+      expect(PostgresInterval.zero.literal, '00:00:00');
     });
   });
 
   group('literal', () {
     test('renders the postgres style Postgres emits', () {
       expect(
-        const PostgrestInterval(
+        const PostgresInterval(
           years: 1,
           months: 2,
           days: 3,
@@ -59,21 +59,21 @@ void main() {
         ).literal,
         '1 year 2 mons 3 days 04:05:06.789',
       );
-      expect(const PostgrestInterval(months: 1).literal, '1 mon');
-      expect(const PostgrestInterval(months: 26).literal, '2 years 2 mons');
-      expect(const PostgrestInterval(days: 1).literal, '1 day');
-      expect(const PostgrestInterval(hours: 100).literal, '100:00:00');
+      expect(const PostgresInterval(months: 1).literal, '1 mon');
+      expect(const PostgresInterval(months: 26).literal, '2 years 2 mons');
+      expect(const PostgresInterval(days: 1).literal, '1 day');
+      expect(const PostgresInterval(hours: 100).literal, '100:00:00');
       expect(
-        const PostgrestInterval(microseconds: 1).literal,
+        const PostgresInterval(microseconds: 1).literal,
         '00:00:00.000001',
       );
-      expect(const PostgrestInterval(seconds: 90).literal, '00:01:30');
+      expect(const PostgresInterval(seconds: 90).literal, '00:01:30');
     });
 
     test('signs each part the way Postgres does', () {
-      expect(const PostgrestInterval(years: -1).literal, '-1 years');
+      expect(const PostgresInterval(years: -1).literal, '-1 years');
       expect(
-        const PostgrestInterval(
+        const PostgresInterval(
           years: -1,
           months: -2,
           days: 3,
@@ -82,29 +82,29 @@ void main() {
         '-1 years -2 mons +3 days -04:00:00',
       );
       expect(
-        const PostgrestInterval(days: -1, hours: 4).literal,
+        const PostgresInterval(days: -1, hours: 4).literal,
         '-1 days +04:00:00',
       );
       expect(
-        const PostgrestInterval(months: 1, seconds: -1).literal,
+        const PostgresInterval(months: 1, seconds: -1).literal,
         '1 mon -00:00:01',
       );
       expect(
-        const PostgrestInterval(days: -3, minutes: -30).literal,
+        const PostgresInterval(days: -3, minutes: -30).literal,
         '-3 days -00:30:00',
       );
     });
 
     test('toString is the literal', () {
-      expect('${const PostgrestInterval(days: 2)}', '2 days');
+      expect('${const PostgresInterval(days: 2)}', '2 days');
     });
   });
 
   group('parse', () {
     test('reads the postgres style', () {
       expect(
-        PostgrestInterval.parse('1 year 2 mons 3 days 04:05:06.789'),
-        const PostgrestInterval(
+        PostgresInterval.parse('1 year 2 mons 3 days 04:05:06.789'),
+        const PostgresInterval(
           years: 1,
           months: 2,
           days: 3,
@@ -115,13 +115,13 @@ void main() {
         ),
       );
       expect(
-        PostgrestInterval.parse('1 mon'),
-        const PostgrestInterval(months: 1),
+        PostgresInterval.parse('1 mon'),
+        const PostgresInterval(months: 1),
       );
-      expect(PostgrestInterval.parse('00:00:00'), PostgrestInterval.zero);
+      expect(PostgresInterval.parse('00:00:00'), PostgresInterval.zero);
       expect(
-        PostgrestInterval.parse('-1 years -2 mons +3 days -04:05:06'),
-        const PostgrestInterval(
+        PostgresInterval.parse('-1 years -2 mons +3 days -04:05:06'),
+        const PostgresInterval(
           years: -1,
           months: -2,
           days: 3,
@@ -131,17 +131,17 @@ void main() {
         ),
       );
       expect(
-        PostgrestInterval.parse('100:00:00'),
-        const PostgrestInterval(hours: 100),
+        PostgresInterval.parse('100:00:00'),
+        const PostgresInterval(hours: 100),
       );
     });
 
     test('reads the postgres_verbose style', () {
       expect(
-        PostgrestInterval.parse(
+        PostgresInterval.parse(
           '@ 1 year 2 mons 3 days 4 hours 5 mins 6.5 secs',
         ),
-        const PostgrestInterval(
+        const PostgresInterval(
           years: 1,
           months: 2,
           days: 3,
@@ -152,16 +152,16 @@ void main() {
         ),
       );
       expect(
-        PostgrestInterval.parse('@ 1 day 2 hours ago'),
-        const PostgrestInterval(days: -1, hours: -2),
+        PostgresInterval.parse('@ 1 day 2 hours ago'),
+        const PostgresInterval(days: -1, hours: -2),
       );
-      expect(PostgrestInterval.parse('@ 0'), PostgrestInterval.zero);
+      expect(PostgresInterval.parse('@ 0'), PostgresInterval.zero);
     });
 
     test('reads the sql_standard style', () {
       expect(
-        PostgrestInterval.parse('+1-2 +3 +4:05:06.789'),
-        const PostgrestInterval(
+        PostgresInterval.parse('+1-2 +3 +4:05:06.789'),
+        const PostgresInterval(
           years: 1,
           months: 2,
           days: 3,
@@ -172,8 +172,8 @@ void main() {
         ),
       );
       expect(
-        PostgrestInterval.parse('-1-2 -3 -4:05:06'),
-        const PostgrestInterval(
+        PostgresInterval.parse('-1-2 -3 -4:05:06'),
+        const PostgresInterval(
           years: -1,
           months: -2,
           days: -3,
@@ -183,30 +183,30 @@ void main() {
         ),
       );
       expect(
-        PostgrestInterval.parse('1-2'),
-        const PostgrestInterval(years: 1, months: 2),
+        PostgresInterval.parse('1-2'),
+        const PostgresInterval(years: 1, months: 2),
       );
-      expect(PostgrestInterval.parse('3'), const PostgrestInterval(days: 3));
-      expect(PostgrestInterval.parse('0'), PostgrestInterval.zero);
+      expect(PostgresInterval.parse('3'), const PostgresInterval(days: 3));
+      expect(PostgresInterval.parse('0'), PostgresInterval.zero);
       expect(
-        PostgrestInterval.parse('4:05'),
-        const PostgrestInterval(hours: 4, minutes: 5),
+        PostgresInterval.parse('4:05'),
+        const PostgresInterval(hours: 4, minutes: 5),
       );
     });
 
     test('a single leading sign in the sql_standard style covers every '
         'field', () {
       expect(
-        PostgrestInterval.parse('-3 4:05:06'),
-        const PostgrestInterval(days: -3, hours: -4, minutes: -5, seconds: -6),
+        PostgresInterval.parse('-3 4:05:06'),
+        const PostgresInterval(days: -3, hours: -4, minutes: -5, seconds: -6),
       );
       expect(
-        PostgrestInterval.parse('-1-2'),
-        const PostgrestInterval(years: -1, months: -2),
+        PostgresInterval.parse('-1-2'),
+        const PostgresInterval(years: -1, months: -2),
       );
       expect(
-        PostgrestInterval.parse('-4:05:06.5'),
-        const PostgrestInterval(
+        PostgresInterval.parse('-4:05:06.5'),
+        const PostgresInterval(
           hours: -4,
           minutes: -5,
           seconds: -6,
@@ -214,15 +214,15 @@ void main() {
         ),
       );
       expect(
-        PostgrestInterval.parse('-3 4:05:06').literal,
+        PostgresInterval.parse('-3 4:05:06').literal,
         '-3 days -04:05:06',
       );
     });
 
     test('reads the iso_8601 style', () {
       expect(
-        PostgrestInterval.parse('P1Y2M3DT4H5M6.789S'),
-        const PostgrestInterval(
+        PostgresInterval.parse('P1Y2M3DT4H5M6.789S'),
+        const PostgresInterval(
           years: 1,
           months: 2,
           days: 3,
@@ -232,26 +232,26 @@ void main() {
           milliseconds: 789,
         ),
       );
-      expect(PostgrestInterval.parse('PT0S'), PostgrestInterval.zero);
-      expect(PostgrestInterval.parse('P2W'), const PostgrestInterval(weeks: 2));
+      expect(PostgresInterval.parse('PT0S'), PostgresInterval.zero);
+      expect(PostgresInterval.parse('P2W'), const PostgresInterval(weeks: 2));
       expect(
-        PostgrestInterval.parse('P-1Y-2M3DT-4H'),
-        const PostgrestInterval(years: -1, months: -2, days: 3, hours: -4),
+        PostgresInterval.parse('P-1Y-2M3DT-4H'),
+        const PostgresInterval(years: -1, months: -2, days: 3, hours: -4),
       );
       expect(
-        PostgrestInterval.parse('PT-0.5S'),
-        const PostgrestInterval(milliseconds: -500),
+        PostgresInterval.parse('PT-0.5S'),
+        const PostgresInterval(milliseconds: -500),
       );
     });
 
     test('reads spelled out units', () {
       expect(
-        PostgrestInterval.parse('3 hours 30 minutes'),
-        const PostgrestInterval(hours: 3, minutes: 30),
+        PostgresInterval.parse('3 hours 30 minutes'),
+        const PostgresInterval(hours: 3, minutes: 30),
       );
       expect(
-        PostgrestInterval.parse('2 weeks 1 month 250 milliseconds'),
-        const PostgrestInterval(months: 1, weeks: 2, milliseconds: 250),
+        PostgresInterval.parse('2 weeks 1 month 250 milliseconds'),
+        const PostgresInterval(months: 1, weeks: 2, milliseconds: 250),
       );
     });
 
@@ -272,7 +272,7 @@ void main() {
         '1.5',
       ]) {
         expect(
-          () => PostgrestInterval.parse(literal),
+          () => PostgresInterval.parse(literal),
           throwsFormatException,
           reason: literal,
         );
@@ -289,7 +289,7 @@ void main() {
         '100:00:00',
         '00:00:00.000001',
       ]) {
-        expect(PostgrestInterval.parse(literal).literal, literal);
+        expect(PostgresInterval.parse(literal).literal, literal);
       }
     });
   });
@@ -297,19 +297,19 @@ void main() {
   group('toDuration', () {
     test('counts a year as 365.25 days and a month as 30', () {
       expect(
-        const PostgrestInterval(years: 1).toDuration(),
+        const PostgresInterval(years: 1).toDuration(),
         const Duration(days: 365, hours: 6),
       );
       expect(
-        const PostgrestInterval(months: 1).toDuration(),
+        const PostgresInterval(months: 1).toDuration(),
         const Duration(days: 30),
       );
       expect(
-        const PostgrestInterval(months: 14, days: 3, hours: 4).toDuration(),
+        const PostgresInterval(months: 14, days: 3, hours: 4).toDuration(),
         const Duration(days: 365 + 60 + 3, hours: 6 + 4),
       );
       expect(
-        const PostgrestInterval(months: -13).toDuration(),
+        const PostgresInterval(months: -13).toDuration(),
         -const Duration(days: 365 + 30, hours: 6),
       );
     });
@@ -318,35 +318,35 @@ void main() {
   group('ordering', () {
     test('counts a month as 30 days and a day as 24 hours', () {
       expect(
-        const PostgrestInterval(months: 1).compareTo(
-          const PostgrestInterval(days: 30),
+        const PostgresInterval(months: 1).compareTo(
+          const PostgresInterval(days: 30),
         ),
         0,
       );
       expect(
-        const PostgrestInterval(days: 31).compareTo(
-          const PostgrestInterval(months: 1),
+        const PostgresInterval(days: 31).compareTo(
+          const PostgresInterval(months: 1),
         ),
         greaterThan(0),
       );
       expect(
-        const PostgrestInterval(hours: 23).compareTo(
-          const PostgrestInterval(days: 1),
+        const PostgresInterval(hours: 23).compareTo(
+          const PostgresInterval(days: 1),
         ),
         lessThan(0),
       );
       expect(
         [
-          const PostgrestInterval(days: 1),
-          const PostgrestInterval(hours: -1),
-          const PostgrestInterval(months: 1),
-          PostgrestInterval.zero,
+          const PostgresInterval(days: 1),
+          const PostgresInterval(hours: -1),
+          const PostgresInterval(months: 1),
+          PostgresInterval.zero,
         ]..sort(),
         [
-          const PostgrestInterval(hours: -1),
-          PostgrestInterval.zero,
-          const PostgrestInterval(days: 1),
-          const PostgrestInterval(months: 1),
+          const PostgresInterval(hours: -1),
+          PostgresInterval.zero,
+          const PostgresInterval(days: 1),
+          const PostgresInterval(months: 1),
         ],
       );
     });
@@ -354,16 +354,16 @@ void main() {
 
   test('equal intervals hash alike', () {
     expect(
-      const PostgrestInterval(years: 1, months: 2),
-      const PostgrestInterval(months: 14),
+      const PostgresInterval(years: 1, months: 2),
+      const PostgresInterval(months: 14),
     );
     expect(
-      const PostgrestInterval(days: 30),
-      isNot(const PostgrestInterval(months: 1)),
+      const PostgresInterval(days: 30),
+      isNot(const PostgresInterval(months: 1)),
     );
     expect(
-      const PostgrestInterval(hours: 1).hashCode,
-      PostgrestInterval.parse('01:00:00').hashCode,
+      const PostgresInterval(hours: 1).hashCode,
+      PostgresInterval.parse('01:00:00').hashCode,
     );
   });
 }

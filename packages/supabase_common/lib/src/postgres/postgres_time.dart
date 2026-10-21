@@ -1,12 +1,12 @@
-part of 'postgrest_typed_builder.dart';
+part of 'postgres_values.dart';
 
 /// A time of day, the value of a Postgres `time` column, or with an [offset]
 /// the value of a `timetz` column.
 ///
 /// ```dart
-/// PostgrestTime(hour: 9, minute: 30).literal                  // 09:30:00
-/// PostgrestTime(hour: 9, offset: Duration(hours: 2)).literal  // 09:00:00+02
-/// PostgrestTime.parse('04:05:06.789').microsecond             // 789000
+/// PostgresTime(hour: 9, minute: 30).literal                  // 09:30:00
+/// PostgresTime(hour: 9, offset: Duration(hours: 2)).literal  // 09:00:00+02
+/// PostgresTime.parse('04:05:06.789').microsecond             // 789000
 /// ```
 ///
 /// Postgres allows `24:00:00`, the end of the day, so [hour] goes up to 24
@@ -19,13 +19,13 @@ part of 'postgrest_typed_builder.dart';
 /// `08:00:00+00` without being equal to it. A plain `time` sorts before a
 /// `timetz` at the same instant.
 @experimental
-final class PostgrestTime implements Comparable<PostgrestTime> {
+final class PostgresTime implements PostgresValue, Comparable<PostgresTime> {
   /// The time [hour]:[minute]:[second].[microsecond], at the UTC [offset]
   /// for a `timetz` value.
   ///
   /// Throws an [ArgumentError] when a component is out of range or [offset]
   /// is not a whole number of seconds within the 15:59:59 Postgres accepts.
-  PostgrestTime({
+  PostgresTime({
     required this.hour,
     this.minute = 0,
     this.second = 0,
@@ -60,7 +60,7 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
 
   /// The time of day of [dateTime] in the timezone it carries, without an
   /// [offset].
-  PostgrestTime.fromDateTime(DateTime dateTime)
+  PostgresTime.fromDateTime(DateTime dateTime)
     : this(
         hour: dateTime.hour,
         minute: dateTime.minute,
@@ -76,7 +76,7 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
   /// seconds may be left out on input.
   ///
   /// Throws a [FormatException] when [literal] is not a time.
-  factory PostgrestTime.parse(String literal) {
+  factory PostgresTime.parse(String literal) {
     final match = _timePattern.firstMatch(literal.trim());
     if (match == null) throw FormatException('Not a time literal', literal);
     final fraction = match[4];
@@ -97,7 +97,7 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
           sign;
     }
     try {
-      return PostgrestTime(
+      return PostgresTime(
         hour: int.parse(match[1]!),
         minute: int.parse(match[2]!),
         second: int.parse(match[3] ?? '0'),
@@ -133,6 +133,7 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
 
   /// The literal Postgres accepts and emits: `09:30:00`, `04:05:06.789` or
   /// `09:30:00+02`.
+  @override
   String get literal {
     final fraction = microsecond == 0
         ? ''
@@ -169,7 +170,7 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
       (offset?.inMicroseconds ?? 0);
 
   @override
-  int compareTo(PostgrestTime other) {
+  int compareTo(PostgresTime other) {
     final byInstant = _utcMicroseconds.compareTo(other._utcMicroseconds);
     if (byInstant != 0) return byInstant;
     return switch ((offset, other.offset)) {
@@ -189,7 +190,7 @@ final class PostgrestTime implements Comparable<PostgrestTime> {
 
   @override
   bool operator ==(Object other) =>
-      other is PostgrestTime &&
+      other is PostgresTime &&
       other.hour == hour &&
       other.minute == minute &&
       other.second == second &&

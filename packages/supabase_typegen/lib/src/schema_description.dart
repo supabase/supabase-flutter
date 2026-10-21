@@ -22,13 +22,13 @@ enum ColumnTypeKind {
   /// The `boolean` type.
   boolean,
 
-  /// The `date` type, mapped to `PostgrestDate`.
+  /// The `date` type, mapped to `PostgresDate`.
   date,
 
-  /// The `time` and `timetz` types, mapped to `PostgrestTime`.
+  /// The `time` and `timetz` types, mapped to `PostgresTime`.
   time,
 
-  /// The `interval` type, mapped to `PostgrestInterval`.
+  /// The `interval` type, mapped to `PostgresInterval`.
   interval,
 
   /// Timestamps without a timezone, mapped to `DateTime` and written back as
@@ -61,7 +61,7 @@ enum ColumnTypeKind {
   array,
 
   /// A range type such as `int4range` or `tstzrange`, mapped to
-  /// `PostgrestRange`; the bound type is in
+  /// `PostgresRange`; the bound type is in
   /// [ColumnDescription.boundTypeKind].
   range,
 

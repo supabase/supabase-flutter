@@ -1,16 +1,16 @@
-part of 'postgrest_typed_builder.dart';
+part of 'postgres_values.dart';
 
 /// A calendar date without a time of day or a timezone, the value of a
 /// Postgres `date` column.
 ///
 /// ```dart
-/// PostgrestDate(2024, 2, 29).literal              // 2024-02-29
-/// PostgrestDate.parse('2024-02-29').toDateTime()  // DateTime(2024, 2, 29)
-/// PostgrestDate.infinity.literal                  // infinity
+/// PostgresDate(2024, 2, 29).literal              // 2024-02-29
+/// PostgresDate.parse('2024-02-29').toDateTime()  // DateTime(2024, 2, 29)
+/// PostgresDate.infinity.literal                  // infinity
 /// ```
 ///
 /// Years are counted the way [DateTime] counts them: year 0 is 1 BC and
-/// negative years go further back, so `PostgrestDate(-43, 3, 15)` is the date
+/// negative years go further back, so `PostgresDate(-43, 3, 15)` is the date
 /// Postgres prints as `0044-03-15 BC`.
 ///
 /// Postgres accepts `infinity` and `-infinity` as dates that sort after and
@@ -18,12 +18,12 @@ part of 'postgrest_typed_builder.dart';
 /// [year], [month], [day] and [toDateTime] are not defined for them and throw
 /// a [StateError].
 @experimental
-final class PostgrestDate implements Comparable<PostgrestDate> {
+final class PostgresDate implements PostgresValue, Comparable<PostgresDate> {
   /// The date [year]-[month]-[day].
   ///
   /// Throws an [ArgumentError] when the components do not name a day of the
   /// proleptic Gregorian calendar, which Postgres uses for every date.
-  PostgrestDate(int year, int month, int day)
+  PostgresDate(int year, int month, int day)
     : _year = year,
       _month = month,
       _day = day,
@@ -41,14 +41,14 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
     }
   }
 
-  const PostgrestDate._infinite(this._infinity)
+  const PostgresDate._infinite(this._infinity)
     : _year = 0,
       _month = 0,
       _day = 0;
 
   /// The calendar date of [dateTime] in the timezone it carries, so a UTC
   /// instant yields its UTC date and a local one its local date.
-  PostgrestDate.fromDateTime(DateTime dateTime)
+  PostgresDate.fromDateTime(DateTime dateTime)
     : this(dateTime.year, dateTime.month, dateTime.day);
 
   /// Parses the `YYYY-MM-DD` literal Postgres emits for a date, with a ` BC`
@@ -56,7 +56,7 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
   ///
   /// Throws a [FormatException] when [literal] is not a date, including a
   /// date that does not exist such as `2023-02-29`.
-  factory PostgrestDate.parse(String literal) {
+  factory PostgresDate.parse(String literal) {
     final text = literal.trim();
     final infinite = switch (text.toLowerCase()) {
       'infinity' || '+infinity' => infinity,
@@ -74,17 +74,17 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
       throw FormatException('Not a date literal', literal);
     }
     try {
-      return PostgrestDate(isBc ? 1 - year : year, month, day);
+      return PostgresDate(isBc ? 1 - year : year, month, day);
     } on ArgumentError {
       throw FormatException('Not a date literal', literal);
     }
   }
 
   /// The date after every other date, `infinity`.
-  static const infinity = PostgrestDate._infinite(1);
+  static const infinity = PostgresDate._infinite(1);
 
   /// The date before every other date, `-infinity`.
-  static const negativeInfinity = PostgrestDate._infinite(-1);
+  static const negativeInfinity = PostgresDate._infinite(-1);
 
   static final _datePattern = RegExp(r'^(\d{4,})-(\d{2})-(\d{2})( BC)?$');
 
@@ -121,6 +121,7 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
 
   /// The literal Postgres accepts and emits: `2024-02-29`, `0044-03-15 BC`,
   /// `infinity` or `-infinity`.
+  @override
   String get literal {
     if (_infinity > 0) return 'infinity';
     if (_infinity < 0) return '-infinity';
@@ -133,7 +134,7 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
   }
 
   @override
-  int compareTo(PostgrestDate other) {
+  int compareTo(PostgresDate other) {
     if (_infinity != 0 || other._infinity != 0) {
       return _infinity.compareTo(other._infinity);
     }
@@ -147,7 +148,7 @@ final class PostgrestDate implements Comparable<PostgrestDate> {
 
   @override
   bool operator ==(Object other) =>
-      other is PostgrestDate &&
+      other is PostgresDate &&
       other._infinity == _infinity &&
       other._year == _year &&
       other._month == _month &&

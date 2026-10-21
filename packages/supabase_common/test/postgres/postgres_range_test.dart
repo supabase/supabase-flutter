@@ -1,39 +1,39 @@
-import 'package:postgrest/postgrest.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('literal', () {
     test('renders the bounds with their inclusivity', () {
-      expect(const PostgrestRange.closedOpen(2, 25).literal, '[2,25)');
-      expect(const PostgrestRange.closed(2, 25).literal, '[2,25]');
-      expect(const PostgrestRange.open(2, 25).literal, '(2,25)');
-      expect(const PostgrestRange.openClosed(2, 25).literal, '(2,25]');
+      expect(const PostgresRange.closedOpen(2, 25).literal, '[2,25)');
+      expect(const PostgresRange.closed(2, 25).literal, '[2,25]');
+      expect(const PostgresRange.open(2, 25).literal, '(2,25)');
+      expect(const PostgresRange.openClosed(2, 25).literal, '(2,25]');
     });
 
     test('a null bound is unbounded', () {
-      expect(const PostgrestRange.closedOpen(2, null).literal, '[2,)');
-      expect(const PostgrestRange.openClosed(null, 5).literal, '(,5]');
-      expect(const PostgrestRange<int>.open(null, null).literal, '(,)');
+      expect(const PostgresRange.closedOpen(2, null).literal, '[2,)');
+      expect(const PostgresRange.openClosed(null, 5).literal, '(,5]');
+      expect(const PostgresRange<int>.open(null, null).literal, '(,)');
     });
 
     test('an unbounded side is exclusive whatever the constructor', () {
-      const range = PostgrestRange.closed(2, null);
+      const range = PostgresRange.closed(2, null);
 
       expect(range.literal, '[2,)');
       expect(range.upperInclusive, isFalse);
-      expect(const PostgrestRange<int>.closed(null, null).literal, '(,)');
-      expect(const PostgrestRange.openClosed(null, 5).lowerInclusive, isFalse);
-      expect(PostgrestRange.parse('[2,)', int.parse), range);
+      expect(const PostgresRange<int>.closed(null, null).literal, '(,)');
+      expect(const PostgresRange.openClosed(null, 5).lowerInclusive, isFalse);
+      expect(PostgresRange.parse('[2,)', int.parse), range);
     });
 
     test('the empty range renders as empty', () {
-      expect(const PostgrestRange<int>.empty().literal, 'empty');
-      expect(const PostgrestRange<int>.empty().isEmpty, isTrue);
+      expect(const PostgresRange<int>.empty().literal, 'empty');
+      expect(const PostgresRange<int>.empty().isEmpty, isTrue);
     });
 
     test('DateTime bounds render in ISO 8601', () {
       expect(
-        PostgrestRange.closedOpen(
+        PostgresRange.closedOpen(
           DateTime.utc(2024),
           DateTime.utc(2025),
         ).literal,
@@ -43,18 +43,18 @@ void main() {
 
     test('bounds are quoted when the literal requires it', () {
       expect(
-        const PostgrestRange.closedOpen('a,b', 'c d').literal,
+        const PostgresRange.closedOpen('a,b', 'c d').literal,
         '["a,b","c d")',
       );
-      expect(const PostgrestRange.closedOpen('', 'x').literal, '["",x)');
+      expect(const PostgresRange.closedOpen('', 'x').literal, '["",x)');
       expect(
-        const PostgrestRange.closedOpen(r'a"b\c', 'x').literal,
+        const PostgresRange.closedOpen(r'a"b\c', 'x').literal,
         r'["a\"b\\c",x)',
       );
     });
 
     test('render takes a bound renderer', () {
-      final range = PostgrestRange.closedOpen(
+      final range = PostgresRange.closedOpen(
         DateTime.utc(2024, 1, 2),
         DateTime.utc(2024, 1, 5),
       );
@@ -66,47 +66,47 @@ void main() {
     });
 
     test('toString is the literal', () {
-      expect('${const PostgrestRange.closedOpen(2, 25)}', '[2,25)');
+      expect('${const PostgresRange.closedOpen(2, 25)}', '[2,25)');
     });
   });
 
   group('parse', () {
     test('reads the bounds and their inclusivity', () {
       expect(
-        PostgrestRange.parse('[2,25)', int.parse),
-        const PostgrestRange.closedOpen(2, 25),
+        PostgresRange.parse('[2,25)', int.parse),
+        const PostgresRange.closedOpen(2, 25),
       );
       expect(
-        PostgrestRange.parse('(2,25]', int.parse),
-        const PostgrestRange.openClosed(2, 25),
+        PostgresRange.parse('(2,25]', int.parse),
+        const PostgresRange.openClosed(2, 25),
       );
       expect(
-        PostgrestRange.parse('[2,25]', int.parse),
-        const PostgrestRange.closed(2, 25),
+        PostgresRange.parse('[2,25]', int.parse),
+        const PostgresRange.closed(2, 25),
       );
       expect(
-        PostgrestRange.parse('(2,25)', int.parse),
-        const PostgrestRange.open(2, 25),
+        PostgresRange.parse('(2,25)', int.parse),
+        const PostgresRange.open(2, 25),
       );
     });
 
     test('reads unbounded sides and the empty range', () {
       expect(
-        PostgrestRange.parse('[2,)', int.parse),
-        const PostgrestRange.closedOpen(2, null),
+        PostgresRange.parse('[2,)', int.parse),
+        const PostgresRange.closedOpen(2, null),
       );
       expect(
-        PostgrestRange.parse('(,)', int.parse),
-        const PostgrestRange<int>.open(null, null),
+        PostgresRange.parse('(,)', int.parse),
+        const PostgresRange<int>.open(null, null),
       );
       expect(
-        PostgrestRange.parse('empty', int.parse),
-        const PostgrestRange<int>.empty(),
+        PostgresRange.parse('empty', int.parse),
+        const PostgresRange<int>.empty(),
       );
     });
 
     test('reads the quoted bounds Postgres emits for timestamps', () {
-      final range = PostgrestRange.parse(
+      final range = PostgresRange.parse(
         '["2024-01-01 00:00:00+00","2024-02-01 00:00:00+00")',
         DateTime.parse,
       );
@@ -118,7 +118,7 @@ void main() {
     });
 
     test('unescapes quoted bounds', () {
-      final range = PostgrestRange.parse(
+      final range = PostgresRange.parse(
         r'["a\"b\\c","d,e"]',
         (bound) => bound,
       );
@@ -130,62 +130,62 @@ void main() {
     test(
       'an infinity bound is kept when the bound type has a value for it',
       () {
-        final range = PostgrestRange.parse(
+        final range = PostgresRange.parse(
           '[2024-01-01,infinity)',
-          PostgrestDate.parse,
+          PostgresDate.parse,
         );
 
-        expect(range.upper, PostgrestDate.infinity);
+        expect(range.upper, PostgresDate.infinity);
         expect(range.literal, '[2024-01-01,"infinity")');
-        expect(PostgrestRange.parse(range.literal, PostgrestDate.parse), range);
+        expect(PostgresRange.parse(range.literal, PostgresDate.parse), range);
         expect(
-          PostgrestRange.parse(
+          PostgresRange.parse(
             '(-infinity,2024-01-01]',
-            PostgrestDate.parse,
+            PostgresDate.parse,
           ).lower,
-          PostgrestDate.negativeInfinity,
+          PostgresDate.negativeInfinity,
         );
       },
     );
 
     test('an infinity bound the bound type rejects is unbounded', () {
       expect(
-        PostgrestRange.parse('[2024-01-01T00:00:00Z,infinity)', DateTime.parse),
-        PostgrestRange.closedOpen(DateTime.utc(2024), null),
+        PostgresRange.parse('[2024-01-01T00:00:00Z,infinity)', DateTime.parse),
+        PostgresRange.closedOpen(DateTime.utc(2024), null),
       );
       expect(
-        PostgrestRange.parse(
+        PostgresRange.parse(
           '(-infinity,2024-01-01T00:00:00Z]',
           DateTime.parse,
         ),
-        PostgrestRange.openClosed(null, DateTime.utc(2024)),
+        PostgresRange.openClosed(null, DateTime.utc(2024)),
       );
       expect(
-        PostgrestRange.parse('[2,infinity)', int.parse),
-        const PostgrestRange.closedOpen(2, null),
+        PostgresRange.parse('[2,infinity)', int.parse),
+        const PostgresRange.closedOpen(2, null),
       );
     });
 
     test('a numeric infinity bound is the infinite number', () {
       expect(
-        PostgrestRange.parse('[1,Infinity)', num.parse),
-        const PostgrestRange<num>.closedOpen(1, double.infinity),
+        PostgresRange.parse('[1,Infinity)', num.parse),
+        const PostgresRange<num>.closedOpen(1, double.infinity),
       );
       expect(
-        PostgrestRange.parse('["infinity",x)', (bound) => bound).lower,
+        PostgresRange.parse('["infinity",x)', (bound) => bound).lower,
         'infinity',
       );
     });
 
     test('a doubled quote inside a quoted bound is a quote', () {
-      final range = PostgrestRange.parse('["a""b",c)', (bound) => bound);
+      final range = PostgresRange.parse('["a""b",c)', (bound) => bound);
 
       expect(range.lower, 'a"b');
       expect(range.upper, 'c');
     });
 
     test('an empty quoted bound is an empty string, not unbounded', () {
-      final range = PostgrestRange.parse('["",x)', (bound) => bound);
+      final range = PostgresRange.parse('["",x)', (bound) => bound);
 
       expect(range.lower, '');
       expect(range.upper, 'x');
@@ -193,12 +193,12 @@ void main() {
 
     test('round trips a rendered literal', () {
       for (final range in [
-        const PostgrestRange.closedOpen('a,b', 'c d'),
-        const PostgrestRange.closedOpen('infinity', 'x'),
-        const PostgrestRange.closed('a"b', ''),
+        const PostgresRange.closedOpen('a,b', 'c d'),
+        const PostgresRange.closedOpen('infinity', 'x'),
+        const PostgresRange.closed('a"b', ''),
       ]) {
         expect(
-          PostgrestRange.parse(range.literal, (bound) => bound),
+          PostgresRange.parse(range.literal, (bound) => bound),
           range,
           reason: range.literal,
         );
@@ -208,7 +208,7 @@ void main() {
     test('rejects a stray bracket inside a bound', () {
       for (final literal in ['[a,b))', '[a,b]]', '[a],b)']) {
         expect(
-          () => PostgrestRange.parse(literal, (bound) => bound),
+          () => PostgresRange.parse(literal, (bound) => bound),
           throwsFormatException,
           reason: literal,
         );
@@ -225,7 +225,7 @@ void main() {
         '["2,3)',
       ]) {
         expect(
-          () => PostgrestRange.parse(literal, int.parse),
+          () => PostgresRange.parse(literal, int.parse),
           throwsFormatException,
           reason: literal,
         );
@@ -235,16 +235,16 @@ void main() {
 
   test('ranges compare by value', () {
     expect(
-      const PostgrestRange.closedOpen(2, 25),
-      const PostgrestRange.closedOpen(2, 25),
+      const PostgresRange.closedOpen(2, 25),
+      const PostgresRange.closedOpen(2, 25),
     );
     expect(
-      const PostgrestRange.closedOpen(2, 25),
-      isNot(const PostgrestRange.closed(2, 25)),
+      const PostgresRange.closedOpen(2, 25),
+      isNot(const PostgresRange.closed(2, 25)),
     );
     expect(
-      const PostgrestRange.closedOpen(2, 25).hashCode,
-      const PostgrestRange.closedOpen(2, 25).hashCode,
+      const PostgresRange.closedOpen(2, 25).hashCode,
+      const PostgresRange.closedOpen(2, 25).hashCode,
     );
   });
 }
