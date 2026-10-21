@@ -11,6 +11,49 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 Packages with breaking changes:
 
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`postgrest` - `v3.0.0-dev.12`](#postgrest---v300-dev12)
+ - [`supabase` - `v3.0.0-dev.12`](#supabase---v300-dev12)
+ - [`supabase_test` - `v0.5.2`](#supabase_test---v052)
+ - [`supabase_flutter` - `v3.0.0-dev.12`](#supabase_flutter---v300-dev12)
+ - [`supabase_flutter_web_auth` - `v0.1.10`](#supabase_flutter_web_auth---v0110)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter` - `v3.0.0-dev.12`
+ - `supabase_flutter_web_auth` - `v0.1.10`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.12`
+
+ - **FEAT**(supabase): add typed onTableChanges for postgres changes ([#2003](https://github.com/supabase/supabase-flutter/issues/2003)). ([74e9870b](https://github.com/supabase/supabase-flutter/commit/74e9870b8768bc42d6a93d88dbc5fecbef1417c1))
+ - **FEAT**(postgrest): select every column alongside embeds in selectOnly ([#2004](https://github.com/supabase/supabase-flutter/issues/2004)). ([c9e6f4b8](https://github.com/supabase/supabase-flutter/commit/c9e6f4b8222d4f755ac74d5540f9ad5ea25aed63))
+ - **FEAT**(postgrest): count the rows of a to-many relation without aggregates ([#2005](https://github.com/supabase/supabase-flutter/issues/2005)). ([511cfb57](https://github.com/supabase/supabase-flutter/commit/511cfb5767e55ad00f913b2619f6b0b64aa26196))
+ - **DOCS**(postgrest): correct the aggregate setting, read inference and stale migration notes ([#2002](https://github.com/supabase/supabase-flutter/issues/2002)). ([e8c4ed0e](https://github.com/supabase/supabase-flutter/commit/e8c4ed0e4bf1c8b1df436270352bcf56dde23df7))
+
+#### `supabase` - `v3.0.0-dev.12`
+
+ - **FEAT**(supabase): add typed onTableChanges for postgres changes ([#2003](https://github.com/supabase/supabase-flutter/issues/2003)). ([74e9870b](https://github.com/supabase/supabase-flutter/commit/74e9870b8768bc42d6a93d88dbc5fecbef1417c1))
+
+#### `supabase_test` - `v0.5.2`
+
+ - **FEAT**(supabase): add typed onTableChanges for postgres changes ([#2003](https://github.com/supabase/supabase-flutter/issues/2003)). ([74e9870b](https://github.com/supabase/supabase-flutter/commit/74e9870b8768bc42d6a93d88dbc5fecbef1417c1))
+
+
+## 2026-10-21
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
  - [`postgrest` - `v3.0.0-dev.11`](#postgrest---v300-dev11)
  - [`supabase` - `v3.0.0-dev.11`](#supabase---v300-dev11)
  - [`supabase_auth` - `v3.0.0-dev.10`](#supabase_auth---v300-dev10)

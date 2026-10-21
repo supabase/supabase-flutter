@@ -1,3 +1,7 @@
+## 3.0.0-dev.12
+
+ - Update a dependency to the latest release.
+
 ## 3.0.0-dev.11
 
  - **FEAT**(storage): resumable uploads with pause, resume and cancel ([#1984](https://github.com/supabase/supabase-flutter/issues/1984)). ([23f25e2b](https://github.com/supabase/supabase-flutter/commit/23f25e2bd8507c5c202d99824ed1c0b43d6f0668))

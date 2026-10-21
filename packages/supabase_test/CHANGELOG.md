@@ -1,3 +1,7 @@
+## 0.5.2
+
+ - **FEAT**(supabase): add typed onTableChanges for postgres changes ([#2003](https://github.com/supabase/supabase-flutter/issues/2003)). ([74e9870b](https://github.com/supabase/supabase-flutter/commit/74e9870b8768bc42d6a93d88dbc5fecbef1417c1))
+
 ## 0.5.1
 
  - Update a dependency to the latest release.
