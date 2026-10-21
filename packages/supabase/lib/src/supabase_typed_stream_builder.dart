@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:supabase/src/typed_postgres_change_filter.dart';
 import 'package:supabase/supabase.dart';
 
 /// The typed counterpart of [SupabaseStreamBuilder]; emits the rows of the
@@ -98,94 +99,13 @@ class SupabaseTypedStreamFilterBuilder<Row, Element>
   SupabaseTypedStreamFilterBuilder<Row, Element> filter(
     PostgrestFilter<Row> filter,
   ) {
-    final comparison = filter.comparison;
-    if (comparison == null) {
-      throw ArgumentError.value(
-        filter,
-        'filter',
-        'Streams apply one comparison per filter call, negated or not; '
-            'combine filters by calling filter repeatedly instead of with & '
-            'or |.',
-      );
-    }
-    final PostgrestComparison(:column, :operator, :value, :negated) =
-        comparison;
-    if (column is! PostgrestStoredColumn<Row, Object>) {
-      throw ArgumentError.value(
-        filter,
-        'filter',
-        'Streams filter on stored columns only.',
-      );
-    }
-    if (column is PostgrestIntegerVectorColumn ||
-        column is PostgrestNullableIntegerVectorColumn) {
-      throw ArgumentError.value(
-        filter,
-        'filter',
-        'Streams cannot filter on int2vector or oidvector columns; realtime '
-            'cannot compare their values.',
-      );
-    }
-    final name = column.name;
-    final type = switch (operator) {
-      PostgrestFilterOperator.eq => PostgresChangeFilterType.eq,
-      PostgrestFilterOperator.neq => PostgresChangeFilterType.neq,
-      PostgrestFilterOperator.lt => PostgresChangeFilterType.lt,
-      PostgrestFilterOperator.lte => PostgresChangeFilterType.lte,
-      PostgrestFilterOperator.gt => PostgresChangeFilterType.gt,
-      PostgrestFilterOperator.gte => PostgresChangeFilterType.gte,
-      PostgrestFilterOperator.inFilter => PostgresChangeFilterType.inFilter,
-      PostgrestFilterOperator.like => PostgresChangeFilterType.like,
-      PostgrestFilterOperator.ilike => PostgresChangeFilterType.ilike,
-      PostgrestFilterOperator.matchRegex => PostgresChangeFilterType.match,
-      PostgrestFilterOperator.imatchRegex => PostgresChangeFilterType.imatch,
-      PostgrestFilterOperator.isFilter => PostgresChangeFilterType.isFilter,
-      PostgrestFilterOperator.isDistinct => PostgresChangeFilterType.isDistinct,
-      PostgrestFilterOperator.likeAllOf ||
-      PostgrestFilterOperator.likeAnyOf ||
-      PostgrestFilterOperator.ilikeAllOf ||
-      PostgrestFilterOperator.ilikeAnyOf ||
-      PostgrestFilterOperator.contains ||
-      PostgrestFilterOperator.containedBy ||
-      PostgrestFilterOperator.overlaps ||
-      PostgrestFilterOperator.rangeLt ||
-      PostgrestFilterOperator.rangeGt ||
-      PostgrestFilterOperator.rangeGte ||
-      PostgrestFilterOperator.rangeLte ||
-      PostgrestFilterOperator.rangeAdjacent ||
-      PostgrestFilterOperator.textSearch => throw ArgumentError.value(
-        filter,
-        'filter',
-        'Streams do not support the ${operator.name} operator.',
-      ),
-    };
+    final change = postgresChangeFilterOf(filter);
     _streamFilterBuilder.addFilter(
-      name,
-      type,
-      _vectorOperand(column, operator, value),
-      negated: negated,
+      change.column,
+      change.type,
+      change.value,
+      negated: change.negate,
     );
     return this;
-  }
-
-  /// [value] as the literal a pgvector [column] reads, or [value] itself for
-  /// any other column, since the stream sends it to PostgREST and to
-  /// realtime as it is.
-  static Object? _vectorOperand(
-    PostgrestStoredColumn<Object?, Object> column,
-    PostgrestFilterOperator operator,
-    Object? value,
-  ) {
-    if (column is! PostgrestVectorColumn &&
-        column is! PostgrestNullableVectorColumn) {
-      return value;
-    }
-    if (value is! List<Object?>) return value;
-    String render(Object? vector) =>
-        postgresVector.encode((vector! as List<Object?>).cast());
-    if (operator == PostgrestFilterOperator.inFilter) {
-      return [for (final member in value) render(member)];
-    }
-    return render(value);
   }
 }

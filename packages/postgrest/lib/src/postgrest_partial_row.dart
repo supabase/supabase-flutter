@@ -53,7 +53,9 @@ final class PostgrestPartialRow<Row> {
     this._json,
     this._selections, {
     required bool allColumns,
-  }) : _allColumns = allColumns;
+    bool presentColumns = false,
+  }) : _allColumns = allColumns,
+       _presentColumns = presentColumns;
 
   final Map<String, dynamic> _json;
 
@@ -63,6 +65,10 @@ final class PostgrestPartialRow<Row> {
   /// Whether the list also asked for every column with `*`, so any column
   /// can be read, though still no relation.
   final bool _allColumns;
+
+  /// Whether every stored column the row holds a value for can be read,
+  /// because the row is not the answer to a `select` list.
+  final bool _presentColumns;
 
   /// A row of [selections] decoded from [json] that reached the client some
   /// other way than a PostgREST response, such as a realtime change payload.
@@ -74,6 +80,19 @@ final class PostgrestPartialRow<Row> {
     json,
     selections,
     allColumns: _selectsAllColumns(selections),
+  );
+
+  /// A row holding whichever stored columns [json] has a value for, such as
+  /// the old row of a realtime change payload, which carries the primary key
+  /// only unless the table has `REPLICA IDENTITY FULL`.
+  @internal
+  static PostgrestPartialRow<Row> fromPresentColumns<Row>(
+    Map<String, dynamic> json,
+  ) => PostgrestPartialRow._(
+    json,
+    const [],
+    allColumns: false,
+    presentColumns: true,
   );
 
   /// The value of [entry] in this row.
@@ -120,7 +139,8 @@ final class PostgrestPartialRow<Row> {
       }
     }
     if (found) return _NestedSelection(selections, allColumns: allColumns);
-    if (_allColumns && entry._selectedByStar) {
+    final present = _presentColumns && _json.containsKey(entry.responseKey);
+    if ((_allColumns || present) && entry._selectedByStar) {
       return const _NestedSelection([], allColumns: false);
     }
     return null;
@@ -129,6 +149,8 @@ final class PostgrestPartialRow<Row> {
   String _describeKeys() {
     final keys = <String>{
       if (_allColumns) 'every column',
+      if (_presentColumns)
+        for (final key in _json.keys) '`$key`',
       for (final selection in _selections)
         if (selection is! PostgrestAllColumns) '`${selection.responseKey}`',
     };

@@ -2663,6 +2663,9 @@ features:
       - SupabaseTypedStreamBuilder.listen
       - SupabaseTypedStreamFilterBuilder
       - SupabaseTypedStreamFilterBuilder.SupabaseTypedStreamFilterBuilder
+      - TypedPostgresChanges
+      - TypedPostgresChanges.onTableChanges
+      - TypedPostgresChanges.onTableChangesOnly
     supporting_symbols:
       - PostgresChangeEvent
       - PostgresChangePayload
@@ -2684,6 +2687,18 @@ features:
       - PostgresColumn.name
       - PostgresColumn.type
       - PostgresColumn.typeModifier
+      - TypedPostgresChange
+      - TypedPostgresChange.commitTimestamp
+      - TypedPostgresDelete
+      - TypedPostgresDelete.oldRow
+      - TypedPostgresDelete.toString
+      - TypedPostgresInsert
+      - TypedPostgresInsert.newRow
+      - TypedPostgresInsert.toString
+      - TypedPostgresUpdate
+      - TypedPostgresUpdate.newRow
+      - TypedPostgresUpdate.oldRow
+      - TypedPostgresUpdate.toString
   realtime.subscriptions.postgres_changes_filter:
     status: implemented
     symbols:

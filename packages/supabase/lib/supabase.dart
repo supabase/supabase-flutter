@@ -18,3 +18,4 @@ export 'src/supabase_stream_builder.dart';
 export 'src/supabase_typed_query_builder.dart';
 export 'src/supabase_typed_stream_builder.dart';
 export 'src/trace_propagation.dart';
+export 'src/typed_postgres_changes.dart';
