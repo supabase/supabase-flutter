@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:supabase/src/typed_selections.dart';
 import 'package:supabase/supabase.dart';
 
 /// The typed counterpart of [SupabaseQueryBuilder], returned by
@@ -83,11 +84,7 @@ class SupabaseTypedQueryBuilder<Row, Insert, Update>
         'streamOnly needs at least one column',
       );
     }
-    final selections = <PostgrestStoredColumn<Row, Object>>[
-      ...columns,
-      for (final column in primaryKey)
-        if (!columns.any((selected) => selected.name == column.name)) column,
-    ];
+    final selections = withPrimaryKey(columns, primaryKey);
     return SupabaseTypedStreamFilterBuilder(
       _queryBuilder.stream(
         primaryKey: [for (final column in primaryKey) column.name],

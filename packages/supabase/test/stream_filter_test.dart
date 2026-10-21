@@ -131,6 +131,23 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('a filter on an array column is rejected', () {
+      // The same cast fails for every array type, and the failing poller
+      // stops delivering changes to the other channels of the client too.
+      final stream = supabase
+          .table(_Users.table)
+          .stream(primaryKey: [_Users.username]);
+
+      expect(
+        () => stream.filter(_Users.tags.eq(['a', 'b'])),
+        throwsArgumentError,
+      );
+      expect(
+        () => stream.filter(_Users.tags.neq(['a']).not()),
+        throwsArgumentError,
+      );
+    });
   });
 
   group('select', () {
@@ -486,6 +503,11 @@ class _Users {
     'previous_keys',
   );
   static const embedding = PostgrestVectorColumn<_User>('embedding');
+  static const tags = PostgrestColumn<_User, List<String>>('tags');
+  static const settings = PostgrestColumn<_User, Map<String, Object?>>(
+    'settings',
+  );
+  static const seenAt = PostgrestColumn<_User, DateTime>('seen_at');
 }
 
 typedef _TypedTestCase = ({
@@ -501,6 +523,19 @@ typedef _TypedTestCase = ({
 /// The typed [SupabaseTypedStreamFilterBuilder.filter] has to end up sending
 /// exactly what the untyped filters above send.
 final _typedTestCases = <_TypedTestCase>[
+  (
+    name: 'a map is sent as JSON',
+    filter: (stream) => stream.filter(_Users.settings.eq({'theme': 'dark'})),
+    realtimeFilter: 'settings=eq."{\\"theme\\":\\"dark\\"}"',
+    restQuery: {'select': '*', 'settings': 'eq.{"theme":"dark"}'},
+  ),
+  (
+    name: 'a DateTime is sent in ISO 8601',
+    filter: (stream) =>
+        stream.filter(_Users.seenAt.gt(DateTime.utc(2026, 10, 21, 12))),
+    realtimeFilter: 'seen_at=gt.2026-10-21T12:00:00.000Z',
+    restQuery: {'select': '*', 'seen_at': 'gt.2026-10-21T12:00:00.000Z'},
+  ),
   (
     name: 'vector members of inFilter are sent as their literals',
     filter: (stream) => stream.filter(
