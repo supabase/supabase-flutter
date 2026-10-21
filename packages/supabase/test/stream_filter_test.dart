@@ -113,6 +113,24 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('a filter on an integer vector column is rejected', () {
+      // Realtime compares a filter by casting the changed value, which it
+      // holds as JSON, to the column type, and that cast fails for these
+      // types.
+      final stream = supabase
+          .table(_Users.table)
+          .stream(primaryKey: [_Users.username]);
+
+      expect(
+        () => stream.filter(_Users.keys.eq([1, 2])),
+        throwsArgumentError,
+      );
+      expect(
+        () => stream.filter(_Users.previousKeys.isNull()),
+        throwsArgumentError,
+      );
+    });
   });
 
   group('select', () {
@@ -464,6 +482,9 @@ class _Users {
   static const age = PostgrestColumn<_User, int>('age');
   static const data = PostgrestNullableColumn<_User, String>('data');
   static const keys = PostgrestIntegerVectorColumn<_User>('keys');
+  static const previousKeys = PostgrestNullableIntegerVectorColumn<_User>(
+    'previous_keys',
+  );
   static const embedding = PostgrestVectorColumn<_User>('embedding');
 }
 
@@ -481,21 +502,15 @@ typedef _TypedTestCase = ({
 /// exactly what the untyped filters above send.
 final _typedTestCases = <_TypedTestCase>[
   (
-    name: 'an integer vector is sent as its literal',
-    filter: (stream) => stream.filter(_Users.keys.eq([1, 2])),
-    realtimeFilter: 'keys=eq.1 2',
-    restQuery: {'select': '*', 'keys': 'eq.1 2'},
-  ),
-  (
-    name: 'integer vector members of inFilter are sent as their literals',
+    name: 'vector members of inFilter are sent as their literals',
     filter: (stream) => stream.filter(
-      _Users.keys.inFilter([
-        [1, 2],
-        [3],
+      _Users.embedding.inFilter([
+        [0.5, 1.5],
+        [2],
       ]),
     ),
-    realtimeFilter: 'keys=in.(1 2,3)',
-    restQuery: {'select': '*', 'keys': 'in.("1 2","3")'},
+    realtimeFilter: 'embedding=in.("[0.5,1.5]",[2.0])',
+    restQuery: {'select': '*', 'embedding': 'in.("[0.5,1.5]","[2.0]")'},
   ),
   (
     name: 'a vector is sent as its literal',
