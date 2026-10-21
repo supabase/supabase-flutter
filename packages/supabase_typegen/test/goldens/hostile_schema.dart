@@ -34,6 +34,30 @@ enum String$ {
   String toString() => wireName;
 }
 
+/// Postgres enum `public.big_int`.
+enum BigInt$ {
+  small('small'),
+  large('large');
+
+  const BigInt$(this.wireName);
+
+  /// The value as stored in the database.
+  final String wireName;
+
+  /// Parses the database representation of the enum.
+  static BigInt$ fromWire(String wireName) => values.firstWhere(
+    (value) => value.wireName == wireName,
+    orElse: () => throw ArgumentError.value(
+      wireName,
+      'wireName',
+      'No BigInt\$ value with this wire name',
+    ),
+  );
+
+  @override
+  String toString() => wireName;
+}
+
 /// Postgres enum `public.статус`.
 enum $ {
   $$('новый'),
@@ -509,6 +533,17 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => PostgrestInterval.parse(value as String),
   };
+  int? get relation => switch (_json['relation']) {
+    null => null,
+    final Object value => int.parse(value as String),
+  };
+  List<int>? get relations => (_json['relations'] as List<dynamic>?)
+      ?.map((element) => int.parse(element as String))
+      .toList();
+  BigInt? get transaction => switch (_json['transaction']) {
+    null => null,
+    final Object value => BigInt.parse(value as String),
+  };
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -532,6 +567,9 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     required PostgrestTime opensAt,
     PostgrestTime? closesAt,
     PostgrestInterval? ttl,
+    int? relation,
+    List<int>? relations,
+    BigInt? transaction,
   }) : this._({
          'list': list,
          'date_time': ?dateTime?.toUtc().toIso8601String(),
@@ -544,6 +582,9 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'opens_at': opensAt.literal,
          'closes_at': ?closesAt?.literal,
          'ttl': ?ttl?.literal,
+         'relation': ?relation,
+         'relations': ?relations,
+         'transaction': ?transaction?.toString(),
        });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
@@ -565,6 +606,19 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   /// Returns a copy with `ttl` set to SQL NULL, overriding any database
   /// default.
   MapInsert setTtlToNull() => MapInsert._({..._json, 'ttl': null});
+
+  /// Returns a copy with `relation` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setRelationToNull() => MapInsert._({..._json, 'relation': null});
+
+  /// Returns a copy with `relations` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setRelationsToNull() => MapInsert._({..._json, 'relations': null});
+
+  /// Returns a copy with `transaction` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setTransactionToNull() =>
+      MapInsert._({..._json, 'transaction': null});
 }
 
 /// Values for updating rows of `map`. All columns are optional; passing `null`
@@ -583,6 +637,9 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     PostgrestTime? opensAt,
     PostgrestTime? closesAt,
     PostgrestInterval? ttl,
+    int? relation,
+    List<int>? relations,
+    BigInt? transaction,
   }) : this._({
          'list': ?list,
          'date_time': ?dateTime?.toUtc().toIso8601String(),
@@ -595,6 +652,9 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'opens_at': ?opensAt?.literal,
          'closes_at': ?closesAt?.literal,
          'ttl': ?ttl?.literal,
+         'relation': ?relation,
+         'relations': ?relations,
+         'transaction': ?transaction?.toString(),
        });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
@@ -616,6 +676,19 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// Returns a copy with `ttl` set to SQL NULL, overriding any database
   /// default.
   MapUpdate setTtlToNull() => MapUpdate._({..._json, 'ttl': null});
+
+  /// Returns a copy with `relation` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setRelationToNull() => MapUpdate._({..._json, 'relation': null});
+
+  /// Returns a copy with `relations` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setRelationsToNull() => MapUpdate._({..._json, 'relations': null});
+
+  /// Returns a copy with `transaction` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setTransactionToNull() =>
+      MapUpdate._({..._json, 'transaction': null});
 }
 
 /// Typed access to the `map` table.
@@ -672,6 +745,18 @@ class Map$ {
   static const ttl = PostgrestNullableColumn<MapRow, PostgrestInterval>(
     'ttl',
     fromJson: _postgrestIntervalFromJson,
+  );
+  static const relation = PostgrestNullableColumn<MapRow, int>(
+    'relation',
+    fromJson: _intFromJson,
+  );
+  static const relations = PostgrestNullableColumn<MapRow, List<int>>(
+    'relations',
+    fromJson: _intListFromJson,
+  );
+  static const transaction = PostgrestNullableColumn<MapRow, BigInt>(
+    'transaction',
+    fromJson: _bigIntFromJson,
   );
 
   /// The `postgrest_table` rows referencing this row through `mood`.
@@ -1070,6 +1155,8 @@ extension DatabaseFunctions on PostgrestRpc {
   );
 }
 
+BigInt _bigIntFromJson(Object json) => BigInt.parse(json as String);
+
 DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
 
 List<DateTime> _dateTimeListFromJson(Object json) => (json as List<dynamic>)
@@ -1086,6 +1173,12 @@ List<double> _doubleListFromJson$(Object json) =>
     postgrestVector.decode(json as String);
 
 $ _fromJson(Object json) => $.fromWire(json as String);
+
+int _intFromJson(Object json) => int.parse(json as String);
+
+List<int> _intListFromJson(Object json) => (json as List<dynamic>)
+    .map((element) => int.parse(element as String))
+    .toList();
 
 PostgrestDate _postgrestDateFromJson(Object json) =>
     PostgrestDate.parse(json as String);

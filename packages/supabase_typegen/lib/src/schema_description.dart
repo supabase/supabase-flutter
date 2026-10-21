@@ -4,6 +4,14 @@ enum ColumnTypeKind {
   /// Whole number types such as `smallint`, `integer` and `bigint`.
   integer,
 
+  /// The `oid` type, mapped to `int` and carried over the wire as a JSON
+  /// string, `"5"`.
+  integerString,
+
+  /// The `xid8` type, mapped to `BigInt` since its values go past what a
+  /// web `int` holds exactly, and carried over the wire as a JSON string.
+  bigInteger,
+
   /// Floating point types such as `real` and `double precision`.
   floating,
 

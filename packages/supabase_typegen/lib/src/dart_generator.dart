@@ -182,6 +182,7 @@ class _TypeNameRegistry {
     'List',
     'DateTime',
     'Uint8List',
+    'BigInt',
     'int',
     'double',
     'num',
@@ -1080,6 +1081,14 @@ _Binding _scalarBindingFor(
     ColumnTypeKind.enumType,
   ),
   ColumnTypeKind.integer => const _Binding('int', ColumnTypeKind.integer),
+  ColumnTypeKind.integerString => const _Binding(
+    'int',
+    ColumnTypeKind.integerString,
+  ),
+  ColumnTypeKind.bigInteger => const _Binding(
+    'BigInt',
+    ColumnTypeKind.bigInteger,
+  ),
   ColumnTypeKind.floating => const _Binding('double', ColumnTypeKind.floating),
   ColumnTypeKind.numeric => const _Binding('num', ColumnTypeKind.numeric),
   ColumnTypeKind.boolean => const _Binding('bool', ColumnTypeKind.boolean),
@@ -1158,6 +1167,8 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.date => 'PostgrestDate',
   ColumnTypeKind.timestamp ||
   ColumnTypeKind.timestampWithTimeZone => 'DateTime',
+  ColumnTypeKind.integerString ||
+  ColumnTypeKind.bigInteger ||
   ColumnTypeKind.time ||
   ColumnTypeKind.interval ||
   ColumnTypeKind.floating ||
@@ -1181,6 +1192,8 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.timestamp ||
   ColumnTypeKind.timestampWithTimeZone =>
     '${_boundDartType(boundTypeKind)}.parse',
+  ColumnTypeKind.integerString ||
+  ColumnTypeKind.bigInteger ||
   ColumnTypeKind.time ||
   ColumnTypeKind.interval ||
   ColumnTypeKind.floating ||
@@ -1234,6 +1247,8 @@ String _readExpression(ColumnDescription column, _Binding binding) {
 String? _readConversion(_Binding binding, String value) =>
     switch (binding.kind) {
       ColumnTypeKind.floating => '($value as num).toDouble()',
+      ColumnTypeKind.integerString => 'int.parse($value as String)',
+      ColumnTypeKind.bigInteger => 'BigInt.parse($value as String)',
       ColumnTypeKind.timestamp ||
       ColumnTypeKind.timestampWithTimeZone ||
       ColumnTypeKind.date ||
@@ -1294,6 +1309,7 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       '.toUtc().toIso8601String()',
     ),
     ColumnTypeKind.enumType => chain('.wireName'),
+    ColumnTypeKind.bigInteger => chain('.toString()'),
     ColumnTypeKind.binary => (
       expression: 'postgrestBytea.encode($value)',
       chained: false,
@@ -1313,6 +1329,8 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       ColumnTypeKind.time ||
       ColumnTypeKind.interval ||
       ColumnTypeKind.integer ||
+      ColumnTypeKind.integerString ||
+      ColumnTypeKind.bigInteger ||
       ColumnTypeKind.numeric ||
       ColumnTypeKind.floating ||
       ColumnTypeKind.boolean ||
@@ -1334,6 +1352,7 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       final expression => chain('.map((element) => $expression).toList()'),
     },
     ColumnTypeKind.integer ||
+    ColumnTypeKind.integerString ||
     ColumnTypeKind.floating ||
     ColumnTypeKind.numeric ||
     ColumnTypeKind.boolean ||

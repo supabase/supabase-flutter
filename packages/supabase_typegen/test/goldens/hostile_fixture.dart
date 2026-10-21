@@ -324,6 +324,32 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           hasDefault: true,
           isNullable: true,
         ),
+        // Sent as JSON strings, so they cannot be read as decoded numbers.
+        ColumnDescription(
+          name: 'relation',
+          postgresFormat: 'oid',
+          typeKind: ColumnTypeKind.integerString,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'relations',
+          postgresFormat: '_oid',
+          typeKind: ColumnTypeKind.array,
+          elementTypeKind: ColumnTypeKind.integerString,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'transaction',
+          postgresFormat: 'xid8',
+          typeKind: ColumnTypeKind.bigInteger,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
       ],
     ),
     TableDescription(
@@ -690,6 +716,12 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       schema: 'public',
       name: 'string',
       values: ["it's \$a\u2028trap", 'plain'],
+    ),
+    // Named like the core type the xid8 column of `map` decodes into.
+    EnumDescription(
+      schema: 'public',
+      name: 'big_int',
+      values: ['small', 'large'],
     ),
     EnumDescription(
       schema: 'public',

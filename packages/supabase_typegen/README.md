@@ -150,6 +150,11 @@ final archived = await client
 - `bytea` columns map to `Uint8List` and are written back as hex literals,
   the format Postgres emits by default; the escape output format is decoded
   as well.
+- `oid` columns map to `int` and `xid8` columns to `BigInt`, parsed from the
+  JSON strings PostgREST sends them as. `numeric` columns map to `num`:
+  PostgREST sends them as JSON numbers, and decoding keeps only what a Dart
+  `int` or `double` holds, so select the column cast to `text` when every
+  digit counts.
 - pgvector `vector` and `halfvec` columns map to `List<double>`, carried as
   the `[0.1,0.2]` literal PostgREST sends, and their column tokens compare
   against vector literals. `sparsevec` columns stay `Object?`.

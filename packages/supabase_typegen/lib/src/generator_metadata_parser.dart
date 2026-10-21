@@ -1,6 +1,6 @@
 import 'schema_description.dart';
 
-const _integerFormats = {'int2', 'int4', 'int8', 'oid'};
+const _integerFormats = {'int2', 'int4', 'int8'};
 const _floatingFormats = {'float4', 'float8'};
 
 /// Types that PostgREST serializes as JSON strings.
@@ -40,7 +40,6 @@ const _textFormats = {
   'jsonpath',
   'tid',
   'xid',
-  'xid8',
   'cid',
   'regclass',
   'regtype',
@@ -109,6 +108,8 @@ ColumnTypeKind _typeKind(
   if (_extensionTextFormats.contains(format)) return ColumnTypeKind.text;
   if (typeSchema != _catalogSchema) return ColumnTypeKind.unknown;
   if (_integerFormats.contains(format)) return ColumnTypeKind.integer;
+  if (format == 'oid') return ColumnTypeKind.integerString;
+  if (format == 'xid8') return ColumnTypeKind.bigInteger;
   if (_floatingFormats.contains(format)) return ColumnTypeKind.floating;
   if (format == 'numeric') return ColumnTypeKind.numeric;
   if (format == 'bool') return ColumnTypeKind.boolean;
