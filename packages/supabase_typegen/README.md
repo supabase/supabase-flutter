@@ -171,7 +171,9 @@ final archived = await client
 - `int2vector` and `oidvector` columns map to `List<int>`. Their column tokens
   and setters send the space-separated literal these types read, `1 2`. A
   computed field of one of these types, or of a pgvector type, is read the
-  same way but filtered with an array literal, which the server rejects.
+  same way but filtered with an array literal, which the server rejects. A
+  typed stream rejects filters on these columns, because realtime cannot
+  compare their values.
 - Foreign keys into another schema get no relation member, since PostgREST
   only embeds tables of the schema a request addresses. The foreign key
   itself is still described, so the column is typed like any other.

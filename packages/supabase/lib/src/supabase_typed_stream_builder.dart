@@ -117,6 +117,15 @@ class SupabaseTypedStreamFilterBuilder<Row, Element>
         'Streams filter on stored columns only.',
       );
     }
+    if (column is PostgrestIntegerVectorColumn ||
+        column is PostgrestNullableIntegerVectorColumn) {
+      throw ArgumentError.value(
+        filter,
+        'filter',
+        'Streams cannot filter on int2vector or oidvector columns; realtime '
+            'cannot compare their values.',
+      );
+    }
     final name = column.name;
     final type = switch (operator) {
       PostgrestFilterOperator.eq => PostgresChangeFilterType.eq,
@@ -159,7 +168,7 @@ class SupabaseTypedStreamFilterBuilder<Row, Element>
     return this;
   }
 
-  /// [value] as the literal a vector [column] reads, or [value] itself for
+  /// [value] as the literal a pgvector [column] reads, or [value] itself for
   /// any other column, since the stream sends it to PostgREST and to
   /// realtime as it is.
   static Object? _vectorOperand(
@@ -167,26 +176,15 @@ class SupabaseTypedStreamFilterBuilder<Row, Element>
     PostgrestFilterOperator operator,
     Object? value,
   ) {
-    String Function(List<Object?> list)? render;
-    if (column is PostgrestIntegerVectorColumn ||
-        column is PostgrestNullableIntegerVectorColumn) {
-      render = (list) {
-        if (list.contains(null)) {
-          throw ArgumentError.value(
-            list,
-            'value',
-            'An integer vector cannot hold null',
-          );
-        }
-        return list.join(' ');
-      };
-    } else if (column is PostgrestVectorColumn ||
-        column is PostgrestNullableVectorColumn) {
-      render = (list) => postgresVector.encode(list.cast());
+    if (column is! PostgrestVectorColumn &&
+        column is! PostgrestNullableVectorColumn) {
+      return value;
     }
-    if (render == null || value is! List<Object?>) return value;
+    if (value is! List<Object?>) return value;
+    String render(Object? vector) =>
+        postgresVector.encode((vector! as List<Object?>).cast());
     if (operator == PostgrestFilterOperator.inFilter) {
-      return [for (final member in value) render(member! as List<Object?>)];
+      return [for (final member in value) render(member)];
     }
     return render(value);
   }
