@@ -36,6 +36,7 @@ class Posts {
   static const season = PostgrestColumn<Post, PostgresRange<PostgresDate>>(
     'season',
   );
+  static const slots = PostgrestColumn<Post, PostgresMultirange<int>>('slots');
 }
 
 String rendered(PostgrestFilter<Post> filter) => [
@@ -149,6 +150,30 @@ void main() {
     test('an empty array renders empty braces', () {
       // `tags=cs.{}` matches every row whose column is non-null.
       expect(rendered(Posts.tags.contains([])), 'tags=cs.{}');
+    });
+  });
+
+  group('multirange operators', () {
+    test('render their abbreviation with a multirange operand', () {
+      final multirange = PostgresMultirange([
+        const PostgresRange.closedOpen(1, 3),
+        const PostgresRange.closedOpen(5, 7),
+      ]);
+      const literal = '{[1,3),[5,7)}';
+      expect(rendered(Posts.slots.contains(multirange)), 'slots=cs.$literal');
+      expect(
+        rendered(Posts.slots.containedBy(multirange)),
+        'slots=cd.$literal',
+      );
+      expect(rendered(Posts.slots.overlaps(multirange)), 'slots=ov.$literal');
+      expect(rendered(Posts.slots.rangeLt(multirange)), 'slots=sl.$literal');
+      expect(rendered(Posts.slots.rangeGt(multirange)), 'slots=sr.$literal');
+      expect(rendered(Posts.slots.rangeGte(multirange)), 'slots=nxl.$literal');
+      expect(rendered(Posts.slots.rangeLte(multirange)), 'slots=nxr.$literal');
+      expect(
+        rendered(Posts.slots.rangeAdjacent(multirange)),
+        'slots=adj.$literal',
+      );
     });
   });
 

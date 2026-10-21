@@ -1380,8 +1380,8 @@ features:
       - PostgrestArrayFilters
       - PostgrestArrayFilters.contains
       - PostgrestRangeFilters
-      - PostgrestMultirangeFilters
       - PostgrestRangeFilters.contains
+      - PostgrestMultirangeFilters
       - PostgrestMultirangeFilters.contains
       - PostgrestRangeFilters.containsElement
       - PostgrestFilterableExpression.containsJson

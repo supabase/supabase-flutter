@@ -70,6 +70,18 @@ void main() {
       );
     });
 
+    test('finds an empty member after a bound that lowercases longer', () {
+      // 'İ' lowercases to two code units, which shifted a lowercased copy of
+      // the literal against the original.
+      expect(
+        PostgresMultirange.parse('{["İ",z),empty}', (bound) => bound).ranges,
+        [
+          const PostgresRange.closedOpen('İ', 'z'),
+          const PostgresRange<String>.empty(),
+        ],
+      );
+    });
+
     test('rejects a literal ending in an escape', () {
       expect(
         () => PostgresMultirange.parse(r'{[a,b\', (bound) => bound),
