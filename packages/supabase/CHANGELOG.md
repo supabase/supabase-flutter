@@ -1,3 +1,14 @@
+## 3.0.0-dev.11
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase): reject stream filters on integer vector columns ([#2000](https://github.com/supabase/supabase-flutter/issues/2000)). ([48ac11c6](https://github.com/supabase/supabase-flutter/commit/48ac11c62ee27ffb3f6762d6e357a0a927550517))
+ - **FIX**(auth): check persistSession up front and give examples a storage ([#1972](https://github.com/supabase/supabase-flutter/issues/1972)). ([2640236a](https://github.com/supabase/supabase-flutter/commit/2640236a3e5b55b85215faa33d5ffed8cd2337c2))
+ - **FEAT**(storage): resumable uploads with pause, resume and cancel ([#1984](https://github.com/supabase/supabase-flutter/issues/1984)). ([23f25e2b](https://github.com/supabase/supabase-flutter/commit/23f25e2bd8507c5c202d99824ed1c0b43d6f0668))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FIX**(auth): throw when a client has no asyncStorage for the pkce flow ([#1971](https://github.com/supabase/supabase-flutter/issues/1971)). ([042d36d3](https://github.com/supabase/supabase-flutter/commit/042d36d376cf44a2f538f4dbbde4e105c4679841))
+ - **BREAKING** **FEAT**(typegen): read int2vector and oidvector columns as integer lists ([#1996](https://github.com/supabase/supabase-flutter/issues/1996)). ([a1526378](https://github.com/supabase/supabase-flutter/commit/a15263780dcfffd30c198346dd0ec2828a612964))
+
 ## 3.0.0-dev.10
 
 > Note: This release has breaking changes.

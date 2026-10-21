@@ -1,3 +1,20 @@
+## 3.0.0-dev.11
+
+> Note: This release has breaking changes.
+
+ - **FIX**(postgrest): address a hinted embed by its table name outside the select list ([#1962](https://github.com/supabase/supabase-flutter/issues/1962)). ([8d9a929d](https://github.com/supabase/supabase-flutter/commit/8d9a929d7b43588551fc54bdcc5f13924cf80eab))
+ - **FEAT**(postgrest): retry typed calls of stable and immutable functions over GET ([#1982](https://github.com/supabase/supabase-flutter/issues/1982)). ([5ca35d92](https://github.com/supabase/supabase-flutter/commit/5ca35d92b3e079911c98f9949a58af54a33cb0b6))
+ - **BREAKING** **REFACTOR**: move the Postgres value types to supabase_common ([#1993](https://github.com/supabase/supabase-flutter/issues/1993)). ([abd3148a](https://github.com/supabase/supabase-flutter/commit/abd3148ac21a1792412eb767683eaa0541598b0c))
+ - **BREAKING** **FIX**(typegen): read oid and xid8 columns as numbers ([#1992](https://github.com/supabase/supabase-flutter/issues/1992)). ([a0261a9d](https://github.com/supabase/supabase-flutter/commit/a0261a9d4aed7593bab52b94728ba47d5919c3c1))
+ - **BREAKING** **FIX**(postgrest): key aggregates and casts by their own expression ([#1988](https://github.com/supabase/supabase-flutter/issues/1988)). ([5609af7f](https://github.com/supabase/supabase-flutter/commit/5609af7f3c38525daf22218eec1194fcac5b901d))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FEAT**(typegen): read multirange columns into a multirange type ([#1999](https://github.com/supabase/supabase-flutter/issues/1999)). ([e5b8bdeb](https://github.com/supabase/supabase-flutter/commit/e5b8bdebc835d5c7ce8153b623c938980563a064))
+ - **BREAKING** **FEAT**(typegen): read geometric columns into value types ([#1998](https://github.com/supabase/supabase-flutter/issues/1998)). ([995cf727](https://github.com/supabase/supabase-flutter/commit/995cf7271ea46dc8530f6a896365a21beca9840a))
+ - **BREAKING** **FEAT**(typegen): read inet and cidr columns into a network address type ([#1997](https://github.com/supabase/supabase-flutter/issues/1997)). ([ed69ae31](https://github.com/supabase/supabase-flutter/commit/ed69ae312021cdfdad5f54f9e59f064dd54d6ed3))
+ - **BREAKING** **FEAT**(typegen): read int2vector and oidvector columns as integer lists ([#1996](https://github.com/supabase/supabase-flutter/issues/1996)). ([a1526378](https://github.com/supabase/supabase-flutter/commit/a15263780dcfffd30c198346dd0ec2828a612964))
+ - **BREAKING** **FEAT**(typegen): read pg_lsn and macaddr columns into value types ([#1994](https://github.com/supabase/supabase-flutter/issues/1994)). ([307fe4ad](https://github.com/supabase/supabase-flutter/commit/307fe4adbec1f63506054288512831cdc90b0f8f))
+ - **BREAKING** **FEAT**(postgrest): quote JSON path keys and add int array-index methods ([#1983](https://github.com/supabase/supabase-flutter/issues/1983)). ([2d3262b6](https://github.com/supabase/supabase-flutter/commit/2d3262b6cdc8dc119cf1dac6986cecd7bba07134))
+
 ## 3.0.0-dev.10
 
 > Note: This release has breaking changes.

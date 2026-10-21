@@ -1,3 +1,14 @@
+## 3.0.0-dev.10
+
+> Note: This release has breaking changes.
+
+ - **FIX**(auth): check persistSession up front and give examples a storage ([#1972](https://github.com/supabase/supabase-flutter/issues/1972)). ([2640236a](https://github.com/supabase/supabase-flutter/commit/2640236a3e5b55b85215faa33d5ffed8cd2337c2))
+ - **FEAT**(auth): add admin SSO provider management ([#1966](https://github.com/supabase/supabase-flutter/issues/1966)). ([baefc9ca](https://github.com/supabase/supabase-flutter/commit/baefc9ca47586ab5e6d3c2dcd938c819e96b126d))
+ - **FEAT**(auth): add admin updateFactor for MFA factors ([#1965](https://github.com/supabase/supabase-flutter/issues/1965)). ([1fce37c3](https://github.com/supabase/supabase-flutter/commit/1fce37c3dcf1a2ecb3ebf22051f46888a462b429))
+ - **DOCS**(auth): note that listProviders ignores the prefix when both filters are given ([#1967](https://github.com/supabase/supabase-flutter/issues/1967)). ([35f6cffd](https://github.com/supabase/supabase-flutter/commit/35f6cffd557855b69c95139df24e263b69482864))
+ - **BREAKING** **FIX**(auth): throw AuthSessionMissingException when a token response has no session ([#1970](https://github.com/supabase/supabase-flutter/issues/1970)). ([373fbd49](https://github.com/supabase/supabase-flutter/commit/373fbd495ef9aeaec45f2aa9a945f2043519aa3c))
+ - **BREAKING** **FIX**(auth): throw when a client has no asyncStorage for the pkce flow ([#1971](https://github.com/supabase/supabase-flutter/issues/1971)). ([042d36d3](https://github.com/supabase/supabase-flutter/commit/042d36d376cf44a2f538f4dbbde4e105c4679841))
+
 ## 3.0.0-dev.9
 
 > Note: This release has breaking changes.

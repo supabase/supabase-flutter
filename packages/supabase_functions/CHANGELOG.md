@@ -1,3 +1,9 @@
+## 3.0.0-dev.9
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+
 ## 3.0.0-dev.8
 
 > Note: This release has breaking changes.
