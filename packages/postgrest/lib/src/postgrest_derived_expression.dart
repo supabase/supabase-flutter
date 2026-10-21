@@ -65,6 +65,9 @@ sealed class PostgrestDerivedExpression<Row, Value extends Object>
   ///     .selectOnly([PostgrestDerivedExpression.countAll()]);
   /// ```
   ///
+  /// [PostgrestToManyRelation.count] counts the rows of an embed without
+  /// needing aggregates.
+  ///
   /// {@macro postgrest_aggregate}
   static PostgrestDerivedExpression<Row, int> countAll<Row>() =>
       const _Derivation._('count()', null);

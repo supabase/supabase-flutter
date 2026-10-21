@@ -219,6 +219,41 @@ void main() {
     );
   });
 
+  group('count', () {
+    test('renders an embed of count under its own key', () {
+      expect(Todos.orders.count().expression, 'orders(count)');
+      expect(Todos.orders.count().responseKey, 'orders(count)');
+      expect(Todos.orders.count().relation, same(Todos.orders));
+    });
+
+    test('keys an aliased embed by its alias', () {
+      const hinted = PostgrestToManyRelation<Todo, Order>(
+        'orders!orders_parent_id_fkey',
+        columns: [Todos.id],
+        referencedTable: 'orders',
+        referencedColumns: [Orders.parentId],
+        alias: 'child_orders',
+      );
+
+      expect(hinted.count().expression, 'orders!orders_parent_id_fkey(count)');
+      expect(hinted.count().responseKey, 'child_orders(count)');
+    });
+
+    test('stays a separate embed inside another embed', () {
+      expect(
+        Orders.todo.select([Todos.id, Todos.orders.count()]).expression,
+        'todo(id,"orders(count)":orders(count))',
+      );
+    });
+
+    test('is selectable and nothing else', () {
+      final Object count = Todos.orders.count();
+
+      expect(count, isA<PostgrestReadable<Todo, int>>());
+      expect(count, isNot(isA<PostgrestColumnExpression<Todo, int>>()));
+    });
+  });
+
   group('alias', () {
     test('the key is the alias, or the table name of the embed', () {
       expect(Orders.todo.key, 'todo');
