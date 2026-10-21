@@ -141,6 +141,10 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// final String? author = books.first.read(Books.author)?.read(Authors.name);
   /// ```
   ///
+  /// [PostgrestTable.allColumns] selects every column next to embeds and
+  /// aggregates, and [PostgrestPartialRow.toRow] converts such a row into
+  /// [Row].
+  ///
   /// [columns] needs at least one entry; use [select] for every column.
   PostgrestTypedFilterBuilder<Row, List<PostgrestPartialRow<Row>>> selectOnly(
     List<PostgrestSelectable<Row>> columns,

@@ -914,6 +914,10 @@ features:
       - PostgrestTable.primaryKey
       - PostgrestTable.relations
       - PostgrestTable.computedFields
+      - PostgrestTable.allColumns
+      - PostgrestAllColumns
+      - PostgrestAllColumns.expression
+      - PostgrestAllColumns.responseKey
       - RowConverter
       - PostgrestSelectable
       - PostgrestSelectable.expression
@@ -944,6 +948,7 @@ features:
       - PostgrestReadable.responseKey
       - PostgrestPartialRow
       - PostgrestPartialRow.read
+      - PostgrestPartialRow.toRow
       - PostgrestPartialRow.toJson
       - PostgrestPartialRow.toString
       - PostgresValue

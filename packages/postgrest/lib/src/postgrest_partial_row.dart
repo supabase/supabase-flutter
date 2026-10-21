@@ -49,11 +49,10 @@ sealed class PostgrestReadable<Row, Output> {
 /// instead of the null cast a getter of the full row type would fail with.
 @experimental
 final class PostgrestPartialRow<Row> {
-  const PostgrestPartialRow._(
-    this._json,
-    this._selections, {
-    required bool allColumns,
-  }) : _allColumns = allColumns;
+  PostgrestPartialRow._(this._json, this._selections, {bool allColumns = false})
+    : _allColumns =
+          allColumns ||
+          _selections.any((selection) => selection is PostgrestAllColumns);
 
   final Map<String, dynamic> _json;
 
@@ -70,7 +69,7 @@ final class PostgrestPartialRow<Row> {
   static PostgrestPartialRow<Row> fromSelections<Row>(
     Map<String, dynamic> json,
     List<PostgrestSelectable<Row>> selections,
-  ) => PostgrestPartialRow._(json, selections, allColumns: false);
+  ) => PostgrestPartialRow._(json, selections);
 
   /// The value of [entry] in this row.
   ///
@@ -124,9 +123,25 @@ final class PostgrestPartialRow<Row> {
   String _describeKeys() {
     final keys = <String>{
       if (_allColumns) 'every column',
-      for (final selection in _selections) '`${selection.responseKey}`',
+      for (final selection in _selections)
+        if (selection is! PostgrestAllColumns) '`${selection.responseKey}`',
     };
     return keys.isEmpty ? 'nothing' : keys.join(', ');
+  }
+
+  /// The row as the full [Row] of [table], when the `select` list asked for
+  /// every column with [PostgrestTable.allColumns] or the row is a whole
+  /// embed.
+  ///
+  /// Throws a [StateError] when it did not, since [Row] would miss columns.
+  Row toRow(PostgrestTable<Row, Object?, Object?> table) {
+    if (!_allColumns) {
+      throw StateError(
+        'Only a row of every column converts into `$Row`. The row holds '
+        '${_describeKeys()}.',
+      );
+    }
+    return table.rowFromJson(_json);
   }
 
   /// The row as decoded from the response.

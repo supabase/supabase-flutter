@@ -478,6 +478,118 @@ void main() {
     });
   });
 
+  group('every column', () {
+    test('renders as * next to an embed', () async {
+      httpClient.stub([]);
+
+      await client.table(Orders.table).selectOnly([
+        Orders.table.allColumns,
+        Orders.customer.select([Customers.name]),
+      ]);
+
+      expect(
+        httpClient.requests.last.url.queryParameters['select'],
+        '*,customers(name)',
+      );
+    });
+
+    test('reads any stored column but no relation', () async {
+      httpClient.stub({
+        'id': 1,
+        'note': 'gift',
+        'customers': {'name': 'Ada'},
+      });
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.table.allColumns,
+        Orders.customer.select([Customers.name]),
+      ]).single();
+
+      expect(order.read(Orders.id), 1);
+      expect(order.read(Orders.note), 'gift');
+      expect(order.read(Orders.customer)?.read(Customers.name), 'Ada');
+      expect(() => order.read(Orders.items), throwsNotSelected('items'));
+    });
+
+    test('covers no derived expression', () async {
+      httpClient.stub({'id': 1});
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.table.allColumns,
+      ]).single();
+
+      expect(
+        () => order.read(Orders.id.count()),
+        throwsNotSelected('id.count()'),
+      );
+    });
+
+    test('inside an embed merges with a whole embed', () async {
+      httpClient.stub([]);
+
+      await client.table(Orders.table).selectOnly([
+        Orders.customer.select(),
+        Orders.customer.select([Customers.table.allColumns, Customers.name]),
+      ]);
+
+      expect(
+        httpClient.requests.last.url.queryParameters['select'],
+        'customers(*,name)',
+      );
+    });
+
+    test('inside an embed reads any column of the nested row', () async {
+      httpClient.stub({
+        'id': 1,
+        'customers': {'id': 5, 'name': 'Ada', 'email': null},
+      });
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.id,
+        Orders.customer.select([Customers.table.allColumns]),
+      ]).single();
+
+      final customer = order.read(Orders.customer)!;
+      expect(customer.read(Customers.name), 'Ada');
+      expect(customer.read(Customers.email), isNull);
+      expect(customer.toRow(Customers.table), isA<Customer>());
+    });
+
+    test('converts into the full row', () async {
+      httpClient.stub({
+        'id': 1,
+        'customers': {'name': 'Ada'},
+      });
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.table.allColumns,
+        Orders.customer.select([Customers.name]),
+      ]).single();
+
+      final Order row = order.toRow(Orders.table);
+      expect(row.id, 1);
+    });
+
+    test('a row of some columns does not convert into the full row', () async {
+      httpClient.stub({'id': 1});
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.id,
+      ]).single();
+
+      expect(
+        () => order.toRow(Orders.table),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('Only a row of every column'),
+          ),
+        ),
+      );
+    });
+  });
+
   group('shapes', () {
     test('single and maybeSingle keep the partial row', () async {
       httpClient.stub({'id': 1, 'note': 'gift'});
