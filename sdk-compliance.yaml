@@ -1547,6 +1547,7 @@ features:
       - PostgrestRelation.select
       - PostgrestToOneRelation.select
       - PostgrestToManyRelation.select
+      - PostgrestToManyRelation.count
       - PostgrestTypedTransformBuilder.embedded
     supporting_symbols:
       - PostgrestEmbeddedScope
@@ -1560,6 +1561,10 @@ features:
       - PostgrestEmbed.expression
       - PostgrestToOneEmbed
       - PostgrestToManyEmbed
+      - PostgrestEmbeddedCount
+      - PostgrestEmbeddedCount.relation
+      - PostgrestEmbeddedCount.expression
+      - PostgrestEmbeddedCount.responseKey
       - PostgrestToOneRelation
       - PostgrestToOneRelation.PostgrestToOneRelation
       - PostgrestToOneRelation.computed

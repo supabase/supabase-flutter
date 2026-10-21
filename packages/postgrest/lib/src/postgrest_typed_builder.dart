@@ -40,11 +40,14 @@ List<Row> _rowsFromJson<Row>(
 /// the position of the first, so `author(id),author(name)` is sent as
 /// `author(id,name)`, since PostgREST joins a relation once per embed and
 /// rejects a repeated join. Merging recurses into nested embeds, and an
-/// entry that renders the same as an earlier one is left out.
+/// entry that renders the same as an earlier one is left out. A
+/// [PostgrestEmbeddedCount] goes after every embed, since PostgREST applies
+/// a scope of a relation to the first embed of it in the list.
 String _selectList(List<PostgrestSelectable<Object?>> selections) {
   if (selections.isEmpty) return '*';
   if (selections case [final single]) return single._selectExpression;
   final entries = <String>[];
+  final counts = <String>[];
   final embeds = <String, _EmbedGroup>{};
   for (final selection in selections) {
     if (selection case _Embedded(:final relation, _selections: final members)) {
@@ -56,13 +59,14 @@ String _selectList(List<PostgrestSelectable<Object?>> selections) {
           .add(members);
     } else {
       final expression = selection._selectExpression;
-      if (!entries.contains(expression)) entries.add(expression);
+      final list = selection is PostgrestEmbeddedCount ? counts : entries;
+      if (!list.contains(expression)) list.add(expression);
     }
   }
   for (final MapEntry(key: name, value: group) in embeds.entries) {
     entries[group.index] = group.render(name);
   }
-  return entries.join(',');
+  return [...entries, ...counts].join(',');
 }
 
 /// The entries of one relation collected from a `select` list.

@@ -252,11 +252,60 @@ final class PostgrestToManyRelation<Row, Target>
     _checkedSelections(selections, 'selections'),
   );
 
+  /// The number of embedded rows, `messages(count)`.
+  ///
+  /// Unlike [PostgrestColumnExpression.count] and
+  /// [PostgrestDerivedExpression.countAll], it works without PostgREST's
+  /// `db-aggregates-enabled` setting.
+  ///
+  /// ```dart
+  /// final channels = await client
+  ///     .table(Channels.table)
+  ///     .selectOnly([Channels.id, Channels.messages.count()]);
+  /// final int messageCount = channels.first.read(Channels.messages.count());
+  /// ```
+  PostgrestEmbeddedCount<Row> count() => PostgrestEmbeddedCount._(this);
+
   @override
   List<PostgrestPartialRow<Target>> _read(
     Object? json,
     _NestedSelection nested,
   ) => _partialRows(json as List<Object?>, nested);
+
+  @override
+  bool get _selectedByStar => false;
+}
+
+/// The number of rows of a to-many relation, created by
+/// [PostgrestToManyRelation.count].
+///
+/// Select position only. It is sent under an alias of its own
+/// [responseKey], `"messages(count)":messages(count)`, so it is a separate
+/// embed from the other entries of the relation in the same list. It is
+/// sent after them, so the [PostgrestTypedTransformBuilder.embedded] scopes
+/// on the relation apply to those rows and not to what it counts.
+@experimental
+final class PostgrestEmbeddedCount<Row> extends PostgrestSelectable<Row>
+    implements PostgrestReadable<Row, int> {
+  const PostgrestEmbeddedCount._(this.relation) : super._();
+
+  /// The relation whose rows are counted.
+  final PostgrestToManyRelation<Row, Object?> relation;
+
+  @override
+  String get expression => '${relation.name}(count)';
+
+  @override
+  String get responseKey => _expressionKey('${relation.key}(count)');
+
+  @override
+  String get _selectExpression => '${_quoted(responseKey)}:$expression';
+
+  @override
+  int _read(Object? json, _NestedSelection nested) {
+    final row = (json! as List<Object?>).single! as Map<String, dynamic>;
+    return row['count'] as int;
+  }
 
   @override
   bool get _selectedByStar => false;

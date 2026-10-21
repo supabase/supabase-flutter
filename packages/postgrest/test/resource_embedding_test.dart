@@ -268,6 +268,48 @@ void main() {
       );
     });
 
+    test('a count of a relation needs no aggregates', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .selectOnly([
+            Users.username,
+            Users.messages(Messages.id),
+            Users.messages.count(),
+          ])
+          .order(Users.username);
+
+      final counts = {
+        for (final user in users)
+          user.read(Users.username): user.read(Users.messages.count()),
+      };
+      expect(counts, {
+        'awailas': 0,
+        'dragarcia': 0,
+        'kiwicopple': 0,
+        'supabot': 3,
+      });
+      final supabot = users.singleWhere(
+        (user) => user.read(Users.username) == 'supabot',
+      );
+      expect(supabot.read(Users.messages), hasLength(3));
+    });
+
+    test('a scope limits the rows of a relation, not its count', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .selectOnly([
+            Users.messages.count(),
+            Users.username,
+            Users.messages(Messages.id),
+          ])
+          .where(Users.username.eq('supabot'))
+          .embedded(Users.messages, (messages) => messages.limit(1));
+
+      final supabot = users.single;
+      expect(supabot.read(Users.messages.count()), 3);
+      expect(supabot.read(Users.messages), hasLength(1));
+    });
+
     test('a to-one embed returns one object', () async {
       final messages = await postgrest
           .table(Messages.table)

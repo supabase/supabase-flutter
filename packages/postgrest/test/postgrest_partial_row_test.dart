@@ -417,6 +417,45 @@ void main() {
       expect(item.read(Items.id.count()), 1);
     });
 
+    test('a count of a relation reads as an int', () async {
+      httpClient.stub({
+        'id': 1,
+        'items': [
+          {'sku': 'a'},
+        ],
+        'items(count)': [
+          {'count': 3},
+        ],
+      });
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.id,
+        Orders.items(Items.sku),
+        Orders.items.count(),
+      ]).single();
+
+      expect(
+        httpClient.requests.last.queryParameters['select'],
+        'id,items(sku),"items(count)":items(count)',
+      );
+      final int count = order.read(Orders.items.count());
+      expect(count, 3);
+      expect(order.read(Orders.items).single.read(Items.sku), 'a');
+    });
+
+    test('a count of a relation not in the select list throws', () async {
+      httpClient.stub({'id': 1});
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.id,
+      ]).single();
+
+      expect(
+        () => order.read(Orders.items.count()),
+        throwsNotSelected('items(count)'),
+      );
+    });
+
     test('a relation not in the select list throws', () async {
       httpClient.stub({'id': 1});
 
