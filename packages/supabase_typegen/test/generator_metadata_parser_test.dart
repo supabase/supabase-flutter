@@ -103,7 +103,7 @@ void main() {
     final moods = parsed.tables.single.columns.single;
     expect(moods.typeKind, ColumnTypeKind.array);
     expect(moods.elementTypeKind, ColumnTypeKind.enumType);
-    expect(moods.postgresFormat, '_mood');
+    expect(moods.postgresFormat, 'public._mood');
     final enumDescription = parsed.enums.single;
     expect(moods.enumType, same(enumDescription));
     expect(enumDescription.qualifiedName, 'public.mood');
@@ -569,7 +569,7 @@ void main() {
       'ordinal_position': 1,
       'name': 'embedding',
       'default_value': null,
-      'data_type': 'USER-DEFINED',
+      'data_type': format.startsWith('_') ? 'ARRAY' : 'USER-DEFINED',
       'format': format,
       'type_schema': 'extensions',
       'is_identity': false,
@@ -729,7 +729,7 @@ void main() {
       'columns': [
         {
           ..._column(tableId: 1, table: 'orders', name: 'value'),
-          'data_type': 'USER-DEFINED',
+          'data_type': format.startsWith('_') ? 'ARRAY' : 'USER-DEFINED',
           'format': format,
           'type_schema': 'public',
         },
@@ -747,6 +747,43 @@ void main() {
     expect(parse('tstzrange').boundTypeKind, isNull);
     expect(parse('_name').typeKind, ColumnTypeKind.array);
     expect(parse('_name').elementTypeKind, ColumnTypeKind.unknown);
+    expect(parse('money').postgresFormat, 'public.money');
+    expect(parse('_name').postgresFormat, 'public._name');
+  });
+
+  test('a composite type is not an extension type or array of its name', () {
+    ColumnDescription parse(
+      String format, {
+      String dataType = 'USER-DEFINED',
+    }) => parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'shapes', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'shapes', name: 'value'),
+          'data_type': dataType,
+          'format': format,
+          'type_schema': 'public',
+        },
+      ],
+      'types': [
+        _type(100, 'vector', relationId: 10),
+        _type(101, '_vector', format: 'vector[]'),
+        _type(102, 'citext', relationId: 11),
+        _type(103, '_meta', relationId: 12, format: '_meta'),
+      ],
+    }).tables.single.columns.single;
+
+    expect(parse('vector').typeKind, ColumnTypeKind.unknown);
+    expect(parse('citext').typeKind, ColumnTypeKind.unknown);
+    expect(parse('_vector', dataType: 'ARRAY').typeKind, ColumnTypeKind.array);
+    expect(
+      parse('_vector', dataType: 'ARRAY').elementTypeKind,
+      ColumnTypeKind.unknown,
+    );
+    expect(parse('_meta').typeKind, ColumnTypeKind.unknown);
+    expect(parse('_meta').elementTypeKind, isNull);
   });
 
   test('extension types read by name in any schema', () {
@@ -1192,7 +1229,7 @@ void main() {
 
       expect(fields['moods']!.typeKind, ColumnTypeKind.array);
       expect(fields['moods']!.elementTypeKind, ColumnTypeKind.enumType);
-      expect(fields['moods']!.postgresFormat, '_mood');
+      expect(fields['moods']!.postgresFormat, 'public._mood');
       expect(fields['moods']!.enumType?.qualifiedName, 'public.mood');
       expect(fields['tags']!.typeKind, ColumnTypeKind.array);
       expect(fields['tags']!.elementTypeKind, ColumnTypeKind.text);
@@ -1462,6 +1499,7 @@ void main() {
             _type(_textType, 'text', schema: 'pg_catalog'),
             _type(200, 'money'),
             _type(201, '_money'),
+            _type(202, '_meta', relationId: 4, format: '_meta'),
           ],
           'rpcFunctions': [
             {
@@ -1479,6 +1517,15 @@ void main() {
                       'type_schema': 'public',
                       'has_default': false,
                       'relation_id': null,
+                    },
+                    {
+                      'name': 'meta',
+                      'mode': 'in',
+                      'type_id': 202,
+                      'format': '_meta',
+                      'type_schema': 'public',
+                      'has_default': false,
+                      'relation_id': 4,
                     },
                   ],
                   'returns': {
@@ -1502,11 +1549,12 @@ void main() {
       );
 
       final overload = parsed.functions.single.overloads.single;
-      expect(overload.arguments.single.type.typeKind, ColumnTypeKind.array);
-      expect(
-        overload.arguments.single.type.elementTypeKind,
-        ColumnTypeKind.unknown,
-      );
+      final [prices, meta] = overload.arguments;
+      expect(prices.type.typeKind, ColumnTypeKind.array);
+      expect(prices.type.elementTypeKind, ColumnTypeKind.unknown);
+      expect(prices.type.postgresFormat, 'public._money');
+      expect(meta.type.typeKind, ColumnTypeKind.unknown);
+      expect(meta.type.elementTypeKind, isNull);
       expect(
         overload.result,
         isA<FunctionValueResult>().having(
@@ -1617,11 +1665,12 @@ Map<String, dynamic> _type(
   String schema = 'public',
   List<String> enums = const [],
   int? relationId,
+  String? format,
 }) => {
   'id': id,
   'name': name,
   'schema': schema,
-  'format': name,
+  'format': format ?? (name.startsWith('_') ? '${name.substring(1)}[]' : name),
   'enums': enums,
   'attributes': <Map<String, dynamic>>[],
   'comment': null,

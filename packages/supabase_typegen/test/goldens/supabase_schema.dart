@@ -796,9 +796,9 @@ class AuthorBookCounts {
 /// public.price_label(amount => numeric). Try renaming the parameters or the
 /// function itself in the database so function overloading can be resolved
 ///
-/// `title(books)` has no method: the function public.title with parameter or
-/// with a single unnamed json/jsonb parameter, but no matches were found in the
-/// schema cache
+/// `title(public.books)` has no method: the function public.title with
+/// parameter or with a single unnamed json/jsonb parameter, but no matches were
+/// found in the schema cache
 extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `inventory.restock` function.
   PostgrestTypedBuilder<int?> inventoryRestock({
