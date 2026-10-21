@@ -1,8 +1,17 @@
+import 'dart:typed_data';
+
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('literal', () {
+    test('renders a bytes bound as a hex bytea literal', () {
+      expect(
+        PostgresRange.closedOpen(Uint8List.fromList([1, 2]), null).literal,
+        r'["\\x0102",)',
+      );
+    });
+
     test('renders the bounds with their inclusivity', () {
       expect(const PostgresRange.closedOpen(2, 25).literal, '[2,25)');
       expect(const PostgresRange.closed(2, 25).literal, '[2,25]');

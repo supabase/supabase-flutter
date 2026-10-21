@@ -40,10 +40,10 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
 /// `PostgrestNullableVectorColumn`, `PostgrestComputedField`,
-/// `PostgresRange`, `PostgresDate`, `PostgresTime`, `PostgresInterval`,
 /// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
-/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, `postgresBytea`
-/// and `postgresVector`); pass the library [packageImportUri] finds for the
+/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, the Postgres value
+/// types such as `PostgresDate` and `PostgresRange`, `postgresBytea` and
+/// `postgresVector`); pass the library [packageImportUri] finds for the
 /// project the file is written into.
 ///
 /// The code is formatted for [languageVersion], so it uses no syntax a
