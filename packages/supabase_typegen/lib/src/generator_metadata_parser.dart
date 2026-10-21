@@ -6,7 +6,6 @@ const _floatingFormats = {'float4', 'float8'};
 /// Types that PostgREST serializes as JSON strings.
 const _textFormats = {
   'text',
-  'citext',
   'varchar',
   'bpchar',
   'char',
@@ -28,6 +27,10 @@ const _jsonFormats = {'json', 'jsonb'};
 /// The pgvector types written as `[…]`; `sparsevec` has a literal of its own.
 const _vectorFormats = {'vector', 'halfvec'};
 
+/// Extension types that PostgREST serializes as JSON strings. Like pgvector,
+/// they live in whichever schema the extension was created in.
+const _extensionTextFormats = {'citext'};
+
 /// Range types, keyed to the kind of their bounds.
 const _rangeBoundKinds = {
   'int4range': ColumnTypeKind.integer,
@@ -38,19 +41,37 @@ const _rangeBoundKinds = {
   'tstzrange': ColumnTypeKind.timestampWithTimeZone,
 };
 
-/// Derives the [ColumnTypeKind] from the metadata [format] of a column,
-/// for example `int8`, `timestamptz` or `_text` for a `text[]` array. This is
-/// the single place where type names are compared as strings; everything
-/// downstream works with the enum.
-ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
-  if (format.startsWith('_')) return ColumnTypeKind.array;
+/// The schema of the built-in types. A type of the same name in another
+/// schema, such as a composite `public.line`, is not the built-in one.
+const _catalogSchema = 'pg_catalog';
+
+/// Derives the [ColumnTypeKind] from the metadata [format] of a column and the
+/// schema [typeSchema] of its type, for example `int8`, `timestamptz` or
+/// `_text` for a `text[]` array. This is the single place where type names
+/// are compared as strings; everything downstream works with the enum.
+///
+/// A composite type in [compositeTypes] is never read as an extension type of
+/// the same name.
+ColumnTypeKind _typeKind(
+  String format,
+  String typeSchema, {
+  required bool isArray,
+  required bool isEnum,
+  required Set<(String, String)> compositeTypes,
+}) {
+  if (isArray) return ColumnTypeKind.array;
   if (isEnum) return ColumnTypeKind.enumType;
+  if (compositeTypes.contains((typeSchema, format))) {
+    return ColumnTypeKind.unknown;
+  }
+  if (_vectorFormats.contains(format)) return ColumnTypeKind.vector;
+  if (_extensionTextFormats.contains(format)) return ColumnTypeKind.text;
+  if (typeSchema != _catalogSchema) return ColumnTypeKind.unknown;
   if (_integerFormats.contains(format)) return ColumnTypeKind.integer;
   if (_floatingFormats.contains(format)) return ColumnTypeKind.floating;
   if (format == 'numeric') return ColumnTypeKind.numeric;
   if (format == 'bool') return ColumnTypeKind.boolean;
   if (format == 'bytea') return ColumnTypeKind.binary;
-  if (_vectorFormats.contains(format)) return ColumnTypeKind.vector;
   if (format == 'date') return ColumnTypeKind.date;
   if (format == 'timestamp') return ColumnTypeKind.timestamp;
   if (format == 'timestamptz') return ColumnTypeKind.timestampWithTimeZone;
@@ -61,6 +82,21 @@ ColumnTypeKind _typeKind(String format, {required bool isEnum}) {
   if (_jsonFormats.contains(format)) return ColumnTypeKind.json;
   return ColumnTypeKind.unknown;
 }
+
+/// The kind of the bounds of a type of [kind], or of its elements of
+/// [elementKind], named [elementFormat]; `null` unless that is a range.
+ColumnTypeKind? _rangeBoundKind(
+  ColumnTypeKind kind,
+  ColumnTypeKind? elementKind,
+  String elementFormat,
+) => (elementKind ?? kind) == ColumnTypeKind.range
+    ? _rangeBoundKinds[elementFormat]
+    : null;
+
+/// [format] qualified by [typeSchema] unless it is a built-in type, so that a
+/// type shadowing a built-in name does not read as the built-in.
+String _qualifiedFormat(String format, String typeSchema) =>
+    typeSchema == _catalogSchema ? format : '$typeSchema.$format';
 
 /// Parses a `GeneratorMetadata` document, the introspection contract of
 /// `@supabase/postgrest-typegen`, into a [DatabaseDescription] of the
@@ -176,6 +212,7 @@ DatabaseDescription _parseGeneratorMetadata(
   final foreignKeysByColumn = _foreignKeysByColumn(document, schemas);
   final primaryKeysByTable = _primaryKeysByTable(document, schemas);
   final enumTypes = _enumTypes(document);
+  final compositeTypes = _compositeTypes(document);
   final typesById = {
     for (final type
         in (document['types'] as List<dynamic>? ?? const [])
@@ -211,18 +248,35 @@ DatabaseDescription _parseGeneratorMetadata(
         in columnsByRelationId[relation['id'] as int] ?? const []) {
       final name = column['name'] as String;
       final format = column['format'] as String;
+      final typeSchema = column['type_schema'] as String;
       final enumValues = (column['enums'] as List<dynamic>? ?? const [])
           .cast<String>();
       final isEnum = enumValues.isNotEmpty;
-      final typeKind = _typeKind(format, isEnum: isEnum);
-      final isArray = typeKind == ColumnTypeKind.array;
+      final isArray = column['data_type'] == 'ARRAY';
+      final elementFormat = isArray ? format.substring(1) : format;
+      final typeKind = _typeKind(
+        format,
+        typeSchema,
+        isArray: isArray,
+        isEnum: isEnum,
+        compositeTypes: compositeTypes,
+      );
+      final elementTypeKind = isArray
+          ? _typeKind(
+              elementFormat,
+              typeSchema,
+              isArray: false,
+              isEnum: isEnum,
+              compositeTypes: compositeTypes,
+            )
+          : null;
 
-      var postgresFormat = format;
+      var postgresFormat = _qualifiedFormat(format, typeSchema);
       EnumDescription? enumDescription;
       if (isEnum) {
         final described = _enumDescription(
-          isArray ? format.substring(1) : format,
-          column['type_schema'] as String,
+          elementFormat,
+          typeSchema,
           enumValues,
           enumTypes,
         );
@@ -249,11 +303,12 @@ DatabaseDescription _parseGeneratorMetadata(
           name: name,
           postgresFormat: postgresFormat,
           typeKind: typeKind,
-          elementTypeKind: isArray
-              ? _typeKind(format.substring(1), isEnum: isEnum)
-              : null,
-          boundTypeKind:
-              _rangeBoundKinds[isArray ? format.substring(1) : format],
+          elementTypeKind: elementTypeKind,
+          boundTypeKind: _rangeBoundKind(
+            typeKind,
+            elementTypeKind,
+            elementFormat,
+          ),
           enumValues: isEnum ? enumValues : null,
           enumType: enumDescription,
           // A view column does not carry the default of the column it reads,
@@ -307,6 +362,7 @@ DatabaseDescription _parseGeneratorMetadata(
           name,
           typesById[function['return_type_id'] as int],
           enumTypes,
+          compositeTypes,
           enumsByType,
         ),
       );
@@ -333,6 +389,7 @@ DatabaseDescription _parseGeneratorMetadata(
     schemas,
     typesById: typesById,
     enumTypes: enumTypes,
+    compositeTypes: compositeTypes,
     enumsByType: enumsByType,
     relationsById: relationsById,
     generatedRelations: generatedRelations,
@@ -516,6 +573,16 @@ Map<(String, String), List<String>> _enumTypes(Map<String, dynamic> document) {
   return enumTypes;
 }
 
+/// The `(schema, name)` pairs of composite types, among them the row types of
+/// tables and views.
+Set<(String, String)> _compositeTypes(Map<String, dynamic> document) => {
+  for (final type
+      in (document['types'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>())
+    if (type['type_relation_id'] != null)
+      (type['schema'] as String, type['name'] as String),
+};
+
 /// Resolves the enum type of a column exactly, by the column's `type_schema`
 /// and type name. Falls back to the values carried on the column itself when
 /// the type is missing from the document's `types` list.
@@ -573,9 +640,15 @@ ComputedFieldDescription _computedField(
   String name,
   Map<String, dynamic>? returnType,
   Map<(String, String), List<String>> enumTypes,
+  Set<(String, String)> compositeTypes,
   Map<(String, String), EnumDescription> enumsByType,
 ) {
-  final type = _valueType(returnType, enumTypes, enumsByType);
+  final type = _valueType(
+    returnType,
+    enumTypes,
+    compositeTypes,
+    enumsByType,
+  );
   return ComputedFieldDescription(
     name: name,
     postgresFormat: type.postgresFormat,
@@ -592,6 +665,7 @@ ComputedFieldDescription _computedField(
 ValueTypeDescription _valueType(
   Map<String, dynamic>? type,
   Map<(String, String), List<String>> enumTypes,
+  Set<(String, String)> compositeTypes,
   Map<(String, String), EnumDescription> enumsByType,
 ) {
   if (type == null) {
@@ -602,7 +676,7 @@ ValueTypeDescription _valueType(
   }
   final format = type['name'] as String;
   final typeSchema = type['schema'] as String;
-  final isArray = format.startsWith('_');
+  final isArray = (type['format'] as String).endsWith('[]');
   final elementFormat = isArray ? format.substring(1) : format;
   // The array type of an enum carries no values itself; its element type
   // does.
@@ -623,13 +697,29 @@ ValueTypeDescription _valueType(
       () => described,
     );
   }
+  final typeKind = _typeKind(
+    format,
+    typeSchema,
+    isArray: isArray,
+    isEnum: isEnum,
+    compositeTypes: compositeTypes,
+  );
+  final elementTypeKind = isArray
+      ? _typeKind(
+          elementFormat,
+          typeSchema,
+          isArray: false,
+          isEnum: isEnum,
+          compositeTypes: compositeTypes,
+        )
+      : null;
   return ValueTypeDescription(
     postgresFormat: isEnum && !isArray
         ? enumDescription!.qualifiedName
-        : format,
-    typeKind: _typeKind(format, isEnum: isEnum),
-    elementTypeKind: isArray ? _typeKind(elementFormat, isEnum: isEnum) : null,
-    boundTypeKind: _rangeBoundKinds[elementFormat],
+        : _qualifiedFormat(format, typeSchema),
+    typeKind: typeKind,
+    elementTypeKind: elementTypeKind,
+    boundTypeKind: _rangeBoundKind(typeKind, elementTypeKind, elementFormat),
     enumType: enumDescription,
   );
 }
@@ -641,6 +731,7 @@ List<FunctionDescription> _functions(
   Set<String> schemas, {
   required Map<int, Map<String, dynamic>> typesById,
   required Map<(String, String), List<String>> enumTypes,
+  required Set<(String, String)> compositeTypes,
   required Map<(String, String), EnumDescription> enumsByType,
   required Map<int, (String, String)> relationsById,
   required Set<(String, String)> generatedRelations,
@@ -657,6 +748,7 @@ List<FunctionDescription> _functions(
   ValueTypeDescription valueType(Map<String, dynamic> reference) => _valueType(
     typesById[reference['type_id'] as int],
     enumTypes,
+    compositeTypes,
     enumsByType,
   );
 

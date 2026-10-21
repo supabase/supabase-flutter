@@ -103,7 +103,7 @@ void main() {
     final moods = parsed.tables.single.columns.single;
     expect(moods.typeKind, ColumnTypeKind.array);
     expect(moods.elementTypeKind, ColumnTypeKind.enumType);
-    expect(moods.postgresFormat, '_mood');
+    expect(moods.postgresFormat, 'public._mood');
     final enumDescription = parsed.enums.single;
     expect(moods.enumType, same(enumDescription));
     expect(enumDescription.qualifiedName, 'public.mood');
@@ -541,6 +541,7 @@ void main() {
           'default_value': null,
           'data_type': 'ARRAY',
           'format': '_bytea',
+          'type_schema': 'pg_catalog',
           'is_identity': false,
           'identity_generation': null,
           'is_generated': false,
@@ -568,8 +569,9 @@ void main() {
       'ordinal_position': 1,
       'name': 'embedding',
       'default_value': null,
-      'data_type': 'USER-DEFINED',
+      'data_type': format.startsWith('_') ? 'ARRAY' : 'USER-DEFINED',
       'format': format,
+      'type_schema': 'extensions',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -605,6 +607,7 @@ void main() {
       'default_value': null,
       'data_type': format,
       'format': format,
+      'type_schema': 'pg_catalog',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -642,6 +645,7 @@ void main() {
       'default_value': null,
       'data_type': format,
       'format': format,
+      'type_schema': 'pg_catalog',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -684,6 +688,7 @@ void main() {
       'default_value': null,
       'data_type': format,
       'format': format,
+      'type_schema': 'pg_catalog',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -713,6 +718,93 @@ void main() {
 
       expect(column.typeKind, ColumnTypeKind.range, reason: format);
       expect(column.boundTypeKind, boundKind, reason: format);
+    }
+  });
+
+  test('a type outside pg_catalog is not the built-in of its name', () {
+    ColumnDescription parse(String format) => parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'orders', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'orders', name: 'value'),
+          'data_type': format.startsWith('_') ? 'ARRAY' : 'USER-DEFINED',
+          'format': format,
+          'type_schema': 'public',
+        },
+      ],
+    }).tables.single.columns.single;
+
+    for (final format in ['name', 'money', 'int8', 'date', 'json', 'bytea']) {
+      expect(
+        parse(format).typeKind,
+        ColumnTypeKind.unknown,
+        reason: 'public.$format is not the built-in $format',
+      );
+    }
+    expect(parse('tstzrange').typeKind, ColumnTypeKind.unknown);
+    expect(parse('tstzrange').boundTypeKind, isNull);
+    expect(parse('_name').typeKind, ColumnTypeKind.array);
+    expect(parse('_name').elementTypeKind, ColumnTypeKind.unknown);
+    expect(parse('money').postgresFormat, 'public.money');
+    expect(parse('_name').postgresFormat, 'public._name');
+  });
+
+  test('a composite type is not an extension type or array of its name', () {
+    ColumnDescription parse(
+      String format, {
+      String dataType = 'USER-DEFINED',
+    }) => parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'shapes', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'shapes', name: 'value'),
+          'data_type': dataType,
+          'format': format,
+          'type_schema': 'public',
+        },
+      ],
+      'types': [
+        _type(100, 'vector', relationId: 10),
+        _type(101, '_vector', format: 'vector[]'),
+        _type(102, 'citext', relationId: 11),
+        _type(103, '_meta', relationId: 12, format: '_meta'),
+      ],
+    }).tables.single.columns.single;
+
+    expect(parse('vector').typeKind, ColumnTypeKind.unknown);
+    expect(parse('citext').typeKind, ColumnTypeKind.unknown);
+    expect(parse('_vector', dataType: 'ARRAY').typeKind, ColumnTypeKind.array);
+    expect(
+      parse('_vector', dataType: 'ARRAY').elementTypeKind,
+      ColumnTypeKind.unknown,
+    );
+    expect(parse('_meta').typeKind, ColumnTypeKind.unknown);
+    expect(parse('_meta').elementTypeKind, isNull);
+  });
+
+  test('extension types read by name in any schema', () {
+    ColumnDescription parse(String format, String typeSchema) =>
+        parseGeneratorMetadata({
+          'tables': [
+            {'id': 1, 'schema': 'public', 'name': 'users', 'comment': null},
+          ],
+          'columns': [
+            {
+              ..._column(tableId: 1, table: 'users', name: 'value'),
+              'data_type': 'USER-DEFINED',
+              'format': format,
+              'type_schema': typeSchema,
+            },
+          ],
+        }).tables.single.columns.single;
+
+    for (final typeSchema in ['extensions', 'public']) {
+      expect(parse('citext', typeSchema).typeKind, ColumnTypeKind.text);
+      expect(parse('vector', typeSchema).typeKind, ColumnTypeKind.vector);
     }
   });
 
@@ -1137,7 +1229,7 @@ void main() {
 
       expect(fields['moods']!.typeKind, ColumnTypeKind.array);
       expect(fields['moods']!.elementTypeKind, ColumnTypeKind.enumType);
-      expect(fields['moods']!.postgresFormat, '_mood');
+      expect(fields['moods']!.postgresFormat, 'public._mood');
       expect(fields['moods']!.enumType?.qualifiedName, 'public.mood');
       expect(fields['tags']!.typeKind, ColumnTypeKind.array);
       expect(fields['tags']!.elementTypeKind, ColumnTypeKind.text);
@@ -1399,6 +1491,80 @@ void main() {
       );
     });
 
+    test('reads a type outside pg_catalog as unknown, not the built-in', () {
+      final parsed = parseGeneratorMetadata(
+        {
+          ..._functionDocument([]),
+          'types': [
+            _type(_textType, 'text', schema: 'pg_catalog'),
+            _type(200, 'money'),
+            _type(201, '_money'),
+            _type(202, '_meta', relationId: 4, format: '_meta'),
+          ],
+          'rpcFunctions': [
+            {
+              'schema': 'public',
+              'name': 'total',
+              'overloads': [
+                {
+                  'function_id': 500,
+                  'args': [
+                    {
+                      'name': 'prices',
+                      'mode': 'in',
+                      'type_id': 201,
+                      'format': '_money',
+                      'type_schema': 'public',
+                      'has_default': false,
+                      'relation_id': null,
+                    },
+                    {
+                      'name': 'meta',
+                      'mode': 'in',
+                      'type_id': 202,
+                      'format': '_meta',
+                      'type_schema': 'public',
+                      'has_default': false,
+                      'relation_id': 4,
+                    },
+                  ],
+                  'returns': {
+                    'type_id': 200,
+                    'format': 'money',
+                    'type_schema': 'public',
+                    'relation_id': null,
+                    'columns': null,
+                  },
+                  'is_set_returning': false,
+                  'rows_estimate': null,
+                  'setof_options': null,
+                  'computed_field_of': null,
+                  'error': null,
+                },
+              ],
+            },
+          ],
+        },
+        schemaNames: ['public'],
+      );
+
+      final overload = parsed.functions.single.overloads.single;
+      final [prices, meta] = overload.arguments;
+      expect(prices.type.typeKind, ColumnTypeKind.array);
+      expect(prices.type.elementTypeKind, ColumnTypeKind.unknown);
+      expect(prices.type.postgresFormat, 'public._money');
+      expect(meta.type.typeKind, ColumnTypeKind.unknown);
+      expect(meta.type.elementTypeKind, isNull);
+      expect(
+        overload.result,
+        isA<FunctionValueResult>().having(
+          (result) => result.type.typeKind,
+          'kind',
+          ColumnTypeKind.unknown,
+        ),
+      );
+    });
+
     test('collects an enum only a function refers to', () {
       final parsed = parseGeneratorMetadata(
         {
@@ -1499,11 +1665,12 @@ Map<String, dynamic> _type(
   String schema = 'public',
   List<String> enums = const [],
   int? relationId,
+  String? format,
 }) => {
   'id': id,
   'name': name,
   'schema': schema,
-  'format': name,
+  'format': format ?? (name.startsWith('_') ? '${name.substring(1)}[]' : name),
   'enums': enums,
   'attributes': <Map<String, dynamic>>[],
   'comment': null,
