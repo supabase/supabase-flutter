@@ -40,10 +40,10 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
 /// `PostgrestNullableVectorColumn`, `PostgrestComputedField`,
-/// `PostgresRange`, `PostgresDate`, `PostgresTime`, `PostgresInterval`,
 /// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
-/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, `postgresBytea`
-/// and `postgresVector`); pass the library [packageImportUri] finds for the
+/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, the Postgres value
+/// types such as `PostgresDate` and `PostgresRange`, `postgresBytea` and
+/// `postgresVector`); pass the library [packageImportUri] finds for the
 /// project the file is written into.
 ///
 /// The code is formatted for [languageVersion], so it uses no syntax a
@@ -200,6 +200,8 @@ class _TypeNameRegistry {
     'PostgresDate',
     'PostgresTime',
     'PostgresInterval',
+    'PostgresLogSequenceNumber',
+    'PostgresMacAddress',
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
@@ -1098,6 +1100,14 @@ _Binding _scalarBindingFor(
     'PostgresInterval',
     ColumnTypeKind.interval,
   ),
+  ColumnTypeKind.logSequenceNumber => const _Binding(
+    'PostgresLogSequenceNumber',
+    ColumnTypeKind.logSequenceNumber,
+  ),
+  ColumnTypeKind.macAddress => const _Binding(
+    'PostgresMacAddress',
+    ColumnTypeKind.macAddress,
+  ),
   ColumnTypeKind.timestamp => const _Binding(
     'DateTime',
     ColumnTypeKind.timestamp,
@@ -1171,6 +1181,8 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.bigInteger ||
   ColumnTypeKind.time ||
   ColumnTypeKind.interval ||
+  ColumnTypeKind.logSequenceNumber ||
+  ColumnTypeKind.macAddress ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -1196,6 +1208,8 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.bigInteger ||
   ColumnTypeKind.time ||
   ColumnTypeKind.interval ||
+  ColumnTypeKind.logSequenceNumber ||
+  ColumnTypeKind.macAddress ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -1244,31 +1258,34 @@ String _readExpression(ColumnDescription column, _Binding binding) {
 /// The expression converting [value], one decoded JSON value bound to
 /// [binding], into its Dart type, or `null` when the decoded value is used
 /// as it is.
-String? _readConversion(_Binding binding, String value) =>
-    switch (binding.kind) {
-      ColumnTypeKind.floating => '($value as num).toDouble()',
-      ColumnTypeKind.integerString => 'int.parse($value as String)',
-      ColumnTypeKind.bigInteger => 'BigInt.parse($value as String)',
-      ColumnTypeKind.timestamp ||
-      ColumnTypeKind.timestampWithTimeZone ||
-      ColumnTypeKind.date ||
-      ColumnTypeKind.time ||
-      ColumnTypeKind.interval => '${binding.dartType}.parse($value as String)',
-      ColumnTypeKind.enumType =>
-        '${binding.dartType}.fromWire($value as String)',
-      ColumnTypeKind.binary => 'postgresBytea.decode($value as String)',
-      ColumnTypeKind.vector => 'postgresVector.decode($value as String)',
-      ColumnTypeKind.range =>
-        'PostgresRange.parse($value as String, '
-            '${_boundParser(binding.boundKind)})',
-      ColumnTypeKind.integer ||
-      ColumnTypeKind.numeric ||
-      ColumnTypeKind.boolean ||
-      ColumnTypeKind.text ||
-      ColumnTypeKind.array ||
-      ColumnTypeKind.json ||
-      ColumnTypeKind.unknown => null,
-    };
+String? _readConversion(
+  _Binding binding,
+  String value,
+) => switch (binding.kind) {
+  ColumnTypeKind.floating => '($value as num).toDouble()',
+  ColumnTypeKind.integerString => 'int.parse($value as String)',
+  ColumnTypeKind.bigInteger => 'BigInt.parse($value as String)',
+  ColumnTypeKind.timestamp ||
+  ColumnTypeKind.timestampWithTimeZone ||
+  ColumnTypeKind.date ||
+  ColumnTypeKind.time ||
+  ColumnTypeKind.interval ||
+  ColumnTypeKind.logSequenceNumber ||
+  ColumnTypeKind.macAddress => '${binding.dartType}.parse($value as String)',
+  ColumnTypeKind.enumType => '${binding.dartType}.fromWire($value as String)',
+  ColumnTypeKind.binary => 'postgresBytea.decode($value as String)',
+  ColumnTypeKind.vector => 'postgresVector.decode($value as String)',
+  ColumnTypeKind.range =>
+    'PostgresRange.parse($value as String, '
+        '${_boundParser(binding.boundKind)})',
+  ColumnTypeKind.integer ||
+  ColumnTypeKind.numeric ||
+  ColumnTypeKind.boolean ||
+  ColumnTypeKind.text ||
+  ColumnTypeKind.array ||
+  ColumnTypeKind.json ||
+  ColumnTypeKind.unknown => null,
+};
 
 String _writeExpression(
   String parameterName,
@@ -1303,7 +1320,9 @@ _Rendering? _writeConversion(_Binding binding, String value) {
   return switch (binding.kind) {
     ColumnTypeKind.date ||
     ColumnTypeKind.time ||
-    ColumnTypeKind.interval => chain('.literal'),
+    ColumnTypeKind.interval ||
+    ColumnTypeKind.logSequenceNumber ||
+    ColumnTypeKind.macAddress => chain('.literal'),
     ColumnTypeKind.timestamp => chain('.toIso8601String()'),
     ColumnTypeKind.timestampWithTimeZone => chain(
       '.toUtc().toIso8601String()',
@@ -1328,6 +1347,8 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       ColumnTypeKind.date ||
       ColumnTypeKind.time ||
       ColumnTypeKind.interval ||
+      ColumnTypeKind.logSequenceNumber ||
+      ColumnTypeKind.macAddress ||
       ColumnTypeKind.integer ||
       ColumnTypeKind.integerString ||
       ColumnTypeKind.bigInteger ||

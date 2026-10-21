@@ -606,7 +606,6 @@ void main() {
     const formats = [
       'inet',
       'cidr',
-      'macaddr',
       'money',
       'xml',
       'name',
@@ -623,7 +622,6 @@ void main() {
       'datemultirange',
       'tsmultirange',
       'tstzmultirange',
-      'pg_lsn',
       'pg_snapshot',
       'txid_snapshot',
       'jsonpath',
@@ -670,6 +668,33 @@ void main() {
     final kinds = {
       'oid': ColumnTypeKind.integerString,
       'xid8': ColumnTypeKind.bigInteger,
+    };
+    for (final MapEntry(key: format, value: kind) in kinds.entries) {
+      final parsed = parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'servers', 'comment': null},
+        ],
+        'columns': [
+          {
+            ..._column(tableId: 1, table: 'servers', name: 'value'),
+            'data_type': format,
+            'format': format,
+          },
+        ],
+      });
+      expect(
+        parsed.tables.single.columns.single.typeKind,
+        kind,
+        reason: '$format should map to ${kind.name}',
+      );
+    }
+  });
+
+  test('types with a value type of their own read as their kinds', () {
+    final kinds = {
+      'pg_lsn': ColumnTypeKind.logSequenceNumber,
+      'macaddr': ColumnTypeKind.macAddress,
+      'macaddr8': ColumnTypeKind.macAddress,
     };
     for (final MapEntry(key: format, value: kind) in kinds.entries) {
       final parsed = parseGeneratorMetadata({

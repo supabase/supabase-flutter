@@ -8,16 +8,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
-import 'package:supabase_common/supabase_common.dart'
-    show
-        PostgresDate,
-        PostgresInterval,
-        PostgresRange,
-        PostgresTime,
-        PostgresValue,
-        SortDirection,
-        postgresBytea,
-        postgresVector;
+import 'package:supabase_common/supabase_common.dart' show SortDirection;
 
 part 'postgrest_column_expression.dart';
 part 'postgrest_derived_expression.dart';

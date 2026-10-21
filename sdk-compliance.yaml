@@ -1025,6 +1025,24 @@ features:
       - PostgresInterval.toString
       - PostgresInterval.==
       - PostgresInterval.hashCode
+      - PostgresLogSequenceNumber
+      - PostgresLogSequenceNumber.PostgresLogSequenceNumber
+      - PostgresLogSequenceNumber.parse
+      - PostgresLogSequenceNumber.high
+      - PostgresLogSequenceNumber.low
+      - PostgresLogSequenceNumber.literal
+      - PostgresLogSequenceNumber.compareTo
+      - PostgresLogSequenceNumber.toString
+      - PostgresLogSequenceNumber.==
+      - PostgresLogSequenceNumber.hashCode
+      - PostgresMacAddress
+      - PostgresMacAddress.PostgresMacAddress
+      - PostgresMacAddress.parse
+      - PostgresMacAddress.bytes
+      - PostgresMacAddress.literal
+      - PostgresMacAddress.toString
+      - PostgresMacAddress.==
+      - PostgresMacAddress.hashCode
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table

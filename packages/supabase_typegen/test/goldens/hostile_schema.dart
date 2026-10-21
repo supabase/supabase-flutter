@@ -543,6 +543,18 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => BigInt.parse(value as String),
   };
+  PostgresLogSequenceNumber? get position => switch (_json['position']) {
+    null => null,
+    final Object value => PostgresLogSequenceNumber.parse(value as String),
+  };
+  PostgresMacAddress? get hardware => switch (_json['hardware']) {
+    null => null,
+    final Object value => PostgresMacAddress.parse(value as String),
+  };
+  List<PostgresMacAddress>? get hardwareHistory =>
+      (_json['hardware_history'] as List<dynamic>?)
+          ?.map((element) => PostgresMacAddress.parse(element as String))
+          .toList();
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -569,6 +581,9 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     int? relation,
     List<int>? relations,
     BigInt? transaction,
+    PostgresLogSequenceNumber? position,
+    PostgresMacAddress? hardware,
+    List<PostgresMacAddress>? hardwareHistory,
   }) : this._({
          'list': list,
          'date_time': ?dateTime?.toUtc().toIso8601String(),
@@ -584,6 +599,11 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'relation': ?relation,
          'relations': ?relations,
          'transaction': ?transaction?.toString(),
+         'position': ?position?.literal,
+         'hardware': ?hardware?.literal,
+         'hardware_history': ?hardwareHistory
+             ?.map((element) => element.literal)
+             .toList(),
        });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
@@ -618,6 +638,19 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   /// default.
   MapInsert setTransactionToNull() =>
       MapInsert._({..._json, 'transaction': null});
+
+  /// Returns a copy with `position` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setPositionToNull() => MapInsert._({..._json, 'position': null});
+
+  /// Returns a copy with `hardware` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setHardwareToNull() => MapInsert._({..._json, 'hardware': null});
+
+  /// Returns a copy with `hardware_history` set to SQL NULL, overriding any
+  /// database default.
+  MapInsert setHardwareHistoryToNull() =>
+      MapInsert._({..._json, 'hardware_history': null});
 }
 
 /// Values for updating rows of `map`. All columns are optional; passing `null`
@@ -639,6 +672,9 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     int? relation,
     List<int>? relations,
     BigInt? transaction,
+    PostgresLogSequenceNumber? position,
+    PostgresMacAddress? hardware,
+    List<PostgresMacAddress>? hardwareHistory,
   }) : this._({
          'list': ?list,
          'date_time': ?dateTime?.toUtc().toIso8601String(),
@@ -654,6 +690,11 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'relation': ?relation,
          'relations': ?relations,
          'transaction': ?transaction?.toString(),
+         'position': ?position?.literal,
+         'hardware': ?hardware?.literal,
+         'hardware_history': ?hardwareHistory
+             ?.map((element) => element.literal)
+             .toList(),
        });
 
   /// Returns a copy with `date_time` set to SQL NULL, overriding any database
@@ -688,6 +729,19 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// default.
   MapUpdate setTransactionToNull() =>
       MapUpdate._({..._json, 'transaction': null});
+
+  /// Returns a copy with `position` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setPositionToNull() => MapUpdate._({..._json, 'position': null});
+
+  /// Returns a copy with `hardware` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setHardwareToNull() => MapUpdate._({..._json, 'hardware': null});
+
+  /// Returns a copy with `hardware_history` set to SQL NULL, overriding any
+  /// database default.
+  MapUpdate setHardwareHistoryToNull() =>
+      MapUpdate._({..._json, 'hardware_history': null});
 }
 
 /// Typed access to the `map` table.
@@ -757,6 +811,20 @@ class Map$ {
     'transaction',
     fromJson: _bigIntFromJson,
   );
+  static const position =
+      PostgrestNullableColumn<MapRow, PostgresLogSequenceNumber>(
+        'position',
+        fromJson: _postgresLogSequenceNumberFromJson,
+      );
+  static const hardware = PostgrestNullableColumn<MapRow, PostgresMacAddress>(
+    'hardware',
+    fromJson: _postgresMacAddressFromJson,
+  );
+  static const hardwareHistory =
+      PostgrestNullableColumn<MapRow, List<PostgresMacAddress>>(
+        'hardware_history',
+        fromJson: _postgresMacAddressListFromJson,
+      );
 
   /// The `postgrest_table` rows referencing this row through `mood`.
   static const postgrestTableViaMood =
@@ -1189,6 +1257,17 @@ List<PostgresDate> _postgresDateListFromJson(Object json) =>
 
 PostgresInterval _postgresIntervalFromJson(Object json) =>
     PostgresInterval.parse(json as String);
+
+PostgresLogSequenceNumber _postgresLogSequenceNumberFromJson(Object json) =>
+    PostgresLogSequenceNumber.parse(json as String);
+
+PostgresMacAddress _postgresMacAddressFromJson(Object json) =>
+    PostgresMacAddress.parse(json as String);
+
+List<PostgresMacAddress> _postgresMacAddressListFromJson(Object json) =>
+    (json as List<dynamic>)
+        .map((element) => PostgresMacAddress.parse(element as String))
+        .toList();
 
 PostgresRange<DateTime> _postgresRangeOfDateTimeFromJson(Object json) =>
     PostgresRange.parse(json as String, DateTime.parse);

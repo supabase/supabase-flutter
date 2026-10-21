@@ -1,3 +1,6 @@
+// The Postgres value types under test are annotated @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
@@ -25,7 +28,33 @@ class CatalogValues {
     'transaction',
     fromJson: _bigIntFromJson,
   );
+  static const position =
+      PostgrestNullableColumn<CatalogValue, PostgresLogSequenceNumber>(
+        'position',
+        fromJson: _logSequenceNumberFromJson,
+      );
+  static const hardware =
+      PostgrestNullableColumn<CatalogValue, PostgresMacAddress>(
+        'hardware',
+        fromJson: _macAddressFromJson,
+      );
+  static const hardwareHistory =
+      PostgrestNullableColumn<CatalogValue, List<PostgresMacAddress>>(
+        'hardware_history',
+        fromJson: _macAddressListFromJson,
+      );
 }
+
+PostgresLogSequenceNumber _logSequenceNumberFromJson(Object json) =>
+    PostgresLogSequenceNumber.parse(json as String);
+
+PostgresMacAddress _macAddressFromJson(Object json) =>
+    PostgresMacAddress.parse(json as String);
+
+List<PostgresMacAddress> _macAddressListFromJson(Object json) =>
+    (json as List<dynamic>)
+        .map((element) => PostgresMacAddress.parse(element as String))
+        .toList();
 
 int _intFromJson(Object json) => int.parse(json as String);
 
@@ -82,4 +111,44 @@ void main() {
     expect(row.read(CatalogValues.relations), [1, 4294967295]);
     expect(row.read(CatalogValues.transaction), transaction);
   });
+
+  test(
+    'log sequence numbers and MAC addresses read, write and filter as values',
+    () async {
+      final position = PostgresLogSequenceNumber(0x16, 0xB374D848);
+      final hardware = PostgresMacAddress.parse('08-00-2B-01-02-03');
+      final history = [PostgresMacAddress.parse('08002b0102030405')];
+      final inserted = await postgrest
+          .from('catalog_values')
+          .insert({
+            'position': position.literal,
+            'hardware': hardware.literal,
+            'hardware_history': [for (final item in history) item.literal],
+          })
+          .select('id')
+          .single();
+      insertedId = inserted['id'] as int;
+
+      final row = await postgrest
+          .table(CatalogValues.table)
+          .selectOnly([
+            CatalogValues.position,
+            CatalogValues.hardware,
+            CatalogValues.hardwareHistory,
+          ])
+          .where(
+            CatalogValues.position.gt(PostgresLogSequenceNumber(0x16, 0)) &
+                CatalogValues.position.lt(
+                  PostgresLogSequenceNumber(0x17, 0),
+                ) &
+                CatalogValues.hardware.eq(hardware) &
+                CatalogValues.hardwareHistory.contains(history),
+          )
+          .single();
+
+      expect(row.read(CatalogValues.position), position);
+      expect(row.read(CatalogValues.hardware), hardware);
+      expect(row.read(CatalogValues.hardwareHistory), history);
+    },
+  );
 }

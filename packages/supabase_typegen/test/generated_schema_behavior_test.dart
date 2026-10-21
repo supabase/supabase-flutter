@@ -486,6 +486,52 @@ void main() {
   );
 
   test(
+    'log sequence numbers and MAC addresses read, write and filter as values',
+    () async {
+      final row = hostile.MapRow({
+        'list': 1,
+        'opens_at': '09:30:00',
+        'position': '16/B374D848',
+        'hardware': '08:00:2b:01:02:03',
+        'hardware_history': ['08:00:2b:01:02:03:04:05'],
+      });
+
+      expect(row.position, PostgresLogSequenceNumber(0x16, 0xB374D848));
+      expect(row.hardware, PostgresMacAddress([8, 0, 0x2B, 1, 2, 3]));
+      expect(row.hardwareHistory, [
+        PostgresMacAddress([8, 0, 0x2B, 1, 2, 3, 4, 5]),
+      ]);
+
+      httpClient.stub(null);
+      await client
+          .table(hostile.Map$.table)
+          .update(
+            hostile.MapUpdate(
+              position: row.position,
+              hardware: row.hardware,
+              hardwareHistory: row.hardwareHistory,
+            ),
+          )
+          .where(
+            hostile.Map$.position.gt(PostgresLogSequenceNumber(0x16, 0)) &
+                hostile.Map$.hardwareHistory.contains([row.hardware!]),
+          );
+
+      final request = httpClient.requests.last;
+      expect(request.jsonBody, {
+        'position': '16/B374D848',
+        'hardware': '08:00:2b:01:02:03',
+        'hardware_history': ['08:00:2b:01:02:03:04:05'],
+      });
+      expect(request.queryParameters['position'], 'gt.16/0');
+      expect(
+        request.queryParameters['hardware_history'],
+        'cs.{08:00:2b:01:02:03}',
+      );
+    },
+  );
+
+  test(
     'array elements read, write and filter through their conversions',
     () async {
       final row = hostile.PostgrestTableRow({

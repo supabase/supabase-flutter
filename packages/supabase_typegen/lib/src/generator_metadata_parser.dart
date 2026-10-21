@@ -13,8 +13,6 @@ const _textFormats = {
   'uuid',
   'inet',
   'cidr',
-  'macaddr',
-  'macaddr8',
   'money',
   'xml',
   'bit',
@@ -34,7 +32,6 @@ const _textFormats = {
   'datemultirange',
   'tsmultirange',
   'tstzmultirange',
-  'pg_lsn',
   'pg_snapshot',
   'txid_snapshot',
   'jsonpath',
@@ -119,6 +116,10 @@ ColumnTypeKind _typeKind(
   if (format == 'timestamptz') return ColumnTypeKind.timestampWithTimeZone;
   if (format == 'time' || format == 'timetz') return ColumnTypeKind.time;
   if (format == 'interval') return ColumnTypeKind.interval;
+  if (format == 'pg_lsn') return ColumnTypeKind.logSequenceNumber;
+  if (format == 'macaddr' || format == 'macaddr8') {
+    return ColumnTypeKind.macAddress;
+  }
   if (_rangeBoundKinds.containsKey(format)) return ColumnTypeKind.range;
   if (_textFormats.contains(format)) return ColumnTypeKind.text;
   if (_jsonFormats.contains(format)) return ColumnTypeKind.json;
