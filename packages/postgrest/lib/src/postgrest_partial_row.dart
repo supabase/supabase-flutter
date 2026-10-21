@@ -49,10 +49,11 @@ sealed class PostgrestReadable<Row, Output> {
 /// instead of the null cast a getter of the full row type would fail with.
 @experimental
 final class PostgrestPartialRow<Row> {
-  PostgrestPartialRow._(this._json, this._selections, {bool allColumns = false})
-    : _allColumns =
-          allColumns ||
-          _selections.any((selection) => selection is PostgrestAllColumns);
+  const PostgrestPartialRow._(
+    this._json,
+    this._selections, {
+    required bool allColumns,
+  }) : _allColumns = allColumns;
 
   final Map<String, dynamic> _json;
 
@@ -69,7 +70,11 @@ final class PostgrestPartialRow<Row> {
   static PostgrestPartialRow<Row> fromSelections<Row>(
     Map<String, dynamic> json,
     List<PostgrestSelectable<Row>> selections,
-  ) => PostgrestPartialRow._(json, selections);
+  ) => PostgrestPartialRow._(
+    json,
+    selections,
+    allColumns: _selectsAllColumns(selections),
+  );
 
   /// The value of [entry] in this row.
   ///
@@ -106,11 +111,8 @@ final class PostgrestPartialRow<Row> {
       if (selection.responseKey != entry.responseKey) continue;
       found = true;
       if (selection case _Embedded(_selections: final members)) {
-        if (members.isEmpty) {
-          allColumns = true;
-        } else {
-          selections.addAll(members);
-        }
+        if (members.isEmpty || _selectsAllColumns(members)) allColumns = true;
+        selections.addAll(members);
       }
     }
     if (found) return _NestedSelection(selections, allColumns: allColumns);
@@ -150,6 +152,10 @@ final class PostgrestPartialRow<Row> {
   @override
   String toString() => 'PostgrestPartialRow($_json)';
 }
+
+/// Whether [selections] ask for every column with [PostgrestAllColumns].
+bool _selectsAllColumns(List<PostgrestSelectable<Object?>> selections) =>
+    selections.any((selection) => selection is PostgrestAllColumns);
 
 /// What a `select` list asked for under one response key.
 final class _NestedSelection {

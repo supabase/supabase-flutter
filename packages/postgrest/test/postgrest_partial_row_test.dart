@@ -570,6 +570,23 @@ void main() {
       expect(row.id, 1);
     });
 
+    test('a whole embed converts into the full row', () async {
+      httpClient.stub({
+        'id': 1,
+        'customers': {'id': 5, 'name': 'Ada', 'email': null},
+      });
+
+      final order = await client.table(Orders.table).selectOnly([
+        Orders.id,
+        Orders.customer.select(),
+      ]).single();
+
+      final Customer customer = order
+          .read(Orders.customer)!
+          .toRow(Customers.table);
+      expect(customer, {'id': 5, 'name': 'Ada', 'email': null});
+    });
+
     test('a row of some columns does not convert into the full row', () async {
       httpClient.stub({'id': 1});
 

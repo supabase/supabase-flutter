@@ -180,11 +180,13 @@ _ResultConverter<List<Row>> _rowsConverter<Row>(
 /// Converts the rows of a result into partial rows answering [selections].
 _ResultConverter<List<PostgrestPartialRow<Row>>> _partialRowsConverter<Row>(
   List<PostgrestSelectable<Row>> selections,
-) =>
-    (result) => [
-      for (final row in result.data! as PostgrestList)
-        PostgrestPartialRow<Row>._(row, selections),
-    ];
+) {
+  final allColumns = _selectsAllColumns(selections);
+  return (result) => [
+    for (final row in result.data! as PostgrestList)
+      PostgrestPartialRow<Row>._(row, selections, allColumns: allColumns),
+  ];
+}
 
 void _noResult(PostgrestTableResult result) {}
 
