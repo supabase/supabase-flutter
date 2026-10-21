@@ -598,25 +598,9 @@ void main() {
 
   test('types that PostgREST serializes as strings read as text', () {
     Map<String, dynamic> columnOf(String format) => {
-      'table_id': 1,
-      'schema': 'public',
-      'table': 'servers',
-      'id': '1.1',
-      'ordinal_position': 1,
-      'name': 'value',
-      'default_value': null,
+      ..._column(tableId: 1, table: 'servers', name: 'value'),
       'data_type': format,
       'format': format,
-      'type_schema': 'pg_catalog',
-      'is_identity': false,
-      'identity_generation': null,
-      'is_generated': false,
-      'is_nullable': true,
-      'is_updatable': true,
-      'is_unique': false,
-      'enums': <String>[],
-      'check': null,
-      'comment': null,
     };
 
     const formats = [
@@ -660,6 +644,13 @@ void main() {
       'regcollation',
       'aclitem',
       'refcursor',
+      'pg_node_tree',
+      'pg_ndistinct',
+      'pg_dependencies',
+      'pg_mcv_list',
+      'gtsvector',
+      'pg_brin_bloom_summary',
+      'pg_brin_minmax_multi_summary',
     ];
     for (final format in formats) {
       final parsed = parseGeneratorMetadata({

@@ -55,6 +55,13 @@ const _textFormats = {
   'regcollation',
   'aclitem',
   'refcursor',
+  'pg_node_tree',
+  'pg_ndistinct',
+  'pg_dependencies',
+  'pg_mcv_list',
+  'gtsvector',
+  'pg_brin_bloom_summary',
+  'pg_brin_minmax_multi_summary',
 };
 const _jsonFormats = {'json', 'jsonb'};
 
