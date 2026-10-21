@@ -35,7 +35,9 @@ final class PostgresPoint implements PostgresValue {
 
   @override
   bool operator ==(Object other) =>
-      other is PostgresPoint && other.x == x && other.y == y;
+      other is PostgresPoint &&
+      _sameCoordinate(other.x, x) &&
+      _sameCoordinate(other.y, y);
 
   @override
   int get hashCode => Object.hash(x, y);
@@ -86,7 +88,10 @@ final class PostgresLine implements PostgresValue {
 
   @override
   bool operator ==(Object other) =>
-      other is PostgresLine && other.a == a && other.b == b && other.c == c;
+      other is PostgresLine &&
+      _sameCoordinate(other.a, a) &&
+      _sameCoordinate(other.b, b) &&
+      _sameCoordinate(other.c, c);
 
   @override
   int get hashCode => Object.hash(a, b, c);
@@ -150,15 +155,15 @@ final class PostgresLineSegment implements PostgresValue {
 final class PostgresBox implements PostgresValue {
   /// The box with [corner] and [oppositeCorner] at two opposite corners,
   /// stored as its [upperRight] and [lowerLeft] corners the way Postgres
-  /// stores it.
+  /// stores it, which orders `NaN` after every number.
   PostgresBox(PostgresPoint corner, PostgresPoint oppositeCorner)
     : upperRight = PostgresPoint(
-        math.max(corner.x, oppositeCorner.x),
-        math.max(corner.y, oppositeCorner.y),
+        _larger(corner.x, oppositeCorner.x),
+        _larger(corner.y, oppositeCorner.y),
       ),
       lowerLeft = PostgresPoint(
-        math.min(corner.x, oppositeCorner.x),
-        math.min(corner.y, oppositeCorner.y),
+        _smaller(corner.x, oppositeCorner.x),
+        _smaller(corner.y, oppositeCorner.y),
       );
 
   /// Parses the `(x1,y1),(x2,y2)` literal Postgres emits for a `box`, with
@@ -206,6 +211,9 @@ final class PostgresBox implements PostgresValue {
 /// PostgresPath.parse('[(0,0),(1,1)]').isClosed // false
 /// PostgresPath.parse('((0,0),(1,1))').isClosed // true
 /// ```
+///
+/// Postgres compares paths by their number of points, so an `eq` filter on a
+/// `path` column matches every path with as many points.
 @experimental
 final class PostgresPath implements PostgresValue {
   /// The path through [points], which joins its last point back to its
@@ -315,6 +323,9 @@ final class PostgresPolygon implements PostgresValue {
 /// PostgresCircle.parse('<(1,2),3>').radius                 // 3
 /// const PostgresCircle(PostgresPoint(1, 2), 3).literal     // <(1,2),3>
 /// ```
+///
+/// Postgres compares circles by their area, so an `eq` filter on a `circle`
+/// column matches every circle of the same area.
 @experimental
 final class PostgresCircle implements PostgresValue {
   /// The circle around [center] with [radius]; Postgres rejects a negative
@@ -351,7 +362,7 @@ final class PostgresCircle implements PostgresValue {
   bool operator ==(Object other) =>
       other is PostgresCircle &&
       other.center == center &&
-      other.radius == radius;
+      _sameCoordinate(other.radius, radius);
 
   @override
   int get hashCode => Object.hash(center, radius);
@@ -360,14 +371,14 @@ final class PostgresCircle implements PostgresValue {
 /// A coordinate as Postgres spells it: `NaN`, `Infinity`, an exponent, or a
 /// plain decimal number.
 const _numberPattern =
-    r'\s*[-+]?(?:NaN|Infinity|(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*';
+    r'\s*[-+]?(?:NaN|Infinity|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)\s*';
 
 const _pointPattern = '\\s*\\($_numberPattern,$_numberPattern\\)\\s*';
 
 const _pointListPattern = '$_pointPattern(?:,$_pointPattern)*';
 
 final _numberToken = RegExp(
-  r'[-+]?(?:NaN|Infinity|(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)',
+  r'[-+]?(?:NaN|Infinity|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)',
 );
 
 /// Checks [literal] against [pattern] and hands the numbers it holds, in
@@ -400,9 +411,25 @@ bool _samePoints(List<PostgresPoint> first, List<PostgresPoint> second) {
   return true;
 }
 
+/// Whether [first] and [second] are the same coordinate, counting `NaN` as
+/// equal to itself so that a value parsed from `NaN` equals itself.
+bool _sameCoordinate(double first, double second) =>
+    first == second || (first.isNaN && second.isNaN);
+
+/// The larger of [first] and [second], ordering `NaN` after every number as
+/// Postgres does.
+double _larger(double first, double second) =>
+    first.compareTo(second) >= 0 ? first : second;
+
+/// The smaller of [first] and [second], ordering `NaN` after every number as
+/// Postgres does.
+double _smaller(double first, double second) =>
+    first.compareTo(second) <= 0 ? first : second;
+
 /// Renders [value] the way Postgres reads it back exactly, a whole number
 /// without a fraction.
 String _coordinate(double value) {
+  if (value == 0 && value.isNegative) return '-0';
   if (value.isFinite &&
       value == value.truncateToDouble() &&
       value.abs() < 1e15) {

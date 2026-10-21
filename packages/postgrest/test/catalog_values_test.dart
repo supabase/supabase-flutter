@@ -312,7 +312,8 @@ void main() {
         .single();
     insertedId = inserted['id'] as int;
 
-    // point and polygon have no = operator, so they are only read back.
+    // point and polygon have no = operator, and path and circle compare only
+    // their number of points and their area, so they are only read back.
     final row = await postgrest
         .table(CatalogValues.table)
         .selectOnly([
@@ -327,9 +328,7 @@ void main() {
         .where(
           CatalogValues.axis.eq(axis) &
               CatalogValues.edge.eq(edge) &
-              CatalogValues.bounds.eq(bounds) &
-              CatalogValues.route.eq(route) &
-              CatalogValues.reach.eq(reach),
+              CatalogValues.bounds.eq(bounds),
         )
         .single();
 

@@ -197,6 +197,33 @@ void main() {
     });
   });
 
+  test('a NaN coordinate equals itself', () {
+    expect(PostgresPoint.parse('(NaN,0)'), PostgresPoint.parse('(NaN,0)'));
+    expect(
+      PostgresCircle.parse('<(0,0),NaN>'),
+      PostgresCircle.parse('<(0,0),NaN>'),
+    );
+  });
+
+  test('a box orders NaN after every number, as Postgres does', () {
+    final box = PostgresBox(
+      const PostgresPoint(double.nan, 1),
+      const PostgresPoint(1, 0),
+    );
+    expect(box.literal, '(NaN,1),(1,0)');
+  });
+
+  test('negative zero keeps its sign', () {
+    expect(const PostgresPoint(-0.0, 0).literal, '(-0,0)');
+  });
+
+  test('a long malformed path is rejected without backtracking', () {
+    final points = List.filled(40, '(1234567890,1234567890)').join(',');
+    final stopwatch = Stopwatch()..start();
+    expect(() => PostgresPath.parse('[$points]x'), throwsFormatException);
+    expect(stopwatch.elapsed, lessThan(const Duration(seconds: 1)));
+  });
+
   test('equal values hash alike', () {
     expect(
       PostgresPolygon.parse('((0,0),(1,1))').hashCode,

@@ -158,8 +158,8 @@ final archived = await client
 - The geometric types map to `PostgresPoint`, `PostgresLine`,
   `PostgresLineSegment`, `PostgresBox`, `PostgresPath`, `PostgresPolygon` and
   `PostgresCircle`. Postgres has no `=` operator for `point` and `polygon`, so
-  an `eq` filter on those columns fails on the server, and it compares boxes
-  by area.
+  an `eq` filter on those columns fails on the server. It compares boxes and
+  circles by area and paths by their number of points.
 - `oid` columns map to `int` and `xid8` columns to `BigInt`, parsed from the
   JSON strings PostgREST sends them as. `numeric` columns map to `num`:
   PostgREST sends them as JSON numbers, and decoding keeps only what a Dart
