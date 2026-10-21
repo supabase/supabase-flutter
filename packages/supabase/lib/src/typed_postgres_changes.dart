@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:meta/meta.dart';
 import 'package:supabase/src/typed_postgres_change_filter.dart';
+import 'package:supabase/src/typed_selections.dart';
 import 'package:supabase/supabase.dart';
 
 /// Listens to the Postgres changes of a [PostgrestTable], with the rows
@@ -14,6 +17,10 @@ extension TypedPostgresChanges on RealtimeChannel {
   /// [PostgrestFilter.not], using one of `eq`, `neq`, `lt`, `lte`, `gt`,
   /// `gte`, `inFilter`, `like`, `ilike`, `matchRegex`, `imatchRegex`,
   /// `isNull`, `isTrue`, `isFalse` or `isDistinct`.
+  ///
+  /// A change realtime could not send in full, because its record exceeds
+  /// the payload size limit of the server, arrives as a [RealtimeException]
+  /// error on the stream instead of a change.
   ///
   /// A table without a schema is listened to in `public`. Like
   /// [RealtimeChannel.onPostgresChanges], this has to be called before
@@ -78,11 +85,7 @@ extension TypedPostgresChanges on RealtimeChannel {
         'onTableChangesOnly needs at least one column',
       );
     }
-    final selections = <PostgrestStoredColumn<Row, Object>>[
-      ...columns,
-      for (final column in table.primaryKey)
-        if (!columns.any((selected) => selected.name == column.name)) column,
-    ];
+    final selections = withPrimaryKey(columns, table.primaryKey);
     return _onTableChanges(
       table,
       event: event,
@@ -110,29 +113,43 @@ extension TypedPostgresChanges on RealtimeChannel {
       table: table.name,
       filters: changeFilters.isEmpty ? null : changeFilters,
       select: select,
-    ).expand((payload) {
-      PostgrestPartialRow<Row> oldRow() =>
-          // ignore: invalid_use_of_internal_member
-          PostgrestPartialRow.fromPresentColumns(payload.oldRecord);
-      return <TypedPostgresChange<Row, Element>>[
-        ?switch (payload.eventType) {
-          PostgresChangeEvent.insert => TypedPostgresInsert._(
-            commitTimestamp: payload.commitTimestamp,
-            newRow: newRowFromJson(payload.newRecord),
-          ),
-          PostgresChangeEvent.update => TypedPostgresUpdate._(
-            commitTimestamp: payload.commitTimestamp,
-            newRow: newRowFromJson(payload.newRecord),
-            oldRow: oldRow(),
-          ),
-          PostgresChangeEvent.delete => TypedPostgresDelete._(
-            commitTimestamp: payload.commitTimestamp,
-            oldRow: oldRow(),
-          ),
-          PostgresChangeEvent.all || PostgresChangeEvent.unknown => null,
+    ).transform(
+      StreamTransformer.fromHandlers(
+        handleData: (payload, sink) {
+          final errors = payload.errors;
+          if (errors is List && errors.isNotEmpty) {
+            sink.addError(
+              RealtimeException(
+                'The ${payload.eventType.name} on '
+                '${payload.schema}.${payload.table} arrived without its full '
+                'record: ${errors.join(', ')}',
+              ),
+            );
+            return;
+          }
+          PostgrestPartialRow<Row> oldRow() =>
+              // ignore: invalid_use_of_internal_member
+              PostgrestPartialRow.fromPresentColumns(payload.oldRecord);
+          final change = switch (payload.eventType) {
+            PostgresChangeEvent.insert => TypedPostgresInsert<Row, Element>._(
+              commitTimestamp: payload.commitTimestamp,
+              newRow: newRowFromJson(payload.newRecord),
+            ),
+            PostgresChangeEvent.update => TypedPostgresUpdate<Row, Element>._(
+              commitTimestamp: payload.commitTimestamp,
+              newRow: newRowFromJson(payload.newRecord),
+              oldRow: oldRow(),
+            ),
+            PostgresChangeEvent.delete => TypedPostgresDelete<Row, Element>._(
+              commitTimestamp: payload.commitTimestamp,
+              oldRow: oldRow(),
+            ),
+            PostgresChangeEvent.all || PostgresChangeEvent.unknown => null,
+          };
+          if (change != null) sink.add(change);
         },
-      ];
-    });
+      ),
+    );
   }
 }
 
@@ -182,8 +199,8 @@ final class TypedPostgresUpdate<Row, Element>
   /// The row before the update.
   ///
   /// Holds the primary key only, unless the table has
-  /// `REPLICA IDENTITY FULL`; reading a column it does not hold throws a
-  /// [StateError].
+  /// `REPLICA IDENTITY FULL` and row level security disabled; reading a
+  /// column it does not hold throws a [StateError].
   final PostgrestPartialRow<Row> oldRow;
 
   @override
@@ -202,8 +219,8 @@ final class TypedPostgresDelete<Row, Element>
   /// The deleted row.
   ///
   /// Holds the primary key only, unless the table has
-  /// `REPLICA IDENTITY FULL`; reading a column it does not hold throws a
-  /// [StateError].
+  /// `REPLICA IDENTITY FULL` and row level security disabled; reading a
+  /// column it does not hold throws a [StateError].
   final PostgrestPartialRow<Row> oldRow;
 
   @override

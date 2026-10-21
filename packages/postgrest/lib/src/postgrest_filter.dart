@@ -219,6 +219,20 @@ final class PostgrestComparison<Row> {
   /// Whether the comparison is wrapped in [PostgrestFilter.not], so it
   /// matches the rows the operator does not.
   final bool negated;
+
+  /// [value] rendered the way PostgREST receives it: the list of rendered
+  /// members for `in`, the rendered literal otherwise.
+  @internal
+  Object get renderedValue {
+    final comparison = _Comparison(column, operator, value);
+    if (operator == PostgrestFilterOperator.inFilter) {
+      return [
+        for (final member in value! as List<Object?>)
+          comparison._render(member),
+      ];
+    }
+    return comparison._render(value);
+  }
 }
 
 sealed class _FilterNode<Row> {

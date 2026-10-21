@@ -161,6 +161,45 @@ void main() {
       expect(change.oldRow.read(Todos.title), 'first');
     });
 
+    test(
+      'delivers a change sent without its full record as an error',
+      () async {
+        final errors = <Object>[];
+        final changes = <TypedPostgresChange<Todo, Todo>>[];
+        final subscription = channel
+            .onTableChanges(Todos.table)
+            .listen(changes.add, onError: errors.add);
+        addTearDown(subscription.cancel);
+        channel.subscribe();
+        await waitFor(() => realtime.joinedTopics.isNotEmpty);
+
+        realtime
+          ..emitPostgresChange(
+            table: 'todos',
+            event: PostgresChangeEvent.insert,
+            newRecord: {'id': 1, 'done': false},
+            errors: ['Error 413: Payload Too Large'],
+          )
+          ..emitPostgresChange(
+            table: 'todos',
+            event: PostgresChangeEvent.insert,
+            newRecord: {'id': 2, 'title': 'second', 'done': false},
+          );
+        await waitFor(() => changes.isNotEmpty);
+
+        expect(
+          errors.single,
+          isA<RealtimeException>().having(
+            (error) => error.message,
+            'message',
+            contains('Error 413: Payload Too Large'),
+          ),
+        );
+        final change = changes.single as TypedPostgresInsert<Todo, Todo>;
+        expect(change.newRow.id, 2);
+      },
+    );
+
     test('rejects a filter realtime cannot evaluate', () {
       expect(
         () => channel.onTableChanges(

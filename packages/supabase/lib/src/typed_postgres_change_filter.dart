@@ -5,8 +5,8 @@ import 'package:supabase/supabase.dart';
 ///
 /// Throws an [ArgumentError] for a filter realtime cannot evaluate: one
 /// composed with `&` or `|`, one on anything but a stored column, one on an
-/// int2vector or oidvector column, or one using an operator realtime does not
-/// support.
+/// array column other than a pgvector one, or one using an operator realtime
+/// does not support.
 @experimental
 @internal
 PostgresChangeFilter postgresChangeFilterOf<Row>(PostgrestFilter<Row> filter) {
@@ -16,10 +16,11 @@ PostgresChangeFilter postgresChangeFilterOf<Row>(PostgrestFilter<Row> filter) {
       filter,
       'filter',
       'Realtime applies one comparison per filter, negated or not; '
-          'combine filters by passing them separately instead of with & or |.',
+          'give each comparison its own filter instead of joining them with & '
+          'or |.',
     );
   }
-  final PostgrestComparison(:column, :operator, :value, :negated) = comparison;
+  final PostgrestComparison(:column, :operator, :negated) = comparison;
   if (column is! PostgrestStoredColumn<Row, Object>) {
     throw ArgumentError.value(
       filter,
@@ -27,13 +28,16 @@ PostgresChangeFilter postgresChangeFilterOf<Row>(PostgrestFilter<Row> filter) {
       'Realtime filters on stored columns only.',
     );
   }
-  if (column is PostgrestIntegerVectorColumn ||
-      column is PostgrestNullableIntegerVectorColumn) {
+  final isVector =
+      column is PostgrestVectorColumn ||
+      column is PostgrestNullableVectorColumn;
+  if (column is PostgrestStoredColumn<Object?, List<Object?>> && !isVector) {
     throw ArgumentError.value(
       filter,
       'filter',
-      'Realtime cannot filter on int2vector or oidvector columns, since it '
-          'cannot compare their values.',
+      'Realtime cannot filter on array, int2vector or oidvector columns, '
+          'since casting the filter value to the column type fails on the '
+          'server.',
     );
   }
   final type = switch (operator) {
@@ -71,28 +75,8 @@ PostgresChangeFilter postgresChangeFilterOf<Row>(PostgrestFilter<Row> filter) {
   return PostgresChangeFilter(
     type: type,
     column: column.name,
-    value: _vectorOperand(column, operator, value),
+    // ignore: invalid_use_of_internal_member
+    value: comparison.renderedValue,
     negate: negated,
   );
-}
-
-/// [value] as the literal a pgvector [column] reads, or [value] itself for
-/// any other column, since realtime and PostgREST receive it as it is.
-@experimental
-Object? _vectorOperand(
-  PostgrestStoredColumn<Object?, Object> column,
-  PostgrestFilterOperator operator,
-  Object? value,
-) {
-  if (column is! PostgrestVectorColumn &&
-      column is! PostgrestNullableVectorColumn) {
-    return value;
-  }
-  if (value is! List<Object?>) return value;
-  String render(Object? vector) =>
-      postgresVector.encode((vector! as List<Object?>).cast());
-  if (operator == PostgrestFilterOperator.inFilter) {
-    return [for (final member in value) render(member)];
-  }
-  return render(value);
 }

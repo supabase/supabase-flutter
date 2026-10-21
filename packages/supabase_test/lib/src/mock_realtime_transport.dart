@@ -98,7 +98,9 @@ class MockRealtimeTransport {
   /// [newRecord] is the row after the change and [oldRecord] the row before
   /// it, as the code under test expects them in `newRecord` and `oldRecord`
   /// of the payload. [columns] describe the column types the way the server
-  /// reports them; when omitted the values are delivered as given.
+  /// reports them; when omitted the values are delivered as given. [errors]
+  /// are what the server reports for a change it could not send in full,
+  /// such as `Error 413: Payload Too Large`.
   void emitPostgresChange({
     required String table,
     required PostgresChangeEvent event,
@@ -107,6 +109,7 @@ class MockRealtimeTransport {
     Map<String, dynamic> oldRecord = const {},
     DateTime? commitTimestamp,
     List<Map<String, dynamic>> columns = const [],
+    List<String>? errors,
   }) {
     if (event == PostgresChangeEvent.all) {
       throw ArgumentError.value(
@@ -125,7 +128,7 @@ class MockRealtimeTransport {
       'record': newRecord,
       'old_record': oldRecord,
       'columns': columns,
-      'errors': null,
+      'errors': errors,
     };
     var delivered = false;
     for (final MapEntry(key: topic, value: bindings)
