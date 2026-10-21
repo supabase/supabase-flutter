@@ -281,9 +281,9 @@ final class PostgrestToManyRelation<Row, Target>
 ///
 /// Select position only. It is sent under an alias of its own
 /// [responseKey], `"messages(count)":messages(count)`, so it is a separate
-/// embed from the other entries of the relation in the same list, and the
-/// rows of [PostgrestTypedTransformBuilder.embedded] scopes on the relation
-/// are not what it counts.
+/// embed from the other entries of the relation in the same list. It is
+/// sent after them, so the [PostgrestTypedTransformBuilder.embedded] scopes
+/// on the relation apply to those rows and not to what it counts.
 @experimental
 final class PostgrestEmbeddedCount<Row> extends PostgrestSelectable<Row>
     implements PostgrestReadable<Row, int> {

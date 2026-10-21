@@ -246,6 +246,17 @@ void main() {
       );
     });
 
+    test('goes after the embed of its relation', () {
+      expect(
+        Orders.todo.select([
+          Todos.orders.count(),
+          Todos.orders(Orders.id),
+          Todos.id,
+        ]).expression,
+        'todo(orders(id),id,"orders(count)":orders(count))',
+      );
+    });
+
     test('is selectable and nothing else', () {
       final Object count = Todos.orders.count();
 
