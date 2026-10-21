@@ -101,4 +101,40 @@ class PostgrestTable<Row, Insert, Update> {
   /// row type, which PostgREST selects like columns but leaves out of `*`, so
   /// a `select()` row never carries them.
   final List<PostgrestComputedField<Row, Object>> computedFields;
+
+  /// Every stored column of the table, `*`, as an entry of a `select` list.
+  ///
+  /// Lets a `selectOnly` read the whole row next to embeds and aggregates,
+  /// without listing each column:
+  ///
+  /// ```dart
+  /// final books = await client
+  ///     .table(Books.table)
+  ///     .selectOnly([
+  ///       Books.table.allColumns,
+  ///       Books.author.select([Authors.name]),
+  ///     ]);
+  /// final String title = books.first.read(Books.title);
+  /// final Book book = books.first.toRow(Books.table);
+  /// ```
+  ///
+  /// Like `*` in PostgREST, it covers no relation and no computed field.
+  PostgrestAllColumns<Row> get allColumns => PostgrestAllColumns._();
+}
+
+/// Every stored column of a table, `*`, in a `select` list.
+///
+/// Created by [PostgrestTable.allColumns]. A [PostgrestPartialRow] of a list
+/// holding it reads any stored column, and converts into the full row with
+/// [PostgrestPartialRow.toRow].
+@experimental
+final class PostgrestAllColumns<Row> extends PostgrestSelectable<Row> {
+  const PostgrestAllColumns._() : super._();
+
+  @override
+  String get expression => '*';
+
+  /// `*`: the columns come back under their own names, not under one key.
+  @override
+  String get responseKey => '*';
 }

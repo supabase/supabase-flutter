@@ -84,10 +84,13 @@ final class _EmbedGroup {
 
   /// Adds the members of one entry; none means every column.
   void add(List<PostgrestSelectable<Object?>> members) {
-    if (members.isEmpty) {
-      _all = true;
-    } else {
-      _members.addAll(members);
+    if (members.isEmpty) _all = true;
+    for (final member in members) {
+      if (member is PostgrestAllColumns) {
+        _all = true;
+      } else {
+        _members.add(member);
+      }
     }
   }
 
@@ -181,11 +184,13 @@ _ResultConverter<List<Row>> _rowsConverter<Row>(
 /// Converts the rows of a result into partial rows answering [selections].
 _ResultConverter<List<PostgrestPartialRow<Row>>> _partialRowsConverter<Row>(
   List<PostgrestSelectable<Row>> selections,
-) =>
-    (result) => [
-      for (final row in result.data! as PostgrestList)
-        PostgrestPartialRow<Row>._(row, selections, allColumns: false),
-    ];
+) {
+  final allColumns = _selectsAllColumns(selections);
+  return (result) => [
+    for (final row in result.data! as PostgrestList)
+      PostgrestPartialRow<Row>._(row, selections, allColumns: allColumns),
+  ];
+}
 
 void _noResult(PostgrestTableResult result) {}
 

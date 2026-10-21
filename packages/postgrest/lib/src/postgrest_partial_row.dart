@@ -70,7 +70,11 @@ final class PostgrestPartialRow<Row> {
   static PostgrestPartialRow<Row> fromSelections<Row>(
     Map<String, dynamic> json,
     List<PostgrestSelectable<Row>> selections,
-  ) => PostgrestPartialRow._(json, selections, allColumns: false);
+  ) => PostgrestPartialRow._(
+    json,
+    selections,
+    allColumns: _selectsAllColumns(selections),
+  );
 
   /// The value of [entry] in this row.
   ///
@@ -111,11 +115,8 @@ final class PostgrestPartialRow<Row> {
       if (selection.responseKey != entry.responseKey) continue;
       found = true;
       if (selection case _Embedded(_selections: final members)) {
-        if (members.isEmpty) {
-          allColumns = true;
-        } else {
-          selections.addAll(members);
-        }
+        if (members.isEmpty || _selectsAllColumns(members)) allColumns = true;
+        selections.addAll(members);
       }
     }
     if (found) return _NestedSelection(selections, allColumns: allColumns);
@@ -128,9 +129,25 @@ final class PostgrestPartialRow<Row> {
   String _describeKeys() {
     final keys = <String>{
       if (_allColumns) 'every column',
-      for (final selection in _selections) '`${selection.responseKey}`',
+      for (final selection in _selections)
+        if (selection is! PostgrestAllColumns) '`${selection.responseKey}`',
     };
     return keys.isEmpty ? 'nothing' : keys.join(', ');
+  }
+
+  /// The row as the full [Row] of [table], when the `select` list asked for
+  /// every column with [PostgrestTable.allColumns] or the row is a whole
+  /// embed.
+  ///
+  /// Throws a [StateError] when it did not, since [Row] would miss columns.
+  Row toRow(PostgrestTable<Row, Object?, Object?> table) {
+    if (!_allColumns) {
+      throw StateError(
+        'Only a row of every column converts into `$Row`. The row holds '
+        '${_describeKeys()}.',
+      );
+    }
+    return table.rowFromJson(_json);
   }
 
   /// The row as decoded from the response.
@@ -139,6 +156,10 @@ final class PostgrestPartialRow<Row> {
   @override
   String toString() => 'PostgrestPartialRow($_json)';
 }
+
+/// Whether [selections] ask for every column with [PostgrestAllColumns].
+bool _selectsAllColumns(List<PostgrestSelectable<Object?>> selections) =>
+    selections.any((selection) => selection is PostgrestAllColumns);
 
 /// What a `select` list asked for under one response key.
 final class _NestedSelection {
