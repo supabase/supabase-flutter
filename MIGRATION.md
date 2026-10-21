@@ -2819,10 +2819,3 @@ supabase
 A stream filter supports `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
 `matchRegex`, `imatchRegex`, `isNull`, `isTrue`, `isFalse` and `isDistinct`. A filter composed
 with `&`, `|` or `not()` throws an `ArgumentError`.
-
-### What stays on `from()`
-
-These have no typed counterpart yet, so keep them on the untyped API:
-
-- `rpc()`, since the generator does not emit Postgres functions yet.
-- `retry()`, `requestTimeout()`, `abortSignal()` and `setHeader()` on a single request.

@@ -143,8 +143,11 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// {@template postgrest_aggregate}
   /// Select position only: PostgREST has no `HAVING` and rejects an aggregate
   /// in `order`. Selecting a plain column alongside an aggregate groups by
-  /// it. Needs PostgREST's `db-aggregates-enabled` setting, which is on for
-  /// hosted Supabase. `sum`, `avg`, `min` and `max` are `null` when no row
+  /// it. Needs PostgREST's `db-aggregates-enabled` setting, which is off by
+  /// default on Supabase and turned on with
+  /// `alter role authenticator set pgrst.db_aggregates_enabled = 'true'`
+  /// followed by `notify pgrst, 'reload config'`. Without it the request
+  /// fails. `sum`, `avg`, `min` and `max` are `null` when no row
   /// matches; the type parameter describes a present value.
   ///
   /// {@macro postgrest_derived_response_key}
