@@ -17,13 +17,6 @@ const _textFormats = {
   'varbit',
   'tsvector',
   'tsquery',
-  'point',
-  'line',
-  'lseg',
-  'box',
-  'path',
-  'polygon',
-  'circle',
   'int4multirange',
   'int8multirange',
   'nummultirange',
@@ -65,6 +58,17 @@ const _vectorFormats = {'vector', 'halfvec'};
 /// Extension types that PostgREST serializes as JSON strings. Like pgvector,
 /// they live in whichever schema the extension was created in.
 const _extensionTextFormats = {'citext'};
+
+/// The geometric types, keyed to their kind.
+const _geometricKinds = {
+  'point': ColumnTypeKind.point,
+  'line': ColumnTypeKind.line,
+  'lseg': ColumnTypeKind.lineSegment,
+  'box': ColumnTypeKind.box,
+  'path': ColumnTypeKind.path,
+  'polygon': ColumnTypeKind.polygon,
+  'circle': ColumnTypeKind.circle,
+};
 
 /// Range types, keyed to the kind of their bounds.
 const _rangeBoundKinds = {
@@ -124,6 +128,7 @@ ColumnTypeKind _typeKind(
   if (format == 'inet' || format == 'cidr') {
     return ColumnTypeKind.networkAddress;
   }
+  if (_geometricKinds[format] case final kind?) return kind;
   if (_rangeBoundKinds.containsKey(format)) return ColumnTypeKind.range;
   if (_textFormats.contains(format)) return ColumnTypeKind.text;
   if (_jsonFormats.contains(format)) return ColumnTypeKind.json;

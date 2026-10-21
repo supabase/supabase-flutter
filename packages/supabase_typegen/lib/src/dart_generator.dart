@@ -206,6 +206,13 @@ class _TypeNameRegistry {
     'PostgresLogSequenceNumber',
     'PostgresMacAddress',
     'PostgresNetworkAddress',
+    'PostgresPoint',
+    'PostgresLine',
+    'PostgresLineSegment',
+    'PostgresBox',
+    'PostgresPath',
+    'PostgresPolygon',
+    'PostgresCircle',
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
@@ -1122,6 +1129,22 @@ _Binding _scalarBindingFor(
     'PostgresNetworkAddress',
     ColumnTypeKind.networkAddress,
   ),
+  ColumnTypeKind.point => const _Binding('PostgresPoint', ColumnTypeKind.point),
+  ColumnTypeKind.line => const _Binding('PostgresLine', ColumnTypeKind.line),
+  ColumnTypeKind.lineSegment => const _Binding(
+    'PostgresLineSegment',
+    ColumnTypeKind.lineSegment,
+  ),
+  ColumnTypeKind.box => const _Binding('PostgresBox', ColumnTypeKind.box),
+  ColumnTypeKind.path => const _Binding('PostgresPath', ColumnTypeKind.path),
+  ColumnTypeKind.polygon => const _Binding(
+    'PostgresPolygon',
+    ColumnTypeKind.polygon,
+  ),
+  ColumnTypeKind.circle => const _Binding(
+    'PostgresCircle',
+    ColumnTypeKind.circle,
+  ),
   ColumnTypeKind.timestamp => const _Binding(
     'DateTime',
     ColumnTypeKind.timestamp,
@@ -1204,6 +1227,13 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.logSequenceNumber ||
   ColumnTypeKind.macAddress ||
   ColumnTypeKind.networkAddress ||
+  ColumnTypeKind.point ||
+  ColumnTypeKind.line ||
+  ColumnTypeKind.lineSegment ||
+  ColumnTypeKind.box ||
+  ColumnTypeKind.path ||
+  ColumnTypeKind.polygon ||
+  ColumnTypeKind.circle ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -1233,6 +1263,13 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.logSequenceNumber ||
   ColumnTypeKind.macAddress ||
   ColumnTypeKind.networkAddress ||
+  ColumnTypeKind.point ||
+  ColumnTypeKind.line ||
+  ColumnTypeKind.lineSegment ||
+  ColumnTypeKind.box ||
+  ColumnTypeKind.path ||
+  ColumnTypeKind.polygon ||
+  ColumnTypeKind.circle ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -1296,8 +1333,14 @@ String? _readConversion(
   ColumnTypeKind.interval ||
   ColumnTypeKind.logSequenceNumber ||
   ColumnTypeKind.macAddress ||
-  ColumnTypeKind.networkAddress =>
-    '${binding.dartType}.parse($value as String)',
+  ColumnTypeKind.networkAddress ||
+  ColumnTypeKind.point ||
+  ColumnTypeKind.line ||
+  ColumnTypeKind.lineSegment ||
+  ColumnTypeKind.box ||
+  ColumnTypeKind.path ||
+  ColumnTypeKind.polygon ||
+  ColumnTypeKind.circle => '${binding.dartType}.parse($value as String)',
   ColumnTypeKind.enumType => '${binding.dartType}.fromWire($value as String)',
   ColumnTypeKind.binary => 'postgresBytea.decode($value as String)',
   ColumnTypeKind.vector => 'postgresVector.decode($value as String)',
@@ -1353,7 +1396,14 @@ _Rendering? _writeConversion(_Binding binding, String value) {
     ColumnTypeKind.interval ||
     ColumnTypeKind.logSequenceNumber ||
     ColumnTypeKind.macAddress ||
-    ColumnTypeKind.networkAddress => chain('.literal'),
+    ColumnTypeKind.networkAddress ||
+    ColumnTypeKind.point ||
+    ColumnTypeKind.line ||
+    ColumnTypeKind.lineSegment ||
+    ColumnTypeKind.box ||
+    ColumnTypeKind.path ||
+    ColumnTypeKind.polygon ||
+    ColumnTypeKind.circle => chain('.literal'),
     ColumnTypeKind.timestamp => chain('.toIso8601String()'),
     ColumnTypeKind.timestampWithTimeZone => chain(
       '.toUtc().toIso8601String()',
@@ -1382,6 +1432,13 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       ColumnTypeKind.logSequenceNumber ||
       ColumnTypeKind.macAddress ||
       ColumnTypeKind.networkAddress ||
+      ColumnTypeKind.point ||
+      ColumnTypeKind.line ||
+      ColumnTypeKind.lineSegment ||
+      ColumnTypeKind.box ||
+      ColumnTypeKind.path ||
+      ColumnTypeKind.polygon ||
+      ColumnTypeKind.circle ||
       ColumnTypeKind.integer ||
       ColumnTypeKind.integerString ||
       ColumnTypeKind.bigInteger ||

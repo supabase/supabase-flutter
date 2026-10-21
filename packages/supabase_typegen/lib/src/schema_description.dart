@@ -40,6 +40,27 @@ enum ColumnTypeKind {
   /// The `inet` and `cidr` types, mapped to `PostgresNetworkAddress`.
   networkAddress,
 
+  /// The `point` type, mapped to `PostgresPoint`.
+  point,
+
+  /// The `line` type, mapped to `PostgresLine`.
+  line,
+
+  /// The `lseg` type, mapped to `PostgresLineSegment`.
+  lineSegment,
+
+  /// The `box` type, mapped to `PostgresBox`.
+  box,
+
+  /// The `path` type, mapped to `PostgresPath`.
+  path,
+
+  /// The `polygon` type, mapped to `PostgresPolygon`.
+  polygon,
+
+  /// The `circle` type, mapped to `PostgresCircle`.
+  circle,
+
   /// Timestamps without a timezone, mapped to `DateTime` and written back as
   /// the local wall time.
   timestamp,

@@ -12,5 +12,12 @@ create table public.catalog_values (
   key_columns int2vector,
   argument_types oidvector,
   host inet,
-  allowed_networks cidr[]
+  allowed_networks cidr[],
+  location point,
+  axis line,
+  edge lseg,
+  bounds box,
+  route path,
+  outline polygon,
+  reach circle
 );

@@ -607,13 +607,6 @@ void main() {
       'money',
       'xml',
       'name',
-      'point',
-      'line',
-      'lseg',
-      'box',
-      'path',
-      'polygon',
-      'circle',
       'int4multirange',
       'int8multirange',
       'nummultirange',
@@ -695,6 +688,13 @@ void main() {
       'macaddr8': ColumnTypeKind.macAddress,
       'inet': ColumnTypeKind.networkAddress,
       'cidr': ColumnTypeKind.networkAddress,
+      'point': ColumnTypeKind.point,
+      'line': ColumnTypeKind.line,
+      'lseg': ColumnTypeKind.lineSegment,
+      'box': ColumnTypeKind.box,
+      'path': ColumnTypeKind.path,
+      'polygon': ColumnTypeKind.polygon,
+      'circle': ColumnTypeKind.circle,
     };
     for (final MapEntry(key: format, value: kind) in kinds.entries) {
       final parsed = parseGeneratorMetadata({
