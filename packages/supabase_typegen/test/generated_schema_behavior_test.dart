@@ -549,6 +549,62 @@ void main() {
     },
   );
 
+  test('geometric columns read, write and filter as values', () async {
+    final row = hostile.MapRow({
+      'list': 1,
+      'opens_at': '09:30:00',
+      'location': '(1.5,-2)',
+      'axis': '{1,-1,0}',
+      'edge': '[(0,0),(1,1)]',
+      'bounds': '(2,3),(0,0)',
+      'route': '[(0,0),(1,1)]',
+      'outline': '((0,0),(1,1),(1,0))',
+      'reach': '<(1,2),3>',
+    });
+
+    expect(row.location, const PostgresPoint(1.5, -2));
+    expect(row.axis, const PostgresLine(1, -1, 0));
+    expect(
+      row.edge,
+      const PostgresLineSegment(PostgresPoint(0, 0), PostgresPoint(1, 1)),
+    );
+    expect(
+      row.bounds,
+      PostgresBox(const PostgresPoint(0, 0), const PostgresPoint(2, 3)),
+    );
+    expect(row.route?.isClosed, isFalse);
+    expect(row.outline?.points, hasLength(3));
+    expect(row.reach, const PostgresCircle(PostgresPoint(1, 2), 3));
+
+    httpClient.stub(null);
+    await client
+        .table(hostile.Map$.table)
+        .update(
+          hostile.MapUpdate(
+            location: row.location,
+            axis: row.axis,
+            edge: row.edge,
+            bounds: row.bounds,
+            route: row.route,
+            outline: row.outline,
+            reach: row.reach,
+          ),
+        )
+        .where(hostile.Map$.reach.eq(row.reach!));
+
+    final request = httpClient.requests.last;
+    expect(request.jsonBody, {
+      'location': '(1.5,-2)',
+      'axis': '{1,-1,0}',
+      'edge': '[(0,0),(1,1)]',
+      'bounds': '(2,3),(0,0)',
+      'route': '[(0,0),(1,1)]',
+      'outline': '((0,0),(1,1),(1,0))',
+      'reach': '<(1,2),3>',
+    });
+    expect(request.queryParameters['reach'], 'eq.<(1,2),3>');
+  });
+
   test(
     'network addresses read, write and filter as values',
     () async {

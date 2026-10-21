@@ -1057,6 +1057,69 @@ features:
       - PostgresNetworkAddress.toString
       - PostgresNetworkAddress.==
       - PostgresNetworkAddress.hashCode
+      - PostgresPoint
+      - PostgresPoint.PostgresPoint
+      - PostgresPoint.parse
+      - PostgresPoint.x
+      - PostgresPoint.y
+      - PostgresPoint.literal
+      - PostgresPoint.toString
+      - PostgresPoint.==
+      - PostgresPoint.hashCode
+      - PostgresLine
+      - PostgresLine.PostgresLine
+      - PostgresLine.parse
+      - PostgresLine.a
+      - PostgresLine.b
+      - PostgresLine.c
+      - PostgresLine.literal
+      - PostgresLine.toString
+      - PostgresLine.==
+      - PostgresLine.hashCode
+      - PostgresLineSegment
+      - PostgresLineSegment.PostgresLineSegment
+      - PostgresLineSegment.parse
+      - PostgresLineSegment.start
+      - PostgresLineSegment.end
+      - PostgresLineSegment.literal
+      - PostgresLineSegment.toString
+      - PostgresLineSegment.==
+      - PostgresLineSegment.hashCode
+      - PostgresBox
+      - PostgresBox.PostgresBox
+      - PostgresBox.parse
+      - PostgresBox.upperRight
+      - PostgresBox.lowerLeft
+      - PostgresBox.literal
+      - PostgresBox.toString
+      - PostgresBox.==
+      - PostgresBox.hashCode
+      - PostgresPath
+      - PostgresPath.PostgresPath
+      - PostgresPath.parse
+      - PostgresPath.points
+      - PostgresPath.isClosed
+      - PostgresPath.literal
+      - PostgresPath.toString
+      - PostgresPath.==
+      - PostgresPath.hashCode
+      - PostgresPolygon
+      - PostgresPolygon.PostgresPolygon
+      - PostgresPolygon.parse
+      - PostgresPolygon.points
+      - PostgresPolygon.literal
+      - PostgresPolygon.toString
+      - PostgresPolygon.==
+      - PostgresPolygon.hashCode
+      - PostgresCircle
+      - PostgresCircle.PostgresCircle
+      - PostgresCircle.parse
+      - PostgresCircle.center
+      - PostgresCircle.radius
+      - PostgresCircle.literal
+      - PostgresCircle.toString
+      - PostgresCircle.==
+      - PostgresCircle.hashCode
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table

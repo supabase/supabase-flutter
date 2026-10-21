@@ -58,7 +58,54 @@ class CatalogValues {
         'allowed_networks',
         fromJson: _networkAddressListFromJson,
       );
+  static const location = PostgrestNullableColumn<CatalogValue, PostgresPoint>(
+    'location',
+    fromJson: _pointFromJson,
+  );
+  static const axis = PostgrestNullableColumn<CatalogValue, PostgresLine>(
+    'axis',
+    fromJson: _lineFromJson,
+  );
+  static const edge =
+      PostgrestNullableColumn<CatalogValue, PostgresLineSegment>(
+        'edge',
+        fromJson: _lineSegmentFromJson,
+      );
+  static const bounds = PostgrestNullableColumn<CatalogValue, PostgresBox>(
+    'bounds',
+    fromJson: _boxFromJson,
+  );
+  static const route = PostgrestNullableColumn<CatalogValue, PostgresPath>(
+    'route',
+    fromJson: _pathFromJson,
+  );
+  static const outline = PostgrestNullableColumn<CatalogValue, PostgresPolygon>(
+    'outline',
+    fromJson: _polygonFromJson,
+  );
+  static const reach = PostgrestNullableColumn<CatalogValue, PostgresCircle>(
+    'reach',
+    fromJson: _circleFromJson,
+  );
 }
+
+PostgresPoint _pointFromJson(Object json) =>
+    PostgresPoint.parse(json as String);
+
+PostgresLine _lineFromJson(Object json) => PostgresLine.parse(json as String);
+
+PostgresLineSegment _lineSegmentFromJson(Object json) =>
+    PostgresLineSegment.parse(json as String);
+
+PostgresBox _boxFromJson(Object json) => PostgresBox.parse(json as String);
+
+PostgresPath _pathFromJson(Object json) => PostgresPath.parse(json as String);
+
+PostgresPolygon _polygonFromJson(Object json) =>
+    PostgresPolygon.parse(json as String);
+
+PostgresCircle _circleFromJson(Object json) =>
+    PostgresCircle.parse(json as String);
 
 PostgresNetworkAddress _networkAddressFromJson(Object json) =>
     PostgresNetworkAddress.parse(json as String);
@@ -230,5 +277,68 @@ void main() {
 
     expect(row.read(CatalogValues.host), host);
     expect(row.read(CatalogValues.allowedNetworks), networks);
+  });
+
+  test('geometric columns read, write and filter as values', () async {
+    const location = PostgresPoint(1.5, -2);
+    const axis = PostgresLine(1, -1, 0);
+    const edge = PostgresLineSegment(PostgresPoint(0, 0), PostgresPoint(1, 1));
+    final bounds = PostgresBox(
+      const PostgresPoint(0, 0),
+      const PostgresPoint(2, 3),
+    );
+    final route = PostgresPath(const [
+      PostgresPoint(0, 0),
+      PostgresPoint(1, 1),
+    ], isClosed: true);
+    final outline = PostgresPolygon(const [
+      PostgresPoint(0, 0),
+      PostgresPoint(1, 1),
+      PostgresPoint(1, 0),
+    ]);
+    const reach = PostgresCircle(PostgresPoint(1, 2), 3);
+    final inserted = await postgrest
+        .from('catalog_values')
+        .insert({
+          'location': location.literal,
+          'axis': axis.literal,
+          'edge': edge.literal,
+          'bounds': bounds.literal,
+          'route': route.literal,
+          'outline': outline.literal,
+          'reach': reach.literal,
+        })
+        .select('id')
+        .single();
+    insertedId = inserted['id'] as int;
+
+    // point and polygon have no = operator, so they are only read back.
+    final row = await postgrest
+        .table(CatalogValues.table)
+        .selectOnly([
+          CatalogValues.location,
+          CatalogValues.axis,
+          CatalogValues.edge,
+          CatalogValues.bounds,
+          CatalogValues.route,
+          CatalogValues.outline,
+          CatalogValues.reach,
+        ])
+        .where(
+          CatalogValues.axis.eq(axis) &
+              CatalogValues.edge.eq(edge) &
+              CatalogValues.bounds.eq(bounds) &
+              CatalogValues.route.eq(route) &
+              CatalogValues.reach.eq(reach),
+        )
+        .single();
+
+    expect(row.read(CatalogValues.location), location);
+    expect(row.read(CatalogValues.axis), axis);
+    expect(row.read(CatalogValues.edge), edge);
+    expect(row.read(CatalogValues.bounds), bounds);
+    expect(row.read(CatalogValues.route), route);
+    expect(row.read(CatalogValues.outline), outline);
+    expect(row.read(CatalogValues.reach), reach);
   });
 }

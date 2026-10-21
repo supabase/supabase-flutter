@@ -571,6 +571,34 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
       (_json['allowed_networks'] as List<dynamic>?)
           ?.map((element) => PostgresNetworkAddress.parse(element as String))
           .toList();
+  PostgresPoint? get location => switch (_json['location']) {
+    null => null,
+    final Object value => PostgresPoint.parse(value as String),
+  };
+  PostgresLine? get axis => switch (_json['axis']) {
+    null => null,
+    final Object value => PostgresLine.parse(value as String),
+  };
+  PostgresLineSegment? get edge => switch (_json['edge']) {
+    null => null,
+    final Object value => PostgresLineSegment.parse(value as String),
+  };
+  PostgresBox? get bounds => switch (_json['bounds']) {
+    null => null,
+    final Object value => PostgresBox.parse(value as String),
+  };
+  PostgresPath? get route => switch (_json['route']) {
+    null => null,
+    final Object value => PostgresPath.parse(value as String),
+  };
+  PostgresPolygon? get outline => switch (_json['outline']) {
+    null => null,
+    final Object value => PostgresPolygon.parse(value as String),
+  };
+  PostgresCircle? get reach => switch (_json['reach']) {
+    null => null,
+    final Object value => PostgresCircle.parse(value as String),
+  };
   PostgresLogSequenceNumber? get position => switch (_json['position']) {
     null => null,
     final Object value => PostgresLogSequenceNumber.parse(value as String),
@@ -613,6 +641,13 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     List<int>? argumentTypes,
     PostgresNetworkAddress? host,
     List<PostgresNetworkAddress>? allowedNetworks,
+    PostgresPoint? location,
+    PostgresLine? axis,
+    PostgresLineSegment? edge,
+    PostgresBox? bounds,
+    PostgresPath? route,
+    PostgresPolygon? outline,
+    PostgresCircle? reach,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -637,6 +672,13 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'allowed_networks': ?allowedNetworks
              ?.map((element) => element.literal)
              .toList(),
+         'location': ?location?.literal,
+         'axis': ?axis?.literal,
+         'edge': ?edge?.literal,
+         'bounds': ?bounds?.literal,
+         'route': ?route?.literal,
+         'outline': ?outline?.literal,
+         'reach': ?reach?.literal,
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -696,6 +738,34 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   MapInsert setAllowedNetworksToNull() =>
       MapInsert._({..._json, 'allowed_networks': null});
 
+  /// Returns a copy with `location` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setLocationToNull() => MapInsert._({..._json, 'location': null});
+
+  /// Returns a copy with `axis` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setAxisToNull() => MapInsert._({..._json, 'axis': null});
+
+  /// Returns a copy with `edge` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setEdgeToNull() => MapInsert._({..._json, 'edge': null});
+
+  /// Returns a copy with `bounds` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setBoundsToNull() => MapInsert._({..._json, 'bounds': null});
+
+  /// Returns a copy with `route` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setRouteToNull() => MapInsert._({..._json, 'route': null});
+
+  /// Returns a copy with `outline` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setOutlineToNull() => MapInsert._({..._json, 'outline': null});
+
+  /// Returns a copy with `reach` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setReachToNull() => MapInsert._({..._json, 'reach': null});
+
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
   MapInsert setPositionToNull() => MapInsert._({..._json, 'position': null});
@@ -733,6 +803,13 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     List<int>? argumentTypes,
     PostgresNetworkAddress? host,
     List<PostgresNetworkAddress>? allowedNetworks,
+    PostgresPoint? location,
+    PostgresLine? axis,
+    PostgresLineSegment? edge,
+    PostgresBox? bounds,
+    PostgresPath? route,
+    PostgresPolygon? outline,
+    PostgresCircle? reach,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -757,6 +834,13 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'allowed_networks': ?allowedNetworks
              ?.map((element) => element.literal)
              .toList(),
+         'location': ?location?.literal,
+         'axis': ?axis?.literal,
+         'edge': ?edge?.literal,
+         'bounds': ?bounds?.literal,
+         'route': ?route?.literal,
+         'outline': ?outline?.literal,
+         'reach': ?reach?.literal,
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -815,6 +899,34 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// database default.
   MapUpdate setAllowedNetworksToNull() =>
       MapUpdate._({..._json, 'allowed_networks': null});
+
+  /// Returns a copy with `location` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setLocationToNull() => MapUpdate._({..._json, 'location': null});
+
+  /// Returns a copy with `axis` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setAxisToNull() => MapUpdate._({..._json, 'axis': null});
+
+  /// Returns a copy with `edge` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setEdgeToNull() => MapUpdate._({..._json, 'edge': null});
+
+  /// Returns a copy with `bounds` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setBoundsToNull() => MapUpdate._({..._json, 'bounds': null});
+
+  /// Returns a copy with `route` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setRouteToNull() => MapUpdate._({..._json, 'route': null});
+
+  /// Returns a copy with `outline` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setOutlineToNull() => MapUpdate._({..._json, 'outline': null});
+
+  /// Returns a copy with `reach` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setReachToNull() => MapUpdate._({..._json, 'reach': null});
 
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
@@ -912,6 +1024,34 @@ class Map$ {
         'allowed_networks',
         fromJson: _postgresNetworkAddressListFromJson,
       );
+  static const location = PostgrestNullableColumn<MapRow, PostgresPoint>(
+    'location',
+    fromJson: _postgresPointFromJson,
+  );
+  static const axis = PostgrestNullableColumn<MapRow, PostgresLine>(
+    'axis',
+    fromJson: _postgresLineFromJson,
+  );
+  static const edge = PostgrestNullableColumn<MapRow, PostgresLineSegment>(
+    'edge',
+    fromJson: _postgresLineSegmentFromJson,
+  );
+  static const bounds = PostgrestNullableColumn<MapRow, PostgresBox>(
+    'bounds',
+    fromJson: _postgresBoxFromJson,
+  );
+  static const route = PostgrestNullableColumn<MapRow, PostgresPath>(
+    'route',
+    fromJson: _postgresPathFromJson,
+  );
+  static const outline = PostgrestNullableColumn<MapRow, PostgresPolygon>(
+    'outline',
+    fromJson: _postgresPolygonFromJson,
+  );
+  static const reach = PostgrestNullableColumn<MapRow, PostgresCircle>(
+    'reach',
+    fromJson: _postgresCircleFromJson,
+  );
   static const position =
       PostgrestNullableColumn<MapRow, PostgresLogSequenceNumber>(
         'position',
@@ -1348,6 +1488,12 @@ List<int> _intListFromJson(Object json) => (json as List<dynamic>)
     .map((element) => int.parse(element as String))
     .toList();
 
+PostgresBox _postgresBoxFromJson(Object json) =>
+    PostgresBox.parse(json as String);
+
+PostgresCircle _postgresCircleFromJson(Object json) =>
+    PostgresCircle.parse(json as String);
+
 PostgresDate _postgresDateFromJson(Object json) =>
     PostgresDate.parse(json as String);
 
@@ -1358,6 +1504,12 @@ List<PostgresDate> _postgresDateListFromJson(Object json) =>
 
 PostgresInterval _postgresIntervalFromJson(Object json) =>
     PostgresInterval.parse(json as String);
+
+PostgresLine _postgresLineFromJson(Object json) =>
+    PostgresLine.parse(json as String);
+
+PostgresLineSegment _postgresLineSegmentFromJson(Object json) =>
+    PostgresLineSegment.parse(json as String);
 
 PostgresLogSequenceNumber _postgresLogSequenceNumberFromJson(Object json) =>
     PostgresLogSequenceNumber.parse(json as String);
@@ -1377,6 +1529,15 @@ List<PostgresNetworkAddress> _postgresNetworkAddressListFromJson(Object json) =>
     (json as List<dynamic>)
         .map((element) => PostgresNetworkAddress.parse(element as String))
         .toList();
+
+PostgresPath _postgresPathFromJson(Object json) =>
+    PostgresPath.parse(json as String);
+
+PostgresPoint _postgresPointFromJson(Object json) =>
+    PostgresPoint.parse(json as String);
+
+PostgresPolygon _postgresPolygonFromJson(Object json) =>
+    PostgresPolygon.parse(json as String);
 
 PostgresRange<DateTime> _postgresRangeOfDateTimeFromJson(Object json) =>
     PostgresRange.parse(json as String, DateTime.parse);
