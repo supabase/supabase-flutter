@@ -598,28 +598,61 @@ void main() {
 
   test('types that PostgREST serializes as strings read as text', () {
     Map<String, dynamic> columnOf(String format) => {
-      'table_id': 1,
-      'schema': 'public',
-      'table': 'servers',
-      'id': '1.1',
-      'ordinal_position': 1,
-      'name': 'value',
-      'default_value': null,
+      ..._column(tableId: 1, table: 'servers', name: 'value'),
       'data_type': format,
       'format': format,
-      'type_schema': 'pg_catalog',
-      'is_identity': false,
-      'identity_generation': null,
-      'is_generated': false,
-      'is_nullable': true,
-      'is_updatable': true,
-      'is_unique': false,
-      'enums': <String>[],
-      'check': null,
-      'comment': null,
     };
 
-    for (final format in ['inet', 'cidr', 'macaddr', 'money', 'xml', 'name']) {
+    const formats = [
+      'inet',
+      'cidr',
+      'macaddr',
+      'money',
+      'xml',
+      'name',
+      'point',
+      'line',
+      'lseg',
+      'box',
+      'path',
+      'polygon',
+      'circle',
+      'int4multirange',
+      'int8multirange',
+      'nummultirange',
+      'datemultirange',
+      'tsmultirange',
+      'tstzmultirange',
+      'pg_lsn',
+      'pg_snapshot',
+      'txid_snapshot',
+      'jsonpath',
+      'tid',
+      'xid',
+      'xid8',
+      'cid',
+      'regclass',
+      'regtype',
+      'regproc',
+      'regprocedure',
+      'regoper',
+      'regoperator',
+      'regnamespace',
+      'regrole',
+      'regconfig',
+      'regdictionary',
+      'regcollation',
+      'aclitem',
+      'refcursor',
+      'pg_node_tree',
+      'pg_ndistinct',
+      'pg_dependencies',
+      'pg_mcv_list',
+      'gtsvector',
+      'pg_brin_bloom_summary',
+      'pg_brin_minmax_multi_summary',
+    ];
+    for (final format in formats) {
       final parsed = parseGeneratorMetadata({
         'tables': [
           {'id': 1, 'schema': 'public', 'name': 'servers', 'comment': null},
@@ -630,6 +663,28 @@ void main() {
         parsed.tables.single.columns.single.typeKind,
         ColumnTypeKind.text,
         reason: '$format should map to text',
+      );
+    }
+  });
+
+  test('vector types that PostgREST serializes as arrays stay unknown', () {
+    for (final format in ['int2vector', 'oidvector']) {
+      final parsed = parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'servers', 'comment': null},
+        ],
+        'columns': [
+          {
+            ..._column(tableId: 1, table: 'servers', name: 'value'),
+            'data_type': format,
+            'format': format,
+          },
+        ],
+      });
+      expect(
+        parsed.tables.single.columns.single.typeKind,
+        ColumnTypeKind.unknown,
+        reason: '$format is a JSON array, not a string',
       );
     }
   });
