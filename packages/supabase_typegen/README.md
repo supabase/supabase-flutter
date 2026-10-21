@@ -150,6 +150,8 @@ final archived = await client
 - `bytea` columns map to `Uint8List` and are written back as hex literals,
   the format Postgres emits by default; the escape output format is decoded
   as well.
+- `pg_lsn` columns map to `PostgresLogSequenceNumber`, which orders in log
+  order, and `macaddr` and `macaddr8` columns to `PostgresMacAddress`.
 - `oid` columns map to `int` and `xid8` columns to `BigInt`, parsed from the
   JSON strings PostgREST sends them as. `numeric` columns map to `num`:
   PostgREST sends them as JSON numbers, and decoding keeps only what a Dart
