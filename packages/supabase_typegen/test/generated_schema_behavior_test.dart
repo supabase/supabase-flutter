@@ -486,6 +486,43 @@ void main() {
   );
 
   test(
+    'integer vectors read as lists and write and filter as their literal',
+    () async {
+      final row = hostile.MapRow({
+        'list': 1,
+        'opens_at': '09:30:00',
+        'key_columns': [1, 2],
+        'argument_types': ['23', '4294967295'],
+      });
+
+      expect(row.keyColumns, [1, 2]);
+      expect(row.argumentTypes, [23, 4294967295]);
+
+      httpClient.stub(null);
+      await client
+          .table(hostile.Map$.table)
+          .update(
+            hostile.MapUpdate(
+              keyColumns: row.keyColumns,
+              argumentTypes: row.argumentTypes,
+            ),
+          )
+          .where(
+            hostile.Map$.keyColumns.eq([1, 2]) &
+                hostile.Map$.argumentTypes.contains([23]),
+          );
+
+      final request = httpClient.requests.last;
+      expect(request.jsonBody, {
+        'key_columns': '1 2',
+        'argument_types': '23 4294967295',
+      });
+      expect(request.queryParameters['key_columns'], 'eq.1 2');
+      expect(request.queryParameters['argument_types'], 'cs.23');
+    },
+  );
+
+  test(
     'log sequence numbers and MAC addresses read, write and filter as values',
     () async {
       final row = hostile.MapRow({

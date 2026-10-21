@@ -162,6 +162,8 @@ final archived = await client
 - pgvector `vector` and `halfvec` columns map to `List<double>`, carried as
   the `[0.1,0.2]` literal PostgREST sends, and their column tokens compare
   against vector literals. `sparsevec` columns stay `Object?`.
+- `int2vector` and `oidvector` columns map to `List<int>`. Their column tokens
+  and setters send the space-separated literal these types read, `1 2`.
 - Foreign keys into another schema get no relation member, since PostgREST
   only embeds tables of the schema a request addresses. The foreign key
   itself is still described, so the column is typed like any other.

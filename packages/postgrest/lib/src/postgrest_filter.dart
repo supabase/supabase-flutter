@@ -253,6 +253,10 @@ base class _Comparison<Row> extends _FilterNode<Row> {
         when column is PostgrestVectorColumn<Row> ||
             column is PostgrestNullableVectorColumn<Row> =>
       postgresVector.encode(vector),
+    final List<Object?> values
+        when column is PostgrestIntegerVectorColumn<Row> ||
+            column is PostgrestNullableIntegerVectorColumn<Row> =>
+      values.join(' '),
     _ => _renderFilterValue(given),
   };
 
