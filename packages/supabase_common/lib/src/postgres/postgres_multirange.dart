@@ -1,17 +1,17 @@
 part of 'postgres_values.dart';
 
 /// A Postgres multirange value, such as an `int4multirange` or a
-/// `tstzmultirange`: an ordered list of non-overlapping [ranges] with bounds
-/// of type [Bound].
+/// `tstzmultirange`: a list of [ranges] with bounds of type [Bound].
 ///
 /// ```dart
 /// PostgresMultirange.parse('{[1,3),[5,7)}', int.parse).ranges.length // 2
 /// PostgresMultirange<int>(const []).literal                         // {}
 /// ```
 ///
-/// Postgres merges overlapping and adjacent ranges and drops empty ones
-/// when it stores a multirange, so a value read back can hold fewer ranges
-/// than the one written.
+/// Postgres normalizes every multirange it reads, a stored value as well as
+/// a filter operand: it sorts the ranges, merges overlapping and adjacent
+/// ones and drops empty ones, so a value read back can differ from the one
+/// written in the order and the number of its ranges.
 @experimental
 final class PostgresMultirange<Bound extends Object> implements PostgresValue {
   /// The multirange made of [ranges].
@@ -39,7 +39,7 @@ final class PostgresMultirange<Bound extends Object> implements PostgresValue {
     ]);
   }
 
-  /// The ranges, in order.
+  /// The ranges, in the order given.
   final List<PostgresRange<Bound>> ranges;
 
   /// The Postgres literal, with each bound rendered by [renderBound] as
@@ -91,7 +91,8 @@ List<String>? _splitRanges(String inner) {
       skipWhitespace();
     }
     final start = index;
-    if (inner.toLowerCase().startsWith('empty', index)) {
+    if (inner.length - index >= 5 &&
+        inner.substring(index, index + 5).toLowerCase() == 'empty') {
       index += 'empty'.length;
     } else {
       if (index >= inner.length || !'[('.contains(inner[index])) return null;

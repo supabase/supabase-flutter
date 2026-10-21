@@ -195,3 +195,77 @@ extension PostgrestRangeFilters<Row, Bound extends Object>
         range,
       );
 }
+
+/// Filters that only apply to multirange columns, typed
+/// `PostgresMultirange<Bound>`.
+///
+/// Every operand is a [PostgresMultirange] with the column's bound type;
+/// PostgREST reads the operand as the column's type, so neither a single
+/// range nor a single value is accepted.
+@experimental
+extension PostgrestMultirangeFilters<Row, Bound extends Object>
+    on PostgrestFilterableExpression<Row, PostgresMultirange<Bound>> {
+  /// Only rows whose multirange contains every value of [multirange].
+  PostgrestFilter<Row> contains(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.contains,
+        multirange,
+      );
+
+  /// Only rows whose multirange lies within [multirange].
+  PostgrestFilter<Row> containedBy(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.containedBy,
+        multirange,
+      );
+
+  /// Only rows whose multirange shares at least one value with [multirange].
+  PostgrestFilter<Row> overlaps(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.overlaps,
+        multirange,
+      );
+
+  /// Only rows whose multirange is strictly to the left of [multirange].
+  PostgrestFilter<Row> rangeLt(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.rangeLt,
+        multirange,
+      );
+
+  /// Only rows whose multirange is strictly to the right of [multirange].
+  PostgrestFilter<Row> rangeGt(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.rangeGt,
+        multirange,
+      );
+
+  /// Only rows whose multirange does not extend to the left of [multirange].
+  PostgrestFilter<Row> rangeGte(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.rangeGte,
+        multirange,
+      );
+
+  /// Only rows whose multirange does not extend to the right of [multirange].
+  PostgrestFilter<Row> rangeLte(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.rangeLte,
+        multirange,
+      );
+
+  /// Only rows whose multirange is adjacent to [multirange].
+  PostgrestFilter<Row> rangeAdjacent(PostgresMultirange<Bound> multirange) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.rangeAdjacent,
+        multirange,
+      );
+}

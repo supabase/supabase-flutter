@@ -63,6 +63,20 @@ void main() {
       ]);
     });
 
+    test('keeps a doubled quote inside a quoted bound', () {
+      expect(
+        PostgresMultirange.parse('{["a""b",c)}', (bound) => bound).ranges,
+        [const PostgresRange.closedOpen('a"b', 'c')],
+      );
+    });
+
+    test('rejects a literal ending in an escape', () {
+      expect(
+        () => PostgresMultirange.parse(r'{[a,b\', (bound) => bound),
+        throwsFormatException,
+      );
+    });
+
     test('reads whitespace around the ranges and an empty member', () {
       expect(
         PostgresMultirange.parse('{ [1,3) , empty }', int.parse).ranges,

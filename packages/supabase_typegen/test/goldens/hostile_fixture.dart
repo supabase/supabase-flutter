@@ -449,6 +449,16 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           isNullable: true,
         ),
         ColumnDescription(
+          name: 'blackouts',
+          postgresFormat: '_int4multirange',
+          typeKind: ColumnTypeKind.array,
+          elementTypeKind: ColumnTypeKind.multirange,
+          boundTypeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
           name: 'shifts',
           postgresFormat: 'tsmultirange',
           typeKind: ColumnTypeKind.multirange,

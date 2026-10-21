@@ -388,6 +388,19 @@ void main() {
         .selectOnly([CatalogValues.availability, CatalogValues.windows])
         .where(
           CatalogValues.availability.eq(availability) &
+              CatalogValues.availability.contains(
+                PostgresMultirange([
+                  PostgresRange.closedOpen(
+                    PostgresDate(2026, 6, 2),
+                    PostgresDate(2026, 6, 3),
+                  ),
+                ]),
+              ) &
+              CatalogValues.availability.rangeLt(
+                PostgresMultirange([
+                  PostgresRange.closedOpen(PostgresDate(2026, 8, 1), null),
+                ]),
+              ) &
               CatalogValues.windows.eq(windows),
         )
         .single();

@@ -1380,7 +1380,9 @@ features:
       - PostgrestArrayFilters
       - PostgrestArrayFilters.contains
       - PostgrestRangeFilters
+      - PostgrestMultirangeFilters
       - PostgrestRangeFilters.contains
+      - PostgrestMultirangeFilters.contains
       - PostgrestRangeFilters.containsElement
       - PostgrestFilterableExpression.containsJson
   database.using_filters.contained_by:
@@ -1389,6 +1391,7 @@ features:
       - PostgrestFilterBuilder.containedBy
       - PostgrestArrayFilters.containedBy
       - PostgrestRangeFilters.containedBy
+      - PostgrestMultirangeFilters.containedBy
       - PostgrestFilterableExpression.containedByJson
   database.using_filters.overlaps:
     status: implemented
@@ -1396,6 +1399,7 @@ features:
       - PostgrestFilterBuilder.overlaps
       - PostgrestArrayFilters.overlaps
       - PostgrestRangeFilters.overlaps
+      - PostgrestMultirangeFilters.overlaps
   database.using_filters.match:
     status: implemented
     symbols:
@@ -1416,26 +1420,31 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeGt
       - PostgrestRangeFilters.rangeGt
+      - PostgrestMultirangeFilters.rangeGt
   database.using_filters.range_gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGte
       - PostgrestRangeFilters.rangeGte
+      - PostgrestMultirangeFilters.rangeGte
   database.using_filters.range_lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLt
       - PostgrestRangeFilters.rangeLt
+      - PostgrestMultirangeFilters.rangeLt
   database.using_filters.range_lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLte
       - PostgrestRangeFilters.rangeLte
+      - PostgrestMultirangeFilters.rangeLte
   database.using_filters.range_adjacent:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeAdjacent
       - PostgrestRangeFilters.rangeAdjacent
+      - PostgrestMultirangeFilters.rangeAdjacent
   database.using_filters.text_search:
     status: implemented
     symbols:

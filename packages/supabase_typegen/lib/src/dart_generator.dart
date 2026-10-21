@@ -14,7 +14,8 @@ class _Binding {
   final String dartType;
   final ColumnTypeKind kind;
 
-  /// The kind of the bounds of a [ColumnTypeKind.range] column.
+  /// The kind of the bounds of a [ColumnTypeKind.range] or
+  /// [ColumnTypeKind.multirange] column.
   final ColumnTypeKind? boundKind;
 
   /// The binding of the elements of a [ColumnTypeKind.array] column.

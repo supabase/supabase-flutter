@@ -607,6 +607,12 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
           PostgresDate.parse,
         ),
       };
+  List<PostgresMultirange<int>>? get blackouts =>
+      (_json['blackouts'] as List<dynamic>?)
+          ?.map(
+            (element) => PostgresMultirange.parse(element as String, int.parse),
+          )
+          .toList();
   PostgresMultirange<DateTime>? get shifts => switch (_json['shifts']) {
     null => null,
     final Object value => PostgresMultirange.parse(
@@ -664,6 +670,7 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     PostgresPolygon? outline,
     PostgresCircle? reach,
     PostgresMultirange<PostgresDate>? availability,
+    List<PostgresMultirange<int>>? blackouts,
     PostgresMultirange<DateTime>? shifts,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
@@ -697,6 +704,7 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'outline': ?outline?.literal,
          'reach': ?reach?.literal,
          'availability': ?availability?.literal,
+         'blackouts': ?blackouts?.map((element) => element.literal).toList(),
          'shifts': ?shifts?.render((bound) => bound.toIso8601String()),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
@@ -790,6 +798,10 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   MapInsert setAvailabilityToNull() =>
       MapInsert._({..._json, 'availability': null});
 
+  /// Returns a copy with `blackouts` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setBlackoutsToNull() => MapInsert._({..._json, 'blackouts': null});
+
   /// Returns a copy with `shifts` set to SQL NULL, overriding any database
   /// default.
   MapInsert setShiftsToNull() => MapInsert._({..._json, 'shifts': null});
@@ -839,6 +851,7 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     PostgresPolygon? outline,
     PostgresCircle? reach,
     PostgresMultirange<PostgresDate>? availability,
+    List<PostgresMultirange<int>>? blackouts,
     PostgresMultirange<DateTime>? shifts,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
@@ -872,6 +885,7 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'outline': ?outline?.literal,
          'reach': ?reach?.literal,
          'availability': ?availability?.literal,
+         'blackouts': ?blackouts?.map((element) => element.literal).toList(),
          'shifts': ?shifts?.render((bound) => bound.toIso8601String()),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
@@ -964,6 +978,10 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// database default.
   MapUpdate setAvailabilityToNull() =>
       MapUpdate._({..._json, 'availability': null});
+
+  /// Returns a copy with `blackouts` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setBlackoutsToNull() => MapUpdate._({..._json, 'blackouts': null});
 
   /// Returns a copy with `shifts` set to SQL NULL, overriding any database
   /// default.
@@ -1097,6 +1115,11 @@ class Map$ {
       PostgrestNullableColumn<MapRow, PostgresMultirange<PostgresDate>>(
         'availability',
         fromJson: _postgresMultirangeOfPostgresDateFromJson,
+      );
+  static const blackouts =
+      PostgrestNullableColumn<MapRow, List<PostgresMultirange<int>>>(
+        'blackouts',
+        fromJson: _postgresMultirangeOfIntListFromJson,
       );
   static const shifts =
       PostgrestNullableColumn<MapRow, PostgresMultirange<DateTime>>(
@@ -1576,6 +1599,12 @@ List<PostgresMacAddress> _postgresMacAddressListFromJson(Object json) =>
 PostgresMultirange<DateTime> _postgresMultirangeOfDateTimeFromJson(
   Object json,
 ) => PostgresMultirange.parse(json as String, DateTime.parse);
+
+List<PostgresMultirange<int>> _postgresMultirangeOfIntListFromJson(
+  Object json,
+) => (json as List<dynamic>)
+    .map((element) => PostgresMultirange.parse(element as String, int.parse))
+    .toList();
 
 PostgresMultirange<PostgresDate> _postgresMultirangeOfPostgresDateFromJson(
   Object json,
