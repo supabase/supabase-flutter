@@ -541,6 +541,7 @@ void main() {
           'default_value': null,
           'data_type': 'ARRAY',
           'format': '_bytea',
+          'type_schema': 'pg_catalog',
           'is_identity': false,
           'identity_generation': null,
           'is_generated': false,
@@ -570,6 +571,7 @@ void main() {
       'default_value': null,
       'data_type': 'USER-DEFINED',
       'format': format,
+      'type_schema': 'extensions',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -605,6 +607,7 @@ void main() {
       'default_value': null,
       'data_type': format,
       'format': format,
+      'type_schema': 'pg_catalog',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -642,6 +645,7 @@ void main() {
       'default_value': null,
       'data_type': format,
       'format': format,
+      'type_schema': 'pg_catalog',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -684,6 +688,7 @@ void main() {
       'default_value': null,
       'data_type': format,
       'format': format,
+      'type_schema': 'pg_catalog',
       'is_identity': false,
       'identity_generation': null,
       'is_generated': false,
@@ -713,6 +718,56 @@ void main() {
 
       expect(column.typeKind, ColumnTypeKind.range, reason: format);
       expect(column.boundTypeKind, boundKind, reason: format);
+    }
+  });
+
+  test('a type outside pg_catalog is not the built-in of its name', () {
+    ColumnDescription parse(String format) => parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'orders', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'orders', name: 'value'),
+          'data_type': 'USER-DEFINED',
+          'format': format,
+          'type_schema': 'public',
+        },
+      ],
+    }).tables.single.columns.single;
+
+    for (final format in ['name', 'money', 'int8', 'date', 'json', 'bytea']) {
+      expect(
+        parse(format).typeKind,
+        ColumnTypeKind.unknown,
+        reason: 'public.$format is not the built-in $format',
+      );
+    }
+    expect(parse('tstzrange').typeKind, ColumnTypeKind.unknown);
+    expect(parse('tstzrange').boundTypeKind, isNull);
+    expect(parse('_name').typeKind, ColumnTypeKind.array);
+    expect(parse('_name').elementTypeKind, ColumnTypeKind.unknown);
+  });
+
+  test('extension types read by name in any schema', () {
+    ColumnDescription parse(String format, String typeSchema) =>
+        parseGeneratorMetadata({
+          'tables': [
+            {'id': 1, 'schema': 'public', 'name': 'users', 'comment': null},
+          ],
+          'columns': [
+            {
+              ..._column(tableId: 1, table: 'users', name: 'value'),
+              'data_type': 'USER-DEFINED',
+              'format': format,
+              'type_schema': typeSchema,
+            },
+          ],
+        }).tables.single.columns.single;
+
+    for (final typeSchema in ['extensions', 'public']) {
+      expect(parse('citext', typeSchema).typeKind, ColumnTypeKind.text);
+      expect(parse('vector', typeSchema).typeKind, ColumnTypeKind.vector);
     }
   });
 
@@ -1396,6 +1451,69 @@ void main() {
               ColumnTypeKind.json,
             )
             .having((result) => result.isSetReturning, 'isSetReturning', true),
+      );
+    });
+
+    test('reads a type outside pg_catalog as unknown, not the built-in', () {
+      final parsed = parseGeneratorMetadata(
+        {
+          ..._functionDocument([]),
+          'types': [
+            _type(_textType, 'text', schema: 'pg_catalog'),
+            _type(200, 'money'),
+            _type(201, '_money'),
+          ],
+          'rpcFunctions': [
+            {
+              'schema': 'public',
+              'name': 'total',
+              'overloads': [
+                {
+                  'function_id': 500,
+                  'args': [
+                    {
+                      'name': 'prices',
+                      'mode': 'in',
+                      'type_id': 201,
+                      'format': '_money',
+                      'type_schema': 'public',
+                      'has_default': false,
+                      'relation_id': null,
+                    },
+                  ],
+                  'returns': {
+                    'type_id': 200,
+                    'format': 'money',
+                    'type_schema': 'public',
+                    'relation_id': null,
+                    'columns': null,
+                  },
+                  'is_set_returning': false,
+                  'rows_estimate': null,
+                  'setof_options': null,
+                  'computed_field_of': null,
+                  'error': null,
+                },
+              ],
+            },
+          ],
+        },
+        schemaNames: ['public'],
+      );
+
+      final overload = parsed.functions.single.overloads.single;
+      expect(overload.arguments.single.type.typeKind, ColumnTypeKind.array);
+      expect(
+        overload.arguments.single.type.elementTypeKind,
+        ColumnTypeKind.unknown,
+      );
+      expect(
+        overload.result,
+        isA<FunctionValueResult>().having(
+          (result) => result.type.typeKind,
+          'kind',
+          ColumnTypeKind.unknown,
+        ),
       );
     });
 
