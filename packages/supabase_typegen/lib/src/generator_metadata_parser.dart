@@ -11,8 +11,6 @@ const _textFormats = {
   'char',
   'name',
   'uuid',
-  'inet',
-  'cidr',
   'money',
   'xml',
   'bit',
@@ -122,6 +120,9 @@ ColumnTypeKind _typeKind(
   }
   if (format == 'macaddr' || format == 'macaddr8') {
     return ColumnTypeKind.macAddress;
+  }
+  if (format == 'inet' || format == 'cidr') {
+    return ColumnTypeKind.networkAddress;
   }
   if (_rangeBoundKinds.containsKey(format)) return ColumnTypeKind.range;
   if (_textFormats.contains(format)) return ColumnTypeKind.text;

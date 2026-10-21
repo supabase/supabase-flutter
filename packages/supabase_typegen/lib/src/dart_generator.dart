@@ -205,6 +205,7 @@ class _TypeNameRegistry {
     'PostgresInterval',
     'PostgresLogSequenceNumber',
     'PostgresMacAddress',
+    'PostgresNetworkAddress',
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
@@ -1117,6 +1118,10 @@ _Binding _scalarBindingFor(
     'PostgresMacAddress',
     ColumnTypeKind.macAddress,
   ),
+  ColumnTypeKind.networkAddress => const _Binding(
+    'PostgresNetworkAddress',
+    ColumnTypeKind.networkAddress,
+  ),
   ColumnTypeKind.timestamp => const _Binding(
     'DateTime',
     ColumnTypeKind.timestamp,
@@ -1198,6 +1203,7 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.interval ||
   ColumnTypeKind.logSequenceNumber ||
   ColumnTypeKind.macAddress ||
+  ColumnTypeKind.networkAddress ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -1226,6 +1232,7 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.interval ||
   ColumnTypeKind.logSequenceNumber ||
   ColumnTypeKind.macAddress ||
+  ColumnTypeKind.networkAddress ||
   ColumnTypeKind.floating ||
   ColumnTypeKind.boolean ||
   ColumnTypeKind.text ||
@@ -1288,7 +1295,9 @@ String? _readConversion(
   ColumnTypeKind.time ||
   ColumnTypeKind.interval ||
   ColumnTypeKind.logSequenceNumber ||
-  ColumnTypeKind.macAddress => '${binding.dartType}.parse($value as String)',
+  ColumnTypeKind.macAddress ||
+  ColumnTypeKind.networkAddress =>
+    '${binding.dartType}.parse($value as String)',
   ColumnTypeKind.enumType => '${binding.dartType}.fromWire($value as String)',
   ColumnTypeKind.binary => 'postgresBytea.decode($value as String)',
   ColumnTypeKind.vector => 'postgresVector.decode($value as String)',
@@ -1343,7 +1352,8 @@ _Rendering? _writeConversion(_Binding binding, String value) {
     ColumnTypeKind.time ||
     ColumnTypeKind.interval ||
     ColumnTypeKind.logSequenceNumber ||
-    ColumnTypeKind.macAddress => chain('.literal'),
+    ColumnTypeKind.macAddress ||
+    ColumnTypeKind.networkAddress => chain('.literal'),
     ColumnTypeKind.timestamp => chain('.toIso8601String()'),
     ColumnTypeKind.timestampWithTimeZone => chain(
       '.toUtc().toIso8601String()',
@@ -1371,6 +1381,7 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       ColumnTypeKind.interval ||
       ColumnTypeKind.logSequenceNumber ||
       ColumnTypeKind.macAddress ||
+      ColumnTypeKind.networkAddress ||
       ColumnTypeKind.integer ||
       ColumnTypeKind.integerString ||
       ColumnTypeKind.bigInteger ||

@@ -13,6 +13,7 @@ export 'package:supabase_common/supabase_common.dart'
         PostgresInterval,
         PostgresLogSequenceNumber,
         PostgresMacAddress,
+        PostgresNetworkAddress,
         PostgresRange,
         PostgresTime,
         PostgresValue,

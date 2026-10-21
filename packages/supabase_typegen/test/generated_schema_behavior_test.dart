@@ -550,6 +550,52 @@ void main() {
   );
 
   test(
+    'network addresses read, write and filter as values',
+    () async {
+      final row = hostile.MapRow({
+        'list': 1,
+        'opens_at': '09:30:00',
+        'host': '2001:db8::1/64',
+        'allowed_networks': ['10.0.0.0/8', '192.168.1.5/32'],
+      });
+
+      expect(
+        row.host,
+        PostgresNetworkAddress([
+          0x20,
+          0x01,
+          0x0D,
+          0xB8,
+          ...List.filled(11, 0),
+          1,
+        ], prefixLength: 64),
+      );
+      expect(row.allowedNetworks, [
+        PostgresNetworkAddress([10, 0, 0, 0], prefixLength: 8),
+        PostgresNetworkAddress([192, 168, 1, 5]),
+      ]);
+
+      httpClient.stub(null);
+      await client
+          .table(hostile.Map$.table)
+          .update(
+            hostile.MapUpdate(
+              host: row.host,
+              allowedNetworks: row.allowedNetworks,
+            ),
+          )
+          .where(hostile.Map$.host.eq(row.host!));
+
+      final request = httpClient.requests.last;
+      expect(request.jsonBody, {
+        'host': '2001:db8::1/64',
+        'allowed_networks': ['10.0.0.0/8', '192.168.1.5'],
+      });
+      expect(request.queryParameters['host'], 'eq.2001:db8::1/64');
+    },
+  );
+
+  test(
     'log sequence numbers and MAC addresses read, write and filter as values',
     () async {
       final row = hostile.MapRow({

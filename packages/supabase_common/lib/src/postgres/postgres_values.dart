@@ -9,6 +9,7 @@ part 'postgres_date.dart';
 part 'postgres_interval.dart';
 part 'postgres_log_sequence_number.dart';
 part 'postgres_mac_address.dart';
+part 'postgres_network_address.dart';
 part 'postgres_range.dart';
 part 'postgres_time.dart';
 part 'postgres_vector.dart';

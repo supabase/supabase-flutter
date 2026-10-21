@@ -151,9 +151,10 @@ final archived = await client
   the format Postgres emits by default; the escape output format is decoded
   as well.
 - `pg_lsn` columns map to `PostgresLogSequenceNumber`, which orders in log
-  order, and `macaddr` and `macaddr8` columns to `PostgresMacAddress`. A
-  `macaddr8` column stores a six byte address with `ff:fe` inserted, so it
-  reads back as eight bytes.
+  order, `macaddr` and `macaddr8` columns to `PostgresMacAddress`, and `inet`
+  and `cidr` columns to `PostgresNetworkAddress`, which also works on the
+  web. A `macaddr8` column stores a six byte address with `ff:fe` inserted,
+  so it reads back as eight bytes.
 - `oid` columns map to `int` and `xid8` columns to `BigInt`, parsed from the
   JSON strings PostgREST sends them as. `numeric` columns map to `num`:
   PostgREST sends them as JSON numbers, and decoding keeps only what a Dart
