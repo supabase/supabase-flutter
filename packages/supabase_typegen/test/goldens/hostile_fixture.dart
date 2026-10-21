@@ -367,6 +367,23 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           isNullable: true,
         ),
         ColumnDescription(
+          name: 'host',
+          postgresFormat: 'inet',
+          typeKind: ColumnTypeKind.networkAddress,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'allowed_networks',
+          postgresFormat: '_cidr',
+          typeKind: ColumnTypeKind.array,
+          elementTypeKind: ColumnTypeKind.networkAddress,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
           name: 'position',
           postgresFormat: 'pg_lsn',
           typeKind: ColumnTypeKind.logSequenceNumber,

@@ -37,6 +37,9 @@ enum ColumnTypeKind {
   /// The `macaddr` and `macaddr8` types, mapped to `PostgresMacAddress`.
   macAddress,
 
+  /// The `inet` and `cidr` types, mapped to `PostgresNetworkAddress`.
+  networkAddress,
+
   /// Timestamps without a timezone, mapped to `DateTime` and written back as
   /// the local wall time.
   timestamp,

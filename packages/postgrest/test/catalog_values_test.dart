@@ -48,7 +48,25 @@ class CatalogValues {
   );
   static const argumentTypes =
       PostgrestNullableIntegerVectorColumn<CatalogValue>('argument_types');
+  static const host =
+      PostgrestNullableColumn<CatalogValue, PostgresNetworkAddress>(
+        'host',
+        fromJson: _networkAddressFromJson,
+      );
+  static const allowedNetworks =
+      PostgrestNullableColumn<CatalogValue, List<PostgresNetworkAddress>>(
+        'allowed_networks',
+        fromJson: _networkAddressListFromJson,
+      );
 }
+
+PostgresNetworkAddress _networkAddressFromJson(Object json) =>
+    PostgresNetworkAddress.parse(json as String);
+
+List<PostgresNetworkAddress> _networkAddressListFromJson(Object json) =>
+    (json as List<dynamic>)
+        .map((element) => PostgresNetworkAddress.parse(element as String))
+        .toList();
 
 PostgresLogSequenceNumber _logSequenceNumberFromJson(Object json) =>
     PostgresLogSequenceNumber.parse(json as String);
@@ -184,4 +202,33 @@ void main() {
       expect(row.read(CatalogValues.argumentTypes), [23, 4294967295]);
     },
   );
+
+  test('network addresses read, write and filter as values', () async {
+    final host = PostgresNetworkAddress.parse('2001:db8::1/64');
+    final networks = [
+      PostgresNetworkAddress.parse('10.0.0.0/8'),
+      PostgresNetworkAddress.parse('192.168.1.5'),
+    ];
+    final inserted = await postgrest
+        .from('catalog_values')
+        .insert({
+          'host': host.literal,
+          'allowed_networks': [for (final network in networks) network.literal],
+        })
+        .select('id')
+        .single();
+    insertedId = inserted['id'] as int;
+
+    final row = await postgrest
+        .table(CatalogValues.table)
+        .selectOnly([CatalogValues.host, CatalogValues.allowedNetworks])
+        .where(
+          CatalogValues.host.eq(host) &
+              CatalogValues.allowedNetworks.contains([networks.last]),
+        )
+        .single();
+
+    expect(row.read(CatalogValues.host), host);
+    expect(row.read(CatalogValues.allowedNetworks), networks);
+  });
 }

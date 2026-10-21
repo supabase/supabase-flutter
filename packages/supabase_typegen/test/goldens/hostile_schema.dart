@@ -563,6 +563,14 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
         },
     ],
   };
+  PostgresNetworkAddress? get host => switch (_json['host']) {
+    null => null,
+    final Object value => PostgresNetworkAddress.parse(value as String),
+  };
+  List<PostgresNetworkAddress>? get allowedNetworks =>
+      (_json['allowed_networks'] as List<dynamic>?)
+          ?.map((element) => PostgresNetworkAddress.parse(element as String))
+          .toList();
   PostgresLogSequenceNumber? get position => switch (_json['position']) {
     null => null,
     final Object value => PostgresLogSequenceNumber.parse(value as String),
@@ -603,6 +611,8 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     BigInt? transaction,
     List<int>? keyColumns,
     List<int>? argumentTypes,
+    PostgresNetworkAddress? host,
+    List<PostgresNetworkAddress>? allowedNetworks,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -623,6 +633,10 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'transaction': ?transaction?.toString(),
          'key_columns': ?keyColumns?.join(' '),
          'argument_types': ?argumentTypes?.join(' '),
+         'host': ?host?.literal,
+         'allowed_networks': ?allowedNetworks
+             ?.map((element) => element.literal)
+             .toList(),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -673,6 +687,15 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   MapInsert setArgumentTypesToNull() =>
       MapInsert._({..._json, 'argument_types': null});
 
+  /// Returns a copy with `host` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setHostToNull() => MapInsert._({..._json, 'host': null});
+
+  /// Returns a copy with `allowed_networks` set to SQL NULL, overriding any
+  /// database default.
+  MapInsert setAllowedNetworksToNull() =>
+      MapInsert._({..._json, 'allowed_networks': null});
+
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
   MapInsert setPositionToNull() => MapInsert._({..._json, 'position': null});
@@ -708,6 +731,8 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     BigInt? transaction,
     List<int>? keyColumns,
     List<int>? argumentTypes,
+    PostgresNetworkAddress? host,
+    List<PostgresNetworkAddress>? allowedNetworks,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -728,6 +753,10 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'transaction': ?transaction?.toString(),
          'key_columns': ?keyColumns?.join(' '),
          'argument_types': ?argumentTypes?.join(' '),
+         'host': ?host?.literal,
+         'allowed_networks': ?allowedNetworks
+             ?.map((element) => element.literal)
+             .toList(),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -777,6 +806,15 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// database default.
   MapUpdate setArgumentTypesToNull() =>
       MapUpdate._({..._json, 'argument_types': null});
+
+  /// Returns a copy with `host` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setHostToNull() => MapUpdate._({..._json, 'host': null});
+
+  /// Returns a copy with `allowed_networks` set to SQL NULL, overriding any
+  /// database default.
+  MapUpdate setAllowedNetworksToNull() =>
+      MapUpdate._({..._json, 'allowed_networks': null});
 
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
@@ -865,6 +903,15 @@ class Map$ {
   static const argumentTypes = PostgrestNullableIntegerVectorColumn<MapRow>(
     'argument_types',
   );
+  static const host = PostgrestNullableColumn<MapRow, PostgresNetworkAddress>(
+    'host',
+    fromJson: _postgresNetworkAddressFromJson,
+  );
+  static const allowedNetworks =
+      PostgrestNullableColumn<MapRow, List<PostgresNetworkAddress>>(
+        'allowed_networks',
+        fromJson: _postgresNetworkAddressListFromJson,
+      );
   static const position =
       PostgrestNullableColumn<MapRow, PostgresLogSequenceNumber>(
         'position',
@@ -1321,6 +1368,14 @@ PostgresMacAddress _postgresMacAddressFromJson(Object json) =>
 List<PostgresMacAddress> _postgresMacAddressListFromJson(Object json) =>
     (json as List<dynamic>)
         .map((element) => PostgresMacAddress.parse(element as String))
+        .toList();
+
+PostgresNetworkAddress _postgresNetworkAddressFromJson(Object json) =>
+    PostgresNetworkAddress.parse(json as String);
+
+List<PostgresNetworkAddress> _postgresNetworkAddressListFromJson(Object json) =>
+    (json as List<dynamic>)
+        .map((element) => PostgresNetworkAddress.parse(element as String))
         .toList();
 
 PostgresRange<DateTime> _postgresRangeOfDateTimeFromJson(Object json) =>

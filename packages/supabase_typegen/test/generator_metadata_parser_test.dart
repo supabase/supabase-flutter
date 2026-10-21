@@ -604,8 +604,6 @@ void main() {
     };
 
     const formats = [
-      'inet',
-      'cidr',
       'money',
       'xml',
       'name',
@@ -695,6 +693,8 @@ void main() {
       'pg_lsn': ColumnTypeKind.logSequenceNumber,
       'macaddr': ColumnTypeKind.macAddress,
       'macaddr8': ColumnTypeKind.macAddress,
+      'inet': ColumnTypeKind.networkAddress,
+      'cidr': ColumnTypeKind.networkAddress,
     };
     for (final MapEntry(key: format, value: kind) in kinds.entries) {
       final parsed = parseGeneratorMetadata({
