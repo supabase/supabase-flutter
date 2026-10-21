@@ -440,6 +440,52 @@ void main() {
   );
 
   test(
+    'integers sent as strings read, write and filter as numbers',
+    () async {
+      final row = hostile.MapRow({
+        'list': 1,
+        'opens_at': '09:30:00',
+        'relation': '4294967295',
+        'relations': ['1', '2'],
+        'transaction': '18446744073709551615',
+      });
+
+      expect(row.relation, 4294967295);
+      expect(row.relations, [1, 2]);
+      expect(row.transaction, BigInt.parse('18446744073709551615'));
+
+      httpClient.stub(null);
+      await client
+          .table(hostile.Map$.table)
+          .update(
+            hostile.MapUpdate(
+              relation: row.relation,
+              relations: row.relations,
+              transaction: row.transaction,
+            ),
+          )
+          .where(
+            hostile.Map$.relation.eq(4294967295) &
+                hostile.Map$.transaction.eq(
+                  BigInt.parse('18446744073709551615'),
+                ),
+          );
+
+      final request = httpClient.requests.last;
+      expect(request.jsonBody, {
+        'relation': 4294967295,
+        'relations': [1, 2],
+        'transaction': '18446744073709551615',
+      });
+      expect(request.queryParameters['relation'], 'eq.4294967295');
+      expect(
+        request.queryParameters['transaction'],
+        'eq.18446744073709551615',
+      );
+    },
+  );
+
+  test(
     'array elements read, write and filter through their conversions',
     () async {
       final row = hostile.PostgrestTableRow({

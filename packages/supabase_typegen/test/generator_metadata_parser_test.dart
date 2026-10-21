@@ -629,7 +629,6 @@ void main() {
       'jsonpath',
       'tid',
       'xid',
-      'xid8',
       'cid',
       'regclass',
       'regtype',
@@ -663,6 +662,32 @@ void main() {
         parsed.tables.single.columns.single.typeKind,
         ColumnTypeKind.text,
         reason: '$format should map to text',
+      );
+    }
+  });
+
+  test('integers that PostgREST serializes as strings read as their kinds', () {
+    final kinds = {
+      'oid': ColumnTypeKind.integerString,
+      'xid8': ColumnTypeKind.bigInteger,
+    };
+    for (final MapEntry(key: format, value: kind) in kinds.entries) {
+      final parsed = parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'servers', 'comment': null},
+        ],
+        'columns': [
+          {
+            ..._column(tableId: 1, table: 'servers', name: 'value'),
+            'data_type': format,
+            'format': format,
+          },
+        ],
+      });
+      expect(
+        parsed.tables.single.columns.single.typeKind,
+        kind,
+        reason: '$format should map to ${kind.name}',
       );
     }
   });
