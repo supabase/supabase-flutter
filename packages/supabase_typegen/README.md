@@ -160,6 +160,8 @@ final archived = await client
   `PostgresCircle`. Postgres has no `=` operator for `point` and `polygon`, so
   an `eq` filter on those columns fails on the server. It compares boxes and
   circles by area and paths by their number of points.
+- Multirange columns map to `PostgresMultirange`, with bounds typed like
+  those of the matching range type.
 - `oid` columns map to `int` and `xid8` columns to `BigInt`, parsed from the
   JSON strings PostgREST sends them as. `numeric` columns map to `num`:
   PostgREST sends them as JSON numbers, and decoding keeps only what a Dart

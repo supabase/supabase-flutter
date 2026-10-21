@@ -965,6 +965,15 @@ features:
       - PostgresRange.toString
       - PostgresRange.==
       - PostgresRange.hashCode
+      - PostgresMultirange
+      - PostgresMultirange.PostgresMultirange
+      - PostgresMultirange.parse
+      - PostgresMultirange.ranges
+      - PostgresMultirange.render
+      - PostgresMultirange.literal
+      - PostgresMultirange.toString
+      - PostgresMultirange.==
+      - PostgresMultirange.hashCode
       - PostgresByteaCodec
       - PostgresByteaCodec.PostgresByteaCodec
       - PostgresByteaCodec.encoder

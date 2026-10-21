@@ -17,12 +17,6 @@ const _textFormats = {
   'varbit',
   'tsvector',
   'tsquery',
-  'int4multirange',
-  'int8multirange',
-  'nummultirange',
-  'datemultirange',
-  'tsmultirange',
-  'tstzmultirange',
   'pg_snapshot',
   'txid_snapshot',
   'jsonpath',
@@ -80,6 +74,16 @@ const _rangeBoundKinds = {
   'tstzrange': ColumnTypeKind.timestampWithTimeZone,
 };
 
+/// Multirange types, keyed to the kind of their bounds.
+const _multirangeBoundKinds = {
+  'int4multirange': ColumnTypeKind.integer,
+  'int8multirange': ColumnTypeKind.integer,
+  'nummultirange': ColumnTypeKind.numeric,
+  'datemultirange': ColumnTypeKind.date,
+  'tsmultirange': ColumnTypeKind.timestamp,
+  'tstzmultirange': ColumnTypeKind.timestampWithTimeZone,
+};
+
 /// The schema of the built-in types. A type of the same name in another
 /// schema, such as a composite `public.line`, is not the built-in one.
 const _catalogSchema = 'pg_catalog';
@@ -130,20 +134,29 @@ ColumnTypeKind _typeKind(
   }
   if (_geometricKinds[format] case final kind?) return kind;
   if (_rangeBoundKinds.containsKey(format)) return ColumnTypeKind.range;
+  if (_multirangeBoundKinds.containsKey(format)) {
+    return ColumnTypeKind.multirange;
+  }
   if (_textFormats.contains(format)) return ColumnTypeKind.text;
   if (_jsonFormats.contains(format)) return ColumnTypeKind.json;
   return ColumnTypeKind.unknown;
 }
 
 /// The kind of the bounds of a type of [kind], or of its elements of
-/// [elementKind], named [elementFormat]; `null` unless that is a range.
+/// [elementKind], named [elementFormat]; `null` unless that is a range or a
+/// multirange.
 ColumnTypeKind? _rangeBoundKind(
   ColumnTypeKind kind,
   ColumnTypeKind? elementKind,
   String elementFormat,
-) => (elementKind ?? kind) == ColumnTypeKind.range
-    ? _rangeBoundKinds[elementFormat]
-    : null;
+) {
+  final rangeKind = elementKind ?? kind;
+  if (rangeKind == ColumnTypeKind.range) return _rangeBoundKinds[elementFormat];
+  if (rangeKind == ColumnTypeKind.multirange) {
+    return _multirangeBoundKinds[elementFormat];
+  }
+  return null;
+}
 
 /// [format] qualified by [typeSchema] unless it is a built-in type, so that a
 /// type shadowing a built-in name does not read as the built-in.

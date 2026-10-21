@@ -10,6 +10,7 @@ part 'postgres_geometry.dart';
 part 'postgres_interval.dart';
 part 'postgres_log_sequence_number.dart';
 part 'postgres_mac_address.dart';
+part 'postgres_multirange.dart';
 part 'postgres_network_address.dart';
 part 'postgres_range.dart';
 part 'postgres_time.dart';

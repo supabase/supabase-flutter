@@ -100,6 +100,11 @@ enum ColumnTypeKind {
   /// [ColumnDescription.boundTypeKind].
   range,
 
+  /// A multirange type such as `int4multirange` or `tstzmultirange`, mapped
+  /// to `PostgresMultirange`; the bound type is in
+  /// [ColumnDescription.boundTypeKind].
+  multirange,
+
   /// A type without a specific mapping, treated like [json].
   unknown,
 }

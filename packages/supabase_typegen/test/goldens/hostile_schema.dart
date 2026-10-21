@@ -599,6 +599,21 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => PostgresCircle.parse(value as String),
   };
+  PostgresMultirange<PostgresDate>? get availability =>
+      switch (_json['availability']) {
+        null => null,
+        final Object value => PostgresMultirange.parse(
+          value as String,
+          PostgresDate.parse,
+        ),
+      };
+  PostgresMultirange<DateTime>? get shifts => switch (_json['shifts']) {
+    null => null,
+    final Object value => PostgresMultirange.parse(
+      value as String,
+      DateTime.parse,
+    ),
+  };
   PostgresLogSequenceNumber? get position => switch (_json['position']) {
     null => null,
     final Object value => PostgresLogSequenceNumber.parse(value as String),
@@ -648,6 +663,8 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     PostgresPath? route,
     PostgresPolygon? outline,
     PostgresCircle? reach,
+    PostgresMultirange<PostgresDate>? availability,
+    PostgresMultirange<DateTime>? shifts,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -679,6 +696,8 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'route': ?route?.literal,
          'outline': ?outline?.literal,
          'reach': ?reach?.literal,
+         'availability': ?availability?.literal,
+         'shifts': ?shifts?.render((bound) => bound.toIso8601String()),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -766,6 +785,15 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   /// default.
   MapInsert setReachToNull() => MapInsert._({..._json, 'reach': null});
 
+  /// Returns a copy with `availability` set to SQL NULL, overriding any
+  /// database default.
+  MapInsert setAvailabilityToNull() =>
+      MapInsert._({..._json, 'availability': null});
+
+  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setShiftsToNull() => MapInsert._({..._json, 'shifts': null});
+
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
   MapInsert setPositionToNull() => MapInsert._({..._json, 'position': null});
@@ -810,6 +838,8 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     PostgresPath? route,
     PostgresPolygon? outline,
     PostgresCircle? reach,
+    PostgresMultirange<PostgresDate>? availability,
+    PostgresMultirange<DateTime>? shifts,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -841,6 +871,8 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'route': ?route?.literal,
          'outline': ?outline?.literal,
          'reach': ?reach?.literal,
+         'availability': ?availability?.literal,
+         'shifts': ?shifts?.render((bound) => bound.toIso8601String()),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -927,6 +959,15 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// Returns a copy with `reach` set to SQL NULL, overriding any database
   /// default.
   MapUpdate setReachToNull() => MapUpdate._({..._json, 'reach': null});
+
+  /// Returns a copy with `availability` set to SQL NULL, overriding any
+  /// database default.
+  MapUpdate setAvailabilityToNull() =>
+      MapUpdate._({..._json, 'availability': null});
+
+  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setShiftsToNull() => MapUpdate._({..._json, 'shifts': null});
 
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
@@ -1052,6 +1093,16 @@ class Map$ {
     'reach',
     fromJson: _postgresCircleFromJson,
   );
+  static const availability =
+      PostgrestNullableColumn<MapRow, PostgresMultirange<PostgresDate>>(
+        'availability',
+        fromJson: _postgresMultirangeOfPostgresDateFromJson,
+      );
+  static const shifts =
+      PostgrestNullableColumn<MapRow, PostgresMultirange<DateTime>>(
+        'shifts',
+        fromJson: _postgresMultirangeOfDateTimeFromJson,
+      );
   static const position =
       PostgrestNullableColumn<MapRow, PostgresLogSequenceNumber>(
         'position',
@@ -1521,6 +1572,14 @@ List<PostgresMacAddress> _postgresMacAddressListFromJson(Object json) =>
     (json as List<dynamic>)
         .map((element) => PostgresMacAddress.parse(element as String))
         .toList();
+
+PostgresMultirange<DateTime> _postgresMultirangeOfDateTimeFromJson(
+  Object json,
+) => PostgresMultirange.parse(json as String, DateTime.parse);
+
+PostgresMultirange<PostgresDate> _postgresMultirangeOfPostgresDateFromJson(
+  Object json,
+) => PostgresMultirange.parse(json as String, PostgresDate.parse);
 
 PostgresNetworkAddress _postgresNetworkAddressFromJson(Object json) =>
     PostgresNetworkAddress.parse(json as String);
