@@ -25,7 +25,7 @@ dependencies:
   yaml: ^3.1.0
 
 dev_dependencies:
-  postgrest: 3.0.0-dev.11
+  postgrest: 3.0.0-dev.12
   supabase_lints: ^0.1.2
-  supabase_test: 0.5.1
+  supabase_test: 0.5.2
   test: ^1.25.0

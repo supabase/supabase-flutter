@@ -1,3 +1,10 @@
+## 3.0.0-dev.12
+
+ - **FEAT**(supabase): add typed onTableChanges for postgres changes ([#2003](https://github.com/supabase/supabase-flutter/issues/2003)). ([74e9870b](https://github.com/supabase/supabase-flutter/commit/74e9870b8768bc42d6a93d88dbc5fecbef1417c1))
+ - **FEAT**(postgrest): select every column alongside embeds in selectOnly ([#2004](https://github.com/supabase/supabase-flutter/issues/2004)). ([c9e6f4b8](https://github.com/supabase/supabase-flutter/commit/c9e6f4b8222d4f755ac74d5540f9ad5ea25aed63))
+ - **FEAT**(postgrest): count the rows of a to-many relation without aggregates ([#2005](https://github.com/supabase/supabase-flutter/issues/2005)). ([511cfb57](https://github.com/supabase/supabase-flutter/commit/511cfb5767e55ad00f913b2619f6b0b64aa26196))
+ - **DOCS**(postgrest): correct the aggregate setting, read inference and stale migration notes ([#2002](https://github.com/supabase/supabase-flutter/issues/2002)). ([e8c4ed0e](https://github.com/supabase/supabase-flutter/commit/e8c4ed0e4bf1c8b1df436270352bcf56dde23df7))
+
 ## 3.0.0-dev.11
 
 > Note: This release has breaking changes.
