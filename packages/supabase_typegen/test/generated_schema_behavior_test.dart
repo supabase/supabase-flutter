@@ -519,6 +519,33 @@ void main() {
       });
       expect(request.queryParameters['key_columns'], 'eq.1 2');
       expect(request.queryParameters['argument_types'], 'cs.23');
+
+      httpClient.stub([]);
+      await client
+          .table(hostile.Map$.table)
+          .select()
+          .where(
+            hostile.Map$.keyColumns.inFilter([
+                  [1, 2],
+                  [3],
+                ]) &
+                (hostile.Map$.argumentTypes.eq([]) |
+                    hostile.Map$.argumentTypes.eq([23]).not()),
+          );
+
+      final parameters = httpClient.requests.last.queryParameters;
+      expect(parameters['key_columns'], 'in.(1 2,3)');
+      expect(
+        parameters['or'],
+        '(argument_types.eq."",argument_types.not.eq.23)',
+      );
+      await expectLater(
+        () async => await client
+            .table(hostile.Map$.table)
+            .select()
+            .where(hostile.Map$.keyColumns.contains([1, null])),
+        throwsArgumentError,
+      );
     },
   );
 

@@ -39,6 +39,7 @@ export 'src/postgrest_typed_builder.dart'
         PostgrestTableOperation,
         PostgrestTableRequest,
         PostgrestTableResult,
+        renderPostgrestIntegerVector,
         renderPostgrestQueryValue;
 export 'src/types.dart';
 export 'package:http/http.dart' show RequestAbortedException;

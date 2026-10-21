@@ -35,3 +35,19 @@ List<int> _decodeIntegerVector(Object json) => [
       _ => int.parse(element as String),
     },
 ];
+
+/// The space-separated literal an `int2vector` or `oidvector` reads, `1 2`.
+///
+/// Throws an [ArgumentError] when one of [values] is `null`, which these
+/// types cannot hold.
+@internal
+String renderPostgrestIntegerVector(List<Object?> values) {
+  if (values.contains(null)) {
+    throw ArgumentError.value(
+      values,
+      'values',
+      'An integer vector cannot hold null',
+    );
+  }
+  return values.join(' ');
+}

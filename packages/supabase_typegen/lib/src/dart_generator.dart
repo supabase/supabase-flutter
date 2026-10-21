@@ -39,7 +39,8 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
-/// `PostgrestNullableVectorColumn`, `PostgrestComputedField`,
+/// `PostgrestNullableVectorColumn`, `PostgrestIntegerVectorColumn`,
+/// `PostgrestNullableIntegerVectorColumn`, `PostgrestComputedField`,
 /// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
 /// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, the Postgres value
 /// types such as `PostgresDate` and `PostgresRange`, `postgresBytea` and
@@ -1844,8 +1845,9 @@ void _writeFunctionMethod(
 
 /// Whether [argument] can be sent as a query parameter, as a read-only call
 /// sends its arguments: it is named, PostgREST does not read the name as a
-/// query option or embed path, and it is neither a row nor `json`, which only
-/// a request body carries as JSON.
+/// query option or embed path, and it is neither a row, `json`, which only a
+/// request body carries as JSON, nor an array of integer vectors, whose
+/// elements no array literal spells the way they read.
 bool _isQueryParameter(FunctionArgumentDescription argument) {
   bool isJson(ColumnTypeKind? kind) =>
       kind == ColumnTypeKind.json || kind == ColumnTypeKind.unknown;
@@ -1856,7 +1858,8 @@ bool _isQueryParameter(FunctionArgumentDescription argument) {
       !_reservedQueryParameters.contains(name) &&
       argument.rowOf == null &&
       !isJson(type.typeKind) &&
-      !isJson(type.elementTypeKind);
+      !isJson(type.elementTypeKind) &&
+      type.elementTypeKind != ColumnTypeKind.integerVector;
 }
 
 /// The query parameters PostgREST reads as options of the request rather than
