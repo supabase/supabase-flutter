@@ -83,6 +83,10 @@ final class PostgrestPartialRow<Row> {
   /// Throws a [StateError] when the `select` list did not ask for [entry],
   /// and a [TypeError] when the response holds a value of another type than
   /// the entry declares.
+  ///
+  /// Returned straight from an `async` function, [Output] is inferred from
+  /// the `FutureOr` return context rather than from [entry], so pass it
+  /// explicitly there: `return book.read<int>(Books.id);`.
   Output read<Output>(PostgrestReadable<Row, Output> entry) {
     final nested = _nestedSelection(entry);
     if (nested == null) {
