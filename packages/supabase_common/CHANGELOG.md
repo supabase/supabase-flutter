@@ -1,3 +1,16 @@
+## 3.0.0-dev.8
+
+> Note: This release has breaking changes.
+
+ - **FIX**(storage): harden resumable upload failure, cancel and record handling ([#1985](https://github.com/supabase/supabase-flutter/issues/1985)). ([bec2d2db](https://github.com/supabase/supabase-flutter/commit/bec2d2db418844dc12a69349ec4ad091d3aa6cd1))
+ - **BREAKING** **REFACTOR**: move the Postgres value types to supabase_common ([#1993](https://github.com/supabase/supabase-flutter/issues/1993)). ([abd3148a](https://github.com/supabase/supabase-flutter/commit/abd3148ac21a1792412eb767683eaa0541598b0c))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FEAT**(typegen): read multirange columns into a multirange type ([#1999](https://github.com/supabase/supabase-flutter/issues/1999)). ([e5b8bdeb](https://github.com/supabase/supabase-flutter/commit/e5b8bdebc835d5c7ce8153b623c938980563a064))
+ - **BREAKING** **FEAT**(typegen): read geometric columns into value types ([#1998](https://github.com/supabase/supabase-flutter/issues/1998)). ([995cf727](https://github.com/supabase/supabase-flutter/commit/995cf7271ea46dc8530f6a896365a21beca9840a))
+ - **BREAKING** **FEAT**(typegen): read inet and cidr columns into a network address type ([#1997](https://github.com/supabase/supabase-flutter/issues/1997)). ([ed69ae31](https://github.com/supabase/supabase-flutter/commit/ed69ae312021cdfdad5f54f9e59f064dd54d6ed3))
+ - **BREAKING** **FEAT**(typegen): read pg_lsn and macaddr columns into value types ([#1994](https://github.com/supabase/supabase-flutter/issues/1994)). ([307fe4ad](https://github.com/supabase/supabase-flutter/commit/307fe4adbec1f63506054288512831cdc90b0f8f))
+ - **BREAKING** **FEAT**(storage): report upload progress and download byte ranges ([#1981](https://github.com/supabase/supabase-flutter/issues/1981)). ([fc76df7d](https://github.com/supabase/supabase-flutter/commit/fc76df7d34f9332cede7f49371c9d4f7db624ff2))
+
 ## 3.0.0-dev.7
 
 > Note: This release has breaking changes.

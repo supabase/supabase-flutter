@@ -1,3 +1,7 @@
+## 3.0.0-dev.10
+
+ - **FIX**(realtime): do not flush a join that its channel has since resent ([#1986](https://github.com/supabase/supabase-flutter/issues/1986)). ([4024fdb6](https://github.com/supabase/supabase-flutter/commit/4024fdb65699668e4e007520c98ffa95f491d03f))
+
 ## 3.0.0-dev.9
 
 > Note: This release has breaking changes.

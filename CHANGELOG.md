@@ -3,6 +3,125 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-21
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.11`](#postgrest---v300-dev11)
+ - [`supabase` - `v3.0.0-dev.11`](#supabase---v300-dev11)
+ - [`supabase_auth` - `v3.0.0-dev.10`](#supabase_auth---v300-dev10)
+ - [`supabase_common` - `v3.0.0-dev.8`](#supabase_common---v300-dev8)
+ - [`supabase_functions` - `v3.0.0-dev.9`](#supabase_functions---v300-dev9)
+ - [`supabase_storage` - `v3.0.0-dev.9`](#supabase_storage---v300-dev9)
+ - [`supabase_typegen` - `v0.6.0`](#supabase_typegen---v060)
+
+Packages with other changes:
+
+ - [`supabase_flutter` - `v3.0.0-dev.11`](#supabase_flutter---v300-dev11)
+ - [`supabase_realtime` - `v3.0.0-dev.10`](#supabase_realtime---v300-dev10)
+ - [`supabase_test` - `v0.5.1`](#supabase_test---v051)
+ - [`iceberg` - `v0.2.1`](#iceberg---v021)
+ - [`supabase_flutter_web_auth` - `v0.1.9`](#supabase_flutter_web_auth---v019)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_test` - `v0.5.1`
+ - `iceberg` - `v0.2.1`
+ - `supabase_flutter_web_auth` - `v0.1.9`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.11`
+
+ - **FIX**(postgrest): address a hinted embed by its table name outside the select list ([#1962](https://github.com/supabase/supabase-flutter/issues/1962)). ([8d9a929d](https://github.com/supabase/supabase-flutter/commit/8d9a929d7b43588551fc54bdcc5f13924cf80eab))
+ - **FEAT**(postgrest): retry typed calls of stable and immutable functions over GET ([#1982](https://github.com/supabase/supabase-flutter/issues/1982)). ([5ca35d92](https://github.com/supabase/supabase-flutter/commit/5ca35d92b3e079911c98f9949a58af54a33cb0b6))
+ - **BREAKING** **REFACTOR**: move the Postgres value types to supabase_common ([#1993](https://github.com/supabase/supabase-flutter/issues/1993)). ([abd3148a](https://github.com/supabase/supabase-flutter/commit/abd3148ac21a1792412eb767683eaa0541598b0c))
+ - **BREAKING** **FIX**(typegen): read oid and xid8 columns as numbers ([#1992](https://github.com/supabase/supabase-flutter/issues/1992)). ([a0261a9d](https://github.com/supabase/supabase-flutter/commit/a0261a9d4aed7593bab52b94728ba47d5919c3c1))
+ - **BREAKING** **FIX**(postgrest): key aggregates and casts by their own expression ([#1988](https://github.com/supabase/supabase-flutter/issues/1988)). ([5609af7f](https://github.com/supabase/supabase-flutter/commit/5609af7f3c38525daf22218eec1194fcac5b901d))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FEAT**(typegen): read multirange columns into a multirange type ([#1999](https://github.com/supabase/supabase-flutter/issues/1999)). ([e5b8bdeb](https://github.com/supabase/supabase-flutter/commit/e5b8bdebc835d5c7ce8153b623c938980563a064))
+ - **BREAKING** **FEAT**(typegen): read geometric columns into value types ([#1998](https://github.com/supabase/supabase-flutter/issues/1998)). ([995cf727](https://github.com/supabase/supabase-flutter/commit/995cf7271ea46dc8530f6a896365a21beca9840a))
+ - **BREAKING** **FEAT**(typegen): read inet and cidr columns into a network address type ([#1997](https://github.com/supabase/supabase-flutter/issues/1997)). ([ed69ae31](https://github.com/supabase/supabase-flutter/commit/ed69ae312021cdfdad5f54f9e59f064dd54d6ed3))
+ - **BREAKING** **FEAT**(typegen): read int2vector and oidvector columns as integer lists ([#1996](https://github.com/supabase/supabase-flutter/issues/1996)). ([a1526378](https://github.com/supabase/supabase-flutter/commit/a15263780dcfffd30c198346dd0ec2828a612964))
+ - **BREAKING** **FEAT**(typegen): read pg_lsn and macaddr columns into value types ([#1994](https://github.com/supabase/supabase-flutter/issues/1994)). ([307fe4ad](https://github.com/supabase/supabase-flutter/commit/307fe4adbec1f63506054288512831cdc90b0f8f))
+ - **BREAKING** **FEAT**(postgrest): quote JSON path keys and add int array-index methods ([#1983](https://github.com/supabase/supabase-flutter/issues/1983)). ([2d3262b6](https://github.com/supabase/supabase-flutter/commit/2d3262b6cdc8dc119cf1dac6986cecd7bba07134))
+
+#### `supabase` - `v3.0.0-dev.11`
+
+ - **FIX**(supabase): reject stream filters on integer vector columns ([#2000](https://github.com/supabase/supabase-flutter/issues/2000)). ([48ac11c6](https://github.com/supabase/supabase-flutter/commit/48ac11c62ee27ffb3f6762d6e357a0a927550517))
+ - **FIX**(auth): check persistSession up front and give examples a storage ([#1972](https://github.com/supabase/supabase-flutter/issues/1972)). ([2640236a](https://github.com/supabase/supabase-flutter/commit/2640236a3e5b55b85215faa33d5ffed8cd2337c2))
+ - **FEAT**(storage): resumable uploads with pause, resume and cancel ([#1984](https://github.com/supabase/supabase-flutter/issues/1984)). ([23f25e2b](https://github.com/supabase/supabase-flutter/commit/23f25e2bd8507c5c202d99824ed1c0b43d6f0668))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FIX**(auth): throw when a client has no asyncStorage for the pkce flow ([#1971](https://github.com/supabase/supabase-flutter/issues/1971)). ([042d36d3](https://github.com/supabase/supabase-flutter/commit/042d36d376cf44a2f538f4dbbde4e105c4679841))
+ - **BREAKING** **FEAT**(typegen): read int2vector and oidvector columns as integer lists ([#1996](https://github.com/supabase/supabase-flutter/issues/1996)). ([a1526378](https://github.com/supabase/supabase-flutter/commit/a15263780dcfffd30c198346dd0ec2828a612964))
+
+#### `supabase_auth` - `v3.0.0-dev.10`
+
+ - **FIX**(auth): check persistSession up front and give examples a storage ([#1972](https://github.com/supabase/supabase-flutter/issues/1972)). ([2640236a](https://github.com/supabase/supabase-flutter/commit/2640236a3e5b55b85215faa33d5ffed8cd2337c2))
+ - **FEAT**(auth): add admin SSO provider management ([#1966](https://github.com/supabase/supabase-flutter/issues/1966)). ([baefc9ca](https://github.com/supabase/supabase-flutter/commit/baefc9ca47586ab5e6d3c2dcd938c819e96b126d))
+ - **FEAT**(auth): add admin updateFactor for MFA factors ([#1965](https://github.com/supabase/supabase-flutter/issues/1965)). ([1fce37c3](https://github.com/supabase/supabase-flutter/commit/1fce37c3dcf1a2ecb3ebf22051f46888a462b429))
+ - **DOCS**(auth): note that listProviders ignores the prefix when both filters are given ([#1967](https://github.com/supabase/supabase-flutter/issues/1967)). ([35f6cffd](https://github.com/supabase/supabase-flutter/commit/35f6cffd557855b69c95139df24e263b69482864))
+ - **BREAKING** **FIX**(auth): throw AuthSessionMissingException when a token response has no session ([#1970](https://github.com/supabase/supabase-flutter/issues/1970)). ([373fbd49](https://github.com/supabase/supabase-flutter/commit/373fbd495ef9aeaec45f2aa9a945f2043519aa3c))
+ - **BREAKING** **FIX**(auth): throw when a client has no asyncStorage for the pkce flow ([#1971](https://github.com/supabase/supabase-flutter/issues/1971)). ([042d36d3](https://github.com/supabase/supabase-flutter/commit/042d36d376cf44a2f538f4dbbde4e105c4679841))
+
+#### `supabase_common` - `v3.0.0-dev.8`
+
+ - **FIX**(storage): harden resumable upload failure, cancel and record handling ([#1985](https://github.com/supabase/supabase-flutter/issues/1985)). ([bec2d2db](https://github.com/supabase/supabase-flutter/commit/bec2d2db418844dc12a69349ec4ad091d3aa6cd1))
+ - **BREAKING** **REFACTOR**: move the Postgres value types to supabase_common ([#1993](https://github.com/supabase/supabase-flutter/issues/1993)). ([abd3148a](https://github.com/supabase/supabase-flutter/commit/abd3148ac21a1792412eb767683eaa0541598b0c))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FEAT**(typegen): read multirange columns into a multirange type ([#1999](https://github.com/supabase/supabase-flutter/issues/1999)). ([e5b8bdeb](https://github.com/supabase/supabase-flutter/commit/e5b8bdebc835d5c7ce8153b623c938980563a064))
+ - **BREAKING** **FEAT**(typegen): read geometric columns into value types ([#1998](https://github.com/supabase/supabase-flutter/issues/1998)). ([995cf727](https://github.com/supabase/supabase-flutter/commit/995cf7271ea46dc8530f6a896365a21beca9840a))
+ - **BREAKING** **FEAT**(typegen): read inet and cidr columns into a network address type ([#1997](https://github.com/supabase/supabase-flutter/issues/1997)). ([ed69ae31](https://github.com/supabase/supabase-flutter/commit/ed69ae312021cdfdad5f54f9e59f064dd54d6ed3))
+ - **BREAKING** **FEAT**(typegen): read pg_lsn and macaddr columns into value types ([#1994](https://github.com/supabase/supabase-flutter/issues/1994)). ([307fe4ad](https://github.com/supabase/supabase-flutter/commit/307fe4adbec1f63506054288512831cdc90b0f8f))
+ - **BREAKING** **FEAT**(storage): report upload progress and download byte ranges ([#1981](https://github.com/supabase/supabase-flutter/issues/1981)). ([fc76df7d](https://github.com/supabase/supabase-flutter/commit/fc76df7d34f9332cede7f49371c9d4f7db624ff2))
+
+#### `supabase_functions` - `v3.0.0-dev.9`
+
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+
+#### `supabase_storage` - `v3.0.0-dev.9`
+
+ - **FIX**(storage): harden resumable upload failure, cancel and record handling ([#1985](https://github.com/supabase/supabase-flutter/issues/1985)). ([bec2d2db](https://github.com/supabase/supabase-flutter/commit/bec2d2db418844dc12a69349ec4ad091d3aa6cd1))
+ - **FIX**(storage): omit an empty transform when signing a URL ([#1979](https://github.com/supabase/supabase-flutter/issues/1979)). ([e22a8cde](https://github.com/supabase/supabase-flutter/commit/e22a8cdebc23c9b261ddd3a8f4f615fa987acbaf))
+ - **FEAT**(storage): purge the CDN cache for the whole project ([#1987](https://github.com/supabase/supabase-flutter/issues/1987)). ([760cdb62](https://github.com/supabase/supabase-flutter/commit/760cdb62d5f89a52cef57407c1982c8ad4ee124f))
+ - **FEAT**(storage): resumable uploads with pause, resume and cancel ([#1984](https://github.com/supabase/supabase-flutter/issues/1984)). ([23f25e2b](https://github.com/supabase/supabase-flutter/commit/23f25e2bd8507c5c202d99824ed1c0b43d6f0668))
+ - **DOCS**(storage): say that a purge without transformations also drops the variants ([#1980](https://github.com/supabase/supabase-flutter/issues/1980)). ([eb621d29](https://github.com/supabase/supabase-flutter/commit/eb621d297f0fda74ac7b64659b6115d8464279b9))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FEAT**(storage): report upload progress and download byte ranges ([#1981](https://github.com/supabase/supabase-flutter/issues/1981)). ([fc76df7d](https://github.com/supabase/supabase-flutter/commit/fc76df7d34f9332cede7f49371c9d4f7db624ff2))
+
+#### `supabase_typegen` - `v0.6.0`
+
+ - **FIX**(supabase): reject stream filters on integer vector columns ([#2000](https://github.com/supabase/supabase-flutter/issues/2000)). ([48ac11c6](https://github.com/supabase/supabase-flutter/commit/48ac11c62ee27ffb3f6762d6e357a0a927550517))
+ - **FIX**(typegen): read built-in type names only from pg_catalog ([#1990](https://github.com/supabase/supabase-flutter/issues/1990)). ([18d2f426](https://github.com/supabase/supabase-flutter/commit/18d2f4262fd7188019f523e3d6d89b41376ce243))
+ - **FIX**(typegen): keep a schema or function name with a line break inside one doc comment code span ([#1976](https://github.com/supabase/supabase-flutter/issues/1976)). ([55c05659](https://github.com/supabase/supabase-flutter/commit/55c05659b173214bfb669c29fa5664a5718de3aa))
+ - **FEAT**(postgrest): retry typed calls of stable and immutable functions over GET ([#1982](https://github.com/supabase/supabase-flutter/issues/1982)). ([5ca35d92](https://github.com/supabase/supabase-flutter/commit/5ca35d92b3e079911c98f9949a58af54a33cb0b6))
+ - **FEAT**(typegen): non-null view columns from postgrest-typegen 0.6.0 ([#1968](https://github.com/supabase/supabase-flutter/issues/1968)). ([c9f89d51](https://github.com/supabase/supabase-flutter/commit/c9f89d5193bd368e4af9f478dedea091ead2c382))
+ - **BREAKING** **REFACTOR**: move the Postgres value types to supabase_common ([#1993](https://github.com/supabase/supabase-flutter/issues/1993)). ([abd3148a](https://github.com/supabase/supabase-flutter/commit/abd3148ac21a1792412eb767683eaa0541598b0c))
+ - **BREAKING** **FIX**(typegen): read oid and xid8 columns as numbers ([#1992](https://github.com/supabase/supabase-flutter/issues/1992)). ([a0261a9d](https://github.com/supabase/supabase-flutter/commit/a0261a9d4aed7593bab52b94728ba47d5919c3c1))
+ - **BREAKING** **FIX**(typegen): map string-serialized catalog types to String ([#1991](https://github.com/supabase/supabase-flutter/issues/1991)). ([2a0e6865](https://github.com/supabase/supabase-flutter/commit/2a0e686516415861136c216a014f17c91a2f382c))
+ - **BREAKING** **FIX**(postgrest): key aggregates and casts by their own expression ([#1988](https://github.com/supabase/supabase-flutter/issues/1988)). ([5609af7f](https://github.com/supabase/supabase-flutter/commit/5609af7f3c38525daf22218eec1194fcac5b901d))
+ - **BREAKING** **FEAT**(typegen): read multirange columns into a multirange type ([#1999](https://github.com/supabase/supabase-flutter/issues/1999)). ([e5b8bdeb](https://github.com/supabase/supabase-flutter/commit/e5b8bdebc835d5c7ce8153b623c938980563a064))
+ - **BREAKING** **FEAT**(typegen): read geometric columns into value types ([#1998](https://github.com/supabase/supabase-flutter/issues/1998)). ([995cf727](https://github.com/supabase/supabase-flutter/commit/995cf7271ea46dc8530f6a896365a21beca9840a))
+ - **BREAKING** **FEAT**(typegen): read inet and cidr columns into a network address type ([#1997](https://github.com/supabase/supabase-flutter/issues/1997)). ([ed69ae31](https://github.com/supabase/supabase-flutter/commit/ed69ae312021cdfdad5f54f9e59f064dd54d6ed3))
+ - **BREAKING** **FEAT**(typegen): read int2vector and oidvector columns as integer lists ([#1996](https://github.com/supabase/supabase-flutter/issues/1996)). ([a1526378](https://github.com/supabase/supabase-flutter/commit/a15263780dcfffd30c198346dd0ec2828a612964))
+ - **BREAKING** **FEAT**(typegen): read pg_lsn and macaddr columns into value types ([#1994](https://github.com/supabase/supabase-flutter/issues/1994)). ([307fe4ad](https://github.com/supabase/supabase-flutter/commit/307fe4adbec1f63506054288512831cdc90b0f8f))
+ - **BREAKING** **FEAT**(typegen): generate only from the document the Supabase CLI pipes in ([#1963](https://github.com/supabase/supabase-flutter/issues/1963)). ([b44859b8](https://github.com/supabase/supabase-flutter/commit/b44859b8fd9480d18bec2a16ef56ff18cf0accdc))
+
+#### `supabase_flutter` - `v3.0.0-dev.11`
+
+ - **FEAT**(storage): resumable uploads with pause, resume and cancel ([#1984](https://github.com/supabase/supabase-flutter/issues/1984)). ([23f25e2b](https://github.com/supabase/supabase-flutter/commit/23f25e2bd8507c5c202d99824ed1c0b43d6f0668))
+
+#### `supabase_realtime` - `v3.0.0-dev.10`
+
+ - **FIX**(realtime): do not flush a join that its channel has since resent ([#1986](https://github.com/supabase/supabase-flutter/issues/1986)). ([4024fdb6](https://github.com/supabase/supabase-flutter/commit/4024fdb65699668e4e007520c98ffa95f491d03f))
+
+
 ## 2026-10-15
 
 ### Changes

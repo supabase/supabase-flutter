@@ -1,3 +1,23 @@
+## 0.6.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase): reject stream filters on integer vector columns ([#2000](https://github.com/supabase/supabase-flutter/issues/2000)). ([48ac11c6](https://github.com/supabase/supabase-flutter/commit/48ac11c62ee27ffb3f6762d6e357a0a927550517))
+ - **FIX**(typegen): read built-in type names only from pg_catalog ([#1990](https://github.com/supabase/supabase-flutter/issues/1990)). ([18d2f426](https://github.com/supabase/supabase-flutter/commit/18d2f4262fd7188019f523e3d6d89b41376ce243))
+ - **FIX**(typegen): keep a schema or function name with a line break inside one doc comment code span ([#1976](https://github.com/supabase/supabase-flutter/issues/1976)). ([55c05659](https://github.com/supabase/supabase-flutter/commit/55c05659b173214bfb669c29fa5664a5718de3aa))
+ - **FEAT**(postgrest): retry typed calls of stable and immutable functions over GET ([#1982](https://github.com/supabase/supabase-flutter/issues/1982)). ([5ca35d92](https://github.com/supabase/supabase-flutter/commit/5ca35d92b3e079911c98f9949a58af54a33cb0b6))
+ - **FEAT**(typegen): non-null view columns from postgrest-typegen 0.6.0 ([#1968](https://github.com/supabase/supabase-flutter/issues/1968)). ([c9f89d51](https://github.com/supabase/supabase-flutter/commit/c9f89d5193bd368e4af9f478dedea091ead2c382))
+ - **BREAKING** **REFACTOR**: move the Postgres value types to supabase_common ([#1993](https://github.com/supabase/supabase-flutter/issues/1993)). ([abd3148a](https://github.com/supabase/supabase-flutter/commit/abd3148ac21a1792412eb767683eaa0541598b0c))
+ - **BREAKING** **FIX**(typegen): read oid and xid8 columns as numbers ([#1992](https://github.com/supabase/supabase-flutter/issues/1992)). ([a0261a9d](https://github.com/supabase/supabase-flutter/commit/a0261a9d4aed7593bab52b94728ba47d5919c3c1))
+ - **BREAKING** **FIX**(typegen): map string-serialized catalog types to String ([#1991](https://github.com/supabase/supabase-flutter/issues/1991)). ([2a0e6865](https://github.com/supabase/supabase-flutter/commit/2a0e686516415861136c216a014f17c91a2f382c))
+ - **BREAKING** **FIX**(postgrest): key aggregates and casts by their own expression ([#1988](https://github.com/supabase/supabase-flutter/issues/1988)). ([5609af7f](https://github.com/supabase/supabase-flutter/commit/5609af7f3c38525daf22218eec1194fcac5b901d))
+ - **BREAKING** **FEAT**(typegen): read multirange columns into a multirange type ([#1999](https://github.com/supabase/supabase-flutter/issues/1999)). ([e5b8bdeb](https://github.com/supabase/supabase-flutter/commit/e5b8bdebc835d5c7ce8153b623c938980563a064))
+ - **BREAKING** **FEAT**(typegen): read geometric columns into value types ([#1998](https://github.com/supabase/supabase-flutter/issues/1998)). ([995cf727](https://github.com/supabase/supabase-flutter/commit/995cf7271ea46dc8530f6a896365a21beca9840a))
+ - **BREAKING** **FEAT**(typegen): read inet and cidr columns into a network address type ([#1997](https://github.com/supabase/supabase-flutter/issues/1997)). ([ed69ae31](https://github.com/supabase/supabase-flutter/commit/ed69ae312021cdfdad5f54f9e59f064dd54d6ed3))
+ - **BREAKING** **FEAT**(typegen): read int2vector and oidvector columns as integer lists ([#1996](https://github.com/supabase/supabase-flutter/issues/1996)). ([a1526378](https://github.com/supabase/supabase-flutter/commit/a15263780dcfffd30c198346dd0ec2828a612964))
+ - **BREAKING** **FEAT**(typegen): read pg_lsn and macaddr columns into value types ([#1994](https://github.com/supabase/supabase-flutter/issues/1994)). ([307fe4ad](https://github.com/supabase/supabase-flutter/commit/307fe4adbec1f63506054288512831cdc90b0f8f))
+ - **BREAKING** **FEAT**(typegen): generate only from the document the Supabase CLI pipes in ([#1963](https://github.com/supabase/supabase-flutter/issues/1963)). ([b44859b8](https://github.com/supabase/supabase-flutter/commit/b44859b8fd9480d18bec2a16ef56ff18cf0accdc))
+
 ## 0.5.2
 
  - **FEAT**(typegen): generate typed RPC methods from rpcFunctions ([#1959](https://github.com/supabase/supabase-flutter/issues/1959)). ([82e457bb](https://github.com/supabase/supabase-flutter/commit/82e457bb197e698d21796ae1cb5fb6c09de8a6c5))

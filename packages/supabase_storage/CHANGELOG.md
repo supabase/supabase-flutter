@@ -1,3 +1,15 @@
+## 3.0.0-dev.9
+
+> Note: This release has breaking changes.
+
+ - **FIX**(storage): harden resumable upload failure, cancel and record handling ([#1985](https://github.com/supabase/supabase-flutter/issues/1985)). ([bec2d2db](https://github.com/supabase/supabase-flutter/commit/bec2d2db418844dc12a69349ec4ad091d3aa6cd1))
+ - **FIX**(storage): omit an empty transform when signing a URL ([#1979](https://github.com/supabase/supabase-flutter/issues/1979)). ([e22a8cde](https://github.com/supabase/supabase-flutter/commit/e22a8cdebc23c9b261ddd3a8f4f615fa987acbaf))
+ - **FEAT**(storage): purge the CDN cache for the whole project ([#1987](https://github.com/supabase/supabase-flutter/issues/1987)). ([760cdb62](https://github.com/supabase/supabase-flutter/commit/760cdb62d5f89a52cef57407c1982c8ad4ee124f))
+ - **FEAT**(storage): resumable uploads with pause, resume and cancel ([#1984](https://github.com/supabase/supabase-flutter/issues/1984)). ([23f25e2b](https://github.com/supabase/supabase-flutter/commit/23f25e2bd8507c5c202d99824ed1c0b43d6f0668))
+ - **DOCS**(storage): say that a purge without transformations also drops the variants ([#1980](https://github.com/supabase/supabase-flutter/issues/1980)). ([eb621d29](https://github.com/supabase/supabase-flutter/commit/eb621d297f0fda74ac7b64659b6115d8464279b9))
+ - **BREAKING** **FIX**: throw AccessTokenException when the accessToken callback fails ([#1989](https://github.com/supabase/supabase-flutter/issues/1989)). ([069478cd](https://github.com/supabase/supabase-flutter/commit/069478cdb44bb9493b7e54652588e4255b960500))
+ - **BREAKING** **FEAT**(storage): report upload progress and download byte ranges ([#1981](https://github.com/supabase/supabase-flutter/issues/1981)). ([fc76df7d](https://github.com/supabase/supabase-flutter/commit/fc76df7d34f9332cede7f49371c9d4f7db624ff2))
+
 ## 3.0.0-dev.8
 
 > Note: This release has breaking changes.
