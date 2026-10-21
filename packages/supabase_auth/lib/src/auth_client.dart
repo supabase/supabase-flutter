@@ -1843,6 +1843,7 @@ class AuthClient {
       throw AuthSessionMissingException(
         message: 'The server response did not contain a session.',
         requestId: result.response.headers.requestId,
+        traceId: result.response.request?.headers.traceId,
       );
     }
     return session;

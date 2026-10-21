@@ -824,20 +824,26 @@ class RealtimeChannel {
       '${Uri.encodeComponent(event)}${_private ? '?private=true' : ''}',
     );
 
-    final body = isBinary ? _asBytes(payload) : json.encode(payload);
+    final request = Request(HttpMethod.post.value, url)
+      ..headers.addAll(headers);
+    if (isBinary) {
+      request.bodyBytes = _asBytes(payload);
+    } else {
+      request.body = json.encode(payload);
+    }
 
     final Response response;
     try {
-      response = await (socket.httpClient?.post ?? post)(
-        url,
-        headers: headers,
-        body: body,
-      ).timeout(timeout ?? _timeout);
+      response = await request
+          .sendWith(socket.httpClient)
+          .then(Response.fromStream)
+          .timeout(timeout ?? _timeout);
     } on SupabaseException {
       rethrow;
     } on Exception catch (error) {
       throw RealtimeTransportException(
         'Request failed: $error',
+        traceId: request.headers.traceId,
         cause: error,
       );
     }
@@ -847,6 +853,7 @@ class RealtimeChannel {
     }
 
     final requestId = response.headers.requestId;
+    final traceId = request.headers.traceId;
     if (response.statusCode == 404) {
       throw RealtimeApiException(
         'httpSend() requires Realtime server v2.97.0 or newer; the endpoint '
@@ -854,6 +861,7 @@ class RealtimeChannel {
         'upgrade the Realtime server in your self-hosted setup.',
         statusCode: response.statusCode,
         requestId: requestId,
+        traceId: traceId,
         headers: response.headers,
         body: response.body,
       );
@@ -867,6 +875,7 @@ class RealtimeChannel {
           : (response.reasonPhrase ?? 'HTTP ${response.statusCode}'),
       statusCode: response.statusCode,
       requestId: requestId,
+      traceId: traceId,
       headers: response.headers,
       body: response.body,
     );

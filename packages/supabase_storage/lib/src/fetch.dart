@@ -33,6 +33,7 @@ class Fetch {
   ) {
     final data = tryDecodeJsonObject(response.body);
     final requestId = response.headers.requestId;
+    final traceId = response.request?.headers.traceId;
 
     if (data == null) {
       storageLogger.fine(
@@ -44,6 +45,7 @@ class Fetch {
         response.body.isEmpty ? (response.reasonPhrase ?? '') : response.body,
         statusCode: response.statusCode,
         requestId: requestId,
+        traceId: traceId,
         headers: response.headers,
         body: response.body,
       );
@@ -53,6 +55,7 @@ class Fetch {
       data,
       response.statusCode,
       requestId: requestId,
+      traceId: traceId,
       headers: response.headers,
       body: response.body,
     );
@@ -65,16 +68,20 @@ class Fetch {
   }
 
   StorageTransportException _transportException(
-    Uri? url,
+    http.BaseRequest? request,
     Exception error,
     StackTrace stackTrace,
   ) {
     storageLogger.fine(
-      'StorageTransportException for ${url?.redacted}',
+      'StorageTransportException for ${request?.url.redacted}',
       error,
       stackTrace,
     );
-    return StorageTransportException('Request failed: $error', cause: error);
+    return StorageTransportException(
+      'Request failed: $error',
+      traceId: request?.headers.traceId,
+      cause: error,
+    );
   }
 
   /// Sends [request] under [idleTimeout], wrapping a failure to get a
@@ -91,7 +98,7 @@ class Fetch {
     } on SupabaseException {
       rethrow;
     } on Exception catch (error, stackTrace) {
-      throw _transportException(request.url, error, stackTrace);
+      throw _transportException(request, error, stackTrace);
     }
   }
 
@@ -108,15 +115,17 @@ class Fetch {
     } on http.RequestAbortedException {
       rethrow;
     } on Exception catch (error, stackTrace) {
-      final url = streamedResponse.request?.url;
+      final request = streamedResponse.request;
+      final url = request?.url;
       if (isSuccessStatusCode(streamedResponse.statusCode) ||
           error is TimeoutException) {
-        throw _transportException(url, error, stackTrace);
+        throw _transportException(request, error, stackTrace);
       }
       final exception = StorageApiException(
         'Failed to read the response: $error',
         statusCode: streamedResponse.statusCode,
         requestId: streamedResponse.headers.requestId,
+        traceId: request?.headers.traceId,
         headers: streamedResponse.headers,
       );
       storageLogger.fine(
@@ -282,6 +291,7 @@ class Fetch {
         throw StorageException(
           'Expected a $T response, but got a ${body.runtimeType}',
           requestId: response.headers.requestId,
+          traceId: response.request?.headers.traceId,
         );
       }
       return body;

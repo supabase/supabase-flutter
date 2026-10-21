@@ -8,14 +8,19 @@ import 'package:supabase_common/supabase_common.dart';
 /// [RealtimeApiException], and a request to it that never received a
 /// response is a [RealtimeTransportException].
 class RealtimeException extends SupabaseException {
-  const RealtimeException(super.message, {super.errorCode, super.requestId});
+  const RealtimeException(
+    super.message, {
+    super.errorCode,
+    super.requestId,
+    super.traceId,
+  });
 }
 
 /// Thrown when a request to the broadcast REST endpoint never received a
 /// response, because the connection failed or the request timed out.
 class RealtimeTransportException extends RealtimeException
     with SupabaseTransportException {
-  const RealtimeTransportException(super.message, {this.cause});
+  const RealtimeTransportException(super.message, {super.traceId, this.cause});
 
   @override
   final Object? cause;
@@ -28,6 +33,7 @@ class RealtimeApiException extends RealtimeException with SupabaseApiException {
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    super.traceId,
     this.headers = const {},
     this.body,
   });

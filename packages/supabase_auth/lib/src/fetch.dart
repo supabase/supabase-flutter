@@ -50,14 +50,7 @@ class AuthFetch {
     return 'HTTP ${response.statusCode}';
   }
 
-  AuthException _handleError(dynamic error) {
-    if (error is! Response) {
-      throw AuthRetryableFetchException(
-        message: error.toString(),
-        cause: error,
-      );
-    }
-    final response = error;
+  AuthException _handleError(Response response, {String? traceId}) {
     final requestId = response.headers.requestId;
 
     // If the status is 500 or above, it's likely a server error,
@@ -74,6 +67,7 @@ class AuthFetch {
           message: _getStatusMessage(response),
           statusCode: response.statusCode,
           requestId: requestId,
+          traceId: traceId,
           headers: response.headers,
           body: response.body,
         );
@@ -84,6 +78,7 @@ class AuthFetch {
             '${response.statusCode}',
         originalError: response,
         requestId: requestId,
+        traceId: traceId,
       );
     }
     try {
@@ -94,6 +89,7 @@ class AuthFetch {
           message: _getStatusMessage(response),
           statusCode: response.statusCode,
           requestId: requestId,
+          traceId: traceId,
           headers: response.headers,
           body: response.body,
         );
@@ -102,6 +98,7 @@ class AuthFetch {
         message: 'Failed to decode error response',
         originalError: error,
         requestId: requestId,
+        traceId: traceId,
       );
     }
 
@@ -110,6 +107,7 @@ class AuthFetch {
         message: _getErrorMessage(data),
         statusCode: response.statusCode,
         requestId: requestId,
+        traceId: traceId,
         headers: response.headers,
         body: response.body,
       );
@@ -123,6 +121,7 @@ class AuthFetch {
         statusCode: response.statusCode,
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
         requestId: requestId,
+        traceId: traceId,
         headers: response.headers,
         body: response.body,
       );
@@ -133,6 +132,7 @@ class AuthFetch {
       statusCode: response.statusCode,
       errorCode: errorCode,
       requestId: requestId,
+      traceId: traceId,
       headers: response.headers,
       body: response.body,
     );
@@ -206,6 +206,7 @@ class AuthFetch {
       throw AuthRetryableFetchException(
         message: error.toString(),
         requestId: response.headers.requestId,
+        traceId: response.request?.headers.traceId,
         cause: error,
       );
     }
@@ -234,12 +235,13 @@ class AuthFetch {
       // fetch failed, likely due to a network or CORS error, or it timed out
       throw AuthRetryableFetchException(
         message: error.toString(),
+        traceId: request.headers.traceId,
         cause: error,
       );
     }
 
     if (!isSuccessStatusCode(response.statusCode)) {
-      throw _handleError(response);
+      throw _handleError(response, traceId: request.headers.traceId);
     }
 
     return response;

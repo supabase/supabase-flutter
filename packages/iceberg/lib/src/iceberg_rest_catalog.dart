@@ -145,6 +145,7 @@ class IcebergRestCatalog {
     } catch (error) {
       throw IcebergNetworkException(
         'Network request failed: $error',
+        traceId: request.headers.traceId,
         cause: error,
       );
     }
@@ -160,6 +161,7 @@ class IcebergRestCatalog {
       if (isSuccessStatusCode(streamedResponse.statusCode)) {
         throw IcebergNetworkException(
           'Failed to read the response: $error',
+          traceId: request.headers.traceId,
           cause: error,
         );
       }
@@ -167,6 +169,7 @@ class IcebergRestCatalog {
         streamedResponse.statusCode,
         error,
         headers: streamedResponse.headers,
+        traceId: request.headers.traceId,
       );
     }
 
@@ -185,6 +188,7 @@ class IcebergRestCatalog {
         decoded,
         headers: response.headers,
         body: response.body,
+        traceId: request.headers.traceId,
       );
     }
 

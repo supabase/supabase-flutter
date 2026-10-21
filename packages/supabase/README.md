@@ -90,8 +90,10 @@ final httpClient = IOClient(
 ## Request ids and tracing
 
 The exceptions thrown by the auth, database, storage and functions clients carry the `requestId`
-the Supabase gateway assigned to the failed request, which finds it in the logs of your project.
-To correlate requests with your own traces, pass `TracePropagationOptions` to `SupabaseClient`.
+the Supabase gateway assigned to the failed request and the `traceId` of the W3C trace context it
+was sent with, which find it in the logs of your project. Outside the web, every request carries a
+trace context, originated by the client unless you propagate your own by passing
+`TracePropagationOptions` to `SupabaseClient`.
 Both are described, with Sentry and OpenTelemetry recipes, in the
 [supabase_flutter README](https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_flutter#request-ids-and-tracing).
 

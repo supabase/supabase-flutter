@@ -40,6 +40,7 @@ sealed class FunctionException extends SupabaseException {
     required String message,
     this.details,
     super.requestId,
+    super.traceId,
   }) : super(message);
 
   /// The response body, or the originating error when no response or no body
@@ -49,7 +50,7 @@ sealed class FunctionException extends SupabaseException {
   @override
   String toString() =>
       '$runtimeType(message: $message, requestId: $requestId, '
-      'details: $details)';
+      'traceId: $traceId, details: $details)';
 }
 
 /// Thrown when the request to the Edge Function could not be sent, for example
@@ -61,6 +62,7 @@ class FunctionsFetchException extends FunctionException
     with SupabaseTransportException {
   const FunctionsFetchException({
     this.cause,
+    super.traceId,
     String? message,
   }) : super(
          message: message ?? 'Failed to send a request to the Edge Function',
@@ -73,7 +75,7 @@ class FunctionsFetchException extends FunctionException
   @override
   String toString() =>
       '$runtimeType(message: $message, requestId: $requestId, '
-      'details: $details)';
+      'traceId: $traceId, details: $details)';
 }
 
 /// Thrown when the Edge Function responded with a non-2xx status code.
@@ -87,6 +89,7 @@ class FunctionsApiException extends FunctionException
     required this.statusCode,
     super.details,
     super.requestId,
+    super.traceId,
     this.headers = const {},
     this.body,
     String? message,
@@ -106,7 +109,7 @@ class FunctionsApiException extends FunctionException
   @override
   String toString() =>
       '$runtimeType(message: $message, statusCode: $statusCode, '
-      'requestId: $requestId, details: $details)';
+      'requestId: $requestId, traceId: $traceId, details: $details)';
 }
 
 /// Thrown when the Supabase relay returns an error while invoking the Edge
@@ -118,6 +121,7 @@ class FunctionsRelayException extends FunctionsApiException {
     required super.statusCode,
     super.details,
     super.requestId,
+    super.traceId,
     super.headers,
     super.body,
     String? message,

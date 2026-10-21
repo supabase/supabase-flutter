@@ -1,3 +1,4 @@
+import 'package:supabase/src/trace_context_format.dart';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
@@ -115,6 +116,20 @@ void main() {
         () => TraceContext.w3c(traceId: _traceId, spanId: '0' * 16),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('generated ids', () {
+    test('are valid W3C ids', () {
+      for (var i = 0; i < 100; i++) {
+        expect(isValidTraceId(generateTraceId()), isTrue);
+        expect(isValidParentId(generateParentId()), isTrue);
+      }
+    });
+
+    test('differ between calls', () {
+      expect(generateTraceId(), isNot(generateTraceId()));
+      expect(generateParentId(), isNot(generateParentId()));
     });
   });
 }

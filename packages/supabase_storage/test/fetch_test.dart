@@ -1059,5 +1059,82 @@ void main() {
         );
       });
     });
+
+    group('trace id', () {
+      const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+      const tracedHeaders = {
+        ...headers,
+        'traceparent': '00-$traceId-00f067aa0ba902b7-00',
+      };
+
+      test('is read from the request of an error response', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stub(
+            {'statusCode': '404', 'code': 'NoSuchKey', 'message': 'not found'},
+            statusCode: 404,
+          );
+        final client = SupabaseStorageClient(
+          storageUrl,
+          tracedHeaders,
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageApiException>().having(
+              (exception) => exception.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is read from the request of a transport failure', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stubError(ClientException('Offline'));
+        final client = SupabaseStorageClient(
+          storageUrl,
+          tracedHeaders,
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageTransportException>().having(
+              (exception) => exception.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is null when the request carried no traceparent', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stub(
+            {'statusCode': '404', 'code': 'NoSuchKey', 'message': 'not found'},
+            statusCode: 404,
+          );
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageApiException>().having(
+              (exception) => exception.traceId,
+              'traceId',
+              isNull,
+            ),
+          ),
+        );
+      });
+    });
   });
 }

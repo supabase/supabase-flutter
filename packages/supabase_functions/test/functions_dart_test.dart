@@ -1107,12 +1107,13 @@ void main() {
         expect(
           exception.toString(),
           'FunctionsApiException(message: Edge Function returned a non-2xx '
-          'status code, statusCode: 500, requestId: request-1, details: boom)',
+          'status code, statusCode: 500, requestId: request-1, traceId: null, '
+          'details: boom)',
         );
         expect(
           const FunctionsFetchException(cause: 'offline').toString(),
           'FunctionsFetchException(message: Failed to send a request to the '
-          'Edge Function, requestId: null, details: offline)',
+          'Edge Function, requestId: null, traceId: null, details: offline)',
         );
       });
     });
@@ -1178,6 +1179,96 @@ void main() {
             isA<FunctionsApiException>().having(
               (e) => e.requestId,
               'requestId',
+              isNull,
+            ),
+          ),
+        );
+      });
+    });
+
+    group('Trace id', () {
+      const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+      const tracedHeaders = {
+        'traceparent': '00-$traceId-00f067aa0ba902b7-00',
+      };
+
+      FunctionsClient buildClient(Client httpClient) => FunctionsClient(
+        'http://localhost/functions/v1',
+        tracedHeaders,
+        httpClient: httpClient,
+      );
+
+      test('is carried on a FunctionsApiException', () async {
+        final client = buildClient(
+          MockSupabaseHttpClient()..stub({'error': 'boom'}, statusCode: 500),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsApiException>().having(
+              (exception) => exception.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is carried on a FunctionsFetchException', () async {
+        final client = buildClient(
+          MockSupabaseHttpClient()..stubError(ClientException('Offline')),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsFetchException>().having(
+              (exception) => exception.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is read from the request when the response omits it', () async {
+        final client = buildClient(
+          MockClient.streaming(
+            (_, _) async => StreamedResponse(
+              Stream.value(utf8.encode('boom')),
+              500,
+              headers: {'content-type': 'text/plain'},
+            ),
+          ),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsApiException>().having(
+              (exception) => exception.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is null when the request carried no traceparent', () async {
+        final client = FunctionsClient(
+          'http://localhost/functions/v1',
+          {},
+          httpClient: MockSupabaseHttpClient()
+            ..stub({'error': 'boom'}, statusCode: 500),
+        );
+
+        await expectLater(
+          client.invoke('failing'),
+          throwsA(
+            isA<FunctionsApiException>().having(
+              (exception) => exception.traceId,
+              'traceId',
               isNull,
             ),
           ),

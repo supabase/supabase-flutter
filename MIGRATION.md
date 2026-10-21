@@ -44,6 +44,8 @@ explicitly:
   so a catch of the transport exception no longer matches a token failure
 - [The request timeout bounds idle time, not the whole request](#the-request-timeout-bounds-idle-time-not-the-whole-request),
   so a response that keeps arriving can take longer than `requestTimeout`
+- [Requests carry a `traceparent` by default](#requests-carry-a-traceparent-by-default),
+  so a proxy or gateway that inspects request headers sees a new one
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
@@ -2388,12 +2390,13 @@ await supabase.storage.from('avatars').uploadStream(
 );
 ```
 
-### `TracePropagationOptions` requires a `traceContextProvider`
+### Requests carry a `traceparent` by default
 
-`TracePropagationOptions.enabled` is gone and `traceContextProvider` is required. The
-`tracePropagationOptions` parameter on `SupabaseClient` and `Supabase.initialize` is nullable and
-defaults to `null`, which sends no trace headers. Passing options turns propagation on, so the
-two switches that had to agree before are one:
+`TracePropagationOptions.enabled` is gone. Outside the web, every request to a Supabase host now
+carries a `traceparent`: the one your `traceContextProvider` returns, or, when there is no provider or it
+returns no `traceparent`, one the client originates with a new random trace id. An originated
+trace is flagged as not sampled, and its id is on `SupabaseException.traceId` when the request
+fails.
 
 ```dart
 // Before
@@ -2408,8 +2411,15 @@ tracePropagationOptions: TracePropagationOptions(
 ),
 ```
 
-A `TracePropagationOptions()` with no provider, or `enabled: false` next to a provider, no longer
-compiles. Drop the argument to keep propagation off.
+On the web, origination is off by default, since an Edge Function whose CORS allow-list does not
+include `traceparent` would reject the browser's preflight. Pass `originateTraces: true` once your
+functions allow it.
+
+To send no trace headers at all, as v2 did by default, turn origination off and pass no provider:
+
+```dart
+tracePropagationOptions: TracePropagationOptions(originateTraces: false),
+```
 
 ## Moving from `from()` to the typed table API
 

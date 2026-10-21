@@ -42,9 +42,12 @@ class TracePropagationClient extends BaseClient {
     if (!_shouldPropagateTo(request.url)) {
       return _inner.send(request);
     }
-    final context = await _options.traceContextProvider();
+    var context = await _options.traceContextProvider?.call();
+    if (context?.traceparent?.isEmpty ?? true) {
+      context = _options.originateTraces ? _originateTraceContext() : null;
+    }
     final traceparent = context?.traceparent;
-    if (context == null || traceparent == null || traceparent.isEmpty) {
+    if (context == null || traceparent == null) {
       return _inner.send(request);
     }
     final addedHeaders = _applyHeaders(request.headers, context, traceparent);
@@ -152,6 +155,15 @@ class TracePropagationClient extends BaseClient {
     }
     return false;
   }
+
+  /// A new unsampled trace context for a request without an active trace.
+  static TraceContext _originateTraceContext() => TraceContext(
+    traceparent: formatTraceparent(
+      traceId: generateTraceId(),
+      spanId: generateParentId(),
+      sampled: false,
+    ),
+  );
 
   /// Writes the headers of [context] onto [headers] and returns the names of
   /// the ones it added.

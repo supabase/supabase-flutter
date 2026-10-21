@@ -24,7 +24,12 @@ typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 /// failure PostgREST reported is a [PostgrestApiException], and a request
 /// that never received a response is a [PostgrestTransportException].
 class PostgrestException extends SupabaseException {
-  const PostgrestException(super.message, {super.errorCode, super.requestId});
+  const PostgrestException(
+    super.message, {
+    super.errorCode,
+    super.requestId,
+    super.traceId,
+  });
 }
 
 /// Thrown when a request never received a response from PostgREST, because
@@ -35,7 +40,7 @@ class PostgrestException extends SupabaseException {
 /// surfaces as a `RequestAbortedException`.
 class PostgrestTransportException extends PostgrestException
     with SupabaseTransportException {
-  const PostgrestTransportException(super.message, {this.cause});
+  const PostgrestTransportException(super.message, {super.traceId, this.cause});
 
   @override
   final Object? cause;
@@ -53,6 +58,7 @@ class PostgrestApiException extends PostgrestException
     required this.statusCode,
     super.errorCode,
     super.requestId,
+    super.traceId,
     this.headers = const {},
     this.body,
     this.details,
@@ -71,6 +77,7 @@ class PostgrestApiException extends PostgrestException
     String? message,
     String? details,
     String? requestId,
+    String? traceId,
     Map<String, String> headers = const {},
     String? body,
   }) {
@@ -82,6 +89,7 @@ class PostgrestApiException extends PostgrestException
       statusCode: statusCode,
       errorCode: json['code']?.toString(),
       requestId: requestId,
+      traceId: traceId,
       headers: headers,
       body: body,
       details: (json['details'] ?? details),
@@ -109,6 +117,7 @@ class PostgrestApiException extends PostgrestException
       'statusCode': statusCode,
       'errorCode': errorCode,
       'requestId': requestId,
+      'traceId': traceId,
       'details': details,
       'hint': hint,
     };
@@ -117,8 +126,8 @@ class PostgrestApiException extends PostgrestException
   @override
   String toString() {
     return 'PostgrestApiException(message: $message, statusCode: $statusCode, '
-        'errorCode: $errorCode, requestId: $requestId, details: $details, '
-        'hint: $hint)';
+        'errorCode: $errorCode, requestId: $requestId, traceId: $traceId, '
+        'details: $details, hint: $hint)';
   }
 }
 

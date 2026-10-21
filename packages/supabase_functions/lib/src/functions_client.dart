@@ -261,9 +261,7 @@ class FunctionsClient {
       '${request.headers.redacted}',
     );
 
-    final response = await _guardTransport(
-      () => idleTimeout.send(request, _httpClient),
-    );
+    final response = await _send(request, idleTimeout);
     final responseType = response.headers.mediaType ?? 'text/plain';
 
     final isRelayError = response.headers['x-relay-error'] == 'true';
@@ -293,10 +291,16 @@ class FunctionsClient {
       if (isSuccessStatus || error is TimeoutException) {
         throw FunctionsFetchException(
           message: 'Failed to read the response of the Edge Function',
+          traceId: request.headers.traceId,
           cause: error,
         );
       }
-      throw _apiException(response, isRelayError, details: error);
+      throw _apiException(
+        response,
+        isRelayError,
+        traceId: request.headers.traceId,
+        details: error,
+      );
     }
     final dynamic data;
     if (responseType == 'application/json') {
@@ -328,19 +332,21 @@ class FunctionsClient {
     throw _apiException(
       response,
       isRelayError,
+      traceId: request.headers.traceId,
       details: data,
       body: utf8.decode(bodyBytes, allowMalformed: true),
     );
   }
 
   /// Builds the exception for an error [response], a relay one when
-  /// [isRelayError].
+  /// [isRelayError], to the request that carried [traceId].
   ///
   /// The reason phrase is the only message the response itself carries; when
   /// it is absent, as it is over HTTP/2, each exception uses its own default.
   FunctionsApiException _apiException(
     http.StreamedResponse response,
     bool isRelayError, {
+    required String? traceId,
     required Object? details,
     String? body,
   }) {
@@ -350,6 +356,7 @@ class FunctionsClient {
         statusCode: response.statusCode,
         details: details,
         requestId: requestId,
+        traceId: traceId,
         headers: response.headers,
         body: body,
         message: response.reasonPhrase,
@@ -359,24 +366,31 @@ class FunctionsClient {
       statusCode: response.statusCode,
       details: details,
       requestId: requestId,
+      traceId: traceId,
       headers: response.headers,
       body: body,
       message: response.reasonPhrase,
     );
   }
 
-  /// Runs [action], wrapping a failure to get a response in a
-  /// [FunctionsFetchException]. An abort and an exception the HTTP client
-  /// already classified keep their own type.
-  Future<T> _guardTransport<T>(Future<T> Function() action) async {
+  /// Sends [request] under [idleTimeout], wrapping a failure to get a
+  /// response in a [FunctionsFetchException]. An abort and an exception the
+  /// HTTP client already classified keep their own type.
+  Future<http.StreamedResponse> _send(
+    http.BaseRequest request,
+    IdleTimeout idleTimeout,
+  ) async {
     try {
-      return await action();
+      return await idleTimeout.send(request, _httpClient);
     } on http.RequestAbortedException {
       rethrow;
     } on SupabaseException {
       rethrow;
     } catch (error) {
-      throw FunctionsFetchException(cause: error);
+      throw FunctionsFetchException(
+        traceId: request.headers.traceId,
+        cause: error,
+      );
     }
   }
 

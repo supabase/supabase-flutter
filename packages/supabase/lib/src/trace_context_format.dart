@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 final _hexadecimal = RegExp(r'^[0-9a-f]+$', caseSensitive: false);
 
@@ -76,3 +77,17 @@ String formatTraceparent({
 }) =>
     '00-${traceId.toLowerCase()}-${spanId.toLowerCase()}-'
     '${sampled ? '01' : '00'}';
+
+/// Generates a random W3C trace id, 32 hexadecimal digits and not all zeros.
+@internal
+String generateTraceId() {
+  final traceId = randomHex(16);
+  return isValidTraceId(traceId) ? traceId : generateTraceId();
+}
+
+/// Generates a random W3C parent id, 16 hexadecimal digits and not all zeros.
+@internal
+String generateParentId() {
+  final parentId = randomHex(8);
+  return isValidParentId(parentId) ? parentId : generateParentId();
+}

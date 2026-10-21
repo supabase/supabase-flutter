@@ -81,7 +81,8 @@ class SupabaseClient {
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    TracePropagationOptions? tracePropagationOptions,
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
@@ -110,7 +111,9 @@ class SupabaseClient {
       throw ArgumentError(_missingAsyncStorageMessage(authOptions));
     }
     final baseHttpClient = httpClient ?? createDefaultHttpClient();
-    final tracedHttpClient = tracePropagationOptions == null
+    final tracedHttpClient =
+        tracePropagationOptions.traceContextProvider == null &&
+            !tracePropagationOptions.originateTraces
         ? baseHttpClient
         : TracePropagationClient(
             baseHttpClient,

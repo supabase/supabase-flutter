@@ -57,10 +57,12 @@ void main() {
   TracePropagationOptions optionsWith(
     TraceContext? Function() provider, {
     bool respectSamplingDecision = true,
+    bool originateTraces = false,
   }) {
     return TracePropagationOptions(
       traceContextProvider: provider,
       respectSamplingDecision: respectSamplingDecision,
+      originateTraces: originateTraces,
     );
   }
 
@@ -238,6 +240,145 @@ void main() {
     expect(captured().headers['traceparent'], 'existing');
   });
 
+  group('origination', () {
+    final originated = RegExp(r'^00-[0-9a-f]{32}-[0-9a-f]{16}-00$');
+
+    test('originates an unsampled traceparent without a provider', () async {
+      await client(
+        const TracePropagationOptions(originateTraces: true),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      final traceparent = captured().headers['traceparent']!;
+      expect(traceparent, matches(originated));
+      expect(isValidTraceparent(traceparent), isTrue);
+      expect(captured().headers.containsKey('tracestate'), isFalse);
+      expect(captured().headers.containsKey('baggage'), isFalse);
+    });
+
+    test('gives every request its own trace', () async {
+      final traced = client(
+        const TracePropagationOptions(originateTraces: true),
+      );
+      await traced.get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+      await traced.get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      final traceIds = httpClient.requests
+          .map((request) => request.headers['traceparent']!.split('-')[1])
+          .toSet();
+      expect(traceIds, hasLength(2));
+    });
+
+    test('originates a trace when the provider returns null', () async {
+      await client(
+        optionsWith(() => null, originateTraces: true),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      expect(captured().headers['traceparent'], matches(originated));
+    });
+
+    test('originates a trace when the context has no traceparent', () async {
+      await client(
+        optionsWith(
+          () => const TraceContext(baggage: 'key=value'),
+          originateTraces: true,
+        ),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      expect(captured().headers['traceparent'], matches(originated));
+      expect(captured().headers.containsKey('baggage'), isFalse);
+    });
+
+    test('never replaces the trace of the provider', () async {
+      await client(
+        optionsWith(() => context, originateTraces: true),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      expect(captured().headers['traceparent'], _sampledTraceparent);
+    });
+
+    test('does not replace a malformed traceparent of the provider', () async {
+      await client(
+        optionsWith(
+          () => const TraceContext(traceparent: 'not-a-traceparent'),
+          originateTraces: true,
+        ),
+      ).get(Uri.parse('$_supabaseUrl/rest/v1/table'));
+
+      expect(captured().headers.containsKey('traceparent'), isFalse);
+    });
+
+    test('does not originate a trace for third-party hosts', () async {
+      await client(
+        const TracePropagationOptions(originateTraces: true),
+      ).get(Uri.parse('https://evil.com/api'));
+
+      expect(captured().headers.containsKey('traceparent'), isFalse);
+    });
+
+    test('SupabaseClient originates traces by default', testOn: 'vm', () async {
+      final supabase = SupabaseClient(
+        _supabaseUrl,
+        'anon-key',
+        authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
+        httpClient: httpClient..stubTable('table', rows: []),
+      );
+      addTearDown(supabase.dispose);
+
+      await supabase.from('table').select();
+
+      expect(captured().headers['traceparent'], matches(originated));
+    });
+
+    test(
+      'SupabaseClient does not originate traces on the web by default',
+      testOn: 'browser',
+      () async {
+        final supabase = SupabaseClient(
+          _supabaseUrl,
+          'anon-key',
+          authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
+          httpClient: httpClient..stubTable('table', rows: []),
+        );
+        addTearDown(supabase.dispose);
+
+        await supabase.from('table').select();
+
+        expect(captured().headers.containsKey('traceparent'), isFalse);
+      },
+    );
+
+    test('a failed request reports its originated trace id', () async {
+      final supabase = SupabaseClient(
+        _supabaseUrl,
+        'anon-key',
+        tracePropagationOptions: const TracePropagationOptions(
+          originateTraces: true,
+        ),
+        authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
+        httpClient: httpClient
+          ..stub(
+            {'message': 'boom'},
+            path: '/rest/v1/table',
+            statusCode: 500,
+          ),
+      );
+      addTearDown(supabase.dispose);
+
+      await expectLater(
+        () => supabase.from('table').select(),
+        throwsA(
+          isA<PostgrestException>().having(
+            (exception) =>
+                exception.traceId ==
+                captured().headers['traceparent']!.split('-')[1],
+            'traceId is the one the request was sent with',
+            isTrue,
+          ),
+        ),
+      );
+    });
+  });
+
   test('SupabaseClient wires trace propagation into rest requests', () async {
     final supabase = SupabaseClient(
       _supabaseUrl,
@@ -253,10 +394,13 @@ void main() {
     expect(captured().headers['traceparent'], _sampledTraceparent);
   });
 
-  test('SupabaseClient sends no trace headers without options', () async {
+  test('SupabaseClient sends no trace headers with origination off', () async {
     final supabase = SupabaseClient(
       _supabaseUrl,
       'anon-key',
+      tracePropagationOptions: const TracePropagationOptions(
+        originateTraces: false,
+      ),
       authOptions: AuthClientOptions(asyncStorage: TestAsyncStorage()),
       httpClient: httpClient..stubTable('table', rows: []),
     );

@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/types.dart';
+import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -1616,6 +1617,57 @@ void main() {
         );
       },
     );
+
+    group('trace id', () {
+      const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+      const tracedHeaders = {
+        'traceparent': '00-$traceId-00f067aa0ba902b7-00',
+      };
+
+      test('is carried on a RealtimeApiException', () async {
+        socket = RealtimeClient(
+          'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+          headers: tracedHeaders,
+          parameters: {'apikey': 'abc123'},
+          httpClient: MockSupabaseHttpClient()
+            ..stub({'error': 'Server error'}, statusCode: 500),
+        );
+        channel = socket.channel('topic');
+
+        await expectLater(
+          channel.httpSend(event: 'test', payload: {'data': 'test'}),
+          throwsA(
+            isA<RealtimeApiException>().having(
+              (error) => error.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+
+      test('is carried on a RealtimeTransportException', () async {
+        socket = RealtimeClient(
+          'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+          headers: tracedHeaders,
+          parameters: {'apikey': 'abc123'},
+          httpClient: MockSupabaseHttpClient()
+            ..stubError(ClientException('Connection refused')),
+        );
+        channel = socket.channel('topic');
+
+        await expectLater(
+          channel.httpSend(event: 'test', payload: {'data': 'test'}),
+          throwsA(
+            isA<RealtimeTransportException>().having(
+              (error) => error.traceId,
+              'traceId',
+              traceId,
+            ),
+          ),
+        );
+      });
+    });
 
     test('passes an exception the HTTP client classified through', () async {
       socket = RealtimeClient(
