@@ -94,6 +94,8 @@ void main() {
         '::1/129',
         '::1.2.3',
         'fe80::1%eth0',
+        '1.2.3.4::',
+        '1:2:3:4:5:1.2.3.4::',
       ]) {
         expect(
           () => PostgresNetworkAddress.parse(literal),

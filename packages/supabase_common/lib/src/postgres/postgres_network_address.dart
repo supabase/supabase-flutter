@@ -76,7 +76,8 @@ final class PostgresNetworkAddress implements PostgresValue {
   /// form, followed by `/prefixLength` unless the netmask covers the whole
   /// address.
   ///
-  /// Postgres reads it as a `cidr` too, which prints the whole-address
+  /// Postgres reads it as a `cidr` too when no bit past the netmask is set,
+  /// which this type does not check. A `cidr` prints the whole-address
   /// netmask as well, so `192.168.1.5/32` read from a `cidr` equals the
   /// address written as `192.168.1.5`.
   @override
@@ -123,12 +124,12 @@ List<int>? _parseIpv4(String address) {
 List<int>? _parseIpv6(String address) {
   final halves = address.split('::');
   if (halves.length > 2) return null;
-  List<int>? groups(String text) {
+  List<int>? groups(String text, {required bool allowsIpv4Tail}) {
     if (text.isEmpty) return [];
     final words = <int>[];
     final parts = text.split(':');
     for (final (index, part) in parts.indexed) {
-      if (index == parts.length - 1 && part.contains('.')) {
+      if (allowsIpv4Tail && index == parts.length - 1 && part.contains('.')) {
         final ipv4 = _parseIpv4(part);
         if (ipv4 == null) return null;
         words
@@ -143,8 +144,10 @@ List<int>? _parseIpv6(String address) {
     return words;
   }
 
-  final head = groups(halves.first);
-  final tail = halves.length == 2 ? groups(halves.last) : <int>[];
+  final head = groups(halves.first, allowsIpv4Tail: halves.length == 1);
+  final tail = halves.length == 2
+      ? groups(halves.last, allowsIpv4Tail: true)
+      : <int>[];
   if (head == null || tail == null) return null;
   final missing = 8 - head.length - tail.length;
   if (halves.length == 2 ? missing < 1 : missing != 0) return null;
