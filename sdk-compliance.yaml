@@ -980,6 +980,10 @@ features:
       - PostgrestVectorColumn.PostgrestVectorColumn
       - PostgrestNullableVectorColumn
       - PostgrestNullableVectorColumn.PostgrestNullableVectorColumn
+      - PostgrestIntegerVectorColumn
+      - PostgrestIntegerVectorColumn.PostgrestIntegerVectorColumn
+      - PostgrestNullableIntegerVectorColumn
+      - PostgrestNullableIntegerVectorColumn.PostgrestNullableIntegerVectorColumn
       - PostgresDate
       - PostgresDate.PostgresDate
       - PostgresDate.fromDateTime

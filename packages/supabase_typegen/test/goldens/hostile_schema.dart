@@ -543,6 +543,26 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => BigInt.parse(value as String),
   };
+  List<int>? get keyColumns => switch (_json['key_columns']) {
+    null => null,
+    final Object value => [
+      for (final element in value as List<dynamic>)
+        switch (element) {
+          final int number => number,
+          _ => int.parse(element as String),
+        },
+    ],
+  };
+  List<int>? get argumentTypes => switch (_json['argument_types']) {
+    null => null,
+    final Object value => [
+      for (final element in value as List<dynamic>)
+        switch (element) {
+          final int number => number,
+          _ => int.parse(element as String),
+        },
+    ],
+  };
   PostgresLogSequenceNumber? get position => switch (_json['position']) {
     null => null,
     final Object value => PostgresLogSequenceNumber.parse(value as String),
@@ -581,6 +601,8 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     int? relation,
     List<int>? relations,
     BigInt? transaction,
+    List<int>? keyColumns,
+    List<int>? argumentTypes,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -599,6 +621,8 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'relation': ?relation,
          'relations': ?relations,
          'transaction': ?transaction?.toString(),
+         'key_columns': ?keyColumns?.join(' '),
+         'argument_types': ?argumentTypes?.join(' '),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -639,6 +663,16 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   MapInsert setTransactionToNull() =>
       MapInsert._({..._json, 'transaction': null});
 
+  /// Returns a copy with `key_columns` set to SQL NULL, overriding any database
+  /// default.
+  MapInsert setKeyColumnsToNull() =>
+      MapInsert._({..._json, 'key_columns': null});
+
+  /// Returns a copy with `argument_types` set to SQL NULL, overriding any
+  /// database default.
+  MapInsert setArgumentTypesToNull() =>
+      MapInsert._({..._json, 'argument_types': null});
+
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
   MapInsert setPositionToNull() => MapInsert._({..._json, 'position': null});
@@ -672,6 +706,8 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     int? relation,
     List<int>? relations,
     BigInt? transaction,
+    List<int>? keyColumns,
+    List<int>? argumentTypes,
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
@@ -690,6 +726,8 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'relation': ?relation,
          'relations': ?relations,
          'transaction': ?transaction?.toString(),
+         'key_columns': ?keyColumns?.join(' '),
+         'argument_types': ?argumentTypes?.join(' '),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -729,6 +767,16 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   /// default.
   MapUpdate setTransactionToNull() =>
       MapUpdate._({..._json, 'transaction': null});
+
+  /// Returns a copy with `key_columns` set to SQL NULL, overriding any database
+  /// default.
+  MapUpdate setKeyColumnsToNull() =>
+      MapUpdate._({..._json, 'key_columns': null});
+
+  /// Returns a copy with `argument_types` set to SQL NULL, overriding any
+  /// database default.
+  MapUpdate setArgumentTypesToNull() =>
+      MapUpdate._({..._json, 'argument_types': null});
 
   /// Returns a copy with `position` set to SQL NULL, overriding any database
   /// default.
@@ -810,6 +858,12 @@ class Map$ {
   static const transaction = PostgrestNullableColumn<MapRow, BigInt>(
     'transaction',
     fromJson: _bigIntFromJson,
+  );
+  static const keyColumns = PostgrestNullableIntegerVectorColumn<MapRow>(
+    'key_columns',
+  );
+  static const argumentTypes = PostgrestNullableIntegerVectorColumn<MapRow>(
+    'argument_types',
   );
   static const position =
       PostgrestNullableColumn<MapRow, PostgresLogSequenceNumber>(

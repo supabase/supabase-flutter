@@ -117,6 +117,9 @@ ColumnTypeKind _typeKind(
   if (format == 'time' || format == 'timetz') return ColumnTypeKind.time;
   if (format == 'interval') return ColumnTypeKind.interval;
   if (format == 'pg_lsn') return ColumnTypeKind.logSequenceNumber;
+  if (format == 'int2vector' || format == 'oidvector') {
+    return ColumnTypeKind.integerVector;
+  }
   if (format == 'macaddr' || format == 'macaddr8') {
     return ColumnTypeKind.macAddress;
   }

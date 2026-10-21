@@ -39,7 +39,8 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// The generated code depends only on the library at [importUri], which must
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
-/// `PostgrestNullableVectorColumn`, `PostgrestComputedField`,
+/// `PostgrestNullableVectorColumn`, `PostgrestIntegerVectorColumn`,
+/// `PostgrestNullableIntegerVectorColumn`, `PostgrestComputedField`,
 /// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
 /// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, the Postgres value
 /// types such as `PostgresDate` and `PostgresRange`, `postgresBytea` and
@@ -195,6 +196,8 @@ class _TypeNameRegistry {
     'PostgrestNullableColumn',
     'PostgrestVectorColumn',
     'PostgrestNullableVectorColumn',
+    'PostgrestIntegerVectorColumn',
+    'PostgrestNullableIntegerVectorColumn',
     'PostgrestComputedField',
     'PostgresRange',
     'PostgresDate',
@@ -948,11 +951,17 @@ void _writeColumnTokens(
       (ColumnTypeKind.vector, true) =>
         'PostgrestNullableVectorColumn<$rowType>',
       (ColumnTypeKind.vector, false) => 'PostgrestVectorColumn<$rowType>',
+      (ColumnTypeKind.integerVector, true) =>
+        'PostgrestNullableIntegerVectorColumn<$rowType>',
+      (ColumnTypeKind.integerVector, false) =>
+        'PostgrestIntegerVectorColumn<$rowType>',
       (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
       (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
     };
-    // A vector column decodes its literal itself.
-    final decoder = binding.kind == ColumnTypeKind.vector
+    // A vector column decodes its value itself.
+    final decoder =
+        binding.kind == ColumnTypeKind.vector ||
+            binding.kind == ColumnTypeKind.integerVector
         ? null
         : decoders.claim(binding);
     final arguments = decoder == null ? '' : ', fromJson: $decoder';
@@ -1122,6 +1131,10 @@ _Binding _scalarBindingFor(
     'List<double>',
     ColumnTypeKind.vector,
   ),
+  ColumnTypeKind.integerVector => const _Binding(
+    'List<int>',
+    ColumnTypeKind.integerVector,
+  ),
   ColumnTypeKind.range => _Binding(
     'PostgresRange<${_boundDartType(shape.boundTypeKind)}>',
     ColumnTypeKind.range,
@@ -1136,13 +1149,15 @@ _Binding _scalarBindingFor(
 /// scalar of the same kind.
 ///
 /// pgvector elements stay in their wire representation: the filter renderer
-/// could not tell a `List<double>` element from a nested array. Nested arrays
-/// and JSON elements are `Object`.
+/// could not tell a `List<double>` element from a nested array. Nested arrays,
+/// integer vector elements, which arrive as nested arrays, and JSON elements
+/// are `Object`.
 _Binding _elementBindingFor(
   _TypeShape shape,
   Map<(String, String), String> enumTypeNames,
 ) => switch (shape.elementTypeKind) {
   ColumnTypeKind.vector => const _Binding('String', ColumnTypeKind.text),
+  ColumnTypeKind.integerVector ||
   null => const _Binding('Object', ColumnTypeKind.json),
   final kind => _scalarBindingFor(kind, shape, enumTypeNames),
 };
@@ -1188,6 +1203,7 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.text ||
   ColumnTypeKind.binary ||
   ColumnTypeKind.vector ||
+  ColumnTypeKind.integerVector ||
   ColumnTypeKind.json ||
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
@@ -1215,6 +1231,7 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.text ||
   ColumnTypeKind.binary ||
   ColumnTypeKind.vector ||
+  ColumnTypeKind.integerVector ||
   ColumnTypeKind.json ||
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
@@ -1275,6 +1292,10 @@ String? _readConversion(
   ColumnTypeKind.enumType => '${binding.dartType}.fromWire($value as String)',
   ColumnTypeKind.binary => 'postgresBytea.decode($value as String)',
   ColumnTypeKind.vector => 'postgresVector.decode($value as String)',
+  ColumnTypeKind.integerVector =>
+    '[for (final element in $value as List<dynamic>) '
+        'switch (element) { final int number => number, '
+        '_ => int.parse(element as String) }]',
   ColumnTypeKind.range =>
     'PostgresRange.parse($value as String, '
         '${_boundParser(binding.boundKind)})',
@@ -1329,6 +1350,7 @@ _Rendering? _writeConversion(_Binding binding, String value) {
     ),
     ColumnTypeKind.enumType => chain('.wireName'),
     ColumnTypeKind.bigInteger => chain('.toString()'),
+    ColumnTypeKind.integerVector => chain(".join(' ')"),
     ColumnTypeKind.binary => (
       expression: 'postgresBytea.encode($value)',
       chained: false,
@@ -1358,6 +1380,7 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       ColumnTypeKind.text ||
       ColumnTypeKind.binary ||
       ColumnTypeKind.vector ||
+      ColumnTypeKind.integerVector ||
       ColumnTypeKind.json ||
       ColumnTypeKind.enumType ||
       ColumnTypeKind.array ||
@@ -1822,8 +1845,9 @@ void _writeFunctionMethod(
 
 /// Whether [argument] can be sent as a query parameter, as a read-only call
 /// sends its arguments: it is named, PostgREST does not read the name as a
-/// query option or embed path, and it is neither a row nor `json`, which only
-/// a request body carries as JSON.
+/// query option or embed path, and it is neither a row, `json`, which only a
+/// request body carries as JSON, nor an array of integer vectors, whose
+/// elements no array literal spells the way they read.
 bool _isQueryParameter(FunctionArgumentDescription argument) {
   bool isJson(ColumnTypeKind? kind) =>
       kind == ColumnTypeKind.json || kind == ColumnTypeKind.unknown;
@@ -1834,7 +1858,8 @@ bool _isQueryParameter(FunctionArgumentDescription argument) {
       !_reservedQueryParameters.contains(name) &&
       argument.rowOf == null &&
       !isJson(type.typeKind) &&
-      !isJson(type.elementTypeKind);
+      !isJson(type.elementTypeKind) &&
+      type.elementTypeKind != ColumnTypeKind.integerVector;
 }
 
 /// The query parameters PostgREST reads as options of the request rather than

@@ -463,6 +463,8 @@ class _Users {
   static const status = PostgrestColumn<_User, String>('status');
   static const age = PostgrestColumn<_User, int>('age');
   static const data = PostgrestNullableColumn<_User, String>('data');
+  static const keys = PostgrestIntegerVectorColumn<_User>('keys');
+  static const embedding = PostgrestVectorColumn<_User>('embedding');
 }
 
 typedef _TypedTestCase = ({
@@ -478,6 +480,29 @@ typedef _TypedTestCase = ({
 /// The typed [SupabaseTypedStreamFilterBuilder.filter] has to end up sending
 /// exactly what the untyped filters above send.
 final _typedTestCases = <_TypedTestCase>[
+  (
+    name: 'an integer vector is sent as its literal',
+    filter: (stream) => stream.filter(_Users.keys.eq([1, 2])),
+    realtimeFilter: 'keys=eq.1 2',
+    restQuery: {'select': '*', 'keys': 'eq.1 2'},
+  ),
+  (
+    name: 'integer vector members of inFilter are sent as their literals',
+    filter: (stream) => stream.filter(
+      _Users.keys.inFilter([
+        [1, 2],
+        [3],
+      ]),
+    ),
+    realtimeFilter: 'keys=in.(1 2,3)',
+    restQuery: {'select': '*', 'keys': 'in.("1 2","3")'},
+  ),
+  (
+    name: 'a vector is sent as its literal',
+    filter: (stream) => stream.filter(_Users.embedding.eq([0.5, 1.5])),
+    realtimeFilter: 'embedding=eq."[0.5,1.5]"',
+    restQuery: {'select': '*', 'embedding': 'eq.[0.5,1.5]'},
+  ),
   (
     name: 'eq',
     filter: (stream) => stream.filter(_Users.status.eq('ONLINE')),

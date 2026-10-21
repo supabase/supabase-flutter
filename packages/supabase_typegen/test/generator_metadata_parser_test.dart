@@ -717,7 +717,7 @@ void main() {
     }
   });
 
-  test('vector types that PostgREST serializes as arrays stay unknown', () {
+  test('integer vector types read as their own kind', () {
     for (final format in ['int2vector', 'oidvector']) {
       final parsed = parseGeneratorMetadata({
         'tables': [
@@ -733,8 +733,8 @@ void main() {
       });
       expect(
         parsed.tables.single.columns.single.typeKind,
-        ColumnTypeKind.unknown,
-        reason: '$format is a JSON array, not a string',
+        ColumnTypeKind.integerVector,
+        reason: '$format is a vector of integers',
       );
     }
   });

@@ -1702,6 +1702,21 @@ void main() {
                 elementTypeKind: ColumnTypeKind.json,
               ),
             ),
+            stable(
+              'with_integer_vector',
+              const ValueTypeDescription(
+                postgresFormat: 'int2vector',
+                typeKind: ColumnTypeKind.integerVector,
+              ),
+            ),
+            stable(
+              'with_integer_vector_array',
+              const ValueTypeDescription(
+                postgresFormat: '_int2vector',
+                typeKind: ColumnTypeKind.array,
+                elementTypeKind: ColumnTypeKind.integerVector,
+              ),
+            ),
             FunctionDescription(
               schema: 'public',
               name: 'volatile',
@@ -1740,6 +1755,9 @@ void main() {
       expect(call('with_integers'), contains('get: true'));
       expect(call('with_json'), isNot(contains('get:')));
       expect(call('with_json_array'), isNot(contains('get:')));
+      expect(call('with_integer_vector'), contains('get: true'));
+      expect(call('with_integer_vector'), contains(".join(' ')"));
+      expect(call('with_integer_vector_array'), isNot(contains('get:')));
       expect(call('volatile'), isNot(contains('get:')));
     });
 

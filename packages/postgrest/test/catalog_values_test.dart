@@ -43,6 +43,11 @@ class CatalogValues {
         'hardware_history',
         fromJson: _macAddressListFromJson,
       );
+  static const keyColumns = PostgrestNullableIntegerVectorColumn<CatalogValue>(
+    'key_columns',
+  );
+  static const argumentTypes =
+      PostgrestNullableIntegerVectorColumn<CatalogValue>('argument_types');
 }
 
 PostgresLogSequenceNumber _logSequenceNumberFromJson(Object json) =>
@@ -149,6 +154,34 @@ void main() {
       expect(row.read(CatalogValues.position), position);
       expect(row.read(CatalogValues.hardware), hardware);
       expect(row.read(CatalogValues.hardwareHistory), history);
+    },
+  );
+
+  test(
+    'integer vectors read as lists and write and filter as literals',
+    () async {
+      final inserted = await postgrest
+          .from('catalog_values')
+          .insert({'key_columns': '1 2', 'argument_types': '23 4294967295'})
+          .select('id')
+          .single();
+      insertedId = inserted['id'] as int;
+
+      final row = await postgrest
+          .table(CatalogValues.table)
+          .selectOnly([CatalogValues.keyColumns, CatalogValues.argumentTypes])
+          .where(
+            CatalogValues.keyColumns.eq([1, 2]) &
+                CatalogValues.keyColumns.contains([2]) &
+                CatalogValues.argumentTypes.inFilter([
+                  [23, 4294967295],
+                  [1],
+                ]),
+          )
+          .single();
+
+      expect(row.read(CatalogValues.keyColumns), [1, 2]);
+      expect(row.read(CatalogValues.argumentTypes), [23, 4294967295]);
     },
   );
 }

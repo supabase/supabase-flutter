@@ -56,6 +56,11 @@ enum ColumnTypeKind {
   /// carried over the wire as a vector literal, `[0.1,0.2]`.
   vector,
 
+  /// The `int2vector` and `oidvector` types, mapped to `List<int>`, carried
+  /// over the wire as a JSON array and written as the space-separated literal
+  /// these types read, `1 2`.
+  integerVector,
+
   /// The `json` and `jsonb` types, mapped to `Object?`.
   json,
 

@@ -150,7 +150,44 @@ class SupabaseTypedStreamFilterBuilder<Row, Element>
         'Streams do not support the ${operator.name} operator.',
       ),
     };
-    _streamFilterBuilder.addFilter(name, type, value, negated: negated);
+    _streamFilterBuilder.addFilter(
+      name,
+      type,
+      _vectorOperand(column, operator, value),
+      negated: negated,
+    );
     return this;
+  }
+
+  /// [value] as the literal a vector [column] reads, or [value] itself for
+  /// any other column, since the stream sends it to PostgREST and to
+  /// realtime as it is.
+  static Object? _vectorOperand(
+    PostgrestStoredColumn<Object?, Object> column,
+    PostgrestFilterOperator operator,
+    Object? value,
+  ) {
+    String Function(List<Object?> list)? render;
+    if (column is PostgrestIntegerVectorColumn ||
+        column is PostgrestNullableIntegerVectorColumn) {
+      render = (list) {
+        if (list.contains(null)) {
+          throw ArgumentError.value(
+            list,
+            'value',
+            'An integer vector cannot hold null',
+          );
+        }
+        return list.join(' ');
+      };
+    } else if (column is PostgrestVectorColumn ||
+        column is PostgrestNullableVectorColumn) {
+      render = (list) => postgresVector.encode(list.cast());
+    }
+    if (render == null || value is! List<Object?>) return value;
+    if (operator == PostgrestFilterOperator.inFilter) {
+      return [for (final member in value) render(member! as List<Object?>)];
+    }
+    return render(value);
   }
 }

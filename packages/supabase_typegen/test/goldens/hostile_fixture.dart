@@ -351,6 +351,22 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           isNullable: true,
         ),
         ColumnDescription(
+          name: 'key_columns',
+          postgresFormat: 'int2vector',
+          typeKind: ColumnTypeKind.integerVector,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'argument_types',
+          postgresFormat: 'oidvector',
+          typeKind: ColumnTypeKind.integerVector,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
           name: 'position',
           postgresFormat: 'pg_lsn',
           typeKind: ColumnTypeKind.logSequenceNumber,

@@ -8,5 +8,7 @@ create table public.catalog_values (
   transaction xid8,
   position pg_lsn,
   hardware macaddr,
-  hardware_history macaddr8[]
+  hardware_history macaddr8[],
+  key_columns int2vector,
+  argument_types oidvector
 );
