@@ -2477,7 +2477,7 @@ final String title = books.first.title;
 `BooksRow` is an extension type over the decoded JSON, so the getters cost nothing over reading the
 map, and `toJson()` returns the map when something still needs it. Dates, enums, `bytea` and the
 other column types are converted by the getters, so `createdAt` is a `DateTime` and `publishedOn` a
-`PostgrestDate`.
+`PostgresDate`.
 
 A table outside the `public` schema carries its schema in the definition, so
 `supabase.table(InventoryBooks.table)` replaces `supabase.schema('inventory').from('books')`.

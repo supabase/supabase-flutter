@@ -473,7 +473,7 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   int get authorId => _json['author_id'] as int;
   Uint8List? get coverImage => switch (_json['cover_image']) {
     null => null,
-    final Object value => postgrestBytea.decode(value as String),
+    final Object value => postgresBytea.decode(value as String),
   };
   String? get coverUuid => _json['cover_uuid'] as String?;
 
@@ -488,9 +488,9 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   };
   List<int>? get pageCounts => (_json['page_counts'] as List<dynamic>?)?.cast();
   num? get price => _json['price'] as num?;
-  PostgrestDate? get publishedOn => switch (_json['published_on']) {
+  PostgresDate? get publishedOn => switch (_json['published_on']) {
     null => null,
-    final Object value => PostgrestDate.parse(value as String),
+    final Object value => PostgresDate.parse(value as String),
   };
   double? get rating => (_json['rating'] as num?)?.toDouble();
   List<String>? get tags => (_json['tags'] as List<dynamic>?)?.cast();
@@ -522,7 +522,7 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
     Mood? mood,
     List<int>? pageCounts,
     num? price,
-    PostgrestDate? publishedOn,
+    PostgresDate? publishedOn,
     double? rating,
     List<String>? tags,
     required String title,
@@ -531,7 +531,7 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
          'author_id': authorId,
          'cover_image': ?switch (coverImage) {
            null => null,
-           final value => postgrestBytea.encode(value),
+           final value => postgresBytea.encode(value),
          },
          'cover_uuid': ?coverUuid,
          'created_at': ?createdAt?.toUtc().toIso8601String(),
@@ -611,7 +611,7 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
     Mood? mood,
     List<int>? pageCounts,
     num? price,
-    PostgrestDate? publishedOn,
+    PostgresDate? publishedOn,
     double? rating,
     List<String>? tags,
     String? title,
@@ -620,7 +620,7 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
          'author_id': ?authorId,
          'cover_image': ?switch (coverImage) {
            null => null,
-           final value => postgrestBytea.encode(value),
+           final value => postgresBytea.encode(value),
          },
          'cover_uuid': ?coverUuid,
          'created_at': ?createdAt?.toUtc().toIso8601String(),
@@ -722,9 +722,9 @@ class Books {
     fromJson: _intListFromJson,
   );
   static const price = PostgrestNullableColumn<BooksRow, num>('price');
-  static const publishedOn = PostgrestNullableColumn<BooksRow, PostgrestDate>(
+  static const publishedOn = PostgrestNullableColumn<BooksRow, PostgresDate>(
     'published_on',
-    fromJson: _postgrestDateFromJson,
+    fromJson: _postgresDateFromJson,
   );
   static const rating = PostgrestNullableColumn<BooksRow, double>(
     'rating',
@@ -900,14 +900,14 @@ extension DatabaseFunctions on PostgrestRpc {
   );
 
   /// Calls the `publication_dates` function.
-  PostgrestTypedBuilder<List<PostgrestDate?>> publicationDates({
+  PostgrestTypedBuilder<List<PostgresDate?>> publicationDates({
     required int authorId,
   }) => value(
     'publication_dates',
     arguments: {'author_id': authorId},
     fromJson: (json) => [
       for (final element in json! as List<dynamic>)
-        element == null ? null : _postgrestDateFromJson(element),
+        element == null ? null : _postgresDateFromJson(element),
     ],
     schema: 'public',
     get: true,
@@ -957,10 +957,10 @@ InventoryCondition _inventoryConditionFromJson(Object json) =>
 
 Mood _moodFromJson(Object json) => Mood.fromWire(json as String);
 
-PostgrestDate _postgrestDateFromJson(Object json) =>
-    PostgrestDate.parse(json as String);
+PostgresDate _postgresDateFromJson(Object json) =>
+    PostgresDate.parse(json as String);
 
 List<String> _stringListFromJson(Object json) => (json as List<dynamic>).cast();
 
 Uint8List _uint8ListFromJson(Object json) =>
-    postgrestBytea.decode(json as String);
+    postgresBytea.decode(json as String);

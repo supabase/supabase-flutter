@@ -1,8 +1,9 @@
-/// Shared internal utilities used across the Supabase client packages.
+/// Shared internal utilities used across the Supabase client packages, and
+/// the Postgres value types they re-export, such as `PostgresDate`.
 ///
 /// This package is an implementation detail of the Supabase client packages
-/// and is not intended for direct consumption. Its API may change without
-/// notice.
+/// and is not intended for direct consumption; import the value types through
+/// a client package. Its API may change without notice.
 library;
 
 export 'src/access_token_client.dart';
@@ -17,6 +18,7 @@ export 'src/http_method.dart';
 export 'src/http_status.dart';
 export 'src/idle_timeout.dart';
 export 'src/persist_session_key.dart';
+export 'src/postgres/postgres_values.dart';
 export 'src/pkce.dart';
 export 'src/platform/default_http_client.dart';
 export 'src/platform/platform_info.dart';

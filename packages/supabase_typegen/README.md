@@ -15,9 +15,9 @@ For every table the generator emits:
   call, and `PostgrestColumn` tokens for compile-time checked filters and
   orderings, with nullable columns as `PostgrestNullableColumn` so `isNull()`
   only exists where it can match, and range columns typed
-  `PostgrestRange<int>`, `PostgrestRange<num>`, `PostgrestRange<PostgrestDate>`
-  or `PostgrestRange<DateTime>` so the range operators only exist on them,
-- `PostgrestDate`, `PostgrestTime` and `PostgrestInterval` for `date`, `time`
+  `PostgresRange<int>`, `PostgresRange<num>`, `PostgresRange<PostgresDate>`
+  or `PostgresRange<DateTime>` so the range operators only exist on them,
+- `PostgresDate`, `PostgresTime` and `PostgresInterval` for `date`, `time`
   and `timetz`, and `interval` columns, value types that keep what a `DateTime`
   or `Duration` cannot: a calendar date without a time of day, a time of day
   with its UTC offset, and months, days and clock time kept apart,
@@ -138,13 +138,13 @@ final archived = await client
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; an array containing SQL NULL
   elements throws when the column is read. Elements convert like a column of
-  their type, so `date[]` is `List<PostgrestDate>` and `mood[]` a list of the
+  their type, so `date[]` is `List<PostgresDate>` and `mood[]` a list of the
   generated enum, except for pgvector elements, which stay in their wire
   representation (`List<String>`) because a filter could not tell a vector
-  element from a nested array; `postgrestVector` decodes them.
+  element from a nested array; `postgresVector` decodes them.
 - `timestamptz` values are written back in UTC and naive `timestamp` values
   as local wall time. `date`, `time`, `timetz` and `interval` columns map to
-  `PostgrestDate`, `PostgrestTime` and `PostgrestInterval`, which parse what
+  `PostgresDate`, `PostgresTime` and `PostgresInterval`, which parse what
   Postgres emits, including `infinity` dates and every `IntervalStyle`, and
   write themselves back as the literal Postgres accepts.
 - `bytea` columns map to `Uint8List` and are written back as hex literals,

@@ -1,4 +1,4 @@
-part of 'postgrest_typed_builder.dart';
+part of 'postgres_values.dart';
 
 /// A Postgres `interval`: a span of [months], [days] and [microseconds] kept
 /// apart, the way Postgres stores it.
@@ -10,21 +10,22 @@ part of 'postgrest_typed_builder.dart';
 /// hold that distinction, which is why an `interval` column is not one.
 ///
 /// ```dart
-/// const PostgrestInterval(years: 1, months: 2, days: 3, hours: 4).literal
+/// const PostgresInterval(years: 1, months: 2, days: 3, hours: 4).literal
 /// // 1 year 2 mons 3 days 04:00:00
-/// PostgrestInterval.parse('1 mon').toDuration()   // 30 days
-/// PostgrestInterval.parse('P1Y2M3DT4H5M6S')       // the iso_8601 style
+/// PostgresInterval.parse('1 mon').toDuration()   // 30 days
+/// PostgresInterval.parse('P1Y2M3DT4H5M6S')       // the iso_8601 style
 /// ```
 ///
 /// [parse] reads every `IntervalStyle` Postgres can emit, `postgres`,
 /// `postgres_verbose`, `sql_standard` and `iso_8601`; [literal] renders the
 /// `postgres` style, which Postgres accepts whatever its `IntervalStyle` is.
 @experimental
-final class PostgrestInterval implements Comparable<PostgrestInterval> {
+final class PostgresInterval
+    implements PostgresValue, Comparable<PostgresInterval> {
   /// The interval of the given components, folded into [months], [days] and
   /// [microseconds]: [years] count as 12 months, [weeks] as 7 days, and the
   /// time components add up into microseconds.
-  const PostgrestInterval({
+  const PostgresInterval({
     int years = 0,
     int months = 0,
     int weeks = 0,
@@ -44,7 +45,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
            microseconds;
 
   /// The interval of exactly [duration], with no months or days.
-  PostgrestInterval.fromDuration(Duration duration)
+  PostgresInterval.fromDuration(Duration duration)
     : this(microseconds: duration.inMicroseconds);
 
   /// Parses an interval literal in any of the output styles of Postgres:
@@ -56,7 +57,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
   /// `3 hours 30 minutes` parses too.
   ///
   /// Throws a [FormatException] when [literal] is not an interval.
-  factory PostgrestInterval.parse(String literal) {
+  factory PostgresInterval.parse(String literal) {
     var text = literal.trim();
     if (text.isEmpty) throw FormatException('Not an interval literal', literal);
     if (text[0] == 'P' || text[0] == 'p') return _parseIso8601(text, literal);
@@ -75,7 +76,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
     final (months, days, microseconds) = hasUnitWords
         ? _parseUnitWords(tokens, literal)
         : _parseSqlStandard(tokens, literal);
-    return PostgrestInterval(
+    return PostgresInterval(
       months: negate ? -months : months,
       days: negate ? -days : days,
       microseconds: negate ? -microseconds : microseconds,
@@ -83,7 +84,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
   }
 
   /// The interval of no length at all.
-  static const zero = PostgrestInterval();
+  static const zero = PostgresInterval();
 
   static final _timeToken = RegExp(
     r'^([+-])?(\d+):(\d{1,2})(?::(\d{1,2})(?:\.(\d+))?)?$',
@@ -157,6 +158,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
   ///
   /// The spelling follows Postgres exactly, so a value read from a column and
   /// written back is byte for byte what the database sent.
+  @override
   String get literal {
     final parts = <String>[];
     var previousNegative = false;
@@ -185,7 +187,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
   /// 30 days and every day as 24 hours, so `30 days` and `1 mon` compare
   /// equal without being equal.
   @override
-  int compareTo(PostgrestInterval other) =>
+  int compareTo(PostgresInterval other) =>
       _comparisonValue.compareTo(other._comparisonValue);
 
   int get _comparisonValue =>
@@ -196,7 +198,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
 
   @override
   bool operator ==(Object other) =>
-      other is PostgrestInterval &&
+      other is PostgresInterval &&
       other.months == months &&
       other.days == days &&
       other.microseconds == microseconds;
@@ -335,7 +337,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
         '${_twoDigits(seconds)}$fractionText';
   }
 
-  static PostgrestInterval _parseIso8601(String text, String literal) {
+  static PostgresInterval _parseIso8601(String text, String literal) {
     final match = _iso8601Pattern.firstMatch(text);
     if (match == null ||
         match.groups([1, 2, 3, 4, 5, 6, 7]).every((group) => group == null)) {
@@ -343,7 +345,7 @@ final class PostgrestInterval implements Comparable<PostgrestInterval> {
     }
     int component(int group) => int.parse(match[group] ?? '0');
     final fractionSign = (match[7]?.startsWith('-') ?? false) ? -1 : 1;
-    return PostgrestInterval(
+    return PostgresInterval(
       years: component(1),
       months: component(2),
       weeks: component(3),

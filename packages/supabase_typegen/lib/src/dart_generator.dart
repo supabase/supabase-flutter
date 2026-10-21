@@ -40,10 +40,10 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
 /// `PostgrestNullableVectorColumn`, `PostgrestComputedField`,
-/// `PostgrestRange`, `PostgrestDate`, `PostgrestTime`, `PostgrestInterval`,
+/// `PostgresRange`, `PostgresDate`, `PostgresTime`, `PostgresInterval`,
 /// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
-/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, `postgrestBytea`
-/// and `postgrestVector`); pass the library [packageImportUri] finds for the
+/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, `postgresBytea`
+/// and `postgresVector`); pass the library [packageImportUri] finds for the
 /// project the file is written into.
 ///
 /// The code is formatted for [languageVersion], so it uses no syntax a
@@ -196,10 +196,10 @@ class _TypeNameRegistry {
     'PostgrestVectorColumn',
     'PostgrestNullableVectorColumn',
     'PostgrestComputedField',
-    'PostgrestRange',
-    'PostgrestDate',
-    'PostgrestTime',
-    'PostgrestInterval',
+    'PostgresRange',
+    'PostgresDate',
+    'PostgresTime',
+    'PostgresInterval',
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
@@ -329,8 +329,8 @@ class _TableMembers {
       reserved: {
         ...typeNames,
         'toJson',
-        'postgrestBytea',
-        'postgrestVector',
+        'postgresBytea',
+        'postgresVector',
       },
     );
     final columnMembers = _uniqueMemberNames(
@@ -993,7 +993,7 @@ class _DecoderRegistry {
 }
 
 /// `_dateTimeFromJson` for `DateTime`, `_intListFromJson` for `List<int>`
-/// and `_postgrestRangeOfIntFromJson` for `PostgrestRange<int>`.
+/// and `_postgresRangeOfIntFromJson` for `PostgresRange<int>`.
 String _decoderName(_Binding binding) {
   var words = binding.dartType;
   final argument = RegExp(r'<([^<>]+)>');
@@ -1092,10 +1092,10 @@ _Binding _scalarBindingFor(
   ColumnTypeKind.floating => const _Binding('double', ColumnTypeKind.floating),
   ColumnTypeKind.numeric => const _Binding('num', ColumnTypeKind.numeric),
   ColumnTypeKind.boolean => const _Binding('bool', ColumnTypeKind.boolean),
-  ColumnTypeKind.date => const _Binding('PostgrestDate', ColumnTypeKind.date),
-  ColumnTypeKind.time => const _Binding('PostgrestTime', ColumnTypeKind.time),
+  ColumnTypeKind.date => const _Binding('PostgresDate', ColumnTypeKind.date),
+  ColumnTypeKind.time => const _Binding('PostgresTime', ColumnTypeKind.time),
   ColumnTypeKind.interval => const _Binding(
-    'PostgrestInterval',
+    'PostgresInterval',
     ColumnTypeKind.interval,
   ),
   ColumnTypeKind.timestamp => const _Binding(
@@ -1113,7 +1113,7 @@ _Binding _scalarBindingFor(
     ColumnTypeKind.vector,
   ),
   ColumnTypeKind.range => _Binding(
-    'PostgrestRange<${_boundDartType(shape.boundTypeKind)}>',
+    'PostgresRange<${_boundDartType(shape.boundTypeKind)}>',
     ColumnTypeKind.range,
     boundKind: shape.boundTypeKind,
   ),
@@ -1164,7 +1164,7 @@ String _enumTypeName(
 String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.integer => 'int',
   ColumnTypeKind.numeric => 'num',
-  ColumnTypeKind.date => 'PostgrestDate',
+  ColumnTypeKind.date => 'PostgresDate',
   ColumnTypeKind.timestamp ||
   ColumnTypeKind.timestampWithTimeZone => 'DateTime',
   ColumnTypeKind.integerString ||
@@ -1256,10 +1256,10 @@ String? _readConversion(_Binding binding, String value) =>
       ColumnTypeKind.interval => '${binding.dartType}.parse($value as String)',
       ColumnTypeKind.enumType =>
         '${binding.dartType}.fromWire($value as String)',
-      ColumnTypeKind.binary => 'postgrestBytea.decode($value as String)',
-      ColumnTypeKind.vector => 'postgrestVector.decode($value as String)',
+      ColumnTypeKind.binary => 'postgresBytea.decode($value as String)',
+      ColumnTypeKind.vector => 'postgresVector.decode($value as String)',
       ColumnTypeKind.range =>
-        'PostgrestRange.parse($value as String, '
+        'PostgresRange.parse($value as String, '
             '${_boundParser(binding.boundKind)})',
       ColumnTypeKind.integer ||
       ColumnTypeKind.numeric ||
@@ -1311,11 +1311,11 @@ _Rendering? _writeConversion(_Binding binding, String value) {
     ColumnTypeKind.enumType => chain('.wireName'),
     ColumnTypeKind.bigInteger => chain('.toString()'),
     ColumnTypeKind.binary => (
-      expression: 'postgrestBytea.encode($value)',
+      expression: 'postgresBytea.encode($value)',
       chained: false,
     ),
     ColumnTypeKind.vector => (
-      expression: 'postgrestVector.encode($value)',
+      expression: 'postgresVector.encode($value)',
       chained: false,
     ),
     ColumnTypeKind.range => switch (binding.boundKind) {
@@ -1468,7 +1468,7 @@ Iterable<_TypeShape> _functionShapes(FunctionDescription function) sync* {
 const _rpcMembers = {'call', 'rows', 'value'};
 
 /// The top-level codecs the generated conversions call unqualified.
-const _codecs = {'postgrestBytea', 'postgrestVector'};
+const _codecs = {'postgresBytea', 'postgresVector'};
 
 /// One overload of a function that gets a generated method.
 class _FunctionMethod {

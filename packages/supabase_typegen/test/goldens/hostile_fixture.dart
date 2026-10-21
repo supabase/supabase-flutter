@@ -116,7 +116,7 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
         // Named like the codec the generated conversions call.
         ColumnDescription(
-          name: 'postgrest_bytea',
+          name: 'postgres_bytea',
           postgresFormat: 'bytea',
           typeKind: ColumnTypeKind.binary,
           isRequired: true,
@@ -142,7 +142,7 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
         // Named like the codec the generated conversions call.
         ColumnDescription(
-          name: 'postgrest_vector',
+          name: 'postgres_vector',
           postgresFormat: 'vector',
           typeKind: ColumnTypeKind.vector,
           isRequired: true,
@@ -528,7 +528,7 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         FunctionOverloadDescription(
           arguments: [
             FunctionArgumentDescription(
-              name: 'postgrest_bytea',
+              name: 'postgres_bytea',
               type: ValueTypeDescription(
                 postgresFormat: 'bytea',
                 typeKind: ColumnTypeKind.binary,

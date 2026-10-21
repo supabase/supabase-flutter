@@ -1,3 +1,6 @@
+// The Postgres value types under test are annotated @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 
 import 'package:postgrest/postgrest.dart';
@@ -43,7 +46,7 @@ class Books {
   static const authorId = PostgrestColumn<Book, int>('author_id');
   static const title = PostgrestColumn<Book, String>('title');
   static const tags = PostgrestColumn<Book, List<String>>('tags');
-  static const ageRange = PostgrestColumn<Book, PostgrestRange<int>>(
+  static const ageRange = PostgrestColumn<Book, PostgresRange<int>>(
     'age_range',
   );
   static const metadata = PostgrestColumn<Book, Map<String, dynamic>>(
@@ -476,7 +479,7 @@ void main() {
     });
 
     test('builds the same URLs as the untyped filters', () async {
-      const ages = PostgrestRange.closedOpen(2, 25);
+      const ages = PostgresRange.closedOpen(2, 25);
       final filters = {
         Books.id.eq(1): ('id', 'eq.1'),
         Books.id.neq(1): ('id', 'neq.1'),

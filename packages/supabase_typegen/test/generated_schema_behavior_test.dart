@@ -56,7 +56,7 @@ void main() {
     expect(book.tags, ['dart', 'types']);
     expect(book.metadata, {'reprint': true});
     expect(book.createdAt, DateTime.utc(2026, 7, 23, 10));
-    expect(book.publishedOn, PostgrestDate(2026, 7, 23));
+    expect(book.publishedOn, PostgresDate(2026, 7, 23));
     expect(book.updatedAt == null, isTrue);
     expect(book.coverImage, [0x89, 0x50, 0x4e, 0x47]);
   });
@@ -88,8 +88,8 @@ void main() {
       {
         "quote'name\u2029tail": 'key',
         'samples': <double>[],
-        'postgrest_bytea': r'\x',
-        'postgrest_vector': '[0.5,-2.25,1]',
+        'postgres_bytea': r'\x',
+        'postgres_vector': '[0.5,-2.25,1]',
         'half_embedding': null,
       },
     ]);
@@ -98,7 +98,7 @@ void main() {
         .table(hostile.PostgrestTable$.table)
         .select();
 
-    expect(rows.single.postgrestVector$, [0.5, -2.25, 1.0]);
+    expect(rows.single.postgresVector$, [0.5, -2.25, 1.0]);
     expect(rows.single.halfEmbedding, isNull);
 
     httpClient.stub(null);
@@ -108,24 +108,24 @@ void main() {
           hostile.PostgrestTableInsert(
             quoteNameTail: 'key',
             samples: [],
-            postgrestBytea$: Uint8List(0),
-            postgrestVector$: [0.5, -2.25],
+            postgresBytea$: Uint8List(0),
+            postgresVector$: [0.5, -2.25],
             halfEmbedding: [0.75],
           ),
         );
 
     final sent = httpClient.requests.last.jsonBody as Map<String, dynamic>;
-    expect(sent['postgrest_vector'], '[0.5,-2.25]');
+    expect(sent['postgres_vector'], '[0.5,-2.25]');
     expect(sent['half_embedding'], '[0.75]');
 
     httpClient.stub([]);
     await client
         .table(hostile.PostgrestTable$.table)
         .select()
-        .where(hostile.PostgrestTable$.postgrestVector$.eq([0.5, -2.25]));
+        .where(hostile.PostgrestTable$.postgresVector$.eq([0.5, -2.25]));
 
     expect(
-      httpClient.requests.last.queryParameters['postgrest_vector'],
+      httpClient.requests.last.queryParameters['postgres_vector'],
       'eq.[0.5,-2.25]',
     );
   });
@@ -348,7 +348,7 @@ void main() {
               title: 'A typed row',
               authorId: 7,
               createdAt: DateTime(2026, 7, 23, 10), // local wall time
-              publishedOn: PostgrestDate(2026, 7, 23),
+              publishedOn: PostgresDate(2026, 7, 23),
             ),
           );
 
@@ -365,7 +365,7 @@ void main() {
     await client
         .table(Books.table)
         .select()
-        .where(Books.publishedOn.gte(PostgrestDate(2026, 1, 1)));
+        .where(Books.publishedOn.gte(PostgresDate(2026, 1, 1)));
 
     expect(
       httpClient.requests.last.queryParameters['published_on'],
@@ -389,20 +389,20 @@ void main() {
 
       expect(
         row.season,
-        PostgrestRange.closedOpen(
-          PostgrestDate(2026, 6, 1),
-          PostgrestDate(2026, 9, 1),
+        PostgresRange.closedOpen(
+          PostgresDate(2026, 6, 1),
+          PostgresDate(2026, 9, 1),
         ),
       );
-      expect(row.since, PostgrestDate(2026, 7, 23));
-      expect(row.opensAt, PostgrestTime(hour: 9, minute: 30));
+      expect(row.since, PostgresDate(2026, 7, 23));
+      expect(row.opensAt, PostgresTime(hour: 9, minute: 30));
       expect(
         row.closesAt,
-        PostgrestTime(hour: 17, offset: const Duration(hours: 2)),
+        PostgresTime(hour: 17, offset: const Duration(hours: 2)),
       );
       expect(
         row.ttl,
-        const PostgrestInterval(
+        const PostgresInterval(
           months: 1,
           days: 3,
           hours: 4,
@@ -417,8 +417,8 @@ void main() {
           .insert(
             hostile.MapInsert(
               list: 1,
-              pages: const PostgrestRange.closedOpen(1, 10),
-              shift: PostgrestRange.closedOpen(
+              pages: const PostgresRange.closedOpen(1, 10),
+              shift: PostgresRange.closedOpen(
                 DateTime(2026, 7, 23, 9),
                 DateTime(2026, 7, 23, 17),
               ),
@@ -496,14 +496,14 @@ void main() {
         'stamps': ['2026-07-23T10:00:00+00:00'],
       });
 
-      expect(row.days, [PostgrestDate(2026, 1, 1), PostgrestDate(2028, 2, 29)]);
+      expect(row.days, [PostgresDate(2026, 1, 1), PostgresDate(2028, 2, 29)]);
       expect(row.blobs, [
         [72, 105],
       ]);
       expect(row.moods, [hostile.String$.plain]);
       expect(row.spans, [
-        const PostgrestRange.closedOpen(1, 3),
-        const PostgrestRange<int>.empty(),
+        const PostgresRange.closedOpen(1, 3),
+        const PostgresRange<int>.empty(),
       ]);
       expect(row.stamps, [DateTime.utc(2026, 7, 23, 10)]);
 
@@ -514,8 +514,8 @@ void main() {
             hostile.PostgrestTableInsert(
               quoteNameTail: 'row',
               samples: [1.5],
-              postgrestBytea$: Uint8List.fromList([1]),
-              postgrestVector$: [0.5],
+              postgresBytea$: Uint8List.fromList([1]),
+              postgresVector$: [0.5],
               spans: row.spans,
               days: row.days,
               blobs: row.blobs,
@@ -538,7 +538,7 @@ void main() {
           .table(hostile.PostgrestTable$.table)
           .select()
           .where(
-            hostile.PostgrestTable$.days.contains([PostgrestDate(2026, 1, 1)]) &
+            hostile.PostgrestTable$.days.contains([PostgresDate(2026, 1, 1)]) &
                 hostile.PostgrestTable$.moods.overlaps([hostile.String$.plain]),
           );
 
@@ -780,10 +780,10 @@ void main() {
 
     test('scalars and sets of scalars are converted', () async {
       httpClient.stub(['2026-07-23', null]);
-      final List<PostgrestDate?> dates = await client.rpc.publicationDates(
+      final List<PostgresDate?> dates = await client.rpc.publicationDates(
         authorId: 1,
       );
-      expect(dates, [PostgrestDate(2026, 7, 23), null]);
+      expect(dates, [PostgresDate(2026, 7, 23), null]);
 
       httpClient.stub('sad');
       final Mood? mood = await client.rpc.moodOrDefault(

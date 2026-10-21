@@ -946,83 +946,85 @@ features:
       - PostgrestPartialRow.read
       - PostgrestPartialRow.toJson
       - PostgrestPartialRow.toString
-      - PostgrestRange
-      - PostgrestRange.closedOpen
-      - PostgrestRange.closed
-      - PostgrestRange.open
-      - PostgrestRange.openClosed
-      - PostgrestRange.empty
-      - PostgrestRange.parse
-      - PostgrestRange.lower
-      - PostgrestRange.upper
-      - PostgrestRange.lowerInclusive
-      - PostgrestRange.upperInclusive
-      - PostgrestRange.isEmpty
-      - PostgrestRange.render
-      - PostgrestRange.literal
-      - PostgrestRange.toString
-      - PostgrestRange.==
-      - PostgrestRange.hashCode
-      - PostgrestByteaCodec
-      - PostgrestByteaCodec.PostgrestByteaCodec
-      - PostgrestByteaCodec.encoder
-      - PostgrestByteaCodec.decoder
-      - PostgrestByteaCodec.decode
-      - postgrestBytea
-      - PostgrestVectorCodec
-      - PostgrestVectorCodec.PostgrestVectorCodec
-      - PostgrestVectorCodec.encoder
-      - PostgrestVectorCodec.decoder
-      - postgrestVector
+      - PostgresValue
+      - PostgresValue.literal
+      - PostgresRange
+      - PostgresRange.closedOpen
+      - PostgresRange.closed
+      - PostgresRange.open
+      - PostgresRange.openClosed
+      - PostgresRange.empty
+      - PostgresRange.parse
+      - PostgresRange.lower
+      - PostgresRange.upper
+      - PostgresRange.lowerInclusive
+      - PostgresRange.upperInclusive
+      - PostgresRange.isEmpty
+      - PostgresRange.render
+      - PostgresRange.literal
+      - PostgresRange.toString
+      - PostgresRange.==
+      - PostgresRange.hashCode
+      - PostgresByteaCodec
+      - PostgresByteaCodec.PostgresByteaCodec
+      - PostgresByteaCodec.encoder
+      - PostgresByteaCodec.decoder
+      - PostgresByteaCodec.decode
+      - postgresBytea
+      - PostgresVectorCodec
+      - PostgresVectorCodec.PostgresVectorCodec
+      - PostgresVectorCodec.encoder
+      - PostgresVectorCodec.decoder
+      - postgresVector
       - PostgrestVectorColumn
       - PostgrestVectorColumn.PostgrestVectorColumn
       - PostgrestNullableVectorColumn
       - PostgrestNullableVectorColumn.PostgrestNullableVectorColumn
-      - PostgrestDate
-      - PostgrestDate.PostgrestDate
-      - PostgrestDate.fromDateTime
-      - PostgrestDate.parse
-      - PostgrestDate.infinity
-      - PostgrestDate.negativeInfinity
-      - PostgrestDate.year
-      - PostgrestDate.month
-      - PostgrestDate.day
-      - PostgrestDate.isFinite
-      - PostgrestDate.isInfinite
-      - PostgrestDate.toDateTime
-      - PostgrestDate.literal
-      - PostgrestDate.compareTo
-      - PostgrestDate.toString
-      - PostgrestDate.==
-      - PostgrestDate.hashCode
-      - PostgrestTime
-      - PostgrestTime.PostgrestTime
-      - PostgrestTime.fromDateTime
-      - PostgrestTime.parse
-      - PostgrestTime.hour
-      - PostgrestTime.minute
-      - PostgrestTime.second
-      - PostgrestTime.microsecond
-      - PostgrestTime.offset
-      - PostgrestTime.literal
-      - PostgrestTime.compareTo
-      - PostgrestTime.toString
-      - PostgrestTime.==
-      - PostgrestTime.hashCode
-      - PostgrestInterval
-      - PostgrestInterval.PostgrestInterval
-      - PostgrestInterval.fromDuration
-      - PostgrestInterval.parse
-      - PostgrestInterval.zero
-      - PostgrestInterval.months
-      - PostgrestInterval.days
-      - PostgrestInterval.microseconds
-      - PostgrestInterval.toDuration
-      - PostgrestInterval.literal
-      - PostgrestInterval.compareTo
-      - PostgrestInterval.toString
-      - PostgrestInterval.==
-      - PostgrestInterval.hashCode
+      - PostgresDate
+      - PostgresDate.PostgresDate
+      - PostgresDate.fromDateTime
+      - PostgresDate.parse
+      - PostgresDate.infinity
+      - PostgresDate.negativeInfinity
+      - PostgresDate.year
+      - PostgresDate.month
+      - PostgresDate.day
+      - PostgresDate.isFinite
+      - PostgresDate.isInfinite
+      - PostgresDate.toDateTime
+      - PostgresDate.literal
+      - PostgresDate.compareTo
+      - PostgresDate.toString
+      - PostgresDate.==
+      - PostgresDate.hashCode
+      - PostgresTime
+      - PostgresTime.PostgresTime
+      - PostgresTime.fromDateTime
+      - PostgresTime.parse
+      - PostgresTime.hour
+      - PostgresTime.minute
+      - PostgresTime.second
+      - PostgresTime.microsecond
+      - PostgresTime.offset
+      - PostgresTime.literal
+      - PostgresTime.compareTo
+      - PostgresTime.toString
+      - PostgresTime.==
+      - PostgresTime.hashCode
+      - PostgresInterval
+      - PostgresInterval.PostgresInterval
+      - PostgresInterval.fromDuration
+      - PostgresInterval.parse
+      - PostgresInterval.zero
+      - PostgresInterval.months
+      - PostgresInterval.days
+      - PostgresInterval.microseconds
+      - PostgresInterval.toDuration
+      - PostgresInterval.literal
+      - PostgresInterval.compareTo
+      - PostgresInterval.toString
+      - PostgresInterval.==
+      - PostgresInterval.hashCode
       - PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
       - PostgrestTypedQueryBuilder.table
@@ -1268,7 +1270,7 @@ features:
       - PostgrestFilterBuilder.not
   database.using_filters.contains:
     status: implemented
-    note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. On the column-expression surface the array and range forms exist only on columns of that type, taking a List or a PostgrestRange, and the JSON form is `containsJson`; the string builder takes one list, string or map argument."
+    note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. On the column-expression surface the array and range forms exist only on columns of that type, taking a List or a PostgresRange, and the JSON form is `containsJson`; the string builder takes one list, string or map argument."
     symbols:
       - PostgrestFilterBuilder.contains
       - PostgrestArrayFilters

@@ -77,7 +77,7 @@ void main() {
     expect(
       compact,
       contains(
-        "PostgrestColumn<MapRow,PostgrestRange<int>>"
+        "PostgrestColumn<MapRow,PostgresRange<int>>"
         "('pages'",
       ),
     );
@@ -85,30 +85,30 @@ void main() {
       compact,
       contains(
         "PostgrestNullableColumn<MapRow,"
-        "PostgrestRange<DateTime>>('during'",
+        "PostgresRange<DateTime>>('during'",
       ),
     );
     expect(
       compact,
       contains(
-        "PostgrestColumn<MapRow,PostgrestRange<PostgrestDate>>('season'",
+        "PostgrestColumn<MapRow,PostgresRange<PostgresDate>>('season'",
       ),
     );
     expect(
       code,
       contains(
-        "PostgrestRange.parse(_json['season'] as String, PostgrestDate.parse)",
+        "PostgresRange.parse(_json['season'] as String, PostgresDate.parse)",
       ),
     );
     expect(
       code,
-      contains("PostgrestRange.parse(_json['pages'] as String, int.parse)"),
+      contains("PostgresRange.parse(_json['pages'] as String, int.parse)"),
     );
     expect(
       compact,
       contains(
-        "PostgrestRange<num>?getprices=>switch(_json['prices']){null=>null,"
-        "finalObjectvalue=>PostgrestRange.parse(valueasString,num.parse),};",
+        "PostgresRange<num>?getprices=>switch(_json['prices']){null=>null,"
+        "finalObjectvalue=>PostgresRange.parse(valueasString,num.parse),};",
       ),
     );
     expect(code, contains("'pages': pages.literal,"));
@@ -201,39 +201,39 @@ void main() {
       compact,
       contains(
         "Uint8List?getuint8List=>switch(_json['uint8_list']){null=>null,"
-        "finalObjectvalue=>postgrestBytea.decode(valueasString),};",
+        "finalObjectvalue=>postgresBytea.decode(valueasString),};",
       ),
     );
     expect(
       compact,
       contains(
         "'uint8_list':?switch(uint8List){null=>null,"
-        "finalvalue=>postgrestBytea.encode(value),},",
+        "finalvalue=>postgresBytea.encode(value),},",
       ),
     );
     // A column named like the codec cannot shadow it in the conversions.
     expect(
       compact,
       contains(
-        "Uint8ListgetpostgrestBytea\$=>"
-        "postgrestBytea.decode(_json['postgrest_bytea']asString);",
+        "Uint8ListgetpostgresBytea\$=>"
+        "postgresBytea.decode(_json['postgres_bytea']asString);",
       ),
     );
     expect(
       compact,
-      contains("'postgrest_bytea':postgrestBytea.encode(postgrestBytea\$),"),
+      contains("'postgres_bytea':postgresBytea.encode(postgresBytea\$),"),
     );
     expect(
       compact,
       contains(
         "List<Uint8List>?getblobs=>(_json['blobs']asList<dynamic>?)"
-        "?.map((element)=>postgrestBytea.decode(elementasString)).toList();",
+        "?.map((element)=>postgresBytea.decode(elementasString)).toList();",
       ),
     );
     expect(
       compact,
       contains(
-        "'blobs':?blobs?.map((element)=>postgrestBytea.encode(element))"
+        "'blobs':?blobs?.map((element)=>postgresBytea.encode(element))"
         ".toList(),",
       ),
     );
@@ -316,8 +316,8 @@ void main() {
     expect(
       compact,
       contains(
-        "List<PostgrestRange<int>>_postgrestRangeOfIntListFromJson(Objectjson)"
-        "=>(jsonasList<dynamic>).map((element)=>PostgrestRange.parse("
+        "List<PostgresRange<int>>_postgresRangeOfIntListFromJson(Objectjson)"
+        "=>(jsonasList<dynamic>).map((element)=>PostgresRange.parse("
         "elementasString,int.parse)).toList();",
       ),
     );
@@ -357,34 +357,34 @@ void main() {
     );
     expect(
       compact,
-      contains("PostgrestVectorColumn<PostgrestTableRow>('postgrest_vector'"),
+      contains("PostgrestVectorColumn<PostgrestTableRow>('postgres_vector'"),
     );
     expect(
       compact,
       contains(
         "List<double>?gethalfEmbedding=>switch(_json['half_embedding']){"
-        "null=>null,finalObjectvalue=>postgrestVector.decode(valueasString),};",
+        "null=>null,finalObjectvalue=>postgresVector.decode(valueasString),};",
       ),
     );
     expect(
       compact,
       contains(
         "'half_embedding':?switch(halfEmbedding){null=>null,"
-        "finalvalue=>postgrestVector.encode(value),},",
+        "finalvalue=>postgresVector.encode(value),},",
       ),
     );
     // A column named like the codec cannot shadow it in the conversions.
     expect(
       compact,
       contains(
-        "List<double>getpostgrestVector\$=>"
-        "postgrestVector.decode(_json['postgrest_vector']asString);",
+        "List<double>getpostgresVector\$=>"
+        "postgresVector.decode(_json['postgres_vector']asString);",
       ),
     );
     expect(
       compact,
       contains(
-        "'postgrest_vector':postgrestVector.encode(postgrestVector\$),",
+        "'postgres_vector':postgresVector.encode(postgresVector\$),",
       ),
     );
     // Array elements stay in their wire representation.
@@ -399,47 +399,47 @@ void main() {
     expect(
       compact,
       contains(
-        "PostgrestColumn<MapRow,PostgrestDate>('since',"
-        "fromJson:_postgrestDateFromJson",
+        "PostgrestColumn<MapRow,PostgresDate>('since',"
+        "fromJson:_postgresDateFromJson",
       ),
     );
     expect(
       compact,
       contains(
-        "PostgrestColumn<MapRow,PostgrestTime>('opens_at',"
-        "fromJson:_postgrestTimeFromJson",
+        "PostgrestColumn<MapRow,PostgresTime>('opens_at',"
+        "fromJson:_postgresTimeFromJson",
       ),
     );
     expect(
       compact,
-      contains("PostgrestNullableColumn<MapRow,PostgrestTime>('closes_at'"),
+      contains("PostgrestNullableColumn<MapRow,PostgresTime>('closes_at'"),
     );
     expect(
       compact,
       contains(
-        "PostgrestNullableColumn<MapRow,PostgrestInterval>('ttl',"
-        "fromJson:_postgrestIntervalFromJson",
+        "PostgrestNullableColumn<MapRow,PostgresInterval>('ttl',"
+        "fromJson:_postgresIntervalFromJson",
       ),
     );
     expect(
       code,
       contains(
-        "PostgrestDate get since => PostgrestDate.parse(_json['since'] "
+        "PostgresDate get since => PostgresDate.parse(_json['since'] "
         "as String);",
       ),
     );
     expect(
       compact,
       contains(
-        "PostgrestTime?getclosesAt=>switch(_json['closes_at']){null=>null,"
-        "finalObjectvalue=>PostgrestTime.parse(valueasString),};",
+        "PostgresTime?getclosesAt=>switch(_json['closes_at']){null=>null,"
+        "finalObjectvalue=>PostgresTime.parse(valueasString),};",
       ),
     );
     expect(
       compact,
       contains(
-        "PostgrestInterval?getttl=>switch(_json['ttl']){null=>null,"
-        "finalObjectvalue=>PostgrestInterval.parse(valueasString),};",
+        "PostgresInterval?getttl=>switch(_json['ttl']){null=>null,"
+        "finalObjectvalue=>PostgresInterval.parse(valueasString),};",
       ),
     );
     expect(code, contains("'since': since.literal,"));
@@ -1119,8 +1119,8 @@ void main() {
     expect(
       compact,
       contains(
-        "List<PostgrestDate>?getdays=>(_json['days']asList<dynamic>?)"
-        "?.map((element)=>PostgrestDate.parse(elementasString)).toList();",
+        "List<PostgresDate>?getdays=>(_json['days']asList<dynamic>?)"
+        "?.map((element)=>PostgresDate.parse(elementasString)).toList();",
       ),
     );
     expect(
@@ -1141,8 +1141,8 @@ void main() {
     expect(
       compact,
       contains(
-        "List<PostgrestRange<int>>?getspans=>(_json['spans']asList<dynamic>?)"
-        "?.map((element)=>PostgrestRange.parse(elementasString,int.parse))"
+        "List<PostgresRange<int>>?getspans=>(_json['spans']asList<dynamic>?)"
+        "?.map((element)=>PostgresRange.parse(elementasString,int.parse))"
         ".toList();",
       ),
     );
@@ -1174,14 +1174,14 @@ void main() {
     expect(
       compact,
       contains(
-        "PostgrestNullableColumn<PostgrestTableRow,List<PostgrestDate>>"
-        "('days',fromJson:_postgrestDateListFromJson",
+        "PostgrestNullableColumn<PostgrestTableRow,List<PostgresDate>>"
+        "('days',fromJson:_postgresDateListFromJson",
       ),
     );
     expect(
       compact,
       contains(
-        "PostgrestNullableColumn<PostgrestTableRow,List<PostgrestRange<int>>>"
+        "PostgrestNullableColumn<PostgrestTableRow,List<PostgresRange<int>>>"
         "('spans'",
       ),
     );
@@ -1228,11 +1228,11 @@ void main() {
     expect(
       compact,
       contains(
-        "List<PostgrestDate>getdays=>(_json['days']asList<dynamic>)"
-        ".map((element)=>PostgrestDate.parse(elementasString)).toList();",
+        "List<PostgresDate>getdays=>(_json['days']asList<dynamic>)"
+        ".map((element)=>PostgresDate.parse(elementasString)).toList();",
       ),
     );
-    expect(compact, contains('requiredList<PostgrestDate>days'));
+    expect(compact, contains('requiredList<PostgresDate>days'));
     expect(
       compact,
       contains("'days':days.map((element)=>element.literal).toList()"),
@@ -1842,7 +1842,7 @@ void main() {
       );
 
       expect(code, contains("import 'dart:typed_data';"));
-      expect(code, contains("'data': postgrestBytea.encode(data)"));
+      expect(code, contains("'data': postgresBytea.encode(data)"));
     });
 
     test('method names keep clear of the types and codecs the bodies use', () {
@@ -1860,7 +1860,7 @@ void main() {
           ),
           const FunctionDescription(
             schema: 'public',
-            name: 'postgrest_bytea',
+            name: 'postgres_bytea',
             overloads: [
               FunctionOverloadDescription(
                 arguments: [],
@@ -1872,7 +1872,7 @@ void main() {
       );
 
       expect(code, contains('PostgrestTypedBuilder<int?> int\$()'));
-      expect(code, contains('PostgrestTypedBuilder<void> postgrestBytea\$()'));
+      expect(code, contains('PostgrestTypedBuilder<void> postgresBytea\$()'));
     });
 
     test('result row getters keep clear of the codecs', () {
@@ -1886,7 +1886,7 @@ void main() {
                 arguments: [],
                 result: FunctionColumnsResult([
                   ColumnDescription(
-                    name: 'postgrest_vector',
+                    name: 'postgres_vector',
                     postgresFormat: 'text',
                     typeKind: ColumnTypeKind.text,
                     isRequired: false,
@@ -1901,7 +1901,7 @@ void main() {
         ]),
       );
 
-      expect(code, contains('String? get postgrestVector\$ =>'));
+      expect(code, contains('String? get postgresVector\$ =>'));
     });
 
     test('an overload taking the unnamed body is named after it', () {
