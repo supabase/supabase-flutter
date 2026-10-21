@@ -100,6 +100,11 @@ enum ColumnTypeKind {
   /// [ColumnDescription.boundTypeKind].
   range,
 
+  /// A multirange type such as `int4multirange` or `tstzmultirange`, mapped
+  /// to `PostgresMultirange`; the bound type is in
+  /// [ColumnDescription.boundTypeKind].
+  multirange,
+
   /// A type without a specific mapping, treated like [json].
   unknown,
 }
@@ -263,8 +268,8 @@ class ColumnDescription {
   /// columns.
   final ColumnTypeKind? elementTypeKind;
 
-  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] columns
-  /// and for arrays of a range type.
+  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] and
+  /// [ColumnTypeKind.multirange] columns and for arrays of either.
   final ColumnTypeKind? boundTypeKind;
 
   /// The values of the Postgres enum for enum columns.
@@ -364,8 +369,8 @@ class ComputedFieldDescription {
   /// return types.
   final ColumnTypeKind? elementTypeKind;
 
-  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] return
-  /// types and for arrays of a range type.
+  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] and
+  /// [ColumnTypeKind.multirange] return types and for arrays of either.
   final ColumnTypeKind? boundTypeKind;
 
   /// The Postgres enum of an enum return type or an array of one, which the
@@ -419,8 +424,8 @@ class ValueTypeDescription {
   /// types.
   final ColumnTypeKind? elementTypeKind;
 
-  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] types and
-  /// for arrays of a range type.
+  /// The kind of Dart type of the bounds for [ColumnTypeKind.range] and
+  /// [ColumnTypeKind.multirange] types and for arrays of either.
   final ColumnTypeKind? boundTypeKind;
 
   /// The Postgres enum of an enum type or an array of one; `null` otherwise.

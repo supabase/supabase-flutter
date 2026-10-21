@@ -549,6 +549,56 @@ void main() {
     },
   );
 
+  test('multirange columns read, write and filter as values', () async {
+    final row = hostile.MapRow({
+      'list': 1,
+      'opens_at': '09:30:00',
+      'availability': '{[2026-06-01,2026-06-08),[2026-07-01,2026-07-08)}',
+      'shifts': '{["2026-07-23 09:00:00","2026-07-23 17:00:00")}',
+    });
+
+    expect(
+      row.availability,
+      PostgresMultirange([
+        PostgresRange.closedOpen(
+          PostgresDate(2026, 6, 1),
+          PostgresDate(2026, 6, 8),
+        ),
+        PostgresRange.closedOpen(
+          PostgresDate(2026, 7, 1),
+          PostgresDate(2026, 7, 8),
+        ),
+      ]),
+    );
+    expect(
+      row.shifts,
+      PostgresMultirange([
+        PostgresRange.closedOpen(
+          DateTime(2026, 7, 23, 9),
+          DateTime(2026, 7, 23, 17),
+        ),
+      ]),
+    );
+
+    httpClient.stub(null);
+    await client
+        .table(hostile.Map$.table)
+        .update(
+          hostile.MapUpdate(availability: row.availability, shifts: row.shifts),
+        )
+        .where(hostile.Map$.availability.eq(row.availability!));
+
+    final request = httpClient.requests.last;
+    expect(request.jsonBody, {
+      'availability': '{[2026-06-01,2026-06-08),[2026-07-01,2026-07-08)}',
+      'shifts': '{[2026-07-23T09:00:00.000,2026-07-23T17:00:00.000)}',
+    });
+    expect(
+      request.queryParameters['availability'],
+      'eq.{[2026-06-01,2026-06-08),[2026-07-01,2026-07-08)}',
+    );
+  });
+
   test('geometric columns read, write and filter as values', () async {
     final row = hostile.MapRow({
       'list': 1,

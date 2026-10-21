@@ -17,6 +17,7 @@ export 'package:supabase_common/supabase_common.dart'
         PostgresLineSegment,
         PostgresLogSequenceNumber,
         PostgresMacAddress,
+        PostgresMultirange,
         PostgresNetworkAddress,
         PostgresPath,
         PostgresPoint,

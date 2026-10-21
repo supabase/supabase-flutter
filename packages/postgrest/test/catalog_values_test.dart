@@ -87,7 +87,23 @@ class CatalogValues {
     'reach',
     fromJson: _circleFromJson,
   );
+  static const availability =
+      PostgrestNullableColumn<CatalogValue, PostgresMultirange<PostgresDate>>(
+        'availability',
+        fromJson: _dateMultirangeFromJson,
+      );
+  static const windows =
+      PostgrestNullableColumn<CatalogValue, PostgresMultirange<DateTime>>(
+        'windows',
+        fromJson: _dateTimeMultirangeFromJson,
+      );
 }
+
+PostgresMultirange<PostgresDate> _dateMultirangeFromJson(Object json) =>
+    PostgresMultirange.parse(json as String, PostgresDate.parse);
+
+PostgresMultirange<DateTime> _dateTimeMultirangeFromJson(Object json) =>
+    PostgresMultirange.parse(json as String, DateTime.parse);
 
 PostgresPoint _pointFromJson(Object json) =>
     PostgresPoint.parse(json as String);
@@ -339,5 +355,57 @@ void main() {
     expect(row.read(CatalogValues.route), route);
     expect(row.read(CatalogValues.outline), outline);
     expect(row.read(CatalogValues.reach), reach);
+  });
+
+  test('multirange columns read, write and filter as values', () async {
+    final availability = PostgresMultirange([
+      PostgresRange.closedOpen(
+        PostgresDate(2026, 6, 1),
+        PostgresDate(2026, 6, 8),
+      ),
+      PostgresRange.closedOpen(
+        PostgresDate(2026, 7, 1),
+        PostgresDate(2026, 7, 8),
+      ),
+    ]);
+    final windows = PostgresMultirange([
+      PostgresRange.closedOpen(DateTime.utc(2026, 7, 23, 9), null),
+    ]);
+    final inserted = await postgrest
+        .from('catalog_values')
+        .insert({
+          'availability': availability.literal,
+          'windows': windows.render(
+            (bound) => bound.toUtc().toIso8601String(),
+          ),
+        })
+        .select('id')
+        .single();
+    insertedId = inserted['id'] as int;
+
+    final row = await postgrest
+        .table(CatalogValues.table)
+        .selectOnly([CatalogValues.availability, CatalogValues.windows])
+        .where(
+          CatalogValues.availability.eq(availability) &
+              CatalogValues.availability.contains(
+                PostgresMultirange([
+                  PostgresRange.closedOpen(
+                    PostgresDate(2026, 6, 2),
+                    PostgresDate(2026, 6, 3),
+                  ),
+                ]),
+              ) &
+              CatalogValues.availability.rangeLt(
+                PostgresMultirange([
+                  PostgresRange.closedOpen(PostgresDate(2026, 8, 1), null),
+                ]),
+              ) &
+              CatalogValues.windows.eq(windows),
+        )
+        .single();
+
+    expect(row.read(CatalogValues.availability), availability);
+    expect(row.read(CatalogValues.windows), windows);
   });
 }

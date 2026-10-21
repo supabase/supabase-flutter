@@ -14,7 +14,8 @@ class _Binding {
   final String dartType;
   final ColumnTypeKind kind;
 
-  /// The kind of the bounds of a [ColumnTypeKind.range] column.
+  /// The kind of the bounds of a [ColumnTypeKind.range] or
+  /// [ColumnTypeKind.multirange] column.
   final ColumnTypeKind? boundKind;
 
   /// The binding of the elements of a [ColumnTypeKind.array] column.
@@ -200,6 +201,7 @@ class _TypeNameRegistry {
     'PostgrestNullableIntegerVectorColumn',
     'PostgrestComputedField',
     'PostgresRange',
+    'PostgresMultirange',
     'PostgresDate',
     'PostgresTime',
     'PostgresInterval',
@@ -1168,6 +1170,11 @@ _Binding _scalarBindingFor(
     ColumnTypeKind.range,
     boundKind: shape.boundTypeKind,
   ),
+  ColumnTypeKind.multirange => _Binding(
+    'PostgresMultirange<${_boundDartType(shape.boundTypeKind)}>',
+    ColumnTypeKind.multirange,
+    boundKind: shape.boundTypeKind,
+  ),
   ColumnTypeKind.json ||
   ColumnTypeKind.array ||
   ColumnTypeKind.unknown => const _Binding('Object', ColumnTypeKind.json),
@@ -1244,6 +1251,7 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
   ColumnTypeKind.range ||
+  ColumnTypeKind.multirange ||
   ColumnTypeKind.unknown ||
   null => 'String',
 };
@@ -1280,6 +1288,7 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.enumType ||
   ColumnTypeKind.array ||
   ColumnTypeKind.range ||
+  ColumnTypeKind.multirange ||
   ColumnTypeKind.unknown ||
   null => '(bound) => bound',
 };
@@ -1351,6 +1360,9 @@ String? _readConversion(
   ColumnTypeKind.range =>
     'PostgresRange.parse($value as String, '
         '${_boundParser(binding.boundKind)})',
+  ColumnTypeKind.multirange =>
+    'PostgresMultirange.parse($value as String, '
+        '${_boundParser(binding.boundKind)})',
   ColumnTypeKind.integer ||
   ColumnTypeKind.numeric ||
   ColumnTypeKind.boolean ||
@@ -1419,7 +1431,8 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       expression: 'postgresVector.encode($value)',
       chained: false,
     ),
-    ColumnTypeKind.range => switch (binding.boundKind) {
+    ColumnTypeKind.range ||
+    ColumnTypeKind.multirange => switch (binding.boundKind) {
       ColumnTypeKind.timestamp => chain(
         '.render((bound) => bound.toIso8601String())',
       ),
@@ -1453,6 +1466,7 @@ _Rendering? _writeConversion(_Binding binding, String value) {
       ColumnTypeKind.enumType ||
       ColumnTypeKind.array ||
       ColumnTypeKind.range ||
+      ColumnTypeKind.multirange ||
       ColumnTypeKind.unknown ||
       null => chain('.literal'),
     },

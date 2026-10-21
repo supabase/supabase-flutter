@@ -16,7 +16,9 @@ For every table the generator emits:
   orderings, with nullable columns as `PostgrestNullableColumn` so `isNull()`
   only exists where it can match, and range columns typed
   `PostgresRange<int>`, `PostgresRange<num>`, `PostgresRange<PostgresDate>`
-  or `PostgresRange<DateTime>` so the range operators only exist on them,
+  or `PostgresRange<DateTime>`, and multirange columns typed
+  `PostgresMultirange` the same way, so the range operators only exist on
+  them,
 - `PostgresDate`, `PostgresTime` and `PostgresInterval` for `date`, `time`
   and `timetz`, and `interval` columns, value types that keep what a `DateTime`
   or `Duration` cannot: a calendar date without a time of day, a time of day
@@ -160,6 +162,10 @@ final archived = await client
   `PostgresCircle`. Postgres has no `=` operator for `point` and `polygon`, so
   an `eq` filter on those columns fails on the server. It compares boxes and
   circles by area and paths by their number of points.
+- Multirange columns map to `PostgresMultirange`, with bounds typed like
+  those of the matching range type. Their range operators take a
+  `PostgresMultirange`, since PostgREST reads the operand as the column's
+  type.
 - `oid` columns map to `int` and `xid8` columns to `BigInt`, parsed from the
   JSON strings PostgREST sends them as. `numeric` columns map to `num`:
   PostgREST sends them as JSON numbers, and decoding keeps only what a Dart

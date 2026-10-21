@@ -607,12 +607,6 @@ void main() {
       'money',
       'xml',
       'name',
-      'int4multirange',
-      'int8multirange',
-      'nummultirange',
-      'datemultirange',
-      'tsmultirange',
-      'tstzmultirange',
       'pg_snapshot',
       'txid_snapshot',
       'jsonpath',
@@ -812,8 +806,19 @@ void main() {
       'tsrange': ColumnTypeKind.timestamp,
       'tstzrange': ColumnTypeKind.timestampWithTimeZone,
     };
+    const multirangeBounds = {
+      'int4multirange': ColumnTypeKind.integer,
+      'int8multirange': ColumnTypeKind.integer,
+      'nummultirange': ColumnTypeKind.numeric,
+      'datemultirange': ColumnTypeKind.date,
+      'tsmultirange': ColumnTypeKind.timestamp,
+      'tstzmultirange': ColumnTypeKind.timestampWithTimeZone,
+    };
 
-    for (final MapEntry(key: format, value: boundKind) in bounds.entries) {
+    for (final MapEntry(key: format, value: boundKind) in {
+      ...bounds,
+      ...multirangeBounds,
+    }.entries) {
       final column = parseGeneratorMetadata({
         'tables': [
           {'id': 1, 'schema': 'public', 'name': 'bookings', 'comment': null},
@@ -821,7 +826,13 @@ void main() {
         'columns': [columnOf(format)],
       }).tables.single.columns.single;
 
-      expect(column.typeKind, ColumnTypeKind.range, reason: format);
+      expect(
+        column.typeKind,
+        format.contains('multirange')
+            ? ColumnTypeKind.multirange
+            : ColumnTypeKind.range,
+        reason: format,
+      );
       expect(column.boundTypeKind, boundKind, reason: format);
     }
   });

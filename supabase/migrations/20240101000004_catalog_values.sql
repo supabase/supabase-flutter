@@ -19,5 +19,7 @@ create table public.catalog_values (
   bounds box,
   route path,
   outline polygon,
-  reach circle
+  reach circle,
+  availability datemultirange,
+  windows tstzmultirange
 );
