@@ -57,8 +57,8 @@ class IcebergRestCatalog {
   /// credential vending or request signing for table read and write
   /// operations.
   ///
-  /// Without an [httpClient] the catalog creates its own, which [close]
-  /// releases.
+  /// Without an [httpClient] the catalog creates its own and keeps its
+  /// connections open for reuse, so call [close] once you are done with it.
   ///
   /// [accessToken] is resolved before every request, including every retry,
   /// and sent as `Authorization: Bearer <token>`. Returning `null` sends no
@@ -113,16 +113,34 @@ class IcebergRestCatalog {
   /// The transport the catalog created for itself when none was passed.
   http.Client? _defaultHttpClient;
 
+  /// The client requests are sent through, resolving the access token for
+  /// every request when there is an access token callback.
+  ///
+  /// [close] closes only [_defaultHttpClient], since closing this client would
+  /// also close a transport that belongs to the caller.
+  // ignore: dispose-class-fields
+  late final http.Client _client = _createClient();
+
+  bool _closed = false;
+
   static const Set<int> _retryableStatusCodes = {503, 520};
 
-  Future<String>? _prefixFuture;
+  String? _prefix;
+  Future<String>? _pendingPrefix;
+  int _prefixGeneration = 0;
 
   /// Whether the catalog configuration advertised an idempotency key
   /// lifetime, which makes repeating a write with the same key safe.
   bool _idempotencyKeysSupported = false;
 
-  http.Client get _transport =>
-      _httpClient ?? (_defaultHttpClient ??= createDefaultHttpClient());
+  http.Client _createClient() {
+    final transport =
+        _httpClient ?? (_defaultHttpClient = createDefaultHttpClient());
+    final accessToken = _accessToken;
+    return accessToken == null
+        ? transport
+        : AccessTokenClient(accessToken, transport);
+  }
 
   String _namespaceToPath(List<String> namespace) =>
       namespace.map(Uri.encodeComponent).join('%1F');
@@ -151,24 +169,37 @@ class IcebergRestCatalog {
   /// configuration once and shared by concurrent callers.
   ///
   /// A failed fetch is not cached, so the next operation fetches it again.
-  /// [abortSignal] only abandons the wait of this caller.
+  /// [abortSignal] abandons the wait of this caller, and a fetch still
+  /// pending at that point is not reused by later operations, since it may
+  /// have stalled.
   Future<String> _resolvePrefix(Future<void>? abortSignal) {
-    final prefix = _prefixFuture ??= _fetchPrefix();
+    final prefix = _prefix;
+    if (prefix != null) {
+      return Future.value(prefix);
+    }
+    final pending = _pendingPrefix ??= _fetchPrefix();
     if (abortSignal == null) {
-      return prefix;
+      return pending;
     }
     return Future.any([
-      prefix,
-      abortSignal.then<String>((_) => throw http.RequestAbortedException()),
+      pending,
+      abortSignal.then<String>((_) {
+        if (identical(_pendingPrefix, pending)) {
+          _pendingPrefix = null;
+        }
+        throw http.RequestAbortedException();
+      }),
     ]);
   }
 
   Future<String> _fetchPrefix() async {
+    final generation = ++_prefixGeneration;
     try {
-      return await _computePrefix();
-    } catch (_) {
-      _prefixFuture = null;
-      rethrow;
+      return _prefix = await _computePrefix();
+    } finally {
+      if (generation == _prefixGeneration) {
+        _pendingPrefix = null;
+      }
     }
   }
 
@@ -222,6 +253,9 @@ class IcebergRestCatalog {
     Map<String, String>? headers,
     Future<void>? abortSignal,
   }) async {
+    if (_closed) {
+      throw StateError('The catalog was closed');
+    }
     final uri = _buildUri(path, query);
     final isRead = method == HttpMethod.get || method == HttpMethod.head;
     final requestHeaders = {
@@ -243,7 +277,10 @@ class IcebergRestCatalog {
       options: isRead || _idempotencyKeysSupported
           ? _retryOptions
           : _retryOptions.copyWith(enabled: false),
-      retryIf: (error) => error is IcebergNetworkException,
+      retryIf: (error) =>
+          error is IcebergNetworkException ||
+          (error is IcebergApiException &&
+              _retryableStatusCodes.contains(error.statusCode)),
       retryIfResult: (attemptResponse) =>
           _retryableStatusCodes.contains(attemptResponse.statusCode),
       retryAfter: (outcome) =>
@@ -274,20 +311,10 @@ class IcebergRestCatalog {
       );
       request.body = body;
     }
-    final accessToken = _accessToken;
-    if (accessToken != null) {
-      final token = await resolveAccessToken(accessToken);
-      if (token != null) {
-        request.headers.putIfAbsent(
-          HttpHeader.authorization,
-          () => 'Bearer $token',
-        );
-      }
-    }
 
     final http.StreamedResponse streamedResponse;
     try {
-      streamedResponse = await idleTimeout.send(request, _transport);
+      streamedResponse = await idleTimeout.send(request, _client);
     } on http.RequestAbortedException {
       rethrow;
     } on SupabaseException {
@@ -377,12 +404,18 @@ class IcebergRestCatalog {
       ? const {}
       : {'X-Iceberg-Access-Delegation': _accessDelegation};
 
-  /// Closes the HTTP client the catalog created for itself.
+  /// Closes the HTTP client the catalog created for itself, after which an
+  /// operation throws a [StateError].
   ///
-  /// An `httpClient` passed to the constructor belongs to the caller and is
-  /// left open. A request made after closing fails with an
-  /// [IcebergNetworkException].
-  void close() => _defaultHttpClient?.close();
+  /// Does nothing when an `httpClient` was passed to the constructor, since
+  /// that one belongs to the caller.
+  void close() {
+    if (_httpClient != null) {
+      return;
+    }
+    _closed = true;
+    _defaultHttpClient?.close();
+  }
 
   /// Lists namespaces in the catalog, optionally under a parent namespace.
   ///

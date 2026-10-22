@@ -1560,9 +1560,8 @@ await catalog.listNamespaces(const ListNamespacesOptions(pageSize: 100));
 await catalog.listNamespaces(options: const ListNamespacesOptions(pageSize: 100));
 ```
 
-`TableSnapshotScope.refs` is now `TableSnapshotScope.references`. A nested type the client does not
-recognize decodes as the new `UnknownType` instead of failing the whole table, so a `switch` over
-`IcebergType` needs a case for it.
+A nested type the client does not recognize decodes as the new `UnknownType` instead of failing the
+whole table, so a `switch` over `IcebergType` needs a case for it.
 
 A catalog whose `/v1/config` request fails now throws that error from the operation instead of
 falling back to the `v1/<warehouse>` path, so a rejected token or a missing bucket surfaces as the

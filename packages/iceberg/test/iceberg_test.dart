@@ -208,7 +208,7 @@ void main() {
 
       expect(namespace, ['analytics']);
       final request = lastOperation();
-      expect(request.method, 'POST');
+      expect(request.method, HttpMethod.post.value);
       expect(request.url.path, endsWith('/v1/warehouse/namespaces'));
       expect((request.jsonBody as Map<String, dynamic>), {
         'namespace': ['analytics'],
@@ -260,7 +260,7 @@ void main() {
       final properties = await catalog.loadNamespaceMetadata(['analytics']);
 
       expect(properties, {'owner': 'team'});
-      expect(lastOperation().method, 'GET');
+      expect(lastOperation().method, HttpMethod.get.value);
     });
 
     test('updateNamespaceProperties returns the update result', () async {
@@ -287,7 +287,7 @@ void main() {
 
       await catalog.dropNamespace(['analytics']);
 
-      expect(lastOperation().method, 'DELETE');
+      expect(lastOperation().method, HttpMethod.delete.value);
       expect(
         lastOperation().url.path,
         endsWith('/v1/warehouse/namespaces/analytics'),
@@ -479,7 +479,7 @@ void main() {
         purge: true,
       );
 
-      expect(lastOperation().method, 'DELETE');
+      expect(lastOperation().method, HttpMethod.delete.value);
       expect(
         lastOperation().url.queryParameters['purgeRequested'],
         'true',
@@ -742,6 +742,24 @@ void main() {
       await expectLater(result, throwsA(isA<RequestAbortedException>()));
     });
 
+    test('an abandoned config request is not reused', () async {
+      final abort = Completer<void>();
+      httpClient
+        ..stub({'namespaces': []})
+        ..stub(_config(prefix: 'server'), path: '/v1/config')
+        ..stubStall(path: '/v1/config', times: 1);
+
+      final abandoned = catalog.listNamespaces(abortSignal: abort.future);
+      await pumpEventQueue();
+      abort.complete();
+      await expectLater(abandoned, throwsA(isA<RequestAbortedException>()));
+
+      await catalog.listNamespaces();
+
+      expect(httpClient.requestsTo('/v1/config'), hasLength(2));
+      expect(lastOperation().url.path, endsWith('/v1/server/namespaces'));
+    });
+
     test('the abort signal cancels the wait for the config', () async {
       final abort = Completer<void>();
       httpClient.stubStall();
@@ -793,6 +811,31 @@ void main() {
       await catalog.listNamespaces();
 
       expect(httpClient.requestsTo('/v1/config'), hasLength(2));
+    });
+
+    test('a 503 whose body fails to arrive is retried', () async {
+      var attempts = 0;
+      catalog = createCatalog(
+        retryOptions: _immediateRetries,
+        client: MockClient.streaming((request, _) async {
+          if (request.url.path.endsWith('/v1/config')) {
+            return jsonStreamedResponse(_config(), request: request);
+          }
+          if (attempts++ == 0) {
+            return StreamedResponse(
+              Stream.error(ClientException('Connection reset', request.url)),
+              503,
+              request: request,
+            );
+          }
+          return jsonStreamedResponse({'namespaces': []}, request: request);
+        }),
+      );
+
+      final result = await catalog.listNamespaces();
+
+      expect(result.namespaces, isEmpty);
+      expect(attempts, 2);
     });
 
     test('a read answered with a client error is not retried', () async {
@@ -916,10 +959,11 @@ void main() {
       expect(operations(), hasLength(1));
     });
 
-    test('a catalog that created its own client can be closed', () {
-      final ownCatalog = IcebergRestCatalog(baseUrl: 'http://localhost');
+    test('a closed catalog that created its own client throws', () async {
+      final ownCatalog = IcebergRestCatalog(baseUrl: 'http://localhost')
+        ..close();
 
-      expect(ownCatalog.close, returnsNormally);
+      await expectLater(ownCatalog.listNamespaces(), throwsStateError);
     });
   });
 
