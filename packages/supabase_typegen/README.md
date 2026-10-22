@@ -102,9 +102,9 @@ local database and generates from the result.
 
 Never edit the generated file. Regenerate it after every database migration
 and commit it, so the project builds without a database. A coding agent
-learns this workflow from the `supabase-flutter-generate-schema` skill of
-`supabase_flutter`, or the `supabase-generate-schema` skill of `supabase`,
-installed with [`dart run skills@ get`](https://dart.dev/ai/package-skills).
+learns this workflow from the `supabase-typegen-generate`
+[package skill](https://dart.dev/ai/package-skills) this package ships.
+Install it into your project with `dart run skills@ get -p supabase_typegen`.
 
 The code is formatted with the `dart format` of the SDK running the tool, for
 the language version of the project it is written into (the lower bound of

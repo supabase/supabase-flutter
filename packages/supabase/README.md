@@ -42,24 +42,27 @@ v2 code, which no longer compiles. To upgrade a v2 project, follow
 `supabase` ships [package skills](https://dart.dev/ai/package-skills),
 instructions that teach coding agents such as Claude Code, Cursor, Gemini or
 Copilot the current API. Agents trained on v2 examples otherwise tend to write
-code that does not compile against v3. Install the skills into your project
-after adding the package:
+code that does not compile against v3. The skills for generating the schema
+and for testing ship with the dev dependencies they are about. Install the
+skills of every package you use:
 
 ```sh
 dart run skills@ get -p supabase
+dart run skills@ get -p supabase_typegen
+dart run skills@ get -p supabase_test
 ```
 
-| Skill                      | Covers                                                               |
-| -------------------------- | -------------------------------------------------------------------- |
-| `supabase-idioms`          | Writing or reviewing any code that uses the client                   |
-| `supabase-generate-schema` | Generating the typed database schema and keeping it in sync          |
-| `supabase-realtime`        | Live lists with `stream()`, `onTableChanges`, broadcast and presence |
-| `supabase-testing`         | Unit tests with `supabase_test`                                      |
-| `supabase-migrate-v3`      | Upgrading a project from v2 to v3                                    |
+| Skill                       | Package            | Covers                                                               |
+| --------------------------- | ------------------ | -------------------------------------------------------------------- |
+| `supabase-idioms`           | `supabase`         | Writing or reviewing any code that uses the client                   |
+| `supabase-realtime`         | `supabase`         | Live lists with `stream()`, `onTableChanges`, broadcast and presence |
+| `supabase-migrate-v3`       | `supabase`         | Upgrading a project from v2 to v3                                    |
+| `supabase-typegen-generate` | `supabase_typegen` | Generating the typed database schema and keeping it in sync          |
+| `supabase-test-testing`     | `supabase_test`    | Unit tests with `supabase_test`                                      |
 
-Run the command again after upgrading `supabase` to update the skills. Commit
-the installed skills together with `.config/dart_skills/` so everyone working
-on the project gets the same version.
+Run the commands again after upgrading the packages to update the skills.
+Commit the installed skills together with `.config/dart_skills/` so everyone
+working on the project gets the same version.
 
 ## Getting started
 

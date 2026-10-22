@@ -42,25 +42,28 @@ v2 code, which no longer compiles. To upgrade a v2 project, follow
 `supabase_flutter` ships [package skills](https://dart.dev/ai/package-skills),
 instructions that teach coding agents such as Claude Code, Cursor, Gemini or
 Copilot the current API. Agents trained on v2 examples otherwise tend to write
-code that does not compile against v3. Install the skills into your project
-after adding the package:
+code that does not compile against v3. The skills for generating the schema
+and for testing ship with the dev dependencies they are about. Install the
+skills of every package you use:
 
 ```sh
 dart run skills@ get -p supabase_flutter
+dart run skills@ get -p supabase_typegen
+dart run skills@ get -p supabase_test
 ```
 
-| Skill                              | Covers                                                                   |
-| ---------------------------------- | ------------------------------------------------------------------------ |
-| `supabase-flutter-idioms`          | Writing or reviewing any code that uses the client                       |
-| `supabase-flutter-generate-schema` | Generating the typed database schema and keeping it in sync              |
-| `supabase-flutter-realtime`        | Live lists with `stream()`, `onTableChanges`, broadcast and presence     |
-| `supabase-flutter-auth-setup`      | OAuth, magic links and password reset that return to the app with a link |
-| `supabase-flutter-testing`         | Unit and widget tests with `supabase_test`                               |
-| `supabase-flutter-migrate-v3`      | Upgrading a project from v2 to v3                                        |
+| Skill                         | Package            | Covers                                                                   |
+| ----------------------------- | ------------------ | ------------------------------------------------------------------------ |
+| `supabase-flutter-idioms`     | `supabase_flutter` | Writing or reviewing any code that uses the client                       |
+| `supabase-flutter-realtime`   | `supabase_flutter` | Live lists with `stream()`, `onTableChanges`, broadcast and presence     |
+| `supabase-flutter-auth-setup` | `supabase_flutter` | OAuth, magic links and password reset that return to the app with a link |
+| `supabase-flutter-migrate-v3` | `supabase_flutter` | Upgrading a project from v2 to v3                                        |
+| `supabase-typegen-generate`   | `supabase_typegen` | Generating the typed database schema and keeping it in sync              |
+| `supabase-test-testing`       | `supabase_test`    | Unit and widget tests with `supabase_test`                               |
 
-Run the command again after upgrading `supabase_flutter` to update the
-skills. Commit the installed skills together with `.config/dart_skills/` so
-everyone working on the project gets the same version.
+Run the commands again after upgrading the packages to update the skills.
+Commit the installed skills together with `.config/dart_skills/` so everyone
+working on the project gets the same version.
 
 ## Getting started
 
@@ -439,8 +442,8 @@ which runs the Facebook login in the browser.
 `signInWithIdToken()` supports Apple, Google, Facebook, Kakao and Keycloak.
 Every other provider signs in through `signInWithOAuth()`, which opens the
 browser. Pass a deep link as `redirectTo` to bring the user back to the app,
-as described in [Deep links](#deep-links). The sign in completes when the app
-receives the link, so wait for it on `onAuthStateChange`:
+as described in [Deep links](#deep-links). `signInWithOAuth()` returns once
+the browser is open, and `false` when it could not be opened:
 
 ```dart file
 import 'package:flutter/foundation.dart';
@@ -448,18 +451,22 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
 
-Future<Session> signInWithGitHub() async {
-  await supabase.auth.signInWithOAuth(
+Future<void> signInWithGitHub() async {
+  final launched = await supabase.auth.signInWithOAuth(
     OAuthProvider.github,
     // On the web the browser returns to the current page instead.
     redirectTo: kIsWeb ? null : 'io.supabase.flutterdemo://login-callback',
   );
-  final state = await supabase.auth.onAuthStateChange.firstWhere(
-    (state) => state is AuthSignedIn,
-  );
-  return state.session!;
+  if (!launched) {
+    throw const AuthException('Could not open the sign in page.');
+  }
 }
 ```
+
+The sign in completes when the app receives the link, and
+`onAuthStateChange` then emits `AuthSignedIn`. Listen for it rather than
+awaiting it after the call: the user can close the browser without signing
+in, and no event arrives then.
 
 To run the flow in an in-app browser session instead of the system browser,
 add [`supabase_flutter_web_auth`](https://pub.dev/packages/supabase_flutter_web_auth).
@@ -1067,7 +1074,8 @@ Test code that uses Supabase with
 HTTP requests are answered by stubs and whose realtime socket runs in memory,
 so no running stack is needed. In widget tests, initialize `Supabase` with
 `initializeTestSupabase` from `package:supabase_flutter/testing.dart`. The
-`supabase-flutter-testing` skill teaches a coding agent the same setup.
+`supabase-test-testing` skill of `supabase_test` teaches a coding agent the
+same setup.
 
 ## Migrating
 

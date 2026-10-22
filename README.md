@@ -101,21 +101,20 @@ through every part of the API.
 
 ## Using an AI coding agent
 
-`supabase_flutter` and `supabase` ship
+`supabase_flutter`, `supabase`, `supabase_typegen` and `supabase_test` ship
 [package skills](https://dart.dev/ai/package-skills), instructions that teach
 coding agents such as Claude Code, Cursor, Gemini or Copilot the v3 API.
 Agents trained on v2 examples otherwise tend to write code that does not
-compile. Install them in your project after adding the package:
+compile. Install the skills of every package you use, with `supabase` in
+place of `supabase_flutter` in a Dart project without Flutter:
 
 ```sh
-# In a Flutter app
 dart run skills@ get -p supabase_flutter
-
-# In a Dart project without Flutter
-dart run skills@ get -p supabase
+dart run skills@ get -p supabase_typegen
+dart run skills@ get -p supabase_test
 ```
 
-Run the command again after upgrading the package to update the skills.
+Run the commands again after upgrading the packages to update the skills.
 
 ## Testing your app
 

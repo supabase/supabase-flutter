@@ -20,11 +20,9 @@ suites of the Supabase client packages themselves run on the same primitives.
 - Assert on what was sent with `requests` and `requestsTo`.
 - Dispose every client at the end of the test.
 
-A coding agent learns the same rules from the `supabase-testing` skill of
-`supabase`, or the `supabase-flutter-testing` skill of `supabase_flutter`.
-Install them with `dart run skills@ get -p supabase` or
-`dart run skills@ get -p supabase_flutter`, as described on
-[dart.dev](https://dart.dev/ai/package-skills).
+A coding agent learns the same rules from the `supabase-test-testing`
+[package skill](https://dart.dev/ai/package-skills) this package ships.
+Install it into your project with `dart run skills@ get -p supabase_test`.
 
 ## Getting started
 
@@ -68,9 +66,10 @@ void main() {
 
 The stubbed rows are the JSON PostgREST would return, with the column names of
 the database, so a typed query decodes them exactly like a real response.
-Stub every column the query reads: a `select()` that reads all columns into
-`BooksRow` needs every non-nullable column in each row. The untyped
-`supabase.from('books')` is answered by the same stubs.
+Stub every column the code under test reads: a row type decodes a column when
+it is read, so reading `BooksRow.createdAt` from a row stubbed without
+`created_at` throws. The untyped `supabase.from('books')` is answered by the
+same stubs.
 
 `testSupabaseClient` is a regular `SupabaseClient` wired for tests: it
 configures the in-memory storage the PKCE flow requires, turns off the token
