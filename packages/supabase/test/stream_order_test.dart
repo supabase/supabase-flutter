@@ -199,6 +199,10 @@ void main() {
 
       await waitFor(() => snapshots.length == 2);
       expect(snapshots.last.map((todo) => todo.id), [1, 3, 2]);
+      expect(
+        httpClient.requestsTo('/rest/v1/todos').single.url.queryParameters,
+        containsPair('order', 'priority.asc'),
+      );
     });
 
     test('rejects a null placement', () {

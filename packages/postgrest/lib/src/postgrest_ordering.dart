@@ -93,6 +93,9 @@ final class _Ordering<Row> extends PostgrestOrdering<Row> {
   }
 
   @override
+  String toString() => orderKey;
+
+  @override
   PostgrestOrdering<Row> asc() =>
       _Ordering(column, direction: SortDirection.ascending, nulls: _nulls);
 
