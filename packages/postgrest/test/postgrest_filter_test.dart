@@ -1,4 +1,6 @@
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_common/supabase_common.dart'
+    show postgresTimestampLiteral;
 import 'package:test/test.dart';
 
 extension type const Todo(Map<String, dynamic> _json)
@@ -183,6 +185,29 @@ void main() {
       final filter = (Todos.a.eq(1) & Todos.name.eq('p(q)')) | Todos.id.eq(3);
 
       expect(rendered(filter), ['or=(and(a.eq.1,name.eq."p(q)"),id.eq.3)']);
+    });
+  });
+
+  group('DateTime operands', () {
+    final local = DateTime(2026, 1, 1, 12);
+
+    test('a UTC value is sent with its Z', () {
+      expect(rendered(Todos.due.gt(DateTime.utc(2026, 1, 1, 12))), [
+        'due=gt.2026-01-01T12:00:00.000Z',
+      ]);
+    });
+
+    test('a local value is sent with its offset from UTC', () {
+      expect(rendered(Todos.due.gt(local)), [
+        'due=gt.${postgresTimestampLiteral(local)}',
+      ]);
+      expect(rendered(Todos.due.inFilter([local])), [
+        'due=in.(${postgresTimestampLiteral(local)})',
+      ]);
+      expect(
+        Todos.due.eq(local).comparison!.renderedValue,
+        postgresTimestampLiteral(local),
+      );
     });
   });
 

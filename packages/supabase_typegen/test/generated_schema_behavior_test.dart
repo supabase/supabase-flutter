@@ -361,6 +361,32 @@ void main() {
     },
   );
 
+  test(
+    'timestamp column tokens filter on the instant an update writes',
+    () async {
+      httpClient.stub(null);
+      final local = DateTime(2026, 7, 23, 10); // local wall time
+
+      await client
+          .table(Books.table)
+          .update(BooksUpdate(createdAt: local))
+          .where(Books.createdAt.eq(local));
+
+      final request = httpClient.requests.last;
+      final written = (request.jsonBody as Map<String, dynamic>)['created_at'];
+      final filtered = request.queryParameters['created_at']!;
+      expect(written, local.toUtc().toIso8601String());
+      expect(filtered, startsWith('eq.2026-07-23T10:00:00.000'));
+      expect(filtered, matches(RegExp(r'[+-]\d{2}:\d{2}(:\d{2})?$')));
+      expect(
+        DateTime.parse(
+          filtered.substring('eq.'.length),
+        ).isAtSameMomentAs(DateTime.parse(written as String)),
+        isTrue,
+      );
+    },
+  );
+
   test('date column tokens filter with the date literal', () async {
     await client
         .table(Books.table)

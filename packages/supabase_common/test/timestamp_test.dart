@@ -333,4 +333,22 @@ void main() {
       expect(unixSecondsFromDateTime(dateTimeFromUnixSeconds(-2)), -2);
     });
   });
+
+  group('postgresTimestampLiteral', () {
+    test('a UTC value ends in Z', () {
+      expect(
+        postgresTimestampLiteral(DateTime.utc(2026, 1, 1, 12)),
+        '2026-01-01T12:00:00.000Z',
+      );
+    });
+
+    test('a local value keeps its wall clock time and adds its offset', () {
+      final local = DateTime(2026, 1, 1, 12);
+      final literal = postgresTimestampLiteral(local);
+
+      expect(literal, startsWith('2026-01-01T12:00:00.000'));
+      expect(literal, matches(RegExp(r'[+-]\d{2}:\d{2}(:\d{2})?$')));
+      expect(DateTime.parse(literal).isAtSameMomentAs(local), isTrue);
+    });
+  });
 }
