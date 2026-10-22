@@ -472,8 +472,8 @@ explicitly:
 - [`RealtimeClient.connectionState` is now typed](#realtimeclientconnectionstate-is-now-typed)
 - [`HttpMethod` is one shared enum](#httpmethod-is-one-shared-enum), where the enum `index` shifted
 - [Confirming an email or phone change emits `userUpdated`](#confirming-an-email-or-phone-change-emits-userupdated)
-- [A client without an `asyncStorage` throws when it is created](#a-client-without-an-asyncstorage-throws-when-it-is-created),
-  where release builds used to skip the assert
+- [A client without an `asyncStorage` keeps pkce verifiers in memory](#a-client-without-an-asyncstorage-keeps-pkce-verifiers-in-memory),
+  so a pkce flow that leaves the process needs a persistent storage passed explicitly
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
 - [`DateTime` filter values carry their offset from UTC](#datetime-filter-values-carry-their-offset-from-utc)
@@ -583,6 +583,19 @@ final supabase = SupabaseClient(
 
 A Dart script that does not call `dispose()` on its `SupabaseClient` now waits a minute before
 exiting instead of 15 seconds.
+
+#### `realtimeClientOptions` is renamed to `realtimeOptions`
+
+The parameter of `SupabaseClient` and `Supabase.initialize` now matches `postgrestOptions`,
+`authOptions`, `storageOptions` and `functionsOptions`.
+
+```dart
+// Before
+SupabaseClient(url, key, realtimeClientOptions: RealtimeClientOptions(timeout: timeout));
+
+// After
+SupabaseClient(url, key, realtimeOptions: RealtimeClientOptions(timeout: timeout));
+```
 
 #### The SDK no longer prints logs
 
@@ -774,7 +787,7 @@ await supabase.from('messages').select().lt('created_at', DateTime.now());
 | `supabase.rest.headers['X-Foo'] = 'bar'`                                                     | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}`                                 |
 | `postgrest.headers['X-Foo'] = 'bar'`                                                         | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request     |
 | `await supabase.from('countries')`                                                           | does not compile, choose an operation first                                                |
-| `SupabaseQuerySchema(headers: …)`                                                            | removed, the headers of the `rest` client are used                                         |
+| `SupabaseQuerySchema(…)` and `SupabaseQueryBuilder(…)`                                       | internal, use `supabase.schema(…)` and `supabase.from(…)`                                  |
 | `PostgrestQueryBuilder(method: …, abortSignal: …)`                                           | removed, call `abortSignal()` on the query builder instead                                 |
 | `PostgrestRpcBuilder(abortSignal: …)`                                                        | removed, call `abortSignal()` on the builder `rpc()` returns                               |
 | `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`                 | removed                                                                                    |
@@ -1094,16 +1107,16 @@ session has been restored. `Supabase.initialize` awaits it for you.
 `supabase.auth.token-…` prefix are still read, so a sign-in link requested before the upgrade still
 completes after it.
 
-#### A client without an `asyncStorage` throws when it is created
+#### A client without an `asyncStorage` keeps pkce verifiers in memory
 
 The pkce flow, the default, keeps its code verifiers in the `asyncStorage` of `AuthClientOptions`.
-A `SupabaseClient` or `AuthClient` created without one used to fail an assert, so release builds
-only failed at the first pkce call. Both now throw an `ArgumentError` when they are created, in
-every build mode.
+A `SupabaseClient` created without one now falls back to a `MemoryAuthAsyncStorage`, so a script
+or a server needs no setup. The verifiers are lost when the process exits, so pass a persistent
+storage when the code comes back to another process, such as from an email link.
 
-`Supabase.initialize` configures a storage for you. A standalone script or a server has to pass
-one, such as `MemoryAuthAsyncStorage()`, or use the implicit flow. A client with a third-party
-`accessToken` needs no `asyncStorage`.
+`Supabase.initialize` configures a persistent storage for you. A `SupabaseClient` with
+`persistSession: true`, or an `AuthClient` using the pkce flow, still needs an `asyncStorage` and
+throws an `ArgumentError` when it is created without one, in every build mode.
 
 #### `AuthChangeEvent.initialSession` is emitted to every subscriber
 
@@ -2014,8 +2027,8 @@ behavior, set the header on the individual calls instead of on the client.
 
 `SupabaseClient`, `PostgrestClient` and `FunctionsClient` take an `AsyncJsonCodec` through
 `jsonCodec:` instead of a `YAJsonIsolate` through `isolate:`. The same rename applies to
-`PostgrestBuilder`, `PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `SupabaseQueryBuilder` and
-`SupabaseQuerySchema`, and `Supabase.initialize` takes `jsonCodec:` too.
+`PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder`, and `Supabase.initialize`
+takes `jsonCodec:` too.
 
 ```dart
 // Before
@@ -2029,8 +2042,8 @@ final client = SupabaseClient(url, key, jsonCodec: YAJsonIsolate());
 call. On web, `YAJsonIsolate` is no longer `const`, and using it after `dispose()` throws a
 `StateError` as it already did on other platforms.
 
-Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is not exported
-by `supabase` or `supabase_flutter`, so depend on `yet_another_json_isolate` directly to name it.
+Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is exported by
+`supabase` and `supabase_flutter`.
 
 #### `TracePropagationOptions` requires a `traceContextProvider`
 

@@ -54,7 +54,7 @@ SupabaseClient testSupabaseClient({
       autoRefreshToken: autoRefreshToken,
       asyncStorage: MemoryAuthAsyncStorage(),
     ),
-    realtimeClientOptions: RealtimeClientOptions(transport: realtimeTransport),
+    realtimeOptions: RealtimeClientOptions(transport: realtimeTransport),
   );
 }
 

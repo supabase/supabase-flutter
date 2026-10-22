@@ -7,7 +7,6 @@ import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'api_key.dart';
 import 'auth_http_client.dart';
@@ -44,7 +43,7 @@ import 'trace_http_client.dart';
 /// [functionsOptions] overrides it for that client. `null` (the default)
 /// applies no timeout.
 ///
-/// [realtimeClientOptions] specifies different options you can pass to
+/// [realtimeOptions] specifies different options you can pass to
 /// `RealtimeClient`.
 ///
 /// [accessToken] Optional function for using a third-party authentication
@@ -63,13 +62,14 @@ import 'trace_http_client.dart';
 ///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `asyncStorage` field of [authOptions].
-/// Pass a persistent implementation whenever the flow can leave the process
-/// before the code comes back, which covers every email link and every
-/// redirect to an OAuth provider. `MemoryAuthAsyncStorage` only suits flows
+/// Without one, a `MemoryAuthAsyncStorage` is used, which only suits flows
 /// that start and complete in the same process, such as tests and command line
-/// tools that keep a redirect listener open. Without an `asyncStorage` the
-/// constructor throws an [ArgumentError] for the pkce flow or a persisted
-/// session, unless an [accessToken] is used.
+/// tools that keep a redirect listener open. Pass a persistent implementation
+/// whenever the flow can leave the process before the code comes back, which
+/// covers every email link and every redirect to an OAuth provider. A
+/// persisted session needs an `asyncStorage` too, so without one the
+/// constructor throws an [ArgumentError] when `persistSession` is set, unless
+/// an [accessToken] is used.
 /// {@endtemplate}
 class SupabaseClient {
   /// {@macro supabase_client}
@@ -80,7 +80,7 @@ class SupabaseClient {
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
-    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    RealtimeClientOptions realtimeOptions = const RealtimeClientOptions(),
     TracePropagationOptions? tracePropagationOptions,
     this.accessToken,
     Map<String, String>? headers,
@@ -105,9 +105,8 @@ class SupabaseClient {
        _ownsJsonCodec = jsonCodec == null {
     if (accessToken == null &&
         authOptions.asyncStorage == null &&
-        (authOptions.authFlowType == AuthFlowType.pkce ||
-            authOptions.persistSession)) {
-      throw ArgumentError(_missingAsyncStorageMessage(authOptions));
+        authOptions.persistSession) {
+      throw ArgumentError(_missingAsyncStorageMessage());
     }
     final baseHttpClient = httpClient ?? createDefaultHttpClient();
     final tracedHttpClient = tracePropagationOptions == null
@@ -136,7 +135,7 @@ class SupabaseClient {
     _rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(storageOptions);
-    realtime = _initRealtimeClient(options: realtimeClientOptions);
+    realtime = _initRealtimeClient(options: realtimeOptions);
     if (accessToken == null) {
       clientLogger.config(
         'Initialize SupabaseClient v$version with no custom access token',
@@ -346,15 +345,16 @@ class SupabaseClient {
     }
   }
 
-  /// Disconnects realtime, closes the auth state subscription, and disposes
-  /// the functions, PostgREST, and its internally owned JSON codec.
+  /// Closes the auth state subscription, disconnects realtime, and disposes
+  /// the functions, PostgREST, and auth clients, the JSON codec and the http
+  /// client it created itself.
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
-    await realtime.disconnect();
     // Cancelling a broadcast subscription takes effect immediately and returns
     // a future of the root zone. Awaiting it would resume this method outside
     // the fake async zone of a widget test, which then never completes.
     unawaited(_authStateSubscription?.cancel());
+    await realtime.disconnect();
     await functions.dispose();
     await _rest.dispose();
     if (_ownsJsonCodec) {
@@ -372,7 +372,7 @@ class SupabaseClient {
       headers: _authClientHeaders(),
       autoRefreshToken: authOptions.autoRefreshToken,
       httpClient: _authApiHttpClient,
-      asyncStorage: authOptions.asyncStorage,
+      asyncStorage: authOptions.asyncStorage ?? MemoryAuthAsyncStorage(),
       persistSession: authOptions.persistSession,
       storageKey: authOptions.storageKey,
       flowType: authOptions.authFlowType,
@@ -503,19 +503,12 @@ String _serviceUrl(
       .toString();
 }
 
-String _missingAsyncStorageMessage(AuthClientOptions authOptions) {
-  final message = authOptions.authFlowType == AuthFlowType.pkce
-      ? 'SupabaseClient uses the pkce flow by default, which needs an '
-            'asyncStorage to keep its code verifiers in. Pass one through '
-            'authOptions, for example '
-            '`authOptions: AuthClientOptions(asyncStorage: '
-            'MemoryAuthAsyncStorage())` when the verifiers do not need to '
-            'outlive the process, or set '
-            '`authFlowType: AuthFlowType.implicit`.'
-      : 'SupabaseClient needs an asyncStorage to persist the session in. Pass '
-            'one through authOptions, for example '
-            '`authOptions: AuthClientOptions(asyncStorage: '
-            'MemoryAuthAsyncStorage())`, or set `persistSession: false`.';
+String _missingAsyncStorageMessage() {
+  const message =
+      'SupabaseClient needs an asyncStorage to persist the session in. Pass '
+      'one through authOptions, for example '
+      '`authOptions: AuthClientOptions(asyncStorage: '
+      'MemoryAuthAsyncStorage())`, or set `persistSession: false`.';
   if (Zone.current[#test.invoker] == null) {
     return message;
   }

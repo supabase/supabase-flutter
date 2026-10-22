@@ -1213,7 +1213,6 @@ features:
     supporting_symbols:
       - PostgrestClientOptions.schema
       - SupabaseQuerySchema
-      - SupabaseQuerySchema.SupabaseQuerySchema
       - SupabaseQuerySchema.from
       - SupabaseQuerySchema.rpc
       - SupabaseQuerySchema.schema
@@ -3064,6 +3063,7 @@ supporting_symbols:
   - AuthApiException.headers
   - AuthClientOptions
   - AuthClientOptions.AuthClientOptions
+  - AuthClientOptions.copyWith
   - AuthClientOptions.requestTimeout
   - AuthException
   - AuthException.==
@@ -3156,6 +3156,7 @@ supporting_symbols:
   - FunctionsClient.dispose
   - FunctionsClientOptions
   - FunctionsClientOptions.FunctionsClientOptions
+  - FunctionsClientOptions.copyWith
   - AuthAdminApi
   - AuthAdminApi.AuthAdminApi
   - AuthAdminMFAApi
@@ -3309,6 +3310,7 @@ supporting_symbols:
   - PostgrestClient.url
   - PostgrestClientOptions
   - PostgrestClientOptions.PostgrestClientOptions
+  - PostgrestClientOptions.copyWith
   - PostgrestConverter
   - PostgrestFilterBuilder
   - PostgrestFilterBuilder.PostgrestFilterBuilder
@@ -3347,6 +3349,7 @@ supporting_symbols:
   - RealtimeClient.timeout
   - RealtimeClientOptions
   - RealtimeClientOptions.RealtimeClientOptions
+  - RealtimeClientOptions.copyWith
   - RealtimeClientOptions.timeout
   - RealtimeConstants
   - RealtimeConstants.defaultTimeout
@@ -3459,7 +3462,6 @@ supporting_symbols:
   - SupabaseClient.rest
   - SupabaseClient.storage
   - SupabaseQueryBuilder
-  - SupabaseQueryBuilder.SupabaseQueryBuilder
   - SupabaseQueryBuilder.stream
   - SupabaseStorageClient
   - SupabaseStorageClient.SupabaseStorageClient

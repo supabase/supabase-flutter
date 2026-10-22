@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:supabase/src/supabase_client.dart' as real;
-import 'package:supabase/supabase.dart' hide SupabaseClient;
+import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'utils.dart';
 
@@ -151,7 +149,7 @@ void main() {
       supabase = SupabaseClient(
         supabaseUrl,
         supabaseKey,
-        realtimeClientOptions: RealtimeClientOptions(
+        realtimeOptions: RealtimeClientOptions(
           logLevel: RealtimeLogLevel.info,
         ),
       );
@@ -181,7 +179,7 @@ void main() {
       supabase = SupabaseClient(
         supabaseUrl,
         supabaseKey,
-        realtimeClientOptions: RealtimeClientOptions(
+        realtimeOptions: RealtimeClientOptions(
           encode: encode,
           decode: decode,
         ),
@@ -207,30 +205,29 @@ void main() {
   });
 
   group('auth', () {
-    test('the pkce flow throws when no asyncStorage is given', () {
-      expect(
-        () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            allOf(
-              contains('SupabaseClient uses the pkce flow by default'),
-              contains(
-                'authOptions: AuthClientOptions(asyncStorage: '
-                'MemoryAuthAsyncStorage())',
-              ),
-              contains('testSupabaseClient'),
-            ),
-          ),
-        ),
-      );
-    });
+    test(
+      'the pkce flow keeps its verifiers in memory when no asyncStorage is '
+      'given',
+      () async {
+        final supabase = SupabaseClient('http://localhost:1', 'supabaseKey');
+        addTearDown(supabase.dispose);
+
+        final response = await supabase.auth.getOAuthSignInUrl(
+          provider: OAuthProvider.github,
+        );
+
+        expect(response.url.queryParameters, contains('code_challenge'));
+      },
+    );
 
     test('the testSupabaseClient hint is left out outside of a test', () {
       expect(
         () => Zone.root.run(
-          () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
+          () => SupabaseClient(
+            'http://localhost:1',
+            'supabaseKey',
+            authOptions: const AuthClientOptions(persistSession: true),
+          ),
         ),
         throwsA(
           isA<ArgumentError>().having(
@@ -244,7 +241,7 @@ void main() {
 
     test('a persisted session throws when no asyncStorage is given', () {
       expect(
-        () => real.SupabaseClient(
+        () => SupabaseClient(
           'http://localhost:1',
           'supabaseKey',
           authOptions: const AuthClientOptions(
@@ -256,14 +253,17 @@ void main() {
           isA<ArgumentError>().having(
             (error) => error.message,
             'message',
-            contains('SupabaseClient needs an asyncStorage to persist'),
+            allOf(
+              contains('SupabaseClient needs an asyncStorage to persist'),
+              contains('testSupabaseClient'),
+            ),
           ),
         ),
       );
     });
 
     test('the implicit flow needs no asyncStorage', () async {
-      final supabase = real.SupabaseClient(
+      final supabase = SupabaseClient(
         'http://localhost:1',
         'supabaseKey',
         authOptions: const AuthClientOptions(
@@ -276,7 +276,7 @@ void main() {
     });
 
     test('a third-party accessToken needs no asyncStorage', () async {
-      final supabase = real.SupabaseClient(
+      final supabase = SupabaseClient(
         'http://localhost:1',
         'supabaseKey',
         accessToken: () async => 'jwt',
@@ -287,7 +287,7 @@ void main() {
     });
 
     test('the pkce flow works with a MemoryAuthAsyncStorage', () async {
-      final supabase = real.SupabaseClient(
+      final supabase = SupabaseClient(
         'http://localhost:1',
         'supabaseKey',
         authOptions: AuthClientOptions(
@@ -633,18 +633,54 @@ void main() {
         },
       );
 
-      test(
-        'creates a single codec shared across rest and functions clients',
-        () async {
-          // The rest and functions clients get the codec the SupabaseClient
-          // created, rather than one each, so disposing the client disposes it
-          // exactly once. Verified indirectly: a double dispose of the same
-          // codec would throw.
-          final client = SupabaseClient(supabaseUrl, supabaseKey);
+      test('disposes the codec it created', () async {
+        final httpClient = MockSupabaseHttpClient()
+          ..stubTable('todos', rows: []);
+        final client = testSupabaseClient(httpClient: httpClient);
+        await client.dispose();
 
-          expect(client.dispose(), completes);
-        },
-      );
+        await expectLater(
+          () => client.from('todos').select(),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+
+    group('dispose', () {
+      test('closes the http client it created', () async {
+        final client = SupabaseClient('http://127.0.0.1:1', supabaseKey);
+        await client.dispose();
+
+        await expectLater(
+          client.storage.listBuckets,
+          throwsA(
+            predicate(
+              (error) => '$error'.contains('Client is already closed'),
+            ),
+          ),
+        );
+      });
+
+      test('leaves a supplied http client open', () async {
+        final httpClient = MockSupabaseHttpClient()..stub([]);
+        final client = testSupabaseClient(httpClient: httpClient);
+        await client.dispose();
+
+        expect(httpClient.isClosed, isFalse);
+      });
+
+      test('stops handing auth tokens to realtime', () async {
+        final client = testSupabaseClient(
+          httpClient: MockSupabaseHttpClient(),
+        );
+        final tokenBefore = client.realtime.accessToken;
+
+        final disposing = client.dispose();
+        await signInTestUser(client.auth);
+        await disposing;
+
+        expect(client.realtime.accessToken, tokenBefore);
+      });
     });
   });
 
@@ -672,28 +708,4 @@ void main() {
       });
     });
   });
-}
-
-/// A [real.SupabaseClient] that falls back to an in-memory pkce storage, so the
-/// tests below do not have to pass one at every construction site.
-class SupabaseClient extends real.SupabaseClient {
-  SupabaseClient(
-    super.supabaseUrl,
-    super.supabaseKey, {
-    super.postgrestOptions,
-    AuthClientOptions authOptions = const AuthClientOptions(),
-    super.storageOptions,
-    super.functionsOptions,
-    super.realtimeClientOptions,
-    super.accessToken,
-    super.headers,
-    super.httpClient,
-    super.jsonCodec,
-  }) : super(
-         authOptions: AuthClientOptions(
-           autoRefreshToken: authOptions.autoRefreshToken,
-           asyncStorage: authOptions.asyncStorage ?? MemoryAuthAsyncStorage(),
-           authFlowType: authOptions.authFlowType,
-         ),
-       );
 }

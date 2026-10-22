@@ -67,4 +67,31 @@ class RealtimeClientOptions {
   ///
   /// Defaults to the built-in synchronous codec. See [encode] for an example.
   final RealtimeDecode? decode;
+
+  /// Returns a copy with the given fields replaced.
+  RealtimeClientOptions copyWith({
+    RealtimeLogLevel? logLevel,
+    Duration? timeout,
+    Duration? connectionCloseTimeout,
+    Duration? heartbeatInterval,
+    TimerCalculation? reconnectAfter,
+    WebSocketTransport? transport,
+    Duration? disconnectOnEmptyChannelsAfter,
+    RealtimeEncode? encode,
+    RealtimeDecode? decode,
+  }) {
+    return RealtimeClientOptions(
+      logLevel: logLevel ?? this.logLevel,
+      timeout: timeout ?? this.timeout,
+      connectionCloseTimeout:
+          connectionCloseTimeout ?? this.connectionCloseTimeout,
+      heartbeatInterval: heartbeatInterval ?? this.heartbeatInterval,
+      reconnectAfter: reconnectAfter ?? this.reconnectAfter,
+      transport: transport ?? this.transport,
+      disconnectOnEmptyChannelsAfter:
+          disconnectOnEmptyChannelsAfter ?? this.disconnectOnEmptyChannelsAfter,
+      encode: encode ?? this.encode,
+      decode: decode ?? this.decode,
+    );
+  }
 }

@@ -65,7 +65,7 @@ Future<Supabase> initializeTestSupabase({
     publishableKey: publishableKey ?? testPublishableKey,
     httpClient: httpClient,
     headers: headers,
-    realtimeClientOptions: RealtimeClientOptions(transport: realtimeTransport),
+    realtimeOptions: RealtimeClientOptions(transport: realtimeTransport),
     authOptions: FlutterAuthClientOptions(
       autoRefreshToken: autoRefreshToken,
       asyncStorage: asyncStorage ?? MemoryAuthAsyncStorage(),
