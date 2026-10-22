@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:postgres/postgres.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
@@ -168,6 +169,26 @@ void main() {
       expect(received['socket']!['payload'], {'x': 1});
       expect(received['http']!['payload'], {'x': 1});
       expect(received['database']!['payload'], containsPair('x', 1));
+    });
+
+    test('round trips a binary broadcast', () async {
+      final channel = client.channel(
+        'broadcast-binary',
+        const RealtimeChannelConfig(self: true),
+      );
+      final received = Completer<Map<String, dynamic>>();
+      channel.onBroadcast(event: 'file').listen((message) {
+        if (!received.isCompleted) received.complete(message);
+      });
+      await _subscribe(channel);
+
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+
+      final message = await received.future.timeout(
+        const Duration(seconds: 15),
+      );
+      expect(message['payload'], bytes);
     });
 
     test('tracks and syncs presence', () async {

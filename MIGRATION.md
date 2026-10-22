@@ -1330,13 +1330,16 @@ never subscribed throw. `httpSend()` requires Realtime v2.97.0 or newer.
 `sendBroadcastMessage()` sends its `payload` under the `payload` key of the message, as `httpSend()`,
 database broadcasts and the JavaScript client already did. It used to put the keys next to `type`
 and `event`, so a listener only found them at the top level for messages sent from Dart. Read the
-data from `payload` on every `onBroadcast` message, and pass binary data as the `payload` itself:
+data from `payload` on every `onBroadcast` message. If you wrapped the data in a `payload` key
+yourself, for example to match the JavaScript client or to send binary data, remove the wrapper,
+or the data arrives nested twice and a binary payload is sent as a JSON list of numbers:
 
 ```dart skip
 // Before
 channel.onBroadcast(event: 'cursor').listen((message) => print(message['x']));
 await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 await channel.sendBroadcastMessage(event: 'file', payload: {'payload': bytes});
+await channel.sendBroadcastMessage(event: 'ping', payload: {'payload': {'x': 30}});
 
 // After
 channel
@@ -1344,6 +1347,7 @@ channel
     .listen((message) => print(message['payload']['x']));
 await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
 ```
 
 #### Realtime listener callbacks are now streams
