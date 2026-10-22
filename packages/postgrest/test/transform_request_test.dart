@@ -1,4 +1,10 @@
 import 'package:postgrest/postgrest.dart';
+import 'package:postgrest/src/postgrest_typed_builder.dart'
+    show
+        PostgrestHttpTableExecutor,
+        PostgrestResultShape,
+        PostgrestTableOperation,
+        PostgrestTableRequest;
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
@@ -141,6 +147,33 @@ void main() {
       expect(request.queryParameters, isEmpty);
     });
 
+    test('rejects call arguments PostgREST would not pass on', () {
+      const unreadable = [
+        {'limit': 3},
+        {'query': 'eq.dart'},
+        {'query': null},
+        {'books.title': 'a'},
+      ];
+
+      for (final arguments in unreadable) {
+        expect(
+          () => client.rpc('search', params: arguments).head(),
+          throwsArgumentError,
+        );
+        expect(
+          () => client.rpc
+              .rows(
+                'search',
+                arguments: arguments,
+                rowFromJson: Book.new,
+              )
+              .head(),
+          throwsArgumentError,
+        );
+      }
+      expect(httpClient.requests, isEmpty);
+    });
+
     test('rejects untyped call arguments that are not a Map', () {
       expect(
         () => client.rpcInSchema('sum', null, params: [1, 2]).head(),
@@ -190,6 +223,35 @@ void main() {
       for (final request in httpClient.requests) {
         expect(request.headers['Accept'], isNot(_objectMediaType));
       }
+    });
+
+    test('leaves the Accept header of a function call alone', () async {
+      await client.rpc('find_user', params: {'name': 'x'}).maybeSingle();
+
+      final request = httpClient.requests.single;
+      expect(request.method, 'POST');
+      expect(request.headers['Accept'], isNot(_objectMediaType));
+    });
+
+    test('a later single() still throws when no row matched', () async {
+      httpClient.stub(_coerceError(0), statusCode: 406);
+
+      await expectLater(
+        () => client
+            .from('users')
+            .update({'name': 'x'})
+            .eq('id', 1)
+            .select()
+            .maybeSingle()
+            .single(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (error) => error.errorCode,
+            'errorCode',
+            'PGRST116',
+          ),
+        ),
+      );
     });
 
     test('surfaces a write that matched several rows as an error', () async {
@@ -260,6 +322,31 @@ void main() {
       expect(request.queryParameters, {'id': 'gt.1', 'title': 'neq.a'});
       expect(request.headers['Prefer'], contains('count=planned'));
       expect(request.headers['x-trace'], '1');
+    });
+  });
+
+  group('count executor', () {
+    test('rejects a hand-built count that carries transforms', () async {
+      final requests = [
+        PostgrestTableRequest(
+          table: Books.table,
+          operation: PostgrestTableOperation.count,
+          limit: 10,
+        ),
+        PostgrestTableRequest(
+          table: Books.table,
+          operation: PostgrestTableOperation.count,
+          shape: PostgrestResultShape.csv,
+        ),
+      ];
+
+      for (final request in requests) {
+        await expectLater(
+          () => PostgrestHttpTableExecutor(client).execute(request),
+          throwsArgumentError,
+        );
+      }
+      expect(httpClient.requests, isEmpty);
     });
   });
 

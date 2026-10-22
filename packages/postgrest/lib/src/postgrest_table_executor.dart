@@ -39,6 +39,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   @override
   Future<PostgrestTableResult> execute(PostgrestTableRequest request) async {
     if (request.operation == PostgrestTableOperation.count) {
+      _rejectCountTransforms(request);
       final counted = _applyOptions(
         _applyFilter(
           _query(request).count(request.countOption ?? CountOption.exact),
@@ -140,12 +141,16 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   /// A GET or HEAD request has no body, so a [PostgrestTableRequest.readOnly]
   /// call, and a call read with [PostgrestResultShape.head], sends its
   /// arguments as query parameters. A read-only call whose arguments
-  /// PostgREST would read as filters is sent as a POST instead.
+  /// PostgREST would read as filters is sent as a POST instead, and such a
+  /// call read with [PostgrestResultShape.head] is rejected.
   PostgrestFilterBuilder<Object?> _call(PostgrestTableRequest request) {
     final name = request.table.name;
+    if (request.shape == PostgrestResultShape.head) {
+      checkPostgrestHeadArguments(request.payload);
+    }
     final get =
         request.shape == PostgrestResultShape.head ||
-        (request.readOnly && _fitsQueryParameters(request.payload));
+        (request.readOnly && postgrestArgumentsFitQuery(request.payload));
     final arguments = get
         ? (request.payload ?? const <String, Object?>{})
         : request.payload;
@@ -167,37 +172,22 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     );
   }
 
-  /// Whether PostgREST passes every one of [arguments] to the function when
-  /// they are sent as query parameters. It does not when a name is an option
-  /// of the request, `limit`, or an embed path, when a value is `null`, which
-  /// a query parameter can only carry as the text `null`, or when a value
-  /// starts like a filter, `eq.foo` or `not.in.(1)`, which it applies to the
-  /// result instead.
-  static bool _fitsQueryParameters(Object? arguments) =>
-      arguments is! Map ||
-      arguments.entries.every(
-        (argument) =>
-            !_reservedQueryParameters.contains(argument.key) &&
-            !'${argument.key}'.contains('.') &&
-            argument.value != null &&
-            !_filterSyntax.hasMatch(renderPostgrestQueryValue(argument.value)),
+  /// Rejects a count that carries transforms, which a count has no rows for,
+  /// the same way [PostgrestTypedCountBuilder] offers none.
+  static void _rejectCountTransforms(PostgrestTableRequest request) {
+    if (request.limit != null ||
+        request.offset != null ||
+        request.orderings.isNotEmpty ||
+        request.embeddedScopes.isNotEmpty ||
+        (request.shape != PostgrestResultShape.none &&
+            request.shape != PostgrestResultShape.rows)) {
+      throw ArgumentError.value(
+        request,
+        'request',
+        'A count takes filters only, no transforms',
       );
-
-  static const _reservedQueryParameters = {
-    'select',
-    'columns',
-    'on_conflict',
-    'order',
-    'limit',
-    'offset',
-    'and',
-    'or',
-  };
-
-  static final _filterSyntax = RegExp(
-    r'^(not\.)?(eq|gte?|lte?|neq|i?like|i?match|cs|cd|ov|sl|sr|nx[lr]|adj|'
-    r'in|is|isdistinct|(pl|ph|w)?fts)(\([^)]*\))?\.',
-  );
+    }
+  }
 
   static void _rejectFilter(
     PostgrestFilter<Object?>? filter,

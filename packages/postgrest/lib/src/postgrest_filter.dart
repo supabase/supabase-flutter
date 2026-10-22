@@ -419,6 +419,54 @@ String _renderFilterValue(Object? value) => switch (value) {
 @internal
 String renderPostgrestQueryValue(Object? value) => _renderFilterValue(value);
 
+/// Whether PostgREST passes every one of [arguments] to the function when
+/// they are sent as query parameters. It does not when a name is an option
+/// of the request, `limit`, or an embed path, when a value is `null`, which
+/// a query parameter can only carry as the text `null`, or when a value
+/// starts like a filter, `eq.foo` or `not.in.(1)`, which it applies to the
+/// result instead.
+@internal
+bool postgrestArgumentsFitQuery(Object? arguments) =>
+    arguments is! Map ||
+    arguments.entries.every(
+      (argument) =>
+          !_reservedQueryParameters.contains(argument.key) &&
+          !'${argument.key}'.contains('.') &&
+          argument.value != null &&
+          !_filterSyntax.hasMatch(renderPostgrestQueryValue(argument.value)),
+    );
+
+/// Throws an [ArgumentError] when the [arguments] of a function call read
+/// with `head()`, which has no body to carry them, would not reach the
+/// function as query parameters, see [postgrestArgumentsFitQuery].
+@internal
+void checkPostgrestHeadArguments(Object? arguments) {
+  if (!postgrestArgumentsFitQuery(arguments)) {
+    throw ArgumentError.value(
+      arguments,
+      'params',
+      'head() sends the arguments as query parameters, where PostgREST '
+          'would read some of them as options or filters, or a null as text',
+    );
+  }
+}
+
+const _reservedQueryParameters = {
+  'select',
+  'columns',
+  'on_conflict',
+  'order',
+  'limit',
+  'offset',
+  'and',
+  'or',
+};
+
+final _filterSyntax = RegExp(
+  r'^(not\.)?(eq|gte?|lte?|neq|i?like|i?match|cs|cd|ov|sl|sr|nx[lr]|adj|'
+  r'in|is|isdistinct|(pl|ph|w)?fts)(\([^)]*\))?\.',
+);
+
 /// `{a,b}`, the array literal the array operators and an array-typed
 /// comparison take. A nested list is a nested literal, and `null` is SQL
 /// `NULL`.

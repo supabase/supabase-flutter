@@ -50,7 +50,9 @@ export 'src/postgrest_typed_builder.dart'
         PostgrestTableOperation,
         PostgrestTableRequest,
         PostgrestTableResult,
+        checkPostgrestHeadArguments,
         checkPostgrestRange,
+        postgrestArgumentsFitQuery,
         renderPostgrestIntegerVector,
         renderPostgrestQueryValue;
 export 'src/types.dart';

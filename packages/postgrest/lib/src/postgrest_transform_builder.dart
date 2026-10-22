@@ -220,6 +220,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     return PostgrestTransformBuilder(
       _copyWithType(
         headers: newHeaders,
+        maybeSingle: false,
       ),
     );
   }
@@ -230,13 +231,17 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
   /// otherwise this will result in an error.
   ///
-  /// A write asks PostgREST for a single object, so a write that affects
-  /// more than one row is rolled back before the error is thrown.
+  /// An insert, upsert, update or delete asks PostgREST for a single object,
+  /// so a write that affects more than one row is rolled back before the
+  /// error is thrown.
   PostgrestTransformBuilder<PostgrestMap?> maybeSingle() {
-    // A read enforces the single-row constraint client-side, so that a read
-    // matching zero rows resolves to `null` without PostgREST answering 406
-    // and polluting the API logs.
-    final isRead = _method == HttpMethod.get || _method == HttpMethod.head;
+    // A read, or a function call, enforces the single-row constraint
+    // client-side, so that matching zero rows resolves to `null` without
+    // PostgREST answering 406 and polluting the API logs.
+    final isRead =
+        _method == HttpMethod.get ||
+        _method == HttpMethod.head ||
+        _config.functionCall;
     return PostgrestTransformBuilder(
       _copyWithType(
         headers: isRead
@@ -305,14 +310,19 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   ///```
   ///
   /// The arguments of a function call are sent as query parameters, so they
-  /// have to be a [Map]. Throws a [StateError] after an insert, upsert,
-  /// update or delete, which a head request cannot perform.
+  /// have to be a [Map] that PostgREST passes on to the function: no `null`
+  /// values, no names such as `limit` or `order`, and no values that read
+  /// as a filter, such as `eq.1`. Anything else throws an [ArgumentError].
+  ///
+  /// Throws a [StateError] after an insert, upsert, update or delete, which a
+  /// head request cannot perform.
   PostgrestBuilder<void> head() {
     final method = _method;
     if (method == HttpMethod.get || method == HttpMethod.head) {
       return _copyWithType(method: HttpMethod.head);
     }
     if (_config.functionCall) {
+      checkPostgrestHeadArguments(_body);
       return _copyWithType(
         method: HttpMethod.head,
         url: _appendArguments(_url, _body),

@@ -932,11 +932,14 @@ These used to compile and send something other than what was asked for:
   transforms. `limit()` and `range()` were dropped from a count and `csv()`, `select()` and
   `explain()` crashed, so remove them.
 - `head()` after an insert, upsert, update or delete throws a `StateError`. It used to send a
-  `HEAD` request, so the write never happened.
+  `HEAD` request, so the write never happened. On a function call, `head()` sends the arguments
+  as query parameters and throws an `ArgumentError` for any that PostgREST would read as an
+  option or a filter, such as `limit` or `eq.1`, or a `null`.
 - `range(from, to)` throws an `ArgumentError` when `to` is less than `from`, instead of sending a
   negative limit.
-- `maybeSingle()` on a write asks PostgREST for a single object, so a write that affects more than
-  one row is rolled back before the error is thrown, as with `single()`. It used to be committed.
+- `maybeSingle()` on an insert, upsert, update or delete asks PostgREST for a single object, so
+  a write that affects more than one row is rolled back before the error is thrown, as with
+  `single()`. It used to be committed.
 
 ### Auth
 

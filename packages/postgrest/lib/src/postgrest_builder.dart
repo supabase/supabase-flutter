@@ -6,7 +6,10 @@ import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:postgrest/src/logger.dart';
 import 'package:postgrest/src/postgrest_typed_builder.dart'
-    show checkPostgrestRange, renderPostgrestQueryValue;
+    show
+        checkPostgrestHeadArguments,
+        checkPostgrestRange,
+        renderPostgrestQueryValue;
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -670,9 +673,9 @@ class PostgrestBuilder<T> implements Future<T> {
         }
       }
 
-      // maybeSingle() fetches the result as a list and enforces the
-      // at-most-one-row constraint here, so that zero rows never produce a
-      // PostgREST 406.
+      // maybeSingle() on a read fetches the result as a list and enforces
+      // the at-most-one-row constraint here, so that zero rows never produce
+      // a PostgREST 406. A write asks for one object instead.
       if (_maybeSingle && body is List) {
         if (body.length > 1) {
           final exception = PostgrestApiException(
