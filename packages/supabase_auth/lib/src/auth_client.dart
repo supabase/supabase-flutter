@@ -1744,6 +1744,16 @@ class AuthClient {
     notifyAllSubscribers(AuthChangeEvent.initialSession);
   }
 
+  /// Stores [session] as the current session and emits
+  /// [AuthChangeEvent.signedIn], without any network traffic or expiry check.
+  ///
+  /// For test helpers that sign a client in with a fabricated session.
+  @internal
+  void signInWithSession(Session session) {
+    _saveSession(session);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
+  }
+
   /// Recover session from stringified [Session].
   Future<Session> recoverSession(String jsonString) async {
     final String refreshToken;

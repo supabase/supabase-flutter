@@ -103,7 +103,9 @@ needs every non-nullable column in each row.
 - `query:` narrows a stub to requests carrying those query parameters, for
   example `query: {'id': 'eq.1'}`.
 - An unmatched request throws a `StateError` naming the request and the
-  registered stubs.
+  registered stubs, and fails the test even when a client wraps the error.
+- `testSupabaseClient` does not retry, so a failure surfaces at once. Pass
+  `retryOptions` to test retry handling.
 - `single()` receives the only row of a one-row stub, and a count query
   receives the number of rows, or `count:` when it is given.
 
@@ -209,6 +211,7 @@ expect(change, isA<TypedPostgresInsert<BooksRow, BooksRow>>());
 
 A `stream()` test stubs the initial rows with `stubTable` and then emits the
 changes it wants applied. `emitBroadcast` delivers a broadcast message,
+`emitPresenceState` and `emitPresenceDiff` deliver presence,
 `closeConnection` drops the socket, and `sent` and `joinedTopics` record what
 the client sent.
 

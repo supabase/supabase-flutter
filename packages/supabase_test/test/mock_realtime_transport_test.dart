@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -304,5 +306,83 @@ void main() {
       () => realtime.emitBroadcast('room', event: 'x', payload: {}),
       throwsA(isA<StateError>()),
     );
+  });
+
+  group('binary broadcasts', () {
+    test('are recorded in sent with their bytes', () async {
+      final channel = supabase.channel('files');
+      await subscribed(channel);
+      final bytes = Uint8List.fromList([1, 2, 3]);
+
+      await channel.sendBroadcastMessage(
+        event: 'file',
+        payload: {'payload': bytes},
+      );
+
+      final broadcast = realtime.sent.lastWhere(
+        (message) => message.event == 'broadcast',
+      );
+      expect(broadcast.topic, 'realtime:files');
+      final payload = broadcast.payload as Map;
+      expect(payload['event'], 'file');
+      expect(payload['payload'], bytes);
+    });
+  });
+
+  group('presence', () {
+    test('emitPresenceState syncs the channel presence', () async {
+      final channel = supabase.channel('room');
+      final joins = channel.onPresenceJoin.first;
+      final synced = channel.onPresenceSync.first;
+      await subscribed(channel);
+
+      realtime.emitPresenceState('room', {
+        'alice': [
+          {'status': 'online'},
+        ],
+      });
+
+      final join = await joins;
+      await synced;
+      expect(join.key, 'alice');
+      expect(join.newPresences.single.payload, {'status': 'online'});
+      final state = channel.presenceState().single;
+      expect(state.key, 'alice');
+      expect(state.presences.single.payload, {'status': 'online'});
+    });
+
+    test('emitPresenceDiff delivers joins and leaves', () async {
+      final channel = supabase.channel('room');
+      final joins = channel.onPresenceJoin.first;
+      final leaves = channel.onPresenceLeave.first;
+      await subscribed(channel);
+      realtime.emitPresenceState('room', {});
+
+      realtime.emitPresenceDiff(
+        'room',
+        joins: {
+          'bob': [
+            {'status': 'online'},
+          ],
+        },
+      );
+      final join = await joins;
+      realtime.emitPresenceDiff(
+        'room',
+        leaves: {
+          'bob': [
+            {
+              'status': 'online',
+              'phx_ref': join.newPresences.single.presenceReference,
+            },
+          ],
+        },
+      );
+
+      expect(join.key, 'bob');
+      final leave = await leaves;
+      expect(leave.key, 'bob');
+      expect(channel.presenceState(), isEmpty);
+    });
   });
 }

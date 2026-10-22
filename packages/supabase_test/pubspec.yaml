@@ -15,11 +15,12 @@ environment:
 resolution: workspace
 
 dependencies:
+  clock: ^1.1.2
   crypto: ^3.0.7
   http: ^1.6.0
   meta: ^1.16.0
   stream_channel: ^2.1.0
-  supabase: 3.0.0-dev.12
+  supabase: ^3.0.0-dev.12
   web_socket_channel: ^3.0.3
 
 dev_dependencies:

@@ -67,6 +67,18 @@ void main() {
     },
   );
 
+  test('a failed request is not retried by default', () async {
+    httpClient.stubStatuses([503, 200], body: []);
+    final supabase = await initializeTestSupabase(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+
+    await expectLater(
+      () => supabase.client.from('todos').select(),
+      throwsA(isA<PostgrestApiException>()),
+    );
+    expect(httpClient.requests, hasLength(1));
+  });
+
   test('a signed-in user is not persisted between initializations', () async {
     final first = await initializeTestSupabase(httpClient: httpClient);
     await signInTestUser(first.client.auth, userId: 'user-1');

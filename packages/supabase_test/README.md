@@ -191,9 +191,12 @@ These rules cover most test setups:
   `public.books` and one for `inventory.books` can answer differently. A stub
   without a schema answers every schema.
 
-- **An unmatched request throws.** The `StateError` names the request and the
-  registered stubs, so a typo in a path surfaces as a failing test with the
-  mismatch spelled out instead of a silent wrong answer.
+- **An unmatched request fails the test.** The `StateError` names the request
+  and the registered stubs, so a typo in a path surfaces as a failing test
+  with the mismatch spelled out instead of a silent wrong answer. It is also
+  reported to the test zone, so the test fails even when a client wraps the
+  error as a `SupabaseTransportException` and the code under test handles it
+  as being offline.
 
 Failures are stubbed with `statusCode` and the error shape of the service:
 
@@ -306,7 +309,10 @@ final httpClient = MockSupabaseHttpClient()
 
 `stubError` takes the exception to throw, usually the `ClientException` of
 `package:http`, and the client reports it as a `SupabaseTransportException`.
-Like every stub, it takes `times` to fail only the first requests:
+Like every stub, it takes `times` to fail only the first requests.
+`testSupabaseClient` turns off the retries of database and auth requests, so
+each failure surfaces at once instead of after the real backoff delays; pass
+`retryOptions` to exercise retry handling:
 
 ```dart test-file
 import 'package:http/http.dart';
@@ -387,7 +393,8 @@ expect(upload.files.single.contentType.mimeType, 'image/png');
 ## Testing auth
 
 To run a test as a signed-in user, `signInTestUser` puts the client into a
-signed-in state without any network traffic:
+signed-in state without any network traffic, and emits `signedIn` as a real
+sign-in does:
 
 ```dart test
 final httpClient = MockSupabaseHttpClient()..stubTable('books', rows: []);
@@ -474,9 +481,11 @@ event, which includes the channel a `stream()` opens, so a `stream()` test
 stubs the initial rows with `stubTable` and then emits the changes it wants
 to see applied. Filters are not evaluated, so emit only the changes the code
 under test should see. `emitBroadcast` delivers a broadcast message to a
-channel, `emit` sends any `RealtimeMessage`, and `closeConnection` drops the
-connection so reconnect handling can be exercised. Everything the client sent
-is recorded in `sent`, and `joinedTopics` lists what it subscribed to.
+channel, `emitPresenceState` and `emitPresenceDiff` deliver presence, `emit`
+sends any `RealtimeMessage`, and `closeConnection` drops the connection so
+reconnect handling can be exercised. Everything the client sent, binary
+broadcasts included, is recorded in `sent`, and `joinedTopics` lists what it
+subscribed to.
 
 ## Flutter apps
 

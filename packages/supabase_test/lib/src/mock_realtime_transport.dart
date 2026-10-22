@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
 import 'package:stream_channel/stream_channel.dart';
@@ -19,7 +20,7 @@ import 'realtime_frames.dart';
 /// The transport answers what the client sends, joins, heartbeats, leaves and
 /// pushes, the way the server does, records every message the client sent in
 /// [sent], and lets a test push server events with [emitPostgresChange],
-/// [emitBroadcast] and [emit]:
+/// [emitBroadcast], [emitPresenceState], [emitPresenceDiff] and [emit]:
 ///
 /// ```dart
 /// final realtime = MockRealtimeTransport();
@@ -52,6 +53,10 @@ class MockRealtimeTransport {
   final _connections = <_MockWebSocketChannel>[];
 
   /// Every message the client sent over any connection, oldest first.
+  ///
+  /// A broadcast with a binary payload, which the client sends as a binary
+  /// frame, is decoded into the `payload` map of its JSON counterpart, with
+  /// the bytes under `payload['payload']`.
   final sent = <RealtimeMessage>[];
 
   /// The `postgres_changes` bindings of each joined topic, as the server
@@ -61,6 +66,8 @@ class MockRealtimeTransport {
   final _joinedTopics = <String>{};
 
   var _nextBindingId = 1;
+
+  var _nextPresenceRef = 1;
 
   /// How many WebSocket connections the client has opened, so a test can
   /// assert on a reconnect.
@@ -170,6 +177,61 @@ class MockRealtimeTransport {
     );
   }
 
+  /// Sends the full presence state of the channel [topic], given with or
+  /// without its `realtime:` prefix, as the server does right after a join.
+  ///
+  /// [presences] maps each presence key to the payloads tracked under it, and
+  /// the code under test receives them through `onPresenceSync` and
+  /// `onPresenceJoin`. Send it before any [emitPresenceDiff], since the
+  /// client holds diffs back until the state of the join has arrived.
+  void emitPresenceState(
+    String topic,
+    Map<String, List<Map<String, dynamic>>> presences,
+  ) {
+    emit(
+      RealtimeMessage(
+        topic: _prefixed(topic),
+        event: 'presence_state',
+        payload: _presenceMetas(presences),
+      ),
+    );
+  }
+
+  /// Sends a presence change of the channel [topic], given with or without
+  /// its `realtime:` prefix: the payloads in [joins] were tracked under their
+  /// keys and the ones in [leaves] untracked, as the code under test receives
+  /// them through `onPresenceJoin` and `onPresenceLeave`.
+  void emitPresenceDiff(
+    String topic, {
+    Map<String, List<Map<String, dynamic>>> joins = const {},
+    Map<String, List<Map<String, dynamic>>> leaves = const {},
+  }) {
+    emit(
+      RealtimeMessage(
+        topic: _prefixed(topic),
+        event: 'presence_diff',
+        payload: {
+          'joins': _presenceMetas(joins),
+          'leaves': _presenceMetas(leaves),
+        },
+      ),
+    );
+  }
+
+  /// The wire shape of presences, where each key holds its payloads as
+  /// `metas` carrying a `phx_ref` the client keys them by.
+  Map<String, dynamic> _presenceMetas(
+    Map<String, List<Map<String, dynamic>>> presences,
+  ) => {
+    for (final MapEntry(:key, value: payloads) in presences.entries)
+      key: {
+        'metas': [
+          for (final payload in payloads)
+            {'phx_ref': '${_nextPresenceRef++}', ...payload},
+        ],
+      },
+  };
+
   /// Closes the open connection from the server side with [code] and
   /// [reason], so the code under test observes the disconnect and the client
   /// reconnects on its schedule.
@@ -203,11 +265,11 @@ class MockRealtimeTransport {
   }
 
   void _onClientMessage(_MockWebSocketChannel connection, Object? frame) {
-    if (frame is! String) {
-      // Binary broadcast frames carry no reference to reply to.
-      return;
-    }
-    final message = RealtimeMessage.fromJson(jsonDecode(frame));
+    final message = switch (frame) {
+      String() => RealtimeMessage.fromJson(jsonDecode(frame)),
+      List<int>() => _decodeBroadcastPush(Uint8List.fromList(frame)),
+      _ => throw ArgumentError.value(frame, 'frame', 'Unsupported frame'),
+    };
     sent.add(message);
     final payload = message.payload;
     Map<String, dynamic> response = const {};
@@ -245,6 +307,45 @@ class MockRealtimeTransport {
       ),
     );
   }
+}
+
+const _kindUserBroadcastPush = 3;
+const _broadcastPushHeaderLength = 7;
+
+/// Decodes the binary frame a client sends for a broadcast with a binary
+/// payload: a kind byte, the sizes of the join ref, ref, topic, user event
+/// and metadata, the payload encoding, those fields in that order, and the
+/// payload bytes.
+RealtimeMessage _decodeBroadcastPush(Uint8List frame) {
+  if (frame.isEmpty || frame[0] != _kindUserBroadcastPush) {
+    throw FormatException('Unknown binary realtime frame', frame);
+  }
+  var offset = _broadcastPushHeaderLength;
+  String read(int size) {
+    final value = utf8.decode(
+      Uint8List.sublistView(frame, offset, offset + size),
+    );
+    offset += size;
+    return value;
+  }
+
+  final joinRef = read(frame[1]);
+  final ref = read(frame[2]);
+  final topic = read(frame[3]);
+  final event = read(frame[4]);
+  final metadata = read(frame[5]);
+  return RealtimeMessage(
+    topic: topic,
+    event: 'broadcast',
+    payload: {
+      'type': 'broadcast',
+      'event': event,
+      if (metadata.isNotEmpty) ...jsonDecode(metadata) as Map<String, dynamic>,
+      'payload': Uint8List.sublistView(frame, offset),
+    },
+    ref: ref.isEmpty ? null : ref,
+    joinRef: joinRef.isEmpty ? null : joinRef,
+  );
 }
 
 class _MockWebSocketChannel extends StreamChannelMixin<dynamic>

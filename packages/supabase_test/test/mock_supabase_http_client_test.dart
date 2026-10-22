@@ -94,19 +94,23 @@ void main() {
       expect(second, isEmpty);
     });
 
-    test('an unmatched request throws naming the registered stubs', () {
+    test('an unmatched request throws naming the registered stubs', () async {
       httpClient.stubTable('todos', rows: []);
 
-      expect(
-        () => httpClient.get(Uri.parse('http://localhost:54321/rest/v1/x')),
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            allOf(contains('/rest/v1/x'), contains('/rest/v1/todos')),
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => httpClient.get(Uri.parse('http://localhost:54321/rest/v1/x')),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains('/rest/v1/x'), contains('/rest/v1/todos')),
+            ),
           ),
         ),
       );
+
+      expect(reported, [isA<StateError>()]);
     });
 
     test('a stub for one method does not answer another', () async {
@@ -125,6 +129,40 @@ void main() {
         ),
       );
     });
+
+    test('an unmatched request fails the test even when wrapped', () async {
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => supabase.functions.invoke('missing'),
+          throwsA(isA<SupabaseTransportException>()),
+        ),
+      );
+
+      expect(reported, [
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('/functions/v1/missing'),
+        ),
+      ]);
+    });
+
+    test(
+      'an unmatched auth request fails the test even when wrapped',
+      () async {
+        final reported = await _reportedErrors(
+          () => expectLater(
+            () => supabase.auth.signInWithPassword(
+              email: 'someone@example.com',
+              password: 'password',
+            ),
+            throwsA(isA<SupabaseTransportException>()),
+          ),
+        );
+
+        expect(reported, [isA<StateError>()]);
+      },
+    );
 
     test('a null body produces an empty response', () async {
       httpClient.stub(null, statusCode: 204);
@@ -463,46 +501,40 @@ void main() {
   });
 
   group('stubError', () {
-    final isOfflineFailure = isTransportFailure(isA<http.ClientException>());
-
-    // Retries off, so a failure surfaces on the first request instead of
-    // being ridden out.
-    late SupabaseClient failing;
-
-    setUp(() {
-      failing = SupabaseClient(
-        'http://localhost:54321',
-        'apikey',
-        httpClient: httpClient,
-        authOptions: AuthClientOptions(
-          asyncStorage: MemoryAuthAsyncStorage(),
-        ),
-        postgrestOptions: const PostgrestClientOptions(
-          retryOptions: SupabaseRetryOptions(enabled: false),
-        ),
-      );
-      addTearDown(failing.dispose);
-    });
+    Matcher offline() =>
+        throwsA(isTransportFailure(isA<http.ClientException>()));
 
     test('throws the error instead of answering the request', () async {
       httpClient.stubError(http.ClientException('Offline'));
 
-      await expectLater(
-        () => failing.from('todos').select(),
-        throwsA(isOfflineFailure),
-      );
+      await expectLater(() => supabase.from('todos').select(), offline());
     });
 
     test('times limits the failure to the first requests', () async {
       httpClient
         ..stubTable('todos', rows: [])
-        ..stubError(http.ClientException('Offline'), times: 1);
+        ..stubError(http.ClientException('Offline'), times: 2);
 
-      await expectLater(
-        () => failing.from('todos').select(),
-        throwsA(isOfflineFailure),
+      await expectLater(() => supabase.from('todos').select(), offline());
+      await expectLater(() => supabase.from('todos').select(), offline());
+      expect(await supabase.from('todos').select(), isEmpty);
+    });
+
+    test('a client with retries rides out the failures', () async {
+      final retrying = testSupabaseClient(
+        httpClient: httpClient,
+        retryOptions: const SupabaseRetryOptions(
+          initialDelay: Duration.zero,
+          maxDelay: Duration.zero,
+        ),
       );
-      expect(await failing.from('todos').select(), isEmpty);
+      addTearDown(retrying.dispose);
+      httpClient
+        ..stubTable('todos', rows: [])
+        ..stubError(http.ClientException('Offline'), times: 2);
+
+      expect(await retrying.from('todos').select(), isEmpty);
+      expect(httpClient.requests, hasLength(3));
     });
 
     test('path narrows the failure to one endpoint', () async {
@@ -510,11 +542,18 @@ void main() {
         ..stubTable('todos', rows: [])
         ..stubError(http.ClientException('Offline'), path: '/rest/v1/profiles');
 
-      expect(await failing.from('todos').select(), isEmpty);
-      await expectLater(
-        () => failing.from('profiles').select(),
-        throwsA(isOfflineFailure),
-      );
+      expect(await supabase.from('todos').select(), isEmpty);
+      await expectLater(() => supabase.from('profiles').select(), offline());
+    });
+
+    test('fails fast without real retry backoff', () async {
+      httpClient.stubError(http.ClientException('Offline'));
+      final stopwatch = Stopwatch()..start();
+
+      await expectLater(() => supabase.from('todos').select(), offline());
+
+      expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 300)));
+      expect(httpClient.requests, hasLength(1));
     });
   });
 
@@ -612,10 +651,13 @@ void main() {
       httpClient.reset();
 
       expect(httpClient.requests, isEmpty);
-      await expectLater(
-        () => supabase.from('todos').select(),
-        throwsA(isA<StateError>()),
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => supabase.from('todos').select(),
+          throwsA(isA<StateError>()),
+        ),
       );
+      expect(reported, [isA<StateError>()]);
     });
   });
 
@@ -639,15 +681,18 @@ void main() {
       expect(httpClient.requests.single.url.path, '/supabase/rest/v1/todos');
     });
 
-    test('a suffix only matches at a segment boundary', () {
+    test('a suffix only matches at a segment boundary', () async {
       httpClient.stubTable('todos', rows: []);
 
-      expect(
-        () => httpClient.get(
-          Uri.parse('http://localhost:54321/rest/v1/my_todos'),
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => httpClient.get(
+            Uri.parse('http://localhost:54321/rest/v1/my_todos'),
+          ),
+          throwsA(isA<StateError>()),
         ),
-        throwsA(isA<StateError>()),
       );
+      expect(reported, [isA<StateError>()]);
     });
   });
 
@@ -807,19 +852,51 @@ void main() {
       expect(done, isEmpty);
     });
 
+    test('a query entry matches one value of a repeated key', () async {
+      httpClient
+        ..stubTable(
+          'todos',
+          query: {'id': 'lt.10'},
+          rows: [
+            {'id': 5},
+          ],
+        )
+        ..stubTable('todos', query: {'id': 'gt.20'}, rows: []);
+
+      final rows = await supabase
+          .from('todos')
+          .select()
+          .gt('id', 1)
+          .lt(
+            'id',
+            10,
+          );
+
+      expect(rows, [
+        {'id': 5},
+      ]);
+      expect(httpClient.requests.single.queryParametersAll['id'], [
+        'gt.1',
+        'lt.10',
+      ]);
+    });
+
     test('a query stub does not answer a request without the entry', () async {
       httpClient.stubTable('todos', query: {'status': 'eq.true'}, rows: []);
 
-      await expectLater(
-        () => supabase.from('todos').select(),
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            contains('/rest/v1/todos?status=eq.true'),
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => supabase.from('todos').select(),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('/rest/v1/todos?status=eq.true'),
+            ),
           ),
         ),
       );
+      expect(reported, [isA<StateError>()]);
     });
 
     test('a broad stub still answers what the narrow one does not', () async {
@@ -1059,16 +1136,19 @@ void main() {
 
       await supabase.schema('archive').from('todos').insert({'id': 1});
 
-      await expectLater(
-        () => supabase.from('todos').insert({'id': 1}),
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            contains('(schema archive)'),
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => supabase.from('todos').insert({'id': 1}),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('(schema archive)'),
+            ),
           ),
         ),
       );
+      expect(reported, [isA<StateError>()]);
     });
 
     test('a stub without a schema answers every schema', () async {
@@ -1099,3 +1179,20 @@ TypeMatcher<PostgrestTransportException> isTransportFailure(Matcher cause) =>
       'cause',
       cause,
     );
+
+/// Runs [body] and returns the errors it reported to its zone as uncaught,
+/// which would otherwise fail the test.
+Future<List<Object>> _reportedErrors(Future<void> Function() body) {
+  final reported = <Object>[];
+  final done = Completer<List<Object>>();
+  unawaited(
+    runZonedGuarded(
+      () => body().then(
+        (_) => done.complete(reported),
+        onError: done.completeError,
+      ),
+      (error, _) => reported.add(error),
+    ),
+  );
+  return done.future;
+}
