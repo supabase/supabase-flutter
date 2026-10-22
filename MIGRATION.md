@@ -2805,7 +2805,7 @@ supabase
     .from('books')
     .stream(primaryKey: ['id'])
     .eq('author_id', 2)
-    .order('title')
+    .order('created_at', ascending: false)
     .listen((List<Map<String, dynamic>> books) {});
 
 // After
@@ -2813,10 +2813,15 @@ supabase
     .table(Books.table)
     .stream(primaryKey: [Books.id])
     .filter(Books.authorId.eq(2))
-    .order(Books.title)
+    .order(Books.createdAt.desc())
     .listen((List<BooksRow> books) {});
 ```
 
 A stream filter supports `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
-`matchRegex`, `imatchRegex`, `isNull`, `isTrue`, `isFalse` and `isDistinct`. A filter composed
-with `&`, `|` or `not()` throws an `ArgumentError`.
+`matchRegex`, `imatchRegex`, `isNull`, `isTrue`, `isFalse` and `isDistinct`, optionally negated
+with `not()`. A filter composed with `&` or `|` throws an `ArgumentError`.
+
+`order()` takes the same `PostgrestOrdering` as `order()` on a typed query, so the direction is
+on the column instead of an `ascending` argument. A stream keeps `null` values last in ascending
+order and first in descending order, so an ordering with `nullsFirst()` or `nullsLast()`, or one
+by anything but a stored column, throws an `ArgumentError`.

@@ -328,21 +328,33 @@ base mixin PostgrestOrderableExpression<Row, Value extends Object>
   @override
   String get orderKey => _orderKey;
 
+  @internal
+  @override
+  PostgrestColumnExpression<Row, Object> get column => this;
+
+  @internal
+  @override
+  SortDirection? get direction => null;
+
+  @internal
+  @override
+  bool? get placesNullsFirst => null;
+
   @override
   PostgrestOrdering<Row> asc() =>
-      _Ordering(_orderKey, direction: SortDirection.ascending);
+      _Ordering(this, direction: SortDirection.ascending);
 
   @override
   PostgrestOrdering<Row> desc() =>
-      _Ordering(_orderKey, direction: SortDirection.descending);
+      _Ordering(this, direction: SortDirection.descending);
 
   @override
   PostgrestOrdering<Row> nullsFirst() =>
-      _Ordering(_orderKey, nulls: _NullPlacement.first);
+      _Ordering(this, nulls: _NullPlacement.first);
 
   @override
   PostgrestOrdering<Row> nullsLast() =>
-      _Ordering(_orderKey, nulls: _NullPlacement.last);
+      _Ordering(this, nulls: _NullPlacement.last);
 }
 
 /// A filterable expression whose value the database allows to be `NULL`,
