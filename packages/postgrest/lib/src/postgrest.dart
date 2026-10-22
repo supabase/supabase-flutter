@@ -28,11 +28,12 @@ class PostgrestClient {
   /// [PostgrestBuilder.retry] to override it for a single request.
   ///
   /// [requestTimeout] optionally bounds how long a single request attempt may
-  /// take. It is implemented on top of the abort mechanism, so it actually
-  /// cancels a stalled attempt instead of leaving it running. A timed-out
-  /// attempt is retried like any other failure, and a
-  /// [PostgrestTransportException] is thrown once the retries are exhausted.
-  /// When `null` (the default) no
+  /// go without progress. The timer restarts whenever a chunk of the response
+  /// arrives, so a large response that keeps arriving is not cut short. It is
+  /// implemented on top of the abort mechanism, so it actually cancels a
+  /// stalled attempt instead of leaving it running. A timed-out attempt is
+  /// retried like any other failure, and a [PostgrestTransportException] is
+  /// thrown once the retries are exhausted. When `null` (the default) no
   /// timeout is applied. Use [PostgrestBuilder.requestTimeout] to override it
   /// for a single request, and [PostgrestBuilder.abortSignal] to cancel a
   /// request outright, which stops retrying immediately.

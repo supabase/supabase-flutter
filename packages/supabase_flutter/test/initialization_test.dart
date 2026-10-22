@@ -181,6 +181,16 @@ void main() {
         expect(() => supabase.client, throwsStateError);
       });
 
+      test('instance asserts that supabase is initialized', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+        );
+        await Supabase.instance.dispose();
+
+        expect(() => Supabase.instance, throwsA(isA<AssertionError>()));
+      });
+
       test('dispose can be called more than once', () async {
         await Supabase.initialize(
           url: supabaseUrl,

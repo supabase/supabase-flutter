@@ -574,6 +574,19 @@ void main() {
       );
       stream.listen(expectAsync1((books) {}));
     });
+
+    test('sends the request before anyone listens and does not replay '
+        'the result', () async {
+      httpClient.stub(bookRows);
+
+      final stream = client.table(Books.table).select().asStream();
+      await pumpEventQueue();
+
+      expect(httpClient.requests, hasLength(1));
+      await expectLater(stream, emitsInOrder([hasLength(2), emitsDone]));
+      await expectLater(stream, emitsDone);
+      expect(httpClient.requests, hasLength(1));
+    });
   });
 
   group('transforms', () {

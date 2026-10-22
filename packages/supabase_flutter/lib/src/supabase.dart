@@ -40,8 +40,10 @@ class Supabase {
 
   /// Gets the current supabase instance.
   ///
-  /// An [AssertionError] is thrown if supabase isn't initialized yet.
-  /// Call [Supabase.initialize] to initialize it.
+  /// In debug builds an [AssertionError] is thrown if supabase isn't
+  /// initialized yet. Release builds return the instance anyway, and [client]
+  /// throws a [StateError] when it is used. Call [Supabase.initialize] to
+  /// initialize it.
   static Supabase get instance {
     assert(
       _instance._isInitialized,
