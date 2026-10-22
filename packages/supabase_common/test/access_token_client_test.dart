@@ -64,6 +64,24 @@ void main() {
     );
   });
 
+  test('does not resolve the token for a request that has one', () async {
+    var calls = 0;
+    final client = AccessTokenClient(() async {
+      calls++;
+      throw const RefreshException('refresh failed');
+    }, inner);
+    final request = Request('GET', Uri.parse('http://localhost/x'))
+      ..headers['Authorization'] = 'Bearer per-request';
+
+    await client.send(request);
+
+    expect(calls, 0);
+    expect(
+      inner.requests.single.headers['Authorization'],
+      'Bearer per-request',
+    );
+  });
+
   test('wraps an error from the token callback', () async {
     final error = StateError('no');
     final client = AccessTokenClient(() async => throw error, inner);

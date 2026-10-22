@@ -23,20 +23,17 @@ class AuthHttpClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    final accessToken = await resolveAccessToken(_getAccessToken);
-
-    if (accessToken != null) {
-      request.headers.putIfAbsent(
-        HttpHeader.authorization,
-        () => 'Bearer $accessToken',
-      );
-    } else if (!(_omitNewApiKeyAsBearer && isNewApiKey(_supabaseKey))) {
-      request.headers.putIfAbsent(
-        HttpHeader.authorization,
-        () => 'Bearer $_supabaseKey',
-      );
-    }
     request.headers.putIfAbsent(HttpHeader.apiKey, () => _supabaseKey);
+    if (request.headers.containsKey(HttpHeader.authorization)) {
+      return _inner.send(request);
+    }
+
+    final accessToken = await resolveAccessToken(_getAccessToken);
+    if (accessToken != null) {
+      request.headers[HttpHeader.authorization] = 'Bearer $accessToken';
+    } else if (!(_omitNewApiKeyAsBearer && isNewApiKey(_supabaseKey))) {
+      request.headers[HttpHeader.authorization] = 'Bearer $_supabaseKey';
+    }
     return _inner.send(request);
   }
 
