@@ -47,7 +47,8 @@ final class PostgrestRpc {
   /// parameter, such as a list or a number.
   ///
   /// When [get] is set to `true`, the function will be called with read-only
-  /// access mode, and [params] has to be a [Map] of named arguments.
+  /// access mode, and [params] has to be a [Map] of named arguments or
+  /// `null`.
   /// {@endtemplate}
   ///
   /// ```dart

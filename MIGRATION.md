@@ -774,7 +774,7 @@ await supabase.from('messages').select().lt('created_at', DateTime.now());
 | `postgrest.headers['X-Foo'] = 'bar'`                                                         | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request     |
 | `await supabase.from('countries')`                                                           | does not compile, choose an operation first                                                |
 | `SupabaseQuerySchema(headers: …)`                                                            | removed, the headers of the `rest` client are used                                         |
-| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
+| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, call `abortSignal()` on the builder instead                                       |
 | `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`                 | removed                                                                                    |
 | `PostgrestFilterBuilder.copyWithUrl()` and `PostgrestTransformBuilder.copyWithUrl()`         | removed, build the request with the filters and transforms instead                         |
 | `PostgrestQueryBuilder<T>`                                                                   | `PostgrestQueryBuilder`                                                                    |

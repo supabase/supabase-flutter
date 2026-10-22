@@ -68,6 +68,16 @@ void main() {
       expect(lastRequest().jsonBody, 2);
     });
 
+    test('makes a read-only call without arguments', () async {
+      httpClient.stub('ok', path: '/rest/v1/rpc/get_status');
+
+      final status = await client.rpc('get_status', get: true);
+
+      expect(status, 'ok');
+      expect(lastRequest().method, HttpMethod.get.value);
+      expect(lastRequest().url.queryParameters, isEmpty);
+    });
+
     test('rejects a body that is not a map on a read-only call', () {
       expect(
         () => client.rpc('sum_all', params: [1, 2, 3], get: true),
