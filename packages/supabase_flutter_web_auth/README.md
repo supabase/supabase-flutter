@@ -65,9 +65,9 @@ Future<void> signIn(SupabaseClient supabase) async {
 }
 ```
 
-On web the launcher redirects the current page, like the default launcher, so
-leave `redirectTo` null to return to the page the flow started from, or pass
-an `https` URL of the app.
+On web the launcher redirects the current page, like the default launcher.
+Pass an `https` URL of the app that is on the project's redirect URL allow
+list, or leave `redirectTo` null to return to the project's Site URL.
 
 ## Setup
 
@@ -101,6 +101,12 @@ scheme, than that filter. When both activities match the same URL, the
 callback can be delivered to the wrong one, and `app_links` and this launcher
 can both try to exchange the same code. Add the new redirect URL to the
 project's redirect URL allow list too.
+
+If the provider page closes after signing in but the method returns `false`,
+the callback did not reach the callback activity: `flutter_web_auth_2`
+reports a session that is still open when the app resumes as cancelled.
+Check `android:taskAffinity=""` and that the intent filter matches the
+`redirectTo` scheme and host.
 
 ### iOS and macOS
 

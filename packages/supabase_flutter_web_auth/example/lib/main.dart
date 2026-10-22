@@ -52,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
       onError: (Object error, StackTrace stackTrace) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sign-in failed: $error')),
+          SnackBar(content: Text('Authentication error: $error')),
         );
       },
     );
@@ -90,7 +90,7 @@ class _SignInForm extends StatelessWidget {
           const SnackBar(content: Text('Sign-in was cancelled')),
         );
       }
-    } on Exception catch (error) {
+    } on Object catch (error) {
       messenger.showSnackBar(
         SnackBar(content: Text('Could not start sign-in: $error')),
       );
