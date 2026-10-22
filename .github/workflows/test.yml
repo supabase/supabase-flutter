@@ -72,11 +72,11 @@ jobs:
               continue
             fi
             case "$package" in
-              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage) backend=true ;;
+              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage|supabase_typegen) backend=true ;;
               *) backend=false ;;
             esac
             case "$package" in
-              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage) concurrency="1" ;;
+              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage|supabase_typegen) concurrency="1" ;;
               *) concurrency="0" ;;
             esac
             entries+=("{\"name\":\"$package\",\"backend\":$backend,\"concurrency\":\"$concurrency\"}")

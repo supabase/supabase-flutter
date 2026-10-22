@@ -610,6 +610,69 @@ void main() {
     );
   });
 
+  test('keys in opposite directions both carry the hint', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    // profile.team references team and team.owner_id references profile, so
+    // `team(*)` alone matches both keys.
+    expect(
+      compact,
+      contains(
+        "staticconstteamByTeam=PostgrestToOneRelation<ProfileRow,TeamRow>"
+        "('team!profile_team_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstteamViaOwnerId=PostgrestToManyRelation<ProfileRow,"
+        "TeamRow>('team!team_owner_id_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstprofileByOwnerId=PostgrestToOneRelation<TeamRow,"
+        "ProfileRow>('profile!team_owner_id_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstprofileViaTeam=PostgrestToManyRelation<TeamRow,"
+        "ProfileRow>('profile!profile_team_fkey',",
+      ),
+    );
+  });
+
+  test('an embed whose key is a column name is aliased', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    // badge.profile is the only key into profile, so the embed needs no
+    // hint, but it would come back under the `profile` column's key.
+    expect(
+      compact,
+      contains(
+        "staticconstprofileByProfile=PostgrestToOneRelation<BadgeRow,"
+        "ProfileRow>('profile',columns:[profile],referencedTable:'profile',"
+        "referencedColumns:[Profile.id],alias:'profile_by_profile',);",
+      ),
+    );
+    // The reverse embed is named `badge`, which no column of profile is.
+    expect(
+      compact,
+      contains(
+        "staticconstbadge=PostgrestToManyRelation<ProfileRow,BadgeRow>"
+        "('badge',columns:[id],referencedTable:'badge',"
+        "referencedColumns:[Badge.profile],);",
+      ),
+    );
+  });
+
   test('aliases of relations that share a member name stay distinct', () {
     // Two constraints over the same columns claim `mapByMood` and
     // `mapByMood$`, which snake case alone would both turn into `map_by_mood`.
