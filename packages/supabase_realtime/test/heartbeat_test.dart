@@ -11,9 +11,10 @@ void main() {
   late RealtimeClient client;
   late List<RealtimeHeartbeatStatus> statuses;
   late StreamSubscription<RealtimeHeartbeatStatus> subscription;
+  late MockIOWebSocketChannel mockedChannel;
 
   setUp(() {
-    final mockedChannel = MockIOWebSocketChannel();
+    mockedChannel = MockIOWebSocketChannel();
     final mockedSink = MockWebSocketSink();
     when(() => mockedChannel.sink).thenReturn(mockedSink);
     when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
@@ -126,4 +127,56 @@ void main() {
       expect(statuses, [RealtimeHeartbeatStatus.sent]);
     },
   );
+
+  group('with a custom access token provider', () {
+    RealtimeClient providerClient(Future<String?> Function() provider) {
+      final providerClient = RealtimeClient(
+        'wss://localhost:0/',
+        transport: (url, headers) => mockedChannel,
+        customAccessToken: provider,
+      );
+      addTearDown(providerClient.disconnect);
+      return providerClient;
+    }
+
+    Future<void> acknowledgedHeartbeat(RealtimeClient socket) async {
+      await socket.sendHeartbeat();
+      socket.onConnectionMessage(
+        heartbeatReply(socket.pendingHeartbeatRef, 'ok'),
+      );
+      await pumpEventQueue();
+    }
+
+    test('asks the provider for a fresh token on every heartbeat', () async {
+      var calls = 0;
+      final socket = providerClient(() async => 'token-${++calls}');
+      await socket.connect();
+      await pumpEventQueue();
+      expect(socket.accessToken, 'token-1');
+
+      for (var heartbeat = 2; heartbeat <= 4; heartbeat++) {
+        await acknowledgedHeartbeat(socket);
+        expect(socket.accessToken, 'token-$heartbeat');
+      }
+      expect(calls, 4);
+    });
+
+    test('keeps the current token when the provider throws', () async {
+      var calls = 0;
+      final socket = providerClient(() async {
+        if (++calls > 1) {
+          throw StateError('provider failed');
+        }
+        return 'token';
+      });
+      await socket.connect();
+      await pumpEventQueue();
+
+      await acknowledgedHeartbeat(socket);
+
+      expect(calls, 2);
+      expect(socket.accessToken, 'token');
+      expect(socket.isConnected, isTrue);
+    });
+  });
 }

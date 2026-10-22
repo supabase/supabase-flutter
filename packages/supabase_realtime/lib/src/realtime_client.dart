@@ -374,8 +374,8 @@ class RealtimeClient {
   SocketState? get connectionState => _connectionState;
   SocketState? _connectionState;
 
-  /// Resolves the access token used for a connection or reconnection,
-  /// instead of the token passed to [setAccessToken].
+  /// Resolves the access token used for a connection, a reconnection and
+  /// every heartbeat, instead of the token passed to [setAccessToken].
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
@@ -896,7 +896,8 @@ class RealtimeClient {
   /// Sets the JWT access token used for channel subscription authorization and
   /// Realtime RLS.
   ///
-  /// `token` A JWT strings.
+  /// A null [token] asks [customAccessToken] for a fresh one, and keeps the
+  /// current token when there is no provider.
   Future<void> setAccessToken(String? token) async {
     final tokenToSend =
         token ?? (await customAccessToken?.call()) ?? _accessToken;
@@ -1171,6 +1172,13 @@ class RealtimeClient {
       ),
     );
     _heartbeatController.add(RealtimeHeartbeatStatus.sent);
-    await setAccessToken(_accessToken);
+    try {
+      await setAccessToken(null);
+    } catch (error) {
+      realtimeLogger.warning(
+        'Error resolving access token on heartbeat',
+        error,
+      );
+    }
   }
 }

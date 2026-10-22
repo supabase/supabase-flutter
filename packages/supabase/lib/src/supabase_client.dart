@@ -478,24 +478,20 @@ class SupabaseClient {
   }
 
   Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) async {
-    if (event == AuthChangeEvent.initialSession ||
-        event == AuthChangeEvent.tokenRefreshed ||
-        event == AuthChangeEvent.signedIn) {
-      try {
-        await realtime.setAccessToken(token);
-      } on FormatException catch (error) {
-        if (error.message.contains('InvalidJWTToken')) {
-          // The exception is thrown by RealtimeClient when the token is
-          // expired for example on app launch after the app has been closed
-          // for a while.
-        } else {
-          rethrow;
-        }
-      }
-    } else if (event == AuthChangeEvent.signedOut) {
-      // Token is removed
-
+    if (event == AuthChangeEvent.signedOut) {
       await realtime.setAccessToken(_supabaseKey);
+      return;
+    }
+    try {
+      await realtime.setAccessToken(token);
+    } on FormatException catch (error) {
+      if (error.message.contains('InvalidJWTToken')) {
+        // The exception is thrown by RealtimeClient when the token is
+        // expired for example on app launch after the app has been closed
+        // for a while.
+      } else {
+        rethrow;
+      }
     }
   }
 }
