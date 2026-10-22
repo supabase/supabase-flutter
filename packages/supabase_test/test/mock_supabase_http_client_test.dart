@@ -446,6 +446,12 @@ void main() {
   });
 
   group('stubError', () {
+    final isOfflineFailure = isA<PostgrestTransportException>().having(
+      (exception) => exception.cause,
+      'cause',
+      isA<http.ClientException>(),
+    );
+
     // Retries off, so a failure surfaces on the first request instead of
     // being ridden out.
     late SupabaseClient failing;
@@ -470,7 +476,7 @@ void main() {
 
       await expectLater(
         () => failing.from('todos').select(),
-        throwsA(isA<http.ClientException>()),
+        throwsA(isOfflineFailure),
       );
     });
 
@@ -481,7 +487,7 @@ void main() {
 
       await expectLater(
         () => failing.from('todos').select(),
-        throwsA(isA<http.ClientException>()),
+        throwsA(isOfflineFailure),
       );
       expect(await failing.from('todos').select(), isEmpty);
     });
@@ -494,7 +500,7 @@ void main() {
       expect(await failing.from('todos').select(), isEmpty);
       await expectLater(
         () => failing.from('profiles').select(),
-        throwsA(isA<http.ClientException>()),
+        throwsA(isOfflineFailure),
       );
     });
   });
@@ -518,7 +524,13 @@ void main() {
 
       await expectLater(
         () => stalling.from('todos').select(),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<PostgrestTransportException>().having(
+            (exception) => exception.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
       );
       expect(httpClient.requests, hasLength(1));
     });
