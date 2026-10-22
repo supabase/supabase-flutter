@@ -10,7 +10,10 @@ void main() {
   setUp(() {
     httpClient = MockSupabaseHttpClient();
     realtime = MockRealtimeTransport();
-    supabase = testSupabaseClient(httpClient: httpClient, realtime: realtime);
+    supabase = testSupabaseClient(
+      httpClient: httpClient,
+      realtimeTransport: realtime.call,
+    );
   });
 
   tearDown(() async {
@@ -26,9 +29,8 @@ void main() {
     }
   }
 
-  int fetchCount() => httpClient
-      .requestsTo('/rest/v1/todos', method: HttpMethod.get.value)
-      .length;
+  int fetchCount() =>
+      httpClient.requestsTo('/rest/v1/todos', method: HttpMethod.get).length;
 
   ({
     List<SupabaseStreamEvent> snapshots,
@@ -138,6 +140,86 @@ void main() {
       {'id': 2, 'task': 'Test it'},
     ]);
   });
+
+  test('a client error that a retry cannot fix closes the stream', () async {
+    httpClient.stubTable(
+      'todos',
+      rows: {'code': 'PGRST205', 'message': 'Could not find the table'},
+      statusCode: 404,
+    );
+
+    final stream = listenToTodos();
+    await waitFor(stream.isDone);
+
+    expect(fetchCount(), 1);
+    expect(stream.errors, [isA<PostgrestException>()]);
+    expect(stream.snapshots, isEmpty);
+    expect(realtime.joinedTopics, isEmpty);
+  });
+
+  test(
+    'changes are applied while a failed fetch waits for its retry',
+    () async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1, 'task': 'Ship it'},
+        ],
+      );
+      final stream = listenToTodos();
+      await waitFor(() => stream.snapshots.isNotEmpty);
+
+      httpClient.stubTable(
+        'todos',
+        rows: jwtExpired,
+        statusCode: 401,
+        times: 1,
+      );
+      await realtime.closeConnection(code: 1006);
+      await waitFor(() => stream.errors.isNotEmpty);
+
+      realtime.emitPostgresChange(
+        table: 'todos',
+        event: PostgresChangeEvent.insert,
+        newRecord: {'id': 2, 'task': 'Test it'},
+      );
+      await waitFor(() => stream.snapshots.length == 2);
+
+      expect(fetchCount(), 2);
+      expect(stream.snapshots.last, [
+        {'id': 1, 'task': 'Ship it'},
+        {'id': 2, 'task': 'Test it'},
+      ]);
+    },
+  );
+
+  test(
+    'a burst of changes without their full records fetches once more',
+    () async {
+      httpClient.stubHandler((request) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        return jsonResponse([
+          {'id': 1, 'task': 'Ship it'},
+        ]);
+      }, path: '/rest/v1/todos');
+      final stream = listenToTodos();
+      await waitFor(() => stream.snapshots.isNotEmpty);
+
+      for (var i = 0; i < 3; i++) {
+        realtime.emitPostgresChange(
+          table: 'todos',
+          event: PostgresChangeEvent.update,
+          newRecord: {'id': 1},
+          oldRecord: {'id': 1},
+          errors: ['Error 413: Payload Too Large'],
+        );
+      }
+      await waitFor(() => stream.snapshots.length == 3);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(fetchCount(), 3);
+    },
+  );
 
   test('a dropped connection is not reported and refetches the rows', () async {
     httpClient.stubTable(

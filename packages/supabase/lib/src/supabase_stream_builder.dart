@@ -121,6 +121,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Subscription on the channel's subscription status stream.
   StreamSubscription<RealtimeSubscribeStatusChange>? _statusSubscription;
 
+  /// Subscription on the channel's system events, which confirm that the
+  /// server streams the changes.
+  StreamSubscription<RealtimeSystemPayload>? _systemSubscription;
+
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
 
@@ -152,6 +156,20 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Retries a failed snapshot fetch.
   Timer? _retryTimer;
+
+  /// Whether the server confirmed that it streams the changes since the
+  /// channel last joined.
+  bool _isReplicating = false;
+
+  /// Fetches the snapshot when the server does not confirm the replication
+  /// within the timeout of the realtime client.
+  Timer? _replicationTimer;
+
+  /// Whether another snapshot is needed once the one in flight arrives.
+  bool _refetchRequested = false;
+
+  /// The status codes of client errors that a later fetch can recover from.
+  static const _retryableClientErrors = {401, 408, 429};
 
   /// Orders the result with the specified [column].
   ///
@@ -223,17 +241,24 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     _streamController = controller;
   }
 
-  /// Stops listening to the channel, leaves it and closes the stream.
-  void _tearDown() {
+  /// Stops listening to the channel, leaves it unless [leaveChannel] is
+  /// false, and closes the stream.
+  void _tearDown({bool leaveChannel = true}) {
     _fetchId++;
     _retryTimer?.cancel();
     _retryTimer = null;
+    _replicationTimer?.cancel();
+    _replicationTimer = null;
     _pendingChanges = null;
     unawaited(_changesSubscription?.cancel());
     unawaited(_statusSubscription?.cancel());
+    unawaited(_systemSubscription?.cancel());
     _changesSubscription = null;
     _statusSubscription = null;
-    unawaited(_channel?.unsubscribe());
+    _systemSubscription = null;
+    if (leaveChannel) {
+      unawaited(_channel?.unsubscribe());
+    }
     _channel = null;
     final controller = _streamController;
     _streamController = null;
@@ -245,6 +270,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     _hasSnapshot = false;
     _isFetching = false;
     _failedFetches = 0;
+    _isReplicating = false;
+    _refetchRequested = false;
     _pendingChanges = [];
     final realtimeFilters = _streamFilters
         .map(
@@ -273,19 +300,31 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           select: _effectiveSelect,
         )
         .listen(_onChange);
+    _systemSubscription = channel.onSystemEvents.listen((event) {
+      if (event.extension == 'postgres_changes' && event.status == 'ok') {
+        _isReplicating = true;
+        _replicationTimer?.cancel();
+        _replicationTimer = null;
+        unawaited(_fetchSnapshot());
+      }
+    });
     _statusSubscription = channel.onStatusChange.listen((change) {
       switch (change.status) {
-        // Every join, the first one and each one after a reconnect, is
-        // followed by a snapshot, so that changes missed while the channel
-        // was not joined are picked up.
         case RealtimeSubscribeStatus.subscribed:
-          unawaited(_fetchSnapshot());
+          if (!_isReplicating) {
+            _replicationTimer?.cancel();
+            _replicationTimer = Timer(_realtimeClient.timeout, () {
+              _replicationTimer = null;
+              unawaited(_fetchSnapshot());
+            });
+          }
         case RealtimeSubscribeStatus.closed:
-          _tearDown();
+          _tearDown(leaveChannel: false);
         case RealtimeSubscribeStatus.timedOut:
         case RealtimeSubscribeStatus.channelError:
-          // Without realtime the rows can still be shown, they are refetched
-          // once the channel joins.
+          _isReplicating = false;
+          _replicationTimer?.cancel();
+          _replicationTimer = null;
           if (!_hasSnapshot && !_isFetching && _retryTimer == null) {
             unawaited(_fetchSnapshot());
           }
@@ -317,7 +356,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         'refetching table: $_table after a ${payload.eventType.name} arrived '
         'without its full record: ${errors.join(', ')}',
       );
-      unawaited(_fetchSnapshot());
+      _requestRefetch();
       return;
     }
     final pendingChanges = _pendingChanges;
@@ -325,16 +364,24 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       pendingChanges.add(payload);
       return;
     }
-    if (_applyChange(payload)) {
+    if (_hasSnapshot && _applyChange(payload)) {
       _addStream();
+    }
+  }
+
+  /// Fetches a new snapshot once the one in flight or the pending retry is
+  /// done, so that a burst of changes causes one fetch.
+  void _requestRefetch() {
+    if (_isFetching) {
+      _refetchRequested = true;
+    } else if (_retryTimer == null) {
+      unawaited(_fetchSnapshot());
     }
   }
 
   /// Applies [payload] to [_streamData], and returns whether it changed.
   bool _applyChange(PostgresChangePayload payload) {
     switch (payload.eventType) {
-      // An insert can arrive for a row that a snapshot already returned, so
-      // it replaces that row.
       case PostgresChangeEvent.insert || PostgresChangeEvent.update:
         final index = _streamData.indexWhere(
           (element) => _isTargetRecord(record: element, payload: payload),
@@ -364,14 +411,17 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Fetches the rows from PostgREST and replaces [_streamData] with them,
   /// applying the changes that arrived in the meantime on top.
   ///
-  /// A failed fetch is retried with the backoff of the realtime client. Only
-  /// the first failure in a row is added to the stream.
+  /// A failed fetch is retried with the backoff of the realtime client, and
+  /// only the first failure in a row is added to the stream. A client error
+  /// that a retry cannot fix is added and closes the stream. Until the retry,
+  /// changes are applied to the previous snapshot, if there is one.
   Future<void> _fetchSnapshot() async {
     _retryTimer?.cancel();
     _retryTimer = null;
     final fetchId = ++_fetchId;
     _pendingChanges = [];
     _isFetching = true;
+    _refetchRequested = false;
 
     PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select(
       _effectiveSelect?.join(',') ?? '*',
@@ -401,12 +451,21 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         return;
       }
       _isFetching = false;
+      _pendingChanges = null;
       _failedFetches++;
       clientLogger.warning(
         'fetching the rows of table: $_table failed',
         error,
         stackTrace,
       );
+      if (error is PostgrestApiException &&
+          error.statusCode >= 400 &&
+          error.statusCode < 500 &&
+          !_retryableClientErrors.contains(error.statusCode)) {
+        _addException(error, stackTrace);
+        _tearDown();
+        return;
+      }
       if (_failedFetches == 1) {
         _addException(error, stackTrace);
       }
@@ -427,6 +486,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     _pendingChanges = null;
     pendingChanges.forEach(_applyChange);
     _addStream();
+    if (_refetchRequested) {
+      unawaited(_fetchSnapshot());
+    }
   }
 
   bool _isTargetRecord({

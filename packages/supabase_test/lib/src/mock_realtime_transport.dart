@@ -18,7 +18,8 @@ import 'realtime_frames.dart';
 /// running stack.
 ///
 /// The transport answers what the client sends, joins, heartbeats, leaves and
-/// pushes, the way the server does, records every message the client sent in
+/// pushes, the way the server does, confirms the `postgres_changes` of a join
+/// with a `system` event, records every message the client sent in
 /// [sent], and lets a test push server events with [emitPostgresChange],
 /// [emitBroadcast], [emitPresenceState], [emitPresenceDiff] and [emit]:
 ///
@@ -352,6 +353,23 @@ class MockRealtimeTransport {
         ).toJson(),
       ),
     );
+    if (message.event == 'phx_join' &&
+        (_postgresBindings[message.topic]?.isNotEmpty ?? false)) {
+      connection.deliver(
+        jsonEncode(
+          RealtimeMessage(
+            topic: message.topic,
+            event: 'system',
+            payload: {
+              'extension': 'postgres_changes',
+              'status': 'ok',
+              'message': 'Subscribed to PostgreSQL',
+              'channel': message.topic.replaceFirst('realtime:', ''),
+            },
+          ).toJson(),
+        ),
+      );
+    }
   }
 }
 

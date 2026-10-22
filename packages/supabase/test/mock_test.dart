@@ -144,8 +144,7 @@ void main() {
           try {
             webSocket!.add(frame);
           } on StateError {
-            // The changes are sent after a delay, by when the test may have
-            // ended and closed the socket.
+            // The test ended and closed the socket.
           }
         }
 
@@ -205,10 +204,22 @@ void main() {
             ]);
             final restRequestsBeforeJoin = restRequests;
             send(replyString);
+            send(
+              jsonEncode([
+                null,
+                null,
+                topic,
+                'system',
+                {
+                  'extension': 'postgres_changes',
+                  'status': 'ok',
+                  'message': 'Subscribed to PostgreSQL',
+                },
+              ]),
+            );
 
-            // Send an insert event once stream() has fetched its snapshot,
-            // which it does after the join, since changes that arrive during
-            // the fetch are merged into it.
+            // Changes that arrive while stream() fetches its rows are merged
+            // into the first snapshot, so wait for the fetch.
             for (
               var i = 0;
               i < 100 && restRequests == restRequestsBeforeJoin;
