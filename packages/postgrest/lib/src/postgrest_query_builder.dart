@@ -252,13 +252,20 @@ class PostgrestQueryBuilder {
   }
 
   Uri _setColumnsSearchParam(List<dynamic> values) {
-    final newValues = PostgrestList.from(values);
-    final columns = [for (final element in newValues) ...element.keys];
-    if (newValues.isNotEmpty) {
-      final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      return _config.url.appendSearchParameters("columns", uniqueColumns);
+    if (values.isEmpty) return _config.url;
+    final columns = {for (final row in values) ..._rowColumns(row)};
+    final uniqueColumns = columns.map((e) => '"$e"').join(',');
+    return _config.url.appendSearchParameters("columns", uniqueColumns);
+  }
+
+  /// The keys [row] is sent with, encoding it the way the request body is so
+  /// that a value with a `toJson()` method works like a map.
+  Iterable<String> _rowColumns(Object? row) {
+    final json = row is Map ? row : jsonDecode(jsonEncode(row));
+    if (json is! Map) {
+      throw ArgumentError.value(row, 'values', 'Every row must be an object');
     }
-    return _config.url;
+    return json.keys.cast();
   }
 
   /// Only performs a count query on the table or view.

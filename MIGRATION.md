@@ -297,6 +297,9 @@ Several rows go through `insertAll()` and `upsertAll()` instead of a list passed
 Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the column out of the
 request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
 generated `set…ToNull()` methods, which only exist for nullable columns.
+A column left out of only some of the rows passed to `insertAll()` or `upsertAll()` also gets its
+default, where an untyped `insert()` of a list writes `NULL`. Pass `defaultToNull: true` to write
+`NULL` instead.
 
 An `update()` or `delete()` sends nothing until it says which rows it acts on, through `where()`
 or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request,

@@ -191,12 +191,12 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ]);
   /// ```
   ///
-  /// [rows] needs at least one row.
-  ///
-  /// See [insert] and [PostgrestQueryBuilder.insert] for [defaultToNull].
+  /// [rows] needs at least one row. A column left out of a row gets its
+  /// database default, even when other rows set it. Pass [defaultToNull] as
+  /// `true` to write `NULL` for it instead.
   PostgrestTypedTransformBuilder<Row, void> insertAll(
     List<Insert> rows, {
-    bool defaultToNull = true,
+    bool defaultToNull = false,
   }) => _insertion(
     _request(PostgrestTableOperation.insert).copyWith(
       payload: _nonEmpty(rows),
@@ -246,15 +246,17 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// );
   /// ```
   ///
-  /// [rows] needs at least one row.
+  /// [rows] needs at least one row. A column left out of a row gets its
+  /// database default, even when other rows set it. Pass [defaultToNull] as
+  /// `true` to write `NULL` for it instead.
   ///
   /// See [upsert] for [onConflict] and [PostgrestQueryBuilder.upsert] for
-  /// [ignoreDuplicates] and [defaultToNull].
+  /// [ignoreDuplicates].
   PostgrestTypedTransformBuilder<Row, void> upsertAll(
     List<Insert> rows, {
     List<PostgrestStoredColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
-    bool defaultToNull = true,
+    bool defaultToNull = false,
   }) => _upsert(
     _nonEmpty(rows),
     onConflict: onConflict,

@@ -8,6 +8,38 @@ import 'custom_http_client.dart';
 import 'reset_helper.dart';
 import 'test_utils.dart';
 
+extension type const User(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {}
+
+extension type const UserInsert._(Map<String, dynamic> _json)
+    implements Object {
+  UserInsert({required String username, String? status})
+    : this._({'username': username, 'status': ?status});
+}
+
+class JsonUserInsert {
+  const JsonUserInsert({required this.username, this.status});
+
+  final String username;
+  final String? status;
+
+  Map<String, dynamic> toJson() => {'username': username, 'status': ?status};
+}
+
+class Users {
+  static const table = PostgrestTable<User, UserInsert, Never>(
+    'users',
+    User.new,
+    primaryKey: [username],
+  );
+  static const jsonTable = PostgrestTable<User, JsonUserInsert, Never>(
+    'users',
+    User.new,
+    primaryKey: [username],
+  );
+  static const username = PostgrestColumn<User, String>('username');
+}
+
 void main() {
   late PostgrestClient postgrest;
   late PostgrestClient postgrestCustomHttpClient;
@@ -332,6 +364,53 @@ void main() {
         defaultToNull: false,
       ).select();
       expect(response.length, 2);
+      expect(response.first['status'], 'OFFLINE');
+      expect(response.last['status'], 'ONLINE');
+    });
+
+    test('bulk insert of rows encoded with toJson', () async {
+      final response = await postgrest.from('users').insert([
+        const JsonUserInsert(username: 'json bot', status: 'OFFLINE'),
+        const JsonUserInsert(username: 'json crazy bot'),
+      ]).select();
+      expect(response.length, 2);
+      expect(response.first['status'], 'OFFLINE');
+      expect(response.last['status'], null);
+    });
+
+    test('typed bulk insert applies column defaults', () async {
+      final response = await postgrest.table(Users.table).insertAll([
+        UserInsert(username: 'typed bot', status: 'OFFLINE'),
+        UserInsert(username: 'typed crazy bot'),
+      ]).select();
+      expect(response.length, 2);
+      expect(response.first['status'], 'OFFLINE');
+      expect(response.last['status'], 'ONLINE');
+    });
+
+    test('typed bulk insert with defaultToNull writes NULL', () async {
+      final response = await postgrest.table(Users.table).insertAll([
+        UserInsert(username: 'null bot', status: 'OFFLINE'),
+        UserInsert(username: 'null crazy bot'),
+      ], defaultToNull: true).select();
+      expect(response.last['status'], null);
+    });
+
+    test('typed bulk upsert applies column defaults', () async {
+      final response = await postgrest.table(Users.table).upsertAll([
+        UserInsert(username: 'upsert bot', status: 'OFFLINE'),
+        UserInsert(username: 'upsert crazy bot'),
+      ]).select();
+      expect(response.length, 2);
+      expect(response.first['status'], 'OFFLINE');
+      expect(response.last['status'], 'ONLINE');
+    });
+
+    test('typed bulk insert of rows encoded with toJson', () async {
+      final response = await postgrest.table(Users.jsonTable).insertAll([
+        const JsonUserInsert(username: 'typed json bot', status: 'OFFLINE'),
+        const JsonUserInsert(username: 'typed json crazy bot'),
+      ]).select();
       expect(response.first['status'], 'OFFLINE');
       expect(response.last['status'], 'ONLINE');
     });
