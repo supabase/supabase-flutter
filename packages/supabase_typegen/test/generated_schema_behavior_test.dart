@@ -365,7 +365,7 @@ void main() {
     'timestamp column tokens filter on the instant an update writes',
     () async {
       httpClient.stub(null);
-      final local = DateTime(2026, 7, 23, 10); // local wall time
+      final local = DateTime(2026, 7, 23, 10);
 
       await client
           .table(Books.table)

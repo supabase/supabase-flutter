@@ -38,7 +38,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     } else {
       url = _url.appendSearchParameters(
         column,
-        'not.$operator.${_filterOperand(value)}',
+        'not.$operator.${renderPostgrestQueryValue(value)}',
       );
     }
     return copyWithUrl(url);
@@ -77,7 +77,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'eq.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'eq.${_filterOperand(value)}');
+      url = _url.appendSearchParameters(
+        column,
+        'eq.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -99,7 +102,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'neq.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'neq.${_filterOperand(value)}');
+      url = _url.appendSearchParameters(
+        column,
+        'neq.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -115,7 +121,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> gt(String column, Object value) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'gt.${_filterOperand(value)}'),
+      _url.appendSearchParameters(
+        column,
+        'gt.${renderPostgrestQueryValue(value)}',
+      ),
     );
   }
 
@@ -130,7 +139,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> gte(String column, Object value) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'gte.${_filterOperand(value)}'),
+      _url.appendSearchParameters(
+        column,
+        'gte.${renderPostgrestQueryValue(value)}',
+      ),
     );
   }
 
@@ -145,7 +157,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> lt(String column, Object value) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'lt.${_filterOperand(value)}'),
+      _url.appendSearchParameters(
+        column,
+        'lt.${renderPostgrestQueryValue(value)}',
+      ),
     );
   }
 
@@ -160,7 +175,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> lte(String column, Object value) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'lte.${_filterOperand(value)}'),
+      _url.appendSearchParameters(
+        column,
+        'lte.${renderPostgrestQueryValue(value)}',
+      ),
     );
   }
 
@@ -362,7 +380,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'cs.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'cs.${json.encode(value)}');
+      url = _url.appendSearchParameters(
+        column,
+        'cs.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -405,7 +426,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'cd.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'cd.${json.encode(value)}');
+      url = _url.appendSearchParameters(
+        column,
+        'cd.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -494,7 +518,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     } else {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
       // keep it simple and accept a string
-      url = _url.appendSearchParameters(column, 'ov.$value');
+      url = _url.appendSearchParameters(
+        column,
+        'ov.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -559,7 +586,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     } else {
       url = _url.appendSearchParameters(
         column,
-        '$operator.${_filterOperand(value)}',
+        '$operator.${renderPostgrestQueryValue(value)}',
       );
     }
     return copyWithUrl(url);
@@ -579,7 +606,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     for (final entry in query.entries) {
       url = url.appendSearchParameters(
         entry.key,
-        'eq.${_filterOperand(entry.value)}',
+        'eq.${renderPostgrestQueryValue(entry.value)}',
       );
     }
     return copyWithUrl(url);
@@ -626,7 +653,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(
       _url.appendSearchParameters(
         column,
-        'isdistinct.${_filterOperand(value)}',
+        'isdistinct.${renderPostgrestQueryValue(value)}',
       ),
     );
   }

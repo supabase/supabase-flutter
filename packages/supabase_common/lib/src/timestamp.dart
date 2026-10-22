@@ -145,9 +145,12 @@ int unixSecondsFromDateTime(DateTime dateTime) {
 /// A UTC value ends in `Z`, `2026-01-01T12:00:00.000Z`, and a local one in
 /// the local offset at that instant, `2026-01-01T12:00:00.000-05:00`. Either
 /// names the same instant to a `timestamptz` column, and the wall clock time
-/// it shows to a `timestamp` column, which ignores the offset.
+/// it shows to a `timestamp` column, which ignores the offset. A year past
+/// 9999 is written without the sign ISO 8601 requires, which Postgres rejects.
 String postgresTimestampLiteral(DateTime dateTime) {
-  final iso8601 = dateTime.toIso8601String();
+  final iso8601 = dateTime.year > 9999
+      ? dateTime.toIso8601String().replaceFirst(RegExp(r'^\+0*'), '')
+      : dateTime.toIso8601String();
   if (dateTime.isUtc) return iso8601;
   final offset = dateTime.timeZoneOffset;
   final sign = offset.isNegative ? '-' : '+';

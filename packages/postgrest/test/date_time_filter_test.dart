@@ -1,3 +1,6 @@
+// PostgresRange is annotated @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart'
     show postgresTimestampLiteral;
@@ -31,11 +34,6 @@ void main() {
     await client.dispose();
   });
 
-  test('a local DateTime carries its offset from UTC', () {
-    expect(literal, startsWith('2026-01-01T12:00:00.000'));
-    expect(literal, matches(RegExp(r'[+-]\d{2}:\d{2}(:\d{2})?$')));
-  });
-
   test('untyped filters send a DateTime with its offset', () async {
     await client
         .from('events')
@@ -60,6 +58,32 @@ void main() {
     final query = httpClient.requests.last.queryParameters;
     expect(query['starts_at'], 'eq.$literal');
     expect(query['ends_at'], 'gte.$literal');
+  });
+
+  test(
+    'untyped range filters send DateTime bounds with their offset',
+    () async {
+      final range = PostgresRange.closedOpen(local, DateTime.utc(2026, 1, 2));
+      final rangeLiteral = '[$literal,2026-01-02T00:00:00.000Z)';
+
+      await client
+          .from('events')
+          .select()
+          .contains('during', range)
+          .containedBy('booked', range)
+          .overlaps('open', range);
+
+      final query = httpClient.requests.last.queryParameters;
+      expect(query['during'], 'cs.$rangeLiteral');
+      expect(query['booked'], 'cd.$rangeLiteral');
+      expect(query['open'], 'ov.$rangeLiteral');
+    },
+  );
+
+  test('untyped filters keep sending a Map as JSON', () async {
+    await client.from('events').select().contains('metadata', {'a': 1});
+
+    expect(httpClient.requests.last.queryParameters['metadata'], 'cs.{"a":1}');
   });
 
   test('typed filters send a DateTime with its offset', () async {

@@ -742,8 +742,9 @@ await supabase
 
 #### `DateTime` filter values carry their offset from UTC
 
-A `DateTime` passed to a filter, such as `gt()`, `eq()`, `inFilter()`, `match()` or `filter()`, or
-as a `GET` function argument, is sent in ISO 8601 with its offset from UTC:
+A `DateTime` passed to a filter, such as `gt()`, `eq()`, `inFilter()`, `match()` or `filter()`, to
+a `stream()` or `PostgresChangeFilter`, or as a `GET` function argument, is sent in ISO 8601 with
+its offset from UTC:
 `2026-01-01T12:00:00.000Z` for a UTC value and `2026-01-01T12:00:00.000-05:00` for a local one. v2
 sent `toString()`, `2026-01-01 12:00:00.000`, so the database read a local value in its own time
 zone, usually UTC, and a `timestamptz` filter compared against an instant shifted by the device

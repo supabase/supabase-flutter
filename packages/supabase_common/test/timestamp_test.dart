@@ -343,12 +343,62 @@ void main() {
     });
 
     test('a local value keeps its wall clock time and adds its offset', () {
+      String literal(Duration offset) =>
+          postgresTimestampLiteral(_LocalDateTime(offset));
+
+      expect(literal(Duration.zero), '2026-01-01T12:00:00.000+00:00');
+      expect(
+        literal(const Duration(hours: -5)),
+        '2026-01-01T12:00:00.000-05:00',
+      );
+      expect(
+        literal(const Duration(hours: 5, minutes: 30)),
+        '2026-01-01T12:00:00.000+05:30',
+      );
+      expect(
+        literal(const Duration(hours: -3, minutes: -30)),
+        '2026-01-01T12:00:00.000-03:30',
+      );
+      expect(
+        literal(const Duration(hours: -4, minutes: -56, seconds: -2)),
+        '2026-01-01T12:00:00.000-04:56:02',
+      );
+    });
+
+    test('a local value names the instant it was created for', () {
       final local = DateTime(2026, 1, 1, 12);
       final literal = postgresTimestampLiteral(local);
 
       expect(literal, startsWith('2026-01-01T12:00:00.000'));
-      expect(literal, matches(RegExp(r'[+-]\d{2}:\d{2}(:\d{2})?$')));
       expect(DateTime.parse(literal).isAtSameMomentAs(local), isTrue);
     });
+
+    test('a year past 9999 is written without a sign', () {
+      expect(
+        postgresTimestampLiteral(DateTime.utc(10000)),
+        '10000-01-01T00:00:00.000Z',
+      );
+    });
   });
+}
+
+/// A local `DateTime` at 2026-01-01 12:00 in a time zone [timeZoneOffset]
+/// from UTC, whatever the time zone of the test process.
+class _LocalDateTime implements DateTime {
+  const _LocalDateTime(this.timeZoneOffset);
+
+  @override
+  final Duration timeZoneOffset;
+
+  @override
+  bool get isUtc => false;
+
+  @override
+  int get year => 2026;
+
+  @override
+  String toIso8601String() => '2026-01-01T12:00:00.000';
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -222,11 +222,6 @@ PostgrestFilterBuilder<P> _filterBuilder<P>(
   PostgrestBuilder._(config: config, decode: decode ?? _bodyDecoder<P>()),
 );
 
-/// [value] as an untyped filter operand, a [DateTime] in ISO 8601 with its
-/// offset from UTC and anything else through [Object.toString].
-String _filterOperand(Object? value) =>
-    value is DateTime ? postgresTimestampLiteral(value) : '$value';
-
 /// Convert list filter to query parameters string
 String _cleanFilterList(List<dynamic> filter) {
   if (filter.every((element) => element is num)) {
@@ -237,7 +232,7 @@ String _cleanFilterList(List<dynamic> filter) {
   // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
   return filter
       .map((s) {
-        final escaped = _filterOperand(
+        final escaped = renderPostgrestQueryValue(
           s,
         ).replaceAll(r'\', r'\\').replaceAll('"', r'\"');
         return '"$escaped"';
