@@ -1984,7 +1984,9 @@ subtypes instead.
 
 Every failure of `invoke()` other than an abort is one of the three. A body that cannot be encoded
 as JSON, or a multipart `body` that is not a map of strings, throws a `FunctionsFetchException`
-before anything is sent, where it used to throw a `JsonUnsupportedObjectError` or a `TypeError`.
+before anything is sent, where it used to throw a `JsonUnsupportedObjectError` or a `TypeError`. A
+successful response whose body is not valid JSON or UTF-8 throws a `FunctionsFetchException` caused
+by the `FormatException`, where it used to throw the `FormatException` itself.
 
 #### Edge Function regions are a `FunctionsRegion`
 

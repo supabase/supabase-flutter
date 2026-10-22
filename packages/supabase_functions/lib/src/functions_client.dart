@@ -49,7 +49,7 @@ class FunctionsClient {
        _headers = {...FunctionsConstants.defaultHeaders, ...headers},
        _jsonCodec = jsonCodec ?? YAJsonIsolate(),
        _ownsJsonCodec = jsonCodec == null,
-       _ownedHttpClient = httpClient == null ? http.Client() : null,
+       _ownedHttpClient = httpClient == null ? createDefaultHttpClient() : null,
        _httpClient = httpClient,
        _accessToken = accessToken,
        _region = region,
@@ -98,13 +98,17 @@ class FunctionsClient {
 
   /// The transport invocations are sent over, resolving [_accessToken] first
   /// when one was given.
-  http.Client get _transport {
-    final client = _httpClient ?? _ownedHttpClient!;
-    final accessToken = _accessToken;
-    return accessToken == null
-        ? client
-        : AccessTokenClient(accessToken, client);
-  }
+  ///
+  /// Closing it would close the caller's client too, so [dispose] closes only
+  /// [_ownedHttpClient].
+  // ignore: dispose-class-fields
+  late final http.Client _transport = switch (_accessToken) {
+    null => _httpClient ?? _ownedHttpClient!,
+    final accessToken => AccessTokenClient(
+      accessToken,
+      _httpClient ?? _ownedHttpClient,
+    ),
+  };
 
   /// Replaces the invocation headers with [newHeaders].
   @internal
@@ -217,8 +221,8 @@ class FunctionsClient {
         for (final MapEntry(:key, :value) in queryParameters.entries)
           if (value != null)
             key: value is Iterable
-                ? [for (final element in value) '$element']
-                : '$value',
+                ? [for (final element in value) _queryValue(element)]
+                : _queryValue(value),
       'forceFunctionRegion': ?forcedRegion,
     };
 
@@ -316,10 +320,7 @@ class FunctionsClient {
       // any status. Otherwise, on an error status the status itself is the
       // answer, so it is kept with the read error as the details.
       if (isSuccessStatus || error is TimeoutException) {
-        throw FunctionsFetchException(
-          message: 'Failed to read the response of the Edge Function',
-          cause: error,
-        );
+        throw _unreadableResponse(error);
       }
       throw _apiException(response, isRelayError, details: error);
     }
@@ -331,20 +332,26 @@ class FunctionsClient {
         dynamic decoded;
         try {
           decoded = await _jsonCodec.decodeBytes(bodyBytes);
-        } on FormatException {
+        } on FormatException catch (error) {
           // A body labeled JSON that doesn't parse is only tolerated on an
           // error status, where the raw text still needs to reach the caller
           // as the exception `details`. On a success status it's a real
-          // anomaly, so keep surfacing it instead of handing back a String.
-          if (isSuccessStatus) rethrow;
-          decoded = utf8.decode(bodyBytes, allowMalformed: !isSuccessStatus);
+          // anomaly, so surface it instead of handing back a String.
+          if (isSuccessStatus) throw _unreadableResponse(error);
+          decoded = utf8.decode(bodyBytes, allowMalformed: true);
         }
         data = decoded;
       }
     } else if (responseType == 'application/octet-stream') {
       data = bodyBytes;
+    } else if (isSuccessStatus) {
+      try {
+        data = utf8.decode(bodyBytes);
+      } on FormatException catch (error) {
+        throw _unreadableResponse(error);
+      }
     } else {
-      data = utf8.decode(bodyBytes, allowMalformed: !isSuccessStatus);
+      data = utf8.decode(bodyBytes, allowMalformed: true);
     }
 
     if (isSuccessStatus) {
@@ -385,10 +392,22 @@ class FunctionsClient {
     };
   }
 
+  /// The exception for a response whose body could not be read, or, on a
+  /// success status, could not be decoded.
+  static FunctionsFetchException _unreadableResponse(Object error) =>
+      FunctionsFetchException(
+        message: 'Failed to read the response of the Edge Function',
+        cause: error,
+      );
+
+  /// A query parameter [value] as text, a [DateTime] in ISO 8601.
+  static String _queryValue(Object? value) =>
+      value is DateTime ? value.toIso8601String() : '$value';
+
   Future<String> _encodeJson(Object body) async {
     try {
       return await _jsonCodec.encode(body);
-    } catch (error) {
+    } on JsonUnsupportedObjectError catch (error) {
       throw FunctionsFetchException(
         message: 'Failed to encode the request body as JSON',
         cause: error,

@@ -122,6 +122,19 @@ void main() {
       });
     });
 
+    test('a DateTime is sent in ISO 8601', () async {
+      httpClient.stubEdgeFunction('search');
+
+      await functions.invoke(
+        'search',
+        queryParameters: {'since': DateTime.utc(2026, 10, 22, 10)},
+      );
+
+      expect(httpClient.requests.single.queryParameters, {
+        'since': '2026-10-22T10:00:00.000Z',
+      });
+    });
+
     test('a map typed Map<String, dynamic> is accepted', () async {
       httpClient.stubEdgeFunction('search');
       final Map<String, dynamic> parameters = {'page': 3};
@@ -183,7 +196,26 @@ void main() {
     });
   });
 
-  group('request errors stay FunctionsExceptions', () {
+  group('errors stay FunctionsExceptions', () {
+    test('a success body labeled +json that does not parse', () async {
+      httpClient.stubText(
+        '{"truncated":',
+        path: '/functions/v1/hello',
+        contentType: 'application/problem+json',
+      );
+
+      await expectLater(
+        functions.invoke('hello'),
+        throwsA(
+          isA<FunctionsFetchException>().having(
+            (exception) => exception.cause,
+            'cause',
+            isA<FormatException>(),
+          ),
+        ),
+      );
+    });
+
     test('a JSON body that cannot be encoded', () async {
       await expectLater(
         functions.invoke('hello', body: {'value': Object()}),
@@ -242,9 +274,9 @@ void main() {
 
   group('error messages', () {
     test('come from the message and code of a JSON body', () async {
-      httpClient.stub(
-        {'message': 'Quota exceeded', 'code': 'quota_exceeded'},
-        path: '/functions/v1/hello',
+      httpClient.stubEdgeFunction(
+        'hello',
+        body: {'message': 'Quota exceeded', 'code': 'quota_exceeded'},
         statusCode: 429,
       );
 
@@ -252,16 +284,24 @@ void main() {
         functions.invoke('hello'),
         throwsA(
           isA<FunctionsApiException>()
-              .having((e) => e.message, 'message', 'Quota exceeded')
-              .having((e) => e.errorCode, 'errorCode', 'quota_exceeded'),
+              .having(
+                (exception) => exception.message,
+                'message',
+                'Quota exceeded',
+              )
+              .having(
+                (exception) => exception.errorCode,
+                'errorCode',
+                'quota_exceeded',
+              ),
         ),
       );
     });
 
     test('fall back to the error and error_code of a JSON body', () async {
-      httpClient.stub(
-        {'error': 'Name is required', 'error_code': 'validation_failed'},
-        path: '/functions/v1/hello',
+      httpClient.stubEdgeFunction(
+        'hello',
+        body: {'error': 'Name is required', 'error_code': 'validation_failed'},
         statusCode: 400,
       );
 
@@ -269,8 +309,16 @@ void main() {
         functions.invoke('hello'),
         throwsA(
           isA<FunctionsApiException>()
-              .having((e) => e.message, 'message', 'Name is required')
-              .having((e) => e.errorCode, 'errorCode', 'validation_failed'),
+              .having(
+                (exception) => exception.message,
+                'message',
+                'Name is required',
+              )
+              .having(
+                (exception) => exception.errorCode,
+                'errorCode',
+                'validation_failed',
+              ),
         ),
       );
     });
@@ -287,8 +335,16 @@ void main() {
         functions.invoke('hello'),
         throwsA(
           isA<FunctionsRelayException>()
-              .having((e) => e.message, 'message', 'Function not found')
-              .having((e) => e.errorCode, 'errorCode', 'NOT_FOUND'),
+              .having(
+                (exception) => exception.message,
+                'message',
+                'Function not found',
+              )
+              .having(
+                (exception) => exception.errorCode,
+                'errorCode',
+                'NOT_FOUND',
+              ),
         ),
       );
     });
@@ -305,16 +361,20 @@ void main() {
         functions.invoke('hello'),
         throwsA(
           isA<FunctionsApiException>()
-              .having((e) => e.message, 'message', 'Bad Gateway')
-              .having((e) => e.errorCode, 'errorCode', isNull),
+              .having(
+                (exception) => exception.message,
+                'message',
+                'Bad Gateway',
+              )
+              .having((exception) => exception.errorCode, 'errorCode', isNull),
         ),
       );
     });
 
     test('fall back to the default without a reason phrase', () async {
-      httpClient.stub(
-        {'message': 42},
-        path: '/functions/v1/hello',
+      httpClient.stubEdgeFunction(
+        'hello',
+        body: {'message': 42},
         statusCode: 500,
       );
 
@@ -322,7 +382,7 @@ void main() {
         functions.invoke('hello'),
         throwsA(
           isA<FunctionsApiException>().having(
-            (e) => e.message,
+            (exception) => exception.message,
             'message',
             'Edge Function returned a non-2xx status code',
           ),

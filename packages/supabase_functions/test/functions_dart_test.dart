@@ -260,7 +260,13 @@ void main() {
         // rather than silently degrading to a raw String.
         await expectLater(
           functionsCustomHttpClient.invoke('success-invalid-json'),
-          throwsA(isA<FormatException>()),
+          throwsA(
+            isA<FunctionsFetchException>().having(
+              (exception) => exception.cause,
+              'cause',
+              isA<FormatException>(),
+            ),
+          ),
         );
       },
     );
@@ -268,7 +274,13 @@ void main() {
     test('a success text body that is not valid UTF-8 still throws', () async {
       await expectLater(
         functionsCustomHttpClient.invoke('latin1-plain'),
-        throwsA(isA<FormatException>()),
+        throwsA(
+          isA<FunctionsFetchException>().having(
+            (exception) => exception.cause,
+            'cause',
+            isA<FormatException>(),
+          ),
+        ),
       );
     });
 
