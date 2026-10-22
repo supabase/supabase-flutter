@@ -41,7 +41,7 @@ String packageImportUri({Directory? startDirectory}) {
   final pubspec = _nearestPubspec(startDirectory ?? Directory.current);
   final dependencies = pubspec == null
       ? null
-      : _loadPubspec(pubspec)['dependencies'];
+      : _loadYaml(pubspec)['dependencies'];
   if (dependencies is Map) {
     for (final MapEntry(key: name, value: uri) in _importCandidates.entries) {
       if (dependencies.containsKey(name)) return uri;
@@ -50,31 +50,71 @@ String packageImportUri({Directory? startDirectory}) {
   return _importCandidates['postgrest']!;
 }
 
+/// The first major version of `supabase_flutter`, `supabase` and `postgrest`
+/// whose API the generated code compiles against.
+const supportedSupabaseMajorVersion = 3;
+
+/// The first of `supabase_flutter`, `supabase` and `postgrest` that the
+/// `pubspec.lock` of [startDirectory], which defaults to the current
+/// directory, or of its nearest ancestor resolves to a version before
+/// [supportedSupabaseMajorVersion], with that version. Returns `null` when
+/// every one of them it resolves is supported or no such lockfile exists.
+///
+/// Throws a [FormatException] when the lockfile is not valid YAML.
+(String, Version)? unsupportedSupabaseDependency({Directory? startDirectory}) {
+  final lockfile = _nearestFile(
+    startDirectory ?? Directory.current,
+    'pubspec.lock',
+  );
+  if (lockfile == null) return null;
+  final packages = _loadYaml(lockfile)['packages'];
+  if (packages is! Map) return null;
+  for (final name in _importCandidates.keys) {
+    final package = packages[name];
+    final version = package is Map ? package['version'] : null;
+    if (version is! String) continue;
+    final Version parsed;
+    try {
+      parsed = Version.parse(version);
+    } on FormatException {
+      continue;
+    }
+    if (parsed.major < supportedSupabaseMajorVersion) return (name, parsed);
+  }
+  return null;
+}
+
 /// The `pubspec.yaml` of [directory] or of its nearest ancestor, `null` when
 /// none of them holds one.
-File? _nearestPubspec(Directory directory) {
+File? _nearestPubspec(Directory directory) =>
+    _nearestFile(directory, 'pubspec.yaml');
+
+/// The file called [name] in [directory] or in its nearest ancestor, `null`
+/// when none of them holds one.
+File? _nearestFile(Directory directory, String name) {
   var current = directory.absolute;
   while (true) {
-    final pubspec = File('${current.path}/pubspec.yaml');
-    if (pubspec.existsSync()) return pubspec;
+    final file = File('${current.path}/$name');
+    if (file.existsSync()) return file;
     final parent = current.parent;
     if (parent.path == current.path) return null;
     current = parent;
   }
 }
 
-/// The top-level map of [pubspec], empty when the document is not a map.
-Map<Object?, Object?> _loadPubspec(File pubspec) {
+/// The top-level map of the YAML file [file], empty when the document is
+/// not a map.
+Map<Object?, Object?> _loadYaml(File file) {
   try {
-    final document = loadYaml(pubspec.readAsStringSync());
+    final document = loadYaml(file.readAsStringSync());
     return document is Map ? document : const {};
   } on YamlException catch (error) {
-    throw FormatException('${pubspec.path} is not valid YAML: $error');
+    throw FormatException('${file.path} is not valid YAML: $error');
   }
 }
 
 Version? _sdkLowerBound(File pubspec) {
-  final environment = _loadPubspec(pubspec)['environment'];
+  final environment = _loadYaml(pubspec)['environment'];
   final sdk = environment is Map ? environment['sdk'] : null;
   if (sdk == null) return null;
   if (sdk is! String) {

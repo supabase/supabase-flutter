@@ -108,8 +108,13 @@ Install it into your project with `dart run skills@ get -p supabase_typegen`.
 
 The code is formatted with the `dart format` of the SDK running the tool, for
 the language version of the project it is written into (the lower bound of
-the `environment.sdk` constraint of the nearest `pubspec.yaml`), so
-`dart format` in that project leaves it unchanged. The generated file imports
+the `environment.sdk` constraint of the nearest `pubspec.yaml`) and with the
+`formatter` settings of its `analysis_options.yaml`, such as `page_width`, so
+`dart format` in that project leaves it unchanged. The generated code needs
+version 3 of `supabase_flutter`, `supabase` or `postgrest`; the tool exits with
+an error when the nearest `pubspec.lock` resolves an older one. It also exits
+with an error, without writing the file, when a `--schema` does not exist or
+the schemas hold nothing to generate. The generated file imports
 `PostgrestTable` and `PostgrestColumn` from the library of `supabase_flutter`,
 `supabase` or `postgrest`, preferred in that order, that the `pubspec.yaml`
 lists under `dependencies`, and from `package:postgrest` when it lists none of

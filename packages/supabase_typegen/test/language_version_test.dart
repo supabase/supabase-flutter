@@ -83,6 +83,56 @@ void main() {
     });
   });
 
+  group('unsupportedSupabaseDependency', () {
+    void writeLockfile(Map<String, String> versions) {
+      File('${directory.path}/pubspec.lock').writeAsStringSync(
+        'packages:\n'
+        '${versions.entries.map((entry) => '  ${entry.key}:\n'
+            '    version: "${entry.value}"\n').join()}',
+      );
+    }
+
+    test('is null without a lockfile', () {
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
+    });
+
+    test('is null for version 3 releases and prereleases', () {
+      writeLockfile({
+        'supabase_flutter': '3.0.0-dev.12',
+        'supabase': '3.0.0',
+        'postgrest': '3.1.2',
+      });
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
+    });
+
+    test('is the first package resolved before version 3', () {
+      writeLockfile({'supabase': '2.10.0', 'postgrest': '2.4.2'});
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), (
+        'supabase',
+        Version(2, 10, 0),
+      ));
+    });
+
+    test('finds the lockfile of the nearest ancestor', () {
+      writeLockfile({'postgrest': '2.4.2'});
+      final nested = Directory('${directory.path}/packages/app/lib')
+        ..createSync(recursive: true);
+
+      expect(unsupportedSupabaseDependency(startDirectory: nested), (
+        'postgrest',
+        Version(2, 4, 2),
+      ));
+    });
+
+    test('ignores other packages', () {
+      writeLockfile({'http': '1.2.0'});
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
+    });
+  });
+
   group('packageImportUri', () {
     test('is postgrest without a pubspec', () {
       expect(

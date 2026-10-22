@@ -5,6 +5,8 @@ import 'package:args/args.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:supabase_typegen/supabase_typegen.dart';
 
+const _defaultOutput = 'lib/supabase_schema.g.dart';
+
 final _argParser = ArgParser()
   ..addMultiOption(
     'schema',
@@ -17,7 +19,7 @@ final _argParser = ArgParser()
   ..addOption(
     'output',
     abbr: 'o',
-    defaultsTo: 'lib/supabase_schema.g.dart',
+    defaultsTo: _defaultOutput,
     help: 'Path of the generated Dart file, or - to write the code to stdout.',
   )
   ..addOption(
@@ -98,20 +100,43 @@ Future<int> _run(List<String> arguments) async {
     stderr.writeln('Could not parse the document: ${error.message}');
     return 65;
   }
-  for (final schema in namedSchemas) {
-    if (!database.schemaNames.contains(schema)) {
+  final missingSchemas = [
+    for (final schema in namedSchemas)
+      if (!database.schemaNames.contains(schema)) schema,
+  ];
+  if (missingSchemas.isNotEmpty) {
+    for (final schema in missingSchemas) {
       stderr.writeln('The database has no schema "$schema".');
     }
+    return 65;
+  }
+  if (database.tables.isEmpty &&
+      database.enums.isEmpty &&
+      database.functions.isEmpty) {
+    stderr.writeln(
+      'The document describes no tables, views, enums or functions, so '
+      'there is nothing to generate.',
+    );
+    return 65;
+  }
+  if (!document.containsKey('rpcFunctions') &&
+      (document['functions'] as List<dynamic>? ?? const []).isNotEmpty) {
+    stderr.writeln(
+      'The document has no "rpcFunctions" collection, so no RPC methods are '
+      'generated. Upgrade the Supabase CLI to generate them.',
+    );
   }
 
   // Formatted by the formatter of the running SDK for the language version
-  // of the project the file lands in, so `dart format` there leaves it
-  // unchanged.
+  // and the formatter settings of the project the file lands in, so
+  // `dart format` there leaves it unchanged. Code written to stdout is
+  // formatted as if it landed at the default output path.
   final projectDirectory = output == '-'
       ? Directory.current
       : File(output).parent;
   final Version languageVersion;
   final String importUri;
+  final (String, Version)? unsupported;
   try {
     languageVersion =
         packageLanguageVersion(startDirectory: projectDirectory) ??
@@ -119,8 +144,19 @@ Future<int> _run(List<String> arguments) async {
     importUri =
         options.option('import') ??
         packageImportUri(startDirectory: projectDirectory);
+    unsupported = unsupportedSupabaseDependency(
+      startDirectory: projectDirectory,
+    );
   } on FormatException catch (error) {
     stderr.writeln(error.message);
+    return 78;
+  }
+  if (unsupported case (final name, final version)) {
+    stderr.writeln(
+      'The project resolves $name $version, but the generated code needs '
+      '$name $supportedSupabaseMajorVersion.0.0 or newer. Upgrade it, see '
+      'https://github.com/supabase/supabase-flutter/blob/main/MIGRATION.md.',
+    );
     return 78;
   }
   if (languageVersion < minimumLanguageVersion) {
@@ -139,7 +175,7 @@ Future<int> _run(List<String> arguments) async {
   final formatted = await formatWithSdk(
     code,
     languageVersion,
-    path: output == '-' ? null : output,
+    path: output == '-' ? _defaultOutput : output,
   );
   if (formatted == null) {
     stderr.writeln(
