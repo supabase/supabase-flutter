@@ -246,9 +246,9 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// );
   /// ```
   ///
-  /// [rows] needs at least one row. A column left out of a row gets its
-  /// database default, even when other rows set it. Pass [defaultToNull] as
-  /// `true` to write `NULL` for it instead.
+  /// [rows] needs at least one row. A column left out of a row that another
+  /// row sets is written as its database default, also when the row merges
+  /// into an existing one. See [insertAll] for [defaultToNull].
   ///
   /// See [upsert] for [onConflict] and [PostgrestQueryBuilder.upsert] for
   /// [ignoreDuplicates].

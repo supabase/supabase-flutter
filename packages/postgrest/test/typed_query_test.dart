@@ -33,6 +33,15 @@ class JsonBookInsert {
   Map<String, dynamic> toJson() => {'title': title, 'id': ?id};
 }
 
+class CountingInsert {
+  int calls = 0;
+
+  Map<String, dynamic> toJson() {
+    calls++;
+    return {'title': 'foo'};
+  }
+}
+
 class JsonBooks {
   static const table = PostgrestTable<Book, JsonBookInsert, Never>(
     'books',
@@ -1102,6 +1111,25 @@ void main() {
         () => client.from('books').insert([
           {'title': 'foo'},
           'bar',
+        ]),
+        throwsArgumentError,
+      );
+    });
+
+    test('insert of a list calls toJson once per row', () async {
+      httpClient.stub(null);
+      final row = CountingInsert();
+
+      await client.from('books').insert([row]);
+
+      expect(row.calls, 1);
+      expect(httpClient.requests.last.body, '[{"title":"foo"}]');
+    });
+
+    test('insert of a list with a non-String key throws', () {
+      expect(
+        () => client.from('books').insert([
+          {1: 'foo'},
         ]),
         throwsArgumentError,
       );

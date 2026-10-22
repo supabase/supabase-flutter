@@ -255,6 +255,9 @@ Rules for the conversion:
   analyzer reports it as an `unused_result` warning. Fix every one of them.
 - Passing `null` to an `Insert` or `Update` parameter leaves the column out.
   Use the generated `set…ToNull()` method to write SQL `NULL`.
+- `insertAll()` and `upsertAll()` give a column left out of only some rows its
+  database default, where the untyped list `insert()` wrote `NULL`. Pass
+  `defaultToNull: true` where the code relied on `NULL`.
 - Replace `row['title'] as String` with `row.title` wherever the rows are
   consumed. A model class that only mirrors a table is replaced by the
   generated row type. A model that adds behavior is built from the row

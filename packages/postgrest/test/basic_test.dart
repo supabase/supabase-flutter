@@ -406,6 +406,20 @@ void main() {
       expect(response.last['status'], 'ONLINE');
     });
 
+    test('typed bulk upsert resets a left out column on conflict', () async {
+      await postgrest
+          .table(Users.table)
+          .insert(
+            UserInsert(username: 'conflict bot', status: 'OFFLINE'),
+          );
+
+      final response = await postgrest.table(Users.table).upsertAll([
+        UserInsert(username: 'conflict bot'),
+        UserInsert(username: 'conflict new bot', status: 'OFFLINE'),
+      ]).select();
+      expect(response.first['status'], 'ONLINE');
+    });
+
     test('typed bulk insert of rows encoded with toJson', () async {
       final response = await postgrest.table(Users.jsonTable).insertAll([
         const JsonUserInsert(username: 'typed json bot', status: 'OFFLINE'),
