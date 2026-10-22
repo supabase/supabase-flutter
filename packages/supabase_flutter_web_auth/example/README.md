@@ -12,4 +12,6 @@ flutter create .
 
 Then fill in `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY` in `lib/main.dart`,
 register the redirect scheme (see the package README's Setup section), and
-run the app.
+run the app. Add `io.supabase.flutterwebauthexample://oauth-callback` and, for
+web, the origin the app is served from to the project's redirect URL allow
+list.

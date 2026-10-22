@@ -45,28 +45,62 @@ documented in `supabase_flutter`; the new `preferEphemeral` parameter (ignored
 by the default launcher) requests a session that does not share cookies with
 the system browser.
 
+Observe the result on `onAuthStateChange`, as with the default launcher:
+
+- A successful sign-in emits `AuthSignedIn`.
+- A failed code exchange, for example an expired flow, arrives as an
+  `AuthException` error on the stream, so pass `onError` to the listener.
+- When the user closes the session without signing in, the method returns
+  `false` and nothing is emitted.
+
+```dart
+Future<void> signIn(SupabaseClient supabase) async {
+  final launched = await supabase.auth.signInWithOAuth(
+    OAuthProvider.github,
+    redirectTo: kIsWeb ? null : 'com.example.myapp://oauth-callback',
+  );
+  if (!launched) {
+    print('Sign-in was cancelled');
+  }
+}
+```
+
+On web the launcher redirects the current page, like the default launcher, so
+leave `redirectTo` null to return to the page the flow started from, or pass
+an `https` URL of the app.
+
 ## Setup
 
 ### Android
 
-Register the `flutter_web_auth_2` callback activity for your redirect scheme
-in `android/app/src/main/AndroidManifest.xml`:
+Register the `flutter_web_auth_2` callback activity for your redirect URL
+in `android/app/src/main/AndroidManifest.xml`, and set
+`android:taskAffinity=""` on it and on `.MainActivity`, as `flutter_web_auth_2`
+requires:
 
 ```xml
 <activity
     android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
-    android:exported="true">
+    android:exported="true"
+    android:taskAffinity="">
   <intent-filter android:label="flutter_web_auth_2">
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="my-scheme" />
+    <data android:scheme="com.example.myapp" android:host="oauth-callback" />
   </intent-filter>
 </activity>
 ```
 
-Replace `my-scheme` with the scheme of the `redirectTo` URL you pass to
+Replace the scheme and host with those of the `redirectTo` URL you pass to
 `signInWithOAuth`/`signInWithSSO`/`linkIdentity`.
+
+If `.MainActivity` already has an intent filter for magic links or other
+email redirects, give the callback activity a different host, or a different
+scheme, than that filter. When both activities match the same URL, the
+callback can be delivered to the wrong one, and `app_links` and this launcher
+can both try to exchange the same code. Add the new redirect URL to the
+project's redirect URL allow list too.
 
 ### iOS and macOS
 
@@ -75,5 +109,20 @@ No extra configuration is needed for a custom URL scheme redirect. For an
 
 ### Linux and Windows
 
-No native configuration is needed; the flow runs in an embedded webview
-window provided by `flutter_web_auth_2`.
+The flow runs in an embedded webview window provided by
+[`desktop_webview_window`](https://pub.dev/packages/desktop_webview_window),
+which needs a system webview:
+
+- Linux builds need the WebKitGTK 4.1 and libsoup 3 development packages, for
+  example on Ubuntu or Debian:
+
+  ```shell
+  sudo apt-get install libwebkit2gtk-4.1-dev libsoup-3.0-dev
+  ```
+
+  Users need the matching runtime libraries, `libwebkit2gtk-4.1-0` and
+  `libsoup-3.0-0`.
+- Windows needs the
+  [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2),
+  which ships with Windows 11 but may be missing on Windows 10. Without it,
+  sign-in throws `StateError('Webview is not available')`.
