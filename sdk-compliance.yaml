@@ -1248,8 +1248,11 @@ features:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.delete
-      - PostgrestTypedQueryBuilder.delete
+      - PostgrestTypedDelete.delete
     supporting_symbols:
+      - PostgrestTypedDelete
+      - PostgrestTypedReadOnlyDelete
+      - PostgrestTypedReadOnlyDelete.delete
       - PostgrestTypedUnscopedBuilder
       - PostgrestTypedUnscopedBuilder.all
       - PostgrestTypedUnscopedBuilder.where
@@ -1549,7 +1552,7 @@ features:
       - PostgrestTypedTransformBuilder.geojson
   database.using_modifiers.relationship_embed:
     status: implemented
-    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Ordering and limiting the rows inside a to-many embed is a scope on the builder, `.embedded(Authors.books, (books) => books.order(Books.createdAt.desc()).limit(1))`, typed against the embedded table; scopes nest into dotted paths. Filtering inside an embed and the `!inner` counterpart are not on the typed surface yet; embeddedFilterName is the form filtering will use."
+    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Ordering and limiting the rows inside a to-many embed is a scope on the builder, `.embedded(Authors.books, (books) => books.order(Books.createdAt.desc()).limit(1))`, typed against the embedded table; scopes nest into dotted paths. Filtering inside an embed and the `!inner` counterpart are not on the typed surface yet."
     symbols:
       - PostgrestTransformBuilder.select
       - PostgrestToOneRelation.call
@@ -1622,6 +1625,9 @@ features:
     symbols:
       - PostgrestBuilder.abortSignal
     supporting_symbols:
+      - PostgrestFilterBuilder.abortSignal
+      - PostgrestQueryBuilder.abortSignal
+      - PostgrestTransformBuilder.abortSignal
       - PostgrestTypedBuilder.abortSignal
       - PostgrestTypedFilterBuilder.abortSignal
       - PostgrestTypedQueryBuilder.abortSignal
@@ -3315,7 +3321,6 @@ supporting_symbols:
   - PostgrestConverter
   - PostgrestFilterBuilder
   - PostgrestFilterBuilder.PostgrestFilterBuilder
-  - PostgrestFilterBuilder.copyWithUrl
   - PostgrestList
   - PostgrestListResponse
   - PostgrestMap
@@ -3333,7 +3338,6 @@ supporting_symbols:
   - PostgrestRpcBuilder.PostgrestRpcBuilder
   - PostgrestTransformBuilder
   - PostgrestTransformBuilder.PostgrestTransformBuilder
-  - PostgrestTransformBuilder.copyWithUrl
   - PrimitiveType
   - PrimitiveType.PrimitiveType
   - PrimitiveType.name

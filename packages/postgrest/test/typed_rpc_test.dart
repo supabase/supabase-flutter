@@ -49,6 +49,33 @@ void main() {
       expect(lastRequest().jsonBody, {'name': 'supabot'});
     });
 
+    test('sends a list as the body of an unnamed json parameter', () async {
+      httpClient.stub(6, path: '/rest/v1/rpc/sum_all');
+
+      final sum = await client.rpc('sum_all', params: [1, 2, 3]);
+
+      expect(sum, 6);
+      expect(lastRequest().method, HttpMethod.post.value);
+      expect(lastRequest().jsonBody, [1, 2, 3]);
+    });
+
+    test('sends a scalar as the body of an unnamed json parameter', () async {
+      httpClient.stub(4, path: '/rest/v1/rpc/double_it');
+
+      final doubled = await client.rpc('double_it', params: 2);
+
+      expect(doubled, 4);
+      expect(lastRequest().jsonBody, 2);
+    });
+
+    test('rejects a body that is not a map on a read-only call', () {
+      expect(
+        () => client.rpc('sum_all', params: [1, 2, 3], get: true),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+
     test('passes the type argument and the read-only flag on', () async {
       httpClient.stub(bookRows);
 

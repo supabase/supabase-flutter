@@ -776,6 +776,7 @@ await supabase.from('messages').select().lt('created_at', DateTime.now());
 | `SupabaseQuerySchema(headers: …)`                                                            | removed, the headers of the `rest` client are used                                         |
 | `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
 | `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`                 | removed                                                                                    |
+| `PostgrestFilterBuilder.copyWithUrl()` and `PostgrestTransformBuilder.copyWithUrl()`         | removed, build the request with the filters and transforms instead                         |
 | `PostgrestQueryBuilder<T>`                                                                   | `PostgrestQueryBuilder`                                                                    |
 
 `PostgrestClient.headers` is an unmodifiable map. Set headers on the constructor for all requests,
@@ -788,9 +789,10 @@ read `supabase.rest` or call `supabase.schema(…)` again after changing them.
 `insert()`, `upsert()`, `update()` and `delete()` without a trailing `select()` now resolve to
 `void`. The value was always `null`, so drop the assignment or add `select()` to return data.
 
-`supabase.from('countries')` by itself can no longer be awaited, converted with `withConverter()`,
-or given an `abortSignal()`. Call `select()`, `insert()`, `upsert()`, `update()`, `delete()` or
-`count()` first. `setHeader()` and `retry()` remain available before the operation.
+`supabase.from('countries')` by itself can no longer be awaited or converted with
+`withConverter()`. Call `select()`, `insert()`, `upsert()`, `update()`, `delete()` or `count()`
+first. `setHeader()`, `retry()`, `requestTimeout()` and `abortSignal()` remain available before the
+operation.
 
 #### The PostgREST builder has one type parameter and no wrapper classes
 

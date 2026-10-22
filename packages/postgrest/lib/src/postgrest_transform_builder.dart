@@ -26,7 +26,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   );
 
   /// Returns a copy of this request pointed at [url].
-  PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
+  PostgrestTransformBuilder<T> _copyWithUrl(Uri url) =>
       PostgrestTransformBuilder(_copyWith(url: url));
 
   @override
@@ -36,6 +36,10 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   @override
   PostgrestTransformBuilder<T> requestTimeout(Duration timeout) =>
       PostgrestTransformBuilder(super.requestTimeout(timeout));
+
+  @override
+  PostgrestTransformBuilder<T> abortSignal(Future<void> abortSignal) =>
+      PostgrestTransformBuilder(super.abortSignal(abortSignal));
 
   @override
   PostgrestTransformBuilder<T> setHeader(String key, String value) =>
@@ -130,7 +134,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     final existingOrder = _url.queryParameters[parameter];
     final value = existingOrder == null ? key : '$existingOrder,$key';
     return PostgrestTransformBuilder(
-      copyWithUrl(_url.overrideSearchParameters(parameter, value)),
+      _copyWithUrl(_url.overrideSearchParameters(parameter, value)),
     );
   }
 
@@ -152,7 +156,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     final key = referencedTable == null ? 'limit' : '$referencedTable.limit';
 
     final url = _url.overrideSearchParameters(key, '$count');
-    return PostgrestTransformBuilder(copyWithUrl(url));
+    return PostgrestTransformBuilder(_copyWithUrl(url));
   }
 
   /// Limits the result to rows within the specified range, inclusive.
@@ -187,7 +191,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     final url = _url
         .overrideSearchParameters(keyOffset, '$from')
         .overrideSearchParameters(keyLimit, '${to - from + 1}');
-    return PostgrestTransformBuilder(copyWithUrl(url));
+    return PostgrestTransformBuilder(_copyWithUrl(url));
   }
 
   /// Retrieves only one row from the result.

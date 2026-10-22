@@ -318,6 +318,14 @@ class PostgrestQueryBuilder {
     return PostgrestQueryBuilder._(_config.copyWith(requestTimeout: timeout));
   }
 
+  /// Cancels the requests built by this builder when [abortSignal]
+  /// completes.
+  ///
+  /// See [PostgrestBuilder.abortSignal].
+  PostgrestQueryBuilder abortSignal(Future<void> abortSignal) {
+    return PostgrestQueryBuilder._(_config.copyWith(abortSignal: abortSignal));
+  }
+
   /// Sets a header on the requests built by this builder.
   PostgrestQueryBuilder setHeader(String key, String value) {
     return PostgrestQueryBuilder._(

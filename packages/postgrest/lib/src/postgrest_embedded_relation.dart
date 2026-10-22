@@ -326,16 +326,6 @@ base mixin _Embedded<Row> on PostgrestSelectable<Row> {
 
   @override
   String get responseKey => relation.key;
-
-  /// The filter form, `parent.title`, dotted through every level of a
-  /// nested projection.
-  String get _filterName {
-    final inner = _selections.single;
-    final innerName = inner is _Embedded<Object?>
-        ? inner._filterName
-        : inner.expression;
-    return '${relation._reference}.$innerName';
-  }
 }
 
 /// An embedded relation selected as a whole into the parent's `select` list:
@@ -363,9 +353,6 @@ sealed class PostgrestEmbed<Row, Target> extends PostgrestSelectable<Row>
 
   @override
   List<PostgrestSelectable<Object?>> get _selections => selections;
-
-  @override
-  String get _filterName => relation._reference;
 }
 
 /// A to-one relation selected as a whole, `author(id,name)`.
@@ -410,10 +397,6 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
 
   @override
   Value Function(Object json)? get _fromJson => _inner._fromJson;
-
-  /// The filter form, `parent.title`, dotted through every level of a
-  /// nested projection.
-  String get embeddedFilterName => _filterName;
 
   /// The `order` form, `parent(title)`, addressing an aliased embed by its
   /// alias.

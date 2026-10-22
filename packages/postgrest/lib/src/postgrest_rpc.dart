@@ -42,10 +42,12 @@ final class PostgrestRpc {
   ///
   /// [fn] is the name of the function to call.
   ///
-  /// [params] is an optional object to pass as arguments to the function call.
+  /// [params] is sent as the request body: the JSON object of named
+  /// arguments, or the value of a function's sole unnamed `json` or `jsonb`
+  /// parameter, such as a list or a number.
   ///
   /// When [get] is set to `true`, the function will be called with read-only
-  /// access mode.
+  /// access mode, and [params] has to be a [Map] of named arguments.
   /// {@endtemplate}
   ///
   /// ```dart
@@ -53,7 +55,7 @@ final class PostgrestRpc {
   /// ```
   PostgrestFilterBuilder<T> call<T>(
     String fn, {
-    Map<dynamic, dynamic>? params,
+    Object? params,
     bool get = false,
   }) =>
       // ignore: invalid_use_of_internal_member

@@ -1314,6 +1314,20 @@ void main() {
       expect(httpClient.requests.last.body, '{"title":"bar"}');
     });
 
+    test('an Update of Never makes delete uncallable', () {
+      // The tear-off types are checked statically, so picking the wrong
+      // extension fails the analysis; the runtime checks pin them down too.
+      final PostgrestTypedUnscopedBuilder<Book> Function() deletable = client
+          .table(Books.table)
+          .delete;
+      final PostgrestTypedUnscopedBuilder<Author> Function(Never) readOnly =
+          client.table(Authors.table).delete;
+
+      expect(deletable, isA<Object? Function()>());
+      expect(readOnly, isNot(isA<Object? Function()>()));
+      expect(httpClient.requests, isEmpty);
+    });
+
     test('all() deletes every row without a filter', () async {
       httpClient.stub(null);
 
