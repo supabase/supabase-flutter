@@ -45,8 +45,8 @@ class RoomChannel {
         )
         .map((payload) => Message.fromJson(payload.newRecord));
 
-    // Postgres Changes: deleted rows. The delete payload carries the removed
-    // row under `oldRecord`.
+    // Postgres Changes: deleted rows. With row level security on, the delete
+    // payload carries only the primary key of the removed row in `oldRecord`.
     onMessageDeleted = _channel
         .onPostgresChanges(
           event: PostgresChangeEvent.delete,

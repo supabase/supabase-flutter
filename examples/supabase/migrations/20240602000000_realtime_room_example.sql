@@ -18,10 +18,9 @@ create index messages_created_at_idx on public.messages (created_at);
 -- to the realtime publication. Without this, Postgres Changes emits nothing.
 alter publication supabase_realtime add table public.messages;
 
--- Include the full previous row in delete (and update) change payloads. By
--- default only the primary key is sent on delete; the example only needs the
--- id, but this keeps the payload complete.
-alter table public.messages replica identity full;
+-- A delete event carries only the primary key of the removed row, which is all
+-- the example needs. Replica identity full would not add the other columns,
+-- since realtime sends only the primary key on tables with row level security.
 
 -- The example runs unauthenticated with the publishable (anon) key. Enable row
 -- level security and add permissive policies so anyone can read and post to the
