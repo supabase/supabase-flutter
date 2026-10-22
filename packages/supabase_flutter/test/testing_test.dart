@@ -96,8 +96,17 @@ void main() {
     expect(urls.single, startsWith('ws://localhost:54321/realtime/v1'));
   });
 
-  test('the publishable key carries the anon role', () {
-    expect(decodeTestJwtClaims(testPublishableKey)['role'], 'anon');
+  test('a signed-out function call sends the key only as apikey', () async {
+    httpClient.stubEdgeFunction('hello');
+    final supabase = await initializeTestSupabase(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+
+    await supabase.client.functions.invoke('hello');
+
+    final headers = httpClient.requests.single.headers;
+    expect(testPublishableKey, startsWith('sb_publishable_'));
+    expect(headers['apikey'], testPublishableKey);
+    expect(headers['Authorization'], isNull);
   });
 
   test('a custom key, url and headers are passed through', () async {

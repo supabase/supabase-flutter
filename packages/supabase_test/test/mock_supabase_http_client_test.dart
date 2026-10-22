@@ -32,7 +32,7 @@ void main() {
     });
 
     test('records the payload an insert sent', () async {
-      httpClient.stubTable('todos', method: 'POST', statusCode: 201);
+      httpClient.stubTable('todos', method: HttpMethod.post, statusCode: 201);
 
       await supabase.from('todos').insert({'task': 'Write tests'});
 
@@ -104,6 +104,23 @@ void main() {
             (error) => error.message,
             'message',
             allOf(contains('/rest/v1/x'), contains('/rest/v1/todos')),
+          ),
+        ),
+      );
+    });
+
+    test('a stub for one method does not answer another', () async {
+      httpClient.stubTable('todos', method: HttpMethod.post, statusCode: 201);
+
+      await supabase.from('todos').insert({'task': 'Write tests'});
+
+      await expectLater(
+        () => supabase.from('todos').select(),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('No stub matches GET'), contains('POST /rest/v1')),
           ),
         ),
       );
@@ -227,7 +244,7 @@ void main() {
     test('single after an insert returns the inserted row', () async {
       httpClient.stubTable(
         'todos',
-        method: 'POST',
+        method: HttpMethod.post,
         statusCode: 201,
         rows: [
           {'id': 1, 'task': 'Write tests'},
@@ -404,7 +421,7 @@ void main() {
           }
           return jsonResponse([row], statusCode: 201);
         },
-        method: 'POST',
+        method: HttpMethod.post,
         path: '/rest/v1/users',
       );
 
@@ -655,7 +672,10 @@ void main() {
       await supabase.from('todos').insert({'task': 'Write tests'});
 
       expect(httpClient.requestsTo('/rest/v1/todos'), hasLength(2));
-      final inserts = httpClient.requestsTo('/rest/v1/todos', method: 'POST');
+      final inserts = httpClient.requestsTo(
+        '/rest/v1/todos',
+        method: HttpMethod.post,
+      );
       expect(inserts.single.jsonBody, {'task': 'Write tests'});
     });
 
@@ -1035,7 +1055,7 @@ void main() {
     );
 
     test('writes are matched on their schema too', () async {
-      httpClient.stubTable('todos', schema: 'archive', method: 'POST');
+      httpClient.stubTable('todos', schema: 'archive', method: HttpMethod.post);
 
       await supabase.schema('archive').from('todos').insert({'id': 1});
 

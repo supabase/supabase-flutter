@@ -3,7 +3,7 @@
 ///
 /// [initializeTestSupabase] initializes [Supabase] the way a test needs it:
 /// in-memory persistence, no token auto refresh, no deep link detection, and
-/// an unsigned test key. Answer the HTTP traffic with a
+/// a test publishable key. Answer the HTTP traffic with a
 /// `MockSupabaseHttpClient` from `package:supabase_test`, and realtime with
 /// its `MockRealtimeTransport`:
 ///
@@ -25,20 +25,17 @@
 /// ```
 library;
 
-import 'dart:convert';
-
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 
 import 'supabase_flutter.dart';
 
-/// The publishable key [initializeTestSupabase] uses by default: an unsigned
-/// JWT carrying the `anon` role, which the mocked services never verify.
+/// The publishable key [initializeTestSupabase] uses by default.
+///
+/// It carries the `sb_publishable_` prefix, so signed-out requests carry the
+/// headers a production publishable key produces.
 @visibleForTesting
-final String testPublishableKey = _unsignedJwt({
-  'role': 'anon',
-  'iss': 'supabase_flutter_testing',
-});
+const testPublishableKey = 'sb_publishable_supabase_flutter_testing';
 
 /// Initializes [Supabase] for a test and returns the instance.
 ///
@@ -49,7 +46,7 @@ final String testPublishableKey = _unsignedJwt({
 /// touched, and defaults [publishableKey] to [testPublishableKey]. Pass a
 /// `MockSupabaseHttpClient` as [httpClient] to answer the requests, and the
 /// `call` method of a `MockRealtimeTransport` as [realtimeTransport] to
-/// answer the realtime traffic.
+/// answer the realtime traffic, the same way `testSupabaseClient` takes them.
 ///
 /// Dispose the instance when the test ends, for example with
 /// `addTearDown(supabase.dispose)`, so the next test can initialize again.
@@ -57,7 +54,7 @@ final String testPublishableKey = _unsignedJwt({
 Future<Supabase> initializeTestSupabase({
   Client? httpClient,
   String url = 'http://localhost:54321',
-  String? publishableKey,
+  String publishableKey = testPublishableKey,
   Map<String, String>? headers,
   WebSocketTransport? realtimeTransport,
   AuthAsyncStorage? asyncStorage,
@@ -65,7 +62,7 @@ Future<Supabase> initializeTestSupabase({
 }) {
   return Supabase.initialize(
     url: url,
-    publishableKey: publishableKey ?? testPublishableKey,
+    publishableKey: publishableKey,
     httpClient: httpClient,
     headers: headers,
     realtimeClientOptions: RealtimeClientOptions(transport: realtimeTransport),
@@ -75,12 +72,4 @@ Future<Supabase> initializeTestSupabase({
       detectSessionInUri: false,
     ),
   );
-}
-
-String _unsignedJwt(Map<String, dynamic> claims) {
-  final header = base64Url.encode(
-    utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
-  );
-  final payload = base64Url.encode(utf8.encode(jsonEncode(claims)));
-  return '$header.$payload.AAAA';
 }

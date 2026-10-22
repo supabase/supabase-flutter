@@ -25,7 +25,7 @@ description: >-
 - Assert on what was sent with `requests` and `requestsTo`, not by wrapping
   the client.
 - Dispose every client at the end of the test.
-- Match methods with `HttpMethod.post.value` and friends, not raw strings.
+- Match methods with `HttpMethod.post` and friends.
 
 ## Setup
 
@@ -85,7 +85,7 @@ needs every non-nullable column in each row.
 | An edge function                     | `stubEdgeFunction('hello', body: {...})`                                                                   |
 | Sign in, sign up, sign out, the user | `stubSignIn()`, `stubSignUp()`, `stubSignOut()`, `stubUser()`                                              |
 | Storage                              | `stubStorageUpload`, `stubStorageDownload`, `stubStorageSignedUrl`, `stubStorageList`, `stubStorageRemove` |
-| Any other path                       | `stub(body, method: HttpMethod.get.value, path: '/storage/v1/bucket/avatars')`                             |
+| Any other path                       | `stub(body, method: HttpMethod.get, path: '/storage/v1/bucket/avatars')`                                   |
 | A response computed from the request | `stubHandler((request) => jsonResponse(...), path: ...)`                                                   |
 | No network                           | `stubError(ClientException('Offline'))`                                                                    |
 | A request that never answers         | `stubStall(path: ...)`                                                                                     |
@@ -130,7 +130,7 @@ await supabase
     .insert(BooksInsert(authorId: 2, title: 'Dune'));
 
 final insert = httpClient
-    .requestsTo('/rest/v1/books', method: HttpMethod.post.value)
+    .requestsTo('/rest/v1/books', method: HttpMethod.post)
     .single;
 expect(insert.jsonBody, {'author_id': 2, 'title': 'Dune'});
 ```
@@ -183,7 +183,7 @@ events from the test:
 final realtime = MockRealtimeTransport();
 final supabase = testSupabaseClient(
   httpClient: MockSupabaseHttpClient(),
-  realtime: realtime,
+  realtimeTransport: realtime.call,
 );
 
 final channel = supabase.channel('books');

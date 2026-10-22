@@ -19,18 +19,18 @@ class FakeTusServer {
     httpClient
       ..stubHandler(
         _create,
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: '/upload/resumable',
       )
       ..stubHandler(
         _create,
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: '/upload/resumable/sign',
       )
-      ..stubHandler(_head, method: HttpMethod.head.value, path: uploadUrlPath)
+      ..stubHandler(_head, method: HttpMethod.head, path: uploadUrlPath)
       ..stubHandler(
         _append,
-        method: HttpMethod.patch.value,
+        method: HttpMethod.patch,
         path: uploadUrlPath,
       )
       ..stubHandler(
@@ -38,7 +38,7 @@ class FakeTusServer {
           length = null;
           return Response('', 204);
         },
-        method: HttpMethod.delete.value,
+        method: HttpMethod.delete,
         path: uploadUrlPath,
       );
   }
@@ -124,10 +124,10 @@ void main() {
   );
 
   List<RecordedRequest> patches() =>
-      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.patch.value);
+      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.patch);
 
   List<RecordedRequest> heads() =>
-      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.head.value);
+      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.head);
 
   setUp(() {
     httpClient = MockSupabaseHttpClient();
@@ -159,7 +159,7 @@ void main() {
     expect(server.received.toBytes(), data);
 
     final create = httpClient
-        .requestsTo('/upload/resumable', method: HttpMethod.post.value)
+        .requestsTo('/upload/resumable', method: HttpMethod.post)
         .single;
     expect(create.headers['tus-resumable'], '1.0.0');
     expect(create.headers['upload-length'], '10');
@@ -209,7 +209,7 @@ void main() {
 
     expect(server.received.toBytes(), data);
     final create = httpClient
-        .requestsTo('/upload/resumable', method: HttpMethod.post.value)
+        .requestsTo('/upload/resumable', method: HttpMethod.post)
         .single;
     expect(
       decodeUploadMetadata(create.headers['upload-metadata']!)['contentType'],
@@ -218,7 +218,7 @@ void main() {
   });
 
   test('records the upload before the first chunk is sent', () async {
-    httpClient.stubStall(method: HttpMethod.patch.value, times: 1);
+    httpClient.stubStall(method: HttpMethod.patch, times: 1);
 
     final upload = storage
         .from('videos')
@@ -248,7 +248,7 @@ void main() {
   test(
     'pauses the chunk in flight and resumes from the server offset',
     () async {
-      httpClient.stubStall(method: HttpMethod.patch.value, times: 1);
+      httpClient.stubStall(method: HttpMethod.patch, times: 1);
       final upload = storage
           .from('videos')
           .resumableUploadBinary('clip.mp4', data);
@@ -277,7 +277,7 @@ void main() {
         server.received.add(data.sublist(0, 4));
         return Response('Upload-Offset conflict', 409);
       },
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
       times: 1,
     );
 
@@ -290,7 +290,7 @@ void main() {
   test('retries a chunk that failed on the network', () async {
     httpClient.stubError(
       ClientException('Offline'),
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
       times: 2,
     );
 
@@ -303,7 +303,7 @@ void main() {
   test('retries a chunk the server answered with a 5xx', () async {
     httpClient.stubHandler(
       (_) => Response('Service Unavailable', 503),
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
       times: 1,
     );
 
@@ -315,7 +315,7 @@ void main() {
   test('keeps the record once the retries run out, to resume later', () async {
     httpClient.stubError(
       ClientException('Offline'),
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
       times: 3,
     );
     final upload = storage
@@ -339,7 +339,7 @@ void main() {
   test('resumes a failed upload through the same handle', () async {
     httpClient.stubError(
       ClientException('Offline'),
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
       times: 3,
     );
     final upload = storage
@@ -362,7 +362,7 @@ void main() {
     httpClient.stubText(
       'Forbidden',
       statusCode: 403,
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
     );
     final upload = storage
         .from('videos')
@@ -386,7 +386,7 @@ void main() {
         server.length = null;
         return Response('Not Found', 404);
       },
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
       times: 1,
     );
     final upload = storage
@@ -397,7 +397,7 @@ void main() {
     await upload.done;
 
     expect(
-      httpClient.requestsTo('/upload/resumable', method: HttpMethod.post.value),
+      httpClient.requestsTo('/upload/resumable', method: HttpMethod.post),
       hasLength(2),
     );
     expect(server.received.toBytes(), data);
@@ -413,7 +413,7 @@ void main() {
       httpClient.stubText(
         'Not Found',
         statusCode: 404,
-        method: HttpMethod.patch.value,
+        method: HttpMethod.patch,
       );
       final upload = storage
           .from('videos')
@@ -432,7 +432,7 @@ void main() {
       expect(
         httpClient.requestsTo(
           '/upload/resumable',
-          method: HttpMethod.post.value,
+          method: HttpMethod.post,
         ),
         hasLength(2),
       );
@@ -444,7 +444,7 @@ void main() {
     httpClient.stubText(
       'The resource already exists',
       statusCode: 409,
-      method: HttpMethod.post.value,
+      method: HttpMethod.post,
     );
     final upload = storage
         .from('videos')
@@ -475,7 +475,7 @@ void main() {
 
     expect(
       httpClient
-          .requestsTo('/upload/resumable', method: HttpMethod.post.value)
+          .requestsTo('/upload/resumable', method: HttpMethod.post)
           .single
           .headers['x-upsert'],
       'true',
@@ -487,7 +487,7 @@ void main() {
   });
 
   test('cancels the upload on the server and forgets it', () async {
-    httpClient.stubStall(method: HttpMethod.patch.value, times: 1);
+    httpClient.stubStall(method: HttpMethod.patch, times: 1);
     final upload = storage
         .from('videos')
         .resumableUploadBinary('clip.mp4', data);
@@ -509,7 +509,7 @@ void main() {
       ),
     );
     expect(
-      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete.value),
+      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete),
       hasLength(1),
     );
     expect(await storage.resumableUploads(), isEmpty);
@@ -535,7 +535,7 @@ void main() {
           },
         );
       },
-      method: HttpMethod.patch.value,
+      method: HttpMethod.patch,
       times: 1,
     );
     final upload = storage
@@ -551,7 +551,7 @@ void main() {
     expect(upload.status, ResumableUploadStatus.completed);
     expect((await upload.done).id, 'object-1');
     expect(
-      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete.value),
+      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete),
       isEmpty,
     );
   });
@@ -560,7 +560,7 @@ void main() {
     const key = 'sb-localhost-resumable-uploads';
     const unreadable = {'future-upload': 'from a newer version'};
     await recordStorage.setItem(key, jsonEncode(unreadable));
-    httpClient.stubStall(method: HttpMethod.patch.value, times: 1);
+    httpClient.stubStall(method: HttpMethod.patch, times: 1);
 
     final upload = storage
         .from('videos')
@@ -592,7 +592,7 @@ void main() {
         .done;
 
     final create = httpClient
-        .requestsTo('/upload/resumable/sign', method: HttpMethod.post.value)
+        .requestsTo('/upload/resumable/sign', method: HttpMethod.post)
         .single;
     expect(create.headers['x-signature'], 'signed-token');
     expect(create.headers.containsKey('x-upsert'), isFalse);
@@ -618,7 +618,7 @@ void main() {
   });
 
   test('fails when the bytes arrived but no object was stored', () async {
-    httpClient.stubStall(method: HttpMethod.patch.value, times: 1);
+    httpClient.stubStall(method: HttpMethod.patch, times: 1);
     final upload = storage
         .from('videos')
         .resumableUploadBinary('clip.mp4', data);
@@ -631,7 +631,7 @@ void main() {
         200,
         headers: {'upload-offset': '10', 'upload-length': '10'},
       ),
-      method: HttpMethod.head.value,
+      method: HttpMethod.head,
       times: 1,
     );
 
@@ -648,10 +648,10 @@ void main() {
           server.received.add(request.bodyBytes);
           return Response('', 204, headers: {'upload-offset': '4'});
         },
-        method: HttpMethod.patch.value,
+        method: HttpMethod.patch,
         times: 1,
       );
-      httpClient.stubStall(method: HttpMethod.patch.value, times: 1);
+      httpClient.stubStall(method: HttpMethod.patch, times: 1);
       final upload = storage
           .from('videos')
           .resumableUploadBinary('clip.mp4', data);
@@ -678,7 +678,7 @@ void main() {
       expect(
         httpClient.requestsTo(
           '/upload/resumable',
-          method: HttpMethod.post.value,
+          method: HttpMethod.post,
         ),
         hasLength(1),
       );
@@ -709,7 +709,7 @@ void main() {
 
       expect(await restarted.resumableUploads(), isEmpty);
       expect(
-        httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete.value),
+        httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete),
         hasLength(1),
       );
     });

@@ -24,7 +24,7 @@ void main() {
             testUserJson(email: 'updated@email.com'),
           );
         },
-        method: HttpMethod.put.value,
+        method: HttpMethod.put,
         path: '/user',
       );
     client = AuthClient(

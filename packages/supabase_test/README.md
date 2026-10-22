@@ -73,9 +73,10 @@ same stubs.
 
 `testSupabaseClient` is a regular `SupabaseClient` wired for tests: it
 configures the in-memory storage the PKCE flow requires, turns off the token
-auto refresh so no timer outlives the test, and defaults the API key to an
-unsigned test JWT. Dispose it when the test ends, for example with
-`addTearDown(supabase.dispose)`.
+auto refresh so no timer outlives the test, and defaults the publishable key
+to an `sb_publishable_` test key, so signed-out requests carry the headers a
+production publishable key produces. Dispose
+it when the test ends, for example with `addTearDown(supabase.dispose)`.
 
 ## Stubbing endpoints
 
@@ -135,7 +136,7 @@ a path prefix:
 final httpClient = MockSupabaseHttpClient()
   ..stub(
     {'name': 'avatars', 'id': 'avatars', 'public': true},
-    method: HttpMethod.get.value,
+    method: HttpMethod.get,
     path: '/storage/v1/bucket/avatars',
   );
 ```
@@ -359,12 +360,12 @@ await supabase
     .insert(BooksInsert(authorId: 2, title: 'Dune'));
 
 final select = httpClient
-    .requestsTo('/rest/v1/books', method: HttpMethod.get.value)
+    .requestsTo('/rest/v1/books', method: HttpMethod.get)
     .single;
 expect(select.queryParameters['in_print'], 'is.true');
 
 final insert = httpClient
-    .requestsTo('/rest/v1/books', method: HttpMethod.post.value)
+    .requestsTo('/rest/v1/books', method: HttpMethod.post)
     .single;
 expect(insert.jsonBody, {'author_id': 2, 'title': 'Dune'});
 ```
@@ -441,7 +442,7 @@ events:
 final realtime = MockRealtimeTransport();
 final supabase = testSupabaseClient(
   httpClient: MockSupabaseHttpClient(),
-  realtime: realtime,
+  realtimeTransport: realtime.call,
 );
 addTearDown(supabase.dispose);
 
@@ -477,7 +478,8 @@ is recorded in `sent`, and `joinedTopics` lists what it subscribed to.
 
 Widget tests initialize `supabase_flutter` through `initializeTestSupabase`
 from `package:supabase_flutter/testing.dart`, which applies the same test
-defaults as `testSupabaseClient` and takes the same mock HTTP client:
+defaults as `testSupabaseClient` and takes the same `httpClient`, `url`,
+`publishableKey` and `realtimeTransport` parameters:
 
 ```dart skip
 import 'package:supabase_flutter/testing.dart';

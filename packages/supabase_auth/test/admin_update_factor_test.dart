@@ -38,7 +38,7 @@ void main() {
 
     final requests = httpClient.requestsTo(
       '/admin/users/$userId/factors/$factorId',
-      method: HttpMethod.put.value,
+      method: HttpMethod.put,
     );
     expect(requests, hasLength(1));
     expect(requests.single.jsonBody, {

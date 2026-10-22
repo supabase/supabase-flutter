@@ -28,7 +28,7 @@ void main() {
   void stubRefreshRejection(String code) {
     httpClient.stub(
       rejection(code),
-      method: HttpMethod.post.value,
+      method: HttpMethod.post,
       path: '/token',
       query: {'grant_type': 'refresh_token'},
       statusCode: 400,
@@ -152,7 +152,7 @@ void main() {
             headers: apiVersionHeaders,
           );
         },
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: '/token',
         query: {'grant_type': 'refresh_token'},
       );
