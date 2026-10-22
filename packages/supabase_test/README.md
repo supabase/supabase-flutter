@@ -196,7 +196,8 @@ These rules cover most test setups:
   with the mismatch spelled out instead of a silent wrong answer. It is also
   reported to the test zone, so the test fails even when a client wraps the
   error as a `SupabaseTransportException` and the code under test handles it
-  as being offline.
+  as being offline. A test that expects the unmatched request to fail
+  constructs the client with `reportUnmatchedRequests: false`.
 
 Failures are stubbed with `statusCode` and the error shape of the service:
 
@@ -310,8 +311,8 @@ final httpClient = MockSupabaseHttpClient()
 `stubError` takes the exception to throw, usually the `ClientException` of
 `package:http`, and the client reports it as a `SupabaseTransportException`.
 Like every stub, it takes `times` to fail only the first requests.
-`testSupabaseClient` turns off the retries of database and auth requests, so
-each failure surfaces at once instead of after the real backoff delays; pass
+`testSupabaseClient` turns off the retries of database requests and token
+refreshes, so each failure surfaces at once instead of after the real backoff delays; pass
 `retryOptions` to exercise retry handling:
 
 ```dart test-file

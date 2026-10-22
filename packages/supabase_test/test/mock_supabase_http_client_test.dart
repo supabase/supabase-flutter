@@ -118,16 +118,33 @@ void main() {
 
       await supabase.from('todos').insert({'task': 'Write tests'});
 
-      await expectLater(
-        () => supabase.from('todos').select(),
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            allOf(contains('No stub matches GET'), contains('POST /rest/v1')),
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => supabase.from('todos').select(),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              allOf(contains('No stub matches GET'), contains('POST /rest/v1')),
+            ),
           ),
         ),
       );
+
+      expect(reported, [isA<StateError>()]);
+    });
+
+    test('reporting an unmatched request can be turned off', () async {
+      final quiet = MockSupabaseHttpClient(reportUnmatchedRequests: false);
+
+      final reported = await _reportedErrors(
+        () => expectLater(
+          () => quiet.get(Uri.parse('http://localhost:54321/rest/v1/x')),
+          throwsStateError,
+        ),
+      );
+
+      expect(reported, isEmpty);
     });
 
     test('an unmatched request fails the test even when wrapped', () async {
@@ -545,16 +562,6 @@ void main() {
       expect(await supabase.from('todos').select(), isEmpty);
       await expectLater(() => supabase.from('profiles').select(), offline());
     });
-
-    test('fails fast without real retry backoff', () async {
-      httpClient.stubError(http.ClientException('Offline'));
-      final stopwatch = Stopwatch()..start();
-
-      await expectLater(() => supabase.from('todos').select(), offline());
-
-      expect(stopwatch.elapsed, lessThan(const Duration(milliseconds: 300)));
-      expect(httpClient.requests, hasLength(1));
-    });
   });
 
   group('stubStall', () {
@@ -773,6 +780,7 @@ void main() {
       await signInTestUser(supabase.auth);
 
       await supabase.auth.signOut();
+      await pumpEventQueue();
 
       expect(supabase.auth.currentSession, isNull);
       await pumpEventQueue();

@@ -187,11 +187,12 @@ const _singleObjectAccept = 'application/vnd.pgrst.object+json';
 /// The latest registered stub that matches a request answers it, so a stub
 /// registered inside a test overrides one registered in `setUp`. A request no
 /// stub matches throws a [StateError] naming the request and the registered
-/// stubs, and reports it to the current zone as an uncaught error as well, so
-/// the test fails even when the client under test wraps the error, the way
-/// auth and functions report it as a `SupabaseTransportException`. The auth
-/// shorthands answer their endpoint both under the
-/// `/auth/v1` prefix and at the root, where a bare `AuthClient` addresses it.
+/// stubs, and unless [reportUnmatchedRequests] is off, reports it to the
+/// current zone as an uncaught error as well, so the test fails even when the
+/// client under test wraps the error, the way auth and functions report it as
+/// a `SupabaseTransportException`. The auth shorthands answer their endpoint
+/// both under the `/auth/v1` prefix and at the root, where a bare
+/// `AuthClient` addresses it.
 ///
 /// A request can be failed instead of answered with [stubError], stalled
 /// with [stubStall], and driven through a sequence of statuses with
@@ -201,6 +202,14 @@ const _singleObjectAccept = 'application/vnd.pgrst.object+json';
 /// for example, is registered with [stubHandler].
 @visibleForTesting
 class MockSupabaseHttpClient extends BaseClient {
+  MockSupabaseHttpClient({this.reportUnmatchedRequests = true});
+
+  /// Whether a request no stub matches is reported to the current zone as an
+  /// uncaught error, which fails the running test, on top of being thrown.
+  ///
+  /// Turn it off for a test that expects the unmatched request to fail.
+  final bool reportUnmatchedRequests;
+
   final _stubs = <_Stub>[];
 
   /// Every request this client has answered, oldest first.
@@ -268,7 +277,7 @@ class MockSupabaseHttpClient extends BaseClient {
     int? times,
   }) {
     _stub(
-      body,
+      () => body,
       method: method,
       path: path,
       query: query,
@@ -278,8 +287,10 @@ class MockSupabaseHttpClient extends BaseClient {
     );
   }
 
+  /// Registers a stub answering with the body [body] builds when a request
+  /// arrives.
   void _stub(
-    Object? body, {
+    Object? Function() body, {
     HttpMethod? method,
     String? path,
     String? bareEndpoint,
@@ -297,7 +308,7 @@ class MockSupabaseHttpClient extends BaseClient {
         schema: null,
         remaining: times,
         respond: (request, _) => _response(
-          body,
+          body(),
           request: request,
           statusCode: statusCode,
           headers: headers,
@@ -622,7 +633,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Answers the logout endpoint, so `signOut` completes.
   void stubSignOut({int? times}) {
     _stub(
-      null,
+      () => null,
       method: HttpMethod.post,
       path: '/auth/v1/logout',
       bareEndpoint: '/logout',
@@ -635,7 +646,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// so `getUser` and `updateUser` succeed.
   void stubUser({Map<String, dynamic>? user, int? times}) {
     _stub(
-      user ?? testUserJson(),
+      () => user ?? testUserJson(),
       path: '/auth/v1/user',
       bareEndpoint: '/user',
       times: times,
@@ -792,21 +803,12 @@ class MockSupabaseHttpClient extends BaseClient {
     required DateTime? expiresAt,
     required int? times,
   }) {
-    _stubs.add(
-      _Stub(
-        method: HttpMethod.post,
-        path: '/auth/v1$endpoint',
-        bareEndpoint: endpoint,
-        query: null,
-        schema: null,
-        remaining: times,
-        respond: (request, _) => _response(
-          _sessionJson(user: user, expiresAt: expiresAt),
-          request: request,
-          statusCode: 200,
-          headers: const {},
-        ),
-      ),
+    _stub(
+      () => _sessionJson(user: user, expiresAt: expiresAt),
+      method: HttpMethod.post,
+      path: '/auth/v1$endpoint',
+      bareEndpoint: endpoint,
+      times: times,
     );
   }
 
@@ -971,7 +973,9 @@ class MockSupabaseHttpClient extends BaseClient {
       'No stub matches ${request.method} ${request.url}.\n'
       'Registered stubs, in matching order:\n$stubs',
     );
-    Zone.current.handleUncaughtError(error, StackTrace.current);
+    if (reportUnmatchedRequests) {
+      Zone.current.handleUncaughtError(error, StackTrace.current);
+    }
     throw error;
   }
 }

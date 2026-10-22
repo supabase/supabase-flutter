@@ -314,10 +314,7 @@ void main() {
       await subscribed(channel);
       final bytes = Uint8List.fromList([1, 2, 3]);
 
-      await channel.sendBroadcastMessage(
-        event: 'file',
-        payload: {'payload': bytes},
-      );
+      await channel.sendBroadcastMessage(event: 'file', payload: bytes);
 
       final broadcast = realtime.sent.lastWhere(
         (message) => message.event == 'broadcast',
@@ -371,10 +368,7 @@ void main() {
         'room',
         leaves: {
           'bob': [
-            {
-              'status': 'online',
-              'phx_ref': join.newPresences.single.presenceReference,
-            },
+            {'status': 'online'},
           ],
         },
       );

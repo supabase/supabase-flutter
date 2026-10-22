@@ -43,8 +43,8 @@ const testPublishableKey = 'sb_publishable_supabase_flutter_testing';
 /// code verifier in memory through [asyncStorage], which defaults to a fresh
 /// [MemoryAuthAsyncStorage], turns off the token auto refresh so no timer
 /// outlives the test, disables deep link detection so no platform channel is
-/// touched, turns off the retries of database and auth requests so a stubbed
-/// failure surfaces at once, and defaults [publishableKey] to
+/// touched, turns off the retries of database requests and token refreshes so
+/// a stubbed failure surfaces at once, and defaults [publishableKey] to
 /// [testPublishableKey]. Pass [retryOptions] to exercise retry handling. Pass a
 /// `MockSupabaseHttpClient` as [httpClient] to answer the requests, and the
 /// `call` method of a `MockRealtimeTransport` as [realtimeTransport] to

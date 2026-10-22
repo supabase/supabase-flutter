@@ -69,6 +69,10 @@ class MockRealtimeTransport {
 
   var _nextPresenceRef = 1;
 
+  /// The presences emitted per topic and key, as the JSON of their payload
+  /// and the ref they joined with.
+  final _presenceRefs = <String, Map<String, List<(String, String)>>>{};
+
   /// How many WebSocket connections the client has opened, so a test can
   /// assert on a reconnect.
   int get connectionCount => _connections.length;
@@ -192,7 +196,7 @@ class MockRealtimeTransport {
       RealtimeMessage(
         topic: _prefixed(topic),
         event: 'presence_state',
-        payload: _presenceMetas(presences),
+        payload: _presenceMetas(topic, presences, joining: true),
       ),
     );
   }
@@ -211,8 +215,8 @@ class MockRealtimeTransport {
         topic: _prefixed(topic),
         event: 'presence_diff',
         payload: {
-          'joins': _presenceMetas(joins),
-          'leaves': _presenceMetas(leaves),
+          'joins': _presenceMetas(topic, joins, joining: true),
+          'leaves': _presenceMetas(topic, leaves, joining: false),
         },
       ),
     );
@@ -220,17 +224,58 @@ class MockRealtimeTransport {
 
   /// The wire shape of presences, where each key holds its payloads as
   /// `metas` carrying a `phx_ref` the client keys them by.
+  ///
+  /// A joining payload gets a new ref, and a leaving one the ref it joined
+  /// with, so the client removes the presence it tracked.
   Map<String, dynamic> _presenceMetas(
-    Map<String, List<Map<String, dynamic>>> presences,
-  ) => {
-    for (final MapEntry(:key, value: payloads) in presences.entries)
-      key: {
-        'metas': [
-          for (final payload in payloads)
-            {'phx_ref': '${_nextPresenceRef++}', ...payload},
-        ],
-      },
-  };
+    String topic,
+    Map<String, List<Map<String, dynamic>>> presences, {
+    required bool joining,
+  }) {
+    final tracked = _presenceRefs.putIfAbsent(_prefixed(topic), () => {});
+    return {
+      for (final MapEntry(:key, value: payloads) in presences.entries)
+        key: {
+          'metas': [
+            for (final payload in payloads)
+              {
+                'phx_ref': joining
+                    ? _track(tracked, key, payload)
+                    : _untrack(tracked, key, payload),
+                ...payload,
+              },
+          ],
+        },
+    };
+  }
+
+  String _track(
+    Map<String, List<(String, String)>> tracked,
+    String key,
+    Map<String, dynamic> payload,
+  ) {
+    final ref = '${_nextPresenceRef++}';
+    tracked.putIfAbsent(key, () => []).add((jsonEncode(payload), ref));
+    return ref;
+  }
+
+  String _untrack(
+    Map<String, List<(String, String)>> tracked,
+    String key,
+    Map<String, dynamic> payload,
+  ) {
+    final explicit = payload['phx_ref'];
+    if (explicit is String) {
+      return explicit;
+    }
+    final encoded = jsonEncode(payload);
+    final refs = tracked[key] ?? [];
+    final index = refs.indexWhere((entry) => entry.$1 == encoded);
+    if (index == -1) {
+      return '${_nextPresenceRef++}';
+    }
+    return refs.removeAt(index).$2;
+  }
 
   /// Closes the open connection from the server side with [code] and
   /// [reason], so the code under test observes the disconnect and the client
@@ -261,6 +306,7 @@ class MockRealtimeTransport {
     if (_connections.isNotEmpty && connection == _connections.last) {
       _joinedTopics.clear();
       _postgresBindings.clear();
+      _presenceRefs.clear();
     }
   }
 

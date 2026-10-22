@@ -83,7 +83,6 @@ SupabaseClient testSupabaseClient({
 /// expect(supabase.auth.currentUser?.id, session.user.id);
 /// ```
 @visibleForTesting
-// Stays a Future so existing callers that await it keep compiling cleanly.
 // ignore: avoid-unnecessary-futures
 Future<Session> signInTestUser(
   AuthClient auth, {
@@ -95,11 +94,12 @@ Future<Session> signInTestUser(
 }) async {
   final now = clock.now();
   final expiry = expiresAt ?? now.add(const Duration(hours: 1));
-  if (!expiry.isAfter(now)) {
+  final expirySeconds = expiry.millisecondsSinceEpoch ~/ 1000;
+  if (expirySeconds * 1000 <= now.millisecondsSinceEpoch) {
     throw ArgumentError.value(expiresAt, 'expiresAt', 'must lie in the future');
   }
   final accessToken = unsignedTestJwt({
-    'exp': expiry.millisecondsSinceEpoch ~/ 1000,
+    'exp': expirySeconds,
     'sub': userId,
     'role': role,
     'email': email,

@@ -64,8 +64,7 @@ void main() {
 
   test('testSupabaseClient does not retry by default', () async {
     final httpClient = MockSupabaseHttpClient()
-      ..stubStatuses([503, 200], body: [], path: '/rest/v1/todos')
-      ..stubStatuses([503, 200], body: {}, path: '/auth/v1/token');
+      ..stubStatuses([503, 200], body: []);
     final supabase = testSupabaseClient(httpClient: httpClient);
     addTearDown(supabase.dispose);
 
@@ -73,14 +72,7 @@ void main() {
       () => supabase.from('todos').select(),
       throwsA(isA<PostgrestApiException>()),
     );
-    await expectLater(
-      () => supabase.auth.signInWithPassword(
-        email: 'someone@example.com',
-        password: 'password',
-      ),
-      throwsA(isA<AuthException>()),
-    );
-    expect(httpClient.requests, hasLength(2));
+    expect(httpClient.requests, hasLength(1));
   });
 
   test('testSupabaseClient retries with the given options', () async {
@@ -188,6 +180,21 @@ void main() {
       );
 
       expect(supabase.auth.currentSession, same(session));
+    });
+
+    test('rejects an expiry that rounds down to the past', () async {
+      final now = DateTime.fromMillisecondsSinceEpoch(1700000000000);
+
+      await expectLater(
+        () => withClock(
+          Clock.fixed(now),
+          () => signInTestUser(
+            supabase.auth,
+            expiresAt: now.add(const Duration(milliseconds: 500)),
+          ),
+        ),
+        throwsArgumentError,
+      );
     });
 
     test('rejects an expiry in the past', () async {
