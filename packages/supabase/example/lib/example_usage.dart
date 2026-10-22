@@ -32,7 +32,7 @@ Future<void> exampleUsage(SupabaseClient supabase) async {
   final streamSubscription = supabase
       .table(Countries.table)
       .stream(primaryKey: [Countries.id])
-      .order(Countries.name.asc())
+      .order(Countries.name)
       .limit(10)
       .listen((snapshot) {
         print('snapshot: ${snapshot.map((country) => country.name)}');
@@ -42,7 +42,7 @@ Future<void> exampleUsage(SupabaseClient supabase) async {
   final countries = await supabase
       .table(Countries.table)
       .select()
-      .order(Countries.name.asc());
+      .order(Countries.name);
   print(countries.map((country) => country.name));
 
   // insert data

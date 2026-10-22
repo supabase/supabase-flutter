@@ -17,7 +17,7 @@ class RoomRepository {
   /// SELECT the existing messages once, oldest first, to seed the chat log
   /// before realtime starts streaming new ones.
   Future<List<MessagesRow>> fetchMessages() =>
-      _client.table(Messages.table).select().order(Messages.createdAt.asc());
+      _client.table(Messages.table).select().order(Messages.createdAt);
 
   /// INSERT a message and return the stored row.
   ///

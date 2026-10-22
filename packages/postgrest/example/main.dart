@@ -21,7 +21,7 @@ dynamic main() async {
         .table(Countries.table)
         .select()
         .where(Countries.name.ilike('s%'))
-        .order(Countries.name.asc());
+        .order(Countries.name);
     for (final country in countries) {
       print('${country.id}: ${country.name}');
     }

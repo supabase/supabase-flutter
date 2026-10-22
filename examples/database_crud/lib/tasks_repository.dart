@@ -18,7 +18,7 @@ class TasksRepository {
 
   /// SELECT every project, ordered alphabetically by name.
   Future<List<ProjectsRow>> fetchProjects() =>
-      _client.table(Projects.table).select().order(Projects.name.asc());
+      _client.table(Projects.table).select().order(Projects.name);
 
   /// SELECT tasks joined to their project, with optional filters and ordering.
   ///
