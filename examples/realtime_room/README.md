@@ -35,10 +35,11 @@ is needed.
 come from [`lib/supabase_schema.g.dart`](lib/supabase_schema.g.dart), generated
 from the database schema by the Supabase CLI and the `supabase_typegen` dev
 dependency. After changing a migration, start the local stack and generate it
-again from this directory:
+again from this directory. `--workdir ..` points the CLI at the shared
+`examples/supabase` config:
 
 ```bash
-supabase gen types --lang dart --local --schema public > lib/supabase_schema.g.dart
+supabase gen types --lang dart --local --schema public --workdir .. > lib/supabase_schema.g.dart
 ```
 
 ## Running

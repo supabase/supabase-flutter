@@ -39,10 +39,11 @@ The tables, function and sample data come from the shared Supabase config in
 the Supabase CLI and the `supabase_typegen` dev dependency, so a misspelled
 column or a value of the wrong type is a compile error instead of a failed
 request. After changing a migration, start the local stack and generate it
-again from this directory:
+again from this directory. `--workdir ..` points the CLI at the shared
+`examples/supabase` config:
 
 ```bash
-supabase gen types --lang dart --local --schema public > lib/supabase_schema.g.dart
+supabase gen types --lang dart --local --schema public --workdir .. > lib/supabase_schema.g.dart
 ```
 
 Typed database function calls need Supabase CLI 2.122.0 or newer.
