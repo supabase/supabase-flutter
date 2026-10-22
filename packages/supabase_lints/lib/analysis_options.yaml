@@ -84,9 +84,8 @@ dcm:
     # assigns them.
     avoid-unassigned-fields: false
 
-    # Blocked until dot shorthands stabilize. They are still an experimental
-    # language feature, so code targeting our 3.9.0 floor cannot use them.
-    prefer-returning-shorthands: false # needs dot shorthands (experimental)
-    prefer-shorthands-with-enums: false # needs dot shorthands (experimental)
-    prefer-shorthands-with-static-fields: false # needs dot shorthands (experimental)
-    prefer-shorthands-with-constructors: false # needs dot shorthands (experimental)
+    # Dot shorthands need Dart 3.10, above the 3.9.0 floor of the packages.
+    prefer-returning-shorthands: false
+    prefer-shorthands-with-enums: false
+    prefer-shorthands-with-static-fields: false
+    prefer-shorthands-with-constructors: false

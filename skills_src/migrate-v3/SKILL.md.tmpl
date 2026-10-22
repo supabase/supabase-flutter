@@ -260,13 +260,15 @@ Rules for the conversion:
   generated row type. A model that adds behavior is built from the row
   getters, not from `toJson()`.
 - An operator with no typed method uses `Books.title.raw('eq.Dune')`. A filter
-  on a JSON path uses `PostgrestFilter.raw('metadata->>edition', 'eq.first')`.
+  on a JSON path uses `Books.metadata.jsonText('edition').eq('first')`.
 
 `from()` and the untyped `rpc('fn', params: …)` remain only for:
 
 - a table, view or function missing from the generated file because its
   schema was not generated or is not exposed through the Data API,
 - a table name computed at runtime,
+- a filter inside an embed, such as `.eq('authors.name', 'Frank Herbert')`,
+  or an `!inner` embed, which the typed API does not support yet,
 - a function the generator gives no method, which it explains in a comment in
   the generated file.
 

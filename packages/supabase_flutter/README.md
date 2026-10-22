@@ -269,21 +269,26 @@ await supabase.auth.signOut();
 
 `onAuthStateChange` emits a sealed `AuthState`, with one subtype per event.
 Every new listener first receives `AuthInitialSession` with the current
-session, or `null` when no user is signed in:
+session, or `null` when no user is signed in. A token refresh that fails, for
+example while the device is offline, arrives as an error on the stream, so
+always pass `onError`. Without it the error is unhandled:
 
 ```dart
-final subscription = supabase.auth.onAuthStateChange.listen((state) {
-  switch (state) {
-    case AuthInitialSession(:final session):
-      print('Started with ${session?.user.email ?? 'no user'}');
-    case AuthSignedIn(:final session):
-      print('Signed in as ${session.user.email}');
-    case AuthSignedOut(:final reason):
-      print('Signed out, reason: ${reason?.name}');
-    case _:
-      print('Auth event: ${state.event.name}');
-  }
-});
+final subscription = supabase.auth.onAuthStateChange.listen(
+  (state) {
+    switch (state) {
+      case AuthInitialSession(:final session):
+        print('Started with ${session?.user.email ?? 'no user'}');
+      case AuthSignedIn(:final session):
+        print('Signed in as ${session.user.email}');
+      case AuthSignedOut(:final reason):
+        print('Signed out, reason: ${reason?.name}');
+      case _:
+        print('Auth event: ${state.event.name}');
+    }
+  },
+  onError: (Object error) => print('Auth error: $error'),
+);
 ```
 
 `supabase.auth.currentUser` and `supabase.auth.currentSession` hold the
@@ -296,7 +301,7 @@ package and follow its README to set up Apple sign in on iOS and macOS. Then
 add the bundle ID of your app in the Supabase dashboard under
 **Authentication > Providers > Apple**.
 
-```dart file
+```dart skip
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -344,7 +349,7 @@ Add the web client ID in the Supabase dashboard under
 **Authentication > Providers > Google**, and turn on **Skip nonce check**,
 which iOS needs.
 
-```dart file
+```dart skip
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -390,7 +395,7 @@ Use [flutter_facebook_auth](https://pub.dev/packages/flutter_facebook_auth)
 - **Android** needs `LoginBehavior.webOnly` and the `openid` permission to
   receive an OIDC ID token in `ClassicToken.authenticationToken`.
 
-```dart file
+```dart skip
 import 'dart:io';
 
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
@@ -559,6 +564,7 @@ connection.
 
 ```dart file
 import 'package:flutter/material.dart';
+import 'package:my_app/supabase_schema.g.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BookList extends StatefulWidget {
@@ -762,9 +768,28 @@ Set them up when you use any of these:
 - Password reset by email.
 - `signInWithOAuth()`.
 
-`supabase_flutter` handles deep links on Android, iOS, the web, macOS and
-Windows. It completes the sign in itself when the app is opened through a link
-carrying a `code` (the PKCE flow, the default) or an `access_token`.
+`supabase_flutter` handles deep links on Android, iOS, the web, macOS, Windows
+and Linux. It completes the sign in itself when the app is opened through a
+link carrying a `code` (the PKCE flow, the default) or an `access_token`.
+
+By default, every link with a `code`, `access_token`, `error`, `error_code` or
+`error_description` parameter, in the query or the fragment, is treated as an
+auth callback. If your app receives other links with one of those parameters,
+pass `detectSessionInUriPredicate` to tell the auth callbacks apart, for
+example by their path:
+
+```dart
+await Supabase.initialize(
+  url: 'https://your-project.supabase.co',
+  publishableKey: 'your-publishable-key',
+  authOptions: FlutterAuthClientOptions(
+    detectSessionInUriPredicate: (uri) => uri.host == 'login-callback',
+  ),
+);
+```
+
+`detectSessionInUri: false` turns the handling off, for example when the app
+calls `exchangeCodeForSession` itself.
 
 ### Dashboard configuration
 
@@ -802,7 +827,7 @@ To store them anywhere else, pass an `AuthAsyncStorage` implementation. This
 one keeps the session in secure storage with
 [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage):
 
-```dart file
+```dart skip
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -980,7 +1005,7 @@ request is sent without trace headers.
 `toSentryTrace()` returns a header in the `sentry-trace` format, so convert it
 with `formatAsW3CHeader` from `package:sentry` before passing it on:
 
-```dart file
+```dart skip
 import 'package:sentry/sentry.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -1007,7 +1032,7 @@ Future<void> initialize() async {
 Let the propagator you registered write the active context into a map, and
 read the headers back out of it with `TraceContext.fromCarrier`:
 
-```dart file
+```dart skip
 import 'package:opentelemetry/api.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

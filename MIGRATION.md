@@ -179,13 +179,20 @@ if (search != null) filter = filter & Books.title.ilike('%$search%');
 final books = await supabase.table(Books.table).select().where(filter);
 ```
 
-For an operator the API has no method for, `raw()` on a column keeps the column checked and takes
-the operand as PostgREST spells it, `Books.title.raw('eq.Dune')`. `PostgrestFilter.raw` takes both
-sides as strings, for an expression no column constant can name:
+A JSON path is built on the column, with `jsonText()` for a key read as text and `jsonObject()`
+to go deeper, and filters like any other column:
 
 ```dart
-.where(PostgrestFilter.raw('metadata->>edition', 'eq.first'))
+// Before
+.eq('metadata->>edition', 'first')
+
+// After
+.where(Books.metadata.jsonText('edition').eq('first'))
 ```
+
+For an operator the API has no method for, `raw()` on a column keeps the column checked and takes
+the operand as PostgREST spells it, `Books.title.raw('eq.Dune')`. `PostgrestFilter.raw` takes both
+sides as strings, for an expression no column constant or JSON path can name.
 
 #### Ordering, pagination and single rows
 
@@ -388,6 +395,10 @@ final List<String> titles = [
 
 A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
 
+The typed API cannot filter inside an embed yet, and has no `!inner` embed that drops the parent
+rows without a match. Keep a query that needs either on `from()`, for example
+`.select('title, authors!inner(name)').eq('authors.name', 'Frank Herbert')`.
+
 When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
 so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.
 
@@ -488,6 +499,12 @@ explicitly:
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
+- [Broadcasts no longer fall back to the REST API](#broadcasts-no-longer-fall-back-to-the-rest-api),
+  so `sendBroadcastMessage()` on a channel that was never subscribed throws
+- [Storage uploads return an `UploadResponse`](#storage-uploads-return-an-uploadresponse), so a
+  result stored in `var` or interpolated into a string is no longer the key
+- [`exists()` only returns `false` for a missing object](#exists-only-returns-false-for-a-missing-object),
+  so a missing bucket or an invalid token throws instead of returning `false`
 
 ### Packages and setup
 
@@ -570,6 +587,7 @@ runWithClient(() {
 final supabase = SupabaseClient(
   supabaseUrl,
   supabaseKey,
+  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
   httpClient: MockClient(handler),
 );
 ```
@@ -1488,6 +1506,40 @@ Without `hierarchicalLoggingEnabled = true`, listen on `Logger.root` and filter 
 
 ### Storage
 
+#### Storage uploads return an `UploadResponse`
+
+`upload`, `uploadBinary`, `update`, `updateBinary`, `uploadToSignedUrl` and
+`uploadBinaryToSignedUrl` return an `UploadResponse` instead of a `String`. The uploads used to
+return the key, the path prefixed with the bucket id, which is now `fullPath`. The signed URL
+uploads used to return the path within the bucket, which is now `path`. Code that keeps the result
+in a `var` or interpolates it into a string still compiles, but gets the whole response:
+
+```dart
+// Before
+final key = await supabase.storage.from('avatars').upload('avatar.png', file);
+
+// After
+final response = await supabase.storage.from('avatars').upload('avatar.png', file);
+final key = response.fullPath;
+```
+
+`UploadResponse` also carries the `id` of the stored object, and `versionId` for a resumable upload.
+
+#### `exists()` only returns `false` for a missing object
+
+`exists()` used to send a `HEAD` request and return `false` for any 400 or 404 response. It now
+reads the object's metadata and returns `false` only when storage reports the object missing. A
+missing bucket or an invalid token throws a `StorageApiException` instead:
+
+```dart
+try {
+  final found = await supabase.storage.from('avatars').exists('avatar.png');
+  print(found ? 'found' : 'missing');
+} on StorageApiException catch (error) {
+  print('could not check: ${error.errorCode}');
+}
+```
+
 #### `createSignedUrls` reports per-path failures
 
 `createSignedUrls` returns a list of `SignedUrlSuccess` and `SignedUrlFailure` instead of
@@ -1750,8 +1802,7 @@ exception for token failures. An exception that is already a `SupabaseException`
 | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `subscribe()` called twice throws a `String`                    | `StateError`                                                             |
 | `onPostgresChanges()` after `subscribe()` throws a `String`     | `StateError`                                                             |
-| `send()` or `track()` before `subscribe()` throws a `String`    | `StateError`                                                             |
-| `ChannelEvent.fromValue` with an unknown name throws a `String` | `ArgumentError`                                                          |
+| `track()` or `untrack()` before `subscribe()` throws a `String` | `StateError`                                                             |
 | `httpSend()` times out with a `TimeoutException`                | `RealtimeTransportException` with the `TimeoutException` as `cause`      |
 | `httpSend()` gets a non-202 status, as `Exception(message)`     | `RealtimeApiException` with `statusCode`, `requestId`, `headers`, `body` |
 | `onStatusChange` reports `channelError` with an `Exception`     | `RealtimeException` with the server's reason as `message`                |
@@ -1891,7 +1942,12 @@ current headers.
 final client = SupabaseClient(url, key, isolate: YAJsonIsolate()..initialize());
 
 // After
-final client = SupabaseClient(url, key, jsonCodec: YAJsonIsolate()..initialize());
+final client = SupabaseClient(
+  url,
+  key,
+  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
+  jsonCodec: YAJsonIsolate(),
+);
 ```
 
 Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is not exported

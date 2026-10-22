@@ -35,9 +35,12 @@ dart pub add dev:supabase_test
 Create a client with `testSupabaseClient`, hand it a `MockSupabaseHttpClient`,
 and stub the endpoints the code under test talks to. The examples query a
 `books` table through the types that
-[`supabase_typegen`](https://pub.dev/packages/supabase_typegen) generates:
+[`supabase_typegen`](https://pub.dev/packages/supabase_typegen) generates
+into `lib/supabase_schema.g.dart`. Replace `my_app` with the name of your
+package:
 
 ```dart test-file
+import 'package:my_app/supabase_schema.g.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -306,6 +309,7 @@ Like every stub, it takes `times` to fail only the first requests:
 
 ```dart test-file
 import 'package:http/http.dart';
+import 'package:my_app/supabase_schema.g.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';

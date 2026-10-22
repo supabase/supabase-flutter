@@ -38,10 +38,15 @@ dart pub add dev:supabase_test dev:test
 
 Use `flutter pub add dev:supabase_test` in a Flutter app, and import
 `package:flutter_test/flutter_test.dart` instead of `package:test/test.dart`.
+The examples query the `Books` table of the schema `supabase_typegen`
+generates into `lib/supabase_schema.g.dart`. Replace `my_app` with the name
+of the package under test.
 
 ```dart test-file
-import 'package:test/test.dart';
+import 'package:my_app/supabase_schema.g.dart';
+import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   late MockSupabaseHttpClient httpClient;
@@ -216,6 +221,7 @@ read `Supabase.instance.client` work unchanged:
 ```dart test-file
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_app/supabase_schema.g.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supabase_flutter/testing.dart';
 import 'package:supabase_test/supabase_test.dart';

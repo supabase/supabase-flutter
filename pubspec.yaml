@@ -71,5 +71,5 @@ melos:
       run: dart scripts/sync_skills.dart
 
     check-skill-snippets:
-      description: Analyzes every Dart snippet of the package skills against the workspace
+      description: Analyzes every Dart snippet of the package skills and READMEs against the workspace
       run: dart scripts/check_skill_snippets.dart

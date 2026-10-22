@@ -1,6 +1,6 @@
-// Analyzes every Dart snippet in the package skills against the workspace, so
-// a skill cannot show code that does not compile, and runs the ones that are
-// tests.
+// Analyzes every Dart snippet in the package skills and package READMEs
+// against the workspace, so they cannot show code that does not compile, and
+// runs the ones that are tests.
 //
 // The fence of a block says how it is checked:
 //
@@ -11,28 +11,30 @@
 // - ```dart test-file: a whole test library with a `main()`, which is run.
 // - ```dart skip: not checked, for example v2 code shown as "before".
 //
-// Every snippet has the library of its package, and the generated schema
-// golden of supabase_typegen (`Books`, `Authors`, ...), in scope. Tests also
-// have supabase_test, and a `dart test` body the test framework of the
-// package; a `dart test-file` imports its own.
+// A function or test body has the library of its package, and the generated
+// schema golden of supabase_typegen (`Books`, `Authors`, ...), in scope. A
+// test body also has supabase_test and the test framework of the package. A
+// whole library imports everything it uses, as the code a user copies has
+// to, and an import of `supabase_schema.g.dart` resolves to the golden.
 
 import 'dart:io';
 
 const _harness = 'tool/skill_snippets';
+final _schemaImport = RegExp(r"^import '[^']*supabase_schema\.g\.dart'");
 const _schemaPath =
     'packages/supabase_typegen/test/goldens/supabase_schema.dart';
 
 const _importsByPackage = {
   'supabase_flutter': ['package:supabase_flutter/supabase_flutter.dart'],
+  'supabase_test': ['package:supabase/supabase.dart'],
+  'supabase_typegen': ['package:supabase/supabase.dart'],
 };
-const _defaultImports = ['package:supabase/supabase.dart'];
 const _testImportsByPackage = {
   'supabase_flutter': [
     'package:flutter_test/flutter_test.dart',
     'package:supabase_test/supabase_test.dart',
   ],
 };
-const _testFrameworks = ['package:test/', 'package:flutter_test/'];
 const _defaultTestImports = [
   'package:test/test.dart',
   'package:supabase_test/supabase_test.dart',
@@ -62,53 +64,57 @@ Future<void> main() async {
 
   final snippets = <String, _Snippet>{};
   var testCount = 0;
-  for (final skillFile in _skillFiles()) {
-    final package = skillFile.split('/')[1];
-    for (final (index, block) in _dartBlocks(skillFile).indexed) {
+  for (final sourceFile in _snippetFiles()) {
+    final package = sourceFile.split('/')[1];
+    for (final (index, block) in _dartBlocks(sourceFile).indexed) {
       if (block.mode == 'skip') continue;
       final isTest = block.mode.startsWith('test');
       final isFile = block.mode.endsWith('file');
       final directory = isTest ? 'test/snippets' : 'snippets';
       final depth = '../' * '$_harness/$directory'.split('/').length;
-      final header = [
-        for (final import in _importsByPackage[package] ?? _defaultImports)
-          "import '$import';",
-        if (isTest)
-          for (final import
-              in _testImportsByPackage[package] ?? _defaultTestImports)
-            // A whole test library imports its own test framework.
-            if (!isFile || !_testFrameworks.any(import.startsWith))
-              "import '$import';",
-        "import '$depth$_schemaPath';",
-        '',
-        if (isFile)
-          ...[]
-        else if (isTest) ...[
-          'void main() {',
-          "  test('$skillFile:${block.firstLine}', () async {",
-        ] else
-          'Future<void> snippet(SupabaseClient supabase) async {',
-      ];
+      final header = isFile
+          ? <String>[]
+          : [
+              for (final import
+                  in _importsByPackage[package] ??
+                      [
+                        'package:supabase/supabase.dart',
+                        'package:$package/$package.dart',
+                      ])
+                "import '$import';",
+              if (isTest)
+                for (final import
+                    in _testImportsByPackage[package] ?? _defaultTestImports)
+                  "import '$import';",
+              "import '$depth$_schemaPath';",
+              '',
+              if (isTest) ...[
+                'void main() {',
+                "  test('$sourceFile:${block.firstLine}', () async {",
+              ] else
+                'Future<void> snippet(SupabaseClient supabase) async {',
+            ];
       final body = [
         ...header,
-        ...block.lines,
+        for (final line in block.lines)
+          line.replaceFirst(_schemaImport, "import '$depth$_schemaPath'"),
         if (isFile) ...[] else if (isTest) ...['  });', '}'] else '}',
       ];
-      final name = skillFile
+      final name = sourceFile
           .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_')
           .toLowerCase();
       final path =
           '$_harness/$directory/${name}_$index${isTest ? '_test' : ''}.dart';
       File(path).writeAsStringSync('${body.join('\n')}\n');
       snippets[File(path).absolute.path] = _Snippet(
-        source: skillFile,
+        source: sourceFile,
         firstLine: block.firstLine,
         headerLines: header.length,
       );
       if (isTest) testCount++;
     }
   }
-  stdout.writeln('Analyzing ${snippets.length} skill snippets.');
+  stdout.writeln('Analyzing ${snippets.length} snippets.');
 
   final result = await Process.run('dart', [
     'analyze',
@@ -138,10 +144,10 @@ Future<void> main() async {
     exitCode = 1;
     return;
   }
-  stdout.writeln('Every skill snippet compiles.');
+  stdout.writeln('Every snippet compiles.');
 
   if (testCount == 0) return;
-  stdout.writeln('Running $testCount skill snippets that are tests.');
+  stdout.writeln('Running $testCount snippets that are tests.');
   final tests = await Process.run(
     'flutter',
     ['test', '--reporter=failures-only', 'test/snippets'],
@@ -150,17 +156,19 @@ Future<void> main() async {
   );
   if (tests.exitCode != 0) {
     stderr
-      ..writeln('Skill snippets that are tests failed:')
+      ..writeln('Snippets that are tests failed:')
       ..writeln(tests.stdout)
       ..writeln(tests.stderr);
     exitCode = 1;
     return;
   }
-  stdout.writeln('Every skill snippet that is a test passes.');
+  stdout.writeln('Every snippet that is a test passes.');
 }
 
-Iterable<String> _skillFiles() sync* {
+Iterable<String> _snippetFiles() sync* {
   for (final package in Directory('packages').listSync()) {
+    final readme = File('${package.path}/README.md');
+    if (readme.existsSync()) yield readme.path;
     final skills = Directory('${package.path}/skills');
     if (!skills.existsSync()) continue;
     final files =
