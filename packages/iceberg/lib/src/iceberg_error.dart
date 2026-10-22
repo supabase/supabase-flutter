@@ -47,6 +47,9 @@ final class IcebergNetworkException extends IcebergException
 
   @override
   final Object? cause;
+
+  @override
+  String get exceptionName => 'IcebergNetworkException';
 }
 
 /// The Iceberg REST Catalog API answered with an error response.
@@ -159,7 +162,7 @@ sealed class IcebergApiException extends IcebergException
 
   @override
   String toString() =>
-      '$runtimeType(message: $message, statusCode: $statusCode, '
+      '$exceptionName(message: $message, statusCode: $statusCode, '
       'errorCode: $errorCode, code: $code)';
 }
 
@@ -174,6 +177,9 @@ final class IcebergNotFoundException extends IcebergApiException {
     super.body,
     super.requestId,
   }) : super(statusCode: 404);
+
+  @override
+  String get exceptionName => 'IcebergNotFoundException';
 }
 
 /// The request conflicts with the current state, for example the resource
@@ -188,6 +194,9 @@ final class IcebergConflictException extends IcebergApiException {
     super.body,
     super.requestId,
   }) : super(statusCode: 409);
+
+  @override
+  String get exceptionName => 'IcebergConflictException';
 }
 
 /// Authentication timed out and the request should be retried with fresh
@@ -202,6 +211,9 @@ final class IcebergAuthenticationTimeoutException extends IcebergApiException {
     super.body,
     super.requestId,
   }) : super(statusCode: 419);
+
+  @override
+  String get exceptionName => 'IcebergAuthenticationTimeoutException';
 }
 
 /// A table commit was sent but its outcome is unknown, so retrying it could
@@ -216,6 +228,9 @@ final class IcebergCommitStateUnknownException extends IcebergApiException {
     super.body,
     super.requestId,
   }) : super(errorCode: 'CommitStateUnknownException');
+
+  @override
+  String get exceptionName => 'IcebergCommitStateUnknownException';
 }
 
 /// The server failed to handle the request (HTTP 5xx).
@@ -230,6 +245,9 @@ final class IcebergServerException extends IcebergApiException {
     super.body,
     super.requestId,
   });
+
+  @override
+  String get exceptionName => 'IcebergServerException';
 }
 
 /// Any Iceberg failure that does not fit a more specific subtype.
@@ -244,4 +262,7 @@ final class IcebergUnknownException extends IcebergApiException {
     super.body,
     super.requestId,
   });
+
+  @override
+  String get exceptionName => 'IcebergUnknownException';
 }

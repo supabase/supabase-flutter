@@ -9,6 +9,9 @@ import 'package:supabase_common/supabase_common.dart';
 /// response is a [RealtimeTransportException].
 class RealtimeException extends SupabaseException {
   const RealtimeException(super.message, {super.errorCode, super.requestId});
+
+  @override
+  String get exceptionName => 'RealtimeException';
 }
 
 /// Thrown when a request to the broadcast REST endpoint never received a
@@ -19,6 +22,9 @@ class RealtimeTransportException extends RealtimeException
 
   @override
   final Object? cause;
+
+  @override
+  String get exceptionName => 'RealtimeTransportException';
 }
 
 /// Thrown when the broadcast REST endpoint answered with an error.
@@ -40,4 +46,7 @@ class RealtimeApiException extends RealtimeException with SupabaseApiException {
 
   @override
   final String? body;
+
+  @override
+  String get exceptionName => 'RealtimeApiException';
 }

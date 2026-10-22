@@ -961,6 +961,9 @@ class SignedUploadUrlResponse {
 /// response is a [StorageTransportException].
 class StorageException extends SupabaseException {
   const StorageException(super.message, {super.errorCode, super.requestId});
+
+  @override
+  String get exceptionName => 'StorageException';
 }
 
 /// Thrown when a request never received a response from storage, because the
@@ -975,6 +978,9 @@ class StorageTransportException extends StorageException
 
   @override
   final Object? cause;
+
+  @override
+  String get exceptionName => 'StorageTransportException';
 }
 
 /// Thrown by a resumable upload that was cancelled with
@@ -985,6 +991,9 @@ class ResumableUploadCancelledException extends StorageException {
 
   /// The id of the cancelled upload.
   final String uploadId;
+
+  @override
+  String get exceptionName => 'ResumableUploadCancelledException';
 }
 
 /// Thrown when storage answered with an error.
@@ -1040,6 +1049,9 @@ class StorageApiException extends StorageException with SupabaseApiException {
 
   @override
   final String? body;
+
+  @override
+  String get exceptionName => 'StorageApiException';
 }
 
 /// {@template resize_mode}

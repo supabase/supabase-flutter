@@ -25,6 +25,9 @@ typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 /// that never received a response is a [PostgrestTransportException].
 class PostgrestException extends SupabaseException {
   const PostgrestException(super.message, {super.errorCode, super.requestId});
+
+  @override
+  String get exceptionName => 'PostgrestException';
 }
 
 /// Thrown when a request never received a response from PostgREST, because
@@ -39,6 +42,9 @@ class PostgrestTransportException extends PostgrestException
 
   @override
   final Object? cause;
+
+  @override
+  String get exceptionName => 'PostgrestTransportException';
 }
 
 /// Thrown when PostgREST answered with an error.
@@ -115,8 +121,11 @@ class PostgrestApiException extends PostgrestException
   }
 
   @override
+  String get exceptionName => 'PostgrestApiException';
+
+  @override
   String toString() {
-    return 'PostgrestApiException(message: $message, statusCode: $statusCode, '
+    return '$exceptionName(message: $message, statusCode: $statusCode, '
         'errorCode: $errorCode, requestId: $requestId, details: $details, '
         'hint: $hint)';
   }

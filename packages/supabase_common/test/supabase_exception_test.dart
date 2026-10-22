@@ -29,6 +29,17 @@ class TestTransportException extends SupabaseException
   final Object? cause;
 }
 
+class NamedTransportException extends SupabaseException
+    with SupabaseTransportException {
+  const NamedTransportException(super.message);
+
+  @override
+  Object? get cause => null;
+
+  @override
+  String get exceptionName => 'LiteralName';
+}
+
 class DetailedException extends SupabaseException {
   const DetailedException(super.message, {required this.details});
   final String details;
@@ -99,6 +110,24 @@ void main() {
       exception.toString(),
       'TestTransportException(message: offline, errorCode: null, '
       'requestId: null, cause: no route)',
+    );
+  });
+
+  test('toString starts with the exceptionName of the subtype', () {
+    const exception = NamedTransportException('offline');
+
+    expect(
+      exception.toString(),
+      'LiteralName(message: offline, errorCode: null, requestId: null, '
+      'cause: null)',
+    );
+  });
+
+  test('AccessTokenException names itself without runtimeType', () {
+    expect(
+      AccessTokenException('expired').toString(),
+      'AccessTokenException(message: Failed to resolve the access token: '
+      'expired, errorCode: null, requestId: null, cause: expired)',
     );
   });
 

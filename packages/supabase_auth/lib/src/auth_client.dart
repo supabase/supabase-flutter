@@ -1782,16 +1782,9 @@ class AuthClient {
   Future<Session> _refreshAccessToken(String refreshToken) async {
     final startedAt = clock.now();
     var attempt = 0;
-    Duration? retryAfterOf(Object outcome) {
-      final requested = outcome is SupabaseApiException
-          ? parseRetryAfter(outcome.headers)
-          : null;
-      if (requested == null) {
-        return null;
-      }
-      final maxDelay = retryOptions.maxDelay;
-      return requested < maxDelay ? requested : maxDelay;
-    }
+    Duration? retryAfterOf(Object outcome) => outcome is SupabaseApiException
+        ? parseRetryAfter(outcome.headers)
+        : null;
 
     return await retry(
       () async {

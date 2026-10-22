@@ -1774,6 +1774,7 @@ features:
       - ResumableUpload.status
       - ResumableUploadCancelledException
       - ResumableUploadCancelledException.ResumableUploadCancelledException
+      - ResumableUploadCancelledException.exceptionName
       - ResumableUploadCancelledException.uploadId
       - ResumableUploadOptions
       - ResumableUploadOptions.ResumableUploadOptions
@@ -2531,14 +2532,17 @@ features:
     supporting_symbols:
       - StorageApiException
       - StorageApiException.StorageApiException
+      - StorageApiException.exceptionName
       - StorageApiException.fromJson
       - StorageApiException.statusCode
       - StorageException.StorageException
+      - StorageException.exceptionName
       - StorageApiException.body
       - StorageApiException.headers
       - StorageTransportException
       - StorageTransportException.StorageTransportException
       - StorageTransportException.cause
+      - StorageTransportException.exceptionName
 
   # realtime — channel
   realtime.channel.subscribe:
@@ -2884,10 +2888,13 @@ features:
       - FunctionResponse.statusCode
       - FunctionsFetchException
       - FunctionsFetchException.FunctionsFetchException
+      - FunctionsFetchException.exceptionName
       - FunctionsRelayException
       - FunctionsRelayException.FunctionsRelayException
+      - FunctionsRelayException.exceptionName
       - FunctionsApiException
       - FunctionsApiException.FunctionsApiException
+      - FunctionsApiException.exceptionName
     supporting_symbols:
       - FunctionResponse
       - FunctionResponse.FunctionResponse
@@ -3057,6 +3064,7 @@ supporting_symbols:
   - AuthApiException
   - AuthApiException.==
   - AuthApiException.AuthApiException
+  - AuthApiException.exceptionName
   - AuthApiException.hashCode
   - AuthApiException.statusCode
   - AuthApiException.body
@@ -3068,11 +3076,14 @@ supporting_symbols:
   - AuthException
   - AuthException.==
   - AuthException.AuthException
+  - AuthException.exceptionName
   - AuthException.hashCode
   - AuthInvalidJwtException
   - AuthInvalidJwtException.AuthInvalidJwtException
+  - AuthInvalidJwtException.exceptionName
   - AuthPKCEGrantCodeExchangeError
   - AuthPKCEGrantCodeExchangeError.AuthPKCEGrantCodeExchangeError
+  - AuthPKCEGrantCodeExchangeError.exceptionName
   - AuthResponse
   - AuthResponse.AuthResponse
   - AuthResponse.fromJson
@@ -3081,6 +3092,7 @@ supporting_symbols:
   - AuthRetryableApiException
   - AuthRetryableApiException.==
   - AuthRetryableApiException.AuthRetryableApiException
+  - AuthRetryableApiException.exceptionName
   - AuthRetryableApiException.hashCode
   - AuthRetryableApiException.retryAfter
   - AuthRetryableApiException.statusCode
@@ -3091,14 +3103,18 @@ supporting_symbols:
   - AuthRetryableFetchException
   - AuthRetryableFetchException.AuthRetryableFetchException
   - AuthRetryableFetchException.cause
+  - AuthRetryableFetchException.exceptionName
   - AuthSessionMissingException
   - AuthSessionMissingException.AuthSessionMissingException
+  - AuthSessionMissingException.exceptionName
   - AuthUnknownException
   - AuthUnknownException.AuthUnknownException
+  - AuthUnknownException.exceptionName
   - AuthUnknownException.originalError
   - AuthUnknownException.toString
   - AuthWeakPasswordException
   - AuthWeakPasswordException.AuthWeakPasswordException
+  - AuthWeakPasswordException.exceptionName
   - AuthWeakPasswordException.reasons
   - AuthWeakPasswordException.toString
   - BroadcastChannel
@@ -3187,10 +3203,13 @@ supporting_symbols:
   - IcebergApiException.headers
   - IcebergAuthenticationTimeoutException
   - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
+  - IcebergAuthenticationTimeoutException.exceptionName
   - IcebergCommitStateUnknownException
   - IcebergCommitStateUnknownException.IcebergCommitStateUnknownException
+  - IcebergCommitStateUnknownException.exceptionName
   - IcebergConflictException
   - IcebergConflictException.IcebergConflictException
+  - IcebergConflictException.exceptionName
   - IcebergException
   - IcebergException.IcebergException
   - IcebergException.code
@@ -3198,16 +3217,20 @@ supporting_symbols:
   - IcebergNetworkException
   - IcebergNetworkException.IcebergNetworkException
   - IcebergNetworkException.cause
+  - IcebergNetworkException.exceptionName
   - IcebergNotFoundException
   - IcebergNotFoundException.IcebergNotFoundException
+  - IcebergNotFoundException.exceptionName
   - IcebergServerException
   - IcebergServerException.IcebergServerException
+  - IcebergServerException.exceptionName
   - IcebergType
   - IcebergType.IcebergType
   - IcebergType.fromJson
   - IcebergType.toJson
   - IcebergUnknownException
   - IcebergUnknownException.IcebergUnknownException
+  - IcebergUnknownException.exceptionName
   - ListType
   - ListType.ListType
   - ListType.element
@@ -3292,6 +3315,7 @@ supporting_symbols:
   - PostgrestApiException
   - PostgrestApiException.PostgrestApiException
   - PostgrestApiException.details
+  - PostgrestApiException.exceptionName
   - PostgrestApiException.fromJson
   - PostgrestApiException.hint
   - PostgrestApiException.statusCode
@@ -3301,9 +3325,11 @@ supporting_symbols:
   - PostgrestApiException.headers
   - PostgrestException
   - PostgrestException.PostgrestException
+  - PostgrestException.exceptionName
   - PostgrestTransportException
   - PostgrestTransportException.PostgrestTransportException
   - PostgrestTransportException.cause
+  - PostgrestTransportException.exceptionName
   - PostgrestClient
   - PostgrestClient.PostgrestClient
   - PostgrestClient.dispose
@@ -3356,18 +3382,22 @@ supporting_symbols:
   - RealtimeSubscribeException
   - RealtimeSubscribeException.RealtimeSubscribeException
   - RealtimeSubscribeException.details
+  - RealtimeSubscribeException.exceptionName
   - RealtimeSubscribeException.status
   - RealtimeSubscribeException.toString
   - RealtimeException
   - RealtimeException.RealtimeException
+  - RealtimeException.exceptionName
   - RealtimeApiException
   - RealtimeApiException.RealtimeApiException
   - RealtimeApiException.body
+  - RealtimeApiException.exceptionName
   - RealtimeApiException.headers
   - RealtimeApiException.statusCode
   - RealtimeTransportException
   - RealtimeTransportException.RealtimeTransportException
   - RealtimeTransportException.cause
+  - RealtimeTransportException.exceptionName
   - Session
   - Session.==
   - Session.Session

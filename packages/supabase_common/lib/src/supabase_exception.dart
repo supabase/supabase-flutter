@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 /// Base class for the exceptions thrown by the Supabase client packages.
 ///
 /// A plain [SupabaseException] is a failure the client raised on its own,
@@ -37,9 +39,16 @@ abstract class SupabaseException implements Exception {
   /// request id, as one from a self-hosted stack without a gateway does.
   final String? requestId;
 
+  /// The class name [toString] starts with.
+  ///
+  /// Release web builds minify [runtimeType], so every exception of the
+  /// Supabase packages returns its name as a literal.
+  @protected
+  String get exceptionName => '$runtimeType';
+
   @override
   String toString() =>
-      '$runtimeType(message: $message, errorCode: $errorCode, '
+      '$exceptionName(message: $message, errorCode: $errorCode, '
       'requestId: $requestId)';
 }
 
@@ -73,7 +82,7 @@ mixin SupabaseApiException on SupabaseException {
 
   @override
   String toString() =>
-      '$runtimeType(message: $message, statusCode: $statusCode, '
+      '$exceptionName(message: $message, statusCode: $statusCode, '
       'errorCode: $errorCode, requestId: $requestId)';
 }
 
@@ -100,7 +109,7 @@ mixin SupabaseTransportException on SupabaseException {
 
   @override
   String toString() =>
-      '$runtimeType(message: $message, errorCode: $errorCode, '
+      '$exceptionName(message: $message, errorCode: $errorCode, '
       'requestId: $requestId, cause: $cause)';
 }
 
@@ -125,7 +134,10 @@ class AccessTokenException extends SupabaseException {
   final Object cause;
 
   @override
+  String get exceptionName => 'AccessTokenException';
+
+  @override
   String toString() =>
-      '$runtimeType(message: $message, errorCode: $errorCode, '
+      '$exceptionName(message: $message, errorCode: $errorCode, '
       'requestId: $requestId, cause: $cause)';
 }

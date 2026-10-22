@@ -63,9 +63,22 @@ void main() {
             count: 1,
             initialDelay: Duration(hours: 1),
           ),
-          headers: {'retry-after': '0'},
+          headers: {'retry-after': '1'},
         ).timeout(const Duration(seconds: 5)),
         2,
+      );
+    });
+
+    test('a Retry-After of zero falls back to the backoff', () async {
+      expect(
+        await refreshAttemptsWith(
+          const SupabaseRetryOptions(
+            count: 1,
+            initialDelay: Duration(hours: 1),
+          ),
+          headers: {'retry-after': '0'},
+        ),
+        1,
       );
     });
 
@@ -79,16 +92,17 @@ void main() {
       );
     });
 
-    test('a Retry-After header is capped at maxDelay', () async {
+    test('a Retry-After longer than maxDelay stops the retries', () async {
       expect(
         await refreshAttemptsWith(
           const SupabaseRetryOptions(
             count: 1,
+            initialDelay: Duration(milliseconds: 1),
             maxDelay: Duration(milliseconds: 10),
           ),
-          headers: {'retry-after': '3600'},
-        ).timeout(const Duration(seconds: 5)),
-        2,
+          headers: {'retry-after': '1'},
+        ),
+        1,
       );
     });
 

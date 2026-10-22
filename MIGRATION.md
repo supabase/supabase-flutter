@@ -1923,7 +1923,8 @@ carries over unchanged. The auth token refresh can be configured through
 #### The retry backoff defaults are the same in every client
 
 One curve is used everywhere: the first retry waits 400 ms, every retry after that waits twice as
-long up to 30 seconds, and each delay is randomized by up to 25%.
+long up to 30 seconds, and each delay, a capped one included, is randomized by up to 25%. A
+`Retry-After` header asking for longer than `maxDelay` ends the retries instead of being shortened.
 
 | Client             | Before                                    | After                                               |
 | ------------------ | ----------------------------------------- | --------------------------------------------------- |

@@ -48,7 +48,7 @@ sealed class FunctionException extends SupabaseException {
 
   @override
   String toString() =>
-      '$runtimeType(message: $message, requestId: $requestId, '
+      '$exceptionName(message: $message, requestId: $requestId, '
       'details: $details)';
 }
 
@@ -71,8 +71,11 @@ class FunctionsFetchException extends FunctionException
   final Object? cause;
 
   @override
+  String get exceptionName => 'FunctionsFetchException';
+
+  @override
   String toString() =>
-      '$runtimeType(message: $message, requestId: $requestId, '
+      '$exceptionName(message: $message, requestId: $requestId, '
       'details: $details)';
 }
 
@@ -104,8 +107,11 @@ class FunctionsApiException extends FunctionException
   final String? body;
 
   @override
+  String get exceptionName => 'FunctionsApiException';
+
+  @override
   String toString() =>
-      '$runtimeType(message: $message, statusCode: $statusCode, '
+      '$exceptionName(message: $message, statusCode: $statusCode, '
       'requestId: $requestId, details: $details)';
 }
 
@@ -122,4 +128,7 @@ class FunctionsRelayException extends FunctionsApiException {
     super.body,
     String? message,
   }) : super(message: message ?? 'Relay error invoking the Edge Function');
+
+  @override
+  String get exceptionName => 'FunctionsRelayException';
 }
