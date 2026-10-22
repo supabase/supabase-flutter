@@ -1008,11 +1008,12 @@ if (response.redirectType == AuthRedirectType.passwordRecovery) {
 revoke request, so with `SignOutScope.global` an offline device was signed out while the other
 devices stayed signed in, and the token needed to retry was gone.
 
-- With `SignOutScope.local`, the default, signing out on the device always succeeds and no longer
-  throws. A failure to revoke the session on the server is logged.
-- With `SignOutScope.global` and `SignOutScope.others` the server is asked first. When that fails,
-  `signOut()` throws and the session is kept, so you can retry. `SignOutScope.global` signs out on
-  the device once the server has revoked the sessions.
+- With `SignOutScope.local`, the default, signing out on the device completes right away and no
+  longer throws. The session is revoked on the server in the background, and a failure to do so is
+  logged.
+- With `SignOutScope.global` and `SignOutScope.others` the server is asked first, after refreshing
+  an expired access token. When that fails, `signOut()` throws and the session is kept, so you can
+  retry. `SignOutScope.global` signs out on the device once the server has revoked the sessions.
 
 Remove any `try`/`catch` around a local `signOut()` that only existed to ignore offline failures.
 Where you sign out globally, handle the exception, for example by offering a retry or falling back

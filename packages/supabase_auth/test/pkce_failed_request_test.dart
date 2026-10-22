@@ -83,14 +83,14 @@ void main() {
 
     test('leaves no verifier behind when it was the only flow', () async {
       httpClient.stub(
-        {'code': 500, 'msg': 'Error sending recovery email'},
+        {'code': 400, 'msg': 'Unable to validate email address'},
         path: '/auth/v1/recover',
-        statusCode: 500,
+        statusCode: 400,
       );
 
       await expectLater(
         client.resetPasswordForEmail('fake1@email.com'),
-        throwsA(isA<AuthRetryableApiException>()),
+        throwsA(isA<AuthApiException>()),
       );
 
       expect(await store.retrieve(), isNull);
@@ -136,7 +136,33 @@ void main() {
     });
   });
 
+  test('a resent email change link reports an email change', () async {
+    httpClient
+      ..stub({}, path: '/auth/v1/resend')
+      ..stubSignIn();
+
+    await client.resend(email: 'new@email.com', type: OtpType.emailChange);
+    final response = await client.exchangeCodeForSession('auth-code');
+
+    expect(response.redirectType, AuthRedirectType.emailChange);
+  });
+
   group('a PKCE request that never got an answer', () {
+    test('keeps the verifier of an email behind a gateway error', () async {
+      httpClient.stubText(
+        'Gateway Timeout',
+        path: '/auth/v1/recover',
+        statusCode: 504,
+      );
+
+      await expectLater(
+        client.resetPasswordForEmail('fake1@email.com'),
+        throwsA(isA<AuthRetryableApiException>()),
+      );
+
+      expect(await store.retrieve(), isNotNull);
+    });
+
     test('keeps the verifier of an email the server may have sent', () async {
       httpClient.stubError(ClientException('Offline'), path: '/auth/v1/otp');
 

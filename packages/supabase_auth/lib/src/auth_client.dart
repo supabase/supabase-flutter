@@ -762,9 +762,10 @@ class AuthClient {
   ///
   /// Without that, a failed request, a rate limited second email for example,
   /// would leave its verifier as the most recent flow and break the link of
-  /// an earlier email that was sent. When the request never got an answer
-  /// the server may still have sent the email, so the verifier is kept unless
-  /// [sendsEmail] is false, in which case nothing could ever use it.
+  /// an earlier email that was sent. When the request never got an answer,
+  /// or a 5xx that a gateway may have sent after the server sent the email,
+  /// the verifier is kept unless [sendsEmail] is false, in which case nothing
+  /// could ever use it.
   Future<T> _sendPKCEFlowRequest<T>(
     String? flowId,
     Future<T> Function() request, {
@@ -773,8 +774,7 @@ class AuthClient {
     try {
       return await request();
     } catch (error) {
-      if (flowId != null &&
-          (!sendsEmail || error is! AuthRetryableFetchException)) {
+      if (flowId != null && (!sendsEmail || error is! AuthRetryableException)) {
         try {
           await _pkceVerifierStore!.discard(flowId: flowId);
         } catch (discardError, stackTrace) {
@@ -1184,7 +1184,13 @@ class AuthClient {
       );
     }
 
-    final pkceFlow = email != null ? await _startPKCEFlow() : null;
+    final pkceFlow = email != null
+        ? await _startPKCEFlow(
+            storageEventName: type == OtpType.emailChange
+                ? AuthChangeEvent.userUpdated.name
+                : null,
+          )
+        : null;
 
     final body = {
       'email': ?email,
@@ -1462,16 +1468,18 @@ class AuthClient {
   ///
   /// [scope] determines which sessions should be logged out.
   ///
-  /// With [SignOutScope.local] the session is removed from this device first
-  /// and always, so signing out works offline. Revoking it on the server
-  /// afterwards is best effort: when that fails it is logged rather than
-  /// thrown, and the refresh token stays valid on the server until it
+  /// With [SignOutScope.local] the session is removed from this device right
+  /// away, so signing out works offline. Revoking it on the server runs in
+  /// the background and is best effort: when that fails it is logged rather
+  /// than thrown, and the refresh token stays valid on the server until it
   /// expires.
   ///
   /// With [SignOutScope.global] and [SignOutScope.others] the sessions are
-  /// revoked on the server first. When that fails, this throws and the
-  /// session is kept, so the call can be retried. With [SignOutScope.global]
-  /// the session is removed from this device once the server has revoked it.
+  /// revoked on the server first, refreshing an expired access token before.
+  /// When that fails, this throws and the session is kept, so the call can be
+  /// retried. With [SignOutScope.global] the session is removed from this
+  /// device once the server has revoked it, unless another sign-in or
+  /// sign-out happened in the meantime.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
   /// is fired!
@@ -1483,29 +1491,39 @@ class AuthClient {
     required SignOutReason reason,
   }) async {
     authLogger.info('Signing out user with scope: ${scope.name}');
-    final accessToken = currentSession?.accessToken;
 
     if (scope == SignOutScope.local) {
+      final accessToken = currentSession?.accessToken;
       await _signOutLocally(reason);
       if (accessToken != null) {
-        try {
-          await _revokeSessions(accessToken, scope);
-        } on AuthException catch (error, stackTrace) {
-          authLogger.warning(
-            'Signed out locally, but could not revoke the session on the '
-            'server',
-            error,
-            stackTrace,
-          );
-        }
+        unawaited(
+          _revokeSessions(accessToken, scope).then(
+            (_) {},
+            onError: (Object error, StackTrace stackTrace) {
+              authLogger.warning(
+                'Signed out locally, but could not revoke the session on the '
+                'server',
+                error,
+                stackTrace,
+              );
+            },
+          ),
+        );
       }
       return;
     }
 
-    if (accessToken != null) {
-      await _revokeSessions(accessToken, scope);
+    // An expired access token would be rejected with a 401, which counts as
+    // already signed out, so the sessions would never be revoked.
+    final session = await getSession();
+    final versionBeforeRevoke = _sessionVersion;
+    if (session != null) {
+      await _revokeSessions(session.accessToken, scope);
     }
-    if (scope == SignOutScope.global) {
+    // A sign-in or sign-out that happened while the request was in flight is
+    // newer than this sign-out.
+    if (scope == SignOutScope.global &&
+        _sessionVersion == versionBeforeRevoke) {
       await _signOutLocally(reason);
     }
   }
@@ -1513,8 +1531,16 @@ class AuthClient {
   /// Removes the session and every pending PKCE verifier from this device.
   Future<void> _signOutLocally(SignOutReason reason) async {
     _removeSession();
-    await _pkceVerifierStore?.removeAll();
     notifyAllSubscribers(AuthChangeEvent.signedOut, signOutReason: reason);
+    try {
+      await _pkceVerifierStore?.removeAll();
+    } catch (error, stackTrace) {
+      authLogger.warning(
+        'Could not remove the pending PKCE verifiers',
+        error,
+        stackTrace,
+      );
+    }
   }
 
   /// Revokes the sessions [scope] covers on the server.
@@ -1967,6 +1993,11 @@ class AuthClient {
   ) {
     final storage = _asyncStorage;
     if (!_persistSession || storage == null) {
+      return;
+    }
+    if (_isDisposed) {
+      // Another client may own the storage by now.
+      authLogger.fine('Not updating the persisted session, client disposed');
       return;
     }
     _storageWrites = _storageWrites

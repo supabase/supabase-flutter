@@ -80,6 +80,27 @@ void main() {
       expect(verified.user.id, testUserId);
     });
 
+    test('leaves the persisted session alone', () async {
+      final storage = TestAsyncStorage();
+      final persistingClient = AuthClient(
+        url: 'http://localhost:9999/auth/v1',
+        httpClient: httpClient,
+        autoRefreshToken: false,
+        asyncStorage: storage,
+        persistSession: true,
+      );
+      await persistingClient.initialized;
+      final request = persistingClient.signInAnonymously();
+      await pumpEventQueue();
+      persistingClient.dispose();
+      response.complete(jsonResponse(sessionJson));
+
+      await request;
+      await pumpEventQueue();
+
+      expect(await storage.getItem(persistingClient.storageKey), isNull);
+    });
+
     test('rethrows a failure instead of a StateError', () async {
       final request = client.signInWithPassword(
         email: 'fake1@email.com',
