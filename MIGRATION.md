@@ -453,10 +453,10 @@ A stream filter supports `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `lik
 `matchRegex`, `imatchRegex`, `isNull`, `isTrue`, `isFalse` and `isDistinct`, optionally negated
 with `not()`. A filter composed with `&` or `|` throws an `ArgumentError`.
 
-`order()` takes the same `PostgrestOrdering` as `order()` on a typed query, so the direction is
-on the column instead of an `ascending` argument. A stream keeps `null` values last in ascending
-order and first in descending order, so an ordering with `nullsFirst()` or `nullsLast()`, or one
-by anything but a stored column, throws an `ArgumentError`.
+`order()` takes the direction on the column instead of an `ascending` argument, like `order()` on
+a typed query. It accepts a `PostgrestColumnOrdering`: a stored column, or its `asc()` or `desc()`.
+A stream keeps `null` values last in ascending order and first in descending order, so an ordering
+with `nullsFirst()` or `nullsLast()`, or one by anything but a stored column, does not compile.
 
 ### Changes the compiler will not catch
 

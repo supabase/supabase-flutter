@@ -142,7 +142,7 @@ void main() {
 
   group('typed order', () {
     Future<List<List<_Todo>>> listenToTypedTodos(
-      PostgrestOrdering<_Todo> ordering,
+      PostgrestColumnOrdering<_Todo> ordering,
     ) async {
       final snapshots = <List<_Todo>>[];
       final subscription = supabase
@@ -204,31 +204,6 @@ void main() {
         containsPair('order', 'priority.asc'),
       );
     });
-
-    test('rejects a null placement', () {
-      final builder = supabase
-          .table(_Todos.table)
-          .stream(primaryKey: [_Todos.id]);
-
-      expect(
-        () => builder.order(_Todos.priority.desc().nullsLast()),
-        throwsArgumentError,
-      );
-      expect(
-        () => builder.order(_Todos.priority.nullsFirst()),
-        throwsArgumentError,
-      );
-    });
-
-    test('rejects an ordering by anything but a stored column', () {
-      expect(
-        () => supabase
-            .table(_Todos.table)
-            .stream(primaryKey: [_Todos.id])
-            .order(_Todos.label.desc()),
-        throwsArgumentError,
-      );
-    });
   });
 }
 
@@ -244,5 +219,4 @@ class _Todos {
   );
   static const id = PostgrestColumn<_Todo, int>('id');
   static const priority = PostgrestNullableColumn<_Todo, int>('priority');
-  static const label = PostgrestComputedField<_Todo, String>('label');
 }

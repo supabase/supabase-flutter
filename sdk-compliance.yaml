@@ -1496,6 +1496,8 @@ features:
       - PostgrestOrderableExpression.nullsFirst
       - PostgrestOrderableExpression.nullsLast
       - PostgrestOrderableExpression.orderKey
+      - PostgrestStoredColumn.asc
+      - PostgrestStoredColumn.desc
     supporting_symbols:
       - PostgrestOrdering
       - PostgrestOrdering.orderKey
@@ -1503,6 +1505,9 @@ features:
       - PostgrestOrdering.desc
       - PostgrestOrdering.nullsFirst
       - PostgrestOrdering.nullsLast
+      - PostgrestColumnOrdering
+      - PostgrestColumnOrdering.asc
+      - PostgrestColumnOrdering.desc
   database.using_modifiers.limit:
     status: implemented
     symbols:
