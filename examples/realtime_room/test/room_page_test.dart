@@ -75,6 +75,19 @@ void main() {
     await _closeRoom(tester, supabase);
   });
 
+  testWidgets('still loads the history when realtime fails to join', (
+    tester,
+  ) async {
+    httpClient.stubTable('messages', rows: [_message('1', 'already there')]);
+
+    final supabase = await openRoom(tester);
+    _emitReplicationReady(realtime, status: 'error');
+    await tester.pumpAndSettle();
+
+    expect(find.text('already there'), findsOneWidget);
+    await _closeRoom(tester, supabase);
+  });
+
   testWidgets('loads the history again after the app resumes', (
     tester,
   ) async {
@@ -127,14 +140,17 @@ Map<String, dynamic> _message(String id, String content) => {
 
 /// The `system` event the server sends once Postgres Changes replication is
 /// live, after the first join and again after every rejoin.
-void _emitReplicationReady(MockRealtimeTransport realtime) {
+void _emitReplicationReady(
+  MockRealtimeTransport realtime, {
+  String status = 'ok',
+}) {
   realtime.emit(
     RealtimeMessage(
       topic: _topic,
       event: 'system',
       payload: {
         'extension': 'system',
-        'status': 'ok',
+        'status': status,
         'message': 'Replication connection established',
         'channel': 'public-room',
       },

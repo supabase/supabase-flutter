@@ -177,7 +177,8 @@ class _RoomPageState extends State<RoomPage> {
       await _channel.subscribe().timeout(const Duration(seconds: 30));
     } catch (error) {
       _showError(error);
-      if (mounted) setState(() => _loading = false);
+      // Without realtime the history can still be read, it just won't update.
+      if (mounted) await _loadMessages();
     }
   }
 

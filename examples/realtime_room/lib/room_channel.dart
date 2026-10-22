@@ -9,7 +9,7 @@ import 'supabase_schema.g.dart';
 /// this example demonstrates:
 ///
 /// * **Postgres Changes** stream inserts and deletes on the `messages` table,
-///   so the chat log stays in sync without re-fetching.
+///   so the chat log stays in sync while the channel is joined.
 /// * **Broadcast** relays ephemeral "typing" pings that are never written to
 ///   the database, only forwarded to the other connected clients.
 /// * **Presence** tracks who is currently in the room and exposes the live

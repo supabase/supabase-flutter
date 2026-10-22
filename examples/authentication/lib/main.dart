@@ -58,7 +58,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Created once, so a rebuild keeps the same subscription.
-  final _authStateChanges = supabase.auth.onAuthStateChange;
+  final _authStateChanges = AuthRepository(supabase).onAuthStateChange;
 
   @override
   Widget build(BuildContext context) {

@@ -104,7 +104,7 @@ jobs:
 
           # The examples depend on supabase_flutter, so --include-dependents
           # lists them whenever it or anything below it changes.
-          if echo "$CHANGED" | grep -qE '^(authentication|database_crud|edge_functions|passkeys|realtime_room|storage_transforms)_example$'; then
+          if echo "$CHANGED" | grep -qE '_example$'; then
             echo "examples=true" >> "$GITHUB_OUTPUT"
           else
             echo "examples=false" >> "$GITHUB_OUTPUT"
@@ -348,13 +348,18 @@ jobs:
       # running stack and run in example-integration-tests.yml.
       - name: Run widget tests
         run: |
+          failed=()
           for example in examples/*/; do
             if [ -d "${example}test" ]; then
               echo "::group::$example"
-              (cd "$example" && flutter test)
+              (cd "$example" && flutter test) || failed+=("$example")
               echo "::endgroup::"
             fi
           done
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "::error::Widget tests failed in: ${failed[*]}"
+            exit 1
+          fi
 
   dcm:
     name: DCM
