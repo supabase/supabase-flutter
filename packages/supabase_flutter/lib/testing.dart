@@ -54,7 +54,7 @@ const testPublishableKey = 'sb_publishable_supabase_flutter_testing';
 Future<Supabase> initializeTestSupabase({
   Client? httpClient,
   String url = 'http://localhost:54321',
-  String publishableKey = testPublishableKey,
+  String? publishableKey,
   Map<String, String>? headers,
   WebSocketTransport? realtimeTransport,
   AuthAsyncStorage? asyncStorage,
@@ -62,7 +62,7 @@ Future<Supabase> initializeTestSupabase({
 }) {
   return Supabase.initialize(
     url: url,
-    publishableKey: publishableKey,
+    publishableKey: publishableKey ?? testPublishableKey,
     httpClient: httpClient,
     headers: headers,
     realtimeClientOptions: RealtimeClientOptions(transport: realtimeTransport),

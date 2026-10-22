@@ -21,8 +21,8 @@ it also takes care of several of the database changes further down. After it com
 [the changes the compiler will not catch](#changes-the-compiler-will-not-catch), and then every
 breaking change grouped by area: [packages and setup](#packages-and-setup),
 [database](#database), [auth](#auth), [realtime](#realtime), [storage](#storage),
-[errors](#errors), [requests, retries and tokens](#requests-retries-and-tokens) and
-[shared types](#shared-types).
+[errors](#errors), [requests, retries and tokens](#requests-retries-and-tokens),
+[shared types](#shared-types) and [testing](#testing).
 
 ### Install the package skills
 
@@ -2048,3 +2048,21 @@ unaffected. For `functions.invoke`, two things changed:
   (3 to 5). This is not a compile error, so replace any persisted `index` with `name`.
 
 The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
+
+### Testing
+
+#### `supabase_test` matches methods with `HttpMethod` and takes the `initializeTestSupabase` names
+
+The `method` parameter of `MockSupabaseHttpClient.requestsTo` and of every `stub*` method is an
+`HttpMethod` instead of a `String`. `testSupabaseClient` takes the same parameter names as
+`initializeTestSupabase` from `package:supabase_flutter/testing.dart`.
+
+| Before                                   | After                                                  |
+| ---------------------------------------- | ------------------------------------------------------ |
+| `method: 'POST'`                         | `method: HttpMethod.post`                              |
+| `testSupabaseClient(apiKey: key)`        | `testSupabaseClient(publishableKey: key)`              |
+| `testSupabaseClient(realtime: realtime)` | `testSupabaseClient(realtimeTransport: realtime.call)` |
+
+Both helpers now default to an `sb_publishable_` key instead of an unsigned anon JWT. A signed-out
+edge function call therefore no longer sends an `Authorization` header, as with a production
+publishable key. Pass a JWT as `publishableKey` if a test relies on the old headers.

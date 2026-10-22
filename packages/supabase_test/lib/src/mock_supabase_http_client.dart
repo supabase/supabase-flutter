@@ -94,7 +94,7 @@ class _Stub {
     if (remaining == 0) {
       return false;
     }
-    if (method != null && method!.value != request.method.toUpperCase()) {
+    if (!_methodMatches(request.method, method)) {
       return false;
     }
     if (path != null &&
@@ -155,6 +155,10 @@ bool _pathMatches(String requestPath, String stubPath) {
   return stubPath.startsWith('/') || requestPath[boundary - 1] == '/';
 }
 
+bool _methodMatches(String requestMethod, HttpMethod? method) {
+  return method == null || method.value == requestMethod.toUpperCase();
+}
+
 const _singleObjectAccept = 'application/vnd.pgrst.object+json';
 
 /// A mock HTTP client that answers Supabase requests from stubs registered
@@ -208,7 +212,7 @@ class MockSupabaseHttpClient extends BaseClient {
         .where(
           (request) =>
               _pathMatches(request.url.path, path) &&
-              (method == null || method.value == request.method.toUpperCase()),
+              _methodMatches(request.method, method),
         )
         .toList();
   }

@@ -42,13 +42,13 @@ const _testPublishableKey = 'sb_publishable_supabase_test';
 SupabaseClient testSupabaseClient({
   Client? httpClient,
   String url = 'http://localhost:54321',
-  String publishableKey = _testPublishableKey,
+  String? publishableKey,
   WebSocketTransport? realtimeTransport,
   bool autoRefreshToken = false,
 }) {
   return SupabaseClient(
     url,
-    publishableKey,
+    publishableKey ?? _testPublishableKey,
     httpClient: httpClient,
     authOptions: AuthClientOptions(
       autoRefreshToken: autoRefreshToken,
