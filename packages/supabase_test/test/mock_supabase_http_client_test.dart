@@ -446,11 +446,7 @@ void main() {
   });
 
   group('stubError', () {
-    final isOfflineFailure = isA<PostgrestTransportException>().having(
-      (exception) => exception.cause,
-      'cause',
-      isA<http.ClientException>(),
-    );
+    final isOfflineFailure = isTransportFailure(isA<http.ClientException>());
 
     // Retries off, so a failure surfaces on the first request instead of
     // being ridden out.
@@ -524,13 +520,7 @@ void main() {
 
       await expectLater(
         () => stalling.from('todos').select(),
-        throwsA(
-          isA<PostgrestTransportException>().having(
-            (exception) => exception.cause,
-            'cause',
-            isA<TimeoutException>(),
-          ),
-        ),
+        throwsA(isTransportFailure(isA<TimeoutException>())),
       );
       expect(httpClient.requests, hasLength(1));
     });
@@ -1082,3 +1072,10 @@ void main() {
     });
   });
 }
+
+TypeMatcher<PostgrestTransportException> isTransportFailure(Matcher cause) =>
+    isA<PostgrestTransportException>().having(
+      (exception) => exception.cause,
+      'cause',
+      cause,
+    );
