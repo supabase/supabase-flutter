@@ -59,7 +59,7 @@ void main() {
     expect(count.characters, 13);
 
     // An empty input makes the function respond with a 400, which surfaces as a
-    // FunctionException carrying the JSON error body.
+    // FunctionsException carrying the JSON error body.
     await expectLater(
       repository.countWords(''),
       throwsA(

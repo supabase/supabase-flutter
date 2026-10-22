@@ -2,7 +2,7 @@
 //
 // Counts the words and characters in the posted text. When the text is missing
 // or empty it responds with a 400 and a JSON error body, so the example can show
-// how a non-2xx response surfaces in Dart as a FunctionException whose `details`
+// how a non-2xx response surfaces in Dart as a FunctionsException whose `details`
 // carry that body.
 
 Deno.serve(async (req) => {

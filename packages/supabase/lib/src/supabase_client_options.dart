@@ -216,7 +216,7 @@ class FunctionsClientOptions {
 
   /// The region to invoke functions in by default, overridable per call with
   /// `FunctionsClient.invoke`'s own `region` parameter.
-  final String? region;
+  final FunctionsRegion? region;
 
   /// Bounds how long an invocation may go without progress, overriding the
   /// `requestTimeout` of `SupabaseClient`, overridable per call with

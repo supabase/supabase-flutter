@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
   if (status >= 400) {
     // Error bodies come back as either JSON or text, matching the two ways the
-    // SDK surfaces `details` on a FunctionException.
+    // SDK surfaces `details` on a FunctionsException.
     if (format === "text") {
       return new Response("boom", {
         status,

@@ -160,7 +160,7 @@ The sections that most often apply:
   `onBroadcast` and the connection callbacks.
 - "The auth client persists the session itself": `localStorage:` and
   `LocalStorage` subclasses become an `AuthAsyncStorage`.
-- "Service exceptions share one base" and "`FunctionException` is sealed".
+- "Service exceptions share one base" and "`FunctionsException` is sealed".
 - "Every client takes one `SupabaseRetryOptions`".
 - "Timestamps are `DateTime` instead of `String` or `int`".
 - "`rpc` is a getter", "`insert()` and `upsert()` no longer take filters" and

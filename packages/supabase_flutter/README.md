@@ -753,7 +753,7 @@ try {
 ```
 
 Each service also has its own base class, such as `PostgrestException`,
-`AuthException`, `StorageException` or `FunctionException`, to catch the
+`AuthException`, `StorageException` or `FunctionsException`, to catch the
 errors of one service only.
 
 ## Deep links
