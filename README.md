@@ -38,13 +38,13 @@ v2 code, which no longer compiles. To upgrade a v2 project, follow
 
 ## Which package to use
 
-| Package                                                           | Use it for                                                        |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [`supabase_flutter`](packages/supabase_flutter)                   | Flutter apps. Start here.                                         |
-| [`supabase`](packages/supabase)                                   | Dart without Flutter: servers, command line tools, edge functions |
-| [`supabase_typegen`](packages/supabase_typegen)                   | Generating the typed database schema, as a dev dependency         |
-| [`supabase_test`](packages/supabase_test)                         | Testing code that uses Supabase, as a dev dependency              |
-| [`supabase_flutter_web_auth`](packages/supabase_flutter_web_auth) | OAuth and SSO sign in through an in-app browser session           |
+| Package                                                           | Use it for                                                |
+| ----------------------------------------------------------------- | --------------------------------------------------------- |
+| [`supabase_flutter`](packages/supabase_flutter)                   | Flutter apps. Start here.                                 |
+| [`supabase`](packages/supabase)                                   | Dart without Flutter: servers and command line tools      |
+| [`supabase_typegen`](packages/supabase_typegen)                   | Generating the typed database schema, as a dev dependency |
+| [`supabase_test`](packages/supabase_test)                         | Testing code that uses Supabase, as a dev dependency      |
+| [`supabase_flutter_web_auth`](packages/supabase_flutter_web_auth) | OAuth and SSO sign in through an in-app browser session   |
 
 `supabase_flutter` and `supabase` bring in the service clients, which you do
 not add yourself: [`postgrest`](packages/postgrest),

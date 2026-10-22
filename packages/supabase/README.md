@@ -25,9 +25,8 @@
 </div>
 
 `supabase` is the Supabase client for Dart code that does not run in Flutter,
-such as a server, a command line tool or a
-[Dart Edge](https://supabase.com/docs/guides/functions/dart-edge) function. It
-covers typed database queries, auth, realtime, storage and edge functions.
+such as a server or a command line tool. It covers typed database queries,
+auth, realtime, storage and edge functions.
 
 > [!IMPORTANT]
 > For a Flutter app, use [`supabase_flutter`](https://pub.dev/packages/supabase_flutter)
