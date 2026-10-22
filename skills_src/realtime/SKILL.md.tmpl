@@ -47,15 +47,19 @@ final Stream<List<BooksRow>> books = supabase
     .table(Books.table)
     .stream(primaryKey: [Books.id])
     .filter(Books.authorId.eq(2))
-    .order(Books.createdAt, ascending: false)
+    .order(Books.createdAt.desc())
     .limit(50);
 ```
 
 `filter()` takes one operator: `eq`, `neq`, `lt`, `lte`, `gt`, `gte`,
 `inFilter`, `like`, `ilike`, `matchRegex`, `imatchRegex`, `isNull`,
-`isTrue`, `isFalse` or `isDistinct`. A filter composed with `&`, `|` or
-`not()` throws an `ArgumentError`. Unlike `order()` on a query, `order()` on a
-stream takes the column and `ascending:`, which defaults to `true`.
+`isTrue`, `isFalse` or `isDistinct`, optionally negated with `not()`. A filter
+composed with `&` or `|` throws an `ArgumentError`.
+
+`order()` takes the same orderings as a query, `Books.title` or
+`Books.createdAt.desc()`. A stream keeps `NULL`s last ascending and first
+descending, so `.nullsFirst()`, `.nullsLast()`, or an ordering by anything but
+a stored column, such as a computed field, throws an `ArgumentError`.
 
 To receive only some columns:
 

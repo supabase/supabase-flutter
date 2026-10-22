@@ -211,13 +211,7 @@ the client sent.
 
 `initializeTestSupabase` from `package:supabase_flutter/testing.dart`
 initializes `Supabase.instance` with the same test defaults, so widgets that
-read `Supabase.instance.client` work unchanged.
-
-`testWidgets` runs in a fake async zone, where the client's real asynchronous
-work never completes. Initialize and dispose inside `tester.runAsync`, and let
-a request the widget started finish with a `runAsync` before the next
-`pump()`. A plain `await initializeTestSupabase(…)` or `pumpAndSettle()` hangs
-the test:
+read `Supabase.instance.client` work unchanged:
 
 ```dart test-file
 import 'package:flutter/widgets.dart';
@@ -261,14 +255,11 @@ void main() {
           {'id': 1, 'title': 'Dune'},
         ],
       );
-    await tester.runAsync(
-      () => initializeTestSupabase(httpClient: httpClient),
-    );
-    addTearDown(() => tester.runAsync(Supabase.instance.dispose));
+    final supabase = await initializeTestSupabase(httpClient: httpClient);
+    addTearDown(supabase.dispose);
 
     await tester.pumpWidget(const BookTitles());
-    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Dune'), findsOneWidget);
   });

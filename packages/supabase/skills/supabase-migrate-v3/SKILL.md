@@ -79,13 +79,14 @@ grep -rnE '\.order\(' lib test bin
 
 - A call without `ascending:` sorted descending on v2 and sorts ascending on
   v3. Add `ascending: false`.
-- A call that sorts descending (including the ones you just changed) put
+- A query that sorts descending (including the ones you just changed) put
   `NULL`s last on v2 and puts them first on v3. When the column is nullable,
-  add `nullsFirst: false`.
+  add `nullsFirst: false`. This does not apply to `stream().order()`, which
+  takes no null placement.
 
-This applies to `stream().order()` too. The result is that every `order()`
-call states its direction and, on a descending sort of a nullable column, its
-null placement.
+The direction pin applies to `stream().order()` too. The result is that every
+`order()` call states its direction and, on a descending query of a nullable
+column, its null placement.
 
 ## 4. Dependencies and the typed schema
 
@@ -225,8 +226,10 @@ Rules for the conversion:
 
 - Carry the direction pinned in step 3 over: `ascending: false` becomes
   `.desc()`, and `nullsFirst: false` becomes `.nullsLast()`. An `order()` with
-  neither stays a plain column, which is ascending. On a typed `stream()`,
-  `order()` takes the column and keeps `ascending: false` instead.
+  neither stays a plain column, which is ascending. A typed `stream()` takes
+  the same orderings, but throws an `ArgumentError` on `.nullsFirst()` or
+  `.nullsLast()`, since it always places `NULL`s last ascending and first
+  descending.
 - A typed `update()` or `delete()` sends nothing until it has `.where(…)` or
   `.all()`. A bare `await` of one compiles and silently does nothing, and the
   analyzer reports it as an `unused_result` warning. Fix every one of them.
