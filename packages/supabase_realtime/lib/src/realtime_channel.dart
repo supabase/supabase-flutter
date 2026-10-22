@@ -232,14 +232,21 @@ class RealtimeChannel {
   ///
   /// [timeout] parameter can be used to override the default timeout set on
   /// [RealtimeClient].
+  ///
+  /// Calling it again on a channel that has not closed does nothing, so a
+  /// channel returned by [RealtimeClient.channel] for a name already in use
+  /// can be subscribed without checking its state first.
   RealtimeChannel subscribe([Duration? timeout]) {
     if (!socket.isConnected) {
       unawaited(socket.connect());
     }
-    if (_joinedOnce == true) {
+    if (_joinedOnce && !isClosed) {
+      return this;
+    }
+    if (_joinedOnce) {
       throw StateError(
-        "tried to subscribe multiple times. 'subscribe' can only be "
-        "called a single time per channel instance",
+        "tried to subscribe a closed channel. Create a new channel with "
+        "'RealtimeClient.channel' instead",
       );
     }
     final broadcast = _parameters['config']['broadcast'];
@@ -995,7 +1002,7 @@ class RealtimeChannel {
         completeSent();
         return completer.future;
       }
-      push.whenSent(completeSent);
+      push.onSent = completeSent;
     }
 
     push.receive('ok', (_) {
@@ -1077,7 +1084,13 @@ class RealtimeChannel {
           }
         });
 
-    leavePush.send();
+    // Without a connection the server has already dropped the channel, and a
+    // buffered leave would reach it after a newer join on the same topic.
+    if (socket.isConnected) {
+      leavePush.send();
+    } else {
+      leavePush.startTimeout();
+    }
 
     if (!canPush) {
       leavePush.trigger('ok', {});

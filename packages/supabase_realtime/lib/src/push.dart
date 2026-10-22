@@ -25,7 +25,9 @@ class Push {
   String _ref = '';
   Map<String, dynamic>? _receivedResponse;
   final List<Hook> _receiveHooks = [];
-  final List<void Function()> _sentCallbacks = [];
+
+  /// Called every time this push is handed to the socket.
+  void Function()? onSent;
   String? _refEvent;
 
   /// The channel
@@ -78,15 +80,7 @@ class Push {
         joinRef: _channel.joinRef,
       ),
     );
-    for (final callback in _sentCallbacks.toList()) {
-      callback();
-    }
-  }
-
-  /// Registers [callback] to run every time this push is handed to the
-  /// socket.
-  void whenSent(void Function() callback) {
-    _sentCallbacks.add(callback);
+    onSent?.call();
   }
 
   void updatePayload(Map<String, dynamic> newPayload) {

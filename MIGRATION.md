@@ -517,7 +517,7 @@ explicitly:
 - [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so code that
   reads the sent keys from the top of the received message gets `null`
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
-  second `subscribe()` with the same name throws instead of replacing the first channel
+  second channel with the same name shares the first one instead of replacing it
 
 ### Packages and setup
 
@@ -1490,12 +1490,14 @@ await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 await channel.sendBroadcastMessage(event: 'file', payload: bytes);
 await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
 ```
+
 #### A channel name in use returns its channel
 
 `channel()` returns the channel already registered for a name instead of creating a second one,
-and the options passed with the repeated call are ignored. A second `subscribe()` on the returned
-channel throws, so share the channel instead of subscribing it twice. Creating a second channel
-with the same name used to unsubscribe the first one, which reported `closed`.
+and the options passed with the repeated call are ignored. `subscribe()` on a channel that is
+already subscribed does nothing. Creating a second channel with the same name used to unsubscribe
+the first one, which reported `closed`, so remove a channel before reusing its name with other
+options.
 
 `RealtimeClient.disconnect()` keeps the channels and rejoins them on the next connection. Call
 `removeAllChannels()` to unsubscribe them as well. A broadcast without `ack` resolves to `ok` once

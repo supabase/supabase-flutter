@@ -106,8 +106,18 @@ void main() {
       expect(channel.joinedOnce, isTrue);
     });
 
-    test('throws if attempting to join multiple times', () {
+    test('a second subscribe on a channel that has not closed does '
+        'nothing', () {
       channel.subscribe();
+      final joinRef = channel.joinRef;
+
+      expect(channel.subscribe(), same(channel));
+      expect(channel.joinRef, joinRef);
+    });
+
+    test('throws when subscribing a closed channel', () async {
+      channel.subscribe();
+      await channel.unsubscribe();
 
       expect(() => channel.subscribe(), throwsStateError);
     });

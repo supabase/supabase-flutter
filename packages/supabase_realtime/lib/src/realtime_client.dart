@@ -293,10 +293,6 @@ class RealtimeClient {
   final Duration heartbeatInterval;
   Timer? _heartbeatTimer;
 
-  /// Closes a connection whose sink close after a heartbeat timeout never
-  /// completed, so that the reconnect starts anyway.
-  Timer? _heartbeatTimeoutFallbackTimer;
-
   /// Delay before the socket is disconnected once the last channel has been
   /// removed. [Duration.zero] disconnects immediately. Defaults to twice the
   /// heartbeat interval.
@@ -472,12 +468,8 @@ class RealtimeClient {
   /// The channels stay registered and rejoin once the client connects again.
   /// Use [removeAllChannels] to unsubscribe them as well.
   Future<void> disconnect({int? code, String? reason}) async {
-    if (_connection != null) {
-      // Snapshot before marking, in case marking removes a channel from
-      // [_channels] synchronously.
-      for (final channel in _channels.toList()) {
-        channel.markForRejoin();
-      }
+    for (final channel in _channels) {
+      channel.markForRejoin();
     }
     await _disconnect(code: code, reason: reason);
   }
@@ -487,8 +479,6 @@ class RealtimeClient {
   Future<void> _disconnect({int? code, String? reason}) async {
     _cancelPendingDisconnect();
     _accessTokenResolution++;
-    _heartbeatTimeoutFallbackTimer?.cancel();
-    _heartbeatTimeoutFallbackTimer = null;
     final localConnection = _connection;
     if (localConnection != null) {
       final oldState = _connectionState;
@@ -1176,9 +1166,7 @@ class RealtimeClient {
   /// so the joins carry the correct identity.
   void _rejoinErroredChannels() {
     try {
-      // Snapshot before rejoining, in case a rejoin removes a channel from
-      // [_channels] synchronously.
-      for (final channel in _channels.toList()) {
+      for (final channel in _channels) {
         if (channel.isErrored) {
           channel.rejoin();
         }
@@ -1205,15 +1193,12 @@ class RealtimeClient {
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       final timedOutConnection = _connection;
       unawaited(
-        timedOutConnection?.sink.close(
-          RealtimeConstants.webSocketCloseNormal,
-          'heartbeat timeout',
-        ),
-      );
-      _heartbeatTimeoutFallbackTimer?.cancel();
-      _heartbeatTimeoutFallbackTimer = Timer(
-        connectionCloseTimeout,
-        () => _closeAfterHeartbeatTimeout(timedOutConnection),
+        timedOutConnection?.sink
+            .close(RealtimeConstants.webSocketCloseNormal, 'heartbeat timeout')
+            .timeout(
+              connectionCloseTimeout,
+              onTimeout: () => _closeAfterHeartbeatTimeout(timedOutConnection),
+            ),
       );
       return;
     }
@@ -1246,8 +1231,7 @@ class RealtimeClient {
 
   /// Handles [timedOutConnection] as closed when its sink close after a
   /// heartbeat timeout has not closed it within [connectionCloseTimeout].
-  void _closeAfterHeartbeatTimeout(WebSocketChannel? timedOutConnection) {
-    _heartbeatTimeoutFallbackTimer = null;
+  void _closeAfterHeartbeatTimeout(WebSocketChannel timedOutConnection) {
     if (!_isCurrentOpenConnection(timedOutConnection)) {
       return;
     }

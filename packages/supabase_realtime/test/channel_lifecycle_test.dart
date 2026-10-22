@@ -62,6 +62,23 @@ void main() {
       expect((await received)['payload'], {'text': 'hello'});
     });
 
+    test('a channel removed while disconnected does not leave the channel '
+        'that reuses its name', () async {
+      final first = await subscribedChannel('room');
+      await client.disconnect();
+      await client.removeChannel(first);
+
+      final second = client.channel('room').subscribe();
+      await client.disconnect();
+      await client.connect();
+      await pumpEventQueue();
+
+      expect(second, isNot(same(first)));
+      expect(sentEvents('phx_leave'), isEmpty);
+      expect(second.isJoined, isTrue);
+      expect(transport.joinedTopics, ['realtime:room']);
+    });
+
     test('keeps the channels registered', () async {
       final channel = await subscribedChannel('room');
 

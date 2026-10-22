@@ -28,6 +28,9 @@ description: >-
   `StateError`.
 - Cancel the subscriptions and call `supabase.removeChannel(channel)` when the
   feature is closed. A forgotten channel keeps receiving messages.
+- `supabase.channel(name)` returns the channel already open under that name,
+  and ignores the options passed with it. Remove the channel before reusing
+  its name with other options.
 - Use the typed table definitions from the generated schema, not table names
   as strings.
 - Database changes only arrive for tables in the `supabase_realtime`
