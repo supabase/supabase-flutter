@@ -242,11 +242,11 @@ void main() {
       token: 't1',
     );
 
-    test('toString includes path, url and token', () {
+    test('toString includes path and url', () {
       expect(
         response.toString(),
         'SignedUploadUrlResponse(path: a.png, '
-        'signedUrl: https://x/a.png?token=t1, token: t1)',
+        'signedUrl: https://x/a.png?token=t1)',
       );
     });
 

@@ -73,16 +73,11 @@ class StorageFileApi {
 
   FetchOptions get _fetchOptions => FetchOptions(_headers);
 
-  UploadResponse _uploadResponse(
-    String cleanPath,
-    Map<String, dynamic> data, {
-    String? versionId,
-  }) {
+  UploadResponse _uploadResponse(String cleanPath, Map<String, dynamic> data) {
     return UploadResponse(
       id: data['Id'] as String?,
       path: cleanPath,
       fullPath: data['Key'] as String,
-      versionId: versionId,
     );
   }
 
@@ -725,11 +720,7 @@ class StorageFileApi {
       },
       options: _fetchOptions,
     );
-    return _uploadResponse(
-      destinationKey,
-      response,
-      versionId: response['version'] as String?,
-    );
+    return _uploadResponse(destinationKey, response);
   }
 
   /// Create signed URL to download file without requiring permissions. This URL

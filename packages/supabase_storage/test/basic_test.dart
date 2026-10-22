@@ -1348,7 +1348,7 @@ void main() {
         expect(response.id, 'copy-id');
         expect(response.path, 'folder/b.txt');
         expect(response.fullPath, 'other/folder/b.txt');
-        expect(response.versionId, 'version-2');
+        expect(response.versionId, isNull);
       });
 
       test('copy omits the source version by default', () async {

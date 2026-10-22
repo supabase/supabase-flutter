@@ -909,8 +909,7 @@ class UploadResponse {
 
   /// The identifier of the version the upload stored.
   ///
-  /// Only a resumable upload and a copy report it, so it is `null` for the
-  /// others.
+  /// Only a resumable upload reports it, so it is `null` for the others.
   final String? versionId;
 
   @override
@@ -939,8 +938,7 @@ class SignedUploadUrlResponse {
 
   @override
   String toString() =>
-      'SignedUploadUrlResponse(path: $path, signedUrl: $signedUrl, '
-      'token: $token)';
+      'SignedUploadUrlResponse(path: $path, signedUrl: $signedUrl)';
 
   @override
   bool operator ==(Object other) {

@@ -685,6 +685,7 @@ Across every package:
 | Before                                         | After                                       |
 | ---------------------------------------------- | ------------------------------------------- |
 | `StorageFileApi.info()`                        | `StorageFileApi.getMetadata()`              |
+| `SignedUploadURLResponse`                      | `SignedUploadUrlResponse`                   |
 | `VectorBucketEncryption.sseType`               | `serverSideEncryptionType`                  |
 | `PartitionSpec` and the Iceberg `spec` cluster | `PartitionSpecification`, `…Specification…` |
 | `TableMetadata.refs`                           | `TableMetadata.references`                  |
@@ -1606,11 +1607,11 @@ final copy = await supabase.storage.from('avatars').copy('a.png', 'b.png');
 final key = copy.fullPath;
 ```
 
-#### `SignedUploadURLResponse` is renamed `SignedUploadUrlResponse`
+#### `SignedUrl` is removed
 
-The response of `createSignedUploadUrl` is renamed to match the `Url` spelling of the rest of the
-API, and its equality now takes the `token` into account. `SignedUrl`, which it used to extend, is
-removed, along with its `copyWith`.
+`SignedUrl` was only the base class of the `createSignedUploadUrl` response, which is now the
+standalone `SignedUploadUrlResponse` with the same `path` and `signedUrl` fields and its `token`.
+`SignedUrl.copyWith` is gone with it.
 
 #### Storage wire helpers are internal
 
