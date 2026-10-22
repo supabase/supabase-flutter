@@ -664,7 +664,8 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
       ],
     ),
-    // A single key into profile, through a column named like the table.
+    // A single key into profile, through a column named like the table, and
+    // a key into team next to the junction table between the two.
     TableDescription(
       schema: 'public',
       name: 'badge',
@@ -688,6 +689,39 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
         ColumnDescription(
           name: 'profile',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'team',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+      ],
+    ),
+    // A junction table between team and badge, whose primary key covers both
+    // keys.
+    TableDescription(
+      schema: 'public',
+      name: 'team_badge',
+      primaryKey: ['team_id', 'badge_id'],
+      columns: [
+        ColumnDescription(
+          name: 'team_id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'badge_id',
           postgresFormat: 'int8',
           typeKind: ColumnTypeKind.integer,
           isRequired: true,
@@ -767,6 +801,35 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       sourceColumns: ['profile'],
       targetSchema: 'public',
       targetTable: 'profile',
+      targetColumns: ['id'],
+    ),
+    // A single key, but the junction table makes a second relationship
+    // between badge and team.
+    RelationshipDescription(
+      foreignKeyName: 'badge_team_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'badge',
+      sourceColumns: ['team'],
+      targetSchema: 'public',
+      targetTable: 'team',
+      targetColumns: ['id'],
+    ),
+    RelationshipDescription(
+      foreignKeyName: 'team_badge_team_id_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'team_badge',
+      sourceColumns: ['team_id'],
+      targetSchema: 'public',
+      targetTable: 'team',
+      targetColumns: ['id'],
+    ),
+    RelationshipDescription(
+      foreignKeyName: 'team_badge_badge_id_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'team_badge',
+      sourceColumns: ['badge_id'],
+      targetSchema: 'public',
+      targetTable: 'badge',
       targetColumns: ['id'],
     ),
   ],

@@ -1456,7 +1456,7 @@ class Team {
     TeamRow.new,
     schema: 'public',
     primaryKey: [id],
-    relations: [profileViaTeam, profileByOwnerId],
+    relations: [profileViaTeam, profileByOwnerId, badgeViaTeam, teamBadge],
   );
 
   static const id = PostgrestColumn<TeamRow, int>('id');
@@ -1479,6 +1479,23 @@ class Team {
     referencedTable: 'profile',
     referencedColumns: [Profile.id],
     alias: 'profile_by_owner_id',
+  );
+
+  /// The `badge` rows referencing this row through `team`.
+  static const badgeViaTeam = PostgrestToManyRelation<TeamRow, BadgeRow>(
+    'badge!badge_team_fkey',
+    columns: [id],
+    referencedTable: 'badge',
+    referencedColumns: [Badge.team],
+    alias: 'badge_via_team',
+  );
+
+  /// The `team_badge` rows referencing this row through `team_id`.
+  static const teamBadge = PostgrestToManyRelation<TeamRow, TeamBadgeRow>(
+    'team_badge',
+    columns: [id],
+    referencedTable: 'team_badge',
+    referencedColumns: [TeamBadge.teamId],
   );
 }
 
@@ -1569,6 +1586,7 @@ extension type const BadgeRow(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
   String get name => _json['name'] as String;
   int get profile => _json['profile'] as int;
+  int? get team => _json['team'] as int?;
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -1581,8 +1599,12 @@ extension type const BadgeRow(Map<String, dynamic> _json) implements Object {
 /// to insert SQL NULL explicitly.
 extension type const BadgeInsert._(Map<String, dynamic> _json)
     implements Object {
-  BadgeInsert({int? id, required String name, required int profile})
-    : this._({'id': ?id, 'name': name, 'profile': profile});
+  BadgeInsert({int? id, required String name, required int profile, int? team})
+    : this._({'id': ?id, 'name': name, 'profile': profile, 'team': ?team});
+
+  /// Returns a copy with `team` set to SQL NULL, overriding any database
+  /// default.
+  BadgeInsert setTeamToNull() => BadgeInsert._({..._json, 'team': null});
 }
 
 /// Values for updating rows of `badge`. All columns are optional; passing
@@ -1590,8 +1612,12 @@ extension type const BadgeInsert._(Map<String, dynamic> _json)
 /// to write SQL NULL explicitly.
 extension type const BadgeUpdate._(Map<String, dynamic> _json)
     implements Object {
-  BadgeUpdate({int? id, String? name, int? profile})
-    : this._({'id': ?id, 'name': ?name, 'profile': ?profile});
+  BadgeUpdate({int? id, String? name, int? profile, int? team})
+    : this._({'id': ?id, 'name': ?name, 'profile': ?profile, 'team': ?team});
+
+  /// Returns a copy with `team` set to SQL NULL, overriding any database
+  /// default.
+  BadgeUpdate setTeamToNull() => BadgeUpdate._({..._json, 'team': null});
 }
 
 /// Typed access to the `badge` table.
@@ -1604,12 +1630,13 @@ class Badge {
     BadgeRow.new,
     schema: 'public',
     primaryKey: [id],
-    relations: [profileByProfile],
+    relations: [profileByProfile, teamByTeam, teamBadge],
   );
 
   static const id = PostgrestColumn<BadgeRow, int>('id');
   static const name = PostgrestColumn<BadgeRow, String>('name');
   static const profile = PostgrestColumn<BadgeRow, int>('profile');
+  static const team = PostgrestNullableColumn<BadgeRow, int>('team');
 
   /// The `profile` row referenced by `profile`.
   static const profileByProfile = PostgrestToOneRelation<BadgeRow, ProfileRow>(
@@ -1618,6 +1645,87 @@ class Badge {
     referencedTable: 'profile',
     referencedColumns: [Profile.id],
     alias: 'profile_by_profile',
+  );
+
+  /// The `team` row referenced by `team`.
+  static const teamByTeam = PostgrestToOneRelation<BadgeRow, TeamRow>(
+    'team!badge_team_fkey',
+    columns: [team],
+    referencedTable: 'team',
+    referencedColumns: [Team.id],
+    alias: 'team_by_team',
+  );
+
+  /// The `team_badge` rows referencing this row through `badge_id`.
+  static const teamBadge = PostgrestToManyRelation<BadgeRow, TeamBadgeRow>(
+    'team_badge',
+    columns: [id],
+    referencedTable: 'team_badge',
+    referencedColumns: [TeamBadge.badgeId],
+  );
+}
+
+/// A row of the `team_badge` table, as `select()` reads it with every column.
+extension type const TeamBadgeRow(Map<String, dynamic> _json)
+    implements Object {
+  int get teamId => _json['team_id'] as int;
+  int get badgeId => _json['badge_id'] as int;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `team_badge`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const TeamBadgeInsert._(Map<String, dynamic> _json)
+    implements Object {
+  TeamBadgeInsert({required int teamId, required int badgeId})
+    : this._({'team_id': teamId, 'badge_id': badgeId});
+}
+
+/// Values for updating rows of `team_badge`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const TeamBadgeUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  TeamBadgeUpdate({int? teamId, int? badgeId})
+    : this._({'team_id': ?teamId, 'badge_id': ?badgeId});
+}
+
+/// Typed access to the `team_badge` table.
+class TeamBadge {
+  const TeamBadge._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table =
+      PostgrestTable<TeamBadgeRow, TeamBadgeInsert, TeamBadgeUpdate>(
+        'team_badge',
+        TeamBadgeRow.new,
+        schema: 'public',
+        primaryKey: [teamId, badgeId],
+        relations: [team, badge],
+      );
+
+  static const teamId = PostgrestColumn<TeamBadgeRow, int>('team_id');
+  static const badgeId = PostgrestColumn<TeamBadgeRow, int>('badge_id');
+
+  /// The `team` row referenced by `team_id`.
+  static const team = PostgrestToOneRelation<TeamBadgeRow, TeamRow>(
+    'team',
+    columns: [teamId],
+    referencedTable: 'team',
+    referencedColumns: [Team.id],
+  );
+
+  /// The `badge` row referenced by `badge_id`.
+  static const badge = PostgrestToOneRelation<TeamBadgeRow, BadgeRow>(
+    'badge',
+    columns: [badgeId],
+    referencedTable: 'badge',
+    referencedColumns: [Badge.id],
   );
 }
 

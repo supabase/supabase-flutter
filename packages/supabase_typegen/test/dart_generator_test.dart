@@ -615,8 +615,6 @@ void main() {
       generateDartCode(hostileSchema),
     ).replaceAll(' ', '');
 
-    // profile.team references team and team.owner_id references profile, so
-    // `team(*)` alone matches both keys.
     expect(
       compact,
       contains(
@@ -647,13 +645,70 @@ void main() {
     );
   });
 
+  test('a junction table makes a single key ambiguous', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstteamByTeam=PostgrestToOneRelation<BadgeRow,TeamRow>"
+        "('team!badge_team_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstbadgeViaTeam=PostgrestToManyRelation<TeamRow,BadgeRow>"
+        "('badge!badge_team_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstteam=PostgrestToOneRelation<TeamBadgeRow,TeamRow>"
+        "('team',",
+      ),
+    );
+  });
+
+  test('a junction table needs its primary key to cover both keys', () {
+    final withoutJunction = DatabaseDescription(
+      schemaNames: hostileSchema.schemaNames,
+      tables: [
+        for (final table in hostileSchema.tables)
+          if (table.name == 'team_badge')
+            TableDescription(
+              schema: table.schema,
+              name: table.name,
+              primaryKey: const ['team_id'],
+              columns: table.columns,
+            )
+          else
+            table,
+      ],
+      enums: hostileSchema.enums,
+      relationships: hostileSchema.relationships,
+    );
+    final compact = _normalize(
+      generateDartCode(withoutJunction),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstteamByTeam=PostgrestToOneRelation<BadgeRow,TeamRow>"
+        "('team',",
+      ),
+    );
+  });
+
   test('an embed whose key is a column name is aliased', () {
     final compact = _normalize(
       generateDartCode(hostileSchema),
     ).replaceAll(' ', '');
 
-    // badge.profile is the only key into profile, so the embed needs no
-    // hint, but it would come back under the `profile` column's key.
     expect(
       compact,
       contains(
@@ -662,7 +717,6 @@ void main() {
         "referencedColumns:[Profile.id],alias:'profile_by_profile',);",
       ),
     );
-    // The reverse embed is named `badge`, which no column of profile is.
     expect(
       compact,
       contains(

@@ -129,13 +129,20 @@ String generateDartCode(
         typeNames.taken,
       ),
   };
+  final relationshipCounts = _relationshipCounts(database);
   for (final table in tables) {
     _writeTable(
       buffer,
       table,
       tableNames[(table.schema, table.name)]!,
       tableMembers[(table.schema, table.name)]!,
-      _relationMembers(table, database, tableNames, tableMembers),
+      _relationMembers(
+        table,
+        database,
+        tableNames,
+        tableMembers,
+        relationshipCounts,
+      ),
       typeNames.taken,
       enumTypeNames,
       decoders,
@@ -435,8 +442,9 @@ class _RelationMember {
   /// relationship.
   String get key => isComputed ? embedName : referencedTable;
 
-  /// Whether another key joins the same two tables, so the embed carries a
-  /// hint and is aliased to the member name to come back under its own key.
+  /// Whether PostgREST sees another relationship between the same two
+  /// tables, so the embed carries a hint. A hinted embed is always aliased;
+  /// one whose [key] is a column or computed field name is aliased too.
   final bool ambiguous;
 
   /// The column constants of this table the relation joins on.
@@ -472,6 +480,7 @@ List<_RelationMember> _relationMembers(
   DatabaseDescription database,
   Map<(String, String), _TableNames> tableNames,
   Map<(String, String), _TableMembers> tableMembers,
+  Map<_TablePair, int> relationshipCounts,
 ) {
   final members = <_RelationMember>[];
   for (final relationship in database.relationships) {
@@ -499,16 +508,9 @@ List<_RelationMember> _relationMembers(
     // holds.
     final byColumns = 'By${pascalCase(columns)}';
     final viaColumns = 'Via${pascalCase(columns)}';
-    // Several keys between the same two tables, in either direction, make
-    // the plain table name ambiguous for PostgREST, so the embed carries the
-    // hint.
-    final ambiguous = database.relationships.any((other) {
-      if (other == relationship) return false;
-      final otherSource = (other.sourceSchema, other.sourceTable);
-      final otherTarget = (other.targetSchema, other.targetTable);
-      return (otherSource == sourceKey && otherTarget == targetKey) ||
-          (otherSource == targetKey && otherTarget == sourceKey);
-    });
+    // Several relationships between the same two tables make the plain
+    // table name ambiguous for PostgREST, so the embed carries the hint.
+    final ambiguous = relationshipCounts[_tablePair(sourceKey, targetKey)]! > 1;
 
     if (sourceKey == (table.schema, table.name)) {
       final targetName = memberIdentifier(relationship.targetTable);
@@ -576,6 +578,58 @@ List<_RelationMember> _relationMembers(
     members.add(_RelationMember.computed(relationship, source, target));
   }
   return members;
+}
+
+/// Two tables in a fixed order, so both directions share one key.
+typedef _TablePair = ((String, String), (String, String));
+
+_TablePair _tablePair((String, String) first, (String, String) second) {
+  final schemaOrder = first.$1.compareTo(second.$1);
+  final inOrder =
+      schemaOrder < 0 ||
+      (schemaOrder == 0 && first.$2.compareTo(second.$2) <= 0);
+  return inOrder ? (first, second) : (second, first);
+}
+
+/// The number of relationships PostgREST sees between each pair of tables:
+/// the foreign keys in either direction, and the many-to-many relationships
+/// through a junction table whose primary key covers a foreign key to each
+/// of the two.
+Map<_TablePair, int> _relationshipCounts(DatabaseDescription database) {
+  final counts = <_TablePair, int>{};
+  void count(_TablePair pair) =>
+      counts.update(pair, (count) => count + 1, ifAbsent: () => 1);
+  for (final relationship in database.relationships) {
+    count(
+      _tablePair(
+        (relationship.sourceSchema, relationship.sourceTable),
+        (relationship.targetSchema, relationship.targetTable),
+      ),
+    );
+  }
+  for (final junction in database.tables) {
+    final primaryKey = junction.primaryKey.toSet();
+    final keys = [
+      for (final relationship in database.relationships)
+        if (relationship.sourceSchema == junction.schema &&
+            relationship.sourceTable == junction.name &&
+            relationship.targetSchema == junction.schema &&
+            relationship.targetTable != junction.name &&
+            primaryKey.containsAll(relationship.sourceColumns))
+          relationship,
+    ];
+    for (final (index, first) in keys.indexed) {
+      for (final second in keys.skip(index + 1)) {
+        count(
+          _tablePair(
+            (first.targetSchema, first.targetTable),
+            (second.targetSchema, second.targetTable),
+          ),
+        );
+      }
+    }
+  }
+  return counts;
 }
 
 /// The column constants of [columns] in the namespace of [table].

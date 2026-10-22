@@ -118,4 +118,44 @@ void main() {
       ['Ada', 'Ada'],
     );
   });
+
+  test('a key next to a junction table resolves', () async {
+    final badges = await client
+        .table(Badge.table)
+        .selectOnly([
+          Badge.team,
+          Badge.teamByTeam.select([Team.name]),
+        ])
+        .order(Badge.id);
+
+    expect([for (final badge in badges) badge.read(Badge.team)], [1, null]);
+    expect(
+      [
+        for (final badge in badges)
+          badge.read(Badge.teamByTeam)?.read(Team.name),
+      ],
+      ['Rockets', null],
+    );
+
+    final teams = await client
+        .table(Team.table)
+        .selectOnly([
+          Team.badgeViaTeam.select([Badge.name]),
+        ])
+        .order(Team.id);
+
+    expect(
+      [
+        for (final team in teams)
+          [
+            for (final badge in team.read(Team.badgeViaTeam))
+              badge.read(Badge.name),
+          ],
+      ],
+      [
+        ['Founder'],
+        <String>[],
+      ],
+    );
+  });
 }
