@@ -26,100 +26,282 @@
 
 </div>
 
-## Getting Started
+`supabase_flutter` is the Supabase client for Flutter apps: typed database
+queries, auth, realtime, storage and edge functions, plus the Flutter parts
+around them, such as session persistence, deep links for auth redirects and
+the app lifecycle. For Dart code that does not run in Flutter, such as a
+server or a command line tool, use [`supabase`](https://pub.dev/packages/supabase)
+instead.
 
-Import the package:
+This README describes v3. Most Supabase Dart examples published elsewhere are
+v2 code, which no longer compiles. To upgrade a v2 project, follow
+[MIGRATION.md](https://github.com/supabase/supabase-flutter/blob/main/MIGRATION.md).
 
-```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
+## Using an AI coding agent
+
+`supabase_flutter` ships [package skills](https://dart.dev/ai/package-skills),
+instructions that teach coding agents such as Claude Code, Cursor, Gemini or
+Copilot the current API. Agents trained on v2 examples otherwise tend to write
+code that does not compile against v3. Install the skills into your project
+after adding the package:
+
+```sh
+dart run skills@ get -p supabase_flutter
 ```
 
-Initialize `Supabase` before using it:
+| Skill                              | Covers                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| `supabase-flutter-idioms`          | Writing or reviewing any code that uses the client                       |
+| `supabase-flutter-generate-schema` | Generating the typed database schema and keeping it in sync              |
+| `supabase-flutter-realtime`        | Live lists with `stream()`, `onTableChanges`, broadcast and presence     |
+| `supabase-flutter-auth-setup`      | OAuth, magic links and password reset that return to the app with a link |
+| `supabase-flutter-testing`         | Unit and widget tests with `supabase_test`                               |
+| `supabase-flutter-migrate-v3`      | Upgrading a project from v2 to v3                                        |
 
-```dart
+Run the command again after upgrading `supabase_flutter` to update the
+skills. Commit the installed skills together with `.config/dart_skills/` so
+everyone working on the project gets the same version.
+
+## Getting started
+
+### 1. Add the package
+
+```sh
+flutter pub add supabase_flutter
+```
+
+### 2. Initialize Supabase
+
+Call `Supabase.initialize` once, before `runApp`. It restores the persisted
+session before it returns. Find the URL and the publishable key of your
+project in the dashboard under **Project Settings > API Keys**.
+
+```dart file
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Supabase.initialize(
-    url: SUPABASE_URL,
-    publishableKey: SUPABASE_KEY,
+    url: 'https://your-project.supabase.co',
+    publishableKey: 'your-publishable-key',
   );
-
-  runApp(MyApp());
+  runApp(const MaterialApp(home: Placeholder()));
 }
 
-// It's handy to then extract the Supabase client in a variable for later uses
 final supabase = Supabase.instance.client;
 ```
 
-## Usage example
+Use this one client everywhere in the app.
 
-* [Authentication](#authentication)
-  * [Native Apple Sign in](#native-apple-sign-in)
-  * [Native Google sign in](#native-google-sign-in)
-  * [OAuth login](#oauth-login)
-  * [Passkeys](#passkeys)
-  * [Android Restore Credentials](#android-restore-credentials)
-* [Database](#database)
-* [Realtime](#realtime)
-  * [Postgres Changes](#postgres-changes)
-  * [Broadcast](#broadcast)
-  * [Presence](#presence)
-* [Storage](#storage)
-* [Edge Functions](#edge-functions)
-* [Deep Links](#deep-links)
-* [Custom session storage](#custom-session-storage)
-* [Logging](#logging)
-* [Request ids and tracing](#request-ids-and-tracing)
+### 3. Generate the typed schema
 
+Queries are typed by a Dart file generated from your database schema. It
+holds a row type per table, `BooksRow` for a `books` table, the
+`BooksInsert` and `BooksUpdate` values that writes accept, and a `Books`
+class with the table definition and one constant per column. Generate it with
+the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started),
+version 2.122.0 or newer, from the directory of your `pubspec.yaml`:
 
-### <a id="authentication"></a>[Authentication](https://supabase.com/docs/guides/auth)
+```sh
+flutter pub add dev:supabase_typegen
+supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+```
+
+`--local` reads the schema of the stack started with `supabase start`.
+Use `--linked` for the project linked with `supabase link`, or
+`--project-id <ref>` for any hosted project. Never edit the generated file:
+regenerate it after every database migration and commit it. The
+[`supabase_typegen` README](https://pub.dev/packages/supabase_typegen) lists
+everything it generates.
+
+### 4. Query
+
+Import the generated file next to `supabase_flutter`, and pass a table
+definition to `table()`:
 
 ```dart
-final supabase = Supabase.instance.client;
+final List<BooksRow> books = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.inPrint.isTrue())
+    .order(Books.title);
 
-// Email and password sign up
+print(books.first.title);
+```
+
+## Rules of the v3 API
+
+- Query tables with `table()` and the generated schema. `from()` with
+  `Map<String, dynamic>` rows is only the fallback for a table that is not in
+  the generated file.
+- Pass `publishableKey` to `Supabase.initialize`. `anonKey` does not exist.
+- Realtime events arrive on streams. No method takes a `callback:`.
+- A typed `update()` or `delete()` sends nothing until `.where(…)` or
+  `.all()` is called on it.
+- Catch the `SupabaseException` hierarchy, never `ClientException`,
+  `TimeoutException` or `String`.
+- Create a `stream()` once, in a `State` or a controller, never inside
+  `build()`.
+
+## Contents
+
+- [Database](#database)
+- [Authentication](#authentication)
+  - [Native Apple sign in](#native-apple-sign-in)
+  - [Native Google sign in](#native-google-sign-in)
+  - [Native Facebook sign in](#native-facebook-sign-in)
+  - [OAuth login](#oauth-login)
+  - [Passkeys](#passkeys)
+  - [Android Restore Credentials](#android-restore-credentials)
+- [Realtime](#realtime)
+  - [Live rows with `stream()`](#live-rows)
+  - [Postgres changes](#postgres-changes)
+  - [Broadcast](#broadcast)
+  - [Presence](#presence)
+  - [Realtime and the app lifecycle](#realtime-app-lifecycle)
+- [Storage](#storage)
+- [Edge Functions](#edge-functions)
+- [Errors](#errors)
+- [Deep links](#deep-links)
+- [Custom session storage](#custom-session-storage)
+- [Logging](#logging)
+- [Request ids and tracing](#request-ids-and-tracing)
+- [Testing](#testing)
+
+The examples below use a `books` table with a foreign key to an `authors`
+table, and the types generated for them.
+
+## <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
+
+Filters are methods on the column constants, combined with `&`, `|` and
+`not()`. The compiler checks that a value matches the type of its column, and
+`isNull()` only exists on nullable columns.
+
+```dart
+// A list of rows.
+final List<BooksRow> cheapBooks = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.inPrint.isTrue() & Books.price.lt(10))
+    .order(Books.createdAt.desc())
+    .limit(20);
+
+// Exactly one row, or a PostgrestException when there is none.
+final BooksRow book = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.id.eq(1))
+    .single();
+
+// Some columns only, with the author embedded through the foreign key.
+final titles = await supabase.table(Books.table).selectOnly([
+  Books.title,
+  Books.authors(Authors.name),
+]);
+final String title = titles.first.read(Books.title);
+final String? author = titles.first.read(Books.authors)?.read(Authors.name);
+```
+
+Writes take the generated insert and update types, which mark the required
+columns as required parameters:
+
+```dart
+await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Dune'));
+
+// Add select() to get the written row back.
+final BooksRow inserted = await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Emma'))
+    .select()
+    .single();
+
+await supabase
+    .table(Books.table)
+    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .where(Books.id.eq(1));
+
+await supabase.table(Books.table).delete().where(Books.id.eq(1));
+```
+
+A `null` argument to `BooksInsert` or `BooksUpdate` leaves the column out,
+and the generated `set…ToNull()` methods write SQL `NULL`. Several rows go
+through `insertAll()` and `upsertAll()`.
+
+Database functions get a typed method on `rpc`:
+
+```dart
+final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
+```
+
+The untyped `supabase.from('books')` and `supabase.rpc('fn', params: {…})`
+remain for tables and functions that are not in the generated file. The full
+list of filters and modifiers is in the
+[Dart reference](https://supabase.com/docs/reference/dart/select).
+
+## <a id="authentication"></a>[Authentication](https://supabase.com/docs/guides/auth)
+
+Sign-in methods that always produce a session return the `Session`. `signUp()`
+and `verifyOTP()` return an `AuthResponse`, since they can complete without
+one, for example while the email address waits for confirmation.
+
+```dart
 await supabase.auth.signUp(
-  email: email,
-  password: password,
+  email: 'user@example.com',
+  password: 'a-strong-password',
 );
 
-// Email and password login
-await supabase.auth.signInWithPassword(
-  email: email,
-  password: password,
+final Session session = await supabase.auth.signInWithPassword(
+  email: 'user@example.com',
+  password: 'a-strong-password',
 );
 
-// Magic link login
-await supabase.auth.signInWithOtp(email: 'my_email@example.com');
+// Sends a magic link. The link opens the app through a deep link.
+await supabase.auth.signInWithOtp(email: 'user@example.com');
 
-// Listen to auth state changes
-supabase.auth.onAuthStateChange.listen((state) {
+await supabase.auth.signOut();
+```
+
+`onAuthStateChange` emits a sealed `AuthState`, with one subtype per event.
+Every new listener first receives `AuthInitialSession` with the current
+session, or `null` when no user is signed in:
+
+```dart
+final subscription = supabase.auth.onAuthStateChange.listen((state) {
   switch (state) {
+    case AuthInitialSession(:final session):
+      print('Started with ${session?.user.email ?? 'no user'}');
     case AuthSignedIn(:final session):
       print('Signed in as ${session.user.email}');
     case AuthSignedOut(:final reason):
       print('Signed out, reason: ${reason?.name}');
-    default:
+    case _:
       print('Auth event: ${state.event.name}');
   }
 });
 ```
 
-#### <a id="native-apple-sign-in"></a>Native Apple Sign in
+`supabase.auth.currentUser` and `supabase.auth.currentSession` hold the
+state at any time, without listening.
 
-You can perform Apple sign in using the [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple) package on Flutter.
-Follow the instructions on README of the `sign_in_with_apple` package to setup the native Apple sign in on iOS and macOS.
+### <a id="native-apple-sign-in"></a>Native Apple sign in
 
-Once the setup is complete on the Flutter app, add the bundle ID of your app to your Supabase dashboard in `Authentication -> Providers -> Apple` in order to register your app with Supabase.
+Use the [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple)
+package and follow its README to set up Apple sign in on iOS and macOS. Then
+add the bundle ID of your app in the Supabase dashboard under
+**Authentication > Providers > Apple**.
 
-```dart
+```dart file
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Performs Apple sign in on iOS or macOS
+final supabase = Supabase.instance.client;
+
 Future<Session> signInWithApple() async {
   final rawNonce = supabase.auth.generateRawNonce();
   final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
@@ -134,11 +316,10 @@ Future<Session> signInWithApple() async {
 
   final idToken = credential.identityToken;
   if (idToken == null) {
-    throw const AuthException(
-        'Could not find ID Token from generated credential.');
+    throw const AuthException('Apple returned no ID token.');
   }
 
-  return signInWithIdToken(
+  return supabase.auth.signInWithIdToken(
     provider: OAuthProvider.apple,
     idToken: idToken,
     nonce: rawNonce,
@@ -146,551 +327,682 @@ Future<Session> signInWithApple() async {
 }
 ```
 
-#### <a id="native-google-sign-in"></a>Native Google sign in
+### <a id="native-google-sign-in"></a>Native Google sign in
 
-You can perform native Google sign in on Android and iOS using [google_sign_in](https://pub.dev/packages/google_sign_in).
-For platform specific settings, follow the instructions on README of the package.
+Use the [google_sign_in](https://pub.dev/packages/google_sign_in) package and
+follow its README for the platform setup. Google sign in with Supabase needs a
+web client ID, plus an iOS client ID on iOS:
 
-First, create client IDs for your app. You need to create a web client ID as well to perform Google sign-in with Supabase.
+- [Steps to obtain the web client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
+- [Steps to obtain the Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
+- [Steps to obtain the iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
 
-- [Steps to obtain web client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
-- [Steps to obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
-- [Steps to obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
+Add the web client ID in the Supabase dashboard under
+**Authentication > Providers > Google**, and turn on **Skip nonce check**,
+which iOS needs.
 
-Once you have registered your app and created the client IDs, add the web client ID in your Supabase dashboard in `Authentication -> Providers -> Google`. Also turn on the `Skip nonce check` option, which will enable Google sign-in on iOS.
-
-At this point you can perform native Google sign in using the following code. Be sure to replace the `webClientId` and `iosClientId` with your own.
-
-The following example is very basic. Please refer to the [google_sign_in](https://pub.dev/packages/google_sign_in) package for the correct details.
-
-```dart
+```dart file
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-...
+final supabase = Supabase.instance.client;
 
-Future<Session> _googleSignIn() async {
-  /// TODO: update the Web client ID with your own.
-  ///
-  /// Web Client ID that you registered with Google Cloud.
-  const webClientId = 'my-web.apps.googleusercontent.com';
+const webClientId = 'my-web.apps.googleusercontent.com';
+const iosClientId = 'my-ios.apps.googleusercontent.com';
 
-  /// TODO: update the iOS client ID with your own.
-  ///
-  /// iOS Client ID that you registered with Google Cloud.
-  const iosClientId = 'my-ios.apps.googleusercontent.com';
+/// Call once, when the app starts.
+Future<void> initializeGoogleSignIn() {
+  return GoogleSignIn.instance.initialize(
+    clientId: iosClientId,
+    serverClientId: webClientId,
+  );
+}
 
-  // Google sign in on Android will work without providing the Android
-  // Client ID registered on Google Cloud.
-
-  final GoogleSignIn signIn = GoogleSignIn.instance;
-
-  // At the start of your app, initialize the GoogleSignIn instance
-  unawaited(
-    signIn.initialize(clientId: iosClientId, serverClientId: webClientId));
-
-  // Perform the sign in
-  final googleAccount = await signIn.authenticate();
-  final googleAuthorization = await googleAccount.authorizationClient.authorizationForScopes([]);
-  final googleAuthentication = googleAccount!.authentication;
-  final idToken = googleAuthentication.idToken;
-  final accessToken = googleAuthorization.accessToken;
-
+Future<Session> signInWithGoogle() async {
+  final account = await GoogleSignIn.instance.authenticate();
+  final idToken = account.authentication.idToken;
   if (idToken == null) {
-    throw 'No ID Token found.';
+    throw const AuthException('Google returned no ID token.');
   }
+  final authorization = await account.authorizationClient
+      .authorizationForScopes(['email']);
 
   return supabase.auth.signInWithIdToken(
     provider: OAuthProvider.google,
     idToken: idToken,
-    accessToken: accessToken,
+    accessToken: authorization?.accessToken,
   );
 }
-...
 ```
 
-#### <a id="native-facebook-sign-in"></a>Native Facebook sign in
+### <a id="native-facebook-sign-in"></a>Native Facebook sign in
 
-You can use [flutter_facebook_auth](https://pub.dev/packages/flutter_facebook_auth) `^7.1.7` with `signInWithIdToken` on both iOS and Android.
+Use [flutter_facebook_auth](https://pub.dev/packages/flutter_facebook_auth)
+`^7.1.7` with `signInWithIdToken` on iOS and Android:
 
-- **iOS** uses Facebook's [Limited Login](https://developers.facebook.com/docs/facebook-login/limited-login/) (`LoginTracking.limited`), which returns a `LimitedToken` containing an OIDC ID token directly.
-- **Android** requires `LoginBehavior.webOnly` and the `openid` permission to receive an OIDC ID token in `ClassicToken.authenticationToken`.
+- **iOS** uses Facebook's
+  [Limited Login](https://developers.facebook.com/docs/facebook-login/limited-login/)
+  (`LoginTracking.limited`), which returns a `LimitedToken` holding an OIDC ID
+  token.
+- **Android** needs `LoginBehavior.webOnly` and the `openid` permission to
+  receive an OIDC ID token in `ClassicToken.authenticationToken`.
 
-```dart
+```dart file
 import 'dart:io';
+
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Future<Session> _facebookSignIn() async {
-  late final LoginResult result;
+final supabase = Supabase.instance.client;
 
+Future<Session> signInWithFacebook() async {
+  final LoginResult result;
   if (Platform.isIOS) {
     result = await FacebookAuth.instance.login(
       permissions: ['public_profile', 'email'],
       loginTracking: LoginTracking.limited,
     );
   } else {
-    // Android: webOnly behavior with openid scope returns an OIDC ID token.
     result = await FacebookAuth.instance.login(
       permissions: ['public_profile', 'email', 'openid'],
       loginBehavior: LoginBehavior.webOnly,
     );
   }
-
   if (result.status != LoginStatus.success) {
-    throw 'Facebook sign in failed: ${result.message}';
+    throw AuthException('Facebook sign in failed: ${result.message}');
   }
 
-  final accessToken = result.accessToken;
-  final String idToken;
-
-  if (accessToken is LimitedToken) {
-    idToken = accessToken.tokenString;
-  } else if (accessToken is ClassicToken) {
-    final authToken = accessToken.authenticationToken;
-    if (authToken == null) {
-      throw 'No ID token returned. Make sure to use LoginBehavior.webOnly and include the openid scope on Android.';
-    }
-    idToken = authToken;
-  } else {
-    throw 'Unexpected Facebook token type: ${accessToken?.runtimeType}';
+  final idToken = switch (result.accessToken) {
+    LimitedToken(:final tokenString) => tokenString,
+    ClassicToken(:final authenticationToken) => authenticationToken,
+    _ => null,
+  };
+  if (idToken == null) {
+    throw const AuthException(
+      'Facebook returned no ID token. On Android, use LoginBehavior.webOnly '
+      'and request the openid permission.',
+    );
   }
 
-  return Supabase.instance.client.auth.signInWithIdToken(
+  return supabase.auth.signInWithIdToken(
     provider: OAuthProvider.facebook,
     idToken: idToken,
   );
 }
 ```
 
-Alternatively, if you do not want to use the native Facebook SDK, you can use the web-based `signInWithOAuth()` method. This will open the device's web browser to perform the classic Facebook OAuth 2.0 login flow.
-
-```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-Future<void> _facebookSignInWeb() async {
-  await Supabase.instance.client.auth.signInWithOAuth(
-    OAuthProvider.facebook,
-    redirectTo: 'io.supabase.flutterdemo://login-callback',
-  );
-}
-```
+Without the Facebook SDK, use `signInWithOAuth()` from the next section,
+which runs the Facebook login in the browser.
 
 ### <a id="oauth-login"></a>OAuth login
 
-The `signInWithIdToken()` method supports providers like Apple, Google, Facebook, Kakao, and Keycloak. For other providers, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
+`signInWithIdToken()` supports Apple, Google, Facebook, Kakao and Keycloak.
+Every other provider signs in through `signInWithOAuth()`, which opens the
+browser. Pass a deep link as `redirectTo` to bring the user back to the app,
+as described in [Deep links](#deep-links). The sign in completes when the app
+receives the link, so wait for it on `onAuthStateChange`:
 
-Use the `redirectTo` parameter to redirect the user to a deep link to bring the user back to the app. Learn more about setting up deep links in [Deep link config](#deep-link-config).
+```dart file
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-```dart
-// Perform web based OAuth login
-await supabase.auth.signInWithOAuth(
-  OAuthProvider.github,
-  redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
-);
+final supabase = Supabase.instance.client;
 
-// Listen to auth state changes in order to detect when the OAuth login is complete.
-supabase.auth.onAuthStateChange.listen((state) {
-  if (state is AuthSignedIn) {
-    // Do something with state.session when the user signs in
-  }
-});
+Future<Session> signInWithGitHub() async {
+  await supabase.auth.signInWithOAuth(
+    OAuthProvider.github,
+    // On the web the browser returns to the current page instead.
+    redirectTo: kIsWeb ? null : 'io.supabase.flutterdemo://login-callback',
+  );
+  final state = await supabase.auth.onAuthStateChange.firstWhere(
+    (state) => state is AuthSignedIn,
+  );
+  return state.session!;
+}
 ```
+
+To run the flow in an in-app browser session instead of the system browser,
+add [`supabase_flutter_web_auth`](https://pub.dev/packages/supabase_flutter_web_auth).
 
 ### <a id="passkeys"></a>Passkeys
 
-> Passkeys are a BETA feature. Enable them for your project in the Supabase Dashboard under Authentication > Configuration > Passkeys before using these methods.
+> Passkeys are a beta feature. Enable them in the Supabase dashboard under
+> **Authentication > Configuration > Passkeys** before using these methods.
 
-`supabase_flutter` performs the server side of the WebAuthn ceremony for you and delegates the platform prompt (FaceID/TouchID/security key) to an authenticator you supply. This keeps `supabase_flutter` free of a passkey plugin dependency, so apps that do not use passkeys are not forced to raise their minimum platform versions.
+`supabase_flutter` performs the server side of the WebAuthn ceremony and
+hands the platform prompt (Face ID, Touch ID, a security key) to an
+authenticator you pass in. It does not depend on a passkey plugin itself, so
+apps that do not use passkeys keep their minimum platform versions.
 
-Add a passkey plugin to your own app and pass its authenticator in. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's `PasskeyAuthenticator` implements the `PasskeyAuthenticatorInterface` these methods expect (since `passkeys` `2.21.0`), but you can pass any implementation of that interface.
+The `PasskeyAuthenticator` of the [`passkeys`](https://pub.dev/packages/passkeys)
+plugin implements the `PasskeyAuthenticatorInterface` these methods expect
+(since `passkeys` 2.21.0), and any other implementation works too:
 
-```dart
+```dart file
 import 'package:passkeys/authenticator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+final supabase = Supabase.instance.client;
 final authenticator = PasskeyAuthenticator();
 
-// Sign in with a passkey. The user is prompted to pick and unlock a passkey.
-await supabase.auth.signInWithPasskey(authenticator);
+Future<void> passkeys() async {
+  // Prompts the user to pick and unlock a passkey.
+  await supabase.auth.signInWithPasskey(authenticator);
 
-// Register a new passkey for the signed in user.
-await supabase.auth.registerPasskey(authenticator);
+  // Registers a new passkey for the signed in user.
+  await supabase.auth.registerPasskey(authenticator);
 
-// Manage the signed in user's passkeys with the server side API.
-final passkeys = await supabase.auth.passkey.list();
-await supabase.auth.passkey.update(passkeyId: passkeys.first.id, friendlyName: 'My phone');
-await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
+  // Manages the passkeys of the signed in user.
+  final passkeys = await supabase.auth.passkey.list();
+  await supabase.auth.passkey.update(
+    passkeyId: passkeys.first.id,
+    friendlyName: 'My phone',
+  );
+  await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
+}
 ```
 
-The platform ceremony is handled by whichever plugin you add. Refer to your plugin's documentation, for example the [`passkeys` package documentation](https://pub.dev/packages/passkeys), for its platform requirements, setup, and how to handle ceremony failures such as the user cancelling.
+The plugin documents its platform requirements and setup, and how to handle a
+failed ceremony, such as the user cancelling.
 
 ### <a id="android-restore-credentials"></a>Android Restore Credentials
 
-Android's [Restore Credentials](https://developer.android.com/identity/sign-in/restore-credentials) restore keys are passkeys, so they use the same BETA passkey feature and the same authenticator. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's `PasskeyAuthenticator` implements the `RestoreCredentialInterface` these methods expect (since `passkeys` `2.23.1`). Call `supabase.auth.createRestoreKey(authenticator)` after a non-anonymous sign-in and `supabase.auth.signInWithRestoreKey(authenticator)` on the first launch on a new device. On sign-out, delete the server passkey and call `clearRestoreCredential()` on the authenticator. See the API documentation of `AuthClientRestoreCredential` for the details.
+Android's
+[Restore Credentials](https://developer.android.com/identity/sign-in/restore-credentials)
+restore keys are passkeys, so they use the same beta passkey feature and the
+same authenticator. The `PasskeyAuthenticator` of the
+[`passkeys`](https://pub.dev/packages/passkeys) plugin implements the
+`RestoreCredentialInterface` these methods expect (since `passkeys` 2.23.1).
 
-### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
+- Call `supabase.auth.createRestoreKey(authenticator)` after a sign in that
+  is not anonymous.
+- Call `supabase.auth.signInWithRestoreKey(authenticator)` on the first
+  launch on a new device.
+- On sign out, delete the passkey on the server and call
+  `clearRestoreCredential()` on the authenticator.
 
-Database methods are used to perform basic CRUD operations using the Supabase REST API. Full list of supported operators can be found [here](https://supabase.com/docs/reference/dart/select).
+The API documentation of `AuthClientRestoreCredential` has the details.
 
-```dart
-// Select data with filters
-final data = await supabase
-  .from('cities')
-  .select()
-  .eq('country_id', 1) // equals filter
-  .neq('name', 'The shire'); // does not equal filter
+## <a id="realtime"></a>[Realtime](https://supabase.com/docs/guides/realtime)
 
-// Insert a new row
-await supabase
-  .from('cities')
-  .insert({'name': 'The Shire', 'country_id': 554});
+Postgres changes only arrive for tables in the `supabase_realtime`
+publication. Add a table to it in the dashboard under **Database >
+Publications**, or in a migration:
+
+```sql
+alter publication supabase_realtime add table books;
 ```
 
-### <a id="realtime"></a>[Realtime](https://supabase.com/docs/guides/realtime)
+### <a id="live-rows"></a>Live rows with `stream()`
 
-#### Realtime data as `Stream`
-
-To receive realtime updates, you have to first enable Realtime on from your Supabase console. You can read more [here](https://supabase.com/docs/guides/api#realtime-api) on how to enable it.
-
-> **Warning**
-> When using `stream()` with a `StreamBuilder`, make sure to persist the stream value as a variable in a `StatefulWidget` instead of directly constructing the stream within your widget tree, which could cause rapid rebuilds that will lead to losing realtime connection.
+`stream()` emits the rows of a table, first as they are and then again after
+every change:
 
 ```dart
-class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
+final Stream<List<BooksRow>> books = supabase
+    .table(Books.table)
+    .stream(primaryKey: [Books.id])
+    .filter(Books.authorId.eq(2))
+    .order(Books.title);
+```
+
+Create the stream once, in a `State` or a controller. A stream created inside
+`build()` subscribes again on every rebuild, which loses the realtime
+connection.
+
+```dart file
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class BookList extends StatefulWidget {
+  const BookList({super.key});
 
   @override
-  State<MyWidget> createState() => _MyWidgetState();
+  State<BookList> createState() => _BookListState();
 }
 
-class _MyWidgetState extends State<MyWidget> {
-  // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final stream = supabase.from('countries').stream(primaryKey: ['id']);
+class _BookListState extends State<BookList> {
+  final _books = Supabase.instance.client
+      .table(Books.table)
+      .stream(primaryKey: [Books.id])
+      .order(Books.title);
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: stream,
+    return StreamBuilder<List<BooksRow>>(
+      stream: _books,
       builder: (context, snapshot) {
-        // return your widget with the data from snapshot
+        if (snapshot.hasError) return Text('${snapshot.error}');
+        final books = snapshot.data ?? const [];
+        return ListView(children: [for (final book in books) Text(book.title)]);
       },
     );
   }
 }
 ```
 
-#### <a id="postgres-changes"></a>[Postgres Changes](https://supabase.com/docs/guides/realtime#postgres-changes)
+### <a id="postgres-changes"></a>[Postgres changes](https://supabase.com/docs/guides/realtime/postgres-changes)
 
-You can get notified whenever there is a change in your Supabase tables.
+`onTableChanges` emits each insert, update and delete as a typed change.
+Create the stream before calling `subscribe()`, and remove the channel when
+you no longer need it:
 
 ```dart
-final myChannel = supabase.channel('my_channel');
-
-myChannel
-    .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'countries',
-    )
-    .listen((payload) {
-      // Do something fun or interesting when there is a change on the database
+final channel = supabase.channel('books');
+final subscription = channel
+    .onTableChanges(Books.table, filters: [Books.authorId.eq(2)])
+    .listen((change) {
+      switch (change) {
+        case TypedPostgresInsert(:final newRow):
+          print('Added ${newRow.title}');
+        case TypedPostgresUpdate(:final newRow):
+          print('Changed ${newRow.title}');
+        case TypedPostgresDelete(:final oldRow):
+          print('Removed ${oldRow.read(Books.id)}');
+      }
     });
+channel.subscribe();
 
-myChannel.subscribe();
+// Later, when done:
+await subscription.cancel();
+await supabase.removeChannel(channel);
 ```
 
-#### <a id="broadcast"></a>[Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
+Pass `event: PostgresChangeEvent.insert` to receive one kind of change only.
 
-Broadcast lets you send and receive low latency messages between connected clients by bypassing the database.
+### <a id="broadcast"></a>[Broadcast](https://supabase.com/docs/guides/realtime/broadcast)
 
-```dart
-final myChannel = supabase.channel('my_channel');
-
-// Listen to `cursor-pos` broadcast events
-myChannel.onBroadcast(event: 'cursor-pos').listen((payload) {
-  // Do something fun or interesting with the received message
-});
-
-myChannel.subscribe();
-
-// Send a broadcast message to other connected clients
-await myChannel.sendBroadcastMessage(
-  event: 'cursor-pos',
-  payload: {'x': 30, 'y': 50},
-);
-```
-
-### <a id="presence"></a>[Presence](https://supabase.com/docs/guides/realtime#presence)
-
-Presence let's you easily create "I'm online" feature.
+Broadcast sends low latency messages between connected clients, without
+going through the database. Send once the channel is subscribed:
 
 ```dart
-final myChannel = supabase.channel('my_channel');
+final channel = supabase.channel('room');
 
-// Listen to presence events
-myChannel.onPresenceSync.listen((payload) {
-  final onlineUsers = myChannel.presenceState();
-  // handle sync event
-});
-myChannel.onPresenceJoin.listen((payload) {
-  // New users have joined
-});
-myChannel.onPresenceLeave.listen((payload) {
-  // Users have left
+channel.onBroadcast(event: 'cursor').listen((payload) {
+  print('Cursor moved: $payload');
 });
 
-myChannel.onStatusChange.listen((change) async {
+channel.onStatusChange.listen((change) async {
   if (change.status == RealtimeSubscribeStatus.subscribed) {
-    // Send the current user's state upon subscribing
-    await myChannel.track({'online_at': DateTime.now().toIso8601String()});
+    await channel.sendBroadcastMessage(
+      event: 'cursor',
+      payload: {'x': 30, 'y': 50},
+    );
   }
 });
 
-myChannel.subscribe();
+channel.subscribe();
 ```
 
-#### <a id="realtime-app-lifecycle"></a>Realtime and the app lifecycle
+### <a id="presence"></a>[Presence](https://supabase.com/docs/guides/realtime/presence)
 
-`Supabase` disconnects the realtime socket when the app is paused and reconnects it, rejoining every joined channel, when the app is resumed. Every reconnect costs a new socket and a fresh authorization of each channel.
+Presence shares state between the clients of a channel, such as who is
+online:
 
-On iOS a full-screen view such as a video ad or a system sheet reports the app as paused while it is on screen. Pass `RealtimeLifecycleOptions` to keep the socket open through pauses shorter than a grace period:
+```dart
+final channel = supabase.channel('room');
+
+channel.onPresenceSync.listen((_) {
+  print('Online: ${channel.presenceState()}');
+});
+channel.onPresenceJoin.listen((payload) {
+  print('Joined: ${payload.newPresences}');
+});
+channel.onPresenceLeave.listen((payload) {
+  print('Left: ${payload.leftPresences}');
+});
+
+channel.onStatusChange.listen((change) async {
+  if (change.status == RealtimeSubscribeStatus.subscribed) {
+    await channel.track({'online_at': DateTime.now().toIso8601String()});
+  }
+});
+
+channel.subscribe();
+```
+
+### <a id="realtime-app-lifecycle"></a>Realtime and the app lifecycle
+
+`Supabase` disconnects the realtime socket when the app is paused, and
+reconnects it, rejoining every joined channel, when the app is resumed. Every
+reconnect costs a new socket and a new authorization of each channel.
+
+On iOS, a full-screen view such as a video ad or a system sheet reports the
+app as paused while it is on screen. Pass `RealtimeLifecycleOptions` to keep
+the socket open through pauses shorter than a grace period:
 
 ```dart
 await Supabase.initialize(
-  url: supabaseUrl,
-  publishableKey: supabasePublishableKey,
+  url: 'https://your-project.supabase.co',
+  publishableKey: 'your-publishable-key',
   realtimeLifecycleOptions: const RealtimeLifecycleOptions(
     disconnectAfterPause: Duration(minutes: 1),
   ),
 );
 ```
 
-Use `RealtimeLifecycleOptions.manual()` to keep the socket out of the app lifecycle entirely. The socket then stays open in the background until the operating system closes it, and the realtime client reconnects and rejoins its channels by itself once the app runs again.
+`RealtimeLifecycleOptions.manual()` keeps the socket out of the app lifecycle
+entirely. The socket then stays open in the background until the operating
+system closes it, and the realtime client reconnects and rejoins its channels
+once the app runs again.
 
-### <a id="storage"></a>[Storage](https://supabase.com/docs/guides/storage)
+## <a id="storage"></a>[Storage](https://supabase.com/docs/guides/storage)
 
-```dart
-final file = File('example.txt');
-file.writeAsStringSync('File content');
-await supabase.storage
-  .from('my_bucket')
-  .upload('my/path/to/files/example.txt', file);
+`storage.from()` selects a bucket. It is the storage API, not a database
+query.
 
-// Use the `uploadBinary` method to upload files on Flutter web
-await supabase.storage
-  .from('my_bucket')
-  .uploadBinary('my/path/to/files/example.txt', file.readAsBytesSync());
+```dart file
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
+
+Future<void> storage() async {
+  final bucket = supabase.storage.from('avatars');
+
+  await bucket.uploadBinary('users/1/notes.txt', utf8.encode('File content'));
+
+  final Uint8List downloaded = await bucket.download('users/1/notes.txt');
+
+  final String url = await bucket.createSignedUrl('users/1/notes.txt', 60);
+}
 ```
 
-### <a id="edge-functions"></a>[Edge Functions](https://supabase.com/docs/guides/functions)
+`upload()` takes a `File` instead of bytes, on every platform except the web.
+
+## <a id="edge-functions"></a>[Edge Functions](https://supabase.com/docs/guides/functions)
 
 ```dart
-final data = await supabase.functions.invoke('get_countries');
+final response = await supabase.functions.invoke(
+  'hello',
+  body: {'name': 'Dart'},
+);
+print(response.data);
 ```
+
+## <a id="errors"></a>Errors
+
+Every exception the SDK throws for a failed request extends
+`SupabaseException`. `SupabaseApiException` means the server answered with an
+error, and `SupabaseTransportException` means no response arrived, including
+a timeout:
+
+```dart
+try {
+  await supabase.table(Books.table).select();
+} on SupabaseApiException catch (error) {
+  print('${error.statusCode} ${error.errorCode}: ${error.message}');
+} on SupabaseTransportException catch (error) {
+  print('No response: ${error.cause}');
+}
+```
+
+Each service also has its own base class, such as `PostgrestException`,
+`AuthException`, `StorageException` or `FunctionException`, to catch the
+errors of one service only.
 
 ## <a id="deep-links"></a>Deep links
 
-### Why do you need to setup deep links
+### When you need deep links
 
-You need to setup deep links if you want your native app to open when a user clicks on a link. User clicking on a link and the app opens up happens in a few scenarios when you use Supabase auth, and in order to support those scenarios, you need to setup deep links.
+A deep link brings the user back into your app from an email or a browser.
+Set them up when you use any of these:
 
-### When do you need to setup deep links
+- Magic link sign in.
+- Email sign in with **Confirm email** enabled.
+- Password reset by email.
+- `signInWithOAuth()`.
 
-- Magic link login
-- Have `confirm email` enabled and are using email login
-- Resetting password for email login
-- Calling `.signInWithOAuth()` method
+`supabase_flutter` handles deep links on Android, iOS, the web, macOS and
+Windows. It completes the sign in itself when the app is opened through a link
+carrying a `code` (the PKCE flow, the default) or an `access_token`.
 
-\*Currently supabase_flutter supports deep links on Android, iOS, Web, MacOS and Windows.
+### Dashboard configuration
 
-### Dashboard Deep link config
+Add your redirect URL in the dashboard under
+**Authentication > URL Configuration > Redirect URLs**.
 
-- Go to your Supabase project Authentication Settings page.
-- You need to enter your app redirect callback on `Additional Redirect URLs` field.
-
-The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_HOSTNAME]`. Here, `io.supabase.flutterdemo://login-callback` is just an example, you can choose whatever you would like for `YOUR_SCHEME` and `YOUR_HOSTNAME` as long as the scheme is unique across the user's device. For this reason, typically a reverse domain of your website is used.
+The redirect URL has the format `[YOUR_SCHEME]://[YOUR_HOSTNAME]`, for example
+`io.supabase.flutterdemo://login-callback`. Choose any scheme and host name,
+as long as the scheme is unique on the user's device, which is why the
+reverse domain of your website is the usual choice.
 
 ![authentication settings page](https://raw.githubusercontent.com/supabase/supabase-flutter/main/.github/images/deeplink-config.png)
 
-### Flutter Deep link config
+### Flutter configuration
 
-supabase_flutter uses [app_link](https://pub.dev/packages/app_links) internally to handle deep links. You can find the platform specific config to setup deep links in the following.
-
-https://github.com/llfbandit/app_links/tree/master?tab=readme-ov-file#getting-started
-
-### Platform specific config
-
-Follow the guide to find additional platform specific configs for your OAuth provider.
-
-https://supabase.io/docs/guides/auth#third-party-logins
+`supabase_flutter` uses [app_links](https://pub.dev/packages/app_links) to
+receive deep links. Follow its
+[getting started guide](https://github.com/llfbandit/app_links/tree/master?tab=readme-ov-file#getting-started)
+for the configuration of each platform. The
+[native mobile deep linking guide](https://supabase.com/docs/guides/auth/native-mobile-deep-linking)
+covers the Supabase side for each OAuth provider.
 
 ## <a id="custom-session-storage"></a>Custom session storage
 
-By default, `supabase_flutter` uses the `SharedPreferencesAsync` API of [`shared_preferences`](https://pub.dev/packages/shared_preferences) to persist the user session and the code verifiers of pending PKCE flows. If your own code still uses the legacy `SharedPreferences` API, [migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache): on Windows and Linux both APIs rewrite the same file from their own cache, so a write through one drops what the other wrote, and a mixed setup can lose your preferences as well as the session.
+By default, `supabase_flutter` persists the user session, and the code
+verifiers of pending PKCE flows, with the `SharedPreferencesAsync` API of
+[`shared_preferences`](https://pub.dev/packages/shared_preferences). If your
+own code still uses the legacy `SharedPreferences` API,
+[migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache):
+on Windows and Linux both APIs rewrite the same file from their own cache, so
+a write through one drops what the other wrote, and a mixed setup can lose
+your preferences as well as the session.
 
-You can store them anywhere else by passing an `AuthAsyncStorage` implementation. For example, we can use the [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to keep the user session in a secure storage.
+To store them anywhere else, pass an `AuthAsyncStorage` implementation. This
+one keeps the session in secure storage with
+[`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage):
 
-The session is stored under a key derived from your project URL, which `defaultPersistSessionKey` returns and `storageKey` on the auth options overrides. The code verifiers are stored under keys prefixed with it.
+```dart file
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-```dart
-// Define the custom AuthAsyncStorage implementation
-class MySecureStorage extends AuthAsyncStorage {
-  final storage = FlutterSecureStorage();
+class SecureAuthStorage extends AuthAsyncStorage {
+  final _storage = const FlutterSecureStorage();
 
   @override
-  Future<String?> getItem(String key) => storage.read(key: key);
+  Future<String?> getItem(String key) => _storage.read(key: key);
 
   @override
   Future<void> setItem(String key, String value) =>
-      storage.write(key: key, value: value);
+      _storage.write(key: key, value: value);
 
   @override
-  Future<void> removeItem(String key) => storage.delete(key: key);
+  Future<void> removeItem(String key) => _storage.delete(key: key);
 }
 
-// use it when initializing
-Supabase.initialize(
-  ...
-  authOptions: FlutterAuthClientOptions(
-    asyncStorage: MySecureStorage(),
-  ),
-);
+Future<void> initialize() async {
+  await Supabase.initialize(
+    url: 'https://your-project.supabase.co',
+    publishableKey: 'your-publishable-key',
+    authOptions: FlutterAuthClientOptions(asyncStorage: SecureAuthStorage()),
+  );
+}
 ```
 
-Set `persistSession` to `false` to keep the session in memory only. The code verifiers are still stored, so a sign-in through an email link or an OAuth redirect can complete after the app was closed in between.
+The session is stored under a key derived from your project URL, which
+`defaultPersistSessionKey` returns and `storageKey` on the auth options
+overrides. The code verifiers are stored under keys prefixed with it.
+
+Set `persistSession` to `false` to keep the session in memory only. The code
+verifiers are still stored, so a sign in through an email link or an OAuth
+redirect can complete after the app was closed in between.
 
 ```dart
-Supabase.initialize(
-  // ...
-  authOptions: FlutterAuthClientOptions(
-    persistSession: false,
-  ),
+await Supabase.initialize(
+  url: 'https://your-project.supabase.co',
+  publishableKey: 'your-publishable-key',
+  authOptions: const FlutterAuthClientOptions(persistSession: false),
 );
 ```
 
 ## Logging
 
-All Supabase packages emit their logs through the [logging](https://pub.dev/packages/logging) package, using loggers under the shared `supabase` hierarchy. The packages only emit records; they never print anything and never change any `package:logging` settings. Your application decides whether, where, and at which level logs are handled.
+All Supabase packages log through the
+[logging](https://pub.dev/packages/logging) package, with loggers under the
+shared `supabase` hierarchy. They never print anything and never change any
+`package:logging` settings, so your app decides whether, where and at which
+level logs are handled.
 
 ### Listen to Supabase logs
 
-The simplest setup listens on the root logger and filters on the logger name. It receives the records allowed by `Logger.root.level`, which defaults to `Level.INFO`; set `Logger.root.level = Level.ALL` to also receive the fine-grained records, including the `Level.FINEST` payloads described below.
+The simplest setup listens on the root logger and filters on the logger
+name. It receives the records allowed by `Logger.root.level`, which defaults
+to `Level.INFO`. Set `Logger.root.level = Level.ALL` to also receive the
+fine-grained records, including the `Level.FINEST` payloads described below.
 
-```dart
+```dart file
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
 void main() {
   Logger.root.onRecord.listen((record) {
     if (record.loggerName.startsWith('supabase.')) {
-      debugPrint('${record.loggerName}: ${record.level.name}: '
-          '${record.message} ${record.error ?? ''}');
+      debugPrint(
+        '${record.loggerName}: ${record.level.name}: '
+        '${record.message} ${record.error ?? ''}',
+      );
     }
   });
-
-  // ...
 }
 ```
 
 ### Filter Supabase logs by level
 
-To control the level of Supabase logs independently of the rest of your application, enable hierarchical logging and configure the `supabase` logger directly:
+To set the level of the Supabase logs apart from the rest of your app, enable
+hierarchical logging and configure the `supabase` logger:
 
-```dart
+```dart file
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
 void main() {
   hierarchicalLoggingEnabled = true;
   Logger('supabase')
-    ..level = Level.INFO // or Level.ALL to also receive request payloads
+    ..level = Level.INFO
     ..onRecord.listen((record) {
-      debugPrint('${record.loggerName}: ${record.level.name}: '
-          '${record.message} ${record.error ?? ''}');
+      debugPrint(
+        '${record.loggerName}: ${record.level.name}: '
+        '${record.message} ${record.error ?? ''}',
+      );
     });
-
-  // ...
 }
 ```
 
-Without `hierarchicalLoggingEnabled = true`, `package:logging` only supports listening and setting levels on `Logger.root`.
+Without `hierarchicalLoggingEnabled = true`, `package:logging` only supports
+listening and setting levels on `Logger.root`.
 
 ### Log levels
 
 - `Level.CONFIG`: client configuration during initialization.
-- `Level.FINEST`: wire-level details such as request and response payloads. These records can contain sensitive data like row data, so handle them accordingly. Credentials never appear in any record at any level: headers, URL parameters, and payload fields that carry an API key, access token, or other credential are replaced by `<redacted>` before they are logged.
-- `Level.FINE`: internal lifecycle events, for example the realtime socket connecting or disconnecting.
-- `Level.INFO`: notable events, for example completed initialization or session recovery.
-- `Level.WARNING`: recoverable problems, for example a failed retry attempt or an unexpected disconnect.
+- `Level.FINEST`: wire-level details such as request and response payloads.
+  These records can contain sensitive data like row data, so handle them
+  accordingly. Credentials never appear in any record at any level: headers,
+  URL parameters and payload fields that carry an API key, access token or
+  other credential are replaced by `<redacted>` before they are logged.
+- `Level.FINE`: internal lifecycle events, for example the realtime socket
+  connecting or disconnecting.
+- `Level.INFO`: notable events, for example completed initialization or
+  session recovery.
+- `Level.WARNING`: recoverable problems, for example a failed retry attempt
+  or an unexpected disconnect.
 
 ### Package loggers
 
-- `supabase_flutter`: `Logger('supabase.flutter')`
-- `supabase`: `Logger('supabase.dart')`
-- `postgrest`: `Logger('supabase.postgrest')`
-- `supabase_auth`: `Logger('supabase.auth')`
-- `supabase_realtime`: `Logger('supabase.realtime')`
-- `supabase_storage`: `Logger('supabase.storage')`
-- `supabase_functions`: `Logger('supabase.functions')`
-- `iceberg`: `Logger('supabase.storage.iceberg')`
+| Package              | Logger                              |
+| -------------------- | ----------------------------------- |
+| `supabase_flutter`   | `Logger('supabase.flutter')`        |
+| `supabase`           | `Logger('supabase.dart')`           |
+| `postgrest`          | `Logger('supabase.postgrest')`      |
+| `supabase_auth`      | `Logger('supabase.auth')`           |
+| `supabase_realtime`  | `Logger('supabase.realtime')`       |
+| `supabase_storage`   | `Logger('supabase.storage')`        |
+| `supabase_functions` | `Logger('supabase.functions')`      |
+| `iceberg`            | `Logger('supabase.storage.iceberg')` |
 
 ## <a id="request-ids-and-tracing"></a>Request ids and tracing
 
-When a request fails, the Supabase logs of your project usually say why. There are two ways to find the entries for a specific request: the request id on the exception, which needs no setup, and trace propagation, which ties requests into the traces of a tracing tool you already use.
+When a request fails, the Supabase logs of your project usually say why. There
+are two ways to find the entries of a specific request: the request id on the
+exception, which needs no setup, and trace propagation, which ties requests
+into the traces of a tracing tool you already use.
 
 ### Request id on a failure
 
-Every response from the Supabase gateway carries a request id, and the exceptions thrown by the auth, database, storage and functions clients expose it as `requestId`. Paste it into the log explorer of your project dashboard to find the server side logs of the failed request, or quote it when you contact support.
+Every response from the Supabase gateway carries a request id, and the
+exceptions thrown by the auth, database, storage and functions clients expose
+it as `requestId`. Paste it into the log explorer of your project dashboard to
+find the server side logs of the failed request, or quote it when you contact
+support.
 
 ```dart
 try {
-  await supabase.from('countries').select();
+  await supabase.table(Books.table).select();
 } on SupabaseException catch (error) {
   print('Request failed: ${error.message} (request id: ${error.requestId})');
 }
 ```
 
-`requestId` is also part of the `toString()` of every one of these exceptions, so an error reporter that records the exception records the id with it.
+`requestId` is also part of the `toString()` of every one of these
+exceptions, so an error reporter that records the exception records the id
+with it.
 
-It is read from the `sb-request-id` response header, falling back to `x-request-id` for a self-hosted stack behind a reverse proxy that assigns its own. It is `null` when no response was received, for example on a network failure, or when the response carried neither header. Realtime errors do not carry a request id.
+It is read from the `sb-request-id` response header, falling back to
+`x-request-id` for a self-hosted stack behind a reverse proxy that assigns its
+own. It is `null` when no response was received, for example on a network
+failure, or when the response carried neither header. Realtime errors do not
+carry a request id.
 
 ### Trace propagation
 
-If your app already records traces with a tool like Sentry or OpenTelemetry, the client can send the active [W3C trace context](https://www.w3.org/TR/trace-context/) along with each request, so the Supabase logs of that request carry the trace id of the span that made it.
+If your app already records traces with a tool like Sentry or OpenTelemetry,
+the client can send the active
+[W3C trace context](https://www.w3.org/TR/trace-context/) along with each
+request, so the Supabase logs of that request carry the trace id of the span
+that made it.
 
-Propagation is off by default. Turn it on by passing `TracePropagationOptions` with a `traceContextProvider`, which the client calls before each request to read the active trace. Return `null` when there is no active trace and the request is sent without trace headers.
+Propagation is off by default. Turn it on by passing `TracePropagationOptions`
+with a `traceContextProvider`, which the client calls before each request to
+read the active trace. Return `null` when there is no active trace, and the
+request is sent without trace headers.
 
 #### Sentry
 
-`toSentryTrace()` returns a header in the `sentry-trace` format, so convert it with `formatAsW3CHeader` from `package:sentry` before passing it on:
+`toSentryTrace()` returns a header in the `sentry-trace` format, so convert it
+with `formatAsW3CHeader` from `package:sentry` before passing it on:
 
-```dart
+```dart file
 import 'package:sentry/sentry.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-await Supabase.initialize(
-  url: 'SUPABASE_URL',
-  publishableKey: 'SUPABASE_PUBLISHABLE_KEY',
-  tracePropagationOptions: TracePropagationOptions(
-    traceContextProvider: () {
-      final span = Sentry.getSpan();
-      if (span == null) {
-        return null;
-      }
-      return TraceContext(
-        traceparent: formatAsW3CHeader(span.toSentryTrace()),
-        baggage: span.toBaggageHeader()?.value,
-      );
-    },
-  ),
-);
+Future<void> initialize() async {
+  await Supabase.initialize(
+    url: 'https://your-project.supabase.co',
+    publishableKey: 'your-publishable-key',
+    tracePropagationOptions: TracePropagationOptions(
+      traceContextProvider: () {
+        final span = Sentry.getSpan();
+        if (span == null) return null;
+        return TraceContext(
+          traceparent: formatAsW3CHeader(span.toSentryTrace()),
+          baggage: span.toBaggageHeader()?.value,
+        );
+      },
+    ),
+  );
+}
 ```
 
 #### OpenTelemetry
 
-Let the propagator you registered write the active context into a map, and read the headers back out of it with `TraceContext.fromCarrier`:
+Let the propagator you registered write the active context into a map, and
+read the headers back out of it with `TraceContext.fromCarrier`:
 
-```dart
+```dart file
 import 'package:opentelemetry/api.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MapSetter implements TextMapSetter<Map<String, String>> {
   @override
@@ -699,24 +1011,27 @@ class MapSetter implements TextMapSetter<Map<String, String>> {
   }
 }
 
-await Supabase.initialize(
-  url: 'SUPABASE_URL',
-  publishableKey: 'SUPABASE_PUBLISHABLE_KEY',
-  tracePropagationOptions: TracePropagationOptions(
-    traceContextProvider: () {
-      final carrier = <String, String>{};
-      globalTextMapPropagator.inject(Context.current, carrier, MapSetter());
-      return TraceContext.fromCarrier(carrier);
-    },
-  ),
-);
+Future<void> initialize() async {
+  await Supabase.initialize(
+    url: 'https://your-project.supabase.co',
+    publishableKey: 'your-publishable-key',
+    tracePropagationOptions: TracePropagationOptions(
+      traceContextProvider: () {
+        final carrier = <String, String>{};
+        globalTextMapPropagator.inject(Context.current, carrier, MapSetter());
+        return TraceContext.fromCarrier(carrier);
+      },
+    ),
+  );
+}
 ```
 
 #### Other tracing tools
 
-For a tool that exposes the ids of the active span rather than a W3C header, build the context with `TraceContext.w3c`:
+For a tool that exposes the ids of the active span rather than a W3C header,
+build the context with `TraceContext.w3c`:
 
-```dart
+```dart skip
 traceContextProvider: () => TraceContext.w3c(
   traceId: span.traceId,
   spanId: span.spanId,
@@ -724,21 +1039,40 @@ traceContextProvider: () => TraceContext.w3c(
 ),
 ```
 
-A `traceparent` that is not valid W3C trace context is not sent, and the client logs a warning the first time it sees one.
+A `traceparent` that is not valid W3C trace context is not sent, and the
+client logs a warning the first time it sees one.
 
 #### Which requests carry trace headers
 
-The headers are only added to requests addressed to a Supabase host: your project URL, `*.supabase.co`, `*.supabase.in`, and `localhost`, `127.0.0.1` and `::1` for local development. Third-party hosts never receive them: when a Supabase host redirects a request to another host, the redirected request is sent without them. The exception is the web, where the browser follows redirects itself and a redirect to another host still carries the headers. They are sent on every HTTP request the client makes, including realtime broadcasts sent over HTTP, but not over the realtime WebSocket connection.
+The headers are only added to requests addressed to a Supabase host: your
+project URL, `*.supabase.co`, `*.supabase.in`, and `localhost`, `127.0.0.1`
+and `::1` for local development. Third-party hosts never receive them: when a
+Supabase host redirects a request to another host, the redirected request is
+sent without them. The exception is the web, where the browser follows
+redirects itself and a redirect to another host still carries the headers.
+They are sent on every HTTP request the client makes, including realtime
+broadcasts sent over HTTP, but not over the realtime WebSocket connection.
 
 #### Sampling
 
-On a trace that is not sampled, one whose `traceparent` carries a sampled flag of `0`, the client still sends `traceparent` so the Supabase logs get a trace id to correlate on, but withholds `tracestate` and `baggage`. Set `respectSamplingDecision` to `false` to send them on unsampled traces as well.
+On a trace that is not sampled, one whose `traceparent` carries a sampled flag
+of `0`, the client still sends `traceparent` so the Supabase logs get a trace
+id to correlate on, but withholds `tracestate` and `baggage`. Set
+`respectSamplingDecision` to `false` to send them on unsampled traces as well.
 
----
+## <a id="testing"></a>Testing
 
-## Migrating Guide
+Test code that uses Supabase with
+[`supabase_test`](https://pub.dev/packages/supabase_test): a real client whose
+HTTP requests are answered by stubs and whose realtime socket runs in memory,
+so no running stack is needed. In widget tests, initialize `Supabase` with
+`initializeTestSupabase` from `package:supabase_flutter/testing.dart`. The
+`supabase-flutter-testing` skill teaches a coding agent the same setup.
 
-The breaking changes of each major version, and what to do about them, are documented in
+## Migrating
+
+The breaking changes of each major version, and what to do about them, are
+documented in
 [MIGRATION.md](https://github.com/supabase/supabase-flutter/blob/main/MIGRATION.md).
 
 ## Contributing
@@ -747,7 +1081,7 @@ The breaking changes of each major version, and what to do about them, are docum
 - Clone the project to your own machine
 - Commit changes to your own branch
 - Push your work back up to your fork
-- Submit a Pull request so that we can review your changes and merge
+- Submit a pull request so that we can review your changes and merge
 
 ## License
 

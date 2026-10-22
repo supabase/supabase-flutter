@@ -20,21 +20,27 @@
 
 ## Usage
 
-```dart
-final isolate = YAJsonIsolate();
+```dart file
+import 'package:http/http.dart' as http;
+import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
-// serialize to a JSON string
-final requestBody = await isolate.encode(requestObject);
+Future<void> main() async {
+  final isolate = YAJsonIsolate();
 
-// deserialize a JSON string
-final json = await isolate.decode(responseBody);
+  // Serialize to a JSON string.
+  final String requestBody = await isolate.encode({'title': 'Dune'});
 
-// deserialize UTF-8 encoded JSON bytes, such as an HTTP response body,
-// without materializing the intermediate string on the calling isolate
-final data = await isolate.decodeBytes(response.bodyBytes);
+  // Deserialize a JSON string.
+  final Object? json = await isolate.decode('{"title": "Dune"}');
 
-// dispose when no longer needed
-isolate.dispose();
+  // Deserialize UTF-8 encoded JSON bytes, such as an HTTP response body,
+  // without materializing the intermediate string on the calling isolate.
+  final response = await http.get(Uri.parse('https://example.com/books'));
+  final Object? data = await isolate.decodeBytes(response.bodyBytes);
+
+  // Dispose when no longer needed.
+  await isolate.dispose();
+}
 ```
 
 ## `AsyncJsonCodec`
@@ -43,7 +49,11 @@ isolate.dispose();
 through their `jsonCodec` parameter. Implement it to process their JSON some other way, for
 example with a native parser, or to wrap the default implementation and measure it.
 
-```dart
+```dart file
+import 'dart:typed_data';
+
+import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
+
 class TimedJsonCodec implements AsyncJsonCodec {
   TimedJsonCodec(this._inner);
 
@@ -61,6 +71,15 @@ class TimedJsonCodec implements AsyncJsonCodec {
 
   @override
   Future<void> dispose() => _inner.dispose();
+
+  Future<T> _time<T>(Future<T> Function() operation) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      return await operation();
+    } finally {
+      print('JSON took ${stopwatch.elapsedMicroseconds} µs');
+    }
+  }
 }
 ```
 

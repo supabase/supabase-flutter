@@ -72,8 +72,11 @@ its `condition` enum `InventoryCondition`.
 
 Add `supabase_typegen` as a dev dependency of your project and generate the
 types with the
-[Supabase CLI](https://supabase.com/docs/guides/cli/getting-started), from
-the project directory:
+[Supabase CLI](https://supabase.com/docs/guides/cli/getting-started),
+version 2.122.0 or newer, from the directory of the project's
+`pubspec.yaml`. The CLI runs this package with `dart run` in that directory,
+so it must be a dev dependency there. In a Flutter project, use
+`flutter pub add dev:supabase_typegen`.
 
 ```sh
 dart pub add dev:supabase_typegen
@@ -90,10 +93,18 @@ The CLI introspects the database into the `GeneratorMetadata` document of
 [`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen),
 the intermediate representation its TypeScript, Go, Swift and Python
 generators consume, and pipes it into this package, which generates the Dart
-code from it. Pass `--schema` to choose the schema to generate. Only schemas
-exposed through the Data API can be queried at runtime. With `--local` the SQL in your `supabase/` directory
+code from it. Without `--schema`, the CLI generates `public` plus the schemas
+listed in `api.schemas` of `supabase/config.toml`; pass `--schema` once per
+schema to choose them yourself. Only schemas exposed through the Data API can
+be queried at runtime. With `--local` the SQL in your `supabase/` directory
 stays the single source of truth, since the CLI applies your migrations to the
 local database and generates from the result.
+
+Never edit the generated file. Regenerate it after every database migration
+and commit it, so the project builds without a database. A coding agent
+learns this workflow from the `supabase-flutter-generate-schema` skill of
+`supabase_flutter`, or the `supabase-generate-schema` skill of `supabase`,
+installed with [`dart run skills@ get`](https://dart.dev/ai/package-skills).
 
 The code is formatted with the `dart format` of the SDK running the tool, for
 the language version of the project it is written into (the lower bound of
@@ -112,23 +123,27 @@ columns appear in the row type but not in the insert and update types.
 ## Generated code in action
 
 ```dart
-final books = await client.table(Books.table)
+final List<BooksRow> books = await supabase
+    .table(Books.table)
     .select()
     .where(Books.mood.eq(Mood.happy) & Books.publishedOn.isNull().not())
-    .order(Books.createdAt.desc()); // List<BooksRow>
+    .order(Books.createdAt.desc());
 
-await client.table(Books.table).insert(
-  BooksInsert(title: 'A typed row', tags: ['dart']),
-);
+await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'A typed row', tags: ['dart']));
 
 // Queried in the inventory schema, since the table definition carries it.
-final stock = await client.table(InventoryStock.table).select();
+final stock = await supabase.table(InventoryStock.table).select();
 
 // An explicit schema still wins, for identical tables in several schemas.
-final archived = await client
+final archived = await supabase
     .schema('archive')
     .table(InventoryStock.table)
     .select();
+
+// A typed method for every function PostgREST exposes.
+final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
 ```
 
 ## Known limitations

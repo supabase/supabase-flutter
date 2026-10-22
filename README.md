@@ -31,52 +31,143 @@
 
 </div>
 
-## Run locally
+This repository holds the Supabase client libraries for Dart and Flutter.
+This README describes v3. Most Supabase Dart examples published elsewhere are
+v2 code, which no longer compiles. To upgrade a v2 project, follow
+[MIGRATION.md](MIGRATION.md).
 
-This repo is a monorepo powered by [Melos](https://melos.invertase.dev/) containing [supabase_flutter](https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_flutter) and its sub-libraries. All packages are located in the `packages` directory.
+## Which package to use
 
-To install on a locally developed app:
+| Package                                                           | Use it for                                                        |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [`supabase_flutter`](packages/supabase_flutter)                   | Flutter apps. Start here.                                         |
+| [`supabase`](packages/supabase)                                   | Dart without Flutter: servers, command line tools, edge functions |
+| [`supabase_typegen`](packages/supabase_typegen)                   | Generating the typed database schema, as a dev dependency         |
+| [`supabase_test`](packages/supabase_test)                         | Testing code that uses Supabase, as a dev dependency              |
+| [`supabase_flutter_web_auth`](packages/supabase_flutter_web_auth) | OAuth and SSO sign in through an in-app browser session           |
 
-- Clone this repo
-- Install Melos globally if you haven't already: `dart pub global activate melos`
-- Run `melos bootstrap` or `melos bs` at the root of the cloned directory to install dependencies
-- Add the target package to your `pubspec.yaml` file specifying the path.
-  ```yaml
-  supabase_flutter:
-    path: <your-path-to-the-local-supabase-flutter-repo>/packages/supabase_flutter
-  ```
+`supabase_flutter` and `supabase` bring in the service clients, which you do
+not add yourself: [`postgrest`](packages/postgrest),
+[`supabase_auth`](packages/supabase_auth),
+[`supabase_realtime`](packages/supabase_realtime),
+[`supabase_storage`](packages/supabase_storage),
+[`supabase_functions`](packages/supabase_functions) and
+[`iceberg`](packages/iceberg).
+
+## Quick start
+
+Add the package and the schema generator:
+
+```sh
+flutter pub add supabase_flutter
+flutter pub add dev:supabase_typegen
+```
+
+Generate the typed schema of your database with the
+[Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started),
+version 2.122.0 or newer:
+
+```sh
+supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+```
+
+Initialize Supabase once, then query through the generated types, imported
+from `supabase_schema.g.dart`:
+
+```dart file
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: 'https://your-project.supabase.co',
+    publishableKey: 'your-publishable-key',
+  );
+  runApp(const MaterialApp(home: Placeholder()));
+}
+
+Future<List<BooksRow>> booksInPrint() {
+  return Supabase.instance.client
+      .table(Books.table)
+      .select()
+      .where(Books.inPrint.isTrue())
+      .order(Books.title);
+}
+```
+
+The [`supabase_flutter` README](packages/supabase_flutter/README.md) walks
+through every part of the API.
+
+## Using an AI coding agent
+
+`supabase_flutter` and `supabase` ship
+[package skills](https://dart.dev/ai/package-skills), instructions that teach
+coding agents such as Claude Code, Cursor, Gemini or Copilot the v3 API.
+Agents trained on v2 examples otherwise tend to write code that does not
+compile. Install them in your project after adding the package:
+
+```sh
+# In a Flutter app
+dart run skills@ get -p supabase_flutter
+
+# In a Dart project without Flutter
+dart run skills@ get -p supabase
+```
+
+Run the command again after upgrading the package to update the skills.
 
 ## Testing your app
 
-The helpers the test suites of these packages run on are published in
-[`package:supabase_test`](https://pub.dev/packages/supabase_test),
-so your tests can build on the same primitives: mock HTTP clients, JWT builders,
-auth session fixtures and realtime frames. Add the package as a dev dependency:
+[`supabase_test`](packages/supabase_test) runs your tests against a real
+`SupabaseClient` whose HTTP requests are answered by stubs and whose realtime
+socket runs in memory, so no running stack is needed:
 
-```yaml
-dev_dependencies:
-  supabase_test: ^0.1.0
+```sh
+dart pub add dev:supabase_test
 ```
 
-Then stub the endpoints the code under test talks to and run it against a
-real `SupabaseClient`, with no running stack required:
-
-```dart
+```dart test
 final httpClient = MockSupabaseHttpClient()
-  ..stubTable('todos', rows: [
-    {'id': 1, 'task': 'Ship it', 'status': false},
-  ]);
+  ..stubTable(
+    'books',
+    rows: [
+      {'id': 1, 'author_id': 2, 'title': 'Dune', 'in_print': true},
+    ],
+  );
 final supabase = testSupabaseClient(httpClient: httpClient);
 addTearDown(supabase.dispose);
 
-final todos = await supabase.from('todos').select();
-expect(todos, hasLength(1));
+final books = await supabase.table(Books.table).selectOnly([
+  Books.id,
+  Books.title,
+]);
+
+expect(books.single.read(Books.title), 'Dune');
 ```
 
 See the [supabase_test README](packages/supabase_test/README.md) for the
 full guide: stubbing database, rpc, edge function and auth endpoints,
 asserting on recorded requests, running tests as a signed-in user, and wiring
 `Supabase.initialize` in Flutter widget tests.
+
+## Run locally
+
+This repository is a monorepo powered by [Melos](https://melos.invertase.dev/).
+All packages are in the `packages` directory.
+
+To use a local checkout in an app:
+
+- Clone this repository.
+- Install Melos if you have not already: `dart pub global activate melos`.
+- Run `melos bootstrap`, or `melos bs`, at the root of the clone to install
+  the dependencies.
+- Point the dependency in your `pubspec.yaml` at the local package:
+
+  ```yaml
+  supabase_flutter:
+    path: <your-path-to-the-local-supabase-flutter-repo>/packages/supabase_flutter
+  ```
 
 ## Testing this repo
 
