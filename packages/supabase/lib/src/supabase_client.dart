@@ -355,7 +355,10 @@ class SupabaseClient {
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
     await realtime.disconnect();
-    await _authStateSubscription?.cancel();
+    // Cancelling a broadcast subscription takes effect immediately and returns
+    // a future of the root zone. Awaiting it would resume this method outside
+    // the fake async zone of a widget test, which then never completes.
+    unawaited(_authStateSubscription?.cancel());
     await functions.dispose();
     await _rest.dispose();
     if (_ownsJsonCodec) {

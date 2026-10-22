@@ -232,8 +232,9 @@ class Supabase {
   DateTime? _pausedAt;
 
   /// Serial queue for lifecycle operations (connect/disconnect). Each event
-  /// appends via `.then()` so operations never overlap.
-  Future<void> _pendingLifecycleOperation = Future.value();
+  /// appends via `.then()` so operations never overlap. Null while no
+  /// operation is in flight, so [dispose] has nothing to await.
+  Future<void>? _pendingLifecycleOperation;
 
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
@@ -266,7 +267,7 @@ class Supabase {
     // lifecycle event cannot reach a client that is already torn down.
     await _disposeAll([
       () => supabaseAuth?.dispose(),
-      () => pendingLifecycleOperation,
+      if (pendingLifecycleOperation != null) () => pendingLifecycleOperation,
       currentClient.dispose,
     ]);
   }
@@ -378,11 +379,20 @@ class Supabase {
     bool replaceConnection = false,
   }) {
     _targetLifecycleState = state;
-    _pendingLifecycleOperation = _pendingLifecycleOperation
+    final previous = _pendingLifecycleOperation ?? Future<void>.value();
+    final operation = previous
         .then(
           (_) => _processLifecycle(state, replaceConnection: replaceConnection),
         )
         .catchError((_) {});
+    _pendingLifecycleOperation = operation;
+    unawaited(
+      operation.whenComplete(() {
+        if (identical(_pendingLifecycleOperation, operation)) {
+          _pendingLifecycleOperation = null;
+        }
+      }),
+    );
   }
 
   bool _pendingPauseExpired() {

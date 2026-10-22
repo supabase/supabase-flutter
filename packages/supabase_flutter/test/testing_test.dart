@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supabase_flutter/testing.dart';
 import 'package:supabase_test/supabase_test.dart';
 
@@ -9,6 +11,36 @@ void main() {
 
   setUp(() {
     httpClient = MockSupabaseHttpClient();
+  });
+
+  // These run first, so the Supabase singleton is created inside the fake
+  // async zone of a widget test.
+  for (final run in ['first', 'second']) {
+    testWidgets('a widget test reads the mocked rows ($run run)', (
+      tester,
+    ) async {
+      httpClient.stubTable(
+        'todos',
+        rows: [
+          {'id': 1, 'task': 'Ship it'},
+        ],
+      );
+      final supabase = await initializeTestSupabase(httpClient: httpClient);
+      addTearDown(supabase.dispose);
+
+      await tester.pumpWidget(const _Todos());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ship it'), findsOneWidget);
+    });
+  }
+
+  testWidgets('a widget test can dispose inside its body', (tester) async {
+    final supabase = await initializeTestSupabase(httpClient: httpClient);
+
+    await supabase.dispose();
+
+    expect(() => supabase.client, throwsStateError);
   });
 
   test(
@@ -86,4 +118,26 @@ void main() {
     expect(request.headers['apikey'], 'sb_publishable_test');
     expect(request.headers['x-app'], 'tests');
   });
+}
+
+class _Todos extends StatefulWidget {
+  const _Todos();
+
+  @override
+  State<_Todos> createState() => _TodosState();
+}
+
+class _TodosState extends State<_Todos> {
+  final _todos = Supabase.instance.client.from('todos').select();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _todos,
+      builder: (context, snapshot) => Text(
+        snapshot.data?.map((row) => row['task']).join(', ') ?? 'Loading',
+        textDirection: TextDirection.ltr,
+      ),
+    );
+  }
 }
