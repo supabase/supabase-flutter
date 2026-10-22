@@ -1,6 +1,9 @@
 /// JSON encoding and decoding that never blocks the calling isolate for
 /// long: small payloads are processed inline, large payloads on short lived
 /// isolates that hand their result back without copying.
+///
+/// On web there are no isolates, so every payload is processed inline on the
+/// calling thread.
 library;
 
 export 'src/async_json_codec.dart';

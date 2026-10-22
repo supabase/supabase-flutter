@@ -101,7 +101,7 @@ class SupabaseClient {
          ...?headers,
        },
        _httpClient = httpClient,
-       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _jsonCodec = jsonCodec ?? YAJsonIsolate(),
        _ownsJsonCodec = jsonCodec == null {
     if (accessToken == null &&
         authOptions.asyncStorage == null &&

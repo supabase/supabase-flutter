@@ -36,7 +36,6 @@ class YAJsonIsolate implements AsyncJsonCodec {
   /// The debug name used for the isolates spawned by this instance.
   final String? debugName;
 
-  bool _hasStartedInitialize = false;
   Future<void>? _disposal;
   final Set<Future<void>> _activeWork = {};
 
@@ -46,22 +45,6 @@ class YAJsonIsolate implements AsyncJsonCodec {
     if (_isDisposed) {
       throw StateError('This YAJsonIsolate has already been disposed.');
     }
-  }
-
-  /// Kept for backwards compatibility.
-  ///
-  /// There is no persistent isolate anymore, so there is nothing to
-  /// initialize: large payloads are processed on short lived isolates spawned
-  /// per call.
-  Future<void> initialize() {
-    return Future.sync(() {
-      _throwIfDisposed();
-      assert(
-        _hasStartedInitialize == false,
-        'initialize() can only be called once per isolate.',
-      );
-      _hasStartedInitialize = true;
-    });
   }
 
   /// Dispose the instance.
@@ -127,24 +110,105 @@ class YAJsonIsolate implements AsyncJsonCodec {
 
   /// Encodes [json] into a JSON string, like [jsonEncode].
   ///
-  /// Payloads estimated to be small are encoded inline, the rest on a short
-  /// lived isolate. A value that cannot be sent to an isolate, for example an
-  /// object whose `toJson()` result is encodable while the object itself
-  /// holds a `ReceivePort`, is encoded inline instead.
+  /// Objects that are not a JSON value are converted with their `toJson()`
+  /// method on the calling isolate first, so that method runs exactly once
+  /// and where the caller expects it. Payloads estimated to be small are then
+  /// encoded inline, the rest on a short lived isolate. A value that cannot
+  /// be sent to an isolate, for example a custom `Map` that holds a
+  /// `ReceivePort`, is encoded inline instead.
   ///
   /// The value is consumed before control returns to the caller, so it can
   /// be mutated as soon as the call returns.
   @override
   Future<String> encode(Object? json) async {
     _throwIfDisposed();
-    if (_remainingBudget(json, _isolateThresholdBytes, 0) >= 0) {
-      return jsonEncode(json);
+    final encodable = _toEncodable(json);
+    if (_remainingBudget(encodable, _isolateThresholdBytes, 0) >= 0) {
+      return jsonEncode(encodable);
     }
     try {
-      return await _runTracked(() => jsonEncode(json));
+      return await _runTracked(() => jsonEncode(encodable));
     } on ArgumentError {
-      return jsonEncode(json);
+      return jsonEncode(encodable);
     }
+  }
+}
+
+/// Returns [value] with every object that is not a JSON value replaced by the
+/// result of its `toJson()` method, the way [jsonEncode] converts it.
+///
+/// Lists and maps are only copied when something inside them is replaced.
+/// When the conversion fails, or the structure is nested deeper than
+/// [_maxEstimationDepth], [value] is returned unchanged so that [jsonEncode]
+/// reports the error or the cycle exactly as it would without conversion.
+Object? _toEncodable(Object? value) {
+  final converted = _converted(value, 0);
+  return identical(converted, _notConvertible) ? value : converted;
+}
+
+/// Returned by [_converted] when a value cannot be converted.
+const Object _notConvertible = Object();
+
+Object? _converted(Object? value, int depth) {
+  if (depth > _maxEstimationDepth) {
+    return _notConvertible;
+  }
+  switch (value) {
+    case null || bool _ || String _:
+      return value;
+    case num number:
+      return number.isFinite ? number : _notConvertible;
+    case List<dynamic> list:
+      List<Object?>? copy;
+      for (var index = 0; index < list.length; index++) {
+        final element = list[index];
+        final converted = _converted(element, depth + 1);
+        if (identical(converted, _notConvertible)) {
+          return _notConvertible;
+        }
+        if (copy == null && !identical(converted, element)) {
+          copy = List.of(list.take(index));
+        }
+        copy?.add(converted);
+      }
+      return copy ?? list;
+    case Map<dynamic, dynamic> map:
+      Map<String, Object?>? copy;
+      var index = 0;
+      for (final MapEntry(:key, value: entryValue) in map.entries) {
+        if (key is! String) {
+          return _notConvertible;
+        }
+        final converted = _converted(entryValue, depth + 1);
+        if (identical(converted, _notConvertible)) {
+          return _notConvertible;
+        }
+        if (copy == null && !identical(converted, entryValue)) {
+          copy = {
+            for (final entry in map.entries.take(index))
+              entry.key as String: entry.value,
+          };
+        }
+        copy?[key] = converted;
+        index++;
+      }
+      return copy ?? map;
+    default:
+      final Object? json;
+      try {
+        json = (value as dynamic).toJson();
+      } on Object {
+        return _notConvertible;
+      }
+      return switch (json) {
+        null ||
+        bool _ ||
+        String _ ||
+        num _ ||
+        List<dynamic> _ ||
+        Map<dynamic, dynamic> _ => _converted(json, depth + 1),
+        _ => _notConvertible,
+      };
   }
 }
 

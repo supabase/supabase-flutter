@@ -170,7 +170,6 @@ _Scenario _concurrentDecodeScenario(
 
 Future<_ScenarioResult> _runScenario(_Scenario scenario) async {
   final isolate = YAJsonIsolate(debugName: 'benchmark');
-  await isolate.initialize();
 
   final warmupIterations = (scenario.iterations ~/ 10).clamp(2, 20);
   for (var i = 0; i < warmupIterations; i++) {
