@@ -136,8 +136,10 @@ class RealtimeConnectionStatusChange {
 ///    immediately and reconnects on unexpected disconnections.
 /// 3. Create channels with [channel], subscribe to events, and call
 ///    `RealtimeChannel.subscribe()` to join server-side topics.
-/// 4. Call [disconnect] when real-time functionality is no longer needed; this
-///    removes all channels and closes the underlying socket.
+/// 4. Call [removeAllChannels] when real-time functionality is no longer
+///    needed; this unsubscribes every channel and closes the underlying
+///    socket. [disconnect] only closes the socket: the channels stay
+///    registered and rejoin when the client next connects.
 ///
 /// **Platform notes:**
 /// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
@@ -291,6 +293,10 @@ class RealtimeClient {
   final Duration heartbeatInterval;
   Timer? _heartbeatTimer;
 
+  /// Closes a connection whose sink close after a heartbeat timeout never
+  /// completed, so that the reconnect starts anyway.
+  Timer? _heartbeatTimeoutFallbackTimer;
+
   /// Delay before the socket is disconnected once the last channel has been
   /// removed. [Duration.zero] disconnects immediately. Defaults to twice the
   /// heartbeat interval.
@@ -394,7 +400,7 @@ class RealtimeClient {
       if (_connectionState != SocketState.closed) {
         return;
       }
-      await disconnect();
+      await _disconnect();
     }
 
     try {
@@ -456,14 +462,33 @@ class RealtimeClient {
   }
 
   Future<void> _reconnect() async {
-    await disconnect();
+    await _disconnect();
     await connect();
   }
 
-  /// Disconnects the socket with status [code] and [reason] for the disconnect
+  /// Disconnects the socket with status [code] and [reason] for the
+  /// disconnect.
+  ///
+  /// The channels stay registered and rejoin once the client connects again.
+  /// Use [removeAllChannels] to unsubscribe them as well.
   Future<void> disconnect({int? code, String? reason}) async {
+    if (_connection != null) {
+      // Snapshot before marking, in case marking removes a channel from
+      // [_channels] synchronously.
+      for (final channel in _channels.toList()) {
+        channel.markForRejoin();
+      }
+    }
+    await _disconnect(code: code, reason: reason);
+  }
+
+  /// Closes the socket without touching the channels, for a reconnect that
+  /// rejoins them through their own error handling.
+  Future<void> _disconnect({int? code, String? reason}) async {
     _cancelPendingDisconnect();
     _accessTokenResolution++;
+    _heartbeatTimeoutFallbackTimer?.cancel();
+    _heartbeatTimeoutFallbackTimer = null;
     final localConnection = _connection;
     if (localConnection != null) {
       final oldState = _connectionState;
@@ -587,13 +612,23 @@ class RealtimeClient {
 
   /// Creates and registers a new channel for [topic].
   ///
+  /// If a channel for [topic] is already registered and not leaving, that
+  /// channel is returned instead and [config] is ignored.
+  ///
   /// Call `RealtimeChannel.subscribe` on the result to join it.
   RealtimeChannel channel(
     String topic, [
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
   ]) {
-    final newChannel = RealtimeChannel('realtime:$topic', this, config: config);
     _cancelPendingDisconnect();
+    final realtimeTopic = 'realtime:$topic';
+    final existing = _channels.firstWhereOrNull(
+      (channel) => channel.topic == realtimeTopic && !channel.isLeaving,
+    );
+    if (existing != null) {
+      return existing;
+    }
+    final newChannel = RealtimeChannel(realtimeTopic, this, config: config);
     _channels.add(newChannel);
     return newChannel;
   }
@@ -963,21 +998,6 @@ class RealtimeClient {
       ..addAll(newHeaders);
   }
 
-  /// Unsubscribes a joined or joining channel on [topic] other than [except].
-  @internal
-  void leaveOpenTopic(String topic, {required RealtimeChannel except}) {
-    final dupChannel = _channels.firstWhereOrNull(
-      (c) =>
-          c.topic == topic &&
-          !identical(c, except) &&
-          (c.isJoined || c.isJoining),
-    );
-    if (dupChannel != null) {
-      realtimeLogger.fine('Leaving duplicate topic "$topic"');
-      unawaited(dupChannel.unsubscribe());
-    }
-  }
-
   void _onConnectionOpen() {
     realtimeLogger.fine('Connected');
     realtimeLogger.finest('Connected to $_redactedEndpointUrl');
@@ -1127,7 +1147,7 @@ class RealtimeClient {
         _sendBuffer.clear();
         for (final channel in channelsSnapshot) {
           if (channel.isJoining) {
-            channel.forceRejoin();
+            channel.rejoin();
           }
         }
       }
@@ -1151,12 +1171,13 @@ class RealtimeClient {
       identical(_connection, originConnection) &&
       _connectionState == SocketState.open;
 
-  /// Rejoins the channels that errored on a previous connection, once the
-  /// access token has resolved so the joins carry the correct identity.
+  /// Rejoins the channels that errored on a previous connection or were
+  /// joined when [disconnect] closed it, once the access token has resolved
+  /// so the joins carry the correct identity.
   void _rejoinErroredChannels() {
     try {
-      // Snapshot before rejoining: a rejoin can synchronously unsubscribe a
-      // duplicate topic, which removes it from [_channels].
+      // Snapshot before rejoining, in case a rejoin removes a channel from
+      // [_channels] synchronously.
       for (final channel in _channels.toList()) {
         if (channel.isErrored) {
           channel.rejoin();
@@ -1182,11 +1203,17 @@ class RealtimeClient {
         'Heartbeat timeout, attempting to re-establish connection',
       );
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
+      final timedOutConnection = _connection;
       unawaited(
-        _connection?.sink.close(
+        timedOutConnection?.sink.close(
           RealtimeConstants.webSocketCloseNormal,
           'heartbeat timeout',
         ),
+      );
+      _heartbeatTimeoutFallbackTimer?.cancel();
+      _heartbeatTimeoutFallbackTimer = Timer(
+        connectionCloseTimeout,
+        () => _closeAfterHeartbeatTimeout(timedOutConnection),
       );
       return;
     }
@@ -1215,5 +1242,21 @@ class RealtimeClient {
     } finally {
       _refreshingAccessTokenOnHeartbeat = false;
     }
+  }
+
+  /// Handles [timedOutConnection] as closed when its sink close after a
+  /// heartbeat timeout has not closed it within [connectionCloseTimeout].
+  void _closeAfterHeartbeatTimeout(WebSocketChannel? timedOutConnection) {
+    _heartbeatTimeoutFallbackTimer = null;
+    if (!_isCurrentOpenConnection(timedOutConnection)) {
+      return;
+    }
+    realtimeLogger.warning(
+      'Connection did not close after the heartbeat timeout, reconnecting',
+    );
+    _connectionState = SocketState.closed;
+    unawaited(_connectionSubscription?.cancel());
+    _connectionSubscription = null;
+    _onConnectionClose();
   }
 }

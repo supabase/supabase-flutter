@@ -60,16 +60,17 @@ void main() {
     expect(sentEvents, ['phx_join', 'phx_join']);
   });
 
-  test('a rejoin leaves another open channel on the same topic', () async {
-    final first = await joinedChannel();
-    final second = client.channel('topic');
+  test('asking for a joined topic again keeps the joined channel', () async {
+    final channel = await joinedChannel();
+    final statuses = <RealtimeSubscribeStatus>[];
+    channel.onStatusChange.listen((change) => statuses.add(change.status));
 
-    second.rejoin();
+    expect(client.channel('topic'), same(channel));
     await pumpEventQueue();
 
-    expect(client.channels, [second]);
-    expect(first.isClosed, isTrue);
-    expect(sentEvents, ['phx_join', 'phx_leave', 'phx_join']);
+    expect(channel.isJoined, isTrue);
+    expect(statuses, isEmpty);
+    expect(sentEvents, ['phx_join']);
   });
 
   test('adding a presence listener to a joined channel rejoins it without '

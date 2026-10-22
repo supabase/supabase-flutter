@@ -61,6 +61,11 @@ class RealtimeChannel {
       realtimeLogger.fine('Channel close: $topic $joinRef');
       _state = ChannelState.closed;
       socket.remove(this);
+      final droppedPushes = _pushBuffer;
+      _pushBuffer = [];
+      for (final droppedPush in droppedPushes) {
+        droppedPush.trigger('error', {});
+      }
       // Deferred so that bindings registered after this one (such as the
       // status forwarding set up in [subscribe]) still run for this close
       // event before their controllers are closed.
@@ -371,7 +376,10 @@ class RealtimeChannel {
       final schema = clientPostgresBinding.filter['schema'];
       final table = clientPostgresBinding.filter['table'];
       final filter = clientPostgresBinding.filter['filter'];
-      final serverPostgresFilter = serverPostgresFilters[i];
+      final serverPostgresFilter =
+          serverPostgresFilters is List && i < serverPostgresFilters.length
+          ? serverPostgresFilters[i]
+          : null;
 
       // NOTE: `select` is intentionally not part of this equality check
       // (mirroring supabase-js), so a server that echoes `select` back in a
@@ -711,7 +719,7 @@ class RealtimeChannel {
   ) {
     final typeLower = type.toLowerCase();
 
-    if ((isJoined || isJoining) && typeLower == 'postgres_changes') {
+    if (_joinedOnce && typeLower == 'postgres_changes') {
       throw StateError(
         'cannot add `$typeLower` callbacks for $topic after `subscribe()`.',
       );
@@ -733,12 +741,22 @@ class RealtimeChannel {
   RealtimeChannel off(String type, Map<String, dynamic> filter) {
     final typeLower = type.toLowerCase();
 
-    _bindings[typeLower] = _bindings[typeLower]!.where((bind) {
+    final remaining = (_bindings[typeLower] ?? []).where((bind) {
       return !(bind.type.toLowerCase() == typeLower &&
           RealtimeChannel._isEqual(bind.filter, filter));
     }).toList();
+    if (remaining.isEmpty) {
+      _bindings.remove(typeLower);
+    } else {
+      _bindings[typeLower] = remaining;
+    }
     return this;
   }
+
+  /// The event types that have at least one binding registered.
+  @internal
+  @visibleForTesting
+  Iterable<String> get bindingTypes => _bindings.keys;
 
   /// Returns `true` if the socket is connected and the channel has been joined.
   @internal
@@ -922,7 +940,12 @@ class RealtimeChannel {
   /// channel, resolving once the server acknowledges, rejects, or times out.
   ///
   /// A broadcast sent without requesting an acknowledgement (the default)
-  /// resolves immediately instead of waiting for the server.
+  /// resolves with [ChannelResponse.ok] once it is written to the socket
+  /// instead of waiting for the server. Until the channel is joined it is
+  /// buffered, and resolves with [ChannelResponse.timedOut] if the join takes
+  /// longer than the timeout. A message on a channel that is leaving or has
+  /// closed resolves with [ChannelResponse.error] without being sent, as does
+  /// a buffered one when the channel closes.
   @internal
   Future<ChannelResponse> send({
     required RealtimeListenType type,
@@ -930,6 +953,10 @@ class RealtimeChannel {
     required Map<String, dynamic> payload,
     Map<String, dynamic> options = const {},
   }) {
+    if (_joinedOnce && (isLeaving || isClosed)) {
+      return Future.value(ChannelResponse.error);
+    }
+
     final completer = Completer<ChannelResponse>();
 
     final message = <String, dynamic>{
@@ -937,6 +964,11 @@ class RealtimeChannel {
       'type': type.toType(),
       'event': ?event,
     };
+
+    final isUnacknowledgedBroadcast =
+        message['type'] == 'broadcast' &&
+        _parameters['config']?['broadcast']?['ack'] != true;
+    final sendsImmediately = canPush;
 
     final Push push;
     try {
@@ -949,12 +981,21 @@ class RealtimeChannel {
       return Future.error(error, stackTrace);
     }
 
-    if (message['type'] == 'broadcast' &&
-        (_parameters['config']?['broadcast']?['ack'] == null ||
-            _parameters['config']?['broadcast']?['ack'] == false)) {
-      if (!completer.isCompleted) {
-        completer.complete(ChannelResponse.ok);
+    if (isUnacknowledgedBroadcast) {
+      // No reply will arrive, so the reply binding and the timeout are only
+      // kept while the message waits in the buffer.
+      void completeSent() {
+        push.destroy();
+        if (!completer.isCompleted) {
+          completer.complete(ChannelResponse.ok);
+        }
       }
+
+      if (sendsImmediately) {
+        completeSent();
+        return completer.future;
+      }
+      push.whenSent(completeSent);
     }
 
     push.receive('ok', (_) {
@@ -1064,30 +1105,31 @@ class RealtimeChannel {
   @internal
   String get joinRef => _joinPush.ref;
 
-  /// Resends [joinPush] after telling the socket to leave any other channel
-  /// already open on the same topic.
+  /// Resends [joinPush] to tell the server we join this channel again and
+  /// marks the channel as [ChannelState.joining].
   @internal
   void rejoin([Duration? timeout]) {
     if (isLeaving) {
       return;
     }
-    socket.leaveOpenTopic(topic, except: this);
     _state = ChannelState.joining;
     _joinPush.resend(timeout ?? _timeout);
   }
 
-  /// Resends [joinPush] to tell the server we join this channel again and marks
-  /// the channel as [ChannelState.joining].
+  /// Marks a subscribed channel as errored without reporting an error, so
+  /// that the client rejoins it on its next connection, after
+  /// [RealtimeClient.disconnect] closed the one it was joined on.
   ///
-  /// Unlike [rejoin], this does not leave other channels open on the same
-  /// topic.
+  /// Cancels the pending join reply and the rejoin backoff, since neither can
+  /// complete until the client connects again.
   @internal
-  void forceRejoin([Duration? timeout]) {
-    if (isLeaving) {
+  void markForRejoin() {
+    if (!isJoined && !isJoining && !isErrored) {
       return;
     }
-    _state = ChannelState.joining;
-    _joinPush.resend(timeout ?? _timeout);
+    _joinPush.destroy();
+    _rejoinTimer.reset();
+    _state = ChannelState.errored;
   }
 
   /// Dispatches an incoming [type] event with [payload] to every matching

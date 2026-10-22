@@ -565,6 +565,26 @@ void main() {
       final foundChannel = socket.channels[0];
       expect(foundChannel, channel);
     });
+
+    test('returns the registered channel for a topic in use', () {
+      final channel = socket.channel(tTopic);
+
+      expect(
+        socket.channel(tTopic, const RealtimeChannelConfig(ack: true)),
+        same(channel),
+      );
+      expect(socket.channels, [channel]);
+    });
+
+    test('creates a new channel for a topic whose channel is leaving', () {
+      final channel = socket.channel(tTopic).subscribe();
+      unawaited(channel.unsubscribe());
+
+      final replacement = socket.channel(tTopic);
+
+      expect(replacement, isNot(same(channel)));
+      expect(socket.channels, [replacement]);
+    });
   });
 
   group('remove', () {
@@ -612,8 +632,11 @@ void main() {
 
     test('removes only the given channel when topics are duplicated', () {
       final socket = RealtimeClient(socketEndpoint);
-      final channel1 = socket.channel('topic');
-      final channel2 = socket.channel('topic');
+      final channel1 = RealtimeChannel('realtime:topic', socket);
+      final channel2 = RealtimeChannel('realtime:topic', socket);
+      socket
+        ..addChannelForTesting(channel1)
+        ..addChannelForTesting(channel2);
 
       socket.remove(channel1);
 
@@ -625,8 +648,11 @@ void main() {
       // A phx_close trigger removes its channel from the client synchronously,
       // which must not invalidate the dispatch iteration over the members.
       final socket = RealtimeClient(socketEndpoint);
-      socket.channel('topic');
-      socket.channel('topic');
+      final channel1 = RealtimeChannel('realtime:topic', socket);
+      final channel2 = RealtimeChannel('realtime:topic', socket);
+      socket
+        ..addChannelForTesting(channel1)
+        ..addChannelForTesting(channel2);
 
       socket.onConnectionMessage('[null,null,"realtime:topic","phx_close",{}]');
 
