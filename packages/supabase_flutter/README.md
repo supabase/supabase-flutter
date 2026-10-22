@@ -625,8 +625,8 @@ going through the database. Send once the channel is subscribed:
 ```dart
 final channel = supabase.channel('room');
 
-channel.onBroadcast(event: 'cursor').listen((payload) {
-  print('Cursor moved: $payload');
+channel.onBroadcast(event: 'cursor').listen((message) {
+  print('Cursor moved: ${message['payload']}');
 });
 
 channel.onStatusChange.listen((change) async {

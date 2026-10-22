@@ -44,7 +44,7 @@ class RoomChannel {
     // Broadcast: transient "typing" pings. Our own pings are filtered out.
     onTyping = _channel
         .onBroadcast(event: _typingEvent)
-        .map((payload) => payload['username'] as String)
+        .map((message) => message['payload']['username'] as String)
         .where((name) => name != username);
 
     // Presence: fires whenever the roster changes. Read the full state back

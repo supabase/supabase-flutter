@@ -97,9 +97,7 @@ void main() {
       await _subscribe(channel);
       await channel.sendBroadcastMessage(
         event: 'ping',
-        payload: {
-          'payload': {'value': 42},
-        },
+        payload: {'value': 42},
       );
 
       final payload = await received.future.timeout(
@@ -129,15 +127,47 @@ void main() {
       await _subscribe(senderChannel);
       await senderChannel.sendBroadcastMessage(
         event: 'cursor',
-        payload: {
-          'payload': {'x': 1, 'y': 2},
-        },
+        payload: {'x': 1, 'y': 2},
       );
 
       final payload = await received.future.timeout(
         const Duration(seconds: 15),
       );
       expect(payload['payload'], {'x': 1, 'y': 2});
+    });
+
+    test('receives broadcasts from every source in the same shape', () async {
+      final topic = 'broadcast-sources';
+      final channel = client.channel(
+        topic,
+        const RealtimeChannelConfig(self: true),
+      );
+      final received = <String, Map<String, dynamic>>{};
+      final allReceived = Completer<void>();
+      channel.onBroadcast(event: '*').listen((message) {
+        received[message['event'] as String] = message;
+        if (received.length == 3 && !allReceived.isCompleted) {
+          allReceived.complete();
+        }
+      });
+      await _subscribe(channel);
+
+      await channel.sendBroadcastMessage(event: 'socket', payload: {'x': 1});
+      await channel.httpSend(event: 'http', payload: {'x': 1});
+      final database = await openPostgresConnection();
+      addTearDown(database.close);
+      await database.execute(
+        Sql.named(
+          "select realtime.send('{\"x\": 1}'::jsonb, 'database', @topic, "
+          'false)',
+        ),
+        parameters: {'topic': topic},
+      );
+
+      await allReceived.future.timeout(const Duration(seconds: 15));
+      expect(received['socket']!['payload'], {'x': 1});
+      expect(received['http']!['payload'], {'x': 1});
+      expect(received['database']!['payload'], containsPair('x', 1));
     });
 
     test('tracks and syncs presence', () async {
@@ -357,9 +387,7 @@ void main() {
       for (var index = 0; index < _asyncCodecMessageCount; index++) {
         await channel.sendBroadcastMessage(
           event: 'tick',
-          payload: {
-            'payload': {'index': index},
-          },
+          payload: {'index': index},
         );
       }
 
