@@ -252,7 +252,8 @@ await Supabase.initialize(
   run as tests, and ```dart skip is not checked, for code such as v2 "before"
   examples or code that needs a third-party package. A whole library gets no
   imports injected, so it imports everything it uses, the schema as
-  `package:my_app/supabase_schema.g.dart`
+  `package:my_app/supabase_schema.g.dart`. MIGRATION.md, which the
+  migrate-v3 skills link, is not checked
 - Line length limit is 80 characters
 - Use `dart format` for consistent formatting
 

@@ -1942,12 +1942,17 @@ current headers.
 final client = SupabaseClient(url, key, isolate: YAJsonIsolate()..initialize());
 
 // After
+final jsonCodec = YAJsonIsolate();
 final client = SupabaseClient(
   url,
   key,
   authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
-  jsonCodec: YAJsonIsolate(),
+  jsonCodec: jsonCodec,
 );
+
+// A codec passed in belongs to the caller, so dispose it with the client.
+await client.dispose();
+await jsonCodec.dispose();
 ```
 
 Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is not exported

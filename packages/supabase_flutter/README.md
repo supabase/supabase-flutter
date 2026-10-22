@@ -776,16 +776,25 @@ By default, every link with a `code`, `access_token`, `error`, `error_code` or
 `error_description` parameter, in the query or the fragment, is treated as an
 auth callback. If your app receives other links with one of those parameters,
 pass `detectSessionInUriPredicate` to tell the auth callbacks apart, for
-example by their path:
+example by the redirect URL they arrive on. On the web the predicate receives
+the URL of the page, so keep the default rule there:
 
-```dart
-await Supabase.initialize(
-  url: 'https://your-project.supabase.co',
-  publishableKey: 'your-publishable-key',
-  authOptions: FlutterAuthClientOptions(
-    detectSessionInUriPredicate: (uri) => uri.host == 'login-callback',
-  ),
-);
+```dart file
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> initializeSupabase() async {
+  await Supabase.initialize(
+    url: 'https://your-project.supabase.co',
+    publishableKey: 'your-publishable-key',
+    authOptions: FlutterAuthClientOptions(
+      detectSessionInUriPredicate: (uri) =>
+          (kIsWeb || uri.host == 'login-callback') &&
+          (uri.queryParameters.containsKey('code') ||
+              uri.queryParameters.containsKey('error')),
+    ),
+  );
+}
 ```
 
 `detectSessionInUri: false` turns the handling off, for example when the app

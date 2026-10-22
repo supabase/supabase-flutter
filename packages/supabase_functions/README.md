@@ -42,13 +42,15 @@ final response = await supabase.functions.invoke(
 print('${response.statusCode}: ${response.data}');
 ```
 
-`data` is decoded from the `Content-Type` of the response: JSON as a `Map` or
-`List`, `text/plain` as a `String`, `application/octet-stream` as a
-`Uint8List`, and `text/event-stream` as a `ByteStream` to listen to.
+`data` depends on the `Content-Type` of the response: `application/json` is
+decoded, `application/octet-stream` is a `Uint8List`, `text/event-stream` is a
+`ByteStream` to listen to, and every other type is a `String`.
 
 Standalone, create a `FunctionsClient` with the functions URL of your project
 and the `apikey` header. Pass `accessToken` to send the token of a signed-in
-user as `Authorization: Bearer <token>`:
+user as `Authorization: Bearer <token>`. With a legacy JWT anon key, a
+function that verifies the JWT also needs the key as
+`Authorization: Bearer <key>` when no user is signed in:
 
 ```dart file
 import 'package:supabase_functions/supabase_functions.dart';

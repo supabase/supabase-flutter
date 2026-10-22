@@ -27,11 +27,10 @@
 
 ## Usage
 
-Add it to your `dev_dependencies`:
+Add it as a dev dependency:
 
-```yaml
-dev_dependencies:
-  supabase_lints: ^0.1.2
+```sh
+dart pub add dev:supabase_lints
 ```
 
 Include the rules in your `analysis_options.yaml`.
