@@ -86,7 +86,8 @@ supabase gen types --lang dart --local > lib/supabase_schema.g.dart
 ```
 
 `--linked` and `--project-id` generate from a hosted project instead; see the
-[`supabase_typegen` README](packages/supabase_typegen/README.md) for details.
+[`supabase_typegen` README](https://github.com/supabase/supabase-flutter/blob/main/packages/supabase_typegen/README.md)
+for details.
 
 For every table the file holds a row type (`BooksRow`), an insert type (`BooksInsert`), an update
 type (`BooksUpdate`), and a class (`Books`) with the table definition and one constant per column

@@ -44,3 +44,6 @@ packages/*/example/
 # (`echo "const version = '$version';" > $d/lib/src/version.dart`), so it cannot
 # carry an @internal annotation.
 packages/*/lib/src/version.dart
+
+# The skill snippet harness only compiles the snippets of the package skills.
+tool/
