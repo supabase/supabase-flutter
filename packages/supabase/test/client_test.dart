@@ -209,35 +209,43 @@ void main() {
       'the pkce flow keeps its verifiers in memory when no asyncStorage is '
       'given',
       () async {
-        final supabase = SupabaseClient('http://localhost:1', 'supabaseKey');
+        final httpClient = MockSupabaseHttpClient()
+          ..stub(
+            testSessionResponseJson(
+              accessToken: unsignedTestJwt({
+                'sub': testUserId,
+                'exp':
+                    DateTime.now()
+                        .add(const Duration(hours: 1))
+                        .millisecondsSinceEpoch ~/
+                    1000,
+              }),
+              user: testUserJson(),
+            ),
+            method: HttpMethod.post.value,
+            path: '/auth/v1/token',
+          );
+        final supabase = SupabaseClient(
+          'http://localhost:1',
+          'supabaseKey',
+          httpClient: httpClient,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        );
         addTearDown(supabase.dispose);
 
-        final response = await supabase.auth.getOAuthSignInUrl(
+        final signInUrl = await supabase.auth.getOAuthSignInUrl(
           provider: OAuthProvider.github,
         );
+        await supabase.auth.exchangeCodeForSession('auth-code');
 
-        expect(response.url.queryParameters, contains('code_challenge'));
+        final exchange = httpClient
+            .requestsTo('/auth/v1/token', method: HttpMethod.post.value)
+            .single;
+        expect(signInUrl.url.queryParameters, contains('code_challenge'));
+        expect(exchange.jsonBody, containsPair('auth_code', 'auth-code'));
+        expect(exchange.jsonBody, containsPair('code_verifier', isA<String>()));
       },
     );
-
-    test('the testSupabaseClient hint is left out outside of a test', () {
-      expect(
-        () => Zone.root.run(
-          () => SupabaseClient(
-            'http://localhost:1',
-            'supabaseKey',
-            authOptions: const AuthClientOptions(persistSession: true),
-          ),
-        ),
-        throwsA(
-          isA<ArgumentError>().having(
-            (error) => error.message,
-            'message',
-            isNot(contains('testSupabaseClient')),
-          ),
-        ),
-      );
-    });
 
     test('a persisted session throws when no asyncStorage is given', () {
       expect(
@@ -255,7 +263,7 @@ void main() {
             'message',
             allOf(
               contains('SupabaseClient needs an asyncStorage to persist'),
-              contains('testSupabaseClient'),
+              isNot(contains('MemoryAuthAsyncStorage')),
             ),
           ),
         ),

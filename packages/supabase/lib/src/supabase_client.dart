@@ -106,7 +106,7 @@ class SupabaseClient {
     if (accessToken == null &&
         authOptions.asyncStorage == null &&
         authOptions.persistSession) {
-      throw ArgumentError(_missingAsyncStorageMessage());
+      throw ArgumentError(_missingAsyncStorageMessage);
     }
     final baseHttpClient = httpClient ?? createDefaultHttpClient();
     final tracedHttpClient = tracePropagationOptions == null
@@ -503,16 +503,8 @@ String _serviceUrl(
       .toString();
 }
 
-String _missingAsyncStorageMessage() {
-  const message =
-      'SupabaseClient needs an asyncStorage to persist the session in. Pass '
-      'one through authOptions, for example '
-      '`authOptions: AuthClientOptions(asyncStorage: '
-      'MemoryAuthAsyncStorage())`, or set `persistSession: false`.';
-  if (Zone.current[#test.invoker] == null) {
-    return message;
-  }
-  return '$message In a test, `testSupabaseClient` from '
-      'package:supabase_test builds a client with the storage already '
-      'configured.';
-}
+const _missingAsyncStorageMessage =
+    'SupabaseClient needs an asyncStorage to persist the session in. Pass an '
+    'AuthAsyncStorage that writes to disk through '
+    '`authOptions: AuthClientOptions(asyncStorage: …)`, or set '
+    '`persistSession: false`.';
