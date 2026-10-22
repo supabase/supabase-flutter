@@ -49,13 +49,21 @@ class AuthExampleApp extends StatelessWidget {
 /// Shows the sign in methods while signed out and the account screen once a
 /// session exists. Rebuilds on every auth change so signing in or out swaps the
 /// screen automatically.
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Created once, so a rebuild keeps the same subscription.
+  final _authStateChanges = supabase.auth.onAuthStateChange;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
-      stream: supabase.auth.onAuthStateChange,
+      stream: _authStateChanges,
       builder: (context, snapshot) {
         final session = supabase.auth.currentSession;
         return Scaffold(

@@ -14,8 +14,8 @@ class RoomRepository {
 
   final SupabaseClient _client;
 
-  /// SELECT the existing messages once, oldest first, to seed the chat log
-  /// before realtime starts streaming new ones.
+  /// SELECT the existing messages, oldest first, to seed the chat log once
+  /// realtime is streaming new ones.
   Future<List<MessagesRow>> fetchMessages() =>
       _client.table(Messages.table).select().order(Messages.createdAt);
 

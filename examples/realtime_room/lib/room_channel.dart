@@ -50,6 +50,10 @@ class RoomChannel {
     // Presence: fires whenever the roster changes. Read the full state back
     // and map it to the connected users.
     onlineUsers = _channel.onPresenceSync.map((_) => _currentUsers());
+
+    onReplicationReady = _channel.onSystemEvents.where(
+      (system) => system.extension == 'system' && system.status == 'ok',
+    );
   }
 
   final SupabaseClient _client;
@@ -74,6 +78,13 @@ class RoomChannel {
 
   /// The current room roster (recomputed on every presence sync event).
   late final Stream<List<OnlineUser>> onlineUsers;
+
+  /// Fires each time Postgres Changes replication is live: once after
+  /// [subscribe], and again after every rejoin, for example when the app
+  /// comes back from the background or the network returns. Changes made
+  /// while the channel was away are not streamed afterwards, so this is the
+  /// moment to load the table.
+  late final Stream<void> onReplicationReady;
 
   static const _typingEvent = 'typing';
 

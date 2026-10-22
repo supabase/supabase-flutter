@@ -37,13 +37,21 @@ class PasskeyExampleApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Created once, so a rebuild keeps the same subscription.
+  final _authStateChanges = supabase.auth.onAuthStateChange;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
-      stream: supabase.auth.onAuthStateChange,
+      stream: _authStateChanges,
       builder: (context, snapshot) {
         final session = supabase.auth.currentSession;
         return Scaffold(

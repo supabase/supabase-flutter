@@ -133,6 +133,8 @@ class _RoomPageState extends State<RoomPage> {
   Timer? _typingThrottle;
   bool _loading = true;
   bool _sending = false;
+  List<TypedPostgresChange<MessagesRow, MessagesRow>>? _changesDuringLoad;
+  bool _reloadRequested = false;
 
   @override
   void initState() {
@@ -155,12 +157,14 @@ class _RoomPageState extends State<RoomPage> {
     super.dispose();
   }
 
-  /// Loads the existing messages, then joins the channel and wires the realtime
-  /// streams into the UI.
+  /// Joins the channel and wires the realtime streams into the UI. The
+  /// messages are loaded once replication is live, so a message sent while
+  /// they load still streams in.
   Future<void> _init() async {
     // Start listening before subscribing so no early event is missed.
     _subscriptions.addAll([
       _channel.onMessageChanges.listen(_applyChange, onError: _showError),
+      _channel.onReplicationReady.listen((_) => unawaited(_loadMessages())),
       _channel.onlineUsers.listen(
         (users) => setState(() => _onlineUsers = users),
       ),
@@ -168,20 +172,51 @@ class _RoomPageState extends State<RoomPage> {
     ]);
 
     try {
-      final messages = await _repository.fetchMessages();
-      if (mounted) setState(() => _messages = messages);
       // Bound the join so a dropped connection surfaces as an error instead of
       // leaving the spinner up forever waiting for the replication-ready event.
       await _channel.subscribe().timeout(const Duration(seconds: 30));
     } catch (error) {
       _showError(error);
-    } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// Loads the messages, after joining and again after every rejoin, since
+  /// changes made while the channel was away are never streamed.
+  ///
+  /// Changes that stream in during the fetch are held back and applied on top
+  /// of the result, so the fetch cannot overwrite a newer insert or bring back
+  /// a deleted row.
+  Future<void> _loadMessages() async {
+    if (_changesDuringLoad != null) {
+      _reloadRequested = true;
+      return;
+    }
+    do {
+      _reloadRequested = false;
+      _changesDuringLoad = [];
+      List<MessagesRow>? messages;
+      try {
+        messages = await _repository.fetchMessages();
+      } catch (error) {
+        _showError(error);
+      }
+      final changes = _changesDuringLoad!;
+      _changesDuringLoad = null;
+      if (!mounted) return;
+      if (messages != null) setState(() => _messages = messages!);
+      changes.forEach(_applyChange);
+    } while (_reloadRequested);
+    setState(() => _loading = false);
     _scrollToBottom();
   }
 
   void _applyChange(TypedPostgresChange<MessagesRow, MessagesRow> change) {
+    final changesDuringLoad = _changesDuringLoad;
+    if (changesDuringLoad != null) {
+      changesDuringLoad.add(change);
+      return;
+    }
     switch (change) {
       case TypedPostgresInsert(:final newRow):
         _addMessage(newRow);
