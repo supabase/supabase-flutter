@@ -1,0 +1,16 @@
+# Snippets are fragments, so declarations they only show are not unused.
+analyzer:
+  errors:
+    dead_code: ignore
+    duplicate_import: ignore
+    experimental_member_use: ignore
+    unused_element: ignore
+    unused_import: ignore
+    unused_local_variable: ignore
+    await_only_futures: warning
+  exclude:
+    - build/**
+
+linter:
+  rules:
+    - await_only_futures

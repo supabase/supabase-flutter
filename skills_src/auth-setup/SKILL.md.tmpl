@@ -1,0 +1,164 @@
+---
+name: {{name}}
+description: >-
+  Sets up Supabase auth flows in a Flutter app that leave the app and come
+  back through a link: OAuth sign-in (signInWithOAuth), magic links, email
+  confirmation and password reset. Covers the redirect URL, the dashboard
+  allow list, the Android and iOS deep link configuration, and handling the
+  result with onAuthStateChange. Use when adding one of these flows, or when
+  a sign-in opens the browser but never returns to the app.
+---
+
+# Auth flows that return through a deep link
+
+OAuth sign-in, magic links, email confirmation and password reset all end in
+the browser, which has to hand a link back to the app. `supabase_flutter`
+listens for that link through `app_links`, exchanges it for a session, and
+emits the result on `onAuthStateChange`. The app has to own a URL scheme, and
+the Supabase project has to allow it.
+
+Native sign-in with `signInWithIdToken` (Google, Apple and Facebook SDKs) and
+email or phone codes verified with `verifyOTP` do not leave the app and need
+none of this.
+
+## Rules
+
+- Pick one redirect URL of the form `<scheme>://<host>`, with a scheme unique
+  to the app, usually the reverse domain:
+  `com.example.myapp://login-callback`.
+- Pass it as `redirectTo` or `emailRedirectTo` on every flow, except on web.
+- Add it to the redirect URL allow list of the project, or the server falls
+  back to the Site URL and the app never opens.
+- Register the scheme on every platform the app ships to, and turn off
+  Flutter's own deep link handling there, so `app_links` receives the link.
+- React to the result in `onAuthStateChange`, not after the call that opened
+  the browser: the call returns before the user finishes in the browser.
+- Keep the default pkce flow.
+
+## 1. Allow the redirect URL
+
+- Hosted project: Dashboard, Authentication, URL Configuration, Redirect URLs.
+  Add `com.example.myapp://login-callback`.
+- Local stack: in `supabase/config.toml`:
+
+  ```toml
+  [auth]
+  additional_redirect_urls = ["com.example.myapp://login-callback"]
+  ```
+
+For web, add the origin the app is served from, for example
+`http://localhost:3000/**` during development.
+
+## 2. Register the scheme
+
+Android, in `android/app/src/main/AndroidManifest.xml`, inside the
+`<activity>` of `.MainActivity`:
+
+```xml
+<meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
+
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="com.example.myapp" android:host="login-callback" />
+</intent-filter>
+```
+
+iOS, in `ios/Runner/Info.plist`, inside the top-level `<dict>`, and the same
+in `macos/Runner/Info.plist` for macOS:
+
+```xml
+<key>FlutterDeepLinkingEnabled</key>
+<false/>
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleTypeRole</key>
+    <string>Editor</string>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>com.example.myapp</string>
+    </array>
+  </dict>
+</array>
+```
+
+If the app already uses Flutter deep linking for its router, keep it and let
+the router ignore the auth callback path instead of disabling it.
+
+Windows and Linux need the scheme registered with the system, as described in
+the [`app_links` documentation](https://pub.dev/packages/app_links). Web needs
+no registration.
+
+## 3. Start the flow
+
+```dart file
+import 'package:flutter/foundation.dart';
+
+const redirectUrl = 'com.example.myapp://login-callback';
+
+Future<void> startAuthFlows(SupabaseClient supabase) async {
+  await supabase.auth.signInWithOAuth(
+    OAuthProvider.github,
+    redirectTo: kIsWeb ? null : redirectUrl,
+  );
+
+  await supabase.auth.signInWithOtp(
+    email: 'user@example.com',
+    emailRedirectTo: kIsWeb ? null : redirectUrl,
+  );
+
+  await supabase.auth.resetPasswordForEmail(
+    'user@example.com',
+    redirectTo: kIsWeb ? null : redirectUrl,
+  );
+}
+```
+
+`signUp` takes `emailRedirectTo` for the confirmation email in the same way.
+On web, `null` returns to the current page, which `supabase_flutter` picks the
+session up from.
+
+## 4. Handle the result
+
+Listen once, early, for example in the root widget's `initState`:
+
+```dart
+final subscription = supabase.auth.onAuthStateChange.listen((state) {
+  switch (state) {
+    case AuthInitialSession(:final session):
+      // The session restored at startup, or null.
+      print(session == null ? 'Show sign in' : 'Show home');
+    case AuthSignedIn():
+      // OAuth, magic link and email confirmation end here.
+      print('Show home');
+    case AuthPasswordRecovery():
+      // A password reset link was opened: ask for the new password.
+      print('Show new password form');
+    case AuthSignedOut():
+      print('Show sign in');
+    case _:
+  }
+});
+```
+
+Finish a password reset with the new password:
+
+```dart
+await supabase.auth.updateUser(UserAttributes(password: 'a-new-password'));
+```
+
+A failed exchange, for example an expired link, arrives as an
+`AuthException` error on the same stream, so pass `onError` when the app
+should tell the user.
+
+## When the app does not open, or opens without a session
+
+| Symptom                                              | Cause and fix                                                                                                     |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| The browser lands on the Site URL                    | The redirect URL is missing from the allow list, or differs from `redirectTo` in scheme, host or path.            |
+| The browser shows the link but the app does not open | The scheme is not registered on that platform, or the intent filter is outside `.MainActivity`.                   |
+| The app opens but no `AuthSignedIn` arrives          | Flutter deep linking is still enabled and consumed the link, or the listener was attached after the link came in. |
+| The exchange fails with a missing code verifier      | The flow was started on another device or browser than it finished on. Start and finish on the same device.       |
+| A link from an email works once, then fails          | Email links are single use and expire. Request a new one.                                                         |

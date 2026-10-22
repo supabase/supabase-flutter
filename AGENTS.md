@@ -240,6 +240,16 @@ await Supabase.initialize(
 - Update package changelogs if making notable changes
 - Any change that breaks the public API adds its own section to `MIGRATION.md`
   in the same pull request, under the major version it will ship in
+- The `skills/` folders of the packages are generated from `skills_src/`. Run
+  `melos run sync-skills` after editing it and commit the result, or the
+  "Package skills" CI check fails. The script also pads every Markdown table.
+  The skills symlink `MIGRATION.md`, so links in it must be absolute URLs or
+  anchors
+- Every ```dart block in a skill must compile: `melos run check-skill-snippets`
+  analyzes them against the workspace and the supabase_typegen schema golden.
+  A plain block is checked as a function body, ```dart file as a whole
+  library, ```dart test and ```dart test-file are also run as tests, and
+  ```dart skip is not checked, for code such as v2 "before" examples
 - Line length limit is 80 characters
 - Use `dart format` for consistent formatting
 

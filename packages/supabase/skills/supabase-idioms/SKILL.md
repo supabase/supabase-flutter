@@ -1,0 +1,269 @@
+---
+name: supabase-idioms
+description: >-
+  The current supabase v3 API for writing or reviewing Dart code that talks
+  to Supabase: client setup, typed queries with table(), typed rpc, auth,
+  realtime streams, error handling and logging. Use whenever code imports
+  supabase, or the user asks to query, insert, subscribe, sign in or handle
+  errors with Supabase. Prevents v2 patterns such as from() with maps,
+  anonKey, and realtime callbacks.
+---
+
+# Writing supabase v3 code
+
+Most published Supabase Dart examples are v2 code. v3 changed many of the
+APIs those examples use, so do not copy a pattern from memory without checking
+it against this file. To upgrade an existing v2 project, use the
+`supabase-migrate-v3` skill instead.
+
+## Rules
+
+- Query tables with `table()` and the generated schema, never with
+  `from()` and `Map<String, dynamic>`, unless the table is missing from the
+  generated file.
+- Generate the schema with the Supabase CLI (2.122.0 or newer) and never edit
+  it by hand. Regenerate it after every database migration:
+  `supabase gen types --lang dart --local > lib/supabase_schema.g.dart`. The
+  `supabase-typegen-generate` skill, installed with the `supabase_typegen` dev
+  dependency, covers the setup and the options.
+- Pass `publishableKey`. `anonKey` does not exist in v3.
+- Listen to realtime with streams. v3 has no `callback:` parameters.
+- Catch the `SupabaseException` hierarchy, never `ClientException`,
+  `TimeoutException` or `String`.
+- A typed `update()` or `delete()` does nothing until `.where(…)` or
+  `.all()` is called on it. The analyzer reports a missing one as an
+  `unused_result` warning.
+- Create one `SupabaseClient` per process and reuse it. Call `dispose()` on
+  it before a script exits.
+
+## Client setup
+
+```dart file
+final supabase = SupabaseClient(
+  'https://your-project.supabase.co',
+  'your-publishable-key',
+  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
+);
+```
+
+A client without an `asyncStorage` throws when it is created, since the
+default pkce flow stores its code verifier there. Pass `persistSession: true`
+and a storage that writes to disk to keep the session across runs, then
+`await supabase.auth.initialized` before reading `currentSession`.
+
+## Reading rows
+
+The generated file has, per table, a row type (`BooksRow`), insert and update
+types (`BooksInsert`, `BooksUpdate`) and a class (`Books`) with the table
+definition and one constant per column and relation. A table in another
+schema carries the schema as a prefix, `InventoryBooks`.
+
+```dart
+final List<BooksRow> books = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.inPrint.isTrue() & Books.price.lt(10))
+    .order(Books.createdAt.desc())
+    .limit(20);
+final String title = books.first.title;
+
+final BooksRow book = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.id.eq(1))
+    .single();
+```
+
+Filters are methods on the column constants, combined with `&`, `|` and
+`not()`. Values must match the column type, and `isNull()` only exists on
+nullable columns. `order()` sorts ascending unless the ordering says
+`.desc()`.
+
+Read some columns only, or embed related rows, with `selectOnly`, and read
+the values back through the same constants:
+
+```dart
+final books = await supabase.table(Books.table).selectOnly([
+  Books.title,
+  Books.authors(Authors.name),
+]);
+final String title = books.first.read(Books.title);
+final String? authorName = books.first.read(Books.authors)?.read(Authors.name);
+```
+
+## Writing rows
+
+```dart
+await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Dune'));
+
+final BooksRow inserted = await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Emma'))
+    .select()
+    .single();
+
+await supabase
+    .table(Books.table)
+    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .where(Books.id.eq(1));
+
+await supabase.table(Books.table).delete().where(Books.id.eq(1));
+```
+
+- Several rows go through `insertAll()` and `upsertAll()`.
+- A `null` argument to `BooksInsert` or `BooksUpdate` leaves the column out.
+  Write SQL `NULL` with the generated `set…ToNull()` methods.
+- Writes resolve to `void`. Add `.select()` to get the written rows back.
+- `upsert()` takes `onConflict` as a list of columns,
+  `onConflict: [Authors.name]`.
+
+## Calling database functions
+
+Every function PostgREST exposes gets a typed method on `rpc`:
+
+```dart
+final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
+```
+
+`supabase.rpc('fn', params: {...})` is the untyped fallback for functions the
+generator gives no method, which it explains in a comment in the generated
+file.
+
+## Auth
+
+Sign-in methods that always produce a session return the `Session`:
+
+```dart
+final session = await supabase.auth.signInWithPassword(
+  email: 'user@example.com',
+  password: 'a-strong-password',
+);
+final user = session.user;
+```
+
+`signUp()` and `verifyOTP()` still return an `AuthResponse`, since they can
+complete without a session.
+
+`AuthState` is sealed, with one subtype per event. Every new listener first
+receives `AuthInitialSession` with the current session or `null`:
+
+```dart
+final subscription = supabase.auth.onAuthStateChange.listen((state) {
+  switch (state) {
+    case AuthInitialSession(:final session):
+      // The session when this listener attached, or null.
+      print(session?.user.id);
+    case AuthSignedIn(:final session):
+      print('Signed in as ${session.user.email}');
+    case AuthSignedOut():
+      print('Signed out');
+    case _:
+  }
+});
+```
+
+`user.userMetadata` is never null, and `user.appMetadata` is an
+`AppMetadata` with typed `provider` and `providers`.
+
+## Realtime
+
+Keep a list of rows up to date with `stream()`:
+
+```dart
+final Stream<List<BooksRow>> books = supabase
+    .table(Books.table)
+    .stream(primaryKey: [Books.id])
+    .filter(Books.authorId.eq(2))
+    .order(Books.title);
+```
+
+The `supabase-realtime` skill covers broadcast, presence and channel
+status in more depth.
+
+React to individual changes with `onTableChanges`. Create the stream before
+`subscribe()`, and remove the channel when done:
+
+```dart
+final channel = supabase.channel('books');
+final subscription = channel
+    .onTableChanges(Books.table, filters: [Books.authorId.eq(2)])
+    .listen((change) {
+      switch (change) {
+        case TypedPostgresInsert(:final newRow):
+          print('Added ${newRow.title}');
+        case TypedPostgresUpdate(:final newRow):
+          print('Changed ${newRow.title}');
+        case TypedPostgresDelete(:final oldRow):
+          print('Removed ${oldRow.read(Books.id)}');
+      }
+    });
+channel.subscribe();
+
+await subscription.cancel();
+await supabase.removeChannel(channel);
+```
+
+Broadcast and connection status are streams too:
+
+```dart
+final channel = supabase.channel('room');
+channel.onBroadcast(event: 'cursor').listen((payload) => print(payload));
+channel.onStatusChange.listen((change) async {
+  if (change.status == RealtimeSubscribeStatus.subscribed) {
+    await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 1});
+  }
+});
+channel.subscribe();
+```
+
+The table must be added to the `supabase_realtime` publication in the
+database, or no changes arrive.
+
+## Errors
+
+Every exception the SDK throws for a failed request extends
+`SupabaseException`. `SupabaseApiException` means the server answered with an
+error, and `SupabaseTransportException` means no response arrived, including a
+timeout:
+
+```dart
+try {
+  await supabase.table(Books.table).select();
+} on SupabaseApiException catch (error) {
+  print('${error.statusCode} ${error.errorCode}: ${error.message}');
+} on SupabaseTransportException catch (error) {
+  print('No response: ${error.cause}');
+}
+```
+
+Each service also has its own base, such as `PostgrestException`,
+`AuthException` or `StorageException`, to catch the errors of one service
+only. `AuthApiException` and `PostgrestApiException` carry the server's
+`errorCode`.
+
+## Logging
+
+The SDK never prints. It logs through `package:logging` under the `supabase`
+logger, so listen to it to see the records:
+
+```dart file
+import 'package:logging/logging.dart';
+
+void enableSupabaseLogs() {
+  Logger.root.onRecord.listen((record) {
+    if (record.loggerName.startsWith('supabase.')) {
+      print('${record.loggerName}: ${record.level.name}: ${record.message}');
+    }
+  });
+}
+```
+
+## Tests
+
+Use the `supabase_test` package as a dev dependency instead of mocking the
+HTTP client by hand. Its `MockSupabaseHttpClient`, `testSupabaseClient` and
+`signInTestUser` answer requests and put a client in a signed-in state. The
+`supabase-test-testing` skill, installed with the `supabase_test` dev
+dependency, covers stubbing, assertions, auth and realtime in tests.

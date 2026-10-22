@@ -1,0 +1,273 @@
+---
+name: {{name}}
+description: >-
+  Writes unit and widget tests for Dart and Flutter code that uses Supabase,
+  with the supabase_test package: a real SupabaseClient whose HTTP requests
+  are answered by stubs and whose realtime socket runs in memory. Use when
+  testing code that queries tables, calls rpc or edge functions, signs users
+  in, uses storage or subscribes to realtime, or when replacing hand-written
+  mocks of the Supabase client or mock_supabase_http_client.
+---
+
+# Testing Supabase code with supabase_test
+
+## Rules
+
+- Test against a real client from `testSupabaseClient`, or
+  `initializeTestSupabase` in a Flutter widget test. Never mock or subclass
+  `SupabaseClient`, `AuthClient` or the query builders, and never subclass
+  `http.BaseClient` for Supabase requests.
+- Answer requests with the `stub…` methods of `MockSupabaseHttpClient`.
+  Stub the rows the code under test should receive: filters are not evaluated.
+- Put a client into a signed-in state with `signInTestUser`. Build auth
+  payloads with `testUserJson` and `testSessionResponseJson`, and tokens with
+  `unsignedTestJwt`. Never hand-assemble a JWT or session JSON.
+- Assert on what was sent with `requests` and `requestsTo`, not by wrapping
+  the client.
+- Dispose every client at the end of the test.
+- Match methods with `HttpMethod.post.value` and friends, not raw strings.
+
+## Setup
+
+Add `supabase_test` as a dev dependency, next to `test`, or `flutter_test` in
+a Flutter app:
+
+```sh
+dart pub add dev:supabase_test dev:test
+```
+
+Use `flutter pub add dev:supabase_test` in a Flutter app, and import
+`package:flutter_test/flutter_test.dart` instead of `package:test/test.dart`.
+
+```dart test-file
+import 'package:test/test.dart';
+import 'package:supabase_test/supabase_test.dart';
+
+void main() {
+  late MockSupabaseHttpClient httpClient;
+  late SupabaseClient supabase;
+
+  setUp(() {
+    httpClient = MockSupabaseHttpClient();
+    supabase = testSupabaseClient(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+  });
+
+  test('loads the books in print', () async {
+    httpClient.stubTable(
+      Books.table.name,
+      rows: [
+        {'id': 1, 'author_id': 2, 'title': 'Dune', 'in_print': true},
+      ],
+    );
+
+    final books = await supabase
+        .table(Books.table)
+        .selectOnly([Books.id, Books.title])
+        .where(Books.inPrint.isTrue());
+
+    expect(books.single.read(Books.title), 'Dune');
+  });
+}
+```
+
+The stubbed rows are the JSON PostgREST would return, with database column
+names, so a typed query decodes them exactly like a real response. Stub every
+column the query reads: a `select()` that reads all columns of `BooksRow`
+needs every non-nullable column in each row.
+
+## Stubbing
+
+| Endpoint                             | Stub                                                                                                       |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| A table                              | `stubTable('books', rows: [...])`                                                                          |
+| A database function                  | `stubRpc('book_by_id', body: {...})`                                                                       |
+| An edge function                     | `stubEdgeFunction('hello', body: {...})`                                                                   |
+| Sign in, sign up, sign out, the user | `stubSignIn()`, `stubSignUp()`, `stubSignOut()`, `stubUser()`                                              |
+| Storage                              | `stubStorageUpload`, `stubStorageDownload`, `stubStorageSignedUrl`, `stubStorageList`, `stubStorageRemove` |
+| Any other path                       | `stub(body, method: HttpMethod.get.value, path: '/storage/v1/bucket/avatars')`                             |
+| A response computed from the request | `stubHandler((request) => jsonResponse(...), path: ...)`                                                   |
+| No network                           | `stubError(ClientException('Offline'))`                                                                    |
+| A request that never answers         | `stubStall(path: ...)`                                                                                     |
+| Retries                              | `stubStatuses([503, 503, 200], body: [...], path: ...)`                                                    |
+
+- The latest matching stub wins, so register defaults in `setUp` and override
+  them in a test.
+- `times:` limits how often a stub answers. Register the later responses
+  first to answer a sequence.
+- `query:` narrows a stub to requests carrying those query parameters, for
+  example `query: {'id': 'eq.1'}`.
+- An unmatched request throws a `StateError` naming the request and the
+  registered stubs.
+- `single()` receives the only row of a one-row stub, and a count query
+  receives the number of rows, or `count:` when it is given.
+
+Errors are stubbed with the status code and the service's error body:
+
+```dart test
+final httpClient = MockSupabaseHttpClient()
+  ..stubTable(
+    'books',
+    rows: {'message': 'permission denied', 'code': '42501'},
+    statusCode: 403,
+  );
+final supabase = testSupabaseClient(httpClient: httpClient);
+
+await expectLater(
+  () => supabase.table(Books.table).select(),
+  throwsA(isA<PostgrestApiException>()),
+);
+```
+
+## Asserting on requests
+
+```dart test
+final httpClient = MockSupabaseHttpClient()..stubTable('books');
+final supabase = testSupabaseClient(httpClient: httpClient);
+
+await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Dune'));
+
+final insert = httpClient
+    .requestsTo('/rest/v1/books', method: HttpMethod.post.value)
+    .single;
+expect(insert.jsonBody, {'author_id': 2, 'title': 'Dune'});
+```
+
+`requests` holds every answered request with its body already read,
+`queryParameters` and `headers` are on each one, and `reset()` clears stubs
+and recorded requests.
+
+## Auth
+
+Run a test as a signed-in user without any network traffic:
+
+```dart test
+final httpClient = MockSupabaseHttpClient()..stubTable('books', rows: []);
+final supabase = testSupabaseClient(httpClient: httpClient);
+
+final session = await signInTestUser(
+  supabase.auth,
+  userId: 'user-1',
+  email: 'someone@example.com',
+);
+await supabase.table(Books.table).select();
+
+expect(
+  httpClient.requests.last.headers['Authorization'],
+  'Bearer ${session.accessToken}',
+);
+```
+
+To test a sign-in flow itself, stub the endpoint and call the real method:
+
+```dart test
+final httpClient = MockSupabaseHttpClient()
+  ..stubSignIn(user: testUserJson(id: 'user-1'));
+final supabase = testSupabaseClient(httpClient: httpClient);
+
+final session = await supabase.auth.signInWithPassword(
+  email: 'someone@example.com',
+  password: 'password',
+);
+expect(session.user.id, 'user-1');
+```
+
+## Realtime
+
+Pass a `MockRealtimeTransport`, an in-memory realtime server, and push server
+events from the test:
+
+```dart test
+final realtime = MockRealtimeTransport();
+final supabase = testSupabaseClient(
+  httpClient: MockSupabaseHttpClient(),
+  realtime: realtime,
+);
+
+final channel = supabase.channel('books');
+final changes = channel.onTableChanges(Books.table);
+channel.subscribe();
+await channel.onStatusChange.firstWhere(
+  (change) => change.status == RealtimeSubscribeStatus.subscribed,
+);
+
+realtime.emitPostgresChange(
+  table: 'books',
+  event: PostgresChangeEvent.insert,
+  newRecord: {'id': 1, 'author_id': 2, 'title': 'Dune', 'in_print': true},
+);
+final change = await changes.first;
+expect(change, isA<TypedPostgresInsert<BooksRow, BooksRow>>());
+```
+
+A `stream()` test stubs the initial rows with `stubTable` and then emits the
+changes it wants applied. `emitBroadcast` delivers a broadcast message,
+`closeConnection` drops the socket, and `sent` and `joinedTopics` record what
+the client sent.
+
+## Flutter widget tests
+
+`initializeTestSupabase` from `package:supabase_flutter/testing.dart`
+initializes `Supabase.instance` with the same test defaults, so widgets that
+read `Supabase.instance.client` work unchanged:
+
+```dart test-file
+import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/testing.dart';
+import 'package:supabase_test/supabase_test.dart';
+
+class BookTitles extends StatefulWidget {
+  const BookTitles({super.key});
+
+  @override
+  State<BookTitles> createState() => _BookTitlesState();
+}
+
+class _BookTitlesState extends State<BookTitles> {
+  final _books = Supabase.instance.client
+      .table(Books.table)
+      .selectOnly([Books.id, Books.title]);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _books,
+      builder: (context, snapshot) => Column(
+        children: [
+          for (final book in snapshot.data ?? const [])
+            Text(book.read(Books.title), textDirection: TextDirection.ltr),
+        ],
+      ),
+    );
+  }
+}
+
+void main() {
+  testWidgets('shows the book titles', (tester) async {
+    final httpClient = MockSupabaseHttpClient()
+      ..stubTable(
+        'books',
+        rows: [
+          {'id': 1, 'title': 'Dune'},
+        ],
+      );
+    final supabase = await initializeTestSupabase(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+
+    await tester.pumpWidget(const BookTitles());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dune'), findsOneWidget);
+  });
+}
+```
+
+## Integration tests
+
+Mocks are for fast unit tests. For end-to-end coverage, run the tests
+against a local stack from `supabase start` and point a regular client at the
+URL and keys it prints.

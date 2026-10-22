@@ -30,6 +30,7 @@ workspace:
   - examples/passkeys
   - examples/realtime_room
   - examples/storage_transforms
+  - tool/skill_snippets
 
 dev_dependencies:
   melos: ^8.2.1
@@ -64,3 +65,11 @@ melos:
           } > $d/lib/src/version.dart
         done
         git add packages/*/lib/src/version.dart
+
+    sync-skills:
+      description: Renders the package skills in skills_src/ into the packages that ship them
+      run: dart scripts/sync_skills.dart
+
+    check-skill-snippets:
+      description: Analyzes every Dart snippet of the package skills against the workspace
+      run: dart scripts/check_skill_snippets.dart

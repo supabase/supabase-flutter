@@ -1,0 +1,38 @@
+name: Package skills
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Check package skills are in sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Check package skills
+        run: dart scripts/sync_skills.dart --check
+
+      - name: Resolve workspace dependencies
+        run: flutter pub get
+
+      - name: Check skill snippets compile
+        run: dart scripts/check_skill_snippets.dart
