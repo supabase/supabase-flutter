@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:realtime_room_example/main.dart';
-import 'package:realtime_room_example/supabase_schema.g.dart';
 import 'package:realtime_room_example/room_repository.dart';
+import 'package:realtime_room_example/supabase_schema.g.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');

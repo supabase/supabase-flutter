@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
-import 'supabase_schema.g.dart';
 import 'room_channel.dart';
 import 'room_repository.dart';
+import 'supabase_schema.g.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabasePublishableKey = String.fromEnvironment(
@@ -160,7 +160,7 @@ class _RoomPageState extends State<RoomPage> {
   Future<void> _init() async {
     // Start listening before subscribing so no early event is missed.
     _subscriptions.addAll([
-      _channel.onMessageChanges.listen(_applyChange),
+      _channel.onMessageChanges.listen(_applyChange, onError: _showError),
       _channel.onlineUsers.listen(
         (users) => setState(() => _onlineUsers = users),
       ),

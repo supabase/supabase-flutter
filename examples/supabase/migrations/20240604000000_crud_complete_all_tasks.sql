@@ -7,6 +7,7 @@
 create function public.complete_all_tasks(target_project_id uuid default null)
 returns integer
 language sql
+set search_path = ''
 as $$
   with completed as (
     update public.tasks

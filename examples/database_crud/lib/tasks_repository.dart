@@ -33,7 +33,7 @@ class TasksRepository {
     bool onlyIncomplete = false,
   }) async {
     // Filters are values, so the optional ones are collected and combined
-    // with `&` instead of reassigning the query builder.
+    // with `&` into a single `where`.
     final filters = [
       if (projectId != null) Tasks.projectId.eq(projectId),
       if (search != null && search.isNotEmpty) Tasks.title.ilike('%$search%'),
