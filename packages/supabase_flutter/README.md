@@ -155,11 +155,11 @@ print(books.first.title);
   - [Passkeys](#passkeys)
   - [Android Restore Credentials](#android-restore-credentials)
 - [Realtime](#realtime)
-  - [Live rows with `stream()`](#live-rows)
+  - [Live rows with `stream()`](#live-rows-with-stream)
   - [Postgres changes](#postgres-changes)
   - [Broadcast](#broadcast)
   - [Presence](#presence)
-  - [Realtime and the app lifecycle](#realtime-app-lifecycle)
+  - [Realtime and the app lifecycle](#realtime-and-the-app-lifecycle)
 - [Storage](#storage)
 - [Edge Functions](#edge-functions)
 - [Errors](#errors)
@@ -172,7 +172,7 @@ print(books.first.title);
 The examples below use a `books` table with a foreign key to an `authors`
 table, and the types generated for them.
 
-## <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
+## [Database](https://supabase.com/docs/guides/database)
 
 Filters are methods on the column constants, combined with `&`, `|` and
 `not()`. The compiler checks that a value matches the type of its column, and
@@ -241,7 +241,7 @@ remain for tables and functions that are not in the generated file. The full
 list of filters and modifiers is in the
 [Dart reference](https://supabase.com/docs/reference/dart/select).
 
-## <a id="authentication"></a>[Authentication](https://supabase.com/docs/guides/auth)
+## [Authentication](https://supabase.com/docs/guides/auth)
 
 Sign-in methods that always produce a session return the `Session`. `signUp()`
 and `verifyOTP()` return an `AuthResponse`, since they can complete without
@@ -286,7 +286,7 @@ final subscription = supabase.auth.onAuthStateChange.listen((state) {
 `supabase.auth.currentUser` and `supabase.auth.currentSession` hold the
 state at any time, without listening.
 
-### <a id="native-apple-sign-in"></a>Native Apple sign in
+### Native Apple sign in
 
 Use the [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple)
 package and follow its README to set up Apple sign in on iOS and macOS. Then
@@ -327,7 +327,7 @@ Future<Session> signInWithApple() async {
 }
 ```
 
-### <a id="native-google-sign-in"></a>Native Google sign in
+### Native Google sign in
 
 Use the [google_sign_in](https://pub.dev/packages/google_sign_in) package and
 follow its README for the platform setup. Google sign in with Supabase needs a
@@ -375,7 +375,7 @@ Future<Session> signInWithGoogle() async {
 }
 ```
 
-### <a id="native-facebook-sign-in"></a>Native Facebook sign in
+### Native Facebook sign in
 
 Use [flutter_facebook_auth](https://pub.dev/packages/flutter_facebook_auth)
 `^7.1.7` with `signInWithIdToken` on iOS and Android:
@@ -434,7 +434,7 @@ Future<Session> signInWithFacebook() async {
 Without the Facebook SDK, use `signInWithOAuth()` from the next section,
 which runs the Facebook login in the browser.
 
-### <a id="oauth-login"></a>OAuth login
+### OAuth login
 
 `signInWithIdToken()` supports Apple, Google, Facebook, Kakao and Keycloak.
 Every other provider signs in through `signInWithOAuth()`, which opens the
@@ -464,7 +464,7 @@ Future<Session> signInWithGitHub() async {
 To run the flow in an in-app browser session instead of the system browser,
 add [`supabase_flutter_web_auth`](https://pub.dev/packages/supabase_flutter_web_auth).
 
-### <a id="passkeys"></a>Passkeys
+### Passkeys
 
 > Passkeys are a beta feature. Enable them in the Supabase dashboard under
 > **Authentication > Configuration > Passkeys** before using these methods.
@@ -505,7 +505,7 @@ Future<void> passkeys() async {
 The plugin documents its platform requirements and setup, and how to handle a
 failed ceremony, such as the user cancelling.
 
-### <a id="android-restore-credentials"></a>Android Restore Credentials
+### Android Restore Credentials
 
 Android's
 [Restore Credentials](https://developer.android.com/identity/sign-in/restore-credentials)
@@ -523,7 +523,7 @@ same authenticator. The `PasskeyAuthenticator` of the
 
 The API documentation of `AuthClientRestoreCredential` has the details.
 
-## <a id="realtime"></a>[Realtime](https://supabase.com/docs/guides/realtime)
+## [Realtime](https://supabase.com/docs/guides/realtime)
 
 Postgres changes only arrive for tables in the `supabase_realtime`
 publication. Add a table to it in the dashboard under **Database >
@@ -533,7 +533,7 @@ Publications**, or in a migration:
 alter publication supabase_realtime add table books;
 ```
 
-### <a id="live-rows"></a>Live rows with `stream()`
+### Live rows with `stream()`
 
 `stream()` emits the rows of a table, first as they are and then again after
 every change:
@@ -581,7 +581,7 @@ class _BookListState extends State<BookList> {
 }
 ```
 
-### <a id="postgres-changes"></a>[Postgres changes](https://supabase.com/docs/guides/realtime/postgres-changes)
+### [Postgres changes](https://supabase.com/docs/guides/realtime/postgres-changes)
 
 `onTableChanges` emits each insert, update and delete as a typed change.
 Create the stream before calling `subscribe()`, and remove the channel when
@@ -610,7 +610,7 @@ await supabase.removeChannel(channel);
 
 Pass `event: PostgresChangeEvent.insert` to receive one kind of change only.
 
-### <a id="broadcast"></a>[Broadcast](https://supabase.com/docs/guides/realtime/broadcast)
+### [Broadcast](https://supabase.com/docs/guides/realtime/broadcast)
 
 Broadcast sends low latency messages between connected clients, without
 going through the database. Send once the channel is subscribed:
@@ -634,7 +634,7 @@ channel.onStatusChange.listen((change) async {
 channel.subscribe();
 ```
 
-### <a id="presence"></a>[Presence](https://supabase.com/docs/guides/realtime/presence)
+### [Presence](https://supabase.com/docs/guides/realtime/presence)
 
 Presence shares state between the clients of a channel, such as who is
 online:
@@ -661,7 +661,7 @@ channel.onStatusChange.listen((change) async {
 channel.subscribe();
 ```
 
-### <a id="realtime-app-lifecycle"></a>Realtime and the app lifecycle
+### Realtime and the app lifecycle
 
 `Supabase` disconnects the realtime socket when the app is paused, and
 reconnects it, rejoining every joined channel, when the app is resumed. Every
@@ -686,7 +686,7 @@ entirely. The socket then stays open in the background until the operating
 system closes it, and the realtime client reconnects and rejoins its channels
 once the app runs again.
 
-## <a id="storage"></a>[Storage](https://supabase.com/docs/guides/storage)
+## [Storage](https://supabase.com/docs/guides/storage)
 
 `storage.from()` selects a bucket. It is the storage API, not a database
 query.
@@ -712,7 +712,7 @@ Future<void> storage() async {
 
 `upload()` takes a `File` instead of bytes, on every platform except the web.
 
-## <a id="edge-functions"></a>[Edge Functions](https://supabase.com/docs/guides/functions)
+## [Edge Functions](https://supabase.com/docs/guides/functions)
 
 ```dart
 final response = await supabase.functions.invoke(
@@ -722,7 +722,7 @@ final response = await supabase.functions.invoke(
 print(response.data);
 ```
 
-## <a id="errors"></a>Errors
+## Errors
 
 Every exception the SDK throws for a failed request extends
 `SupabaseException`. `SupabaseApiException` means the server answered with an
@@ -743,7 +743,7 @@ Each service also has its own base class, such as `PostgrestException`,
 `AuthException`, `StorageException` or `FunctionException`, to catch the
 errors of one service only.
 
-## <a id="deep-links"></a>Deep links
+## Deep links
 
 ### When you need deep links
 
@@ -780,7 +780,7 @@ for the configuration of each platform. The
 [native mobile deep linking guide](https://supabase.com/docs/guides/auth/native-mobile-deep-linking)
 covers the Supabase side for each OAuth provider.
 
-## <a id="custom-session-storage"></a>Custom session storage
+## Custom session storage
 
 By default, `supabase_flutter` persists the user session, and the code
 verifiers of pending PKCE flows, with the `SharedPreferencesAsync` API of
@@ -922,7 +922,7 @@ listening and setting levels on `Logger.root`.
 | `supabase_functions` | `Logger('supabase.functions')`      |
 | `iceberg`            | `Logger('supabase.storage.iceberg')` |
 
-## <a id="request-ids-and-tracing"></a>Request ids and tracing
+## Request ids and tracing
 
 When a request fails, the Supabase logs of your project usually say why. There
 are two ways to find the entries of a specific request: the request id on the
@@ -1060,7 +1060,7 @@ of `0`, the client still sends `traceparent` so the Supabase logs get a trace
 id to correlate on, but withholds `tracestate` and `baggage`. Set
 `respectSamplingDecision` to `false` to send them on unsampled traces as well.
 
-## <a id="testing"></a>Testing
+## Testing
 
 Test code that uses Supabase with
 [`supabase_test`](https://pub.dev/packages/supabase_test): a real client whose

@@ -148,7 +148,7 @@ related rows, realtime, auth, storage, edge functions and errors.
 - [Dart reference](https://supabase.com/docs/reference/dart/introduction)
 - [Supabase docs](https://supabase.com/docs)
 
-## <a id="server-side-usage"></a>Server-side usage
+## Server-side usage
 
 Create one `SupabaseClient` when the process starts and reuse it for as long as the process lives.
 The client keeps a pool of HTTP connections, and a request on a warm connection skips the TCP
