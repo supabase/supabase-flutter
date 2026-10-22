@@ -307,6 +307,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///     .update(BookUpdate(title: 'bar'))
   ///     .where(Books.id.eq(1));
   /// ```
+  @UseResult('Call where() or all() to send the request')
   PostgrestTypedUnscopedBuilder<Row> update(Update values) => _mutation(
     _request(
       PostgrestTableOperation.update,
@@ -325,6 +326,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ```dart
   /// await client.table(Books.table).delete().where(Books.id.eq(1));
   /// ```
+  @UseResult('Call where() or all() to send the request')
   PostgrestTypedUnscopedBuilder<Row> delete() =>
       _mutation(_request(PostgrestTableOperation.delete));
 

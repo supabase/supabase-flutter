@@ -925,11 +925,11 @@ await supabase.table(Books.table).delete().all();
 ```
 
 Dart allows `await` on a value that is not a `Future`, so an unchanged bare `await` of `update()`
-or `delete()` still compiles and silently performs no request. The `await_only_futures` lint of
-the core lint set reports every such line; make sure it is enabled and fix its reports when
-upgrading. Anything chained directly after `update()` or `delete()`, a filter, `select()`,
-`order()`, `maxAffected()` or a request option, does not compile until it moves after the
-`where()` or `all()`. Code that stores the result of `update()` or
+or `delete()` still compiles and silently performs no request. The analyzer reports every such
+line as an `unused_result` warning, which is on by default; fix those warnings when upgrading.
+Anything chained directly after `update()` or `delete()`, a filter, `select()`, `order()`,
+`maxAffected()` or a request option, does not compile until it moves after the `where()` or
+`all()`. Code that stores the result of `update()` or
 `delete()` in a variable typed as `PostgrestTypedFilterBuilder<Row, void>` needs
 `PostgrestTypedUnscopedBuilder<Row>` instead, or a `where()` or `all()` call. `update()` and
 `delete()` on `from()` are unchanged.
@@ -2666,7 +2666,8 @@ request, so the database default applies or the value stays unchanged. To write 
 generated `set…ToNull()` methods, which only exist for nullable columns.
 
 An `update()` or `delete()` sends nothing until it says which rows it acts on, through `where()`
-or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request:
+or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request,
+and the analyzer reports it as an `unused_result` warning:
 
 ```dart
 // Before

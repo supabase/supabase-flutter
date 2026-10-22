@@ -10,8 +10,8 @@ part of 'postgrest_typed_builder.dart';
 /// as [all] instead.
 ///
 /// Dart allows `await` on any value, so a bare `await table.update(…)` still
-/// compiles and performs no request. The `await_only_futures` lint of the
-/// core lint set reports it; keep that lint enabled.
+/// compiles and performs no request. The analyzer reports it as an
+/// `unused_result` warning.
 @experimental
 final class PostgrestTypedUnscopedBuilder<Row> {
   const PostgrestTypedUnscopedBuilder._(
