@@ -241,6 +241,10 @@ class RealtimeClient {
   String? get accessToken => _accessToken;
   String? _accessToken;
 
+  /// Incremented whenever an access token resolution starts, so a slower,
+  /// earlier resolution cannot overwrite the token of a later one.
+  int _accessTokenResolution = 0;
+
   /// The channels registered on this client, as an unmodifiable view.
   ///
   /// Create channels with [channel] and remove them with [removeChannel] or
@@ -899,8 +903,12 @@ class RealtimeClient {
   /// A null [token] asks [customAccessToken] for a fresh one, and keeps the
   /// current token when there is no provider.
   Future<void> setAccessToken(String? token) async {
+    final resolution = ++_accessTokenResolution;
     final tokenToSend =
         token ?? (await customAccessToken?.call()) ?? _accessToken;
+    if (resolution != _accessTokenResolution) {
+      return;
+    }
     _applyAccessToken(tokenToSend);
   }
 
@@ -1061,6 +1069,7 @@ class RealtimeClient {
   Future<void> _resolveAccessTokenAndFlush() async {
     final customAccessToken = this.customAccessToken;
     if (customAccessToken != null) {
+      _accessTokenResolution++;
       final originConnection = _connection;
       final String? providedToken;
       try {

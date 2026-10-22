@@ -21,8 +21,22 @@ void main() {
     return supabase.realtime.accessToken;
   }
 
+  String accessTokenWith(Map<String, dynamic> claims) => unsignedTestJwt({
+    'exp':
+        DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        1000,
+    'sub': testUserId,
+    'role': 'authenticated',
+    ...claims,
+  });
+
   test('follows a sign-in', () async {
-    final session = await signInTestUser(supabase.auth);
+    httpClient.stubSignIn();
+
+    final session = await supabase.auth.signInWithPassword(
+      email: 'fake1@email.com',
+      password: 'password',
+    );
 
     expect(await realtimeToken(), session.accessToken);
   });
@@ -47,14 +61,7 @@ void main() {
 
   test('follows the aal2 session of a verified MFA challenge', () async {
     await signInTestUser(supabase.auth, claims: {'aal': 'aal1'});
-    final aal2Token = unsignedTestJwt({
-      'exp':
-          DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
-          1000,
-      'sub': testUserId,
-      'role': 'authenticated',
-      'aal': 'aal2',
-    });
+    final aal2Token = accessTokenWith({'aal': 'aal2'});
     httpClient.stub(
       testSessionResponseJson(accessToken: aal2Token),
       method: HttpMethod.post.value,
@@ -76,15 +83,7 @@ void main() {
     ('email_change', AuthChangeEvent.userUpdated),
   ]) {
     test('follows the session of a ${event.name} redirect', () async {
-      final redirectToken = unsignedTestJwt({
-        'exp':
-            DateTime.now()
-                .add(const Duration(hours: 1))
-                .millisecondsSinceEpoch ~/
-            1000,
-        'sub': testUserId,
-        'role': 'authenticated',
-      });
+      final redirectToken = accessTokenWith({});
       httpClient.stubUser();
       final events = <AuthChangeEvent>[];
       final subscription = supabase.auth.onAuthStateChange.listen(

@@ -161,6 +161,24 @@ void main() {
       expect(calls, 4);
     });
 
+    test('drops a heartbeat token that resolves after a newer one', () async {
+      final heartbeatToken = Completer<String?>();
+      var calls = 0;
+      final socket = providerClient(
+        () => ++calls == 1 ? Future.value('token') : heartbeatToken.future,
+      );
+      await socket.connect();
+      await pumpEventQueue();
+
+      final heartbeat = socket.sendHeartbeat();
+      await pumpEventQueue();
+      await socket.setAccessToken('explicit');
+      heartbeatToken.complete('stale');
+      await heartbeat;
+
+      expect(socket.accessToken, 'explicit');
+    });
+
     test('keeps the current token when the provider throws', () async {
       var calls = 0;
       final socket = providerClient(() async {
