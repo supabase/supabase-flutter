@@ -14,7 +14,12 @@ void main() {
   const authUrl = 'http://localhost:9999';
   const refreshQuery = {'grant_type': 'refresh_token'};
   const apiVersionHeaders = {'x-sb-api-version': '2024-01-01'};
+  const tickDuration = Duration(seconds: 10);
   const htmlPage = '<html><body>Sign in to the network</body></html>';
+  const rateLimit = {
+    'code': 'over_request_rate_limit',
+    'msg': 'Request rate limit reached',
+  };
   final storageKey = defaultPersistSessionKey(authUrl);
 
   late MockSupabaseHttpClient httpClient;
@@ -24,12 +29,19 @@ void main() {
   late List<Object> errors;
   late Session stored;
 
-  AuthClient createClient({
+  setUp(() {
+    httpClient = MockSupabaseHttpClient();
+    storage = TestAsyncStorage();
+    states = [];
+    errors = [];
+  });
+
+  Future<void> signIn({
     SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(
       enabled: false,
     ),
-  }) {
-    final authClient = AuthClient(
+  }) async {
+    client = AuthClient(
       url: authUrl,
       asyncStorage: storage,
       httpClient: httpClient,
@@ -37,13 +49,15 @@ void main() {
       autoRefreshToken: false,
       retryOptions: retryOptions,
     );
-    addTearDown(authClient.dispose);
-    final subscription = authClient.onAuthStateChange.listen(
+    addTearDown(client.dispose);
+    final subscription = client.onAuthStateChange.listen(
       states.add,
       onError: errors.add,
     );
     addTearDown(subscription.cancel);
-    return authClient;
+    stored = await signInTestUser(client);
+    await pumpEventQueue();
+    states.clear();
   }
 
   void stubRefreshJson(
@@ -94,16 +108,7 @@ void main() {
 
   Iterable<AuthChangeEvent> events() => states.map((state) => state.event);
 
-  setUp(() async {
-    httpClient = MockSupabaseHttpClient();
-    storage = TestAsyncStorage();
-    states = [];
-    errors = [];
-    client = createClient();
-    stored = await signInTestUser(client);
-    await pumpEventQueue();
-    states.clear();
-  });
+  int refreshRequests() => httpClient.requestsTo('/token').length;
 
   Future<void> expectSessionKept() async {
     await pumpEventQueue();
@@ -112,27 +117,28 @@ void main() {
     expect(await storage.getItem(storageKey), isNotNull);
   }
 
+  /// Runs an auto refresh tick at [now], close enough to the expiry of the
+  /// stored session that the tick refreshes it.
+  Future<void> tick({Duration after = Duration.zero}) {
+    final now = stored.expiresAt!
+        .subtract(const Duration(seconds: 20))
+        .add(after);
+    return withClock(Clock.fixed(now), () async {
+      client.startAutoRefresh();
+      await pumpEventQueue();
+      client.stopAutoRefresh();
+    });
+  }
+
   final transientFailures = <String, void Function({int? times})>{
-    '429 with a JSON error': ({times}) => stubRefreshJson(
-      {'code': 'over_request_rate_limit', 'msg': 'Request rate limit reached'},
-      statusCode: 429,
-      times: times,
-    ),
-    '429 with a Retry-After header': ({times}) => stubRefreshJson(
-      {'code': 'over_request_rate_limit', 'msg': 'Request rate limit reached'},
-      statusCode: 429,
-      headers: {'retry-after': '3600'},
-      times: times,
-    ),
+    '429 with a JSON error': ({times}) =>
+        stubRefreshJson(rateLimit, statusCode: 429, times: times),
     '429 with an HTML page': ({times}) => stubRefreshHtml(429, times: times),
     '401 with an HTML page': ({times}) => stubRefreshHtml(401, times: times),
     '403 with an HTML page': ({times}) => stubRefreshHtml(403, times: times),
     '404 with an HTML page': ({times}) => stubRefreshHtml(404, times: times),
-    '403 with an empty body': ({times}) => stubRefreshJson(
-      null,
-      statusCode: 403,
-      times: times,
-    ),
+    '403 with an empty body': ({times}) =>
+        stubRefreshJson(null, statusCode: 403, times: times),
     '401 with a JSON error without a code': ({times}) => stubRefreshJson(
       {'message': 'Invalid API key'},
       statusCode: 401,
@@ -141,6 +147,8 @@ void main() {
   };
 
   group('a refresh answered with', () {
+    setUp(signIn);
+
     for (final MapEntry(key: description, value: stubFailure)
         in transientFailures.entries) {
       test('$description keeps the session', () async {
@@ -159,65 +167,110 @@ void main() {
         stubRefreshSuccess();
         stubFailure(times: 1);
 
-        // Close enough to expiry that every auto refresh tick refreshes.
-        final nearExpiry = stored.expiresAt!.subtract(
-          const Duration(seconds: 20),
-        );
-        await withClock(Clock.fixed(nearExpiry), () async {
-          client.startAutoRefresh();
-          await pumpEventQueue();
-          await expectSessionKept();
+        await tick();
+        await expectSessionKept();
 
-          client.startAutoRefresh();
-          await pumpEventQueue();
-          client.stopAutoRefresh();
-        });
+        await tick(after: tickDuration);
 
         expect(events(), [AuthChangeEvent.tokenRefreshed]);
         expect(client.currentSession?.refreshToken, 'refreshed-refresh-token');
-        expect(httpClient.requestsTo('/token'), hasLength(2));
+        expect(refreshRequests(), 2);
       });
     }
+
+    test('a 429 with a Retry-After keeps the session', () async {
+      stubRefreshJson(
+        rateLimit,
+        statusCode: 429,
+        headers: {'retry-after': '3600'},
+      );
+
+      await expectLater(
+        client.refreshSession(),
+        throwsA(isA<AuthApiException>()),
+      );
+
+      await expectSessionKept();
+    });
+
+    test('a 429 with a Retry-After pauses the ticks until it passes', () async {
+      stubRefreshSuccess();
+      stubRefreshJson(
+        rateLimit,
+        statusCode: 429,
+        headers: {'retry-after': '60'},
+        times: 1,
+      );
+
+      await tick();
+      await expectSessionKept();
+
+      await tick(after: tickDuration);
+      expect(refreshRequests(), 1);
+
+      await tick(after: const Duration(seconds: 61));
+
+      expect(events(), [AuthChangeEvent.tokenRefreshed]);
+      expect(refreshRequests(), 2);
+    });
   });
 
-  test('a 429 within the tick is retried after its Retry-After', () async {
-    client = createClient(
-      retryOptions: const SupabaseRetryOptions(
-        count: 1,
-        initialDelay: Duration(hours: 1),
+  group('with retries enabled, a refresh answered with', () {
+    setUp(
+      () => signIn(
+        retryOptions: const SupabaseRetryOptions(
+          count: 2,
+          initialDelay: Duration(milliseconds: 1),
+        ),
       ),
     );
-    stored = await signInTestUser(client);
-    await pumpEventQueue();
-    states.clear();
-    stubRefreshSuccess();
-    stubRefreshJson(
-      {'code': 'over_request_rate_limit', 'msg': 'Request rate limit reached'},
-      statusCode: 429,
-      headers: {'retry-after': '0'},
-      times: 1,
-    );
 
-    final session = await client.refreshSession().timeout(
-      const Duration(seconds: 5),
-    );
+    for (final MapEntry(key: description, value: stubFailure)
+        in transientFailures.entries) {
+      test('$description is not retried within the tick', () async {
+        stubFailure();
 
-    expect(session.refreshToken, 'refreshed-refresh-token');
-    expect(httpClient.requestsTo('/token'), hasLength(2));
+        await expectLater(
+          client.refreshSession(),
+          throwsA(isA<AuthException>()),
+        );
+
+        expect(refreshRequests(), 1);
+      });
+    }
+
+    test('a 429 is retried within the tick after its Retry-After', () async {
+      stubRefreshSuccess();
+      stubRefreshJson(
+        rateLimit,
+        statusCode: 429,
+        headers: {'retry-after': '0'},
+        times: 1,
+      );
+
+      final session = await client.refreshSession().timeout(
+        const Duration(seconds: 5),
+      );
+
+      expect(session.refreshToken, 'refreshed-refresh-token');
+      expect(refreshRequests(), 2);
+    });
   });
 
   group('a refresh token rejected with', () {
+    setUp(signIn);
+
     for (final code in [
-      'refresh_token_not_found',
-      'session_not_found',
-      'session_expired',
-      'user_not_found',
-      'user_banned',
-      'validation_failed',
+      ErrorCode.refreshTokenNotFound,
+      ErrorCode.sessionNotFound,
+      ErrorCode.sessionExpired,
+      ErrorCode.userNotFound,
+      ErrorCode.userBanned,
+      ErrorCode.validationFailed,
     ]) {
-      test('$code signs out', () async {
+      test('${code.code} signs out', () async {
         stubRefreshJson({
-          'code': code,
+          'code': code.code,
           'msg': 'Invalid Refresh Token',
         }, statusCode: 400);
 
@@ -227,7 +280,7 @@ void main() {
             isA<AuthApiException>().having(
               (error) => error.errorCode,
               'errorCode',
-              code,
+              code.code,
             ),
           ),
         );
@@ -237,28 +290,8 @@ void main() {
         expect(signedOut.reason, SignOutReason.sessionExpired);
         expect(client.currentSession, isNull);
         expect(await storage.getItem(storageKey), isNull);
-        expect(httpClient.requestsTo('/token'), hasLength(1));
+        expect(refreshRequests(), 1);
       });
     }
-
-    test('a 400 without a code from a server that predates codes signs '
-        'out', () async {
-      stubRefreshJson({
-        'error': 'invalid_grant',
-        'error_description': 'Invalid Refresh Token: Refresh Token Not Found',
-      }, statusCode: 400);
-
-      await expectLater(
-        client.refreshSession(),
-        throwsA(isA<AuthApiException>()),
-      );
-      await pumpEventQueue();
-
-      expect(
-        states.whereType<AuthSignedOut>().single.reason,
-        SignOutReason.sessionExpired,
-      );
-      expect(client.currentSession, isNull);
-    });
   });
 }

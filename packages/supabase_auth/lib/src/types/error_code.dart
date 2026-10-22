@@ -38,6 +38,12 @@ enum ErrorCode {
   /// The session has expired and must be refreshed.
   sessionExpired('session_expired'),
 
+  /// The refresh token does not exist, for example because it was revoked.
+  refreshTokenNotFound('refresh_token_not_found'),
+
+  /// The refresh token was already exchanged for a new session.
+  refreshTokenAlreadyUsed('refresh_token_already_used'),
+
   /// The request requires a session but none was provided.
   sessionMissing('session_missing'),
 
