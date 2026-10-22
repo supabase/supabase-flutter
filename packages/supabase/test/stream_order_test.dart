@@ -204,6 +204,21 @@ void main() {
         containsPair('order', 'priority.asc'),
       );
     });
+
+    test('a null placement or a computed field is no column ordering', () {
+      expect(
+        _Todos.priority.desc().nullsLast(),
+        isNot(isA<PostgrestColumnOrdering<_Todo>>()),
+      );
+      expect(
+        _Todos.priority.nullsFirst(),
+        isNot(isA<PostgrestColumnOrdering<_Todo>>()),
+      );
+      expect(
+        _Todos.label.desc(),
+        isNot(isA<PostgrestColumnOrdering<_Todo>>()),
+      );
+    });
   });
 }
 
@@ -219,4 +234,5 @@ class _Todos {
   );
   static const id = PostgrestColumn<_Todo, int>('id');
   static const priority = PostgrestNullableColumn<_Todo, int>('priority');
+  static const label = PostgrestComputedField<_Todo, String>('label');
 }

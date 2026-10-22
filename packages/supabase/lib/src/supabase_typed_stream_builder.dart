@@ -19,8 +19,8 @@ class SupabaseTypedStreamBuilder<Row, Element> extends Stream<List<Element>> {
   final RowConverter<Element> _elementFromJson;
 
   /// Orders the result by [ordering]: a stored column, or its
-  /// [PostgrestColumnOrdering.asc] or [PostgrestColumnOrdering.desc], the
-  /// same as on [PostgrestTypedTransformBuilder.order].
+  /// [PostgrestColumnOrdering.asc] or [PostgrestColumnOrdering.desc], written
+  /// as for [PostgrestTypedTransformBuilder.order].
   ///
   /// Rows come back in ascending order unless `desc()` is chained, with
   /// `null` values last in ascending order and first in descending order,

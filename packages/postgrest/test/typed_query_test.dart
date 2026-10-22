@@ -601,6 +601,12 @@ void main() {
       await client
           .table(Books.table)
           .select()
+          .order(Books.publishedOn.desc().nullsLast());
+      expect(requestParameters()['order'], 'published_on.desc.nullslast');
+
+      await client
+          .table(Books.table)
+          .select()
           .order(Books.publishedOn.nullsLast());
       expect(requestParameters()['order'], 'published_on.nullslast');
     });
