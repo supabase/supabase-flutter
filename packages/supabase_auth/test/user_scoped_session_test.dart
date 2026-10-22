@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:supabase_auth/supabase_auth.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -184,15 +185,19 @@ void main() {
       final factors = await client.mfa.listFactors();
 
       expect(factors.all, hasLength(1));
+      expect(client.currentUser?.factors, hasLength(1));
       expect(httpClient.requestsTo('/token'), isEmpty);
-      expect(httpClient.requestsTo('/user', method: 'GET'), hasLength(1));
+      expect(
+        httpClient.requestsTo('/user', method: HttpMethod.get.value),
+        hasLength(1),
+      );
       await pumpEventQueue();
       expect(events, isEmpty);
     });
   });
 
   group('getSession', () {
-    test('throws for an expired session without a refresh token', () async {
+    test('signs out an expired session without a refresh token', () async {
       client = createClient();
       await client.setInitialSession(
         _sessionString(
@@ -200,12 +205,17 @@ void main() {
           withRefreshToken: false,
         ),
       );
+      await listen(client);
 
       await expectLater(
         client.getSession(),
         throwsA(isA<AuthSessionMissingException>()),
       );
+      await pumpEventQueue();
+
       expect(httpClient.requests, isEmpty);
+      expect(client.currentSession, isNull);
+      expect(events, [AuthChangeEvent.signedOut]);
     });
 
     test('returns a session without a refresh token that is only within the '
@@ -221,6 +231,50 @@ void main() {
       final session = await client.getSession();
 
       expect(session, same(client.currentSession));
+    });
+  });
+
+  group('signOut', () {
+    test('refreshes an expired token before revoking it', () async {
+      client = createClient();
+      httpClient
+        ..stubSignIn()
+        ..stubSignOut();
+      await client.setInitialSession(
+        _sessionString(
+          expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        ),
+      );
+
+      final expired = client.currentSession!.accessToken;
+
+      await client.signOut(scope: SignOutScope.global);
+
+      expect(httpClient.requestsTo('/token'), hasLength(1));
+      final authorization = httpClient
+          .requestsTo('/logout')
+          .single
+          .headers['Authorization'];
+      expect(authorization, startsWith('Bearer '));
+      expect(authorization, isNot('Bearer $expired'));
+    });
+  });
+
+  group('getClaims', () {
+    test('reads an expired token without refreshing it when allowed', () async {
+      client = createClient();
+      final expired = _sessionString(
+        expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      );
+      await client.setInitialSession(expired);
+
+      final response = await client.getClaims(
+        null,
+        const GetClaimsOptions(allowExpired: true),
+      );
+
+      expect(response.claims.subject, testUserId);
+      expect(httpClient.requestsTo('/token'), isEmpty);
     });
   });
 
@@ -261,50 +315,47 @@ void main() {
   });
 
   group('recoverSession', () {
-    Future<Session> recoverValidSession(String userId) {
-      return client.recoverSession(
-        jsonEncode(
-          testSessionResponseJson(
-            accessToken: unsignedTestJwt({
-              'exp':
-                  DateTime.now()
-                      .add(const Duration(hours: 1))
-                      .millisecondsSinceEpoch ~/
-                  1000,
-              'sub': userId,
-            }),
-            user: testUserJson(id: userId),
-          ),
-        ),
-      );
-    }
-
     setUp(() async {
       client = createClient();
       await listen(client);
     });
 
     test('emits signedIn for another user', () async {
-      await recoverValidSession('first-user');
+      await signInTestUser(client, userId: 'first-user');
       await pumpEventQueue();
       events.clear();
 
-      await recoverValidSession('second-user');
+      await signInTestUser(client, userId: 'second-user');
       await pumpEventQueue();
 
       expect(events, [AuthChangeEvent.signedIn]);
       expect(client.currentUser?.id, 'second-user');
     });
 
+    test('emits tokenRefreshed for a new token of the same user', () async {
+      await signInTestUser(client, userId: 'first-user');
+      await pumpEventQueue();
+      events.clear();
+
+      await signInTestUser(
+        client,
+        userId: 'first-user',
+        expiresAt: DateTime.now().add(const Duration(hours: 2)),
+      );
+      await pumpEventQueue();
+
+      expect(events, [AuthChangeEvent.tokenRefreshed]);
+    });
+
     test('emits signedIn when nobody was signed in', () async {
-      await recoverValidSession('first-user');
+      await signInTestUser(client, userId: 'first-user');
       await pumpEventQueue();
 
       expect(events, [AuthChangeEvent.signedIn]);
     });
 
     test('emits signedIn for another user whose session expired', () async {
-      await recoverValidSession('first-user');
+      await signInTestUser(client, userId: 'first-user');
       await pumpEventQueue();
       events.clear();
       httpClient.stubSignIn();

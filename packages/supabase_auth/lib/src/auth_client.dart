@@ -434,8 +434,8 @@ class AuthClient {
   /// Returns `null` when there is no session. Throws an [AuthException] when an
   /// expired session cannot be refreshed, unless its access token is still
   /// within its real validity window, in which case the still-valid session is
-  /// returned. An expired session without a refresh token throws an
-  /// [AuthSessionMissingException].
+  /// returned. An expired session without a refresh token is signed out and
+  /// throws an [AuthSessionMissingException].
   Future<Session?> getSession() async {
     final session = _currentSession;
     if (session == null) {
@@ -451,6 +451,11 @@ class AuthClient {
       if (!session.isExpiredWithoutMargin) {
         return session;
       }
+      _removeSession();
+      notifyAllSubscribers(
+        AuthChangeEvent.signedOut,
+        signOutReason: SignOutReason.sessionExpired,
+      );
       throw AuthSessionMissingException(
         message: 'The session has expired and has no refresh token.',
       );
@@ -1531,10 +1536,20 @@ class AuthClient {
 
     // An expired access token would be rejected with a 401, which counts as
     // already signed out, so the sessions would never be revoked.
-    final session = await getSession();
+    String? accessToken;
+    try {
+      accessToken = (await getSession())?.accessToken;
+    } on AuthException {
+      if (_currentSession == null) {
+        // The failed refresh has already signed the session out.
+        await _pkceVerifierStore?.removeAll();
+        return;
+      }
+      accessToken = _currentSession?.accessToken;
+    }
     final versionBeforeRevoke = _sessionVersion;
-    if (session != null) {
-      await _revokeSessions(session.accessToken, scope);
+    if (accessToken != null) {
+      await _revokeSessions(accessToken, scope);
     }
     // A sign-in or sign-out that happened while the request was in flight is
     // newer than this sign-out.
@@ -1750,13 +1765,13 @@ class AuthClient {
       }
 
       if (!session.isExpired) {
-        final shouldEmitEvent =
-            _currentSession == null ||
-            _currentSession!.user.id != session.user.id;
+        final previous = _currentSession;
         _saveSession(session);
 
-        if (shouldEmitEvent) {
+        if (previous == null || previous.user.id != session.user.id) {
           notifyAllSubscribers(AuthChangeEvent.signedIn);
+        } else if (previous.accessToken != session.accessToken) {
+          notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
         }
 
         return session;
@@ -2524,11 +2539,15 @@ class AuthClient {
     String token = jwt ?? '';
 
     if (token.isEmpty) {
-      final session = await getSession();
-      if (session == null) {
-        throw AuthSessionMissingException(message: 'No session found');
+      if (options?.allowExpired ?? false) {
+        final session = currentSession;
+        if (session == null) {
+          throw AuthSessionMissingException();
+        }
+        token = session.accessToken;
+      } else {
+        token = await _userAccessToken();
       }
-      token = session.accessToken;
     }
 
     final decoded = decodeJwt(token);

@@ -235,7 +235,7 @@ void main() {
     });
   });
 
-  group('setSession — refresh token only', () {
+  group('setSession with only a refresh token', () {
     Future<List<AuthChangeEvent>> eventsOf(Future<void> Function() act) async {
       final events = <AuthChangeEvent>[];
       final subscription = client.onAuthStateChange.listen(

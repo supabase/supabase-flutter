@@ -187,9 +187,15 @@ class AuthMFAApi {
 
   /// Returns the list of MFA factors enabled for this user.
   ///
-  /// Fetches the user from the server to get the latest list of factors.
+  /// Fetches the user from the server to get the latest list of factors, and
+  /// stores it on the current session so [getAuthenticatorAssuranceLevel]
+  /// sees them too.
   Future<AuthMFAListFactorsResponse> listFactors() async {
     final user = (await _client.getUser()).user;
+    final session = _client.currentSession;
+    if (user != null && session != null && session.user.id == user.id) {
+      _client._saveSession(session.copyWith(user: user));
+    }
     final factors = user?.factors ?? [];
     final totp = factors
         .where(
