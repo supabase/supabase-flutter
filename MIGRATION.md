@@ -15,8 +15,448 @@ the Flutter one.
 > v3 has not been released yet. This section is updated as breaking changes land on `main`, so
 > treat it as the running list rather than the final one.
 
-v3 also adds a typed table API next to `from()`. Moving to it is optional, so it is covered in
-[its own section](#moving-from-from-to-the-typed-table-api) after the breaking changes.
+The guide starts with the package skills, which let an AI agent carry out much of this migration
+for you. Then comes the typed table API, the biggest addition in v3, since moving your queries to
+it also takes care of several of the database changes further down. After it come
+[the changes the compiler will not catch](#changes-the-compiler-will-not-catch), and then every
+breaking change grouped by area: [packages and setup](#packages-and-setup),
+[database](#database), [auth](#auth), [realtime](#realtime), [storage](#storage),
+[errors](#errors), [requests, retries and tokens](#requests-retries-and-tokens) and
+[shared types](#shared-types).
+
+### Install the package skills
+
+The v3 packages ship [package skills](https://dart.dev/ai/package-skills), instructions for AI
+coding agents such as Claude Code, Cursor, Gemini and Copilot. They include skills for migrating
+from v2 to v3, and teach the agent the current API, including the typed table API, so it writes v3
+code instead of the v2 code it was trained on. Install them from your project directory as the
+first step of the upgrade, once `pubspec.yaml` depends on v3:
+
+```sh
+dart run skills@ get --all
+```
+
+Without `--all` the command lets you pick the skills to install, and `-p supabase_flutter` limits
+it to one package. Run it again after every upgrade to update the installed skills, and
+`dart run skills@ prune` to remove the skills of packages you no longer depend on. If you commit
+the installed skills, commit `.config/dart_skills/` with them; otherwise add both to `.gitignore`.
+
+### Moving from `from()` to the typed table API
+
+v3 adds `table()`, a typed counterpart of `from()` built on definitions that the Supabase CLI
+generates from your database schema. Rows come back as generated types instead of
+`Map<String, dynamic>`, filters and orderings are checked against the column types at compile time,
+and writes only accept the generated insert and update types. We recommend generating the
+definitions for your project and using `table()` for every table they cover. `from()` keeps working,
+and both can be used on one client, so a codebase can move over one table at a time.
+
+The typed API is marked `@experimental` while it settles. Referencing an experimental type such as
+`PostgrestFilter` directly reports `experimental_member_use`, which an
+`// ignore_for_file: experimental_member_use` silences; the generated file already carries it.
+
+The examples below use this schema:
+
+```sql
+create table authors (
+  id bigint generated always as identity primary key,
+  name text not null unique
+);
+
+create table books (
+  id bigint generated always as identity primary key,
+  author_id bigint not null references authors (id),
+  title text not null,
+  in_print boolean not null default true,
+  price numeric,
+  published_on date,
+  created_at timestamptz not null default now()
+);
+```
+
+#### Generate the table definitions
+
+Generating Dart requires [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)
+2.122.0 or newer; check yours with `supabase --version`. Add `supabase_typegen` as a dev dependency
+of your project and generate the types into it. With `--local` the CLI reads the database of the
+running local stack, which it builds from the migrations in your `supabase/` directory:
+
+```sh
+dart pub add dev:supabase_typegen
+supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+```
+
+`--linked` and `--project-id` generate from a hosted project instead; see the
+[`supabase_typegen` README](packages/supabase_typegen/README.md) for details.
+
+For every table the file holds a row type (`BooksRow`), an insert type (`BooksInsert`), an update
+type (`BooksUpdate`), and a class (`Books`) with the table definition and one constant per column
+and foreign key. Run the generator again after every migration so the types follow the schema.
+
+#### Reading rows
+
+```dart
+// Before
+final List<Map<String, dynamic>> books = await supabase
+    .from('books')
+    .select();
+final title = books.first['title'] as String;
+
+// After
+final List<BooksRow> books = await supabase.table(Books.table).select();
+final String title = books.first.title;
+```
+
+`BooksRow` is an extension type over the decoded JSON, so the getters cost nothing over reading the
+map, and `toJson()` returns the map when something still needs it. Dates, enums, `bytea` and the
+other column types are converted by the getters, so `createdAt` is a `DateTime` and `publishedOn` a
+`PostgresDate`.
+
+A table outside the `public` schema carries its schema in the definition, so
+`supabase.table(InventoryBooks.table)` replaces `supabase.schema('inventory').from('books')`.
+
+To read some columns only, `selectOnly` replaces the column string of `select()`. The rows are
+`PostgrestPartialRow`s, read through the same column constants. Each value comes back with the
+type of its column, and reading a column that was not selected throws a `StateError` instead of
+returning `null`:
+
+```dart
+// Before
+final books = await supabase.from('books').select('id, title');
+final title = books.first['title'] as String;
+
+// After
+final books = await supabase.table(Books.table).selectOnly([
+  Books.id,
+  Books.title,
+]);
+final String title = books.first.read(Books.title);
+```
+
+#### Filters
+
+Filters are methods on the column constants, passed to `where()`. The value has to match the column
+type, so `Books.price.eq('ten')` does not compile, and `isNull()` only exists on nullable columns.
+
+| Before                                 | After                                                   |
+| -------------------------------------- | ------------------------------------------------------- |
+| `.eq('author_id', 2)`                  | `.where(Books.authorId.eq(2))`                          |
+| `.neq('title', 'Dune')`                | `.where(Books.title.neq('Dune'))`                       |
+| `.gte('price', 10)`                    | `.where(Books.price.gte(10))`                           |
+| `.ilike('title', '%dune%')`            | `.where(Books.title.ilike('%dune%'))`                   |
+| `.inFilter('id', [1, 2])`              | `.where(Books.id.inFilter([1, 2]))`                     |
+| `.isFilter('published_on', null)`      | `.where(Books.publishedOn.isNull())`                    |
+| `.not('published_on', 'is', null)`     | `.where(Books.publishedOn.isNull().not())`              |
+| `.or('price.lt.10,in_print.eq.false')` | `.where(Books.price.lt(10) \| Books.inPrint.isFalse())` |
+
+Filters combine with `&` and `|` and negate with `not()`, so a nested `or()` string becomes an
+expression the compiler checks. Repeated `where()` calls combine with AND, like repeated filter
+calls did:
+
+```dart
+// Before
+await supabase
+    .from('books')
+    .select()
+    .eq('in_print', true)
+    .or('price.lt.10,published_on.is.null');
+
+// After
+await supabase
+    .table(Books.table)
+    .select()
+    .where(
+      Books.inPrint.isTrue() &
+          (Books.price.lt(10) | Books.publishedOn.isNull()),
+    );
+```
+
+A filter is a value, so one assembled conditionally no longer needs to reassign the builder:
+
+```dart
+var filter = Books.inPrint.isTrue();
+if (search != null) filter = filter & Books.title.ilike('%$search%');
+final books = await supabase.table(Books.table).select().where(filter);
+```
+
+For an operator the API has no method for, `raw()` on a column keeps the column checked and takes
+the operand as PostgREST spells it, `Books.title.raw('eq.Dune')`. `PostgrestFilter.raw` takes both
+sides as strings, for an expression no column constant can name:
+
+```dart
+.where(PostgrestFilter.raw('metadata->>edition', 'eq.first'))
+```
+
+#### Ordering, pagination and single rows
+
+The direction of an ordering is spelled on the column:
+
+```dart
+// Before
+await supabase
+    .from('books')
+    .select()
+    .order('created_at', ascending: false)
+    .range(0, 9);
+
+// After
+await supabase
+    .table(Books.table)
+    .select()
+    .order(Books.createdAt.desc())
+    .range(0, 9);
+```
+
+Both APIs only send what was asked for, so `.order('price', ascending: false)` matches
+`.order(Books.price.desc())` and `.order('price', ascending: false, nullsFirst: false)` matches
+`.order(Books.price.desc().nullsLast())`. Repeated `order()` calls append on both APIs.
+
+`limit()` and `range()` take the same arguments as before, apart from `referencedTable`: the rows
+of an embed are sorted and limited with `embedded()`, see [embedded selects](#embedded-selects).
+`single()` and `maybeSingle()` resolve to the row type:
+
+```dart
+// Before
+final Map<String, dynamic> book = await supabase
+    .from('books')
+    .select()
+    .eq('id', 1)
+    .single();
+
+// After
+final BooksRow book = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.id.eq(1))
+    .single();
+final BooksRow? maybeBook = await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.id.eq(1))
+    .maybeSingle();
+```
+
+`count()` keeps both of its shapes. After `select()` it resolves to a `PostgrestResponse` holding
+the typed rows and the count; on its own it is a count query that resolves to an `int` and takes
+filters like any other request:
+
+```dart
+// Before
+final PostgrestResponse<List<Map<String, dynamic>>> response = await supabase
+    .from('books')
+    .select()
+    .count(CountOption.exact);
+final int inPrint = await supabase.from('books').count().eq('in_print', true);
+
+// After
+final PostgrestResponse<List<BooksRow>> response = await supabase
+    .table(Books.table)
+    .select()
+    .count(CountOption.exact);
+final int inPrint = await supabase
+    .table(Books.table)
+    .count()
+    .where(Books.inPrint.isTrue());
+```
+
+#### Writes
+
+`insert()`, `upsert()` and `update()` take the generated `Insert` and `Update` types instead of
+maps. A required column is a required parameter of `BooksInsert`, and a column the database always
+generates, such as `id` above, is not a parameter at all:
+
+```dart
+// Before
+await supabase.from('books').insert({'author_id': 2, 'title': 'Dune'});
+await supabase.from('books').insert([
+  {'author_id': 2, 'title': 'Dune'},
+  {'author_id': 3, 'title': 'Emma'},
+]);
+await supabase
+    .from('books')
+    .update({'in_print': false, 'price': null})
+    .eq('id', 1);
+await supabase.from('books').delete().eq('id', 1);
+
+// After
+await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Dune'));
+await supabase.table(Books.table).insertAll([
+  BooksInsert(authorId: 2, title: 'Dune'),
+  BooksInsert(authorId: 3, title: 'Emma'),
+]);
+await supabase
+    .table(Books.table)
+    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .where(Books.id.eq(1));
+await supabase.table(Books.table).delete().where(Books.id.eq(1));
+```
+
+Several rows go through `insertAll()` and `upsertAll()` instead of a list passed to `insert()`.
+Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the column out of the
+request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
+generated `set…ToNull()` methods, which only exist for nullable columns.
+
+An `update()` or `delete()` sends nothing until it says which rows it acts on, through `where()`
+or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request,
+and the analyzer reports it as an `unused_result` warning:
+
+```dart
+// Before
+await supabase.from('books').delete();
+
+// After
+await supabase.table(Books.table).delete().all();
+```
+
+`onConflict` of `upsert()` is a list of columns instead of a comma separated string:
+
+```dart
+// Before
+await supabase.from('authors').upsert({
+  'name': 'Frank Herbert',
+}, onConflict: 'name');
+
+// After
+await supabase
+    .table(Authors.table)
+    .upsert(AuthorsInsert(name: 'Frank Herbert'), onConflict: [Authors.name]);
+```
+
+Writes resolve to `void` on both APIs. A trailing `select()` returns the written rows, typed as the
+row type:
+
+```dart
+// Before
+final Map<String, dynamic> book = await supabase
+    .from('books')
+    .insert({'author_id': 2, 'title': 'Dune'})
+    .select()
+    .single();
+
+// After
+final BooksRow book = await supabase
+    .table(Books.table)
+    .insert(BooksInsert(authorId: 2, title: 'Dune'))
+    .select()
+    .single();
+```
+
+#### Embedded selects
+
+Every foreign key between two generated tables of one schema becomes a relation constant on both
+sides, named after the table on the other side: `Books.authors` points at the author of a book, and
+`Authors.books` at the books of an author. A relation goes into a `selectOnly` list, called with a
+column of the other table or with `select()` for several of them, and the embedded rows are read
+back through it:
+
+```dart
+// Before
+final books = await supabase.from('books').select('title, authors(name)');
+final authorName = books.first['authors']?['name'] as String?;
+
+final authors = await supabase
+    .from('authors')
+    .select('name, books(title)')
+    .limit(3, referencedTable: 'books');
+final titles = [
+  for (final book in authors.first['books'] as List) book['title'] as String,
+];
+
+// After
+final books = await supabase.table(Books.table).selectOnly([
+  Books.title,
+  Books.authors(Authors.name),
+]);
+final String? authorName = books.first
+    .read(Books.authors)
+    ?.read(Authors.name);
+
+final authors = await supabase
+    .table(Authors.table)
+    .selectOnly([
+      Authors.name,
+      Authors.books.select([Books.title]),
+    ])
+    .embedded(Authors.books, (books) => books.limit(3));
+final List<String> titles = [
+  for (final book in authors.first.read(Authors.books))
+    book.read(Books.title),
+];
+```
+
+A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
+
+When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
+so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.
+
+`embedded()` replaces `referencedTable` on `order()`, `limit()` and `range()`. Its callback receives
+a scope typed against the embedded table, so ordering by a column of another table does not compile,
+and a scope can reach an embed nested in it:
+
+```dart
+// Before
+await supabase
+    .from('authors')
+    .select('name, books(title, reviews(rating))')
+    .order('created_at', referencedTable: 'books', ascending: false)
+    .limit(1, referencedTable: 'books')
+    .limit(3, referencedTable: 'books.reviews');
+
+// After
+await supabase
+    .table(Authors.table)
+    .selectOnly([
+      Authors.name,
+      Authors.books.select([
+        Books.title,
+        Books.reviews.select([Reviews.rating]),
+      ]),
+    ])
+    .embedded(
+      Authors.books,
+      (books) => books
+          .order(Books.createdAt.desc())
+          .limit(1)
+          .embedded(Books.reviews, (reviews) => reviews.limit(3)),
+    );
+```
+
+The generated table definition also lists `primaryKey` and `relations`. Neither changes how a
+request is sent; they describe the table to code that handles requests itself, such as a plugin
+that caches rows and needs to tell them apart, or one that resolves an embed from local data.
+
+#### Realtime streams
+
+`stream()` on `table()` emits lists of the row type and takes the primary key as columns. Its filter
+method is named `filter()`, since `Stream.where` already exists, and takes a single operator:
+
+```dart
+// Before
+supabase
+    .from('books')
+    .stream(primaryKey: ['id'])
+    .eq('author_id', 2)
+    .order('created_at', ascending: false)
+    .listen((List<Map<String, dynamic>> books) {});
+
+// After
+supabase
+    .table(Books.table)
+    .stream(primaryKey: [Books.id])
+    .filter(Books.authorId.eq(2))
+    .order(Books.createdAt.desc())
+    .listen((List<BooksRow> books) {});
+```
+
+A stream filter supports `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
+`matchRegex`, `imatchRegex`, `isNull`, `isTrue`, `isFalse` and `isDistinct`, optionally negated
+with `not()`. A filter composed with `&` or `|` throws an `ArgumentError`.
+
+`order()` takes the same `PostgrestOrdering` as `order()` on a typed query, so the direction is
+on the column instead of an `ascending` argument. A stream keeps `null` values last in ascending
+order and first in descending order, so an ordering with `nullsFirst()` or `nullsLast()`, or one
+by anything but a stored column, throws an `ArgumentError`.
 
 ### Changes the compiler will not catch
 
@@ -48,7 +488,9 @@ explicitly:
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
 
-### The client packages are renamed
+### Packages and setup
+
+#### The client packages are renamed
 
 Four packages are renamed. The old ones are discontinued on pub.dev when v3 ships.
 
@@ -87,36 +529,17 @@ name they had:
 | `GoTrueClientSignInProvider`          | `AuthClientSignInProvider`          |
 | `GoTrueClientPasskey`                 | `AuthClientPasskey`                 |
 
-```dart
-// Before
-final GoTrueClient auth = supabase.auth;
-
-// After
-final AuthClient auth = supabase.auth;
-```
-
 The last two are extensions `supabase_flutter` adds to the auth client. You only name them if you
 referred to the extension explicitly, for example to hide it in an import.
 
-### The Iceberg catalog moved to its own package
+#### The Iceberg catalog moved to its own package
 
 `IcebergRestCatalog`, the Iceberg exceptions and the table and namespace types now live in
-`iceberg`. `supabase_storage` depends on it and re-exports the whole surface, so importing
-`package:supabase_storage/supabase_storage.dart` or `package:supabase_flutter/supabase_flutter.dart`
-keeps working unchanged, and `storage.analyticsCatalog()` is still how you get a catalog for an
-analytics bucket.
+`iceberg`. `supabase_storage` re-exports all of it, so imports through `supabase_storage` or
+`supabase_flutter` and `storage.analyticsCatalog()` keep working unchanged. Depend on `iceberg`
+directly to use an Iceberg REST Catalog without the rest of Storage.
 
-Depend on `iceberg` directly to talk to an Iceberg REST Catalog without the rest of Storage:
-
-```dart
-final catalog = IcebergRestCatalog(
-  baseUrl: 'https://example.com/iceberg',
-  headers: {'Authorization': 'Bearer $token'},
-  warehouse: 'my-warehouse',
-);
-```
-
-### `publishableKey` is required on `Supabase.initialize`
+#### `publishableKey` is required on `Supabase.initialize`
 
 `anonKey` is removed and `publishableKey` is required. A legacy anon key is still a valid value, it
 just goes under the new name.
@@ -129,35 +552,322 @@ await Supabase.initialize(url: url, anonKey: anonKey);
 await Supabase.initialize(url: url, publishableKey: anonKey);
 ```
 
-### `AuthClient.getSSOSignInUrl` returns a `Uri`
+#### `SupabaseClient` builds its own default HTTP client
+
+On `dart:io` platforms a `SupabaseClient` created without an `httpClient` now builds an `IOClient`
+that keeps idle connections open for 60 seconds instead of 15. It no longer goes through the
+`Client()` factory of `package:http`, so a client installed with `runWithClient` is not picked up
+outside the web. Pass the client as `httpClient` instead, which every platform honors:
 
 ```dart
 // Before
-final String ssoUrl = await supabase.auth.getSSOSignInUrl(domain: 'company.com');
+runWithClient(() {
+  final supabase = SupabaseClient(supabaseUrl, supabaseKey);
+}, () => MockClient(handler));
 
 // After
-final Uri ssoUrl = await supabase.auth.getSSOSignInUrl(domain: 'company.com');
+final supabase = SupabaseClient(
+  supabaseUrl,
+  supabaseKey,
+  httpClient: MockClient(handler),
+);
 ```
 
-Use `ssoUrl.toString()` if you need the string.
+A Dart script that does not call `dispose()` on its `SupabaseClient` now waits a minute before
+exiting instead of 15 seconds.
 
-### `OAuthResponse.url` is a `Uri`
+#### The SDK no longer prints logs
+
+`Supabase.initialize` no longer takes a `debug` flag and never prints anything to the console. All
+packages still emit their records through [`package:logging`](https://pub.dev/packages/logging)
+under the `supabase` logger hierarchy, so instead of `debug: true`, print them yourself:
+
+```dart
+Logger.root.onRecord.listen((record) {
+  if (record.loggerName.startsWith('supabase.')) {
+    debugPrint('${record.loggerName}: ${record.level.name}: '
+        '${record.message} ${record.error ?? ''}');
+  }
+});
+```
+
+See the `Logging` section of the `supabase_flutter` README for level filtering with
+`hierarchicalLoggingEnabled`.
+
+Two logger names changed, so update any listeners that filter on `LogRecord.loggerName`:
+
+| Before                      | After              |
+| --------------------------- | ------------------ |
+| `supabase.supabase`         | `supabase.dart`    |
+| `supabase.supabase_flutter` | `supabase.flutter` |
+
+#### Every deprecated API is gone
+
+| Removed                                                    | Replacement                                  | Package             |
+| ---------------------------------------------------------- | -------------------------------------------- | ------------------- |
+| `AuthChangeEvent.userDeleted`                              | none, it was never emitted                   | `supabase_auth`     |
+| `OAuthProvider.snakeCase`                                  | `OAuthProvider.name`                         | `supabase_auth`     |
+| `User.confirmedAt`                                         | `User.emailConfirmedAt`                      | `supabase_auth`     |
+| `ReturningOption`                                          | none, it was unused                          | `postgrest`         |
+| `PostgrestClient.auth()`                                   | none, pass an `Authorization` header instead | `postgrest`         |
+| `RealtimeClient.longpollerTimeout`                         | none, there is no longpoll transport         | `supabase_realtime` |
+| `ChannelResponse.rateLimited`                              | none, it was never returned                  | `supabase_realtime` |
+| `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it        | `supabase_storage`  |
+| `AuthUser`                                                 | `User`                                       | `supabase`          |
+| `RealtimeClientOptions.eventsPerSecond`                    | none, it was already ignored                 | `supabase`          |
+| `RemoveSubscriptionResult`                                 | none                                         | `supabase`          |
+| `SupabaseRealtimeError`                                    | none                                         | `supabase`          |
+| `SupabaseEventTypes` and `SupabaseEventTypesName`          | none, it was unused                          | `supabase`          |
+| `SupabaseStreamBuilder.execute()`                          | listen to the builder directly               | `supabase`          |
+
+Both `lastAccessedAt` fields were also required constructor parameters, so any code that builds a
+`FileObject` or `FileObjectV2` by hand drops that argument.
+
+`User.toJson()` no longer contains a `confirmed_at` key.
+
+#### Abbreviations in the public API are spelled out
+
+The wire format is unchanged throughout: where a JSON key, query parameter or URL path matched the
+abbreviation, only the Dart identifier is renamed.
+
+Across every package:
+
+| Before                     | After                             |
+| -------------------------- | --------------------------------- |
+| `RealtimeClient.setAuth()` | `RealtimeClient.setAccessToken()` |
+| `queryParams:`             | `queryParameters:`                |
+| `opts:`                    | `options:`                        |
+| `PresenceOpts`             | `PresenceOptions`                 |
+| `appendSearchParams`       | `appendSearchParameters`          |
+| `overrideSearchParams`     | `overrideSearchParameters`        |
+| `toQueryParams`            | `toQueryParameters`               |
+
+`supabase_realtime`:
+
+| Before                                      | After                                       |
+| ------------------------------------------- | ------------------------------------------- |
+| `RealtimeClient.conn`                       | `RealtimeClient.connection`                 |
+| `RealtimeClient.connState`                  | `RealtimeClient.connectionState`            |
+| `RealtimeClient.onConnMessage`              | `RealtimeClient.onConnectionMessage`        |
+| `RealtimeClient.params`                     | `RealtimeClient.parameters`                 |
+| `RealtimeClient.endPoint`                   | `RealtimeClient.endpoint`                   |
+| `RealtimeClient.endPointURL`                | `RealtimeClient.endpointUrl`                |
+| `RealtimeConstants.wsCloseNormal`           | `RealtimeConstants.webSocketCloseNormal`    |
+| `RealtimeChannel(topic, socket, params: …)` | `RealtimeChannel(topic, socket, config: …)` |
+| `Presence.presenceRef`                      | `Presence.presenceReference`                |
+
+`supabase_auth`:
+
+| Before                                                      | After                                                                          |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `JwtPayload.iss/sub/aud/exp/nbf/iat/jti`                    | `issuer`, `subject`, `audience`, `expiresAt`, `notBefore`, `issuedAt`, `jwtId` |
+| `JwtHeader.alg/kid/typ`                                     | `algorithm`, `keyId`, `type`                                                   |
+| `JWK.kty/keyOps/alg/kid`                                    | `keyType`, `keyOperations`, `algorithm`, `keyId`                               |
+| `User.aud`                                                  | `User.audience`                                                                |
+| `CreateOAuthClientParams` / `UpdateOAuthClientParams`       | `…Options`                                                                     |
+| `CreateCustomProviderParams` / `UpdateCustomProviderParams` | `…Options`                                                                     |
+| `authorizationParams`                                       | `authorizationParameters`                                                      |
+| `supportedIdTokenSigningAlgs`                               | `supportedIdTokenSigningAlgorithms`                                            |
+| `tokenEndpointAuthMethod`                                   | `tokenEndpointAuthenticationMethod`                                            |
+| `userinfoEndpoint` / `userinfoUrl`                          | `userInfoEndpoint` / `userInfoUrl`                                             |
+| `validateExp(int? exp)`                                     | `validateExpiration(int? expiresAt)`                                           |
+| `AMRMethod` / `AMREntry`                                    | `AuthenticationMethodReference` / `…Entry`                                     |
+| `AuthChangeEvent.jsName`                                    | `AuthChangeEvent.value`                                                        |
+| `AuthenticationMethodReference.code`                        | `AuthenticationMethodReference.value`                                          |
+| `GenerateLinkType.fromString`                               | `GenerateLinkType.fromValue`                                                   |
+| `OAuthClientType.fromString`                                | `OAuthClientType.fromValue`                                                    |
+| `OAuthClientRegistrationType.fromString`                    | `OAuthClientRegistrationType.fromValue`                                        |
+| `CustomProviderType.fromString`                             | `CustomProviderType.fromValue`                                                 |
+
+`supabase_storage` and `iceberg`:
+
+| Before                                         | After                                       |
+| ---------------------------------------------- | ------------------------------------------- |
+| `StorageFileApi.info()`                        | `StorageFileApi.getMetadata()`              |
+| `VectorBucketEncryption.sseType`               | `serverSideEncryptionType`                  |
+| `PartitionSpec` and the Iceberg `spec` cluster | `PartitionSpecification`, `…Specification…` |
+| `TableMetadata.refs`                           | `TableMetadata.references`                  |
+| `TableField.doc`                               | `TableField.documentation`                  |
+| `LoadTableSnapshots.value`                     | `TableSnapshotScope.name`                   |
+
+These renames also change a type:
+
+| Before                                                              | After                                              |
+| ------------------------------------------------------------------- | -------------------------------------------------- |
+| `RealtimeClient.heartbeatIntervalMs` (`int`)                        | `heartbeatInterval` (`Duration`)                   |
+| `RealtimeConstants.defaultHeartbeatIntervalMs` (`int`)              | `defaultHeartbeatInterval` (`Duration`)            |
+| `RealtimeClient.reconnectAfterMs` (`int` return)                    | `reconnectAfter` (`Duration` return)               |
+| `SnapshotReference.maxReferenceAgeMs` / `maxSnapshotAgeMs` (`int?`) | `maxReferenceAge` / `maxSnapshotAge` (`Duration?`) |
+| `Snapshot.timestampMs` / `TableMetadata.lastUpdatedMs` (`int`)      | `timestamp` / `lastUpdated` (`DateTime`, UTC)      |
+
+### Database
+
+#### `order()` now sorts ascending by default
+
+`PostgrestTransformBuilder.order()` and `SupabaseStreamBuilder.order()` default `ascending` to
+`true` instead of `false`. This is not a compile error, so check every `.order()` call that does not
+pass `ascending` explicitly, in both `select()` queries and `stream()`. To keep the previous
+behaviour, add `ascending: false`, which already means descending on v2, so you can make the change
+before upgrading:
+
+```dart
+// Before: newest first. After: oldest first.
+await supabase.from('messages').select().order('created_at');
+
+// Newest first on both.
+await supabase.from('messages').select().order('created_at', ascending: false);
+```
+
+#### `order()` no longer sends a null placement by default
+
+`nullsFirst` on `PostgrestTransformBuilder.order()` is now a `bool?` that defaults to `null`. When
+it is left out, no `nullsfirst` or `nullslast` is sent and PostgreSQL decides where `NULL`s go: last
+for an ascending sort and first for a descending one. v2 defaulted it to `false`, which always sent
+`nullslast` and so put `NULL`s last on a descending sort too. This is not a compile error, so check
+every `.order(..., ascending: false)` call on a nullable column. To keep the previous behaviour,
+add `nullsFirst: false`, which already means nulls last on v2:
+
+```dart
+// Before: nulls at the end. After: nulls at the start.
+await supabase.from('books').select().order('price', ascending: false);
+
+// Nulls at the end on both.
+await supabase
+    .from('books')
+    .select()
+    .order('price', ascending: false, nullsFirst: false);
+```
+
+#### The rest client and its builders are stateless
+
+| Before                                                                                       | After                                                                                      |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `supabase.rest.headers['X-Foo'] = 'bar'`                                                     | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}`                                 |
+| `postgrest.headers['X-Foo'] = 'bar'`                                                         | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request     |
+| `await supabase.from('countries')`                                                           | does not compile, choose an operation first                                                |
+| `SupabaseQuerySchema(headers: …)`                                                            | removed, the headers of the `rest` client are used                                         |
+| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
+| `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`                 | removed                                                                                    |
+| `PostgrestQueryBuilder<T>`                                                                   | `PostgrestQueryBuilder`                                                                    |
+
+`PostgrestClient.headers` is an unmodifiable map. Set headers on the constructor for all requests,
+or with `setHeader()` on a builder for a single request.
+
+Assigning `supabase.headers` replaces the rest client with one carrying the new headers. A
+`PostgrestClient` or `SupabaseQuerySchema` captured before the assignment keeps the old headers, so
+read `supabase.rest` or call `supabase.schema(…)` again after changing them.
+
+`insert()`, `upsert()`, `update()` and `delete()` without a trailing `select()` now resolve to
+`void`. The value was always `null`, so drop the assignment or add `select()` to return data.
+
+`supabase.from('countries')` by itself can no longer be awaited, converted with `withConverter()`,
+or given an `abortSignal()`. Call `select()`, `insert()`, `upsert()`, `update()`, `delete()` or
+`count()` first. `setHeader()` and `retry()` remain available before the operation.
+
+#### The PostgREST builder has one type parameter and no wrapper classes
+
+`PostgrestBuilder<T, S, R>` is now `PostgrestBuilder<T>`, where `T` is the type the request resolves
+to when awaited. `RawPostgrestBuilder` and `ResponsePostgrestBuilder` are gone; `withConverter()` and
+`count()` are methods of `PostgrestBuilder<T>` itself.
+
+| Before                                                                   | After                                           |
+| ------------------------------------------------------------------------ | ----------------------------------------------- |
+| `PostgrestBuilder<T, S, R>`                                              | `PostgrestBuilder<T>`                           |
+| `RawPostgrestBuilder<T, S, R>` and `ResponsePostgrestBuilder<T, S, R>`   | `PostgrestBuilder<T>`                           |
+| `PostgrestBuilder(count: …, converter: …)`                               | `PostgrestBuilder(…).withConverter(…).count(…)` |
+| `geojson()` returned `ResponsePostgrestBuilder<Map<String, dynamic>, …>` | `PostgrestBuilder<Map<String, dynamic>>`        |
+
+`withConverter()` converts whatever the request resolves to at the point where it is called. Without
+`count()` nothing changes. With `count()`, call `withConverter()` first so the converter keeps
+receiving the data:
+
+```dart
+// Before
+final response = await supabase
+    .from('users')
+    .select()
+    .count(CountOption.exact)
+    .withConverter((rows) => rows.map(User.fromJson).toList());
+
+// After
+final response = await supabase
+    .from('users')
+    .select()
+    .withConverter((rows) => rows.map(User.fromJson).toList())
+    .count(CountOption.exact);
+```
+
+A converter placed after `count()` receives the whole `PostgrestResponse`, so the old order no
+longer compiles.
+
+The per-request timeout override is a method of its own instead of a parameter of `retry()`:
+
+| Before                                                   | After                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| `.retry(requestTimeout: Duration(seconds: 5))`           | `.requestTimeout(Duration(seconds: 5))`                 |
+| `.retry(count: 5, requestTimeout: Duration(seconds: 5))` | `.retry(count: 5).requestTimeout(Duration(seconds: 5))` |
+
+`requestTimeout()` is available wherever `retry()` is.
+
+#### `rpc` is a getter
+
+`PostgrestClient.rpc`, `SupabaseClient.rpc` and `SupabaseQuerySchema.rpc` are getters returning a
+`PostgrestRpc` instead of methods. Calling the result makes the same untyped call as before, so
+`supabase.rpc('fn', params: {...})` is unchanged, and the generated extension methods on
+`PostgrestRpc` add typed calls such as `supabase.rpc.searchBooks(query: 'dart')`. Code that passes
+`rpc` itself around as a function no longer compiles; wrap it in a closure instead.
+
+```dart
+// Before
+final call = supabase.rpc;
+
+// After
+PostgrestFilterBuilder<dynamic> call(String fn) => supabase.rpc(fn);
+```
+
+#### `insert()` and `upsert()` no longer take filters
+
+`insert()` and `upsert()` return a `PostgrestTransformBuilder` instead of a
+`PostgrestFilterBuilder`, and the typed `insert()`, `insertAll()`, `upsert()` and `upsertAll()`
+return a `PostgrestTypedTransformBuilder` instead of a `PostgrestTypedFilterBuilder`. PostgREST
+always ignored a filter on an insert, so drop it, or use `update()` to change existing rows.
+`select()`, `order()`, `limit()` and the other transforms are still available. Code that stores one of these builders in a variable typed as `PostgrestFilterBuilder<void>` or
+`PostgrestTypedFilterBuilder<Row, void>` needs the `Transform` type instead.
+
+#### Typed `update()` and `delete()` require a filter or `all()`
+
+The typed `update()` and `delete()` return a `PostgrestTypedUnscopedBuilder` instead of a
+`PostgrestTypedFilterBuilder`. It does not implement `Future` and has no transforms, only
+`where()` and `all()`, each of which returns the `PostgrestTypedFilterBuilder` the mutation used to
+start with. A mutation that forgot its filter, and would have written every row in the table, no
+longer sends a request; writing every row is spelled out with `all()`.
+
+```dart
+// Before: compiled, and deleted every book.
+await supabase.table(Books.table).delete();
+
+// After: sends nothing, see below. Filter the rows, or ask for all of them.
+await supabase.table(Books.table).delete().where(Books.id.eq(1));
+await supabase.table(Books.table).delete().all();
+```
+
+A bare `await` of `update()` or `delete()` still compiles and silently performs no request. The
+analyzer reports every such line as an `unused_result` warning, which is on by default.
+Anything chained directly after `update()` or `delete()` has to move after the `where()` or `all()`.
+`update()` and `delete()` on `from()` are unchanged.
+
+### Auth
+
+#### `AuthClient.getSSOSignInUrl` returns a `Uri`
+
+It returned a `String` before. Call `toString()` on the result if you need the string.
+
+#### `OAuthResponse.url` is a `Uri`
 
 `getOAuthSignInUrl()` and `getLinkIdentityUrl()` return a `Uri` in `OAuthResponse.url` rather than
-a `String`.
+a `String`. Drop any `Uri.parse()` you were doing yourself, or call `toString()` for the string.
 
-```dart
-// Before
-final String url = response.url;
-
-// After
-final Uri url = response.url;
-```
-
-Use `response.url.toString()` if you need the string, and drop any `Uri.parse()` you were doing
-yourself.
-
-### Sign-in methods that always issue a session return the `Session`
+#### Sign-in methods that always issue a session return the `Session`
 
 The auth methods that cannot complete without a session return it directly instead of an
 `AuthResponse` with a nullable `session`:
@@ -183,36 +893,16 @@ final session = await supabase.auth.signInWithPassword(email: email, password: p
 final user = session.user;
 ```
 
-`signInAnonymously()`, `signInWithPassword()` and `passkey.verifyAuthentication()` used to resolve
-with `session` set to `null` when the response carried no session. Every method in the list now
-throws an `AuthSessionMissingException` in that case, with the `errorCode` `session_missing` and the
-`requestId` of the response.
+When the response carries no session, every method in the list throws an
+`AuthSessionMissingException` with the `errorCode` `session_missing`, where some used to resolve with
+a `null` session. `signUp()` and `verifyOTP()` keep returning an `AuthResponse`, since both can
+complete without a session.
 
-`signUp()` and `verifyOTP()` keep returning an `AuthResponse`, since both can legitimately complete
-without a session: a sign-up that needs email confirmation first, and the first step of a secure
-email or phone change.
-
-### `admin.listUsers()` returns pagination metadata
+#### `admin.listUsers()` returns pagination metadata
 
 `listUsers()` returns a `ListUsersResponse` instead of a `List<User>`. The users are under `users`,
-alongside `total`, `nextPage`, `lastPage` and `audience`.
-
-```dart
-// Before
-final List<User> users = await supabase.auth.admin.listUsers(perPage: 50);
-for (final user in users) {
-  print(user.email);
-}
-
-// After
-final response = await supabase.auth.admin.listUsers(perPage: 50);
-for (final user in response.users) {
-  print(user.email);
-}
-```
-
-`nextPage` is `null` on the last page. To walk every page, use `listAllUsers()`, which requests
-the next page only once the previous one has been read:
+alongside `total`, `nextPage`, `lastPage` and `audience`. `nextPage` is `null` on the last page. To
+walk every page, use `listAllUsers()`:
 
 ```dart
 await for (final user in supabase.auth.admin.listAllUsers(perPage: 50)) {
@@ -220,93 +910,36 @@ await for (final user in supabase.auth.admin.listAllUsers(perPage: 50)) {
 }
 ```
 
-### `OAuthAuthorizationDetailsResponse.user` is an `OAuthAuthorizingUser`
+#### `OAuthAuthorizationDetailsResponse.user` is an `OAuthAuthorizingUser`
 
-```dart
-// Before
-final User user = details.user;
+It was a `User` before. `OAuthAuthorizingUser` carries `id` and `email` under the same names, so
+code that only reads those needs no change.
 
-// After
-final OAuthAuthorizingUser user = details.user;
-```
+#### `OAuthClient.clientName` is nullable
 
-`OAuthAuthorizingUser` carries `id` and `email`, which keep their names, so code that only reads
-those needs no change.
+A client that registered itself through dynamic client registration may have no name, so
+`OAuthClient.clientName` is a `String?`. Fall back to something like `client.clientId` where you
+need a value.
 
-### `OAuthClient.clientName` is nullable
+#### `OAuthClient.tokenEndpointAuthenticationMethod` and `registrationType` are nullable
 
-A client name is optional in Auth, and a client registered without one comes back with no
-`client_name` at all, so `OAuthClient.clientName` is a `String?`.
+Auth leaves both out of a client response when they are empty, so
+`OAuthClient.tokenEndpointAuthenticationMethod` is a `String?` and `OAuthClient.registrationType`
+is an `OAuthClientRegistrationType?`.
 
-```dart
-// Before
-final String name = client.clientName;
+#### OAuth clients no longer have a `scope`
 
-// After
-final String name = client.clientName ?? client.clientId;
-```
-
-`CreateOAuthClientOptions.clientName` is still required, so clients you create through
-`admin.oauth.createClient` always have one. Clients that register themselves through the dynamic
-client registration API, where the name is optional, may not.
-
-### `OAuthClient.tokenEndpointAuthenticationMethod` and `registrationType` are nullable
-
-Auth leaves `token_endpoint_auth_method` and `registration_type` out of a client response when they
-are empty, so `OAuthClient.tokenEndpointAuthenticationMethod` is a `String?` and
-`OAuthClient.registrationType` is an `OAuthClientRegistrationType?`.
-
-```dart
-// Before
-final OAuthClientRegistrationType type = client.registrationType;
-
-// After
-final OAuthClientRegistrationType? type = client.registrationType;
-```
-
-### OAuth clients no longer have a `scope`
-
-Auth does not store a scope on an OAuth client, so `OAuthClient.scope`,
-`CreateOAuthClientOptions.scope` and `UpdateOAuthClientOptions.scope` are gone. `OAuthClient.scope`
-was always `null`, and Auth ignored the scope sent when creating or updating a client.
-
-Scopes belong to each authorization request instead. A client asks for them with the `scope`
-query parameter on `/oauth/authorize`, and the scopes it asked for are on
+`OAuthClient.scope`, `CreateOAuthClientOptions.scope` and `UpdateOAuthClientOptions.scope` are
+gone. Auth never stored a scope on a client, so drop the argument. Scopes are requested per
+authorization with the `scope` query parameter on `/oauth/authorize`, and are on
 `OAuthAuthorizationDetailsResponse.scope`.
 
-```dart
-// Before
-await supabase.auth.admin.oauth.createClient(
-  CreateOAuthClientOptions(
-    clientName: 'My App',
-    redirectUris: ['https://example.com/callback'],
-    scope: 'openid email',
-  ),
-);
-
-// After
-await supabase.auth.admin.oauth.createClient(
-  CreateOAuthClientOptions(
-    clientName: 'My App',
-    redirectUris: ['https://example.com/callback'],
-  ),
-);
-```
-
-### `JWK.publicKey` returns a `JWTKey`
+#### `JWK.publicKey` returns a `JWTKey`
 
 `JWK.publicKey` supports EC keys as well as RSA keys, so it returns a `JWTKey`: an `RSAPublicKey`
-for `RSA` keys and an `ECPublicKey` for `EC` keys.
+for `RSA` keys and an `ECPublicKey` for `EC` keys. It returned an `RSAPublicKey` before.
 
-```dart
-// Before
-final RSAPublicKey key = jwk.publicKey;
-
-// After
-final JWTKey key = jwk.publicKey;
-```
-
-### `User.appMetadata` is an `AppMetadata` and `userMetadata` is never null
+#### `User.appMetadata` is an `AppMetadata` and `userMetadata` is never null
 
 `User.appMetadata` changes from a `Map<String, dynamic>` to an `AppMetadata` value object with
 typed `provider` and `providers` fields. Every other key the server sent, such as a claim added by
@@ -314,53 +947,24 @@ an auth hook or an admin update, is still read with `[]`, so `user.appMetadata['
 compiling. Iterating the map or passing it where a `Map` is expected does not; use `toJson()` for
 the full map.
 
-`User.userMetadata` is no longer nullable. A user without metadata has an empty map, matching
-supabase-js and supabase-swift. Both metadata objects are unmodifiable when parsed from the server.
+`User.userMetadata` is no longer nullable. A user without metadata has an empty map. Both metadata
+objects are unmodifiable when parsed from the server.
 
 ```dart
 // Before
 final provider = user.appMetadata['provider'] as String?;
-final providers = (user.appMetadata['providers'] as List?)?.cast<String>() ?? [];
 final name = user.userMetadata?['name'] as String?;
-for (final entry in user.appMetadata.entries) {
-  // ...
-}
 
 // After
 final provider = user.appMetadata.provider;
-final providers = user.appMetadata.providers;
 final name = user.userMetadata['name'] as String?;
-for (final entry in user.appMetadata.toJson().entries) {
-  // ...
-}
 ```
 
-The `User` constructor takes an `AppMetadata` for `appMetadata`, and both metadata arguments are
-optional:
+The `User` constructor takes an `AppMetadata`, such as
+`const AppMetadata(provider: 'email', providers: ['email'])`, and both metadata arguments are
+optional. `UserAttributes.data` and the `AdminUserAttributes` metadata fields are still plain maps.
 
-```dart
-// Before
-final user = User(
-  id: id,
-  appMetadata: {'provider': 'email'},
-  userMetadata: null,
-  audience: 'authenticated',
-  createdAt: createdAt,
-);
-
-// After
-final user = User(
-  id: id,
-  appMetadata: const AppMetadata(provider: 'email', providers: ['email']),
-  audience: 'authenticated',
-  createdAt: createdAt,
-);
-```
-
-The input side is unchanged: `UserAttributes.data` and the `AdminUserAttributes` metadata fields are
-still plain maps, because the values you send are free-form.
-
-### Confirming an email or phone change emits `userUpdated`
+#### Confirming an email or phone change emits `userUpdated`
 
 Confirming an email or phone change now emits `AuthChangeEvent.userUpdated` instead of
 `AuthChangeEvent.signedIn`:
@@ -372,23 +976,11 @@ Confirming an email or phone change now emits `AuthChangeEvent.userUpdated` inst
 | `exchangeCodeForSession()` for a PKCE code from an email change   | `signedIn` | `userUpdated` |
 
 The session is still saved and `currentSession` still updates. Check any `onAuthStateChange`
-listener that navigates or fetches on `signedIn` and expects the email-change confirmation to reach
-it:
-
-```dart
-supabase.auth.onAuthStateChange.listen((data) {
-  if (data.event == AuthChangeEvent.signedIn) {
-    // Only runs on an actual sign-in.
-  } else if (data.event == AuthChangeEvent.userUpdated) {
-    // Runs when the user record changed, including a confirmed email change.
-  }
-});
-```
-
-For the PKCE case, `AuthSessionUrlResponse.redirectType` is `'userUpdated'` instead of `null`, so
+listener that expects the email-change confirmation to arrive as `signedIn`, and handle
+`userUpdated` there instead. For the PKCE case, `AuthSessionUrlResponse.redirectType` is `'userUpdated'` instead of `null`, so
 you can also branch on the response of `exchangeCodeForSession()` directly.
 
-### Cross-tab session sync is opt-in for standalone clients
+#### Cross-tab session sync is opt-in for standalone clients
 
 On web the auth client keeps the tabs of a project in sync through a `BroadcastChannel`. It is now
 only opened when the session is persisted. `AuthClientOptions` and `AuthClient` gain
@@ -396,31 +988,10 @@ only opened when the session is persisted. `AuthClientOptions` and `AuthClient` 
 
 `Supabase.initialize` still defaults it to `true` through `FlutterAuthClientOptions`, so an app
 initialized that way is unaffected. A client you construct directly no longer takes part unless you
-ask for it:
-
-```dart
-// Before: every client synced its session across tabs.
-final client = SupabaseClient(
-  url,
-  publishableKey,
-  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
-);
-
-// After: opt in where the session should be shared.
-final client = SupabaseClient(
-  url,
-  publishableKey,
-  authOptions: AuthClientOptions(
-    asyncStorage: MemoryAuthAsyncStorage(),
-    persistSession: true,
-  ),
-);
-```
-
-An app that passes `persistSession: false` keeps its session in memory and no longer syncs it
+pass `persistSession: true` to its `AuthClientOptions`. An app that passes `persistSession: false` keeps its session in memory and no longer syncs it
 across tabs. A client configured with a third-party `accessToken` never opens the channel.
 
-### The auth client persists the session itself
+#### The auth client persists the session itself
 
 `AuthClient` owns session persistence. It takes one `AuthAsyncStorage` for both the session and the
 pkce code verifiers, writes the session whenever it changes, and restores it when the client is
@@ -438,45 +1009,10 @@ created, so a Dart program without Flutter gets session persistence too.
 `SharedPreferencesAuthAsyncStorage` remains the default of `Supabase.initialize`. On web it writes
 to `window.localStorage`, so the session is shared with supabase-js under the same key.
 
-A custom storage implements the one interface and no longer needs to know the key:
+A custom storage implements the three methods of `AuthAsyncStorage` instead of the five of
+`LocalStorage`, and no longer needs to know the key:
 
 ```dart
-// Before
-class MySecureStorage extends LocalStorage {
-  MySecureStorage({required this.persistSessionKey});
-
-  final String persistSessionKey;
-
-  final storage = FlutterSecureStorage();
-
-  @override
-  Future<void> initialize() async {}
-
-  @override
-  Future<String?> accessToken() => storage.read(key: persistSessionKey);
-
-  @override
-  Future<bool> hasAccessToken() => storage.containsKey(key: persistSessionKey);
-
-  @override
-  Future<void> persistSession(String persistSessionString) =>
-      storage.write(key: persistSessionKey, value: persistSessionString);
-
-  @override
-  Future<void> removePersistedSession() => storage.delete(key: persistSessionKey);
-}
-
-await Supabase.initialize(
-  url: url,
-  publishableKey: publishableKey,
-  authOptions: FlutterAuthClientOptions(
-    localStorage: MySecureStorage(
-      persistSessionKey: defaultPersistSessionKey(url),
-    ),
-  ),
-);
-
-// After
 class MySecureStorage extends AuthAsyncStorage {
   final storage = FlutterSecureStorage();
 
@@ -491,75 +1027,35 @@ class MySecureStorage extends AuthAsyncStorage {
   Future<void> removeItem(String key) => storage.delete(key: key);
 }
 
-await Supabase.initialize(
-  url: url,
-  publishableKey: publishableKey,
-  authOptions: FlutterAuthClientOptions(asyncStorage: MySecureStorage()),
-);
+authOptions: FlutterAuthClientOptions(asyncStorage: MySecureStorage()),
 ```
 
-Keeping the session in memory only is a flag rather than a storage:
+Keeping the session in memory only is a flag rather than a storage: replace
+`localStorage: const EmptyLocalStorage()` with `persistSession: false`. The code verifiers are still
+stored in that case, so an email link or OAuth redirect completes even if the app was closed in
+between.
 
-```dart
-// Before
-authOptions: FlutterAuthClientOptions(localStorage: const EmptyLocalStorage()),
-
-// After
-authOptions: FlutterAuthClientOptions(persistSession: false),
-```
-
-The code verifiers are still stored in that case, so a sign-in through an email link or an OAuth
-redirect completes even when the app was closed in between.
-
-A Dart program persists the session by passing a storage and opting in:
-
-```dart
-final client = SupabaseClient(
-  url,
-  publishableKey,
-  authOptions: AuthClientOptions(
-    asyncStorage: FileStorage(), // your AuthAsyncStorage
-    persistSession: true,
-  ),
-);
-await client.auth.initialized;
-print(client.auth.currentSession?.user.email);
-```
-
-`AuthClient.initialized` completes once the persisted session has been restored.
-`Supabase.initialize` awaits it, so `currentSession` is set when it returns, as before. Await it
-yourself when you construct a client directly.
+A Dart program persists the session by passing an `asyncStorage` and `persistSession: true` to
+`AuthClientOptions`, then awaiting `client.auth.initialized`, which completes once the persisted
+session has been restored. `Supabase.initialize` awaits it for you.
 
 `AuthClientOptions.storageKey` names the key the session is stored under, defaulting to
-`defaultPersistSessionKey(url)`, which is `sb-<project-ref>-auth-token`. It also prefixes the code
-verifier keys and names the channel that keeps the tabs of a web app in sync. Verifiers under the
-old `supabase.auth.token-…` prefix are still read and cleaned up, so a sign-in link requested before
-the upgrade still completes after it.
+`sb-<project-ref>-auth-token`. It also prefixes the code verifier keys. Verifiers under the old
+`supabase.auth.token-…` prefix are still read, so a sign-in link requested before the upgrade still
+completes after it.
 
-### A client without an `asyncStorage` throws when it is created
+#### A client without an `asyncStorage` throws when it is created
 
-The pkce flow, which is the default, keeps its code verifiers in the `asyncStorage` of
-`AuthClientOptions`. A `SupabaseClient` or `AuthClient` created without one used to fail an assert,
-so `dart run` and AOT builds only failed at the first pkce call. Both now throw an `ArgumentError`
-when they are created, in debug and release builds alike. So does either client when it persists
-the session without an `asyncStorage`.
+The pkce flow, the default, keeps its code verifiers in the `asyncStorage` of `AuthClientOptions`.
+A `SupabaseClient` or `AuthClient` created without one used to fail an assert, so release builds
+only failed at the first pkce call. Both now throw an `ArgumentError` when they are created, in
+every build mode.
 
-`Supabase.initialize` configures a storage for you. A standalone script or a server builds its own
-client and has to pass one, or use the implicit flow:
+`Supabase.initialize` configures a storage for you. A standalone script or a server has to pass
+one, such as `MemoryAuthAsyncStorage()`, or use the implicit flow. A client with a third-party
+`accessToken` needs no `asyncStorage`.
 
-```dart
-final client = SupabaseClient(
-  url,
-  publishableKey,
-  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
-);
-```
-
-`MemoryAuthAsyncStorage` only suits flows that start and complete in the same process. In tests,
-`testSupabaseClient` from `supabase_test` already configures one. A client with a third-party
-`accessToken` does not use the auth client, so it needs no `asyncStorage`.
-
-### `AuthChangeEvent.initialSession` is emitted to every subscriber
+#### `AuthChangeEvent.initialSession` is emitted to every subscriber
 
 `initialSession` is emitted to every new subscriber of `onAuthStateChange` as its first event,
 carrying the session at that moment or `null`. In v2 it was emitted once at startup by
@@ -584,7 +1080,7 @@ supabase.auth.onAuthStateChange.listen((data) {
 A client you construct yourself emits the event too. Earlier events and errors are no longer
 replayed.
 
-### `AuthState` is a sealed class
+#### `AuthState` is a sealed class
 
 Each `AuthChangeEvent` has its own `AuthState` subtype carrying the data that event produces:
 `AuthInitialSession`, `AuthSignedIn`, `AuthSignedOut`, `AuthTokenRefreshed`, `AuthUserUpdated`,
@@ -632,24 +1128,20 @@ supabase.auth.onAuthStateChange.listen((state) {
 });
 ```
 
-### The session is persisted with `SharedPreferencesAsync`
+#### The session is persisted with `SharedPreferencesAsync`
 
 `SharedPreferencesAuthAsyncStorage`, the storage `Supabase.initialize` uses by default, now writes
 through
 [`SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#sharedpreferences-vs-sharedpreferencesasync-vs-sharedpreferenceswithcache)
 rather than the legacy `SharedPreferences` API.
 
-It moves an existing value over the first time it is read and deletes the legacy entry, so your
-users stay signed in. No code change is needed, and there is nothing to migrate if you pass your own
-`AuthAsyncStorage`.
-
-Two things do need action.
+An existing session is moved over the first time it is read, so your users stay signed in. Two
+things need action.
 
 If your own code still calls `SharedPreferences.getInstance()`, on Windows and Linux a session write
 by the SDK can now drop preferences you wrote through the legacy API, and the other way around.
 [Migrate your code to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache)
-as well. If you cannot do that yet, pass an `AuthAsyncStorage` that keeps the session in the legacy
-store:
+as well, or pass an `AuthAsyncStorage` that keeps the session in the legacy store:
 
 ```dart
 class LegacySharedPreferencesStorage extends AuthAsyncStorage {
@@ -667,19 +1159,11 @@ class LegacySharedPreferencesStorage extends AuthAsyncStorage {
   Future<void> removeItem(String key) async =>
       (await _preferences).remove(key);
 }
-
-await Supabase.initialize(
-  url: url,
-  publishableKey: publishableKey,
-  authOptions: FlutterAuthClientOptions(
-    asyncStorage: LegacySharedPreferencesStorage(),
-  ),
-);
 ```
 
-Widget tests that call `Supabase.initialize` need one more line of setup, since
-`SharedPreferences.setMockInitialValues()` only stands in for the legacy API and the new storage
-otherwise throws `StateError: The SharedPreferencesAsyncPlatform instance must be set.`:
+Widget tests that call `Supabase.initialize` otherwise throw
+`StateError: The SharedPreferencesAsyncPlatform instance must be set.`, since
+`SharedPreferences.setMockInitialValues()` only covers the legacy API:
 
 ```dart
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -693,64 +1177,31 @@ setUp(() {
 ```
 
 `shared_preferences_platform_interface` needs to be a `dev_dependency` for that import. Passing
-`FlutterAuthClientOptions(asyncStorage: MemoryAuthAsyncStorage())` instead keeps the tests away from
-shared preferences altogether.
+`FlutterAuthClientOptions(asyncStorage: MemoryAuthAsyncStorage())` instead avoids shared
+preferences altogether.
 
-### `supabasePersistSessionKey` is gone
+#### `supabasePersistSessionKey` is gone
 
 The session is stored under `AuthClientOptions.storageKey`, which defaults to
-`sb-<project-ref>-auth-token`.
+`sb-<project-ref>-auth-token`. A custom `AuthAsyncStorage` receives the key with every call. To keep
+reading sessions stored under the old constant, pass
+`storageKey: 'SUPABASE_PERSIST_SESSION_KEY'` to `FlutterAuthClientOptions`; leaving the default
+signs your users out once instead.
 
-A custom `AuthAsyncStorage` receives the key with every call, so there is nothing to replace the
-constant with in the storage itself. To keep reading the sessions stored under it, pass it as the
-key:
+If you are still on v1 with a session in [hive](https://pub.dev/packages/hive), upgrade to v2 first
+and let it migrate the session, then move to v3.
 
-```dart
-await Supabase.initialize(
-  url: url,
-  publishableKey: publishableKey,
-  authOptions: FlutterAuthClientOptions(
-    asyncStorage: MySecureStorage(),
-    storageKey: 'SUPABASE_PERSIST_SESSION_KEY',
-  ),
-);
-```
+#### Auth requires a GoTrue server on API version `2024-01-01` or newer
 
-Leaving the key at its default signs your users out once instead.
+Error codes are always read from `code`, without the fallback to the older `error_code` field. This
+only affects self-hosted setups on a GoTrue older than `2024-01-01`, where `code` is now `null` and a
+weak password surfaces as a plain `AuthApiException` rather than `AuthWeakPasswordException`.
+`ApiVersions` is removed with nothing replacing it.
 
-The `MigrationLocalStorage` and `HiveLocalStorage` snippets that migrated a v1 session out of
-[hive](https://pub.dev/packages/hive) are gone from the README. If you are still on v1, upgrade to
-v2 first and let it migrate the session, then move to v3.
+#### Session and auth request objects are immutable
 
-### Auth requires a GoTrue server on API version `2024-01-01` or newer
-
-The auth client no longer falls back to the older `error_code` error field, nor reconstructs
-`AuthWeakPasswordException` from a bare `weak_password` body. Error codes are always read from
-`code`.
-
-Hosted Supabase projects are long past this version, so this only affects self-hosted setups pinned
-to a GoTrue older than `2024-01-01`. Against one of those, an auth failure still throws
-`AuthApiException` with the right message and status code, but `code` is `null` and a weak password
-surfaces as a plain `AuthApiException` rather than `AuthWeakPasswordException`. Upgrade the server to
-restore both.
-
-`ApiVersions` and its `ApiVersions.v20240101` field are removed with nothing replacing them.
-
-### Session and auth request objects are immutable
-
-`Session.expiresAt` is `late final`. Mint a new session, or call `copyWith` with a different
-`accessToken`, to change the expiry:
-
-```dart
-// Before
-session.expiresAt = DateTime.now().add(const Duration(hours: 1));
-
-// After
-final refreshed = session.copyWith(accessToken: newAccessToken);
-print(refreshed.expiresAt);
-```
-
-`ResendResponse.messageId` is `final` too.
+`Session.expiresAt` and `ResendResponse.messageId` are `final`. The expiry is read from the access
+token, so call `session.copyWith(accessToken: newAccessToken)` to change it.
 
 The request fields on `UserAttributes` and `AdminUserAttributes` are `final`, so pass them to the
 constructor instead of assigning after construction:
@@ -768,202 +1219,9 @@ await supabase.auth.updateUser(
 );
 ```
 
-### `order()` now sorts ascending by default
+### Realtime
 
-`PostgrestTransformBuilder.order()` and `SupabaseStreamBuilder.order()` default `ascending` to
-`true` instead of `false`. This is not a compile error, so check every `.order()` call that does not
-pass `ascending` explicitly, in both `select()` queries and `stream()`.
-
-```dart
-// Before: newest first
-final messages = await supabase.from('messages').select().order('created_at');
-
-// After: oldest first
-final messages = await supabase.from('messages').select().order('created_at');
-```
-
-To keep the previous behaviour, ask for descending order explicitly:
-
-```dart
-final messages = await supabase
-    .from('messages')
-    .select()
-    .order('created_at', ascending: false);
-```
-
-`ascending: false` already means descending on v2, so you can add it to your current code before
-upgrading and leave this change out of the upgrade itself.
-
-### `order()` no longer sends a null placement by default
-
-`nullsFirst` on `PostgrestTransformBuilder.order()` is now a `bool?` that defaults to `null`. When
-it is left out, no `nullsfirst` or `nullslast` is sent and PostgreSQL decides where `NULL`s go: last
-for an ascending sort and first for a descending one. v2 defaulted it to `false`, which always sent
-`nullslast` and so put `NULL`s last on a descending sort too. This is not a compile error, so check
-every `.order(..., ascending: false)` call on a nullable column.
-
-```dart
-// Before: order=price.desc.nullslast, nulls at the end
-final books = await supabase
-    .from('books')
-    .select()
-    .order('price', ascending: false);
-
-// After: order=price.desc, nulls at the start
-final books = await supabase
-    .from('books')
-    .select()
-    .order('price', ascending: false);
-```
-
-To keep the previous behaviour, ask for nulls last explicitly:
-
-```dart
-final books = await supabase
-    .from('books')
-    .select()
-    .order('price', ascending: false, nullsFirst: false);
-```
-
-`nullsFirst: false` already means nulls last on v2, so you can add it to your current code before
-upgrading and leave this change out of the upgrade itself. Ascending sorts are unaffected, since
-nulls last is also PostgreSQL's default there.
-
-### The rest client and its builders are stateless
-
-| Before                                                                                       | After                                                                                      |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `supabase.rest.headers['X-Foo'] = 'bar'`                                                     | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}`                                 |
-| `postgrest.headers['X-Foo'] = 'bar'`                                                         | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request     |
-| `await supabase.from('countries')`                                                           | does not compile, choose an operation first                                                |
-| `SupabaseQuerySchema(headers: …)`                                                            | removed, the headers of the `rest` client are used                                         |
-| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
-| `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`                 | removed                                                                                    |
-| `PostgrestQueryBuilder<T>`                                                                   | `PostgrestQueryBuilder`                                                                    |
-
-`PostgrestClient.headers` is an unmodifiable map. Set headers on the constructor for all requests,
-or with `setHeader()` on a builder for a single request.
-
-On `SupabaseClient`, assigning `supabase.headers` replaces the rest client with one carrying the new
-headers, so in-place mutation of `supabase.rest.headers` throws an `UnsupportedError`. A
-`PostgrestClient` reference captured before the assignment keeps the headers it was built with, and
-so does the `SupabaseQuerySchema` returned by `supabase.schema(…)`. Read `supabase.rest` or call
-`supabase.schema(…)` again, and create new builders, after changing `supabase.headers`.
-
-`insert()`, `upsert()`, `update()` and `delete()` without a trailing `select()` now resolve to
-`void` everywhere, where `supabase.from()` used to yield `dynamic`. That value was always `null`, so
-drop the assignment or add `select()` to actually return data.
-
-`supabase.from('countries')` by itself no longer implements `Future` and cannot be awaited,
-converted with `withConverter()`, or given an `abortSignal()`. Call `select()`, `insert()`,
-`upsert()`, `update()`, `delete()` or `count()` first; everything after that point is unchanged.
-`setHeader()` and `retry()` remain available before the operation:
-
-```dart
-// Before: compiled, but threw an ArgumentError at runtime.
-await supabase.from('countries');
-
-// After: does not compile. Choose an operation first.
-await supabase.from('countries').select();
-```
-
-### `rpc` is a getter
-
-`PostgrestClient.rpc`, `SupabaseClient.rpc` and `SupabaseQuerySchema.rpc` are getters returning a
-`PostgrestRpc` instead of methods. Calling the result makes the same untyped call as before, so
-`supabase.rpc('fn', params: {...})` and `supabase.rpc<int>('fn')` are unchanged. The extension
-methods `supabase_typegen` generates on `PostgrestRpc` are what make
-`supabase.rpc.searchBooks(query: 'dart')` typed.
-
-Code that passes `rpc` itself around as a function no longer compiles, since the getter returns an
-object rather than a function. Wrap it in a closure instead.
-
-```dart
-// Before
-final call = supabase.rpc;
-
-// After
-PostgrestFilterBuilder<dynamic> call(String fn) => supabase.rpc(fn);
-```
-
-### `insert()` and `upsert()` no longer take filters
-
-`insert()` and `upsert()` return a `PostgrestTransformBuilder` instead of a
-`PostgrestFilterBuilder`, and the typed `insert()`, `insertAll()`, `upsert()` and `upsertAll()`
-return a `PostgrestTypedTransformBuilder` instead of a `PostgrestTypedFilterBuilder`. An insert has
-no existing rows to filter, so PostgREST always ignored a filter on one, and a filter chained after
-`insert()` or `upsert()` no longer compiles. `select()`, `order()`, `limit()` and the other
-transforms, which shape the rows the insert returns, are still available.
-
-```dart
-// Before: compiled, but the filter was ignored by the server.
-await supabase.from('messages').insert({'message': 'foo'}).eq('id', 1);
-
-// After: does not compile. Drop the filter, or use update() to change existing rows.
-await supabase.from('messages').insert({'message': 'foo'});
-await supabase.from('messages').update({'message': 'foo'}).eq('id', 1);
-```
-
-Code that stores one of these builders in a variable typed as `PostgrestFilterBuilder<void>` or
-`PostgrestTypedFilterBuilder<Row, void>` needs the `Transform` type instead.
-
-### Typed `update()` and `delete()` require a filter or `all()`
-
-The typed `update()` and `delete()` return a `PostgrestTypedUnscopedBuilder` instead of a
-`PostgrestTypedFilterBuilder`. It does not implement `Future` and has no transforms, only
-`where()` and `all()`, each of which returns the `PostgrestTypedFilterBuilder` the mutation used to
-start with. A mutation that forgot its filter, and would have written every row in the table, no
-longer sends a request; writing every row is spelled out with `all()`.
-
-```dart
-// Before: compiled, and deleted every book.
-await supabase.table(Books.table).delete();
-
-// After: sends nothing, see below. Filter the rows, or ask for all of them.
-await supabase.table(Books.table).delete().where(Books.id.eq(1));
-await supabase.table(Books.table).delete().all();
-```
-
-Dart allows `await` on a value that is not a `Future`, so an unchanged bare `await` of `update()`
-or `delete()` still compiles and silently performs no request. The analyzer reports every such
-line as an `unused_result` warning, which is on by default; fix those warnings when upgrading.
-Anything chained directly after `update()` or `delete()`, a filter, `select()`, `order()`,
-`maxAffected()` or a request option, does not compile until it moves after the `where()` or
-`all()`. Code that stores the result of `update()` or
-`delete()` in a variable typed as `PostgrestTypedFilterBuilder<Row, void>` needs
-`PostgrestTypedUnscopedBuilder<Row>` instead, or a `where()` or `all()` call. `update()` and
-`delete()` on `from()` are unchanged.
-
-### `createSignedUrls` reports per-path failures
-
-`createSignedUrls` returns a list of `SignedUrlSuccess` and `SignedUrlFailure` instead of
-`List<SignedUrl>`, and the separate `createSignedUrlsResult` is removed. If you were already calling
-`createSignedUrlsResult`, drop the `Result` suffix.
-
-```dart
-// Before
-final urls = await supabase.storage
-    .from('avatars')
-    .createSignedUrls(['a.png', 'b.png'], 60);
-for (final url in urls) {
-  print(url.signedUrl);
-}
-
-// After
-final results = await supabase.storage
-    .from('avatars')
-    .createSignedUrls(['a.png', 'b.png'], 60);
-for (final result in results) {
-  switch (result) {
-    case SignedUrlSuccess(:final signedUrl):
-      print(signedUrl);
-    case SignedUrlFailure(:final path, :final error):
-      print('could not sign $path: $error');
-  }
-}
-```
-
-### `RealtimeClient.connectionState` is now typed
+#### `RealtimeClient.connectionState` is now typed
 
 `connectionState` keeps its name but changes from a `String` getter to `SocketState?`, and the typed
 `connState` field is gone. This is not a compile error if you were only reading the string, so check
@@ -971,30 +1229,18 @@ every use site.
 
 ```dart
 // Before
-if (client.connectionState == 'open') {
-  // ...
-}
-
-// After
-if (client.connectionState == SocketState.open) {
-  // ...
-}
-```
-
-Use `connectionState?.name` for the string form. To check whether the socket is up,
-`RealtimeClient.isConnected` is unchanged and is the better choice.
-
-If you were using the typed field under its old name, rename it:
-
-```dart
-// Before
+if (client.connectionState == 'open') {}
 final SocketStates? state = client.connState;
 
 // After
+if (client.connectionState == SocketState.open) {}
 final SocketState? state = client.connectionState;
 ```
 
-### The mutable internals of `RealtimeClient` are private
+Use `connectionState?.name` for the string form, or `RealtimeClient.isConnected` to check whether
+the socket is up.
+
+#### The mutable internals of `RealtimeClient` are private
 
 | Before                                                          | After                                         |
 | --------------------------------------------------------------- | --------------------------------------------- |
@@ -1014,53 +1260,15 @@ final SocketState? state = client.connectionState;
 Channels are added with `channel()` and removed with `removeChannel()` or `removeAllChannels()`.
 Mutating the `channels`, `headers` or `parameters` views throws an `UnsupportedError`. Unlike the
 removed field write, `setAccessToken()` also propagates the new token to every joined channel.
-
-```dart
-// Before
-final client = RealtimeClient(realtimeUrl);
-client.heartbeatInterval = const Duration(seconds: 60);
-client.accessToken = newToken;
-final channels = client.getChannels();
-
-// After
-final client = RealtimeClient(
-  realtimeUrl,
-  heartbeatInterval: const Duration(seconds: 60),
-);
-await client.setAccessToken(newToken);
-final channels = client.channels;
-```
-
 When the client is managed by a `SupabaseClient`, pass the heartbeat interval and the reconnect
-backoff through `RealtimeClientOptions`, and the headers through `SupabaseClient.headers`:
+backoff through `RealtimeClientOptions`, and the headers through `SupabaseClient.headers`.
 
-```dart
-final supabase = SupabaseClient(
-  supabaseUrl,
-  supabaseKey,
-  realtimeClientOptions: const RealtimeClientOptions(
-    heartbeatInterval: Duration(seconds: 60),
-  ),
-);
-```
+#### `RealtimeClient.parameters` is a `Map<String, String>`
 
-### `RealtimeClient.parameters` is a `Map<String, String>`
+The constructor argument and the `parameters` field were `Map<String, dynamic>`, though every value
+was stringified into the socket URL. Pass string values.
 
-The connection query parameters were declared as `Map<String, dynamic>` but every value was
-stringified into the socket URL. The constructor argument and the `parameters` field are now
-`Map<String, String>`, so a non-string value is a compile error instead of a runtime cast.
-
-```dart
-// Before
-final Map<String, dynamic> parameters = {'apikey': key};
-final client = RealtimeClient(realtimeUrl, parameters: parameters);
-
-// After
-final Map<String, String> parameters = {'apikey': key};
-final client = RealtimeClient(realtimeUrl, parameters: parameters);
-```
-
-### The mutable internals of `RealtimeChannel` are private
+#### The mutable internals of `RealtimeChannel` are private
 
 | Before                             | After                                                |
 | ---------------------------------- | ---------------------------------------------------- |
@@ -1073,41 +1281,23 @@ If you read presence state through `channel.presence`, use `channel.presenceStat
 `onPresenceSync`, `onPresenceJoin` and `onPresenceLeave` streams instead. Pass channel configuration
 through `RealtimeChannelConfig` when creating the channel.
 
-### Broadcasts no longer fall back to the REST API
+#### Broadcasts no longer fall back to the REST API
 
 `sendBroadcastMessage()` only sends over the WebSocket. Calling it on a channel that was never
 subscribed throws. Use `httpSend()` for the REST path, which works without subscribing:
 
 ```dart
-// Before
-final channel = supabase.channel('room');
-// Delivered over REST because the channel was never subscribed.
-await channel.sendBroadcastMessage(
-  event: 'cursor-pos',
-  payload: {'x': 12, 'y': 34},
-);
+// Before: delivered over REST because the channel was never subscribed.
+await supabase.channel('room').sendBroadcastMessage(event: 'move', payload: data);
 
-// After, over REST
-final channel = supabase.channel('room');
-await channel.httpSend(
-  event: 'cursor-pos',
-  payload: {'x': 12, 'y': 34},
-);
-
-// After, over the WebSocket
-final channel = supabase.channel('room')..subscribe();
-await channel.sendBroadcastMessage(
-  event: 'cursor-pos',
-  payload: {'x': 12, 'y': 34},
-);
+// After
+await supabase.channel('room').httpSend(event: 'move', payload: data);
 ```
 
-Messages sent between `subscribe()` and the channel actually joining are still buffered and flushed
-once the join succeeds, so only channels that were never subscribed throw.
+Messages sent between `subscribe()` and the join are still buffered, so only channels that were
+never subscribed throw. `httpSend()` requires Realtime v2.97.0 or newer.
 
-`httpSend()` requires a Realtime server running v2.97.0 or newer.
-
-### Realtime listener callbacks are now streams
+#### Realtime listener callbacks are now streams
 
 Every recurring-event listener in `supabase_realtime` is a Dart `Stream` instead of a callback.
 
@@ -1217,36 +1407,23 @@ channel.subscribe(const Duration(seconds: 10));
 All channel streams complete when the channel closes, so `await for` loops and `onDone` handlers end
 on their own once the channel is gone.
 
-### `Binding` and `BindingCallback` are internal
+#### `Binding` and `BindingCallback` are internal
 
 `Binding` and `BindingCallback` are no longer exported, along with their only consumers
 `RealtimeChannel.onEvents` and `RealtimeChannel.off`. Use the typed channel streams
 (`onPostgresChanges`, `onBroadcast`, `onPresenceSync`, `onPresenceJoin`, `onPresenceLeave`,
 `onSystemEvents`) instead.
 
-### `RealtimePresence` is internal
+#### `RealtimePresence` is internal
 
 `RealtimePresence` and its helper types (`PresenceOptions`, `PresenceEvents`, `PresenceChooser`,
 `PresenceOnJoinCallback`, `PresenceOnLeaveCallback`) are `@internal`, along with the
-`RealtimeChannel.presence` field. Everything the class offered is available on the channel:
+`RealtimeChannel.presence` field. Use `onPresenceJoin`, `onPresenceLeave` and `onPresenceSync` on
+the channel instead of `presence.onJoin`, `onLeave` and `onSync`, and `channel.presenceState()`
+instead of `presence.state`.
 
-```dart
-// Before
-channel.presence.onJoin((key, current, joined) { /* ... */ });
-channel.presence.onLeave((key, current, left) { /* ... */ });
-channel.presence.onSync(() { /* ... */ });
-final Map<String, List<Presence>> state = channel.presence.state;
-
-// After
-channel.onPresenceJoin.listen((payload) { /* ... */ });
-channel.onPresenceLeave.listen((payload) { /* ... */ });
-channel.onPresenceSync.listen((payload) { /* ... */ });
-final List<SinglePresenceState> state = channel.presenceState();
-```
-
-`presenceState()` returns a `List<SinglePresenceState>` rather than a map, so a presence key is read
-from `SinglePresenceState.key` and its payloads from `SinglePresenceState.presences`. When code
-depended on the map, rebuild it from the list:
+`presenceState()` returns a `List<SinglePresenceState>` rather than a map, with the key in
+`SinglePresenceState.key` and the payloads in `SinglePresenceState.presences`. To rebuild the map:
 
 ```dart
 final byKey = {
@@ -1256,7 +1433,7 @@ final byKey = {
 
 The `Presence` payload class is unchanged and stays public.
 
-### `RealtimeEncode` and `RealtimeDecode` are asynchronous and typed
+#### `RealtimeEncode` and `RealtimeDecode` are asynchronous and typed
 
 Both codec typedefs on `RealtimeClient` now work on a `RealtimeMessage` and return a `Future`:
 
@@ -1277,233 +1454,123 @@ final client = RealtimeClient(
 ```
 
 `RealtimeMessage` carries the `joinRef`, `ref`, `topic`, `event` and `payload` of a message, and
-converts to and from the positional array the protocol puts on the wire with `toJson` and
-`RealtimeMessage.fromJson`.
-
-`RealtimeClient.onMessage` emits `RealtimeMessage` instead of `Map<String, dynamic>`, so a listener
-that reads fields off the map needs to switch to properties:
-
-```dart
-// Before
-client.onMessage.listen((message) => print(message['event']));
-
-// After
-client.onMessage.listen((message) => print(message.event));
-```
-
-`RealtimeClientOptions` takes the same two callbacks, so a codec can be set on `SupabaseClient` and
-on `Supabase.initialize` without constructing a `RealtimeClient` yourself:
-
-```dart
-await Supabase.initialize(
-  url: url,
-  publishableKey: publishableKey,
-  realtimeClientOptions: RealtimeClientOptions(
-    encode: (message) => isolate.encode(message.toJson()),
-    decode: (frame) async =>
-        RealtimeMessage.fromJson(await isolate.decode(frame as String)),
-  ),
-);
-```
-
-`encode` and `decode` are `null` unless you pass one, and reading a custom codec back off the client
-changed accordingly:
-
-```dart
-// Before
-final Map<String, dynamic> message = client.decode(frame);
-
-// After
-final RealtimeMessage message = await client.decode!(frame);
-```
+converts to and from the wire array with `toJson` and `RealtimeMessage.fromJson`.
+`RealtimeClient.onMessage` emits `RealtimeMessage` too, so read `message.event` instead of
+`message['event']`. `RealtimeClientOptions` takes the same two callbacks, for a codec set through
+`SupabaseClient` or `Supabase.initialize`. The `encode` and `decode` fields of the client are `null`
+unless you pass a codec.
 
 A codec replaces the built-in one completely, so the one above handles text frames only. Handle a
-`Uint8List` frame as well if you send or receive binary broadcasts. A codec call that never
-completes fails after `RealtimeClient.timeout`.
+`Uint8List` frame as well if you send or receive binary broadcasts.
 
-### Realtime only speaks protocol `2.0.0`
+#### Realtime only speaks protocol `2.0.0`
 
 The legacy `1.0.0` Realtime protocol, with its object-shaped JSON frames, is no longer supported.
 `RealtimeClient` always connects with `vsn=2.0.0`, so the `version` constructor parameter, the
 `RealtimeClient.version` getter and the `RealtimeProtocolVersion` enum are removed.
 `RealtimeMessage.toJson` and `RealtimeMessage.fromJson` no longer take a protocol version.
 
-```dart
-// Before
-final client = RealtimeClient(url, version: RealtimeProtocolVersion.v1);
-final frame = message.toJson(RealtimeProtocolVersion.v1);
-
-// After
-final client = RealtimeClient(url);
-final frame = message.toJson();
-```
-
-### `RealtimeClient.logger` and `RealtimeClient.log` are gone
+#### `RealtimeClient.logger` and `RealtimeClient.log` are gone
 
 The `logger` constructor parameter and the public `log` method are removed. Realtime diagnostics are
 emitted on the `supabase.realtime` logger, so listen there instead.
 
 ```dart
-// Before
-final client = RealtimeClient(
-  realtimeUrl,
-  logger: (kind, message, data) => print('$kind: $message $data'),
-);
-
-// After
 hierarchicalLoggingEnabled = true;
 Logger('supabase.realtime').onRecord.listen((record) {
   print('${record.level.name}: ${record.message} ${record.error ?? ''}');
 });
-final client = RealtimeClient(realtimeUrl);
 ```
 
-Without `hierarchicalLoggingEnabled = true`, `package:logging` resolves the `onRecord` stream of a
-non-root logger to `Logger.root.onRecord`, which receives records from every logger in the
-application; in that case listen on `Logger.root` and filter on `LogRecord.loggerName` instead.
+Without `hierarchicalLoggingEnabled = true`, listen on `Logger.root` and filter on
+`LogRecord.loggerName` instead.
 
-### Timestamps are `DateTime` instead of `String` or `int`
+### Storage
 
-Every timestamp the SDK returns is a `DateTime` in UTC instead of an ISO 8601 `String` or a Unix
-timestamp `int`.
+#### `createSignedUrls` reports per-path failures
 
-| Type            | Fields                                                                                                                                        | Before                | After       |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ----------- |
-| `Session`       | `expiresAt`                                                                                                                                   | `int?` (Unix seconds) | `DateTime?` |
-| `User`          | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
-| `User`          | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?`             | `DateTime?` |
-| `UserIdentity`  | `createdAt`, `lastSignInAt`, `updatedAt`                                                                                                      | `String?`             | `DateTime?` |
-| `OAuthClient`   | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
-| `Bucket`        | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
-| `FileObject`    | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
-| `FileObjectV2`  | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
-| `FileObjectV2`  | `updatedAt`, `lastModified`                                                                                                                   | `String?`             | `DateTime?` |
-| `PaginatedFile` | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
+`createSignedUrls` returns a list of `SignedUrlSuccess` and `SignedUrlFailure` instead of
+`List<SignedUrl>`, and the separate `createSignedUrlsResult` is removed. If you were already calling
+`createSignedUrlsResult`, drop the `Result` suffix.
+
+```dart
+final results = await supabase.storage
+    .from('avatars')
+    .createSignedUrls(['a.png', 'b.png'], 60);
+for (final result in results) {
+  switch (result) {
+    case SignedUrlSuccess(:final signedUrl):
+      print(signedUrl);
+    case SignedUrlFailure(:final path, :final error):
+      print('could not sign $path: $error');
+  }
+}
+```
+
+#### Storage uploads and downloads take an `abortSignal`
+
+`StorageRetryController` is gone. Every upload method and both download methods on
+`StorageFileApi` take a `Future<void>? abortSignal` instead of a `retryController`. Completing the
+future aborts the in-flight request and stops any remaining retries, and the call throws a
+`RequestAbortedException`:
+
+```dart
+final abortSignal = Completer<void>();
+final upload = supabase.storage
+    .from('avatars')
+    .upload('avatar.png', file, abortSignal: abortSignal.future);
+abortSignal.complete();
+
+try {
+  await upload;
+} on RequestAbortedException {
+  print('upload aborted');
+}
+```
+
+On `downloadStream` the abort surfaces as a `RequestAbortedException` error on the stream.
+
+#### Signed URL uploads take named options
+
+The options of `uploadToSignedUrl` and `uploadBinaryToSignedUrl` were optional positional
+parameters and are named now, like on every other upload method:
 
 ```dart
 // Before
-final expiresAt = supabase.auth.currentSession?.expiresAt;
-final expiry = expiresAt == null
-    ? null
-    : DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
-final createdAt = DateTime.parse(user.createdAt);
+.uploadToSignedUrl(path, token, file, const FileOptions(upsert: true));
 
 // After
-final expiry = supabase.auth.currentSession?.expiresAt;
-final createdAt = user.createdAt;
+.uploadToSignedUrl(path, token, file, fileOptions: const FileOptions(upsert: true));
 ```
 
-If you need the previous representation, ask for it explicitly:
+#### Storage uploads send the raw file body
+
+Uploads used to be `multipart/form-data` requests. The file is now the request body itself, with
+the options as the `Content-Type`, `Cache-Control: max-age=<seconds>`, `x-upsert` and `x-metadata`
+headers, the last holding the metadata as base64-encoded JSON. `upload`, `update` and
+`uploadToSignedUrl` stream the `File` from disk instead of reading it into memory.
+
+The Dart API is unchanged. Only middleware, proxies or test fixtures that matched on the multipart
+body need to read the raw body and the `x-metadata` header instead.
+
+`uploadStream`, `updateStream` and `uploadStreamToSignedUrl` are new and upload a
+`Stream<List<int>>` as it arrives, for example a file picked on the web. A stream can only be read
+once, so these are never retried:
 
 ```dart
-final isoString = user.createdAt.toIso8601String();
-final unixSeconds = session.expiresAt!.millisecondsSinceEpoch ~/ 1000;
-```
+import 'package:cross_file/cross_file.dart';
 
-`toJson()` output is unchanged, so sessions persisted by v2 are still readable by v3.
-
-Three behavioural details are worth checking:
-
-- The `DateTime` values are in UTC. `DateTime` equality takes the time zone flag into account, so
-  compare against `DateTime.utc(...)` rather than `DateTime(...)`, or call `toLocal()` first.
-- `User.createdAt` used to fall back to an empty string when the field was missing and now throws a
-  `FormatException`.
-- A timestamp naming a date that does not exist is rejected rather than rolled forward.
-  `DateTime.parse` reads `2019-02-29` as 1 March 2019; parsing now throws a `FormatException`.
-
-### Plural enum names singularized
-
-| Before                         | After                         | Package             |
-| ------------------------------ | ----------------------------- | ------------------- |
-| `SocketStates`                 | `SocketState`                 | `supabase_realtime` |
-| `PostgresTypes`                | `PostgresType`                | `supabase_realtime` |
-| `AuthenticatorAssuranceLevels` | `AuthenticatorAssuranceLevel` | `supabase_auth`     |
-| `LoadTableSnapshots`           | `TableSnapshotScope`          | `iceberg`           |
-
-No enum values changed, so the only work is renaming the type where you name it explicitly.
-
-```dart
-// Before
-final AuthenticatorAssuranceLevels? level =
-    supabase.auth.mfa.getAuthenticatorAssuranceLevel().currentLevel;
-
-// After
-final AuthenticatorAssuranceLevel? level =
-    supabase.auth.mfa.getAuthenticatorAssuranceLevel().currentLevel;
-```
-
-```dart
-// Before
-await catalog.loadTableResult(
-  id,
-  const LoadTableOptions(snapshots: LoadTableSnapshots.refs),
-);
-
-// After
-await catalog.loadTableResult(
-  id,
-  const LoadTableOptions(snapshots: TableSnapshotScope.refs),
+final file = XFile.fileSystem(path: path);
+await supabase.storage.from('avatars').uploadStream(
+  'avatar.png',
+  file.openRead(),
+  contentLength: await file.length(),
 );
 ```
 
-### One shared `SortDirection` for every sort direction
+### Errors
 
-| Before            | After           |
-| ----------------- | --------------- |
-| `BucketSortOrder` | `SortDirection` |
-| `FileSortOrder`   | `SortDirection` |
-| `SortDirection`   | unchanged       |
-
-The values are unchanged, so only the type name moves:
-
-```dart
-// Before
-await supabase.storage.listBuckets(
-  const ListBucketsOptions(sortOrder: BucketSortOrder.descending),
-);
-
-// After
-await supabase.storage.listBuckets(
-  const ListBucketsOptions(sortOrder: SortDirection.descending),
-);
-```
-
-`SortBy.order` is a `SortDirection` too, rather than a `String`. It is non-nullable with
-`SortDirection.ascending` as its default:
-
-```dart
-// Before
-await supabase.storage.from('bucket').list(
-      searchOptions: const SearchOptions(
-        sortBy: SortBy(column: 'created_at', order: 'desc'),
-      ),
-    );
-
-// After
-await supabase.storage.from('bucket').list(
-      searchOptions: const SearchOptions(
-        sortBy: SortBy(column: 'created_at', order: SortDirection.descending),
-      ),
-    );
-```
-
-`SortBy(order: null)` no longer compiles; leave `order` out to sort ascending. `column` is
-unchanged.
-
-### `HttpMethod` is one shared enum
-
-`supabase_functions` and `postgrest` each declared their own `HttpMethod`. There is now one, shaped
-like postgrest's and re-exported from both, so imports are unchanged and postgrest callers are
-unaffected. For `functions.invoke`, two things changed:
-
-- `head` was added, so an exhaustive `switch` over `HttpMethod` no longer compiles until you handle
-  it.
-- The values were reordered, so `index` shifted for `post` (1 to 2), `put` (2 to 3) and `delete`
-  (3 to 5). This is not a compile error, so replace any persisted `index` with `name`.
-
-The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
-
-### Service exceptions share one base
+#### Service exceptions share one base
 
 `AuthException`, `PostgrestException`, `StorageException`, `FunctionException`,
 `RealtimeException` and `IcebergException` now extend a shared `SupabaseException`. The ones
@@ -1559,55 +1626,27 @@ The renames:
 | `FunctionsFetchException.status == 0`          | no status at all, no response reached the client                           |
 | `FunctionResponse.status`                      | `FunctionResponse.statusCode`                                              |
 
-Reading a status off a per-service base no longer compiles, since the base no longer has one.
-Narrow the catch to the API type:
-
-```dart
-// Before
-try {
-  await supabase.auth.signInWithPassword(email: email, password: password);
-} on AuthException catch (error) {
-  if (error.statusCode == '429') {
-    // ...
-  }
-}
-
-// After
-try {
-  await supabase.auth.signInWithPassword(email: email, password: password);
-} on AuthApiException catch (error) {
-  if (error.statusCode == 429) {
-    // ...
-  }
-}
-```
+The per-service bases no longer have a status, so narrow a catch that reads one to the API type,
+for example `on AuthApiException` with `error.statusCode == 429` instead of `on AuthException` with
+`error.statusCode == '429'`.
 
 Four changes go beyond a rename:
 
 - `PostgrestApiException.errorCode` is only ever the PostgREST or PostgreSQL code and `statusCode`
   only ever the HTTP status, where `PostgrestException.code` held either. A duplicate key violation
   reads as `statusCode: 409, errorCode: '23505'`.
-- `AuthSessionMissingException` and `AuthInvalidJwtException` report no status, since they are
-  raised by the client rather than reported by the service. They report `errorCode` values of
-  `session_missing` and `invalid_jwt` instead. `AuthSessionMissingException` takes its `message` as
-  a named parameter, next to a `requestId` set when a response came without the session it should
-  have issued.
-- `AuthRetryableFetchException` covers only the transport case, where the request never reached the
-  service. A retryable 5xx the service answered is an `AuthRetryableApiException`, which carries the
-  status. Both extend `AuthRetryableException`, so catch that to get both.
-- `FunctionException` gained a `message`, taken from the response's reason phrase and falling back
-  to a per-subtype default when the response carries none, as over HTTP/2. The response body is
-  still in `details`.
+- `AuthSessionMissingException` and `AuthInvalidJwtException` report no status, only the
+  `errorCode` values `session_missing` and `invalid_jwt`. `AuthSessionMissingException` takes its
+  `message` as a named parameter.
+- `AuthRetryableFetchException` covers only the case where the request never reached the service.
+  A retryable 5xx is an `AuthRetryableApiException`. Catch `AuthRetryableException` to get both.
+- `FunctionException` gained a `message`, taken from the response's reason phrase or a per-subtype
+  default. The response body is still in `details`.
 
 `AuthUnknownException` no longer reports a status of its own. Read it from `originalError` when that
-is an `http.Response`. `RealtimeSubscribeException` extends `RealtimeException` and keeps its
-`RealtimeSubscribeStatus` next to the message.
+is an `http.Response`.
 
-Every `SupabaseApiException` also carries the `headers` and the text `body` of the response, so a
-proxy error page or a header a gateway adds no longer needs a custom HTTP client to be read.
-`FunctionsApiException.details` and `IcebergApiException.details` keep the decoded body.
-
-### `FunctionException` is sealed
+#### `FunctionException` is sealed
 
 `FunctionException` is a `sealed class`, so a switch over it is exhaustive at compile time:
 
@@ -1623,14 +1662,11 @@ try {
 }
 ```
 
-`FunctionsRelayException` extends `FunctionsApiException`, so it has to come first for its case to
-be reachable. Only `FunctionsFetchException` and `FunctionsApiException` are needed for the switch
-to be exhaustive.
+`FunctionsRelayException` extends `FunctionsApiException`, so it has to come first. A bare
+`FunctionException` can no longer be constructed, extended or implemented; name one of the three
+subtypes instead.
 
-A bare `FunctionException` can no longer be constructed, and code outside `supabase_functions` can
-no longer extend or implement it. Name one of the three subtypes instead.
-
-### The Iceberg exceptions join the same hierarchy
+#### The Iceberg exceptions join the same hierarchy
 
 `IcebergException` splits into two, the same way the other packages do:
 
@@ -1651,39 +1687,13 @@ no longer extend or implement it. Name one of the three subtypes instead.
 | `IcebergException.fromResponse`    | `IcebergApiException.fromResponse`                                  |
 
 `message`, `code` and `details` keep their names. `code` is still the Iceberg numeric error code,
-which is unrelated to `errorCode`, the string error type such as `NoSuchTableException`.
+unrelated to `errorCode`, the string error type such as `NoSuchTableException`.
 
-```dart
-// Before
-try {
-  await catalog.loadTable(id);
-} on IcebergException catch (error) {
-  if (error.statusCode == 0) {
-    // no response was received
-  }
-  print(error.type);
-}
+#### A request that gets no response throws a transport exception
 
-// After
-try {
-  await catalog.loadTable(id);
-} on IcebergNetworkException catch (error) {
-  // no response was received, so the outcome of the request is unknown
-  print(error.details);
-} on IcebergApiException catch (error) {
-  print('${error.statusCode}: ${error.errorCode}');
-}
-```
-
-Exhaustive switches over the sealed hierarchy still compile with the same set of cases.
-
-### A request that gets no response throws a transport exception
-
-A request that never received a response, because the connection failed or the request timed
-out, used to surface differently in every package: postgrest and storage let the HTTP client's
-`ClientException` or a `TimeoutException` through, while auth, functions and iceberg wrapped it.
-Every package now wraps it in an exception of its own that mixes in
-`SupabaseTransportException`, with the original error in `cause`:
+A request that never received a response, because the connection failed or timed out, used to let
+`ClientException` or `TimeoutException` through in postgrest and storage. Every package now wraps it
+in an exception that mixes in `SupabaseTransportException`, with the original error in `cause`:
 
 | Package              | Exception                     |
 | -------------------- | ----------------------------- |
@@ -1694,10 +1704,7 @@ Every package now wraps it in an exception of its own that mixes in
 | `supabase_realtime`  | `RealtimeTransportException`  |
 | `iceberg`            | `IcebergNetworkException`     |
 
-A request aborted through its `abortSignal` is not wrapped and still throws
-`RequestAbortedException`. A body that stops arriving after an error status keeps that status: it
-is reported as the package's API exception, with the read error named in the message or kept in
-`details` where the exception has one.
+A request aborted through its `abortSignal` still throws `RequestAbortedException`.
 
 ```dart
 // Before
@@ -1717,11 +1724,6 @@ try {
 }
 ```
 
-`PostgrestClient.requestTimeout` and `PostgrestBuilder.requestTimeout` throw a
-`PostgrestTransportException` whose `cause` is the `TimeoutException`, so a catch of
-`TimeoutException` around a query no longer matches. A storage upload with retries enabled
-throws the transport exception once every attempt has failed, as the `ClientException` did.
-
 The three packages that already wrapped the failure changed how they expose the error:
 
 | Before                                     | After                                                         |
@@ -1730,35 +1732,18 @@ The three packages that already wrapped the failure changed how they expose the 
 | `IcebergNetworkException(details:)`        | `IcebergNetworkException(cause:)`; `details` still returns it |
 | `AuthRetryableFetchException.message` only | `cause` added, with the error the message was built from      |
 
-### A failing `accessToken` callback throws `AccessTokenException`
+#### A failing `accessToken` callback throws `AccessTokenException`
 
 postgrest, storage and functions used to report an exception from the `accessToken` callback as a
-transport exception, which postgrest and a storage client with retries enabled retried. postgrest
-and storage let a thrown `Error` through unwrapped. All three now throw an `AccessTokenException`
-with the callback's error in `cause`, never retry it, and never send the request. An exception the
-callback throws that is already a `SupabaseException`, such as an `AuthException` from a failed
-session refresh, is thrown as is.
+transport exception. They now throw an `AccessTokenException` with the callback's error in `cause`,
+and neither send nor retry the request. Catch `AccessTokenException` where you caught the transport
+exception for token failures. An exception that is already a `SupabaseException`, such as an
+`AuthException` from a failed session refresh, is thrown as is.
 
-```dart
-// Before
-try {
-  await supabase.from('countries').select();
-} on PostgrestTransportException catch (error) {
-  // the token callback failed, or the network did
-}
-
-// After
-try {
-  await supabase.from('countries').select();
-} on AccessTokenException catch (error) {
-  // the token callback failed; error.cause holds why
-}
-```
-
-### Realtime throws exceptions instead of strings
+#### Realtime throws exceptions instead of strings
 
 `supabase_realtime` threw bare strings for misuse and a plain `Exception` for a failed
-`httpSend()`, and neither carried a status or a request id. The failures now have types:
+`httpSend()`. The failures now have types:
 
 | Before                                                          | After                                                                    |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -1770,38 +1755,14 @@ try {
 | `httpSend()` gets a non-202 status, as `Exception(message)`     | `RealtimeApiException` with `statusCode`, `requestId`, `headers`, `body` |
 | `onStatusChange` reports `channelError` with an `Exception`     | `RealtimeException` with the server's reason as `message`                |
 
-The misuse cases are programming errors, so they are `Error`s rather than part of the
-`SupabaseException` hierarchy. A join the server declines is reported on `onStatusChange` with a
-`RealtimeException` whose `message` is the server's reason, where it used to be an `Exception`
-wrapping a JSON-encoded string, so the message no longer carries quotes.
-
-```dart
-// Before
-try {
-  await channel.httpSend(event: 'cursor-pos', payload: {'x': 1});
-} catch (error) {
-  if (error.toString().contains('404')) {
-    // server too old
-  }
-}
-
-// After
-try {
-  await channel.httpSend(event: 'cursor-pos', payload: {'x': 1});
-} on RealtimeApiException catch (error) {
-  if (error.statusCode == 404) {
-    // server too old
-  }
-} on RealtimeTransportException catch (error) {
-  // no response within the timeout
-}
-```
-
+Replace a `toString()` check such as `contains('404')` with `on RealtimeApiException` and its
+`statusCode`. The message of a declined join no longer carries the quotes of a JSON-encoded string.
 `RealtimeSubscribeException`, which `stream()` delivers to its error handler, now extends
-`RealtimeException`, so one `on SupabaseException` covers it too. Its `status` and `details` are
-unchanged, and `message` repeats the message of `details` when that is a `SupabaseException`.
+`RealtimeException`, with `status` and `details` unchanged.
 
-### Every client takes one `SupabaseRetryOptions`
+### Requests, retries and tokens
+
+#### Every client takes one `SupabaseRetryOptions`
 
 PostgREST, storage and the auth token refresh all take the same `SupabaseRetryOptions`, which
 carries `enabled`, `count`, `initialDelay`, `maxDelay` and `randomizationFactor`.
@@ -1815,80 +1776,13 @@ carries `enabled`, `count`, `initialDelay`, `maxDelay` and `randomizationFactor`
 | `StorageClientOptions(retryAttempts: 5)`                                                                                                            | `StorageClientOptions(retryOptions: SupabaseRetryOptions(count: 5))`  |
 | `upload(…, retryAttempts: 5)` and the same parameter on `uploadBinary`, `uploadToSignedUrl`, `uploadBinaryToSignedUrl`, `update` and `updateBinary` | `retryOptions: SupabaseRetryOptions(count: 5)`                        |
 
-```dart
-// Before
-postgrestOptions: const PostgrestClientOptions(retryCount: 5),
-storageOptions: const StorageClientOptions(retryAttempts: 5),
-
-// After
-postgrestOptions: const PostgrestClientOptions(
-  retryOptions: SupabaseRetryOptions(count: 5),
-),
-storageOptions: const StorageClientOptions(
-  retryOptions: SupabaseRetryOptions(count: 5),
-),
-```
-
-`count` is the number of retries after the first attempt, so `count: 0` sends a request exactly
-once. The old storage `retryAttempts` counted the same way, so the number carries over unchanged.
-
-The auth token refresh is configurable for the first time, through `AuthClientOptions.retryOptions`
-and `AuthClient(retryOptions: …)`. It still stops retrying once the next backoff would fall after
-the next refresh tick.
-
-The per-request `PostgrestBuilder.retry()` override keeps `enabled` and `count`. Its
-`requestTimeout` parameter is now a method of its own, see
+`count` is the number of retries after the first attempt, as `retryAttempts` was, so the number
+carries over unchanged. The auth token refresh can be configured through
+`AuthClientOptions.retryOptions`. The per-request `PostgrestBuilder.retry()` keeps `enabled` and
+`count`; its `requestTimeout` parameter is now a method of its own, see
 [the builder section](#the-postgrest-builder-has-one-type-parameter-and-no-wrapper-classes).
 
-### The PostgREST builder has one type parameter and no wrapper classes
-
-`PostgrestBuilder<T, S, R>` is now `PostgrestBuilder<T>`, where `T` is the type the request resolves
-to when awaited. `RawPostgrestBuilder` and `ResponsePostgrestBuilder` are gone; `withConverter()` and
-`count()` are methods of `PostgrestBuilder<T>` itself.
-
-| Before                                                                   | After                                           |
-| ------------------------------------------------------------------------ | ----------------------------------------------- |
-| `PostgrestBuilder<T, S, R>`                                              | `PostgrestBuilder<T>`                           |
-| `RawPostgrestBuilder<T, S, R>` and `ResponsePostgrestBuilder<T, S, R>`   | `PostgrestBuilder<T>`                           |
-| `PostgrestBuilder(count: …, converter: …)`                               | `PostgrestBuilder(…).withConverter(…).count(…)` |
-| `geojson()` returned `ResponsePostgrestBuilder<Map<String, dynamic>, …>` | `PostgrestBuilder<Map<String, dynamic>>`        |
-
-`withConverter()` converts whatever the request resolves to at the point where it is called. Without
-`count()` nothing changes. With `count()`, call `withConverter()` first so the converter keeps
-receiving the data:
-
-```dart
-// Before
-final response = await supabase
-    .from('users')
-    .select()
-    .count(CountOption.exact)
-    .withConverter((rows) => rows.map(User.fromJson).toList());
-
-// After
-final response = await supabase
-    .from('users')
-    .select()
-    .withConverter((rows) => rows.map(User.fromJson).toList())
-    .count(CountOption.exact);
-final List<User> users = response.data;
-final int count = response.count;
-```
-
-A converter placed after `count()` receives the whole `PostgrestResponse`, so the old order no
-longer compiles and the compiler points at every call site to update.
-
-The per-request timeout override is a method of its own instead of a parameter of `retry()`:
-
-| Before                                                   | After                                                   |
-| -------------------------------------------------------- | ------------------------------------------------------- |
-| `.retry(requestTimeout: Duration(seconds: 5))`           | `.requestTimeout(Duration(seconds: 5))`                 |
-| `.retry(count: 5, requestTimeout: Duration(seconds: 5))` | `.retry(count: 5).requestTimeout(Duration(seconds: 5))` |
-
-`requestTimeout()` is available wherever `retry()` is: on the query builder before the table
-operation, and on every builder after it, where filters and transforms can still follow it.
-
-### The retry backoff defaults are the same in every client
+#### The retry backoff defaults are the same in every client
 
 One curve is used everywhere: the first retry waits 400 ms, every retry after that waits twice as
 long up to 30 seconds, and each delay is randomized by up to 25%.
@@ -1911,33 +1805,19 @@ postgrestOptions: const PostgrestClientOptions(
 ),
 ```
 
-### The request timeout bounds idle time, not the whole request
+#### The request timeout bounds idle time, not the whole request
 
-`requestTimeout` used to be a deadline for a whole PostgREST attempt, however much of the response
-had already arrived. It now bounds how long an attempt may go without progress: the timer restarts
-whenever a chunk of the response arrives, so a large result that keeps arriving is no longer cut
-short. A request that stalls is cancelled just as before. The same option is now also available on
-auth, storage and functions, and as a default for all of them on `SupabaseClient`:
-
-```dart
-final supabase = SupabaseClient(
-  supabaseUrl,
-  supabaseKey,
-  requestTimeout: const Duration(seconds: 30),
-  storageOptions: const StorageClientOptions(
-    requestTimeout: Duration(minutes: 2),
-  ),
-);
-```
-
-To cap the total time a query may take, use `timeout()` on the builder, which stops waiting for
-the result without cancelling the request:
+`requestTimeout` used to be a deadline for a whole PostgREST attempt. It now bounds how long an
+attempt may go without progress, restarting whenever a chunk of the response arrives. The option is
+now also available on auth, storage and functions, and as a default for all of them on
+`SupabaseClient`. To cap the total time a query may take, use `timeout()` on the builder, which
+stops waiting for the result without cancelling the request:
 
 ```dart
 await supabase.from('countries').select().timeout(const Duration(seconds: 10));
 ```
 
-### The retried status codes are no longer configurable
+#### The retried status codes are no longer configurable
 
 `503 Service Unavailable` and `520 Unknown Error` are the only responses that are retried, and the
 set is fixed.
@@ -1948,90 +1828,40 @@ set is fixed.
 | `PostgrestClientOptions(retryableStatusCodes: …)` | removed                                |
 | `PostgrestClient.defaultRetryableStatusCodes`     | `PostgrestClient.retryableStatusCodes` |
 
-If you retried a status code outside that set, catch the exception and decide what to do with it
-yourself:
+If you retried a status code outside that set, catch the `PostgrestApiException` and check its
+`statusCode` yourself.
 
-```dart
-// Before
-postgrestOptions: const PostgrestClientOptions(
-  retryableStatusCodes: {500, 503, 520},
-),
-
-// After
-try {
-  await supabase.from('todos').select();
-} on PostgrestApiException catch (error) {
-  if (error.statusCode == 500) {
-    // Retry it yourself, or surface it.
-  }
-}
-```
-
-### `setAccessToken()` is gone from the rest, storage and functions clients
+#### `setAccessToken()` is gone from the rest, storage and functions clients
 
 `PostgrestClient.setAccessToken()`, `SupabaseStorageClient.setAccessToken()` and
 `FunctionsClient.setAccessToken()` are removed. `RealtimeClient.setAccessToken()` stays.
 
-If you never called them, nothing changes. If you did, the replacement depends on what you were
-after.
+`SupabaseClient` already sends the signed-in user's token on every request, so most code only drops
+the call. Otherwise:
 
-To authenticate as the signed-in user, do nothing. `SupabaseClient` already resolves that token on
-every request.
+- On a client you construct yourself, pass an `accessToken` callback, which is resolved before
+  every request, or an `Authorization` header for a token that never changes. Passing both asserts.
 
-On a client you construct yourself, pass an `accessToken` callback. It is resolved before every
-request, so a token that rotates is picked up without you pushing the new value anywhere:
+  ```dart
+  // Before
+  final functions = FunctionsClient(functionsUrl, {'apikey': anonKey});
+  functions.setAccessToken(jwt);
 
-```dart
-// Before
-final functions = FunctionsClient(functionsUrl, {'apikey': anonKey});
-functions.setAccessToken(jwt);
+  // After
+  final functions = FunctionsClient(
+    functionsUrl,
+    {'apikey': anonKey},
+    accessToken: () async => currentJwt,
+  );
+  ```
 
-// After
-final functions = FunctionsClient(
-  functionsUrl,
-  {'apikey': anonKey},
-  accessToken: () async => currentJwt,
-);
-```
+- For a single call, pass the header to that call, through `headers:` on `invoke()` or
+  `setHeader('Authorization', 'Bearer $jwt')` on a query.
+- To pin a token on a client from `SupabaseClient`, call
+  `setHeader('Authorization', 'Bearer $jwt')` on `supabase.storage` or `supabase.functions`, and
+  for the rest client assign it through `supabase.headers`.
 
-`PostgrestClient` and `SupabaseStorageClient` take the same callback. If the token never changes, a
-constructor header is still enough:
-
-```dart
-final functions = FunctionsClient(functionsUrl, {
-  'apikey': anonKey,
-  'Authorization': 'Bearer $jwt',
-});
-```
-
-Passing both an `Authorization` header and `accessToken` asserts.
-
-To use a different token for a single call, pass it to that call:
-
-```dart
-await functions.invoke('hello', headers: {'Authorization': 'Bearer $jwt'});
-await postgrest.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
-```
-
-To pin a token on a client you got from `SupabaseClient`, set the header yourself:
-
-```dart
-supabase.storage.setHeader('Authorization', 'Bearer $jwt');
-supabase.functions.setHeader('Authorization', 'Bearer $jwt');
-```
-
-The rest client is stateless and its header map unmodifiable (see
-[the stateless rest client](#the-rest-client-and-its-builders-are-stateless)), so a pinned token is
-passed per request there, or client-wide through the `headers` setter of `SupabaseClient`:
-
-```dart
-await supabase.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
-supabase.headers = {...supabase.headers, 'Authorization': 'Bearer $jwt'};
-```
-
-Remove the header again once the pinned token should no longer apply.
-
-### Client header maps are unmodifiable
+#### Client header maps are unmodifiable
 
 Every `headers` getter returns an unmodifiable view, and mutating one throws an `UnsupportedError`.
 
@@ -2044,84 +1874,16 @@ Every `headers` getter returns an unmodifiable view, and mutating one throws an 
 | `authClient.headers['X-Foo'] = 'bar'`             | `authClient.setHeader('X-Foo', 'bar')`                     |
 | `functionsClient.headers['X-Foo'] = 'bar'`        | `functionsClient.setHeader('X-Foo', 'bar')`                |
 
-To add a single header, the auth, functions and storage clients have a `setHeader()` method, and
-storage has one per bucket as well. A whole set of headers is passed to the constructor. For a
-client managed by a `SupabaseClient`, assign `SupabaseClient.headers`, which propagates the new
-headers to every sub-client at once.
+Assigning `SupabaseClient.headers` propagates the new headers to every sub-client at once.
+`SupabaseStorageClient.vectors` builds a new client on each access, so it always carries the
+current headers.
 
-`SupabaseStorageClient.vectors` is a getter that builds a client on each access instead of a cached
-instance, so it always carries the current headers. Hold on to the returned client only for as long
-as its headers should stay fixed.
-
-### `SupabaseClient` builds its own default HTTP client
-
-On `dart:io` platforms a `SupabaseClient` created without an `httpClient` now builds an `IOClient`
-that keeps idle connections open for 60 seconds instead of the 15 seconds `dart:io` defaults to, so
-a request after a pause in traffic reuses a connection instead of opening a new one. Because that
-client is built directly, it no longer goes through the `Client()` factory of `package:http`, so a
-client installed with `runWithClient` is not picked up there. The web build still goes through the
-factory. Pass the client as `httpClient` instead, which every platform honors:
-
-```dart
-// Before
-runWithClient(() {
-  final supabase = SupabaseClient(supabaseUrl, supabaseKey);
-}, () => MockClient(handler));
-
-// After
-final supabase = SupabaseClient(
-  supabaseUrl,
-  supabaseKey,
-  httpClient: MockClient(handler),
-);
-```
-
-Open connections keep a Dart program alive until the idle timeout passes, so a script that does not
-call `dispose()` on its `SupabaseClient` now waits a minute before exiting instead of 15 seconds.
-
-### The SDK no longer prints logs
-
-`Supabase.initialize` no longer takes a `debug` flag and never prints anything to the console. All
-packages still emit their records through [`package:logging`](https://pub.dev/packages/logging)
-under the `supabase` logger hierarchy, so handle them yourself:
-
-```dart
-// Before
-await Supabase.initialize(
-  url: supabaseUrl,
-  publishableKey: supabaseKey,
-  debug: true,
-);
-
-// After
-Logger.root.onRecord.listen((record) {
-  if (record.loggerName.startsWith('supabase.')) {
-    debugPrint('${record.loggerName}: ${record.level.name}: '
-        '${record.message} ${record.error ?? ''}');
-  }
-});
-await Supabase.initialize(
-  url: supabaseUrl,
-  publishableKey: supabaseKey,
-);
-```
-
-See the `Logging` section of the `supabase_flutter` README for level filtering with
-`hierarchicalLoggingEnabled`.
-
-Two logger names changed, so update any listeners that filter on `LogRecord.loggerName`:
-
-| Before                      | After              |
-| --------------------------- | ------------------ |
-| `supabase.supabase`         | `supabase.dart`    |
-| `supabase.supabase_flutter` | `supabase.flutter` |
-
-### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
+#### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
 
 `SupabaseClient`, `PostgrestClient` and `FunctionsClient` take an `AsyncJsonCodec` through
 `jsonCodec:` instead of a `YAJsonIsolate` through `isolate:`. The same rename applies to
 `PostgrestBuilder`, `PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `SupabaseQueryBuilder` and
-`SupabaseQuerySchema`.
+`SupabaseQuerySchema`, and `Supabase.initialize` takes `jsonCodec:` too.
 
 ```dart
 // Before
@@ -2131,697 +1893,91 @@ final client = SupabaseClient(url, key, isolate: YAJsonIsolate()..initialize());
 final client = SupabaseClient(url, key, jsonCodec: YAJsonIsolate()..initialize());
 ```
 
-`Supabase.initialize` takes the codec too:
+Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is not exported
+by `supabase` or `supabase_flutter`, so depend on `yet_another_json_isolate` directly to name it.
 
-```dart
-await Supabase.initialize(
-  url: url,
-  publishableKey: publishableKey,
-  jsonCodec: myJsonCodec,
-);
-```
+#### `TracePropagationOptions` requires a `traceContextProvider`
 
-`AsyncJsonCodec` is exported from `postgrest`, `supabase_functions`, `supabase` and
-`supabase_flutter`, so an application can encode and decode JSON its own way:
+`TracePropagationOptions.enabled` is gone and `traceContextProvider` is required. Passing options
+turns propagation on, so drop `enabled: true`. To keep propagation off, drop the
+`tracePropagationOptions` argument, which defaults to `null`.
 
-```dart
-class TimedJsonCodec implements AsyncJsonCodec {
-  TimedJsonCodec(this._inner);
+### Shared types
 
-  final AsyncJsonCodec _inner;
+#### Timestamps are `DateTime` instead of `String` or `int`
 
-  @override
-  Future<dynamic> decode(String json) => _time(() => _inner.decode(json));
+Every timestamp the SDK returns is a `DateTime` in UTC instead of an ISO 8601 `String` or a Unix
+timestamp `int`.
 
-  @override
-  Future<dynamic> decodeBytes(Uint8List encodedJson) =>
-      _time(() => _inner.decodeBytes(encodedJson));
-
-  @override
-  Future<String> encode(Object? json) => _time(() => _inner.encode(json));
-
-  @override
-  Future<void> dispose() => _inner.dispose();
-}
-```
-
-A codec passed to a client belongs to the caller, so `dispose()` leaves it alone, exactly as the old
-`isolate:` parameter did. `SupabaseClient` passes its codec on to the rest and functions clients it
-builds.
-
-`YAJsonIsolate` is not exported by `supabase` or `supabase_flutter`, so depend on
-`yet_another_json_isolate` directly to name the default implementation.
-
-### Abbreviations in the public API are spelled out
-
-The wire format is unchanged throughout: where a JSON key, query parameter or URL path matched the
-abbreviation, only the Dart identifier is renamed.
-
-Across every package:
-
-| Before                     | After                             |
-| -------------------------- | --------------------------------- |
-| `RealtimeClient.setAuth()` | `RealtimeClient.setAccessToken()` |
-| `queryParams:`             | `queryParameters:`                |
-| `opts:`                    | `options:`                        |
-| `PresenceOpts`             | `PresenceOptions`                 |
-| `appendSearchParams`       | `appendSearchParameters`          |
-| `overrideSearchParams`     | `overrideSearchParameters`        |
-| `toQueryParams`            | `toQueryParameters`               |
-
-`supabase_realtime`:
-
-| Before                                      | After                                       |
-| ------------------------------------------- | ------------------------------------------- |
-| `RealtimeClient.conn`                       | `RealtimeClient.connection`                 |
-| `RealtimeClient.connState`                  | `RealtimeClient.connectionState`            |
-| `RealtimeClient.onConnMessage`              | `RealtimeClient.onConnectionMessage`        |
-| `RealtimeClient.params`                     | `RealtimeClient.parameters`                 |
-| `RealtimeClient.endPoint`                   | `RealtimeClient.endpoint`                   |
-| `RealtimeClient.endPointURL`                | `RealtimeClient.endpointUrl`                |
-| `RealtimeConstants.wsCloseNormal`           | `RealtimeConstants.webSocketCloseNormal`    |
-| `RealtimeChannel(topic, socket, params: …)` | `RealtimeChannel(topic, socket, config: …)` |
-| `Presence.presenceRef`                      | `Presence.presenceReference`                |
-
-`supabase_auth`:
-
-| Before                                                      | After                                                                          |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `JwtPayload.iss/sub/aud/exp/nbf/iat/jti`                    | `issuer`, `subject`, `audience`, `expiresAt`, `notBefore`, `issuedAt`, `jwtId` |
-| `JwtHeader.alg/kid/typ`                                     | `algorithm`, `keyId`, `type`                                                   |
-| `JWK.kty/keyOps/alg/kid`                                    | `keyType`, `keyOperations`, `algorithm`, `keyId`                               |
-| `User.aud`                                                  | `User.audience`                                                                |
-| `CreateOAuthClientParams` / `UpdateOAuthClientParams`       | `…Options`                                                                     |
-| `CreateCustomProviderParams` / `UpdateCustomProviderParams` | `…Options`                                                                     |
-| `authorizationParams`                                       | `authorizationParameters`                                                      |
-| `supportedIdTokenSigningAlgs`                               | `supportedIdTokenSigningAlgorithms`                                            |
-| `tokenEndpointAuthMethod`                                   | `tokenEndpointAuthenticationMethod`                                            |
-| `userinfoEndpoint` / `userinfoUrl`                          | `userInfoEndpoint` / `userInfoUrl`                                             |
-| `validateExp(int? exp)`                                     | `validateExpiration(int? expiresAt)`                                           |
-| `AMRMethod` / `AMREntry`                                    | `AuthenticationMethodReference` / `…Entry`                                     |
-| `AuthChangeEvent.jsName`                                    | `AuthChangeEvent.value`                                                        |
-| `AuthenticationMethodReference.code`                        | `AuthenticationMethodReference.value`                                          |
-| `GenerateLinkType.fromString`                               | `GenerateLinkType.fromValue`                                                   |
-| `OAuthClientType.fromString`                                | `OAuthClientType.fromValue`                                                    |
-| `OAuthClientRegistrationType.fromString`                    | `OAuthClientRegistrationType.fromValue`                                        |
-| `CustomProviderType.fromString`                             | `CustomProviderType.fromValue`                                                 |
-
-`supabase_storage` and `iceberg`:
-
-| Before                                         | After                                       |
-| ---------------------------------------------- | ------------------------------------------- |
-| `StorageFileApi.info()`                        | `StorageFileApi.getMetadata()`              |
-| `VectorBucketEncryption.sseType`               | `serverSideEncryptionType`                  |
-| `PartitionSpec` and the Iceberg `spec` cluster | `PartitionSpecification`, `…Specification…` |
-| `TableMetadata.refs`                           | `TableMetadata.references`                  |
-| `TableField.doc`                               | `TableField.documentation`                  |
-| `LoadTableSnapshots.value`                     | `TableSnapshotScope.name`                   |
-
-These renames also change a type:
-
-| Before                                                              | After                                              |
-| ------------------------------------------------------------------- | -------------------------------------------------- |
-| `RealtimeClient.heartbeatIntervalMs` (`int`)                        | `heartbeatInterval` (`Duration`)                   |
-| `RealtimeConstants.defaultHeartbeatIntervalMs` (`int`)              | `defaultHeartbeatInterval` (`Duration`)            |
-| `RealtimeClient.reconnectAfterMs` (`int` return)                    | `reconnectAfter` (`Duration` return)               |
-| `SnapshotReference.maxReferenceAgeMs` / `maxSnapshotAgeMs` (`int?`) | `maxReferenceAge` / `maxSnapshotAge` (`Duration?`) |
-| `Snapshot.timestampMs` / `TableMetadata.lastUpdatedMs` (`int`)      | `timestamp` / `lastUpdated` (`DateTime`, UTC)      |
-
-### Every deprecated API is gone
-
-| Removed                                                    | Replacement                                  | Package             |
-| ---------------------------------------------------------- | -------------------------------------------- | ------------------- |
-| `AuthChangeEvent.userDeleted`                              | none, it was never emitted                   | `supabase_auth`     |
-| `OAuthProvider.snakeCase`                                  | `OAuthProvider.name`                         | `supabase_auth`     |
-| `User.confirmedAt`                                         | `User.emailConfirmedAt`                      | `supabase_auth`     |
-| `ReturningOption`                                          | none, it was unused                          | `postgrest`         |
-| `PostgrestClient.auth()`                                   | none, pass an `Authorization` header instead | `postgrest`         |
-| `RealtimeClient.longpollerTimeout`                         | none, there is no longpoll transport         | `supabase_realtime` |
-| `ChannelResponse.rateLimited`                              | none, it was never returned                  | `supabase_realtime` |
-| `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it        | `supabase_storage`  |
-| `AuthUser`                                                 | `User`                                       | `supabase`          |
-| `RealtimeClientOptions.eventsPerSecond`                    | none, it was already ignored                 | `supabase`          |
-| `RemoveSubscriptionResult`                                 | none                                         | `supabase`          |
-| `SupabaseRealtimeError`                                    | none                                         | `supabase`          |
-| `SupabaseEventTypes` and `SupabaseEventTypesName`          | none, it was unused                          | `supabase`          |
-| `SupabaseStreamBuilder.execute()`                          | listen to the builder directly               | `supabase`          |
-
-Both `lastAccessedAt` fields were also required constructor parameters, so any code that builds a
-`FileObject` or `FileObjectV2` by hand drops that argument.
-
-`User.confirmedAt` is no longer parsed from or written to JSON, so `toJson()` output no longer
-contains a `confirmed_at` key:
+| Type            | Fields                                                                                                                                        | Before                | After       |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ----------- |
+| `Session`       | `expiresAt`                                                                                                                                   | `int?` (Unix seconds) | `DateTime?` |
+| `User`          | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
+| `User`          | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?`             | `DateTime?` |
+| `UserIdentity`  | `createdAt`, `lastSignInAt`, `updatedAt`                                                                                                      | `String?`             | `DateTime?` |
+| `OAuthClient`   | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
+| `Bucket`        | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
+| `FileObject`    | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
+| `FileObjectV2`  | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
+| `FileObjectV2`  | `updatedAt`, `lastModified`                                                                                                                   | `String?`             | `DateTime?` |
+| `PaginatedFile` | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
 
 ```dart
 // Before
-final confirmed = user.confirmedAt != null;
+final expiresAt = supabase.auth.currentSession?.expiresAt;
+final expiry = expiresAt == null
+    ? null
+    : DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
+final createdAt = DateTime.parse(user.createdAt);
 
 // After
-final confirmed = user.emailConfirmedAt != null;
+final expiry = supabase.auth.currentSession?.expiresAt;
+final createdAt = user.createdAt;
 ```
 
-`SupabaseStreamBuilder` is itself a `Stream`, so drop the `execute()` call:
-
-```dart
-// Before
-supabase.from('users').stream(primaryKey: ['id']).execute().listen(handle);
-
-// After
-supabase.from('users').stream(primaryKey: ['id']).listen(handle);
-```
-
-### Storage uploads and downloads take an `abortSignal`
-
-`StorageRetryController` is gone. Its `cancel()` only stopped the upload from being retried
-again, while the attempt already on the wire kept transferring, and downloads had no cancellation
-at all. Every upload method and both download methods on `StorageFileApi` take a
-`Future<void>? abortSignal` instead, the same shape as `PostgrestBuilder.abortSignal` and
-`FunctionsClient.invoke`. Completing the future aborts the in-flight request and stops any
-remaining retries, and the call throws a `RequestAbortedException`, which `supabase_storage`
-re-exports.
-
-```dart
-// Before
-final controller = StorageRetryController();
-final upload = supabase.storage
-    .from('avatars')
-    .upload('avatar.png', file, retryController: controller);
-controller.cancel();
-
-// After
-final abortSignal = Completer<void>();
-final upload = supabase.storage
-    .from('avatars')
-    .upload('avatar.png', file, abortSignal: abortSignal.future);
-abortSignal.complete();
-
-try {
-  await upload;
-} on RequestAbortedException {
-  print('upload aborted');
-}
-```
-
-`download` and `downloadStream` gain the parameter; on the stream the abort surfaces as a
-`RequestAbortedException` error.
-
-### Signed URL uploads take named options
-
-`uploadToSignedUrl` and `uploadBinaryToSignedUrl` took their options as optional positional
-parameters. They are named now, like on every other upload method, so passing one no longer
-means passing `null` for the ones before it.
-
-```dart
-// Before
-await supabase.storage
-    .from('avatars')
-    .uploadToSignedUrl(path, token, file, const FileOptions(upsert: true));
-
-// After
-await supabase.storage
-    .from('avatars')
-    .uploadToSignedUrl(
-      path,
-      token,
-      file,
-      fileOptions: const FileOptions(upsert: true),
-    );
-```
-
-### Storage uploads send the raw file body
-
-Every upload used to be a `multipart/form-data` request with the file as one part and
-`cacheControl` and `metadata` as form fields, and `upload(path, file)` read the whole file into
-memory before sending it. The file is now the request body itself, with the options as headers:
-`Content-Type`, `Cache-Control: max-age=<seconds>`, `x-upsert` and `x-metadata` holding the
-metadata as base64-encoded JSON. This is the shape `supabase-js` sends for an `ArrayBuffer`, and
-the storage server treats both the same. `upload`, `update` and `uploadToSignedUrl` stream the
-`File` from disk, so its size no longer matters for memory.
-
-The Dart API is unchanged. Only middleware, proxies or test fixtures that matched on the
-multipart body need to read the raw body and the `x-metadata` header instead.
-
-```dart
-// A fixture that used to parse the multipart form
-final request = httpClient.requests.single;
-expect(request.bodyBytes, fileBytes);
-expect(request.headers['cache-control'], 'max-age=3600');
-expect(
-  json.decode(utf8.decode(base64.decode(request.headers['x-metadata']!))),
-  {'owner': 'me'},
-);
-```
-
-Uploading a `Stream<List<int>>` is new: `uploadStream`, `updateStream` and
-`uploadStreamToSignedUrl` send the bytes as they arrive, with an optional `contentLength`. A
-stream can only be read once, so these are never retried. This is how a file picked on the web
-is uploaded without reading it into memory first:
-
-```dart
-import 'package:cross_file/cross_file.dart';
-
-final file = XFile.fileSystem(path: path);
-await supabase.storage.from('avatars').uploadStream(
-  'avatar.png',
-  file.openRead(),
-  contentLength: await file.length(),
-);
-```
-
-### `TracePropagationOptions` requires a `traceContextProvider`
-
-`TracePropagationOptions.enabled` is gone and `traceContextProvider` is required. The
-`tracePropagationOptions` parameter on `SupabaseClient` and `Supabase.initialize` is nullable and
-defaults to `null`, which sends no trace headers. Passing options turns propagation on, so the
-two switches that had to agree before are one:
-
-```dart
-// Before
-tracePropagationOptions: TracePropagationOptions(
-  enabled: true,
-  traceContextProvider: () => TraceContext.fromCarrier(carrier),
-),
-
-// After
-tracePropagationOptions: TracePropagationOptions(
-  traceContextProvider: () => TraceContext.fromCarrier(carrier),
-),
-```
-
-A `TracePropagationOptions()` with no provider, or `enabled: false` next to a provider, no longer
-compiles. Drop the argument to keep propagation off.
-
-## Moving from `from()` to the typed table API
-
-v3 adds `table()`, a typed counterpart of `from()` built on definitions generated from your database
-schema. Rows come back as generated types instead of `Map<String, dynamic>`, filters and orderings
-are checked against the column types at compile time, and writes only accept the generated insert
-and update types. `from()` keeps working, and both can be used on one client, so a codebase can move
-over one table at a time.
-
-The typed API is marked `@experimental` while it settles. Referencing an experimental type such as
-`PostgrestFilter` directly reports `experimental_member_use`, which an
-`// ignore_for_file: experimental_member_use` silences; the generated file already carries it.
-
-The examples below use this schema:
-
-```sql
-create table authors (
-  id bigint generated always as identity primary key,
-  name text not null unique
-);
-
-create table books (
-  id bigint generated always as identity primary key,
-  author_id bigint not null references authors (id),
-  title text not null,
-  in_print boolean not null default true,
-  price numeric,
-  published_on date,
-  created_at timestamptz not null default now()
-);
-```
-
-### Generate the table definitions
-
-Add `supabase_typegen` as a dev dependency and generate the types with the Supabase CLI. With
-`--local` it reads the database of the running local stack, which the CLI builds from the
-migrations in your `supabase/` directory:
-
-```sh
-dart pub add dev:supabase_typegen
-supabase gen types --lang dart --local > lib/supabase_schema.g.dart
-```
-
-`--linked` and `--project-id` generate from a hosted project instead; see the
-[`supabase_typegen` README](packages/supabase_typegen/README.md) for details.
-
-For every table the file holds a row type (`BooksRow`), an insert type (`BooksInsert`), an update
-type (`BooksUpdate`), and a class (`Books`) with the table definition and one constant per column
-and foreign key. Run the generator again after every migration so the types follow the schema.
-
-### Reading rows
-
-```dart
-// Before
-final List<Map<String, dynamic>> books = await supabase
-    .from('books')
-    .select();
-final title = books.first['title'] as String;
-
-// After
-final List<BooksRow> books = await supabase.table(Books.table).select();
-final String title = books.first.title;
-```
-
-`BooksRow` is an extension type over the decoded JSON, so the getters cost nothing over reading the
-map, and `toJson()` returns the map when something still needs it. Dates, enums, `bytea` and the
-other column types are converted by the getters, so `createdAt` is a `DateTime` and `publishedOn` a
-`PostgresDate`.
-
-A table outside the `public` schema carries its schema in the definition, so
-`supabase.table(InventoryBooks.table)` replaces `supabase.schema('inventory').from('books')`.
-
-To read some columns only, `selectOnly` replaces the column string of `select()`. The rows are
-`PostgrestPartialRow`s, read through the same column constants. Each value comes back with the
-type of its column, and reading a column that was not selected throws a `StateError` instead of
-returning `null`:
-
-```dart
-// Before
-final books = await supabase.from('books').select('id, title');
-final title = books.first['title'] as String;
-
-// After
-final books = await supabase.table(Books.table).selectOnly([
-  Books.id,
-  Books.title,
-]);
-final String title = books.first.read(Books.title);
-```
-
-### Filters
-
-Filters are methods on the column constants, passed to `where()`. The value has to match the column
-type, so `Books.price.eq('ten')` does not compile, and `isNull()` only exists on nullable columns.
-
-| Before                                 | After                                                   |
-| -------------------------------------- | ------------------------------------------------------- |
-| `.eq('author_id', 2)`                  | `.where(Books.authorId.eq(2))`                          |
-| `.neq('title', 'Dune')`                | `.where(Books.title.neq('Dune'))`                       |
-| `.gte('price', 10)`                    | `.where(Books.price.gte(10))`                           |
-| `.ilike('title', '%dune%')`            | `.where(Books.title.ilike('%dune%'))`                   |
-| `.inFilter('id', [1, 2])`              | `.where(Books.id.inFilter([1, 2]))`                     |
-| `.isFilter('published_on', null)`      | `.where(Books.publishedOn.isNull())`                    |
-| `.not('published_on', 'is', null)`     | `.where(Books.publishedOn.isNull().not())`              |
-| `.or('price.lt.10,in_print.eq.false')` | `.where(Books.price.lt(10) \| Books.inPrint.isFalse())` |
-
-Filters combine with `&` and `|` and negate with `not()`, so a nested `or()` string becomes an
-expression the compiler checks. Repeated `where()` calls combine with AND, like repeated filter
-calls did:
-
-```dart
-// Before
-await supabase
-    .from('books')
-    .select()
-    .eq('in_print', true)
-    .or('price.lt.10,published_on.is.null');
-
-// After
-await supabase
-    .table(Books.table)
-    .select()
-    .where(
-      Books.inPrint.isTrue() &
-          (Books.price.lt(10) | Books.publishedOn.isNull()),
-    );
-```
-
-A filter is a value, so one assembled conditionally no longer needs to reassign the builder:
-
-```dart
-var filter = Books.inPrint.isTrue();
-if (search != null) filter = filter & Books.title.ilike('%$search%');
-final books = await supabase.table(Books.table).select().where(filter);
-```
-
-For an operator the API has no method for, `raw()` on a column keeps the column checked and takes
-the operand as PostgREST spells it, `Books.title.raw('eq.Dune')`. `PostgrestFilter.raw` takes both
-sides as strings, for an expression no column constant can name:
-
-```dart
-.where(PostgrestFilter.raw('metadata->>edition', 'eq.first'))
-```
-
-### Ordering, pagination and single rows
-
-The direction of an ordering is spelled on the column:
-
-```dart
-// Before
-await supabase
-    .from('books')
-    .select()
-    .order('created_at', ascending: false)
-    .range(0, 9);
-
-// After
-await supabase
-    .table(Books.table)
-    .select()
-    .order(Books.createdAt.desc())
-    .range(0, 9);
-```
-
-Both APIs only send what was asked for, so `.order('price', ascending: false)` matches
-`.order(Books.price.desc())` and `.order('price', ascending: false, nullsFirst: false)` matches
-`.order(Books.price.desc().nullsLast())`. Repeated `order()` calls append on both APIs.
-
-`limit()` and `range()` take the same arguments as before, apart from `referencedTable`: the rows
-of an embed are sorted and limited with `embedded()`, see [embedded selects](#embedded-selects).
-`single()` and `maybeSingle()` resolve to the row type:
-
-```dart
-// Before
-final Map<String, dynamic> book = await supabase
-    .from('books')
-    .select()
-    .eq('id', 1)
-    .single();
-
-// After
-final BooksRow book = await supabase
-    .table(Books.table)
-    .select()
-    .where(Books.id.eq(1))
-    .single();
-final BooksRow? maybeBook = await supabase
-    .table(Books.table)
-    .select()
-    .where(Books.id.eq(1))
-    .maybeSingle();
-```
-
-`count()` keeps both of its shapes. After `select()` it resolves to a `PostgrestResponse` holding
-the typed rows and the count; on its own it is a count query that resolves to an `int` and takes
-filters like any other request:
-
-```dart
-// Before
-final PostgrestResponse<List<Map<String, dynamic>>> response = await supabase
-    .from('books')
-    .select()
-    .count(CountOption.exact);
-final int inPrint = await supabase.from('books').count().eq('in_print', true);
-
-// After
-final PostgrestResponse<List<BooksRow>> response = await supabase
-    .table(Books.table)
-    .select()
-    .count(CountOption.exact);
-final int inPrint = await supabase
-    .table(Books.table)
-    .count()
-    .where(Books.inPrint.isTrue());
-```
-
-### Writes
-
-`insert()`, `upsert()` and `update()` take the generated `Insert` and `Update` types instead of
-maps. A required column is a required parameter of `BooksInsert`, and a column the database always
-generates, such as `id` above, is not a parameter at all:
-
-```dart
-// Before
-await supabase.from('books').insert({'author_id': 2, 'title': 'Dune'});
-await supabase.from('books').insert([
-  {'author_id': 2, 'title': 'Dune'},
-  {'author_id': 3, 'title': 'Emma'},
-]);
-await supabase
-    .from('books')
-    .update({'in_print': false, 'price': null})
-    .eq('id', 1);
-await supabase.from('books').delete().eq('id', 1);
-
-// After
-await supabase
-    .table(Books.table)
-    .insert(BooksInsert(authorId: 2, title: 'Dune'));
-await supabase.table(Books.table).insertAll([
-  BooksInsert(authorId: 2, title: 'Dune'),
-  BooksInsert(authorId: 3, title: 'Emma'),
-]);
-await supabase
-    .table(Books.table)
-    .update(BooksUpdate(inPrint: false).setPriceToNull())
-    .where(Books.id.eq(1));
-await supabase.table(Books.table).delete().where(Books.id.eq(1));
-```
-
-Several rows go through `insertAll()` and `upsertAll()` instead of a list passed to `insert()`.
-Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the column out of the
-request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
-generated `set…ToNull()` methods, which only exist for nullable columns.
-
-An `update()` or `delete()` sends nothing until it says which rows it acts on, through `where()`
-or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request,
-and the analyzer reports it as an `unused_result` warning:
-
-```dart
-// Before
-await supabase.from('books').delete();
-
-// After
-await supabase.table(Books.table).delete().all();
-```
-
-`onConflict` of `upsert()` is a list of columns instead of a comma separated string:
-
-```dart
-// Before
-await supabase.from('authors').upsert({
-  'name': 'Frank Herbert',
-}, onConflict: 'name');
-
-// After
-await supabase
-    .table(Authors.table)
-    .upsert(AuthorsInsert(name: 'Frank Herbert'), onConflict: [Authors.name]);
-```
-
-Writes resolve to `void` on both APIs. A trailing `select()` returns the written rows, typed as the
-row type:
-
-```dart
-// Before
-final Map<String, dynamic> book = await supabase
-    .from('books')
-    .insert({'author_id': 2, 'title': 'Dune'})
-    .select()
-    .single();
-
-// After
-final BooksRow book = await supabase
-    .table(Books.table)
-    .insert(BooksInsert(authorId: 2, title: 'Dune'))
-    .select()
-    .single();
-```
-
-### Embedded selects
-
-Every foreign key between two generated tables of one schema becomes a relation constant on both
-sides, named after the table on the other side: `Books.authors` points at the author of a book, and
-`Authors.books` at the books of an author. A relation goes into a `selectOnly` list, called with a
-column of the other table or with `select()` for several of them, and the embedded rows are read
-back through it:
-
-```dart
-// Before
-final books = await supabase.from('books').select('title, authors(name)');
-final authorName = books.first['authors']?['name'] as String?;
-
-final authors = await supabase
-    .from('authors')
-    .select('name, books(title)')
-    .limit(3, referencedTable: 'books');
-final titles = [
-  for (final book in authors.first['books'] as List) book['title'] as String,
-];
-
-// After
-final books = await supabase.table(Books.table).selectOnly([
-  Books.title,
-  Books.authors(Authors.name),
-]);
-final String? authorName = books.first
-    .read(Books.authors)
-    ?.read(Authors.name);
-
-final authors = await supabase
-    .table(Authors.table)
-    .selectOnly([
-      Authors.name,
-      Authors.books.select([Books.title]),
-    ])
-    .embedded(Authors.books, (books) => books.limit(3));
-final List<String> titles = [
-  for (final book in authors.first.read(Authors.books))
-    book.read(Books.title),
-];
-```
-
-A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
-
-When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
-so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.
-
-`embedded()` replaces `referencedTable` on `order()`, `limit()` and `range()`. Its callback receives
-a scope typed against the embedded table, so ordering by a column of another table does not compile,
-and a scope can reach an embed nested in it:
-
-```dart
-// Before
-await supabase
-    .from('authors')
-    .select('name, books(title, reviews(rating))')
-    .order('created_at', referencedTable: 'books', ascending: false)
-    .limit(1, referencedTable: 'books')
-    .limit(3, referencedTable: 'books.reviews');
-
-// After
-await supabase
-    .table(Authors.table)
-    .selectOnly([
-      Authors.name,
-      Authors.books.select([
-        Books.title,
-        Books.reviews.select([Reviews.rating]),
-      ]),
-    ])
-    .embedded(
-      Authors.books,
-      (books) => books
-          .order(Books.createdAt.desc())
-          .limit(1)
-          .embedded(Books.reviews, (reviews) => reviews.limit(3)),
-    );
-```
-
-The generated table definition also lists `primaryKey` and `relations`. Neither changes how a
-request is sent; they describe the table to code that handles requests itself, such as a plugin
-that caches rows and needs to tell them apart, or one that resolves an embed from local data.
-
-### Realtime streams
-
-`stream()` on `table()` emits lists of the row type and takes the primary key as columns. Its filter
-method is named `filter()`, since `Stream.where` already exists, and takes a single operator:
-
-```dart
-// Before
-supabase
-    .from('books')
-    .stream(primaryKey: ['id'])
-    .eq('author_id', 2)
-    .order('created_at', ascending: false)
-    .listen((List<Map<String, dynamic>> books) {});
-
-// After
-supabase
-    .table(Books.table)
-    .stream(primaryKey: [Books.id])
-    .filter(Books.authorId.eq(2))
-    .order(Books.createdAt.desc())
-    .listen((List<BooksRow> books) {});
-```
-
-A stream filter supports `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
-`matchRegex`, `imatchRegex`, `isNull`, `isTrue`, `isFalse` and `isDistinct`, optionally negated
-with `not()`. A filter composed with `&` or `|` throws an `ArgumentError`.
-
-`order()` takes the same `PostgrestOrdering` as `order()` on a typed query, so the direction is
-on the column instead of an `ascending` argument. A stream keeps `null` values last in ascending
-order and first in descending order, so an ordering with `nullsFirst()` or `nullsLast()`, or one
-by anything but a stored column, throws an `ArgumentError`.
+`toJson()` output is unchanged, so sessions persisted by v2 are still readable by v3. Three
+behavioural details are worth checking:
+
+- The `DateTime` values are in UTC. `DateTime` equality takes the time zone flag into account, so
+  compare against `DateTime.utc(...)` rather than `DateTime(...)`, or call `toLocal()` first.
+- `User.createdAt` used to fall back to an empty string when the field was missing and now throws a
+  `FormatException`.
+- A timestamp naming a date that does not exist is rejected rather than rolled forward.
+  `DateTime.parse` reads `2019-02-29` as 1 March 2019; parsing now throws a `FormatException`.
+
+#### Plural enum names singularized
+
+| Before                         | After                         | Package             |
+| ------------------------------ | ----------------------------- | ------------------- |
+| `SocketStates`                 | `SocketState`                 | `supabase_realtime` |
+| `PostgresTypes`                | `PostgresType`                | `supabase_realtime` |
+| `AuthenticatorAssuranceLevels` | `AuthenticatorAssuranceLevel` | `supabase_auth`     |
+| `LoadTableSnapshots`           | `TableSnapshotScope`          | `iceberg`           |
+
+No enum values changed, so the only work is renaming the type where you name it explicitly.
+
+#### One shared `SortDirection` for every sort direction
+
+| Before            | After           |
+| ----------------- | --------------- |
+| `BucketSortOrder` | `SortDirection` |
+| `FileSortOrder`   | `SortDirection` |
+| `SortDirection`   | unchanged       |
+
+The values are unchanged, so only the type name moves. `SortBy.order` is a `SortDirection` too,
+rather than a `String`, so `SortBy(column: 'created_at', order: 'desc')` becomes
+`SortBy(column: 'created_at', order: SortDirection.descending)`. It is non-nullable and defaults to
+ascending, so leave it out instead of passing `null`.
+
+#### `HttpMethod` is one shared enum
+
+`supabase_functions` and `postgrest` each declared their own `HttpMethod`. There is now one, shaped
+like postgrest's and re-exported from both, so imports are unchanged and postgrest callers are
+unaffected. For `functions.invoke`, two things changed:
+
+- `head` was added, so an exhaustive `switch` over `HttpMethod` no longer compiles until you handle
+  it.
+- The values were reordered, so `index` shifted for `post` (1 to 2), `put` (2 to 3) and `delete`
+  (3 to 5). This is not a compile error, so replace any persisted `index` with `name`.
+
+The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
