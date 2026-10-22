@@ -142,7 +142,7 @@ void main() {
 
   group('typed order', () {
     Future<List<List<_Todo>>> listenToTypedTodos(
-      PostgrestOrdering<_Todo> ordering,
+      PostgrestColumnOrdering<_Todo> ordering,
     ) async {
       final snapshots = <List<_Todo>>[];
       final subscription = supabase
@@ -205,28 +205,18 @@ void main() {
       );
     });
 
-    test('rejects a null placement', () {
-      final builder = supabase
-          .table(_Todos.table)
-          .stream(primaryKey: [_Todos.id]);
-
+    test('a null placement or a computed field is no column ordering', () {
       expect(
-        () => builder.order(_Todos.priority.desc().nullsLast()),
-        throwsArgumentError,
+        _Todos.priority.desc().nullsLast(),
+        isNot(isA<PostgrestColumnOrdering<_Todo>>()),
       );
       expect(
-        () => builder.order(_Todos.priority.nullsFirst()),
-        throwsArgumentError,
+        _Todos.priority.nullsFirst(),
+        isNot(isA<PostgrestColumnOrdering<_Todo>>()),
       );
-    });
-
-    test('rejects an ordering by anything but a stored column', () {
       expect(
-        () => supabase
-            .table(_Todos.table)
-            .stream(primaryKey: [_Todos.id])
-            .order(_Todos.label.desc()),
-        throwsArgumentError,
+        _Todos.label.desc(),
+        isNot(isA<PostgrestColumnOrdering<_Todo>>()),
       );
     });
   });

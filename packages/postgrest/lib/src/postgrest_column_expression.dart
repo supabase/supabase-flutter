@@ -328,33 +328,21 @@ base mixin PostgrestOrderableExpression<Row, Value extends Object>
   @override
   String get orderKey => _orderKey;
 
-  @internal
-  @override
-  PostgrestColumnExpression<Row, Object> get column => this;
-
-  @internal
-  @override
-  SortDirection? get direction => null;
-
-  @internal
-  @override
-  bool? get placesNullsFirst => null;
-
   @override
   PostgrestOrdering<Row> asc() =>
-      _Ordering(this, direction: SortDirection.ascending);
+      _Ordering(_orderKey, direction: SortDirection.ascending);
 
   @override
   PostgrestOrdering<Row> desc() =>
-      _Ordering(this, direction: SortDirection.descending);
+      _Ordering(_orderKey, direction: SortDirection.descending);
 
   @override
   PostgrestOrdering<Row> nullsFirst() =>
-      _Ordering(this, nulls: _NullPlacement.first);
+      _Ordering(_orderKey, nulls: _NullPlacement.first);
 
   @override
   PostgrestOrdering<Row> nullsLast() =>
-      _Ordering(this, nulls: _NullPlacement.last);
+      _Ordering(_orderKey, nulls: _NullPlacement.last);
 }
 
 /// A filterable expression whose value the database allows to be `NULL`,
@@ -423,7 +411,8 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
     extends PostgrestColumnExpression<Row, Value>
     with
         PostgrestFilterableExpression<Row, Value>,
-        PostgrestOrderableExpression<Row, Value> {
+        PostgrestOrderableExpression<Row, Value>
+    implements PostgrestColumnOrdering<Row> {
   const PostgrestStoredColumn._(this.name, this._fromJson) : super._();
 
   /// Name of the column in the database.
@@ -437,6 +426,22 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
 
   @override
   String get responseKey => name;
+
+  @internal
+  @override
+  PostgrestStoredColumn<Row, Object> get column => this;
+
+  @internal
+  @override
+  SortDirection? get direction => null;
+
+  @override
+  PostgrestColumnOrdering<Row> asc() =>
+      _ColumnOrdering(this, SortDirection.ascending);
+
+  @override
+  PostgrestColumnOrdering<Row> desc() =>
+      _ColumnOrdering(this, SortDirection.descending);
 
   /// [json], the decoded JSON of a present value, as [Value].
   Value _decode(Object json) => switch (_fromJson) {
