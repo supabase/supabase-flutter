@@ -118,6 +118,7 @@ Future<void> _delayUnlessAborted(
   Duration duration,
   Future<void>? abortSignal,
 ) {
+  final stackTrace = StackTrace.current;
   final completer = Completer<void>();
   final timer = Timer(duration, completer.complete);
   void abort() {
@@ -125,7 +126,7 @@ Future<void> _delayUnlessAborted(
       return;
     }
     timer.cancel();
-    completer.completeError(RequestAbortedException(), StackTrace.current);
+    completer.completeError(RequestAbortedException(), stackTrace);
   }
 
   unawaited(

@@ -82,6 +82,16 @@ void main() {
       );
     });
 
+    test('a backoff whose jitter could pass the next tick stops the '
+        'retries', () async {
+      expect(
+        await refreshAttemptsWith(
+          const SupabaseRetryOptions(initialDelay: Duration(seconds: 9)),
+        ),
+        1,
+      );
+    });
+
     test('a Retry-After past the next tick stops the retries', () async {
       expect(
         await refreshAttemptsWith(
