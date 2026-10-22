@@ -1882,10 +1882,10 @@ current headers.
 
 #### An `Authorization` header passed to `SupabaseClient` reaches the auth client
 
-An `Authorization` header in the `headers:` of the `SupabaseClient` constructor used to be replaced
-with `Bearer <key>` on the auth client, while one assigned through `supabase.headers` was kept. Both
-are now kept, so auth requests send the header instead of the API key. To keep the old behavior,
-set the header on the individual calls instead of on the client.
+An `Authorization` or `apikey` header in the `headers:` of the `SupabaseClient` constructor used to
+be replaced with the API key on the auth client, while one assigned through `supabase.headers` was
+kept. Both are now kept, so auth requests send the header instead of the API key. To keep the old
+behavior, set the header on the individual calls instead of on the client.
 
 #### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
 

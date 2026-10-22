@@ -82,6 +82,24 @@ void main() {
       expect(supabase.auth.headers[HttpHeader.apiKey], _apiKey);
     });
 
+    test('does not override the session token of a user request', () async {
+      httpClient.stubUser();
+      final supabase = buildClient(
+        headers: {'authorization': userAuthorization},
+      );
+      final session = await signInTestUser(supabase.auth);
+
+      await supabase.auth.getUser();
+
+      final request = httpClient
+          .requestsTo('/auth/v1/user', method: HttpMethod.get.value)
+          .single;
+      expect(
+        request.headers[HttpHeader.authorization],
+        'Bearer ${session.accessToken}',
+      );
+    });
+
     test('reaches the auth client when assigned through headers', () {
       final supabase = buildClient();
 

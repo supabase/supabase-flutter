@@ -448,11 +448,24 @@ class SupabaseClient {
 
   /// The static headers of the auth client, which sends the session token of
   /// a user only on the requests that act on behalf of that user.
+  ///
+  /// A user `apikey` or `Authorization` header is stored under its canonical
+  /// name, so the session token of such a request still replaces it.
   Map<String, String> _authClientHeaders() => {
     HttpHeader.apiKey: _supabaseKey,
     HttpHeader.authorization: 'Bearer $_supabaseKey',
-    ..._headers,
+    for (final MapEntry(:key, :value) in _headers.entries)
+      _canonicalHeaderName(key): value,
   };
+
+  static String _canonicalHeaderName(String name) {
+    for (final canonical in [HttpHeader.apiKey, HttpHeader.authorization]) {
+      if (name.toLowerCase() == canonical.toLowerCase()) {
+        return canonical;
+      }
+    }
+    return name;
+  }
 
   void _listenForAuthEvents() {
     // ignore: invalid_use_of_internal_member
@@ -489,8 +502,6 @@ class SupabaseClient {
   }
 }
 
-/// Appends [servicePath] to the path of [supabaseUrl], switching the scheme
-/// from `http` to `ws` and from `https` to `wss` for a [webSocket] service.
 String _serviceUrl(
   String supabaseUrl,
   String servicePath, {
