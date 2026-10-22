@@ -235,42 +235,37 @@ void main() {
     });
   });
 
-  group('SignedUrl', () {
-    const url = SignedUrl(path: 'a.png', signedUrl: 'https://x/a.png');
+  group('SignedUploadUrlResponse', () {
+    const response = SignedUploadUrlResponse(
+      path: 'a.png',
+      signedUrl: 'https://x/a.png?token=t1',
+      token: 't1',
+    );
 
-    test('toString includes path and url', () {
+    test('toString includes path, url and token', () {
       expect(
-        url.toString(),
-        'SignedUrl(path: a.png, signedUrl: https://x/a.png)',
+        response.toString(),
+        'SignedUploadUrlResponse(path: a.png, '
+        'signedUrl: https://x/a.png?token=t1, token: t1)',
       );
     });
 
-    test('value equality and hashCode', () {
-      const same = SignedUrl(path: 'a.png', signedUrl: 'https://x/a.png');
-      const differentPath = SignedUrl(
-        path: 'b.png',
-        signedUrl: 'https://x/a.png',
-      );
-      const differentUrl = SignedUrl(
+    test('value equality and hashCode include the token', () {
+      const same = SignedUploadUrlResponse(
         path: 'a.png',
-        signedUrl: 'https://x/b.png',
+        signedUrl: 'https://x/a.png?token=t1',
+        token: 't1',
+      );
+      const differentToken = SignedUploadUrlResponse(
+        path: 'a.png',
+        signedUrl: 'https://x/a.png?token=t1',
+        token: 't2',
       );
 
-      expect(url, same);
-      expect(url.hashCode, same.hashCode);
-      expect(url, isNot(differentPath));
-      expect(url, isNot(differentUrl));
-      expect(identical(url, url), isTrue);
-    });
-
-    test('copyWith replaces only the given fields', () {
-      expect(url.copyWith(path: 'c.png').path, 'c.png');
-      expect(url.copyWith(path: 'c.png').signedUrl, url.signedUrl);
-      expect(
-        url.copyWith(signedUrl: 'https://x/c.png').signedUrl,
-        'https://x/c.png',
-      );
-      expect(url.copyWith(signedUrl: 'https://x/c.png').path, url.path);
+      expect(response, same);
+      expect(response.hashCode, same.hashCode);
+      expect(response, isNot(differentToken));
+      expect(response.hashCode, isNot(differentToken.hashCode));
     });
   });
 

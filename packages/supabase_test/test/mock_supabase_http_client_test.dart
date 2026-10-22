@@ -984,12 +984,11 @@ void main() {
             ),
           ],
         );
-        final message = await supabase.storage.deleteBucketLifecycle('avatars');
+        await supabase.storage.deleteBucketLifecycle('avatars');
 
         expect(stored.single.id, 'expire-history');
         expect(stored.single.noncurrentVersionExpiration.noncurrentDays, 30);
         expect(updated.single.id, 'expire-history');
-        expect(message, 'Successfully deleted');
         final requests = httpClient.requestsTo(
           '/storage/v1/bucket/avatars/lifecycle',
         );

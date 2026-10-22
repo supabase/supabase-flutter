@@ -1569,6 +1569,56 @@ await supabase.storage.from('avatars').uploadStream(
 );
 ```
 
+#### `BucketOptions.public` is optional and `fileSizeLimit` is in bytes
+
+`updateBucket` only sends the options that are set, so changing the allowed MIME types or the
+versioning status no longer resets the visibility of the bucket. `BucketOptions.public` is
+optional for that reason, and a bucket created without it is private as before.
+
+`BucketOptions.fileSizeLimit` is the number of bytes as an `int`, the same type that
+`Bucket.fileSizeLimit` reports, instead of a string such as `'20MB'`:
+
+```dart
+// Before
+const BucketOptions(public: false, fileSizeLimit: '20MB');
+
+// After
+const BucketOptions(fileSizeLimit: 20 * 1000 * 1000);
+```
+
+#### Storage methods without a result return `void`
+
+The methods that only confirmed success with a message from the server complete with `void` and
+throw a `StorageException` on failure as before: `createBucket`, `updateBucket`, `emptyBucket`,
+`deleteBucket`, `deleteBucketLifecycle`, `purgeBucketCache`, `purgeProjectCache`,
+`deleteAnalyticsBucket`, `move` and `purgeCache`. `createBucket` used to return the id it was
+given, so keep using that id.
+
+`copy` returns an `UploadResponse` like `upload` does, instead of the key prefixed with the
+bucket id. That key is its `fullPath`, and `path` is the key within the bucket:
+
+```dart
+// Before
+final key = await supabase.storage.from('avatars').copy('a.png', 'b.png');
+
+// After
+final copy = await supabase.storage.from('avatars').copy('a.png', 'b.png');
+final key = copy.fullPath;
+```
+
+#### `SignedUploadURLResponse` is renamed `SignedUploadUrlResponse`
+
+The response of `createSignedUploadUrl` is renamed to match the `Url` spelling of the rest of the
+API, and its equality now takes the `token` into account. `SignedUrl`, which it used to extend, is
+removed, along with its `copyWith`.
+
+#### Storage wire helpers are internal
+
+The `StorageFileApi` constructor is internal. Get one for a bucket with
+`supabase.storage.from(bucketId)` instead. The methods that encode options for a request,
+`ListBucketsOptions.toQueryParameters`, `toMap` on `SearchOptions`, `SortBy`, `FileSort` and
+`PaginatedSearchOptions`, and `Vector.toJson`, are internal too.
+
 ### Errors
 
 #### Service exceptions share one base

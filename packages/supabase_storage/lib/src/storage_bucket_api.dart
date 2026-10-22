@@ -43,7 +43,7 @@ class StorageBucketApi {
     return {
       'id': id,
       'name': id,
-      'public': bucketOptions.public,
+      'public': ?bucketOptions.public,
       'file_size_limit': ?bucketOptions.fileSizeLimit,
       'allowed_mime_types': ?bucketOptions.allowedMimeTypes,
       'versioning_status': ?bucketOptions.versioningStatus?.snakeCase
@@ -94,28 +94,16 @@ class StorageBucketApi {
   /// [BucketOptions.versioningStatus] can only be [VersioningStatus.disabled]
   /// or [VersioningStatus.enabled] here.
   ///
-  /// It returns the ID of the newly created bucket. To get the bucket
-  /// reference, use [getBucket]:
-  ///
-  /// ```dart
-  /// void bucket() async {
-  ///   final newBucketId = await createBucket('images');
-  ///   final bucket = await getBucket(newBucketId);
-  ///   print('${bucket.id}');
-  /// }
-  /// ```
-  Future<String> createBucket(
+  /// Use [getBucket] to read the created bucket back.
+  Future<void> createBucket(
     String id, [
-    BucketOptions bucketOptions = const BucketOptions(public: false),
+    BucketOptions bucketOptions = const BucketOptions(),
   ]) async {
-    final FetchOptions options = FetchOptions(_headers);
-    final response = await storageFetch.post(
+    await storageFetch.post(
       '$url/bucket',
       _bucketPayload(id, bucketOptions),
-      options: options,
+      options: FetchOptions(_headers),
     );
-    final bucketId = (response as Map<String, dynamic>)['name'] as String;
-    return bucketId;
   }
 
   /// Updates an existing Storage bucket
@@ -123,48 +111,45 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you are updating.
   ///
   /// [bucketOptions] sets the publicity of the bucket, what it accepts and
-  /// its object versioning. Its [BucketOptions.versioningStatus] can only be
-  /// [VersioningStatus.enabled] or [VersioningStatus.suspended] here, and a
-  /// bucket has to be enabled before it can be suspended.
-  Future<String> updateBucket(
+  /// its object versioning. Only the options that are set are changed. Its
+  /// [BucketOptions.versioningStatus] can only be [VersioningStatus.enabled]
+  /// or [VersioningStatus.suspended] here, and a bucket has to be enabled
+  /// before it can be suspended.
+  Future<void> updateBucket(
     String id,
     BucketOptions bucketOptions,
   ) async {
-    final FetchOptions options = FetchOptions(_headers);
-    final response = await storageFetch.put(
+    await storageFetch.put(
       '$url/bucket/$id',
       _bucketPayload(id, bucketOptions),
-      options: options,
+      options: FetchOptions(_headers),
     );
-    final message = (response as Map<String, dynamic>)['message'] as String;
-    return message;
   }
 
   /// Removes all objects inside a single bucket.
   ///
   /// [id] is the unique identifier of the bucket you would like to empty.
-  Future<String> emptyBucket(String id) async {
-    final FetchOptions options = FetchOptions(_headers);
-    final response = await storageFetch.post(
+  ///
+  /// The server queues the removal, so objects can still be listed for a
+  /// while after this completes.
+  Future<void> emptyBucket(String id) async {
+    await storageFetch.post(
       '$url/bucket/$id/empty',
       {},
-      options: options,
+      options: FetchOptions(_headers),
     );
-    return (response as Map<String, dynamic>)['message'] as String;
   }
 
   /// Deletes an existing bucket. A bucket can't be deleted with existing
   /// objects inside it. You must first clear the bucket using [emptyBucket].
   ///
   /// [id] is the unique identifier of the bucket you would like to delete.
-  Future<String> deleteBucket(String id) async {
-    final FetchOptions options = FetchOptions(_headers);
-    final response = await storageFetch.delete(
+  Future<void> deleteBucket(String id) async {
+    await storageFetch.delete(
       '$url/bucket/$id',
       {},
-      options: options,
+      options: FetchOptions(_headers),
     );
-    return (response as Map<String, dynamic>)['message'] as String;
   }
 
   /// Retrieves the lifecycle policy of the bucket [id].
@@ -208,13 +193,12 @@ class StorageBucketApi {
   /// Removes the lifecycle policy of the bucket [id].
   ///
   /// Succeeds even when the bucket has no policy.
-  Future<String> deleteBucketLifecycle(String id) async {
-    final response = await storageFetch.delete<Map<String, dynamic>>(
+  Future<void> deleteBucketLifecycle(String id) async {
+    await storageFetch.delete(
       '$url/bucket/$id/lifecycle',
       {},
       options: FetchOptions(_headers),
     );
-    return response['message'] as String;
   }
 
   List<LifecycleRule> _lifecycleRules(Map<String, dynamic> response) {
@@ -234,7 +218,7 @@ class StorageBucketApi {
   ///
   /// Requires the service-role key and the tenant `purgeCache` feature to be
   /// enabled on the storage server.
-  Future<String> purgeBucketCache(
+  Future<void> purgeBucketCache(
     String id, {
     bool transformations = false,
   }) async {
@@ -244,12 +228,11 @@ class StorageBucketApi {
         queryParameters: {'transformations': 'true'},
       );
     }
-    final response = await storageFetch.delete(
+    await storageFetch.delete(
       requestUrl.toString(),
       {},
       options: FetchOptions(_headers),
     );
-    return (response as Map<String, dynamic>)['message'] as String;
   }
 
   /// Purges the CDN cache for every bucket in the project.
@@ -263,8 +246,8 @@ class StorageBucketApi {
   ///
   /// Requires the service-role key and the tenant `purgeCache` feature to be
   /// enabled on the storage server.
-  Future<String> purgeProjectCache({bool transformations = false}) async {
-    final response = await storageFetch.delete(
+  Future<void> purgeProjectCache({bool transformations = false}) async {
+    await storageFetch.delete(
       Uri.parse('$url/cdn/')
           .replace(
             queryParameters: transformations
@@ -275,7 +258,6 @@ class StorageBucketApi {
       {},
       options: FetchOptions(_headers),
     );
-    return (response as Map<String, dynamic>)['message'] as String;
   }
 
   /// Creates a new analytics bucket backed by the Apache Iceberg table format.
@@ -316,13 +298,11 @@ class StorageBucketApi {
   /// still contains namespaces or tables.
   ///
   /// [id] is the unique identifier of the bucket you would like to delete.
-  Future<String> deleteAnalyticsBucket(String id) async {
-    final FetchOptions options = FetchOptions(_headers);
-    final response = await storageFetch.delete(
+  Future<void> deleteAnalyticsBucket(String id) async {
+    await storageFetch.delete(
       '$url/iceberg/bucket/$id',
       {},
-      options: options,
+      options: FetchOptions(_headers),
     );
-    return (response as Map<String, dynamic>)['message'] as String;
   }
 }

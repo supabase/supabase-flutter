@@ -1859,7 +1859,6 @@ features:
       - FileSort.FileSort
       - FileSort.column
       - FileSort.order
-      - FileSort.toMap
       - FileSortColumn
       - PaginatedFile
       - PaginatedFile.PaginatedFile
@@ -1889,7 +1888,6 @@ features:
       - PaginatedSearchOptions.limit
       - PaginatedSearchOptions.prefix
       - PaginatedSearchOptions.sortBy
-      - PaginatedSearchOptions.toMap
       - PaginatedSearchOptions.withDelimiter
       - SearchOptions
       - SearchOptions.SearchOptions
@@ -1898,12 +1896,10 @@ features:
       - SearchOptions.offset
       - SearchOptions.search
       - SearchOptions.sortBy
-      - SearchOptions.toMap
       - SortBy
       - SortBy.SortBy
       - SortBy.column
       - SortBy.order
-      - SortBy.toMap
   storage.file_buckets.move:
     status: implemented
     symbols:
@@ -1948,14 +1944,6 @@ features:
     symbols:
       - StorageFileApi.createSignedUrls
     supporting_symbols:
-      - SignedUrl
-      - SignedUrl.==
-      - SignedUrl.SignedUrl
-      - SignedUrl.copyWith
-      - SignedUrl.hashCode
-      - SignedUrl.path
-      - SignedUrl.signedUrl
-      - SignedUrl.toString
       - SignedUrlFailure
       - SignedUrlFailure.SignedUrlFailure
       - SignedUrlFailure.error
@@ -1972,9 +1960,14 @@ features:
     symbols:
       - StorageFileApi.createSignedUploadUrl
     supporting_symbols:
-      - SignedUploadURLResponse
-      - SignedUploadURLResponse.SignedUploadURLResponse
-      - SignedUploadURLResponse.token
+      - SignedUploadUrlResponse
+      - SignedUploadUrlResponse.==
+      - SignedUploadUrlResponse.SignedUploadUrlResponse
+      - SignedUploadUrlResponse.hashCode
+      - SignedUploadUrlResponse.path
+      - SignedUploadUrlResponse.signedUrl
+      - SignedUploadUrlResponse.toString
+      - SignedUploadUrlResponse.token
   storage.file_buckets.get_public_url:
     status: implemented
     symbols:
@@ -2026,7 +2019,6 @@ features:
       - ListBucketsOptions.search
       - ListBucketsOptions.sortColumn
       - ListBucketsOptions.sortOrder
-      - ListBucketsOptions.toQueryParameters
       - BucketSortColumn
   storage.file_buckets.update_bucket:
     status: implemented
@@ -2227,7 +2219,6 @@ features:
       - Vector.key
       - Vector.data
       - Vector.metadata
-      - Vector.toJson
   storage.vector_buckets.get_vectors:
     status: implemented
     symbols:
@@ -3442,7 +3433,6 @@ supporting_symbols:
   - StorageCredential.fromJson
   - StorageCredential.prefix
   - StorageFileApi
-  - StorageFileApi.StorageFileApi
   - StorageFileApi.bucketId
   - StorageFileApi.url
   - StructType
