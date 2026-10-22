@@ -44,8 +44,9 @@ dart pub add dev:supabase_typegen
 supabase gen types --lang dart --local > lib/supabase_schema.g.dart
 ```
 
-Pass the table definition to `table()`. Filters are methods on the column
-constants, so the compiler checks every column name and value:
+Import the generated `supabase_schema.g.dart` and pass the table definition
+to `table()`. Filters are methods on the column constants, so the compiler
+checks every column name and value:
 
 ```dart file
 import 'package:postgrest/postgrest.dart';

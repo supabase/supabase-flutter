@@ -26,20 +26,21 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 Future<void> main() async {
   final isolate = YAJsonIsolate();
+  try {
+    // Serialize to a JSON string.
+    final String requestBody = await isolate.encode({'title': 'Dune'});
 
-  // Serialize to a JSON string.
-  final String requestBody = await isolate.encode({'title': 'Dune'});
+    // Deserialize a JSON string.
+    final Object? json = await isolate.decode('{"title": "Dune"}');
 
-  // Deserialize a JSON string.
-  final Object? json = await isolate.decode('{"title": "Dune"}');
-
-  // Deserialize UTF-8 encoded JSON bytes, such as an HTTP response body,
-  // without materializing the intermediate string on the calling isolate.
-  final response = await http.get(Uri.parse('https://example.com/books'));
-  final Object? data = await isolate.decodeBytes(response.bodyBytes);
-
-  // Dispose when no longer needed.
-  await isolate.dispose();
+    // Deserialize UTF-8 encoded JSON bytes, such as an HTTP response body,
+    // without materializing the intermediate string on the calling isolate.
+    final response = await http.get(Uri.parse('https://example.com/books'));
+    final Object? data = await isolate.decodeBytes(response.bodyBytes);
+  } finally {
+    // Dispose when no longer needed, even when an operation throws.
+    await isolate.dispose();
+  }
 }
 ```
 

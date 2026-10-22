@@ -23,10 +23,12 @@ dependency. Add this package only if you want that trade-off.
 ## Usage
 
 ```dart file
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supabase_flutter_web_auth/supabase_flutter_web_auth.dart';
 
-Future<void> initialize() async {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: 'https://your-project.supabase.co',
     publishableKey: 'your-publishable-key',
@@ -34,6 +36,7 @@ Future<void> initialize() async {
       oauthLauncher: FlutterWebAuth2OAuthLauncher(),
     ),
   );
+  runApp(const MaterialApp(home: Placeholder()));
 }
 ```
 
