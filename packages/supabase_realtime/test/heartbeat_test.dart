@@ -133,6 +133,7 @@ void main() {
       final providerClient = RealtimeClient(
         'wss://localhost:0/',
         transport: (url, headers) => mockedChannel,
+        parameters: const {'apikey': 'api-key'},
         customAccessToken: provider,
       );
       addTearDown(providerClient.disconnect);
@@ -175,6 +176,72 @@ void main() {
       await socket.setAccessToken('explicit');
       heartbeatToken.complete('stale');
       await heartbeat;
+
+      expect(socket.accessToken, 'explicit');
+    });
+
+    test('falls back to the API key when the provider has no token', () async {
+      var calls = 0;
+      final socket = providerClient(
+        () async => ++calls == 1 ? 'token' : null,
+      );
+      await socket.connect();
+      await pumpEventQueue();
+      expect(socket.accessToken, 'token');
+
+      await acknowledgedHeartbeat(socket);
+
+      expect(socket.accessToken, 'api-key');
+    });
+
+    test('overlapping heartbeats share one provider request', () async {
+      final heartbeatToken = Completer<String?>();
+      var calls = 0;
+      final socket = providerClient(
+        () => ++calls == 1 ? Future.value('token') : heartbeatToken.future,
+      );
+      await socket.connect();
+      await pumpEventQueue();
+
+      final heartbeat = socket.sendHeartbeat();
+      socket.onConnectionMessage(
+        heartbeatReply(socket.pendingHeartbeatRef, 'ok'),
+      );
+      await acknowledgedHeartbeat(socket);
+      heartbeatToken.complete('fresh');
+      await heartbeat;
+
+      expect(calls, 2);
+      expect(socket.accessToken, 'fresh');
+    });
+
+    test('drops a heartbeat token that resolves after disconnecting', () async {
+      final heartbeatToken = Completer<String?>();
+      var calls = 0;
+      final socket = providerClient(
+        () => ++calls == 1 ? Future.value('token') : heartbeatToken.future,
+      );
+      await socket.connect();
+      await pumpEventQueue();
+
+      final heartbeat = socket.sendHeartbeat();
+      await pumpEventQueue();
+      await socket.disconnect();
+      heartbeatToken.complete('stale');
+      await heartbeat;
+
+      expect(socket.accessToken, 'token');
+    });
+
+    test('drops a connect token that resolves after a newer one', () async {
+      final connectToken = Completer<String?>();
+      final socket = providerClient(() => connectToken.future);
+
+      await socket.connect();
+      await pumpEventQueue();
+      await socket.setAccessToken('explicit');
+      connectToken.complete('stale');
+      await pumpEventQueue();
 
       expect(socket.accessToken, 'explicit');
     });
