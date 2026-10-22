@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:realtime_room_example/main.dart';
+import 'package:realtime_room_example/supabase_schema.g.dart';
 import 'package:realtime_room_example/room_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,13 +31,10 @@ void main() {
 
   tearDown(() async {
     // Remove whatever the test posted so it can run repeatedly.
-    await Supabase.instance.client.from('messages').delete().inFilter(
-      'username',
-      [
-        'alice',
-        'bob',
-      ],
-    );
+    await Supabase.instance.client
+        .table(Messages.table)
+        .delete()
+        .where(Messages.username.inFilter(['alice', 'bob']));
   });
 
   testWidgets('joins, chats and sees other users live', (tester) async {

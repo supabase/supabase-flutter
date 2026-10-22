@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
+import 'supabase_schema.g.dart';
 import 'tasks_repository.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -50,7 +51,7 @@ class _TasksPageState extends State<TasksPage> {
   final _repository = TasksRepository(supabase);
   final _search = TextEditingController();
 
-  List<Project> _projects = [];
+  List<ProjectsRow> _projects = [];
   List<Task> _tasks = [];
   String? _projectFilter;
   bool _onlyIncomplete = false;
@@ -157,6 +158,18 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
+  /// Completes every open task of the selected project, or of all projects
+  /// when none is selected, through a database function.
+  Future<void> _completeAll() => _mutate(() async {
+    final count = await _repository.completeAllTasks(projectId: _projectFilter);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Completed $count ${count == 1 ? 'task' : 'tasks'}'),
+      ),
+    );
+  });
+
   Future<void> _rename(Task task) async {
     final title = await showDialog<String>(
       context: context,
@@ -169,7 +182,16 @@ class _TasksPageState extends State<TasksPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tasks')),
+      appBar: AppBar(
+        title: const Text('Tasks'),
+        actions: [
+          IconButton(
+            onPressed: _mutating ? null : () => unawaited(_completeAll()),
+            icon: const Icon(Icons.done_all),
+            tooltip: 'Complete all',
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _projects.isEmpty || _mutating ? null : _create,
         icon: const Icon(Icons.add),
@@ -232,7 +254,7 @@ class _Filters extends StatelessWidget {
     required this.onOnlyIncompleteChanged,
   });
 
-  final List<Project> projects;
+  final List<ProjectsRow> projects;
   final String? projectFilter;
   final TextEditingController search;
   final bool onlyIncomplete;
@@ -405,7 +427,7 @@ class _RenameDialogState extends State<_RenameDialog> {
 class _TaskDialog extends StatefulWidget {
   const _TaskDialog({required this.projects});
 
-  final List<Project> projects;
+  final List<ProjectsRow> projects;
 
   @override
   State<_TaskDialog> createState() => _TaskDialogState();

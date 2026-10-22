@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:supabase/supabase.dart';
 import 'package:web/web.dart' as web;
 
+import 'supabase_schema.g.dart';
+
 void main() {
   const supabaseUrl = 'YOUR_SUPABASE_URL';
   const supabaseKey = 'YOUR_SUPABASE_KEY';
@@ -20,33 +22,39 @@ void main() {
 }
 
 void exampleUsage(SupabaseClient supabase) async {
-  // query data
-  final data = await supabase
-      .from('countries')
+  // query data, typed through the definitions in supabase_schema.g.dart
+  final countries = await supabase
+      .table(Countries.table)
       .select()
-      .order('name', ascending: true);
-  print(data);
+      .order(Countries.name.asc());
+  print(countries.map((country) => country.name));
 
   // insert data
-  await supabase.from('countries').insert([
-    {'name': 'Singapore'},
-  ]);
+  await supabase
+      .table(Countries.table)
+      .insert(CountriesInsert(name: 'Singapore'));
 
   // update data
-  await supabase.from('countries').update({'name': 'Singapore'}).eq('id', 1);
+  await supabase
+      .table(Countries.table)
+      .update(CountriesUpdate(name: 'Singapore'))
+      .where(Countries.id.eq(1));
 
   // delete data
-  await supabase.from('countries').delete().eq('id', 1);
+  await supabase.table(Countries.table).delete().where(Countries.id.eq(1));
 
   // realtime
   final realtimeChannel = supabase.channel('my_channel');
-  realtimeChannel
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'countries',
-      )
-      .listen((payload) {});
+  realtimeChannel.onTableChanges(Countries.table).listen((change) {
+    switch (change) {
+      case TypedPostgresInsert(:final newRow):
+        print('inserted: ${newRow.name}');
+      case TypedPostgresUpdate(:final newRow):
+        print('updated: ${newRow.name}');
+      case TypedPostgresDelete(:final oldRow):
+        print('deleted: ${oldRow.read(Countries.id)}');
+    }
+  });
   realtimeChannel.subscribe();
 
   // remember to remove channel when no longer needed
@@ -54,12 +62,12 @@ void exampleUsage(SupabaseClient supabase) async {
 
   // stream
   final streamSubscription = supabase
-      .from('countries')
-      .stream(primaryKey: ['id'])
-      .order('name')
+      .table(Countries.table)
+      .stream(primaryKey: [Countries.id])
+      .order(Countries.name)
       .limit(10)
       .listen((snapshot) {
-        print('snapshot: $snapshot');
+        print('snapshot: ${snapshot.map((country) => country.name)}');
       });
 
   // remember to remove subscription

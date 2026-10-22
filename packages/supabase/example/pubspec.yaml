@@ -13,6 +13,7 @@ dependencies:
   supabase: ^3.0.0-dev.12
 
 dev_dependencies:
+  supabase_typegen: ^0.6.0
   build_runner: any
   build_web_compilers: any
   supabase_lints: ^0.1.2

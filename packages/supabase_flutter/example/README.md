@@ -55,6 +55,22 @@ create policy "Anyone can update an avatar." on storage.objects
   for update with check (bucket_id = 'avatars');
 ```
 
+## Generated types
+
+The app reads and writes `profiles` through the typed table API,
+`client.table(Profiles.table)`, using the row, insert and column types in
+`lib/supabase_schema.g.dart`. That file is generated from the database schema
+with the [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)
+and the `supabase_typegen` dev dependency. After running the SQL above, generate
+it again from your project:
+
+```sh
+supabase gen types --lang dart --schema public --project-id YOUR_PROJECT_REF > lib/supabase_schema.g.dart
+```
+
+Run the command again after every schema change, so the types keep matching the
+database.
+
 ## Other Examples
 
 - Flutter user management: https://github.com/supabase/supabase/tree/master/examples/user-management/flutter-user-management

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
+import 'supabase_schema.g.dart';
 import 'room_channel.dart';
 import 'room_repository.dart';
 
@@ -125,7 +126,7 @@ class _RoomPageState extends State<RoomPage> {
   );
   final List<StreamSubscription<void>> _subscriptions = [];
 
-  List<Message> _messages = [];
+  List<MessagesRow> _messages = [];
   List<OnlineUser> _onlineUsers = [];
   final Set<String> _typingUsers = {};
   final Map<String, Timer> _typingTimers = {};
@@ -159,8 +160,7 @@ class _RoomPageState extends State<RoomPage> {
   Future<void> _init() async {
     // Start listening before subscribing so no early event is missed.
     _subscriptions.addAll([
-      _channel.onMessageInserted.listen(_addMessage),
-      _channel.onMessageDeleted.listen(_removeMessage),
+      _channel.onMessageChanges.listen(_applyChange),
       _channel.onlineUsers.listen(
         (users) => setState(() => _onlineUsers = users),
       ),
@@ -181,9 +181,23 @@ class _RoomPageState extends State<RoomPage> {
     _scrollToBottom();
   }
 
+  void _applyChange(TypedPostgresChange<MessagesRow, MessagesRow> change) {
+    switch (change) {
+      case TypedPostgresInsert(:final newRow):
+        _addMessage(newRow);
+      case TypedPostgresDelete(:final oldRow):
+        // On a table with row level security, realtime sends only the
+        // primary key of a deleted row, which is all that is needed here.
+        _removeMessage(oldRow.read(Messages.id));
+      case TypedPostgresUpdate():
+        // Messages are never edited, so there are no updates to apply.
+        break;
+    }
+  }
+
   /// Appends a streamed message, ignoring one already in the list (a row could
   /// arrive both from the initial fetch and the insert stream).
-  void _addMessage(Message message) {
+  void _addMessage(MessagesRow message) {
     if (_messages.any((existing) => existing.id == message.id)) return;
     setState(() => _messages = [..._messages, message]);
     _scrollToBottom();
@@ -330,7 +344,7 @@ class _MessageTile extends StatelessWidget {
     required this.onDelete,
   });
 
-  final Message message;
+  final MessagesRow message;
   final bool isMine;
   final VoidCallback onDelete;
 

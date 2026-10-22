@@ -17,6 +17,7 @@ dependencies:
   supabase_flutter: ^3.0.0-dev.12
 
 dev_dependencies:
+  supabase_typegen: ^0.6.0
   supabase_lints: ^0.1.2
   flutter_test:
     sdk: flutter

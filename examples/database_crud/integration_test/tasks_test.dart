@@ -1,4 +1,5 @@
 import 'package:database_crud_example/main.dart';
+import 'package:database_crud_example/supabase_schema.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -34,10 +35,10 @@ void main() {
   tearDown(() async {
     // Remove only what this run created so it can run repeatedly and safely
     // alongside other runs sharing the same instance.
-    await Supabase.instance.client.from('tasks').delete().inFilter('title', [
-      createdTitle,
-      renamedTitle,
-    ]);
+    await Supabase.instance.client
+        .table(Tasks.table)
+        .delete()
+        .where(Tasks.title.inFilter([createdTitle, renamedTitle]));
   });
 
   testWidgets('reads, filters and manages tasks through the UI', (
