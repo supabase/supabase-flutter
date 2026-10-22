@@ -32,9 +32,6 @@ sealed class PostgrestOrdering<Row> {
 
   /// Places `NULL`s after non-null values.
   PostgrestOrdering<Row> nullsLast();
-
-  @override
-  String toString() => orderKey;
 }
 
 /// A [PostgrestOrdering] by a stored column with at most a direction, the
@@ -96,6 +93,9 @@ final class _Ordering<Row> extends PostgrestOrdering<Row> {
   final _NullPlacement? _nulls;
 
   @override
+  String toString() => orderKey;
+
+  @override
   String get orderKey {
     final direction = _direction == null ? '' : '.${_direction.value}';
     final placement = _nulls == null ? '' : '.${_nulls.token}';
@@ -136,6 +136,9 @@ final class _ColumnOrdering<Row> extends PostgrestColumnOrdering<Row> {
 
   @override
   String get orderKey => '${column._orderKey}.${direction.value}';
+
+  @override
+  String toString() => orderKey;
 
   @override
   PostgrestColumnOrdering<Row> asc() => column.asc();
