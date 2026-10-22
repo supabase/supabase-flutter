@@ -1159,6 +1159,8 @@ features:
       - PostgrestTypedQueryBuilder.select
       - PostgrestTypedQueryBuilder.selectOnly
       - PostgrestTypedQueryBuilder.count
+      - PostgrestTypedCountBuilder
+      - PostgrestTypedCountBuilder.where
       - PostgrestTypedTransformBuilder
       - PostgrestTypedTransformBuilder.count
     supporting_symbols:
@@ -1635,6 +1637,7 @@ features:
       - PostgrestQueryBuilder.abortSignal
       - PostgrestTransformBuilder.abortSignal
       - PostgrestTypedBuilder.abortSignal
+      - PostgrestTypedCountBuilder.abortSignal
       - PostgrestTypedFilterBuilder.abortSignal
       - PostgrestTypedQueryBuilder.abortSignal
       - PostgrestTypedTransformBuilder.abortSignal
@@ -1658,6 +1661,7 @@ features:
       - PostgrestQueryBuilder.retry
       - PostgrestTransformBuilder.retry
       - PostgrestTypedBuilder.retry
+      - PostgrestTypedCountBuilder.retry
       - PostgrestTypedFilterBuilder.retry
       - PostgrestTypedQueryBuilder.retry
       - PostgrestTypedTransformBuilder.retry
@@ -1679,6 +1683,7 @@ features:
       - PostgrestQueryBuilder.requestTimeout
       - PostgrestTransformBuilder.requestTimeout
       - PostgrestTypedBuilder.requestTimeout
+      - PostgrestTypedCountBuilder.requestTimeout
       - PostgrestTypedFilterBuilder.requestTimeout
       - PostgrestTypedQueryBuilder.requestTimeout
       - PostgrestTypedTransformBuilder.requestTimeout
@@ -1694,6 +1699,7 @@ features:
       - PostgrestQueryBuilder.setHeader
       - PostgrestTransformBuilder.setHeader
       - PostgrestTypedBuilder.setHeader
+      - PostgrestTypedCountBuilder.setHeader
       - PostgrestTypedFilterBuilder.setHeader
       - PostgrestTypedQueryBuilder.setHeader
       - PostgrestTypedTransformBuilder.setHeader

@@ -243,7 +243,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     final limit = request.limit;
     final offset = request.offset;
     if (offset != null && limit != null) {
-      transformed = transformed.range(offset, offset + limit - 1);
+      transformed = transformed.window(offset, limit);
     } else if (limit != null) {
       transformed = transformed.limit(limit);
     }
@@ -256,9 +256,9 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
         final scopeLimit = transforms.limit;
         final scopeOffset = transforms.offset;
         if (scopeOffset != null && scopeLimit != null) {
-          transformed = transformed.range(
+          transformed = transformed.window(
             scopeOffset,
-            scopeOffset + scopeLimit - 1,
+            scopeLimit,
             referencedTable: path,
           );
         } else if (scopeLimit != null) {

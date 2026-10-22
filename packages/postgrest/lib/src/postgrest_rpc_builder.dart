@@ -35,34 +35,34 @@ class PostgrestRpcBuilder {
     Object? params,
     bool get = false,
   ]) {
-    var newUrl = _config.url;
-    final HttpMethod method;
-    if (get) {
-      method = HttpMethod.get;
-      if (params is! Map?) {
-        throw ArgumentError.value(params, 'params', 'argument must be a Map');
-      }
-      for (final entry in {...?params}.entries) {
-        assert(
-          entry.key is String,
-          "RPC params map keys must be of type String",
-        );
-
-        newUrl = newUrl.appendSearchParameters(
-          entry.key.toString(),
-          renderPostgrestQueryValue(entry.value),
-        );
-      }
-    } else {
-      method = HttpMethod.post;
-    }
-
     return _filterBuilder(
       _config.copyWith(
-        method: method,
-        url: newUrl,
+        method: get ? HttpMethod.get : HttpMethod.post,
+        url: get ? _appendArguments(_config.url, params) : null,
         body: params,
+        functionCall: true,
       ),
     );
   }
+}
+
+/// [url] with each of the function arguments in [params] appended as a query
+/// parameter, for a call sent without a body.
+Uri _appendArguments(Uri url, Object? params) {
+  if (params == null) return url;
+  if (params is! Map) {
+    throw ArgumentError.value(params, 'params', 'argument must be a Map');
+  }
+  var withArguments = url;
+  for (final entry in params.entries) {
+    assert(
+      entry.key is String,
+      "RPC params map keys must be of type String",
+    );
+    withArguments = withArguments.appendSearchParameters(
+      entry.key.toString(),
+      renderPostgrestQueryValue(entry.value),
+    );
+  }
+  return withArguments;
 }

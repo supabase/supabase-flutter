@@ -126,9 +126,12 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
 
   /// Limits the result to rows within the specified range, inclusive.
   ///
-  /// See [embedded] to limit the rows of an embed instead.
-  PostgrestTypedTransformBuilder<Row, T> range(int from, int to) =>
-      _with(_request.copyWith(offset: from, limit: to - from + 1));
+  /// See [embedded] to limit the rows of an embed instead. Throws an
+  /// [ArgumentError] when [to] is less than [from].
+  PostgrestTypedTransformBuilder<Row, T> range(int from, int to) {
+    checkPostgrestRange(from, to);
+    return _with(_request.copyWith(offset: from, limit: to - from + 1));
+  }
 
   /// Sorts and limits the rows of the to-many embed [relation] with [scope],
   /// leaving the parent rows as they are.
@@ -215,11 +218,23 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// ```dart
   /// await client.table(Books.table).select().head();
   /// ```
-  PostgrestTypedBuilder<void> head() => PostgrestTypedBuilder._(
-    _request.copyWith(shape: PostgrestResultShape.head),
-    _executor,
-    _noResult,
-  );
+  ///
+  /// Throws a [StateError] after an insert, upsert, update or delete, which a
+  /// head request cannot perform.
+  PostgrestTypedBuilder<void> head() {
+    final operation = _request.operation;
+    if (operation.isMutation && operation != PostgrestTableOperation.rpc) {
+      throw StateError(
+        'head() only applies to a select or a function call, not to '
+        '${operation.name}',
+      );
+    }
+    return PostgrestTypedBuilder._(
+      _request.copyWith(shape: PostgrestResultShape.head),
+      _executor,
+      _noResult,
+    );
+  }
 
   /// Enables support for GeoJSON for use with PostGIS data types.
   ///

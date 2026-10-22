@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:postgrest/src/logger.dart';
 import 'package:postgrest/src/postgrest_typed_builder.dart'
-    show renderPostgrestQueryValue;
+    show checkPostgrestRange, renderPostgrestQueryValue;
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -37,6 +37,7 @@ class _RequestConfig {
     this.count,
     this.maybeSingle = false,
     this.stripNulls = false,
+    this.functionCall = false,
     required this.retry,
     this.requestTimeout,
     this.abortSignal,
@@ -52,6 +53,10 @@ class _RequestConfig {
   final CountOption? count;
   final bool maybeSingle;
   final bool stripNulls;
+
+  /// Whether this request calls a database function, whose [body] holds the
+  /// arguments.
+  final bool functionCall;
   final SupabaseRetryOptions retry;
   final Duration? requestTimeout;
   final Future<void>? abortSignal;
@@ -67,6 +72,7 @@ class _RequestConfig {
     CountOption? count,
     bool? maybeSingle,
     bool? stripNulls,
+    bool? functionCall,
     SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
@@ -82,6 +88,7 @@ class _RequestConfig {
       count: count ?? this.count,
       maybeSingle: maybeSingle ?? this.maybeSingle,
       stripNulls: stripNulls ?? this.stripNulls,
+      functionCall: functionCall ?? this.functionCall,
       retry: retry ?? this.retry,
       requestTimeout: requestTimeout ?? this.requestTimeout,
       abortSignal: abortSignal ?? this.abortSignal,
@@ -735,6 +742,14 @@ class PostgrestBuilder<T> implements Future<T> {
       );
     }
 
+    // A write sent with maybeSingle() asks PostgREST for one object, which it
+    // refuses when no row matched.
+    if (_maybeSingle &&
+        error.errorCode == 'PGRST116' &&
+        _zeroRows.hasMatch('${error.details}')) {
+      return _decode(null, 0);
+    }
+
     postgrestLogger.finest('$error from request: ${_url.redacted}');
     postgrestLogger.fine('$error from request');
 
@@ -852,6 +867,8 @@ class PostgrestBuilder<T> implements Future<T> {
 }
 
 final _whitespace = RegExp(r'\s');
+
+final _zeroRows = RegExp(r'\b0 rows\b');
 
 /// [columns] without the whitespace outside double quotes. Inside quotes a
 /// backslash escapes the next character, as PostgREST reads it.

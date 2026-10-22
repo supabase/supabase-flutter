@@ -62,8 +62,12 @@ final class PostgrestEmbeddedScope<Row> {
 
   /// Limits the embedded rows of each parent row to the ones within the
   /// specified range, inclusive.
-  PostgrestEmbeddedScope<Row> range(int from, int to) =>
-      _copyWith(offset: from, limit: to - from + 1);
+  ///
+  /// Throws an [ArgumentError] when [to] is less than [from].
+  PostgrestEmbeddedScope<Row> range(int from, int to) {
+    checkPostgrestRange(from, to);
+    return _copyWith(offset: from, limit: to - from + 1);
+  }
 
   /// Applies [scope] to the rows of [relation], an embed nested in this one,
   /// under a dotted path such as `books.reviews.limit=3`.

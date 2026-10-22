@@ -502,6 +502,8 @@ explicitly:
   so a response that keeps arriving can take longer than `requestTimeout`
 - [Iceberg catalog options are named and take an `abortSignal`](#iceberg-catalog-options-are-named-and-take-an-abortsignal),
   where a failing catalog configuration request now fails the operation
+- [Transforms that sent a different request now throw or narrow](#transforms-that-sent-a-different-request-now-throw-or-narrow),
+  where `head()` after a write and a reversed `range()` throw at the call site
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
@@ -921,6 +923,20 @@ A bare `await` of `update()` or `delete()` still compiles and silently performs 
 analyzer reports every such line as an `unused_result` warning, which is on by default.
 Anything chained directly after `update()` or `delete()` has to move after the `where()` or `all()`.
 `update()` and `delete()` on `from()` are unchanged.
+
+#### Transforms that sent a different request now throw or narrow
+
+These used to compile and send something other than what was asked for:
+
+- Typed `count()` returns a `PostgrestTypedCountBuilder`, which offers `where()` but no
+  transforms. `limit()` and `range()` were dropped from a count and `csv()`, `select()` and
+  `explain()` crashed, so remove them.
+- `head()` after an insert, upsert, update or delete throws a `StateError`. It used to send a
+  `HEAD` request, so the write never happened.
+- `range(from, to)` throws an `ArgumentError` when `to` is less than `from`, instead of sending a
+  negative limit.
+- `maybeSingle()` on a write asks PostgREST for a single object, so a write that affects more than
+  one row is rolled back before the error is thrown, as with `single()`. It used to be committed.
 
 ### Auth
 

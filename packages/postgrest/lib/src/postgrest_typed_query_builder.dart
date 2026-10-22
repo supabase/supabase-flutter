@@ -321,16 +321,18 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ```dart
   /// final int count = await client.table(Books.table).count();
   /// ```
-  PostgrestTypedFilterBuilder<Row, int> count([
+  ///
+  /// Only filters apply to a count, so the returned builder offers [where]
+  /// but no transforms.
+  PostgrestTypedCountBuilder<Row> count([
     CountOption option = CountOption.exact,
-  ]) => PostgrestTypedFilterBuilder._(
+  ]) => PostgrestTypedCountBuilder._(
     _request(PostgrestTableOperation.count).copyWith(
       countOption: option,
       shape: PostgrestResultShape.none,
     ),
     _executor,
     (result) => result.count!,
-    table.rowFromJson,
   );
 }
 

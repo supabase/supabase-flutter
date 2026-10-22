@@ -667,6 +667,43 @@ void main() {
       expect(user, isNull);
     });
 
+    test('maybeSingle rolls back a write that matches several rows', () async {
+      await expectLater(
+        () => postgrest
+            .from('users')
+            .update({'status': 'OFFLINE'})
+            .eq('status', 'ONLINE')
+            .select()
+            .maybeSingle(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (error) => error.errorCode,
+            'errorCode',
+            'PGRST116',
+          ),
+        ),
+      );
+
+      final online = await postgrest
+          .from('users')
+          .count()
+          .eq(
+            'status',
+            'ONLINE',
+          );
+      expect(online, 3);
+    });
+
+    test('maybeSingle resolves a write that matches no row to null', () async {
+      final user = await postgrest
+          .from('users')
+          .update({'status': 'OFFLINE'})
+          .eq('username', 'no-such-user')
+          .select()
+          .maybeSingle();
+      expect(user, isNull);
+    });
+
     test('aborts long-running function call', () async {
       final startTime = DateTime.now();
 
