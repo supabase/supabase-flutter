@@ -18,22 +18,49 @@ class SupabaseTypedStreamBuilder<Row, Element> extends Stream<List<Element>> {
   final SupabaseStreamBuilder _streamBuilder;
   final RowConverter<Element> _elementFromJson;
 
-  /// Orders the result with the specified [column].
+  /// Orders the result by [ordering], the same [PostgrestOrdering] that
+  /// [PostgrestTypedTransformBuilder.order] takes.
   ///
-  /// Rows come back in ascending order unless `ascending: false` is passed,
-  /// matching [SupabaseStreamBuilder.order].
+  /// Rows come back in ascending order unless [PostgrestOrdering.desc] is
+  /// chained, with `null` values last in ascending order and first in
+  /// descending order, matching [SupabaseStreamBuilder.order].
   ///
   /// ```dart
   /// supabase
   ///     .table(Books.table)
   ///     .stream(primaryKey: [Books.id])
-  ///     .order(Books.title);
+  ///     .order(Books.createdAt.desc());
   /// ```
+  ///
+  /// Throws an [ArgumentError] for an ordering realtime cannot keep while
+  /// merging changes: one by anything but a stored column, or one with
+  /// [PostgrestOrdering.nullsFirst] or [PostgrestOrdering.nullsLast].
   SupabaseTypedStreamBuilder<Row, Element> order(
-    PostgrestStoredColumn<Row, Object> column, {
-    bool ascending = true,
-  }) {
-    _streamBuilder.order(column.name, ascending: ascending);
+    PostgrestOrdering<Row> ordering,
+  ) {
+    // ignore: invalid_use_of_internal_member
+    final column = ordering.column;
+    if (column is! PostgrestStoredColumn<Row, Object>) {
+      throw ArgumentError.value(
+        ordering,
+        'ordering',
+        'Realtime streams order by stored columns only.',
+      );
+    }
+    // ignore: invalid_use_of_internal_member
+    if (ordering.placesNullsFirst != null) {
+      throw ArgumentError.value(
+        ordering,
+        'ordering',
+        'Realtime streams place nulls last in ascending order and first in '
+            'descending order; remove nullsFirst() or nullsLast().',
+      );
+    }
+    _streamBuilder.order(
+      column.name,
+      // ignore: invalid_use_of_internal_member
+      ascending: ordering.direction != SortDirection.descending,
+    );
     return this;
   }
 

@@ -21,6 +21,19 @@ sealed class PostgrestOrdering<Row> {
   /// `title.desc.nullslast`.
   String get orderKey;
 
+  /// The expression this ordering sorts by.
+  @internal
+  PostgrestColumnExpression<Row, Object> get column;
+
+  /// The direction asked for, or `null` when none was given.
+  @internal
+  SortDirection? get direction;
+
+  /// Whether `NULL`s were asked to sort first (`true`) or last (`false`), or
+  /// `null` when no placement was given.
+  @internal
+  bool? get placesNullsFirst;
+
   /// Sorts smallest first.
   PostgrestOrdering<Row> asc();
 
@@ -46,47 +59,58 @@ enum _NullPlacement {
 
 final class _Ordering<Row> extends PostgrestOrdering<Row> {
   const _Ordering(
-    this._expression, {
-    SortDirection? direction,
+    this.column, {
+    this.direction,
     _NullPlacement? nulls,
-  }) : _direction = direction,
-       _nulls = nulls,
+  }) : _nulls = nulls,
        super._();
 
-  final String _expression;
+  @override
+  final PostgrestColumnExpression<Row, Object> column;
 
   /// `null` sends no direction, so PostgREST's default applies.
-  final SortDirection? _direction;
+  @override
+  final SortDirection? direction;
 
   /// `null` sends no placement, so the database default applies.
   final _NullPlacement? _nulls;
 
   @override
+  bool? get placesNullsFirst => switch (_nulls) {
+    null => null,
+    _NullPlacement.first => true,
+    _NullPlacement.last => false,
+  };
+
+  @override
   String get orderKey {
-    final direction = _direction == null ? '' : '.${_direction.value}';
+    final suffix = switch (direction) {
+      null => '',
+      final sortDirection => '.${sortDirection.value}',
+    };
     final placement = _nulls == null ? '' : '.${_nulls.token}';
-    return '$_expression$direction$placement';
+    return '${column._orderKey}$suffix$placement';
   }
 
   @override
   PostgrestOrdering<Row> asc() =>
-      _Ordering(_expression, direction: SortDirection.ascending, nulls: _nulls);
+      _Ordering(column, direction: SortDirection.ascending, nulls: _nulls);
 
   @override
   PostgrestOrdering<Row> desc() => _Ordering(
-    _expression,
+    column,
     direction: SortDirection.descending,
     nulls: _nulls,
   );
 
   @override
   PostgrestOrdering<Row> nullsFirst() => _Ordering(
-    _expression,
-    direction: _direction,
+    column,
+    direction: direction,
     nulls: _NullPlacement.first,
   );
 
   @override
   PostgrestOrdering<Row> nullsLast() =>
-      _Ordering(_expression, direction: _direction, nulls: _NullPlacement.last);
+      _Ordering(column, direction: direction, nulls: _NullPlacement.last);
 }
