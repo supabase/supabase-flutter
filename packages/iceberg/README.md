@@ -34,12 +34,16 @@ await catalog.createNamespace(['my_namespace']);
 
 Against any other Iceberg REST Catalog, point the client at its base URL:
 
-```dart
-final catalog = IcebergRestCatalog(
-  baseUrl: 'https://example.com/iceberg',
-  warehouse: 'my-warehouse',
-  headers: {'Authorization': 'Bearer $token'},
-);
+```dart file
+import 'package:iceberg/iceberg.dart';
+
+IcebergRestCatalog catalogFor(String token) {
+  return IcebergRestCatalog(
+    baseUrl: 'https://example.com/iceberg',
+    warehouse: 'my-warehouse',
+    headers: {'Authorization': 'Bearer $token'},
+  );
+}
 ```
 
 ## Docs
