@@ -819,7 +819,7 @@ void main() {
         expect(response.session.accessToken, 'my-access-token');
         expect(response.session.refreshToken, 'my-refresh-token');
         expect(response.session.user.email, 'new@email.com');
-        expect(response.redirectType, 'email_change');
+        expect(response.redirectType, AuthRedirectType.emailChange);
         expect(pkceClient.currentUser?.email, 'new@email.com');
         expect(await emittedEvent, AuthChangeEvent.userUpdated);
       },
@@ -878,7 +878,7 @@ void main() {
 
         expect(exchanged.session.user.email, updatedEmail);
         expect(exchanged.session.accessToken, isNotEmpty);
-        expect(exchanged.redirectType, AuthChangeEvent.userUpdated.name);
+        expect(exchanged.redirectType, AuthRedirectType.emailChange);
 
         await pumpEventQueue();
         expect(events, [

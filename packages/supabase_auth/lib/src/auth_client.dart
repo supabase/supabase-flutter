@@ -188,9 +188,10 @@ class AuthClient {
   /// [Completer.future] instead of starting a duplicate request.
   final Map<String, Completer<Session>> _pendingRefreshes = {};
 
-  /// Set by [dispose] to prevent [_doRefresh] from mutating state
-  /// or emitting events on closed stream controllers, and to stop
-  /// [startAutoRefresh] from installing a timer that nothing would cancel.
+  /// Set by [dispose] to prevent [_doRefresh] from mutating state, to stop
+  /// requests that complete afterwards from emitting events on the closed
+  /// stream controllers, and to stop [startAutoRefresh] from installing a
+  /// timer that nothing would cancel.
   bool _isDisposed = false;
 
   JWKSet? _jwks;
@@ -518,23 +519,26 @@ class AuthClient {
     if (email != null) {
       final pkceFlow = await _startPKCEFlow();
 
-      response = await _fetch.request(
-        '$_url/signup',
-        HttpMethod.post,
-        options: AuthRequestOptions(
-          headers: _headers,
-          redirectTo: _maybeAppendFlowIdToRedirect(
-            emailRedirectTo,
-            pkceFlow?.flowId,
+      response = await _sendPKCEFlowRequest<dynamic>(
+        pkceFlow?.flowId,
+        () => _fetch.request(
+          '$_url/signup',
+          HttpMethod.post,
+          options: AuthRequestOptions(
+            headers: _headers,
+            redirectTo: _maybeAppendFlowIdToRedirect(
+              emailRedirectTo,
+              pkceFlow?.flowId,
+            ),
+            body: {
+              'email': email,
+              'password': password,
+              'data': data,
+              'gotrue_meta_security': {'captcha_token': captchaToken},
+              'code_challenge': pkceFlow?.codeChallenge,
+              'code_challenge_method': pkceFlow != null ? 's256' : null,
+            },
           ),
-          body: {
-            'email': email,
-            'password': password,
-            'data': data,
-            'gotrue_meta_security': {'captcha_token': captchaToken},
-            'code_challenge': pkceFlow?.codeChallenge,
-            'code_challenge_method': pkceFlow != null ? 's256' : null,
-          },
         ),
       );
     } else if (phone != null) {
@@ -692,10 +696,18 @@ class AuthClient {
       throw AuthException('Code verifier could not be found in local storage.');
     }
     final codeVerifier = codeVerifierRawString.split('/').first;
-    final eventName = codeVerifierRawString.split('/').last;
-    final redirectType = AuthChangeEvent.fromValue(eventName);
+    // The event name stored with the code verifier names the flow that issued
+    // the code, so a code that was issued without one is a plain sign in.
+    final storedEvent = AuthChangeEvent.fromValue(
+      codeVerifierRawString.split('/').last,
+    );
+    final redirectType = storedEvent == AuthChangeEvent.passwordRecovery
+        ? AuthRedirectType.passwordRecovery
+        : storedEvent == AuthChangeEvent.userUpdated
+        ? AuthRedirectType.emailChange
+        : AuthRedirectType.signIn;
 
-    final Map<String, dynamic> response = await _fetch.request(
+    final response = await _fetch.requestWithResponse(
       '$_url/token',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -707,18 +719,11 @@ class AuthClient {
 
     await pkceVerifierStore.remove(flowId: requestedFlowId);
 
-    final authSessionUrlResponse = AuthSessionUrlResponse(
-      session: Session.fromJson(response)!,
-      redirectType: redirectType?.name,
-    );
-
-    final session = authSessionUrlResponse.session;
+    final session = _sessionFromResponse(response);
     _saveSession(session);
-    // The event name stored with the code verifier is the event to emit, so a
-    // code that was issued without one is a plain sign in.
-    notifyAllSubscribers(redirectType ?? AuthChangeEvent.signedIn);
+    notifyAllSubscribers(_eventOf(redirectType));
 
-    return authSessionUrlResponse;
+    return AuthSessionUrlResponse(session: session, redirectType: redirectType);
   }
 
   /// Starts a PKCE flow by generating a code verifier and persisting it in a
@@ -750,6 +755,47 @@ class AuthClient {
     }
     return (codeChallenge: generatePKCEChallenge(codeVerifier), flowId: flowId);
   }
+
+  /// Sends [request], the request that hands the code challenge of the PKCE
+  /// flow [flowId] to the server, and discards the flow's verifier when it
+  /// fails.
+  ///
+  /// Without that, a failed request, a rate limited second email for example,
+  /// would leave its verifier as the most recent flow and break the link of
+  /// an earlier email that was sent. When the request never got an answer
+  /// the server may still have sent the email, so the verifier is kept unless
+  /// [sendsEmail] is false, in which case nothing could ever use it.
+  Future<T> _sendPKCEFlowRequest<T>(
+    String? flowId,
+    Future<T> Function() request, {
+    bool sendsEmail = true,
+  }) async {
+    try {
+      return await request();
+    } catch (error) {
+      if (flowId != null &&
+          (!sendsEmail || error is! AuthRetryableFetchException)) {
+        try {
+          await _pkceVerifierStore!.discard(flowId: flowId);
+        } catch (discardError, stackTrace) {
+          authLogger.warning(
+            'Could not discard the PKCE verifier of a failed request',
+            discardError,
+            stackTrace,
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
+  /// The event emitted once the session a redirect issued is stored.
+  static AuthChangeEvent _eventOf(AuthRedirectType redirectType) =>
+      switch (redirectType) {
+        AuthRedirectType.signIn => AuthChangeEvent.signedIn,
+        AuthRedirectType.passwordRecovery => AuthChangeEvent.passwordRecovery,
+        AuthRedirectType.emailChange => AuthChangeEvent.userUpdated,
+      };
 
   /// Caps untrusted input echoed back in an exception message to the longest
   /// flow id the store accepts.
@@ -884,23 +930,26 @@ class AuthClient {
   }) async {
     if (email != null) {
       final pkceFlow = await _startPKCEFlow();
-      await _fetch.request(
-        '$_url/otp',
-        HttpMethod.post,
-        options: AuthRequestOptions(
-          headers: _headers,
-          redirectTo: _maybeAppendFlowIdToRedirect(
-            emailRedirectTo,
-            pkceFlow?.flowId,
+      await _sendPKCEFlowRequest(
+        pkceFlow?.flowId,
+        () => _fetch.request(
+          '$_url/otp',
+          HttpMethod.post,
+          options: AuthRequestOptions(
+            headers: _headers,
+            redirectTo: _maybeAppendFlowIdToRedirect(
+              emailRedirectTo,
+              pkceFlow?.flowId,
+            ),
+            body: {
+              'email': email,
+              'data': data ?? {},
+              'create_user': shouldCreateUser ?? true,
+              'gotrue_meta_security': {'captcha_token': captchaToken},
+              'code_challenge': pkceFlow?.codeChallenge,
+              'code_challenge_method': pkceFlow != null ? 's256' : null,
+            },
           ),
-          body: {
-            'email': email,
-            'data': data ?? {},
-            'create_user': shouldCreateUser ?? true,
-            'gotrue_meta_security': {'captcha_token': captchaToken},
-            'code_challenge': pkceFlow?.codeChallenge,
-            'code_challenge_method': pkceFlow != null ? 's256' : null,
-          },
         ),
       );
       return;
@@ -1041,28 +1090,29 @@ class AuthClient {
 
     final pkceFlow = await _startPKCEFlow();
 
-    final response = await _fetch.request(
-      '$_url/sso',
-      HttpMethod.post,
-      options: AuthRequestOptions(
-        body: {
-          'provider_id': ?providerId,
-          'domain': ?domain,
-          'redirect_to': ?_maybeAppendFlowIdToRedirect(
-            redirectTo,
-            pkceFlow?.flowId,
-          ),
-          if (captchaToken != null)
-            'gotrue_meta_security': {'captcha_token': captchaToken},
-          'skip_http_redirect': true,
-          'code_challenge': pkceFlow?.codeChallenge,
-          'code_challenge_method': pkceFlow != null ? 's256' : null,
-        },
-        headers: _headers,
-      ),
-    );
-
-    return Uri.parse(_urlFromResponse(response));
+    return _sendPKCEFlowRequest(pkceFlow?.flowId, sendsEmail: false, () async {
+      final response = await _fetch.request(
+        '$_url/sso',
+        HttpMethod.post,
+        options: AuthRequestOptions(
+          body: {
+            'provider_id': ?providerId,
+            'domain': ?domain,
+            'redirect_to': ?_maybeAppendFlowIdToRedirect(
+              redirectTo,
+              pkceFlow?.flowId,
+            ),
+            if (captchaToken != null)
+              'gotrue_meta_security': {'captcha_token': captchaToken},
+            'skip_http_redirect': true,
+            'code_challenge': pkceFlow?.codeChallenge,
+            'code_challenge_method': pkceFlow != null ? 's256' : null,
+          },
+          headers: _headers,
+        ),
+      );
+      return Uri.parse(_urlFromResponse(response));
+    });
   }
 
   /// Returns a new session, regardless of expiry status. Takes in an optional
@@ -1156,10 +1206,9 @@ class AuthClient {
       ),
     );
 
-    final response = await _fetch.request(
-      '$_url/resend',
-      HttpMethod.post,
-      options: options,
+    final response = await _sendPKCEFlowRequest(
+      pkceFlow?.flowId,
+      () => _fetch.request('$_url/resend', HttpMethod.post, options: options),
     );
 
     if ((response as Map).containsKey('message_id')) {
@@ -1217,10 +1266,9 @@ class AuthClient {
         pkceFlow?.flowId,
       ),
     );
-    final response = await _fetch.request(
-      '$_url/user',
-      HttpMethod.put,
-      options: options,
+    final response = await _sendPKCEFlowRequest(
+      pkceFlow?.flowId,
+      () => _fetch.request('$_url/user', HttpMethod.put, options: options),
     );
     final userResponse = UserResponse.fromJson(response);
 
@@ -1396,15 +1444,15 @@ class AuthClient {
       user: user,
     );
 
-    final redirectType = parameters['type'];
+    final redirectType = switch (parameters['type']) {
+      'recovery' => AuthRedirectType.passwordRecovery,
+      'email_change' => AuthRedirectType.emailChange,
+      _ => AuthRedirectType.signIn,
+    };
 
     if (storeSession == true) {
       _saveSession(session);
-      notifyAllSubscribers(switch (redirectType) {
-        'recovery' => AuthChangeEvent.passwordRecovery,
-        'email_change' => AuthChangeEvent.userUpdated,
-        _ => AuthChangeEvent.signedIn,
-      });
+      notifyAllSubscribers(_eventOf(redirectType));
     }
 
     return AuthSessionUrlResponse(session: session, redirectType: redirectType);
@@ -1413,6 +1461,17 @@ class AuthClient {
   /// Signs out the current user, if there is a logged in user.
   ///
   /// [scope] determines which sessions should be logged out.
+  ///
+  /// With [SignOutScope.local] the session is removed from this device first
+  /// and always, so signing out works offline. Revoking it on the server
+  /// afterwards is best effort: when that fails it is logged rather than
+  /// thrown, and the refresh token stays valid on the server until it
+  /// expires.
+  ///
+  /// With [SignOutScope.global] and [SignOutScope.others] the sessions are
+  /// revoked on the server first. When that fails, this throws and the
+  /// session is kept, so the call can be retried. With [SignOutScope.global]
+  /// the session is removed from this device once the server has revoked it.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
   /// is fired!
@@ -1426,28 +1485,51 @@ class AuthClient {
     authLogger.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
-    if (scope != SignOutScope.others) {
-      _removeSession();
-      await _pkceVerifierStore?.removeAll();
-      notifyAllSubscribers(
-        AuthChangeEvent.signedOut,
-        signOutReason: reason,
-      );
+    if (scope == SignOutScope.local) {
+      await _signOutLocally(reason);
+      if (accessToken != null) {
+        try {
+          await _revokeSessions(accessToken, scope);
+        } on AuthException catch (error, stackTrace) {
+          authLogger.warning(
+            'Signed out locally, but could not revoke the session on the '
+            'server',
+            error,
+            stackTrace,
+          );
+        }
+      }
+      return;
     }
 
     if (accessToken != null) {
-      try {
-        await admin.signOut(accessToken, scope: scope);
-      } on AuthApiException catch (error) {
-        // Ignore 401s since an invalid or expired JWT should sign out the
-        // current session.
-        // Ignore 403s since the user might not exist anymore.
-        // Ignore 404s since the user might not exist anymore.
-        if (error.statusCode != 401 &&
-            error.statusCode != 403 &&
-            error.statusCode != 404) {
-          rethrow;
-        }
+      await _revokeSessions(accessToken, scope);
+    }
+    if (scope == SignOutScope.global) {
+      await _signOutLocally(reason);
+    }
+  }
+
+  /// Removes the session and every pending PKCE verifier from this device.
+  Future<void> _signOutLocally(SignOutReason reason) async {
+    _removeSession();
+    await _pkceVerifierStore?.removeAll();
+    notifyAllSubscribers(AuthChangeEvent.signedOut, signOutReason: reason);
+  }
+
+  /// Revokes the sessions [scope] covers on the server.
+  Future<void> _revokeSessions(String accessToken, SignOutScope scope) async {
+    try {
+      await admin.signOut(accessToken, scope: scope);
+    } on AuthApiException catch (error) {
+      // Ignore 401s since an invalid or expired JWT should sign out the
+      // current session.
+      // Ignore 403s since the user might not exist anymore.
+      // Ignore 404s since the user might not exist anymore.
+      if (error.statusCode != 401 &&
+          error.statusCode != 403 &&
+          error.statusCode != 404) {
+        rethrow;
       }
     }
   }
@@ -1474,10 +1556,13 @@ class AuthClient {
       body: body,
       redirectTo: _maybeAppendFlowIdToRedirect(redirectTo, pkceFlow?.flowId),
     );
-    await _fetch.request(
-      '$_url/recover',
-      HttpMethod.post,
-      options: fetchOptions,
+    await _sendPKCEFlowRequest(
+      pkceFlow?.flowId,
+      () => _fetch.request(
+        '$_url/recover',
+        HttpMethod.post,
+        options: fetchOptions,
+      ),
     );
   }
 
@@ -1545,18 +1630,24 @@ class AuthClient {
       queryParameters: queryParameters,
       skipBrowserRedirect: true,
     );
-    final response = await _fetch.request(
-      authorizeUrl.url.toString(),
-      HttpMethod.get,
-      options: AuthRequestOptions(
-        headers: _headers,
-        jwt: _currentSession?.accessToken,
-      ),
-    );
-    return OAuthResponse(
-      provider: provider,
-      url: Uri.parse(_urlFromResponse(response)),
-      flowId: authorizeUrl.flowId,
+    return _sendPKCEFlowRequest(
+      authorizeUrl.flowId,
+      sendsEmail: false,
+      () async {
+        final response = await _fetch.request(
+          authorizeUrl.url.toString(),
+          HttpMethod.get,
+          options: AuthRequestOptions(
+            headers: _headers,
+            jwt: _currentSession?.accessToken,
+          ),
+        );
+        return OAuthResponse(
+          provider: provider,
+          url: Uri.parse(_urlFromResponse(response)),
+          flowId: authorizeUrl.flowId,
+        );
+      },
     );
   }
 
@@ -2198,6 +2289,12 @@ class AuthClient {
   /// Delivers [state] to the subscribers, and to the other tabs when
   /// [broadcast] is set.
   void _emit(AuthState state, {required bool broadcast}) {
+    if (_isDisposed) {
+      authLogger.fine(
+        'Not emitting ${state.event.name}, the client is disposed',
+      );
+      return;
+    }
     if (broadcast && state is! AuthInitialSession) {
       _broadcastChannel?.postMessage({
         'event': state.event.value,
@@ -2251,6 +2348,9 @@ class AuthClient {
   @internal
   Object notifyException(Object exception, [StackTrace? stackTrace]) {
     authLogger.warning('Notifying exception', exception, stackTrace);
+    if (_isDisposed) {
+      return exception;
+    }
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,

@@ -211,6 +211,36 @@ class PKCEVerifierStore {
     }
   }
 
+  /// Drops the verifier of [flowId], a flow whose request failed and that can
+  /// therefore never be exchanged.
+  ///
+  /// When the flow is the one mirrored under the legacy key, the mirror goes
+  /// back to the most recently started flow that is still pending, so an
+  /// exchange without a flow id keeps working for the flow started before it.
+  Future<void> discard({required String flowId}) =>
+      _serialize(() => _discard(flowId: flowId));
+
+  Future<void> _discard({required String flowId}) async {
+    final slotKey = _slotKey(flowId);
+    final verifier = await _storage.getItem(slotKey);
+    await _storage.removeItem(slotKey);
+    final index = await _readIndex(_indexKey);
+    final remaining = index.where((id) => id != flowId).toList();
+    await _writeIndex(_indexKey, index, remaining);
+
+    if (verifier == null || verifier != await _storage.getItem(_legacyKey)) {
+      return;
+    }
+    final previous = remaining.isEmpty
+        ? null
+        : await _storage.getItem(_slotKey(remaining.last));
+    if (previous == null) {
+      await _storage.removeItem(_legacyKey);
+    } else {
+      await _storage.setItem(_legacyKey, previous);
+    }
+  }
+
   /// Removes every pending verifier, used when the session is torn down.
   Future<void> removeAll() => _serialize(_removeAll);
 

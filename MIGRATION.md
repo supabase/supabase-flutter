@@ -978,8 +978,45 @@ Confirming an email or phone change now emits `AuthChangeEvent.userUpdated` inst
 
 The session is still saved and `currentSession` still updates. Check any `onAuthStateChange`
 listener that expects the email-change confirmation to arrive as `signedIn`, and handle
-`userUpdated` there instead. For the PKCE case, `AuthSessionUrlResponse.redirectType` is `'userUpdated'` instead of `null`, so
-you can also branch on the response of `exchangeCodeForSession()` directly.
+`userUpdated` there instead. You can also branch on the `redirectType` of the response of
+`getSessionFromUrl()` or `exchangeCodeForSession()`, which is `AuthRedirectType.emailChange` for
+these, see below.
+
+#### `AuthSessionUrlResponse.redirectType` is an `AuthRedirectType`
+
+`redirectType` held the raw `type` of an implicit link, such as `'recovery'`, but the name of the
+event, such as `'passwordRecovery'`, for a PKCE code, so a check like `redirectType == 'recovery'`
+never matched a PKCE password reset. It is now an `AuthRedirectType` with the same value for both
+flows, and never `null`:
+
+| Redirect                   | Before (implicit) | Before (PKCE)        | After                               |
+| -------------------------- | ----------------- | -------------------- | ----------------------------------- |
+| Password recovery          | `'recovery'`      | `'passwordRecovery'` | `AuthRedirectType.passwordRecovery` |
+| Email change               | `'email_change'`  | `'userUpdated'`      | `AuthRedirectType.emailChange`      |
+| Any other sign-in or link  | `type` or `null`  | `null`               | `AuthRedirectType.signIn`           |
+
+```dart
+final response = await supabase.auth.getSessionFromUrl(Uri.base);
+if (response.redirectType == AuthRedirectType.passwordRecovery) {
+  // Show the form that sets a new password.
+}
+```
+
+#### `signOut()` only throws when the sessions could not be revoked
+
+`signOut()` used to sign out on the device first and then rethrow a network or server failure of the
+revoke request, so with `SignOutScope.global` an offline device was signed out while the other
+devices stayed signed in, and the token needed to retry was gone.
+
+- With `SignOutScope.local`, the default, signing out on the device always succeeds and no longer
+  throws. A failure to revoke the session on the server is logged.
+- With `SignOutScope.global` and `SignOutScope.others` the server is asked first. When that fails,
+  `signOut()` throws and the session is kept, so you can retry. `SignOutScope.global` signs out on
+  the device once the server has revoked the sessions.
+
+Remove any `try`/`catch` around a local `signOut()` that only existed to ignore offline failures.
+Where you sign out globally, handle the exception, for example by offering a retry or falling back
+to a local sign-out.
 
 #### Cross-tab session sync is opt-in for standalone clients
 

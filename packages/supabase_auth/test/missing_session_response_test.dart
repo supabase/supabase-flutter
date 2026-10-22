@@ -143,6 +143,20 @@ void main() {
       },
     );
 
+    test('makes exchangeCodeForSession throw without signing in', () async {
+      final flow = await client.getOAuthSignInUrl(
+        provider: OAuthProvider.google,
+      );
+
+      await expectLater(
+        client.exchangeCodeForSession('auth-code', flowId: flow.flowId),
+        throwsSessionMissing,
+      );
+      await pumpEventQueue();
+
+      expectNothingSignedIn();
+    });
+
     test('makes refreshSession throw and sign out', () async {
       await signInTestUser(client);
       final signedOut = client.onAuthStateChange.firstWhere(
