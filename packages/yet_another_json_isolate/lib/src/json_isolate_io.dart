@@ -13,10 +13,10 @@ import 'async_json_codec.dart';
 /// messaging overhead.
 const _isolateThresholdBytes = 64 * 1024;
 
-/// Depth guard for [_remainingBudget], so that a cyclic or extremely deep
-/// structure is handed to the isolate path instead of overflowing the stack
-/// during estimation.
-const _maxEstimationDepth = 512;
+/// Depth guard for [_Conversion], so that a cyclic or extremely deep structure
+/// does not overflow the stack. Such a structure is encoded on an isolate
+/// without being converted first, so its `toJson()` methods run there.
+const _maxConversionDepth = 512;
 
 final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
   const JsonDecoder(),
@@ -110,20 +110,28 @@ class YAJsonIsolate implements AsyncJsonCodec {
 
   /// Encodes [json] into a JSON string, like [jsonEncode].
   ///
-  /// Objects that are not a JSON value are converted with their `toJson()`
-  /// method on the calling isolate first, so that method runs exactly once
-  /// and where the caller expects it. Payloads estimated to be small are then
-  /// encoded inline, the rest on a short lived isolate. A value that cannot
-  /// be sent to an isolate, for example a custom `Map` that holds a
-  /// `ReceivePort`, is encoded inline instead.
+  /// Objects that are not a JSON value are first converted with their
+  /// `toJson()` method on the calling isolate, once for each place they
+  /// appear, so side effects of that method happen where the caller expects
+  /// them. Payloads estimated to be small are then encoded inline, the rest on
+  /// a short lived isolate. A value that cannot be sent to an isolate, for
+  /// example a custom `Map` that holds a `ReceivePort`, is encoded inline
+  /// instead, and so is a value that cannot be encoded, which throws the same
+  /// error as [jsonEncode].
   ///
   /// The value is consumed before control returns to the caller, so it can
   /// be mutated as soon as the call returns.
   @override
   Future<String> encode(Object? json) async {
     _throwIfDisposed();
-    final encodable = _toEncodable(json);
-    if (_remainingBudget(encodable, _isolateThresholdBytes, 0) >= 0) {
+    final conversion = _Conversion();
+    final converted = conversion.convert(json, 0);
+    if (identical(converted, _unencodable)) {
+      return jsonEncode(json);
+    }
+    final isTooDeep = identical(converted, _tooDeep);
+    final encodable = isTooDeep ? json : converted;
+    if (!isTooDeep && conversion.budget >= 0) {
       return jsonEncode(encodable);
     }
     try {
@@ -134,133 +142,112 @@ class YAJsonIsolate implements AsyncJsonCodec {
   }
 }
 
-/// Returns [value] with every object that is not a JSON value replaced by the
-/// result of its `toJson()` method, the way [jsonEncode] converts it.
+/// Returned by [_Conversion.convert] for a value that [jsonEncode] rejects.
+const Object _unencodable = Object();
+
+/// Returned by [_Conversion.convert] for a structure nested deeper than
+/// [_maxConversionDepth].
+const Object _tooDeep = Object();
+
+bool _isFailure(Object? converted) =>
+    identical(converted, _unencodable) || identical(converted, _tooDeep);
+
+/// Replaces every object that is not a JSON value with the result of its
+/// `toJson()` method, the way [jsonEncode] converts it, while estimating the
+/// encoded size.
 ///
 /// Lists and maps are only copied when something inside them is replaced.
-/// When the conversion fails, or the structure is nested deeper than
-/// [_maxEstimationDepth], [value] is returned unchanged so that [jsonEncode]
-/// reports the error or the cycle exactly as it would without conversion.
-Object? _toEncodable(Object? value) {
-  final converted = _converted(value, 0);
-  return identical(converted, _notConvertible) ? value : converted;
-}
-
-/// Returned by [_converted] when a value cannot be converted.
-const Object _notConvertible = Object();
-
-Object? _converted(Object? value, int depth) {
-  if (depth > _maxEstimationDepth) {
-    return _notConvertible;
-  }
-  switch (value) {
-    case null || bool _ || String _:
-      return value;
-    case num number:
-      return number.isFinite ? number : _notConvertible;
-    case List<dynamic> list:
-      List<Object?>? copy;
-      for (var index = 0; index < list.length; index++) {
-        final element = list[index];
-        final converted = _converted(element, depth + 1);
-        if (identical(converted, _notConvertible)) {
-          return _notConvertible;
-        }
-        if (copy == null && !identical(converted, element)) {
-          copy = List.of(list.take(index));
-        }
-        copy?.add(converted);
-      }
-      return copy ?? list;
-    case Map<dynamic, dynamic> map:
-      Map<String, Object?>? copy;
-      var index = 0;
-      for (final MapEntry(:key, value: entryValue) in map.entries) {
-        if (key is! String) {
-          return _notConvertible;
-        }
-        final converted = _converted(entryValue, depth + 1);
-        if (identical(converted, _notConvertible)) {
-          return _notConvertible;
-        }
-        if (copy == null && !identical(converted, entryValue)) {
-          copy = {
-            for (final entry in map.entries.take(index))
-              entry.key as String: entry.value,
-          };
-        }
-        copy?[key] = converted;
-        index++;
-      }
-      return copy ?? map;
-    default:
-      final Object? json;
-      try {
-        json = (value as dynamic).toJson();
-      } on Object {
-        return _notConvertible;
-      }
-      return switch (json) {
-        null ||
-        bool _ ||
-        String _ ||
-        num _ ||
-        List<dynamic> _ ||
-        Map<dynamic, dynamic> _ => _converted(json, depth + 1),
-        _ => _notConvertible,
-      };
-  }
-}
-
-/// Returns what is left of [budget] after subtracting an estimate of the
-/// encoded size of [value], or a negative number as soon as the estimate
-/// exceeds the budget.
 ///
 /// The estimate is deliberately rough: it only has to decide whether encoding
-/// inline could block the calling isolate for too long, and it must cost far
-/// less than the encoding itself. Values of unrecognized types, and structures
-/// nested deeper than [_maxEstimationDepth], exhaust the budget immediately so
-/// they are encoded on an isolate.
-///
-/// Numbers are charged at their maximum textual width. Strings are charged
-/// one character each, without inspecting them for characters that JSON
-/// escaping expands, because such a scan would cost nearly as much as the
-/// encoding itself. A string dense in escaped characters can therefore be
-/// undercounted by up to a factor of six, which at worst lets a payload a few
-/// times [_isolateThresholdBytes] be encoded inline.
-int _remainingBudget(Object? value, int budget, int depth) {
-  if (budget < 0 || depth > _maxEstimationDepth) {
-    return -1;
-  }
-  switch (value) {
-    case null:
-      return budget - 4;
-    case bool _:
-      return budget - 5;
-    case num _:
-      return budget - 20;
-    case String string:
-      return budget - string.length - 2;
-    case List<dynamic> list:
-      budget -= 2;
-      for (final element in list) {
-        budget = _remainingBudget(element, budget, depth + 1) - 1;
-        if (budget < 0) {
-          return -1;
+/// inline could block the calling isolate for too long. Numbers are charged
+/// at their maximum textual width. Strings are charged one character each,
+/// without inspecting them for characters that JSON escaping expands, because
+/// such a scan would cost nearly as much as the encoding itself. A string
+/// dense in escaped characters can therefore be undercounted by up to a
+/// factor of six, which at worst lets a payload a few times
+/// [_isolateThresholdBytes] be encoded inline.
+class _Conversion {
+  /// What is left of [_isolateThresholdBytes] after the values converted so
+  /// far, negative once the estimate exceeds it.
+  int budget = _isolateThresholdBytes;
+
+  /// Returns [value] converted, or [_unencodable] or [_tooDeep] when it
+  /// cannot be.
+  Object? convert(Object? value, int depth) {
+    if (depth > _maxConversionDepth) {
+      return _tooDeep;
+    }
+    switch (value) {
+      case null:
+        budget -= 4;
+        return null;
+      case bool _:
+        budget -= 5;
+        return value;
+      case String string:
+        budget -= string.length + 2;
+        return string;
+      case num number:
+        if (!number.isFinite) {
+          return _unencodable;
         }
-      }
-      return budget;
-    case Map<dynamic, dynamic> map:
-      budget -= 2;
-      for (final entry in map.entries) {
-        budget = _remainingBudget(entry.key, budget, depth + 1);
-        budget = _remainingBudget(entry.value, budget, depth + 1) - 2;
-        if (budget < 0) {
-          return -1;
+        budget -= 20;
+        return number;
+      case List<dynamic> list:
+        budget -= 2;
+        List<Object?>? copy;
+        for (var index = 0; index < list.length; index++) {
+          final element = list[index];
+          final converted = convert(element, depth + 1);
+          if (_isFailure(converted)) {
+            return converted;
+          }
+          budget -= 1;
+          if (copy == null && !identical(converted, element)) {
+            copy = List.of(list.take(index));
+          }
+          copy?.add(converted);
         }
-      }
-      return budget;
-    default:
-      return -1;
+        return copy ?? list;
+      case Map<dynamic, dynamic> map:
+        budget -= 2;
+        Map<String, Object?>? copy;
+        var index = 0;
+        for (final MapEntry(:key, value: entryValue) in map.entries) {
+          if (key is! String) {
+            return _unencodable;
+          }
+          final converted = convert(entryValue, depth + 1);
+          if (_isFailure(converted)) {
+            return converted;
+          }
+          budget -= key.length + 4;
+          if (copy == null && !identical(converted, entryValue)) {
+            copy = {
+              for (final entry in map.entries.take(index))
+                entry.key as String: entry.value,
+            };
+          }
+          copy?[key] = converted;
+          index++;
+        }
+        return copy ?? map;
+      default:
+        final Object? json;
+        try {
+          json = (value as dynamic).toJson();
+        } on Object {
+          return _unencodable;
+        }
+        return switch (json) {
+          null ||
+          bool _ ||
+          String _ ||
+          num _ ||
+          List<dynamic> _ ||
+          Map<dynamic, dynamic> _ => convert(json, depth + 1),
+          _ => _unencodable,
+        };
+    }
   }
 }

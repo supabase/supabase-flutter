@@ -17,6 +17,30 @@ class _UnsendableButEncodable {
   Map<String, dynamic> toJson() => {'type': 'unsendable'};
 }
 
+/// Can be sent to another isolate, but throws from [toJson] an error that
+/// cannot be.
+class _ThrowsUnsendable {
+  const _ThrowsUnsendable();
+
+  /// The ports created on this isolate, so that a test can close them.
+  static final List<ReceivePort> ports = [];
+
+  Object toJson() {
+    final port = ReceivePort();
+    ports.add(port);
+    throw _UnsendableError(port);
+  }
+}
+
+class _UnsendableError extends Error {
+  _UnsendableError(this.port);
+
+  final ReceivePort port;
+
+  @override
+  String toString() => 'Unsendable error';
+}
+
 /// A JSON object that cannot be sent to another isolate because it holds a
 /// [ReceivePort].
 class _UnsendableMap extends MapBase<String, Object?> {
@@ -139,6 +163,52 @@ void main() {
       final decoded = jsonDecode(await isolate.encode(map)) as Map;
       expect(decoded, hasLength(5000));
       expect(decoded['user_4999'], {'id': 4999});
+    });
+
+    test('reports an unencodable value without an isolate', () async {
+      final isolate = YAJsonIsolate();
+      addTearDown(() => dispose(isolate));
+      addTearDown(() {
+        for (final port in _ThrowsUnsendable.ports) {
+          port.close();
+        }
+      });
+
+      await expectLater(
+        isolate.encode([const _ThrowsUnsendable()]),
+        throwsA(
+          isA<JsonUnsupportedObjectError>().having(
+            (error) => error.cause,
+            'cause',
+            isA<_UnsendableError>(),
+          ),
+        ),
+      );
+    });
+
+    test('encodes a structure deeper than the conversion limit', () async {
+      final isolate = YAJsonIsolate();
+      addTearDown(() => dispose(isolate));
+      Object? nested = 'leaf';
+      for (var i = 0; i < 600; i++) {
+        nested = [nested];
+      }
+
+      final encoded = await isolate.encode(nested);
+      expect(encoded, '${'[' * 600}"leaf"${']' * 600}');
+    });
+
+    test('throws for a cyclic structure', () async {
+      final isolate = YAJsonIsolate();
+      addTearDown(() => dispose(isolate));
+      final inner = <Object?>[];
+      final cyclic = [inner];
+      inner.add(cyclic);
+
+      await expectLater(
+        isolate.encode(cyclic),
+        throwsA(isA<JsonCyclicError>()),
+      );
     });
   });
 }
