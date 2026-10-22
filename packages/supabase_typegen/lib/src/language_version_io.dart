@@ -55,19 +55,22 @@ String packageImportUri({Directory? startDirectory}) {
 const supportedSupabaseMajorVersion = 3;
 
 /// The first of `supabase_flutter`, `supabase` and `postgrest` that the
-/// `pubspec.lock` of [startDirectory], which defaults to the current
-/// directory, or of its nearest ancestor resolves to a version before
-/// [supportedSupabaseMajorVersion], with that version. Returns `null` when
-/// every one of them it resolves is supported or no such lockfile exists.
-///
-/// Throws a [FormatException] when the lockfile is not valid YAML.
+/// Dart package [startDirectory] belongs to resolves to a version before
+/// [supportedSupabaseMajorVersion], with that version. The package is found
+/// through the same `pubspec.yaml` as [packageLanguageVersion], and its
+/// versions are read from the `pubspec.lock` next to it, or next to the
+/// workspace root for a workspace member. Returns `null` when every one of
+/// them it resolves is supported, or when there is no such lockfile or it
+/// cannot be read.
 (String, Version)? unsupportedSupabaseDependency({Directory? startDirectory}) {
-  final lockfile = _nearestFile(
-    startDirectory ?? Directory.current,
-    'pubspec.lock',
-  );
+  final lockfile = _lockfile(startDirectory ?? Directory.current);
   if (lockfile == null) return null;
-  final packages = _loadYaml(lockfile)['packages'];
+  final Object? packages;
+  try {
+    packages = _loadYaml(lockfile)['packages'];
+  } on FormatException {
+    return null;
+  }
   if (packages is! Map) return null;
   for (final name in _importCandidates.keys) {
     final package = packages[name];
@@ -82,6 +85,37 @@ const supportedSupabaseMajorVersion = 3;
     if (parsed.major < supportedSupabaseMajorVersion) return (name, parsed);
   }
   return null;
+}
+
+/// The `pubspec.lock` that pins the dependencies of the package [directory]
+/// belongs to, `null` when it has none.
+File? _lockfile(Directory directory) {
+  var pubspec = _nearestPubspec(directory);
+  if (pubspec == null) return null;
+  try {
+    if (_loadYaml(pubspec)['resolution'] == 'workspace') {
+      pubspec = _workspaceRoot(pubspec.parent.parent);
+      if (pubspec == null) return null;
+    }
+  } on FormatException {
+    return null;
+  }
+  final lockfile = File('${pubspec.parent.path}/pubspec.lock');
+  return lockfile.existsSync() ? lockfile : null;
+}
+
+/// The `pubspec.yaml` of [directory] or of its nearest ancestor that declares
+/// a `workspace`, `null` when none of them does.
+File? _workspaceRoot(Directory directory) {
+  var current = directory.absolute;
+  while (true) {
+    final pubspec = _nearestPubspec(current);
+    if (pubspec == null) return null;
+    if (_loadYaml(pubspec).containsKey('workspace')) return pubspec;
+    final parent = pubspec.parent.parent;
+    if (parent.path == pubspec.parent.path) return null;
+    current = parent;
+  }
 }
 
 /// The `pubspec.yaml` of [directory] or of its nearest ancestor, `null` when

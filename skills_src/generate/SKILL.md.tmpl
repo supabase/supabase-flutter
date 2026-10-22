@@ -126,12 +126,13 @@ The CLI reports a generator failure as
 `failed to generate dart types: dart run supabase_typegen exited with code N: …`,
 followed by the generator's own message.
 
-| Symptom                                                                                                   | Fix                                                                             |
-| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `dart run` cannot find `supabase_typegen`                                                                 | Add the dev dependency and run `pub get` in the directory the command runs in.  |
-| `The project is on Dart X, but the generated code needs Dart Y or newer`                                  | Raise the lower bound of `environment.sdk` in `pubspec.yaml`.                   |
-| `The database has no schema "x"`                                                                          | Check the schema name, or that the stack has run the migration that creates it. |
-| `The project resolves supabase_flutter 2.x, but the generated code needs supabase_flutter 3.0.0 or newer` | Upgrade the package to version 3, following `MIGRATION.md`.                     |
-| `The document describes no tables, views, enums or functions`                                             | Check the schema names, or that the stack has run the migrations.               |
-| `--lang dart` is rejected                                                                                 | Upgrade the Supabase CLI to 2.122.0 or newer.                                   |
-| `--local` cannot reach the database                                                                       | Run `supabase start` first.                                                     |
+| Symptom                                                                                                 | Fix                                                                             |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `dart run` cannot find `supabase_typegen`                                                               | Add the dev dependency and run `pub get` in the directory the command runs in.  |
+| `The project is on Dart X, but the generated code needs Dart Y or newer`                                | Raise the lower bound of `environment.sdk` in `pubspec.yaml`.                   |
+| `The database has no schema "x"`                                                                        | Check the schema name, or that the stack has run the migration that creates it. |
+| `The project resolves supabase_flutter 2.x, but the generated code needs version 3 of supabase_flutter` | Upgrade the package to version 3 following `MIGRATION.md`, then run `pub get`.  |
+| `The document describes no tables, views, enums or functions`                                           | Check the schema names, or that the stack has run the migrations.               |
+| `The document has no "rpcFunctions" collection, so no RPC methods are generated`                        | Upgrade the Supabase CLI to the latest release and regenerate.                  |
+| `--lang dart` is rejected                                                                               | Upgrade the Supabase CLI to 2.122.0 or newer.                                   |
+| `--local` cannot reach the database                                                                     | Run `supabase start` first.                                                     |

@@ -110,7 +110,7 @@ Future<int> _run(List<String> arguments) async {
     }
     return 65;
   }
-  if (database.tables.isEmpty &&
+  if (database.tables.every((table) => table.columns.isEmpty) &&
       database.enums.isEmpty &&
       database.functions.isEmpty) {
     stderr.writeln(
@@ -119,8 +119,13 @@ Future<int> _run(List<String> arguments) async {
     );
     return 65;
   }
+  final documentFunctions = document['functions'] as List<dynamic>? ?? const [];
   if (!document.containsKey('rpcFunctions') &&
-      (document['functions'] as List<dynamic>? ?? const []).isNotEmpty) {
+      documentFunctions.any(
+        (function) =>
+            function is Map &&
+            database.schemaNames.contains(function['schema']),
+      )) {
     stderr.writeln(
       'The document has no "rpcFunctions" collection, so no RPC methods are '
       'generated. Upgrade the Supabase CLI to generate them.',
@@ -154,7 +159,8 @@ Future<int> _run(List<String> arguments) async {
   if (unsupported case (final name, final version)) {
     stderr.writeln(
       'The project resolves $name $version, but the generated code needs '
-      '$name $supportedSupabaseMajorVersion.0.0 or newer. Upgrade it, see '
+      'version $supportedSupabaseMajorVersion of $name. Upgrade it and run '
+      '`dart pub get`, see '
       'https://github.com/supabase/supabase-flutter/blob/main/MIGRATION.md.',
     );
     return 78;

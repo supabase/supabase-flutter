@@ -131,6 +131,23 @@ void main() {
       expect(output.readAsStringSync(), '// The previous generation.\n');
     });
 
+    test('for a document whose tables have no columns', () async {
+      final document = fixtureDocument()
+        ..['columns'] = const <Object?>[]
+        ..['types'] = const <Object?>[]
+        ..['functions'] = const <Object?>[]
+        ..['rpcFunctions'] = const <Object?>[];
+
+      final result = await run([
+        '--output',
+        output.path,
+      ], document: jsonEncode(document));
+
+      expect(result.exitCode, 65);
+      expect(result.stderr, contains('there is nothing to generate'));
+      expect(output.readAsStringSync(), '// The previous generation.\n');
+    });
+
     test('for a project on supabase_flutter 2', () async {
       File('${project.path}/pubspec.lock').writeAsStringSync(
         'packages:\n'
@@ -147,7 +164,7 @@ void main() {
         result.stderr,
         contains(
           'The project resolves supabase_flutter 2.9.1, but the generated '
-          'code needs supabase_flutter 3.0.0 or newer.',
+          'code needs version 3 of supabase_flutter.',
         ),
       );
       expect(output.readAsStringSync(), '// The previous generation.\n');
@@ -177,6 +194,24 @@ void main() {
     expect(result.exitCode, 0, reason: result.stderr);
     expect(result.stderr, contains('no RPC methods are generated'));
     expect(output.readAsStringSync(), isNot(contains('on PostgrestRpc')));
+  });
+
+  test('does not warn about rpcFunctions for other schemas', () async {
+    final document = fixtureDocument()..remove('rpcFunctions');
+    document['functions'] = [
+      for (final function in document['functions'] as List<dynamic>)
+        if ((function as Map<String, dynamic>)['schema'] != 'public') function,
+    ];
+
+    final result = await run([
+      '--output',
+      output.path,
+      '--schema',
+      'public',
+    ], document: jsonEncode(document));
+
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stderr, isNot(contains('rpcFunctions')));
   });
 
   test('accepts a project on supabase_flutter 3', () async {

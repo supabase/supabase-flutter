@@ -85,6 +85,9 @@ void main() {
 
   group('unsupportedSupabaseDependency', () {
     void writeLockfile(Map<String, String> versions) {
+      if (!File('${directory.path}/pubspec.yaml').existsSync()) {
+        writePubspec('name: app\n');
+      }
       File('${directory.path}/pubspec.lock').writeAsStringSync(
         'packages:\n'
         '${versions.entries.map((entry) => '  ${entry.key}:\n'
@@ -115,15 +118,50 @@ void main() {
       ));
     });
 
-    test('finds the lockfile of the nearest ancestor', () {
+    test('reads the lockfile next to the pubspec of the package', () {
+      writePubspec('name: app\n');
       writeLockfile({'postgrest': '2.4.2'});
-      final nested = Directory('${directory.path}/packages/app/lib')
+      final nested = Directory('${directory.path}/lib/generated')
         ..createSync(recursive: true);
 
       expect(unsupportedSupabaseDependency(startDirectory: nested), (
         'postgrest',
         Version(2, 4, 2),
       ));
+    });
+
+    test('reads the lockfile of the workspace root for a member', () {
+      writePubspec('name: root\nworkspace:\n  - packages/app\n');
+      writeLockfile({'postgrest': '2.4.2'});
+      final member = Directory('${directory.path}/packages/app')
+        ..createSync(recursive: true);
+      File(
+        '${member.path}/pubspec.yaml',
+      ).writeAsStringSync('name: app\nresolution: workspace\n');
+
+      expect(unsupportedSupabaseDependency(startDirectory: member), (
+        'postgrest',
+        Version(2, 4, 2),
+      ));
+    });
+
+    test('ignores the lockfile of an unrelated ancestor project', () {
+      writePubspec('name: legacy\n');
+      writeLockfile({'supabase_flutter': '2.8.0'});
+      final app = Directory('${directory.path}/tools/app')
+        ..createSync(recursive: true);
+      File('${app.path}/pubspec.yaml').writeAsStringSync('name: app\n');
+
+      expect(unsupportedSupabaseDependency(startDirectory: app), isNull);
+    });
+
+    test('is null for a lockfile that is not valid YAML', () {
+      writePubspec('name: app\n');
+      File(
+        '${directory.path}/pubspec.lock',
+      ).writeAsStringSync('<<<<<<< HEAD\npackages: [\n');
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
     });
 
     test('ignores other packages', () {
