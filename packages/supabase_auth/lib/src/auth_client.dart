@@ -1739,14 +1739,41 @@ class AuthClient {
     }
   }
 
+  /// Error codes with which the auth service rejects a refresh token for good.
+  static final _refreshTokenRejectionCodes = {
+    'refresh_token_not_found',
+    'refresh_token_already_used',
+    ErrorCode.sessionNotFound.code,
+    ErrorCode.sessionExpired.code,
+    ErrorCode.userNotFound.code,
+    ErrorCode.userBanned.code,
+    ErrorCode.validationFailed.code,
+  };
+
+  /// Whether a later refresh may get past [error], so the session is kept.
+  ///
+  /// Only an error response from the auth service that rejects the refresh
+  /// token ends the session. A rate limit, or a response the service did not
+  /// send, such as an HTML page from a captive portal or proxy, does not. A
+  /// `400` without an error code comes from a server that predates error
+  /// codes, which answers every rejected refresh token that way.
+  static bool _isTransientRefreshFailure(Object error) => switch (error) {
+    AuthRetryableException() || AuthUnknownException() => true,
+    AuthApiException(errorCode: null, :final statusCode) => statusCode != 400,
+    AuthApiException(:final errorCode) => !_refreshTokenRejectionCodes.contains(
+      errorCode,
+    ),
+    _ => false,
+  };
+
   /// Generates a new JWT.
   /// [refreshToken] A valid refresh token that was returned on login.
   Future<Session> _refreshAccessToken(String refreshToken) async {
     final startedAt = clock.now();
     var attempt = 0;
     Duration? retryAfterOf(Object outcome) {
-      final requested = outcome is AuthRetryableApiException
-          ? outcome.retryAfter
+      final requested = outcome is SupabaseApiException
+          ? parseRetryAfter(outcome.headers)
           : null;
       if (requested == null) {
         return null;
@@ -1779,7 +1806,7 @@ class AuthClient {
         // how many attempts a short backoff can squeeze into the tick.
         final nextBackOff = retryAfterOf(e) ?? retryOptions.delay(attempt - 1);
 
-        return e is AuthRetryableException &&
+        return _isTransientRefreshFailure(e) &&
             (clock.now().millisecondsSinceEpoch +
                     nextBackOff.inMilliseconds -
                     startedAt.millisecondsSinceEpoch) <
@@ -2089,8 +2116,9 @@ class AuthClient {
   /// Returns the refreshed [Session] or throws the underlying error. This
   /// is the single place that emits refresh outcomes:
   /// [AuthChangeEvent.tokenRefreshed] on success, [AuthChangeEvent.signedOut]
-  /// when the refresh token is invalid, or a stream error ([notifyException])
-  /// for a retryable/unexpected failure.
+  /// when the auth service rejects the refresh token, or a stream error
+  /// ([notifyException]) for any other failure, which keeps the session so the
+  /// next tick tries again.
   ///
   /// A rejected [refreshToken] only affects the stored session that token
   /// belongs to. When the stored session holds a different refresh token,
@@ -2137,7 +2165,7 @@ class AuthClient {
         return existingSession;
       }
 
-      if (error is! AuthRetryableException) {
+      if (!_isTransientRefreshFailure(error)) {
         // The server rejected [refreshToken], so only the session that token
         // was redeemed for is gone: the stored session when it held the
         // token, or no session at all when nothing was stored. A session
