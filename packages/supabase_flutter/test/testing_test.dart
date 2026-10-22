@@ -100,8 +100,8 @@ void main() {
     final supabase = await initializeTestSupabase(httpClient: httpClient);
     addTearDown(supabase.dispose);
 
-    expect(
-      () => initializeTestSupabase(httpClient: MockSupabaseHttpClient()),
+    await expectLater(
+      initializeTestSupabase(httpClient: MockSupabaseHttpClient()),
       throwsStateError,
     );
   });

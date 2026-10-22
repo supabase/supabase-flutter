@@ -85,8 +85,10 @@ class SupabaseAuth with WidgetsBindingObserver {
   List<Uri>? _pendingDeeplinks;
 
   /// The link the app was launched with, once it has been exchanged. The
-  /// link stream delivers it as well when this is its first listener, so the
-  /// first matching event is dropped instead of being exchanged twice.
+  /// link stream delivers it as well when this is its first listener, right
+  /// after the subscription and so before the session is restored, so the
+  /// first matching link held back is dropped instead of being exchanged
+  /// twice.
   Uri? _exchangedInitialDeeplink;
 
   /// - Subscribes to incoming deep links, holding them back until the
@@ -217,7 +219,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     final pendingDeeplinks = _pendingDeeplinks;
     if (pendingDeeplinks != null) {
       pendingDeeplinks.add(uri);
-    } else if (!_isRepeatedInitialDeeplink(uri)) {
+    } else {
       unawaited(_handleDeeplink(uri));
     }
   }
@@ -230,17 +232,14 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     while (pendingDeeplinks.isNotEmpty && !_isDisposed) {
       final uri = pendingDeeplinks.removeAt(0);
-      if (!_isRepeatedInitialDeeplink(uri)) {
+      if (uri == _exchangedInitialDeeplink) {
+        _exchangedInitialDeeplink = null;
+      } else {
         await _handleDeeplink(uri);
       }
     }
     _pendingDeeplinks = null;
-  }
-
-  bool _isRepeatedInitialDeeplink(Uri uri) {
-    if (uri != _exchangedInitialDeeplink) return false;
     _exchangedInitialDeeplink = null;
-    return true;
   }
 
   /// Handle the initial Uri - the one the app was started with
@@ -251,7 +250,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// Every exception is caught, so a failing platform call is only logged.
   Future<void> _handleInitialUri() async {
-    if (_initialDeeplinkIsHandled) return;
+    if (_isDisposed || _initialDeeplinkIsHandled) return;
     _initialDeeplinkIsHandled = true;
 
     try {
@@ -278,6 +277,13 @@ class SupabaseAuth with WidgetsBindingObserver {
     } on FormatException catch (error, stackTrace) {
       flutterLogger.warning(
         'Ignoring deeplink that is not valid percent-encoded UTF-8',
+        error,
+        stackTrace,
+      );
+      return;
+    } catch (error, stackTrace) {
+      flutterLogger.warning(
+        'Ignoring deeplink the session detection predicate threw for',
         error,
         stackTrace,
       );

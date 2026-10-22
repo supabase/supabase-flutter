@@ -231,8 +231,8 @@ void main() {
           authOptions: FlutterAuthClientOptions(asyncStorage: asyncStorage),
         );
 
-        expect(
-          () => Supabase.initialize(
+        await expectLater(
+          Supabase.initialize(
             url: 'https://other.supabase.co',
             publishableKey: supabaseKey,
           ),
@@ -242,12 +242,21 @@ void main() {
         asyncStorage.release();
         await first;
 
-        expect(
-          () => Supabase.initialize(
-            url: supabaseUrl,
-            publishableKey: 'other-key',
-          ),
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: 'other-key'),
           throwsStateError,
+        );
+      });
+
+      test('a call after a failed initialization tries again', () async {
+        await expectLater(
+          Supabase.initialize(url: 'http://[', publishableKey: supabaseKey),
+          throwsA(anything),
+        );
+
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey),
+          completes,
         );
       });
 

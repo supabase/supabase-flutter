@@ -34,7 +34,7 @@ dependencies:
   web: ^1.0.0
 
 dev_dependencies:
-  app_links_platform_interface: ^2.0.3
+  app_links_platform_interface: ^2.0.2
   flutter_test:
     sdk: flutter
   shared_preferences_platform_interface: ^2.4.0

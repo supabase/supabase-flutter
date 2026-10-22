@@ -180,3 +180,14 @@ List<String> mockNativeAppLinks({
   });
   return eventChannelCalls;
 }
+
+/// Delivers [link] on the app_links stream, like the native side does for a
+/// link received while the app is running.
+Future<void> sendAppLink(String link) {
+  return TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .handlePlatformMessage(
+        'com.llfbandit.app_links/events',
+        const StandardMethodCodec().encodeSuccessEnvelope(link),
+        (_) {},
+      );
+}

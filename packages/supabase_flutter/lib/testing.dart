@@ -63,9 +63,11 @@ Future<Supabase> initializeTestSupabase({
   bool autoRefreshToken = false,
 }) {
   if (Supabase.isInitializingOrInitialized) {
-    throw StateError(
-      'Supabase is already initialized. Dispose it at the end of every test, '
-      'for example with addTearDown(supabase.dispose).',
+    return Future.error(
+      StateError(
+        'Supabase is already initialized. Dispose it at the end of every '
+        'test, for example with addTearDown(supabase.dispose).',
+      ),
     );
   }
   return Supabase.initialize(

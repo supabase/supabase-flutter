@@ -430,6 +430,42 @@ void main() {
       expect(httpClient.requests, hasLength(1));
     });
 
+    test(
+      'a link the predicate throws for does not hold back later links',
+      () async {
+        final httpClient = createPkceHttpClient();
+        mockNativeAppLinks(
+          launchLink: 'com.supabase://unexpected/?code=other',
+          answerGetInitialLink: false,
+        );
+
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          httpClient: httpClient,
+          authOptions: FlutterAuthClientOptions(
+            asyncStorage: await storageWithCodeVerifier(),
+            detectSessionInUriPredicate: (uri) {
+              if (uri.host != 'callback') {
+                throw StateError('Unexpected host ${uri.host}');
+              }
+              return true;
+            },
+          ),
+        );
+        await pumpEventQueue();
+        expect(httpClient.requests, isEmpty);
+
+        await sendAppLink(launchLink);
+        await pumpEventQueue();
+
+        expect(
+          httpClient.requests.single.jsonBody['auth_code'],
+          'my-code-verifier',
+        );
+      },
+    );
+
     test('dispose during initialize leaves no link subscription', () async {
       final httpClient = createPkceHttpClient();
       final eventChannelCalls = mockNativeAppLinks(launchLink: launchLink);

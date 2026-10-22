@@ -136,24 +136,26 @@ class Supabase {
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
   }) {
-    final pendingInitialization = _instance._initialization;
-    if (pendingInitialization != null) {
-      if (url != _instance._url ||
-          publishableKey != _instance._publishableKey) {
-        throw StateError(
-          'Supabase is already initialized with another url or publishable '
-          'key. Call Supabase.instance.dispose() before initializing it again.',
+    final initialization = _instance._initialization;
+    if (initialization != null) {
+      if (url != initialization.url ||
+          publishableKey != initialization.publishableKey) {
+        return Future.error(
+          StateError(
+            'Supabase is already initialized with another url or publishable '
+            'key. Call Supabase.instance.dispose() before initializing it '
+            'again.',
+          ),
         );
       }
       flutterLogger.info(
-        'Supabase is already initialized. Skipping reinitialization.',
+        'Supabase is already initialized or initializing. Returning the same '
+        'instance.',
       );
-      return pendingInitialization;
+      return initialization.future;
     }
 
-    _instance._url = url;
-    _instance._publishableKey = publishableKey;
-    return _instance._initialization = _initialize(
+    final future = _initialize(
       url: url,
       publishableKey: publishableKey,
       headers: headers,
@@ -168,6 +170,25 @@ class Supabase {
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
     );
+    _instance._initialization = (
+      future: future,
+      url: url,
+      publishableKey: publishableKey,
+    );
+    // A failure before the client exists leaves nothing for dispose to clean
+    // up, so the next call may try again.
+    unawaited(
+      future.then<void>(
+        (_) {},
+        onError: (Object _) {
+          if (_instance._client == null &&
+              identical(_instance._initialization?.future, future)) {
+            _instance._initialization = null;
+          }
+        },
+      ),
+    );
+    return future;
   }
 
   static Future<Supabase> _initialize({
@@ -235,10 +256,8 @@ class Supabase {
 
   /// The pending or completed [initialize] call, shared with every call that
   /// arrives before [dispose].
-  Future<Supabase>? _initialization;
-
-  String? _url;
-  String? _publishableKey;
+  ({Future<Supabase> future, String url, String publishableKey})?
+  _initialization;
 
   /// Whether [initialize] was called and the instance has not been disposed
   /// since, including while the initialization is still pending.
@@ -330,8 +349,6 @@ class Supabase {
     _lifecycleListener = null;
     _isInitialized = false;
     _initialization = null;
-    _url = null;
-    _publishableKey = null;
 
     _targetLifecycleState = null;
     _cancelPendingPause();
