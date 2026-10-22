@@ -80,7 +80,7 @@ void main() {
     final session = await signInTestUser(appAuth);
 
     final state = await received;
-    expect(state.event, AuthChangeEvent.tokenRefreshed);
+    expect(state.event, AuthChangeEvent.signedIn);
     expect(otherClient.auth.currentSession?.accessToken, session.accessToken);
   });
 

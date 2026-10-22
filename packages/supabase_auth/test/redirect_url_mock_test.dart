@@ -24,6 +24,12 @@ void main() {
       return client;
     }
 
+    Future<AuthClient> createSignedInClient(Object? body) async {
+      final client = createClient(body);
+      await signInTestUser(client);
+      return client;
+    }
+
     test('fails getSSOSignInUrl when the field is absent', () async {
       await expectLater(
         createClient({'id': 'not-a-url'}).getSSOSignInUrl(domain: 'a.com'),
@@ -56,32 +62,36 @@ void main() {
 
     test('fails getLinkIdentityUrl when the field is absent', () async {
       await expectLater(
-        createClient({'id': 'not-a-url'}).getLinkIdentityUrl(
-          OAuthProvider.google,
-        ),
+        (await createSignedInClient({
+          'id': 'not-a-url',
+        })).getLinkIdentityUrl(OAuthProvider.google),
         missingUrl,
       );
     });
 
     test('fails getLinkIdentityUrl when the field is not a string', () async {
       await expectLater(
-        createClient({'url': 42}).getLinkIdentityUrl(OAuthProvider.google),
+        (await createSignedInClient({
+          'url': 42,
+        })).getLinkIdentityUrl(OAuthProvider.google),
         missingUrl,
       );
     });
 
     test('fails getLinkIdentityUrl when the body is not an object', () async {
       await expectLater(
-        createClient(['https://idp.example.com']).getLinkIdentityUrl(
-          OAuthProvider.google,
-        ),
+        (await createSignedInClient([
+          'https://idp.example.com',
+        ])).getLinkIdentityUrl(OAuthProvider.google),
         missingUrl,
       );
     });
 
     test('fails getLinkIdentityUrl when the body is null', () async {
       await expectLater(
-        createClient(null).getLinkIdentityUrl(OAuthProvider.google),
+        (await createSignedInClient(
+          null,
+        )).getLinkIdentityUrl(OAuthProvider.google),
         missingUrl,
       );
     });

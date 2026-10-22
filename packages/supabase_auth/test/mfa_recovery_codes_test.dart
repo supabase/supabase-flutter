@@ -203,21 +203,13 @@ void main() {
       }
     });
 
-    test('requests are sent without a bearer token when signed out', () async {
-      mockClient.errorResponse = (statusCode: 401, code: 'no_authorization');
-
+    test('requests throw without a request when signed out', () async {
       await expectLater(
         client.mfa.recoveryCodes.getStatus(),
-        throwsA(
-          isA<AuthApiException>().having(
-            (e) => e.errorCode,
-            'errorCode',
-            ErrorCode.noAuthorization.code,
-          ),
-        ),
+        throwsA(isA<AuthSessionMissingException>()),
       );
 
-      expect(mockClient.lastHeaders?.containsKey('Authorization'), isFalse);
+      expect(mockClient.lastHeaders, isNull);
     });
 
     test('listFactors buckets verified recovery code factors', () async {

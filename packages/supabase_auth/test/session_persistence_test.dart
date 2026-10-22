@@ -185,20 +185,30 @@ void main() {
     expect(await storage.getItem(storageKey), isNull);
   });
 
-  test('does not refresh an expired session without auto refresh', () async {
+  test('keeps an expired session without auto refresh', () async {
     final expired = getSessionData(
       DateTime.now().subtract(const Duration(hours: 1)),
     );
     await storage.setItem(storageKey, expired.sessionString);
     final client = createClient(autoRefreshToken: false);
+    final states = <AuthState>[];
+    final errors = <Object>[];
+    final subscription = client.onAuthStateChange.listen(
+      states.add,
+      onError: errors.add,
+    );
 
     await client.initialized;
+    await pumpEventQueue();
+    await settle();
 
-    await expectLater(
-      client.onAuthStateChange,
-      emitsThrough(emitsError(isA<AuthException>())),
-    );
-    expect(client.currentSession, isNull);
+    expect(client.currentSession?.accessToken, expired.accessToken);
+    expect(await storage.getItem(storageKey), expired.sessionString);
+    expect(states.map((state) => state.event), [
+      AuthChangeEvent.initialSession,
+    ]);
+    expect(errors, isEmpty);
+    await subscription.cancel();
   });
 
   test('discards a persisted value that is not a session', () async {

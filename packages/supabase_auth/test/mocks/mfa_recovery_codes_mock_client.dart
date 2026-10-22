@@ -170,8 +170,8 @@ class MfaRecoveryCodesMockClient extends BaseClient {
       return _jsonResponse({'id': factorId});
     }
 
-    if (path.endsWith('/token') && method == 'POST') {
-      return _jsonResponse(sessionJson(withFactors: true));
+    if (path.endsWith('/user') && method == 'GET') {
+      return _jsonResponse(sessionJson(withFactors: true)['user'] as Object);
     }
 
     return _jsonResponse({'error': 'Unhandled mock request'}, statusCode: 501);

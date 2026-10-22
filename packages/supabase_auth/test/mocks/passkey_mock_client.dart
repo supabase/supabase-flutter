@@ -90,8 +90,8 @@ class PasskeyMockClient extends BaseClient {
       return _emptyResponse(204);
     }
 
-    if (path.endsWith('/token') && method == 'POST') {
-      return _jsonResponse(_accessTokenResponse(withFactors: true));
+    if (path.endsWith('/user') && method == 'GET') {
+      return _jsonResponse(_accessTokenResponse(withFactors: true)['user']);
     }
 
     return StreamedResponse(

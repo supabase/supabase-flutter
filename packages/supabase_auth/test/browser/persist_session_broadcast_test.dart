@@ -45,7 +45,7 @@ void main() {
     final session = await signInTestUser(sender);
 
     final state = await received;
-    expect(state.event, AuthChangeEvent.tokenRefreshed);
+    expect(state.event, AuthChangeEvent.signedIn);
     expect(state.session?.accessToken, session.accessToken);
     expect(receiver.currentSession?.accessToken, session.accessToken);
   });

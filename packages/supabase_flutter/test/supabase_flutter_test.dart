@@ -114,10 +114,12 @@ void main() {
       );
     });
 
-    test('signs out when no auto refresh', () async {
+    test('is kept when no auto refresh', () async {
       await pumpEventQueue();
 
-      expect(Supabase.instance.client.auth.currentSession, isNull);
+      final session = Supabase.instance.client.auth.currentSession;
+      expect(session, isNotNull);
+      expect(session!.isExpired, isTrue);
     });
   });
 

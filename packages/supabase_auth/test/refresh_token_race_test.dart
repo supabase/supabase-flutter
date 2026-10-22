@@ -600,7 +600,8 @@ void main() {
     );
 
     test(
-      'recoverSession emits a single error for an expired session',
+      'recoverSession emits a single error for an expired session without '
+      'a refresh token',
       () async {
         final client = AuthClient(
           url: authUrl,
@@ -608,6 +609,8 @@ void main() {
           autoRefreshToken: false,
           httpClient: RefreshTokenTrackingHttpClient(),
         );
+        final expired = jsonDecode(createExpiredSessionForUser1()) as Map
+          ..remove('refresh_token');
 
         var errorCount = 0;
         final subscription = client.onAuthStateChange.listen(
@@ -616,7 +619,7 @@ void main() {
         );
 
         await expectLater(
-          client.recoverSession(createExpiredSessionForUser1()),
+          client.recoverSession(jsonEncode(expired)),
           throwsA(isA<AuthException>()),
         );
         await pumpEventQueue();

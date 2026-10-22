@@ -11,7 +11,7 @@ void main() {
   Map<String, dynamic> lastChallengeBody() =>
       mockClient.requestsTo('/challenge').last.jsonBody as Map<String, dynamic>;
 
-  setUp(() {
+  setUp(() async {
     mockClient = MockSupabaseHttpClient()
       ..stub({
         'id': 'mock-challenge-id',
@@ -23,6 +23,7 @@ void main() {
       httpClient: mockClient,
       asyncStorage: TestAsyncStorage(),
     );
+    await signInTestUser(client);
   });
 
   test('challenge() omits the channel by default', () async {

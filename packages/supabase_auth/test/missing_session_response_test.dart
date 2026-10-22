@@ -114,7 +114,11 @@ void main() {
       expectNothingSignedIn();
     });
 
-    test('makes linkIdentityWithIdToken throw without signing in', () async {
+    test('makes linkIdentityWithIdToken throw and keep the session', () async {
+      final session = await signInTestUser(client);
+      await pumpEventQueue();
+      events.clear();
+
       await expectLater(
         client.linkIdentityWithIdToken(
           provider: OAuthProvider.google,
@@ -124,7 +128,8 @@ void main() {
       );
       await pumpEventQueue();
 
-      expectNothingSignedIn();
+      expect(client.currentSession?.accessToken, session.accessToken);
+      expect(events, isEmpty);
     });
 
     test(
