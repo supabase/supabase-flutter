@@ -56,9 +56,20 @@ class Supabase {
 
   /// Initialize the current supabase instance
   ///
-  /// This should only be called once. If called again while an instance is
-  /// already initialized, initialization is skipped and the existing
-  /// instance is returned.
+  /// This should only be called once. A second call while the instance is
+  /// initializing or initialized returns the same instance once it is fully
+  /// initialized, and its other arguments are ignored. It throws a
+  /// [StateError] when its [url] or [publishableKey] differ from the first
+  /// call. Call [dispose] first to initialize with another configuration.
+  ///
+  /// The returned future completes once the persisted session is restored.
+  /// When the app was opened by an auth callback deep link, such as a magic
+  /// link, a password recovery link or the redirect of an OAuth sign-in, the
+  /// link is exchanged for a session right after that, on every platform.
+  /// Subscribe to `onAuthStateChange` as soon as the future completes to get
+  /// the outcome, for example [AuthChangeEvent.passwordRecovery]. Set
+  /// [FlutterAuthClientOptions.detectSessionInUri] to false to handle the
+  /// links yourself.
   ///
   /// [url] and [publishableKey] can be found on your Supabase dashboard.
   /// Use the `publishable` (anon) key here, never the secret key in a
@@ -124,15 +135,59 @@ class Supabase {
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
-  }) async {
-    if (_instance._isInitialized) {
+  }) {
+    final pendingInitialization = _instance._initialization;
+    if (pendingInitialization != null) {
+      if (url != _instance._url ||
+          publishableKey != _instance._publishableKey) {
+        throw StateError(
+          'Supabase is already initialized with another url or publishable '
+          'key. Call Supabase.instance.dispose() before initializing it again.',
+        );
+      }
       flutterLogger.info(
         'Supabase is already initialized. Skipping reinitialization.',
       );
-      return _instance;
+      return pendingInitialization;
     }
 
+    _instance._url = url;
+    _instance._publishableKey = publishableKey;
+    return _instance._initialization = _initialize(
+      url: url,
+      publishableKey: publishableKey,
+      headers: headers,
+      httpClient: httpClient,
+      realtimeClientOptions: realtimeClientOptions,
+      realtimeLifecycleOptions: realtimeLifecycleOptions,
+      postgrestOptions: postgrestOptions,
+      storageOptions: storageOptions,
+      authOptions: authOptions,
+      tracePropagationOptions: tracePropagationOptions,
+      accessToken: accessToken,
+      jsonCodec: jsonCodec,
+      requestTimeout: requestTimeout,
+    );
+  }
+
+  static Future<Supabase> _initialize({
+    required String url,
+    required String publishableKey,
+    required Map<String, String>? headers,
+    required Client? httpClient,
+    required RealtimeClientOptions realtimeClientOptions,
+    required RealtimeLifecycleOptions realtimeLifecycleOptions,
+    required PostgrestClientOptions postgrestOptions,
+    required StorageClientOptions storageOptions,
+    required FlutterAuthClientOptions authOptions,
+    required TracePropagationOptions? tracePropagationOptions,
+    required Future<String?> Function()? accessToken,
+    required AsyncJsonCodec? jsonCodec,
+    required Duration? requestTimeout,
+  }) async {
     flutterLogger.config('Initialize Supabase v$version');
+
+    WidgetsFlutterBinding.ensureInitialized();
 
     if (authOptions.asyncStorage == null) {
       authOptions = authOptions.copyWith(
@@ -177,6 +232,19 @@ class Supabase {
   static final Supabase _instance = Supabase._();
 
   bool _isInitialized = false;
+
+  /// The pending or completed [initialize] call, shared with every call that
+  /// arrives before [dispose].
+  Future<Supabase>? _initialization;
+
+  String? _url;
+  String? _publishableKey;
+
+  /// Whether [initialize] was called and the instance has not been disposed
+  /// since, including while the initialization is still pending.
+  @internal
+  static bool get isInitializingOrInitialized =>
+      _instance._initialization != null;
 
   /// Whether the Supabase instance has been initialized. Useful for debugging.
   bool get isInitialized => _isInitialized;
@@ -261,6 +329,9 @@ class Supabase {
     _oauthLauncher = null;
     _lifecycleListener = null;
     _isInitialized = false;
+    _initialization = null;
+    _url = null;
+    _publishableKey = null;
 
     _targetLifecycleState = null;
     _cancelPendingPause();

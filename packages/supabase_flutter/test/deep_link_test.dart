@@ -4,6 +4,7 @@ library;
 
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +18,9 @@ void main() {
   const supabaseKey = '';
 
   tearDown(() async {
-    await Supabase.instance.dispose();
+    if (Supabase.isInitializingOrInitialized) {
+      await Supabase.instance.dispose();
+    }
   });
 
   group('Deep Link with PKCE code', () {
@@ -337,6 +340,119 @@ void main() {
         detectSessionInUriPredicate: (uri) =>
             uri.queryParameters.containsKey('code'),
       );
+    });
+  });
+
+  group('Link the app was launched with', () {
+    const launchLink = 'com.supabase://callback/?code=my-code-verifier';
+
+    Future<MockAsyncStorage> storageWithCodeVerifier() async {
+      final asyncStorage = MockAsyncStorage();
+      await asyncStorage.setItem(
+        '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
+        'raw-code-verifier',
+      );
+      return asyncStorage;
+    }
+
+    test(
+      'is exchanged when the app listened to the link stream first',
+      () async {
+        final httpClient = createPkceHttpClient();
+        mockNativeAppLinks(launchLink: launchLink);
+        final appLinks = <Uri>[];
+        final appSubscription = AppLinks().uriLinkStream.listen(appLinks.add);
+        addTearDown(appSubscription.cancel);
+        await pumpEventQueue();
+        expect(appLinks, [Uri.parse(launchLink)]);
+
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          httpClient: httpClient,
+          authOptions: FlutterAuthClientOptions(
+            asyncStorage: await storageWithCodeVerifier(),
+          ),
+        );
+
+        await pumpEventQueue();
+
+        expect(
+          httpClient.requests.single.jsonBody['auth_code'],
+          'my-code-verifier',
+        );
+      },
+    );
+
+    test('is exchanged once when the link stream delivers it too', () async {
+      final httpClient = createPkceHttpClient();
+      mockNativeAppLinks(launchLink: launchLink);
+
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: await storageWithCodeVerifier(),
+        ),
+      );
+      await Supabase.instance.client.auth.onAuthStateChange
+          .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
+          .timeout(const Duration(seconds: 5));
+      await pumpEventQueue();
+
+      expect(httpClient.requests, hasLength(1));
+    });
+
+    test('a link received while the session is restored is exchanged after '
+        'the restore', () async {
+      final httpClient = createPkceHttpClient();
+      mockNativeAppLinks(launchLink: launchLink, answerGetInitialLink: false);
+      final asyncStorage = BlockingAsyncStorage();
+      await asyncStorage.setItem(
+        '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
+        'raw-code-verifier',
+      );
+
+      final initialization = Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(asyncStorage: asyncStorage),
+      );
+      await pumpEventQueue();
+      expect(httpClient.requests, isEmpty);
+
+      asyncStorage.release();
+      await initialization;
+      await pumpEventQueue();
+
+      expect(httpClient.requests, hasLength(1));
+    });
+
+    test('dispose during initialize leaves no link subscription', () async {
+      final httpClient = createPkceHttpClient();
+      final eventChannelCalls = mockNativeAppLinks(launchLink: launchLink);
+      final asyncStorage = BlockingAsyncStorage();
+
+      final initialization = Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(asyncStorage: asyncStorage),
+      );
+      await pumpEventQueue();
+      await Supabase.instance.dispose();
+
+      asyncStorage.release();
+      await initialization;
+      await pumpEventQueue();
+
+      expect(
+        eventChannelCalls.where((method) => method == 'listen').length,
+        eventChannelCalls.where((method) => method == 'cancel').length,
+      );
+      expect(httpClient.requests, isEmpty);
     });
   });
 }

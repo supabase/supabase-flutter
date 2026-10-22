@@ -6,6 +6,8 @@
 /// it was in v2, so there is nothing to migrate there.
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -142,6 +144,96 @@ void main() {
         expect(await newStorage.getItem(sessionKey), isNull);
       },
     );
+  });
+
+  group('Supabase.initialize with a v2 session', () {
+    const supabaseUrl = 'https://abcdefghij.supabase.co';
+
+    tearDown(() async {
+      await Supabase.instance.dispose();
+    });
+
+    test('restores the session supabase_flutter v2 persisted', () async {
+      final expiresAt =
+          DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+          1000;
+      final accessToken = unsignedTestJwt({
+        'exp': expiresAt,
+        'sub': testUserId,
+        'role': 'authenticated',
+      });
+      // The value v2 wrote: `jsonEncode(session.toJson())` under the key it
+      // derived from the project ref.
+      final v2Session = jsonEncode({
+        'access_token': accessToken,
+        'expires_in': 3600,
+        'expires_at': expiresAt,
+        'refresh_token': 'v2-refresh-token',
+        'token_type': 'bearer',
+        'provider_token': null,
+        'provider_refresh_token': null,
+        'user': {
+          'id': testUserId,
+          'app_metadata': {
+            'provider': 'email',
+            'providers': ['email'],
+          },
+          'user_metadata': <String, dynamic>{},
+          'aud': 'authenticated',
+          'confirmation_sent_at': null,
+          'recovery_sent_at': null,
+          'email_change_sent_at': null,
+          'new_email': null,
+          'invited_at': null,
+          'action_link': null,
+          'email': 'v2@example.com',
+          'phone': '',
+          'created_at': '2024-05-01T12:00:00.000000Z',
+          'confirmed_at': '2024-05-01T12:00:00.000000Z',
+          'email_confirmed_at': '2024-05-01T12:00:00.000000Z',
+          'phone_confirmed_at': null,
+          'last_sign_in_at': '2024-05-02T08:30:00.000000Z',
+          'role': 'authenticated',
+          'updated_at': '2024-05-02T08:30:00.000000Z',
+          'identities': [
+            {
+              'id': testUserId,
+              'user_id': testUserId,
+              'identity_data': {'email': 'v2@example.com', 'sub': testUserId},
+              'identity_id': '6b1f5c2e-7a52-4d0b-9a1e-0f3f4c1d2e3a',
+              'provider': 'email',
+              'created_at': '2024-05-01T12:00:00.000000Z',
+              'last_sign_in_at': '2024-05-02T08:30:00.000000Z',
+              'updated_at': '2024-05-02T08:30:00.000000Z',
+            },
+          ],
+          'factors': null,
+          'is_anonymous': false,
+        },
+      });
+      mockSharedPreferences(
+        legacyValues: {'sb-abcdefghij-auth-token': v2Session},
+      );
+
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: '',
+        httpClient: MockSupabaseHttpClient(),
+        authOptions: const FlutterAuthClientOptions(
+          detectSessionInUri: false,
+        ),
+      );
+
+      final session = Supabase.instance.client.auth.currentSession;
+      expect(session?.accessToken, accessToken);
+      expect(session?.refreshToken, 'v2-refresh-token');
+      expect(session?.user.id, testUserId);
+      expect(session?.user.email, 'v2@example.com');
+      expect(
+        await SharedPreferencesAsync().getString('sb-abcdefghij-auth-token'),
+        isNotNull,
+      );
+    });
   });
 
   group('SharedPreferencesAuthAsyncStorage operation order', () {

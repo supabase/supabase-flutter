@@ -123,3 +123,60 @@ MockSupabaseHttpClient createPkceHttpClient() =>
         statusCode: 201,
       ),
     );
+
+/// An in-memory storage whose reads wait for [release], so a test can act
+/// while [Supabase.initialize] is still restoring the session.
+class BlockingAsyncStorage extends MemoryAuthAsyncStorage {
+  final _released = Completer<void>();
+
+  /// Lets every pending and future read complete.
+  void release() => _released.complete();
+
+  @override
+  Future<String?> getItem(String key) async {
+    await _released.future;
+    return super.getItem(key);
+  }
+}
+
+/// Answers the app_links channels like the native side does: the stream sends
+/// [launchLink] to its first listener only, and `getInitialLink` keeps
+/// returning it unless [answerGetInitialLink] is false.
+///
+/// Returns the methods called on the event channel, such as `listen` and
+/// `cancel`.
+List<String> mockNativeAppLinks({
+  String? launchLink,
+  bool answerGetInitialLink = true,
+}) {
+  const methodChannel = MethodChannel('com.llfbandit.app_links/messages');
+  const eventChannel = MethodChannel('com.llfbandit.app_links/events');
+  final eventChannelCalls = <String>[];
+  var launchLinkSent = false;
+
+  TestWidgetsFlutterBinding.ensureInitialized();
+  final binaryMessenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+  binaryMessenger.setMockMethodCallHandler(
+    methodChannel,
+    (call) async => call.method == 'getInitialLink' && answerGetInitialLink
+        ? launchLink
+        : null,
+  );
+  binaryMessenger.setMockMethodCallHandler(eventChannel, (call) {
+    eventChannelCalls.add(call.method);
+    if (call.method == 'listen' && launchLink != null && !launchLinkSent) {
+      launchLinkSent = true;
+      unawaited(
+        binaryMessenger.handlePlatformMessage(
+          eventChannel.name,
+          const StandardMethodCodec().encodeSuccessEnvelope(launchLink),
+          (_) {},
+        ),
+      );
+    }
+    return Future.value();
+  });
+  return eventChannelCalls;
+}

@@ -22,9 +22,9 @@ import 'clear_auth_url_parameters_stub.dart'
 /// `Supabase.instance.client.auth` for auth operations.
 ///
 /// **Responsibilities:**
-/// - Waits for the [AuthClient] to restore the persisted session before the
-///   deep link observer starts, so a link cannot be exchanged over a session
-///   that is still being read.
+/// - Subscribes to deep links right away, but holds them back until the
+///   [AuthClient] has restored the persisted session, so a link cannot be
+///   exchanged over a session that is still being read.
 /// - Observes deep links (universal links / custom URL schemes) and exchanges
 ///   auth codes or tokens found in those links for a valid session, supporting
 ///   both PKCE and Implicit OAuth flows.
@@ -41,9 +41,10 @@ import 'clear_auth_url_parameters_stub.dart'
 ///
 /// **Lifecycle:**
 /// 1. Created lazily when [Supabase.initialize] runs.
-/// 2. [initialize] waits for the persisted session to be restored, registers
-///    the deep link observer, and adds this instance as a
-///    `WidgetsBindingObserver`.
+/// 2. [initialize] registers the deep link observer, waits for the persisted
+///    session to be restored, adds this instance as a
+///    `WidgetsBindingObserver`, and schedules the exchange of the link the
+///    app was launched with.
 /// 3. [dispose] cancels all subscriptions, removes the binding observer, and
 ///    stops deep link monitoring.
 ///
@@ -52,6 +53,8 @@ import 'clear_auth_url_parameters_stub.dart'
 ///   only the URL the app was loaded with is inspected once at startup,
 ///   since browser navigation triggers a full page load rather than a
 ///   stream event.
+/// - On every platform the link the app was launched with is exchanged
+///   right after [Supabase.initialize] completes.
 @internal
 class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding get _widgetsBindingInstance => WidgetsBinding.instance;
@@ -76,20 +79,45 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// teardown does not touch the disposed [Supabase] instance.
   bool _isDisposed = false;
 
+  /// Links received before the persisted session is restored, held back so
+  /// that none of them is exchanged over a session that is still being read.
+  /// Null once they have been handled.
+  List<Uri>? _pendingDeeplinks;
+
+  /// The link the app was launched with, once it has been exchanged. The
+  /// link stream delivers it as well when this is its first listener, so the
+  /// first matching event is dropped instead of being exchanged twice.
+  Uri? _exchangedInitialDeeplink;
+
+  /// - Subscribes to incoming deep links, holding them back until the
+  ///   persisted session is restored
   /// - Waits for the auth client to restore the persisted session
-  /// - Starts a deep link observer
+  /// - Schedules the exchange of the link the app was launched with and of
+  ///   any link received in the meantime
   Future<void> initialize({
     required FlutterAuthClientOptions options,
   }) async {
     _autoRefreshToken = options.autoRefreshToken;
     _detectSessionInUriPredicate = options.detectSessionInUriPredicate;
 
+    if (options.detectSessionInUri) {
+      _handleIncomingLinks();
+    }
+
     await Supabase.instance.client.auth.initialized;
+    if (_isDisposed) return;
     _widgetsBindingInstance.addObserver(this);
 
     if (options.detectSessionInUri) {
-      await _startDeeplinkObserver();
+      // Exchanged after [Supabase.initialize] completes, so that a listener
+      // subscribing to `onAuthStateChange` right after it gets the outcome.
+      unawaited(Future(_handleLaunchDeeplinks));
     }
+  }
+
+  Future<void> _handleLaunchDeeplinks() async {
+    await _handleInitialUri();
+    await _handlePendingDeeplinks();
   }
 
   /// Dispose the instance to free up resources
@@ -153,13 +181,6 @@ class SupabaseAuth with WidgetsBindingObserver {
         hasParameter('error_description');
   }
 
-  /// Enable deep link observer to handle deep links
-  Future<void> _startDeeplinkObserver() async {
-    flutterLogger.fine('Starting deeplink observer');
-    _handleIncomingLinks();
-    await _handleInitialUri();
-  }
-
   /// Stop deep link observer
   ///
   /// Automatically called on dispose().
@@ -172,21 +193,54 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Handle incoming links - the ones that the app will receive from the OS
   /// while already started.
+  ///
+  /// `app_links` sends the link the app was launched with only to the first
+  /// listener of its link stream, so this subscribes as early as possible.
+  /// [_handleInitialUri] reads that link explicitly for the case where the
+  /// app subscribed first.
   void _handleIncomingLinks() {
     if (!kIsWeb) {
+      flutterLogger.fine('Starting deeplink observer');
+      _pendingDeeplinks = [];
       // It will handle app links while the app is already started - be it in
       // the foreground or in the background.
       _deeplinkSubscription = _appLinks.uriLinkStream.listen(
-        (Uri? uri) {
-          if (uri != null) {
-            unawaited(_handleDeeplink(uri));
-          }
-        },
+        _onDeeplink,
         onError: (Object err, StackTrace stackTrace) {
           _onErrorReceivingDeeplink(err, stackTrace);
         },
       );
     }
+  }
+
+  void _onDeeplink(Uri uri) {
+    final pendingDeeplinks = _pendingDeeplinks;
+    if (pendingDeeplinks != null) {
+      pendingDeeplinks.add(uri);
+    } else if (!_isRepeatedInitialDeeplink(uri)) {
+      unawaited(_handleDeeplink(uri));
+    }
+  }
+
+  /// Exchanges the links held back while the session was restored, in the
+  /// order they arrived.
+  Future<void> _handlePendingDeeplinks() async {
+    final pendingDeeplinks = _pendingDeeplinks;
+    if (pendingDeeplinks == null) return;
+
+    while (pendingDeeplinks.isNotEmpty && !_isDisposed) {
+      final uri = pendingDeeplinks.removeAt(0);
+      if (!_isRepeatedInitialDeeplink(uri)) {
+        await _handleDeeplink(uri);
+      }
+    }
+    _pendingDeeplinks = null;
+  }
+
+  bool _isRepeatedInitialDeeplink(Uri uri) {
+    if (uri != _exchangedInitialDeeplink) return false;
+    _exchangedInitialDeeplink = null;
+    return true;
   }
 
   /// Handle the initial Uri - the one the app was started with
@@ -195,32 +249,30 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
   ///
-  /// We handle all exceptions, since it is called from initState.
+  /// Every exception is caught, so a failing platform call is only logged.
   Future<void> _handleInitialUri() async {
     if (_initialDeeplinkIsHandled) return;
     _initialDeeplinkIsHandled = true;
 
-    // Only web needs to handle initial uri. On mobile, the initial uri is
-    // included in the uriLinkStream.
-    if (kIsWeb) {
-      try {
-        final Uri? uri = await _appLinks.getInitialLink();
-        if (uri != null) {
-          await _handleDeeplink(uri);
-        }
-      } on PlatformException catch (err, stackTrace) {
-        _onErrorReceivingDeeplink(err.message ?? err, stackTrace);
-        // Platform messages may fail but we ignore the exception
-      } on FormatException catch (err, stackTrace) {
-        _onErrorReceivingDeeplink(err.message, stackTrace);
-      } catch (err, stackTrace) {
-        _onErrorReceivingDeeplink(err, stackTrace);
+    try {
+      final Uri? uri = await _appLinks.getInitialLink();
+      if (uri != null && !_isDisposed) {
+        _exchangedInitialDeeplink = uri;
+        await _handleDeeplink(uri);
       }
+    } on PlatformException catch (err, stackTrace) {
+      _onErrorReceivingDeeplink(err.message ?? err, stackTrace);
+      // Platform messages may fail but we ignore the exception
+    } on FormatException catch (err, stackTrace) {
+      _onErrorReceivingDeeplink(err.message, stackTrace);
+    } catch (err, stackTrace) {
+      _onErrorReceivingDeeplink(err, stackTrace);
     }
   }
 
   /// Callback when deeplink receiving succeeds
   Future<void> _handleDeeplink(Uri uri) async {
+    if (_isDisposed) return;
     try {
       if (!_isAuthCallbackDeeplink(uri)) return;
     } on FormatException catch (error, stackTrace) {
@@ -335,7 +387,7 @@ extension AuthClientSignInProvider on AuthClient {
     String? domain,
     String? redirectTo,
     String? captchaToken,
-    LaunchMode launchMode = LaunchMode.platformDefault,
+    LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     bool preferEphemeral = false,
   }) async {
     final ssoUrl = await getSSOSignInUrl(
@@ -349,7 +401,7 @@ extension AuthClientSignInProvider on AuthClient {
       ssoUrl,
       provider: null,
       redirectTo: redirectTo == null ? null : Uri.parse(redirectTo),
-      launchMode: launchMode,
+      launchMode: authScreenLaunchMode,
       preferEphemeral: preferEphemeral,
     );
   }

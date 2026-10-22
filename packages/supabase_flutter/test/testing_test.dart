@@ -96,6 +96,16 @@ void main() {
     expect(urls.single, startsWith('ws://localhost:54321/realtime/v1'));
   });
 
+  test('throws when an earlier instance was not disposed', () async {
+    final supabase = await initializeTestSupabase(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+
+    expect(
+      () => initializeTestSupabase(httpClient: MockSupabaseHttpClient()),
+      throwsStateError,
+    );
+  });
+
   test('a signed-out function call sends the key only as apikey', () async {
     httpClient.stubEdgeFunction('hello');
     final supabase = await initializeTestSupabase(httpClient: httpClient);
