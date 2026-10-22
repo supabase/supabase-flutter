@@ -1,4 +1,5 @@
 import 'package:database_crud_example/main.dart';
+import 'package:database_crud_example/supabase_schema.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -11,7 +12,8 @@ const supabasePublishableKey = String.fromEnvironment(
 
 /// End-to-end test that drives the real app widgets against the local Supabase
 /// stack, exercising the CRUD flow through the UI: reading the seeded tasks,
-/// filtering them, then creating, completing, renaming and deleting a task.
+/// filtering them, then creating a task, completing every open task through a
+/// database function, reopening, renaming and deleting the task.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -19,6 +21,10 @@ void main() {
   // previous run.
   final createdTitle = 'E2E task ${DateTime.now().microsecondsSinceEpoch}';
   final renamedTitle = 'E2E renamed ${DateTime.now().microsecondsSinceEpoch}';
+
+  // The open tasks "Complete all" also completes, reopened afterwards so the
+  // seed data stays as it was.
+  var reopenAfterTest = <String>[];
 
   setUpAll(() async {
     await Supabase.initialize(
@@ -34,10 +40,16 @@ void main() {
   tearDown(() async {
     // Remove only what this run created so it can run repeatedly and safely
     // alongside other runs sharing the same instance.
-    await Supabase.instance.client.from('tasks').delete().inFilter('title', [
-      createdTitle,
-      renamedTitle,
-    ]);
+    await Supabase.instance.client
+        .table(Tasks.table)
+        .delete()
+        .where(Tasks.title.inFilter([createdTitle, renamedTitle]));
+    if (reopenAfterTest.isNotEmpty) {
+      await Supabase.instance.client
+          .table(Tasks.table)
+          .update(TasksUpdate(isComplete: false))
+          .where(Tasks.id.inFilter(reopenAfterTest));
+    }
   });
 
   testWidgets('reads, filters and manages tasks through the UI', (
@@ -78,15 +90,23 @@ void main() {
     await _searchFor(tester, createdTitle);
     await _pumpUntil(tester, _tile(createdTitle));
 
-    // Complete it by ticking the checkbox in its tile (update).
+    // Complete every open task, the new one included, through the
+    // `complete_all_tasks` database function (rpc).
+    final openTasks = await Supabase.instance.client
+        .table(Tasks.table)
+        .selectOnly([Tasks.id, Tasks.title])
+        .where(Tasks.isComplete.isFalse());
+    reopenAfterTest = [
+      for (final task in openTasks)
+        if (task.read(Tasks.title) != createdTitle) task.read(Tasks.id),
+    ];
+    await tester.tap(find.byTooltip('Complete all'));
+    await _pumpUntil(tester, find.textContaining('Completed '));
+    await _pumpUntil(tester, _inTile(createdTitle, _checkbox(checked: true)));
+
+    // Reopen it by unticking the checkbox in its tile (update).
     await tester.tap(_inTile(createdTitle, find.byType(Checkbox)));
-    await _pumpUntil(
-      tester,
-      _inTile(
-        createdTitle,
-        find.byWidgetPredicate((widget) => widget is Checkbox && widget.value!),
-      ),
-    );
+    await _pumpUntil(tester, _inTile(createdTitle, _checkbox(checked: false)));
 
     // Rename it through the edit dialog (update).
     await tester.tap(_inTile(createdTitle, find.byIcon(Icons.edit)));
@@ -117,6 +137,11 @@ Finder _tile(String title) => find.widgetWithText(ListTile, title);
 /// Finds [target] within the [ListTile] that contains [title].
 Finder _inTile(String title, Finder target) =>
     find.descendant(of: _tile(title), matching: target);
+
+/// Finds a [Checkbox] that is ticked when [checked] is true.
+Finder _checkbox({required bool checked}) => find.byWidgetPredicate(
+  (widget) => widget is Checkbox && widget.value == checked,
+);
 
 /// Filters the list down to [query] through the search field.
 Future<void> _searchFor(WidgetTester tester, String query) =>

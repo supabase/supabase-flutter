@@ -6,7 +6,7 @@ all sharing a single local Supabase instance.
 | Example                                    | What it shows                                                         |
 | ------------------------------------------ | --------------------------------------------------------------------- |
 | [`authentication`](authentication)         | Email/password, magic link, OTP, phone, OAuth, anonymous and MFA auth |
-| [`database_crud`](database_crud)           | Database CRUD with PostgREST (`from(...)`)                            |
+| [`database_crud`](database_crud)           | Typed database CRUD and RPC with generated types (`table(...)`)       |
 | [`edge_functions`](edge_functions)         | Invoking Edge Functions (`functions.invoke(...)`)                     |
 | [`passkeys`](passkeys)                     | Passkey (WebAuthn) sign in and management                             |
 | [`realtime_room`](realtime_room)           | Realtime Postgres Changes, Broadcast and Presence                     |
@@ -48,6 +48,10 @@ the stack was already running, it is left running.
 - [`supabase/`](supabase) holds the shared Supabase setup. `config.toml` is the
   one configuration every example runs against, so anything enabled there (for
   example email sign in) is available everywhere.
+- The `database_crud` and `realtime_room` examples reach the database through
+  types generated from `supabase/migrations` with
+  `supabase gen types --lang dart`, committed as `lib/supabase_schema.g.dart`.
+  Each example's README has the command to regenerate them.
 - [`launcher/`](launcher) is a small Dart CLI, wrapped by `run.sh`, that runs
   `supabase start` against that config, reads back the local `API_URL` and
   publishable key, lists the examples, and runs the selected one with those

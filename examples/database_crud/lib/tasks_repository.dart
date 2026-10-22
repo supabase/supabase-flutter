@@ -1,30 +1,30 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
+import 'supabase_schema.g.dart';
 
 /// All database access for the CRUD example lives here, so the UI stays thin
-/// and every `supabase.from(...)` call is easy to read and to exercise from an
+/// and every `supabase.table(...)` call is easy to read and to exercise from an
 /// integration test.
+///
+/// The tables, columns and relations used here come from
+/// `supabase_schema.g.dart`, which `supabase gen types --lang dart` generates
+/// from the database schema, so a misspelled column or a value of the wrong
+/// type is a compile error rather than a failed request.
 class TasksRepository {
   TasksRepository(this._client);
 
   final SupabaseClient _client;
 
-  /// Columns for a task plus its related project, used everywhere a task is
-  /// returned so the join is consistent.
-  static const _taskColumns = '*, projects(name)';
-
   /// SELECT every project, ordered alphabetically by name.
-  Future<List<Project>> fetchProjects() async {
-    final rows = await _client.from('projects').select().order('name');
-    return rows.map(Project.fromJson).toList();
-  }
+  Future<List<ProjectsRow>> fetchProjects() =>
+      _client.table(Projects.table).select().order(Projects.name);
 
   /// SELECT tasks joined to their project, with optional filters and ordering.
   ///
   /// * [projectId] restricts to a single project (`eq`).
   /// * [search] matches the title case-insensitively (`ilike`).
-  /// * [onlyIncomplete] hides finished tasks (`eq`).
+  /// * [onlyIncomplete] hides finished tasks (`isFalse`).
   ///
   /// Results are ordered by priority (highest first) then newest first.
   Future<List<Task>> fetchTasks({
@@ -32,23 +32,24 @@ class TasksRepository {
     String? search,
     bool onlyIncomplete = false,
   }) async {
-    // Embed the related project row (`projects(name)`) to demonstrate a join.
-    var query = _client.from('tasks').select(_taskColumns);
+    // Filters are values, so the optional ones are collected and combined
+    // with `&` into a single `where`.
+    final filters = [
+      if (projectId != null) Tasks.projectId.eq(projectId),
+      if (search != null && search.isNotEmpty) Tasks.title.ilike('%$search%'),
+      if (onlyIncomplete) Tasks.isComplete.isFalse(),
+    ];
 
-    if (projectId != null) {
-      query = query.eq('project_id', projectId);
-    }
-    if (search != null && search.isNotEmpty) {
-      query = query.ilike('title', '%$search%');
-    }
-    if (onlyIncomplete) {
-      query = query.eq('is_complete', false);
+    // Embed the related project's name to demonstrate a join.
+    var query = _client.table(Tasks.table).selectOnly(Task.columns);
+    if (filters.isNotEmpty) {
+      query = query.where(filters.reduce((all, filter) => all & filter));
     }
 
     final rows = await query
-        .order('priority', ascending: false)
-        .order('created_at', ascending: false);
-    return rows.map(Task.fromJson).toList();
+        .order(Tasks.priority.desc())
+        .order(Tasks.createdAt.desc());
+    return rows.map(Task.new).toList();
   }
 
   /// INSERT a task and return the created row (joined to its project).
@@ -58,44 +59,50 @@ class TasksRepository {
     Priority priority = Priority.low,
   }) async {
     final row = await _client
-        .from('tasks')
-        .insert({
-          'project_id': projectId,
-          'title': title,
-          'priority': priority.value,
-        })
-        .select(_taskColumns)
+        .table(Tasks.table)
+        .insert(
+          TasksInsert(
+            projectId: projectId,
+            title: title,
+            priority: priority.value,
+          ),
+        )
+        .selectOnly(Task.columns)
         .single();
-    return Task.fromJson(row);
+    return Task(row);
   }
 
   /// UPDATE a task's completion state and return the updated row.
   Future<Task> setTaskComplete({
     required String id,
     required bool isComplete,
-  }) async {
-    final row = await _client
-        .from('tasks')
-        .update({'is_complete': isComplete})
-        .eq('id', id)
-        .select(_taskColumns)
-        .single();
-    return Task.fromJson(row);
-  }
+  }) => _updateTask(id, TasksUpdate(isComplete: isComplete));
 
   /// UPDATE a task's title and return the updated row.
-  Future<Task> renameTask({required String id, required String title}) async {
+  Future<Task> renameTask({required String id, required String title}) =>
+      _updateTask(id, TasksUpdate(title: title));
+
+  Future<Task> _updateTask(String id, TasksUpdate values) async {
     final row = await _client
-        .from('tasks')
-        .update({'title': title})
-        .eq('id', id)
-        .select(_taskColumns)
+        .table(Tasks.table)
+        .update(values)
+        .where(Tasks.id.eq(id))
+        .selectOnly(Task.columns)
         .single();
-    return Task.fromJson(row);
+    return Task(row);
   }
+
+  /// Calls the `complete_all_tasks` database function, which marks every open
+  /// task complete, or only those of [projectId] when given, and returns how
+  /// many it changed.
+  ///
+  /// `client.rpc.completeAllTasks` is generated from the function's signature,
+  /// so its parameters and result are typed like the table API.
+  Future<int> completeAllTasks({String? projectId}) async =>
+      await _client.rpc.completeAllTasks(targetProjectId: projectId) ?? 0;
 
   /// DELETE a task.
   Future<void> deleteTask(String id) async {
-    await _client.from('tasks').delete().eq('id', id);
+    await _client.table(Tasks.table).delete().where(Tasks.id.eq(id));
   }
 }

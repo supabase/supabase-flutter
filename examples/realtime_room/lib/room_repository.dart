@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'models.dart';
 import 'room_channel.dart';
+import 'supabase_schema.g.dart';
 
 /// Database reads and writes for the room's chat history.
 ///
@@ -16,10 +16,8 @@ class RoomRepository {
 
   /// SELECT the existing messages once, oldest first, to seed the chat log
   /// before realtime starts streaming new ones.
-  Future<List<Message>> fetchMessages() async {
-    final rows = await _client.from('messages').select().order('created_at');
-    return rows.map(Message.fromJson).toList();
-  }
+  Future<List<MessagesRow>> fetchMessages() =>
+      _client.table(Messages.table).select().order(Messages.createdAt);
 
   /// INSERT a message and return the stored row.
   ///
@@ -27,21 +25,18 @@ class RoomRepository {
   /// `messages` table is in the realtime publication, so the server streams
   /// this row to every subscribed [RoomChannel] as a Postgres Changes insert
   /// event.
-  Future<Message> sendMessage({
+  Future<MessagesRow> sendMessage({
     required String username,
     required String content,
-  }) async {
-    final row = await _client
-        .from('messages')
-        .insert({'username': username, 'content': content})
-        .select()
-        .single();
-    return Message.fromJson(row);
-  }
+  }) => _client
+      .table(Messages.table)
+      .insert(MessagesInsert(username: username, content: content))
+      .select()
+      .single();
 
   /// DELETE a message, which likewise streams a delete event to every client.
   Future<void> deleteMessage(String id) async {
-    await _client.from('messages').delete().eq('id', id);
+    await _client.table(Messages.table).delete().where(Messages.id.eq(id));
   }
 
   /// Opens a realtime [RoomChannel] for [username] carrying the Postgres

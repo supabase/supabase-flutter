@@ -1,3 +1,7 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'supabase_schema.g.dart';
+
 /// How urgent a [Task] is. Stored in the database as the integer [value].
 enum Priority {
   low(1, 'Low'),
@@ -13,54 +17,21 @@ enum Priority {
   final String label;
 }
 
-/// A project that groups tasks together.
-class Project {
-  const Project({required this.id, required this.name});
+/// A task as the example selects it: every column of `tasks` plus the name of
+/// the project it belongs to, read through the generated column constants.
+extension type const Task(PostgrestPartialRow<TasksRow> _row)
+    implements Object {
+  /// The selection that [Task] reads, the same as `*, projects(name)`.
+  static final columns = [
+    Tasks.table.allColumns,
+    Tasks.projects(Projects.name),
+  ];
 
-  factory Project.fromJson(Map<String, dynamic> json) => Project(
-    id: json['id'] as String,
-    name: json['name'] as String,
-  );
+  String get id => _row.read(Tasks.id);
+  String get title => _row.read(Tasks.title);
+  bool get isComplete => _row.read(Tasks.isComplete);
+  Priority get priority => Priority.fromValue(_row.read(Tasks.priority));
 
-  final String id;
-  final String name;
-}
-
-/// A single task belonging to a [Project].
-class Task {
-  const Task({
-    required this.id,
-    required this.projectId,
-    required this.title,
-    required this.isComplete,
-    required this.priority,
-    required this.createdAt,
-    this.projectName,
-  });
-
-  factory Task.fromJson(Map<String, dynamic> json) {
-    // When the task is fetched with a join, the related project is nested under
-    // the `projects` key.
-    final project = json['projects'] as Map<String, dynamic>?;
-    return Task(
-      id: json['id'] as String,
-      projectId: json['project_id'] as String,
-      title: json['title'] as String,
-      isComplete: json['is_complete'] as bool,
-      priority: Priority.fromValue(json['priority'] as int),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      projectName: project?['name'] as String?,
-    );
-  }
-
-  final String id;
-  final String projectId;
-  final String title;
-  final bool isComplete;
-  final Priority priority;
-  final DateTime createdAt;
-
-  /// Name of the task's project, populated from the embedded `projects` row
-  /// when the task is fetched with a join.
-  final String? projectName;
+  /// Name of the task's project, read from the embedded `projects` row.
+  String? get projectName => _row.read(Tasks.projects)?.read(Projects.name);
 }

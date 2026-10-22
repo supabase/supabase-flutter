@@ -9,3 +9,7 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+  errors:
+    # The typed table API (`client.table(...)`) that this example is built on
+    # is marked experimental while it settles.
+    experimental_member_use: ignore

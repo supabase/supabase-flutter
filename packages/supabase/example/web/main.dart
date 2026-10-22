@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:supabase/supabase.dart';
+import 'package:supabase_example/example_usage.dart';
 import 'package:web/web.dart' as web;
 
 void main() {
@@ -16,77 +16,5 @@ void main() {
   final element = web.document.querySelector('#output');
   element?.textContent = 'Supabase Dart Web Example';
 
-  exampleUsage(supabase);
-}
-
-void exampleUsage(SupabaseClient supabase) async {
-  // query data
-  final data = await supabase
-      .from('countries')
-      .select()
-      .order('name', ascending: true);
-  print(data);
-
-  // insert data
-  await supabase.from('countries').insert([
-    {'name': 'Singapore'},
-  ]);
-
-  // update data
-  await supabase.from('countries').update({'name': 'Singapore'}).eq('id', 1);
-
-  // delete data
-  await supabase.from('countries').delete().eq('id', 1);
-
-  // realtime
-  final realtimeChannel = supabase.channel('my_channel');
-  realtimeChannel
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'countries',
-      )
-      .listen((payload) {});
-  realtimeChannel.subscribe();
-
-  // remember to remove channel when no longer needed
-  unawaited(supabase.removeChannel(realtimeChannel));
-
-  // stream
-  final streamSubscription = supabase
-      .from('countries')
-      .stream(primaryKey: ['id'])
-      .order('name')
-      .limit(10)
-      .listen((snapshot) {
-        print('snapshot: $snapshot');
-      });
-
-  // remember to remove subscription
-  unawaited(streamSubscription.cancel());
-
-  // Upload file to bucket "public"
-  final content = "my file content";
-  final storageResponse = await supabase.storage
-      .from('public')
-      .uploadBinary('example.txt', Uint8List.fromList(content.codeUnits));
-  print('upload response : $storageResponse');
-
-  // Get download url
-  final urlResponse = await supabase.storage
-      .from('public')
-      .createSignedUrl('example.txt', 60);
-  print('download url : $urlResponse');
-
-  // Download text file
-  final fileResponse = await supabase.storage
-      .from('public')
-      .download('example.txt');
-  print('downloaded file : ${String.fromCharCodes(fileResponse)}');
-
-  // Delete file
-  final deleteFileResponse = await supabase.storage.from('public').remove([
-    'example.txt',
-  ]);
-  print('deleted file id : ${deleteFileResponse.first.id}');
+  unawaited(exampleUsage(supabase));
 }

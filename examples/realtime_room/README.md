@@ -5,7 +5,7 @@ together on a single channel:
 
 - **Postgres Changes** stream inserts and deletes on the `messages` table, so the
   chat log stays in sync across every open window without re-fetching
-  (`onPostgresChanges`).
+  (`onTableChanges`, which decodes each change into the generated row type).
 - **Broadcast** relays ephemeral "typing" pings that are never written to the
   database, only forwarded to the other clients (`sendBroadcastMessage`,
   `onBroadcast`).
@@ -28,6 +28,19 @@ shared Supabase config in [`../supabase`](../supabase): schema in
 `migrations/20240602000000_realtime_room_example.sql`, seed rows in `seed.sql`.
 Realtime itself is part of the always-on local stack, so no `config.toml` change
 is needed.
+
+## Generated types
+
+`MessagesRow`, `MessagesInsert` and the `Messages` table and column constants
+come from [`lib/supabase_schema.g.dart`](lib/supabase_schema.g.dart), generated
+from the database schema by the Supabase CLI and the `supabase_typegen` dev
+dependency. After changing a migration, start the local stack and generate it
+again from this directory. `--workdir ..` points the CLI at the shared
+`examples/supabase` config:
+
+```bash
+supabase gen types --lang dart --local --schema public --workdir .. > lib/supabase_schema.g.dart
+```
 
 ## Running
 

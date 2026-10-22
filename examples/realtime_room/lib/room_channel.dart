@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
+import 'supabase_schema.g.dart';
 
 /// A single realtime channel for the room, wrapping the three realtime features
 /// this example demonstrates:
@@ -36,24 +37,9 @@ class RoomChannel {
            replicationReady: true,
          ),
        ) {
-    // Postgres Changes: new rows in the `messages` table.
-    onMessageInserted = _channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'messages',
-        )
-        .map((payload) => Message.fromJson(payload.newRecord));
-
-    // Postgres Changes: deleted rows. With row level security on, the delete
-    // payload carries only the primary key of the removed row in `oldRecord`.
-    onMessageDeleted = _channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.delete,
-          schema: 'public',
-          table: 'messages',
-        )
-        .map((payload) => payload.oldRecord['id'] as String);
+    // Postgres Changes: inserts and deletes on the `messages` table, decoded
+    // into the generated row type.
+    onMessageChanges = _channel.onTableChanges(Messages.table);
 
     // Broadcast: transient "typing" pings. Our own pings are filtered out.
     onTyping = _channel
@@ -76,13 +62,11 @@ class RoomChannel {
   /// messages, typing pings and presence.
   final String roomName;
 
-  /// A message someone added to the room (from a Postgres Changes insert
-  /// event).
-  late final Stream<Message> onMessageInserted;
-
-  /// The id of a message someone removed (from a Postgres Changes delete
-  /// event).
-  late final Stream<String> onMessageDeleted;
+  /// A message someone added to or removed from the room (from Postgres
+  /// Changes). Switch over the sealed [TypedPostgresChange] to tell an insert,
+  /// carrying the new row, from a delete, carrying the old row.
+  late final Stream<TypedPostgresChange<MessagesRow, MessagesRow>>
+  onMessageChanges;
 
   /// The username of another client that is currently typing (from a broadcast
   /// event).

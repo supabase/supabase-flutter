@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'supabase_schema.g.dart';
+
 Future<void> main() async {
   await Supabase.initialize(
     url: 'SUPABASE_URL',
@@ -200,15 +202,15 @@ class _ProfileFormState extends State<_ProfileForm> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
-      final data = await Supabase.instance.client
-          .from('profiles')
+      final profile = await Supabase.instance.client
+          .table(Profiles.table)
           .select()
-          .match({'id': userId})
+          .where(Profiles.id.eq(userId))
           .maybeSingle();
-      if (data != null && mounted) {
+      if (profile != null && mounted) {
         setState(() {
-          _usernameController.text = data['username'];
-          _websiteController.text = data['website'];
+          _usernameController.text = profile.username ?? '';
+          _websiteController.text = profile.website ?? '';
         });
       }
     } catch (_) {
@@ -233,11 +235,16 @@ class _ProfileFormState extends State<_ProfileForm> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
-      await Supabase.instance.client.from('profiles').upsert({
-        'id': userId,
-        'username': _usernameController.text,
-        'website': _websiteController.text,
-      });
+      await Supabase.instance.client
+          .table(Profiles.table)
+          .upsert(
+            ProfilesInsert(
+              id: userId,
+              username: _usernameController.text,
+              website: _websiteController.text,
+              updatedAt: DateTime.now(),
+            ),
+          );
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Saved profile'),
