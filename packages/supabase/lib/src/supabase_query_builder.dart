@@ -51,12 +51,19 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   /// [primaryKey] columns are always included, since they identify the rows,
   /// and so is the column passed to `order`, which the rows are sorted by.
   ///
-  /// It handles the life cycle of the realtime connection and automatically
-  /// refetches data from PostgREST when needed.
+  /// The rows are fetched from PostgREST once the channel has joined, and
+  /// again after every rejoin, so changes missed while the connection was
+  /// down are picked up. Changes that arrive during a fetch are applied on top
+  /// of its result, and a change the server could not send in full triggers a
+  /// fetch instead.
   ///
-  /// Make sure to provide `onError` and `onDone` callbacks to [Stream.listen]
-  /// to handle errors and completion of the stream.
-  /// The stream gets closed when the realtime connection is closed.
+  /// The stream stays open until it is cancelled or its channel is removed.
+  /// Connection drops are not reported, since the channel rejoins by itself.
+  /// A failed fetch is reported as an error, once until a fetch succeeds
+  /// again, and retried with the backoff of the realtime client. A join the
+  /// server declines is reported as a [RealtimeSubscribeException]. Provide
+  /// `onError` to [Stream.listen] to handle them, since an `await for` loop
+  /// ends at the first error.
   ///
   /// Be aware of the following limitations when using streams:
   /// - When using filters like `eq` only realtime updates matching the filter
