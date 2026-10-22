@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -9,10 +10,28 @@ import 'package:iceberg/src/logger.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class _IcebergResponse {
-  const _IcebergResponse(this.statusCode, this.headers, this.body);
+  const _IcebergResponse(this.statusCode, this.headers, this.body, this.text);
   final int statusCode;
   final Map<String, String> headers;
-  final dynamic body;
+  final Object? body;
+  final String text;
+
+  /// The body as a JSON object, which every successful catalog response
+  /// except `304 Not Modified` is.
+  Map<String, dynamic> get object {
+    final body = this.body;
+    if (body is Map<String, dynamic>) {
+      return body;
+    }
+    throw IcebergUnknownException(
+      'Expected a JSON object in the response, but got ${body.runtimeType}',
+      statusCode: statusCode,
+      details: body,
+      headers: headers,
+      body: text,
+      requestId: headers.requestId,
+    );
+  }
 }
 
 /// Client for the Apache Iceberg REST Catalog exposed by Supabase Storage under
@@ -23,6 +42,12 @@ class _IcebergResponse {
 /// final catalog = storage.analyticsCatalog('my-analytics-bucket');
 /// await catalog.createNamespace(['analytics']);
 /// ```
+///
+/// {@template iceberg_abort_signal}
+/// Every operation takes an `abortSignal` that cancels it when the [Future]
+/// completes, throwing a [http.RequestAbortedException]. It must not complete
+/// with an error.
+/// {@endtemplate}
 class IcebergRestCatalog {
   /// Creates a catalog client.
   ///
@@ -31,27 +56,73 @@ class IcebergRestCatalog {
   /// analytics bucket to operate on. [accessDelegation] requests server side
   /// credential vending or request signing for table read and write
   /// operations.
+  ///
+  /// Without an [httpClient] the catalog creates its own, which [close]
+  /// releases.
+  ///
+  /// [accessToken] is resolved before every request, including every retry,
+  /// and sent as `Authorization: Bearer <token>`. Returning `null` sends no
+  /// bearer token.
+  ///
+  /// [requestTimeout] bounds how long a request may go without progress. A
+  /// timed-out request is cancelled and throws an [IcebergNetworkException]
+  /// caused by a `TimeoutException`.
+  ///
+  /// [retryOptions] configures how a request that failed at the network level
+  /// or was answered with `503` or `520` is retried. Reads are always
+  /// retried. Writes are retried with the same `Idempotency-Key` only when the
+  /// catalog configuration advertises support for idempotency keys, since a
+  /// server that ignores the key could apply a repeated write twice.
   IcebergRestCatalog({
     required String baseUrl,
-    required Map<String, String> headers,
+    Map<String, String> headers = const {},
     String? warehouse,
     List<AccessDelegation>? accessDelegation,
     http.Client? httpClient,
-  }) : _baseUrl = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/',
+    Future<String?> Function()? accessToken,
+    Duration? requestTimeout,
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
+  }) : assert(
+         accessToken == null ||
+             headers.header(HttpHeader.authorization) == null,
+         'Pass either an Authorization header or accessToken, not both: the '
+         'header would win over the resolved token on every request.',
+       ),
+       _baseUrl = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/',
        _headers = headers,
        _warehouse = warehouse,
        _httpClient = httpClient,
+       _accessToken = accessToken,
+       _requestTimeout = requestTimeout,
+       _retryOptions = retryOptions,
        _accessDelegation =
            (accessDelegation == null || accessDelegation.isEmpty)
            ? null
            : accessDelegation.map((delegation) => delegation.value).join(',');
   final String _baseUrl;
   final Map<String, String> _headers;
-  final http.Client? _httpClient;
   final String? _warehouse;
   final String? _accessDelegation;
+  final Future<String?> Function()? _accessToken;
+  final Duration? _requestTimeout;
+  final SupabaseRetryOptions _retryOptions;
+
+  /// The transport passed by the caller, which the catalog never closes.
+  final http.Client? _httpClient;
+
+  /// The transport the catalog created for itself when none was passed.
+  http.Client? _defaultHttpClient;
+
+  static const Set<int> _retryableStatusCodes = {503, 520};
 
   Future<String>? _prefixFuture;
+
+  /// Whether the catalog configuration advertised an idempotency key
+  /// lifetime, which makes repeating a write with the same key safe.
+  bool _idempotencyKeysSupported = false;
+
+  http.Client get _transport =>
+      _httpClient ?? (_defaultHttpClient ??= createDefaultHttpClient());
 
   String _namespaceToPath(List<String> namespace) =>
       namespace.map(Uri.encodeComponent).join('%1F');
@@ -76,29 +147,52 @@ class IcebergRestCatalog {
         '${hex.sublist(10, 16).join()}';
   }
 
-  Future<String> _resolvePrefix() => _prefixFuture ??= _computePrefix();
-
-  Future<String> _computePrefix() async {
-    if (_warehouse == null) {
-      return 'v1';
+  /// The path prefix of every operation, fetched from the catalog
+  /// configuration once and shared by concurrent callers.
+  ///
+  /// A failed fetch is not cached, so the next operation fetches it again.
+  /// [abortSignal] only abandons the wait of this caller.
+  Future<String> _resolvePrefix(Future<void>? abortSignal) {
+    final prefix = _prefixFuture ??= _fetchPrefix();
+    if (abortSignal == null) {
+      return prefix;
     }
+    return Future.any([
+      prefix,
+      abortSignal.then<String>((_) => throw http.RequestAbortedException()),
+    ]);
+  }
+
+  Future<String> _fetchPrefix() async {
     try {
-      final response = await _request(
-        HttpMethod.get,
-        'v1/config',
-        query: {'warehouse': _warehouse},
-      );
-      final config = response.body as Map<String, dynamic>;
-      final overrides = config['overrides'] as Map<String, dynamic>?;
-      final defaults = config['defaults'] as Map<String, dynamic>?;
-      final serverPrefix =
-          (overrides?['prefix'] ?? defaults?['prefix']) as String?;
-      return serverPrefix != null ? 'v1/$serverPrefix' : 'v1/$_warehouse';
-    } catch (error) {
+      return await _computePrefix();
+    } catch (_) {
       _prefixFuture = null;
-      return 'v1/$_warehouse';
+      rethrow;
     }
   }
+
+  Future<String> _computePrefix() async {
+    final warehouse = _warehouse;
+    if (warehouse == null) {
+      return 'v1';
+    }
+    final response = await _request(
+      HttpMethod.get,
+      'v1/config',
+      query: {'warehouse': warehouse},
+    );
+    final config = response.object;
+    _idempotencyKeysSupported = config['idempotency-key-lifetime'] != null;
+    final serverPrefix =
+        _prefixOf(config['overrides']) ?? _prefixOf(config['defaults']);
+    return serverPrefix != null ? 'v1/$serverPrefix' : 'v1/$warehouse';
+  }
+
+  static String? _prefixOf(Object? properties) => switch (properties) {
+    {'prefix': final String prefix} => prefix,
+    _ => null,
+  };
 
   Uri _buildUri(String path, Map<String, String>? query) {
     final buffer = StringBuffer('$_baseUrl$path');
@@ -117,31 +211,89 @@ class IcebergRestCatalog {
     return Uri.parse(buffer.toString());
   }
 
+  /// Sends a request, retrying it according to the retry options.
+  ///
+  /// A write carries an `Idempotency-Key` that every retry of it repeats.
   Future<_IcebergResponse> _request(
     HttpMethod method,
     String path, {
     Map<String, String>? query,
     Object? body,
     Map<String, String>? headers,
+    Future<void>? abortSignal,
   }) async {
     final uri = _buildUri(path, query);
-    final request = http.Request(method.value, uri)
-      ..headers.addAll({..._headers, ...?headers});
+    final isRead = method == HttpMethod.get || method == HttpMethod.head;
+    final requestHeaders = {
+      ..._headers,
+      if (!isRead) 'Idempotency-Key': _idempotencyKey(),
+      ...?headers,
+    };
+    final encodedBody = body == null ? null : json.encode(body);
+
+    var attempt = 0;
+    final response = await retry<http.Response>(
+      () {
+        attempt++;
+        icebergLogger.finest(
+          'Request: attempt: $attempt ${method.value} ${uri.redacted}',
+        );
+        return _send(method, uri, requestHeaders, encodedBody, abortSignal);
+      },
+      options: isRead || _idempotencyKeysSupported
+          ? _retryOptions
+          : _retryOptions.copyWith(enabled: false),
+      retryIf: (error) => error is IcebergNetworkException,
+      retryIfResult: (attemptResponse) =>
+          _retryableStatusCodes.contains(attemptResponse.statusCode),
+      retryAfter: (outcome) =>
+          outcome is http.Response ? parseRetryAfter(outcome.headers) : null,
+      abortSignal: abortSignal,
+    );
+    return _parse(response);
+  }
+
+  /// Sends a single attempt and reads its whole response.
+  Future<http.Response> _send(
+    HttpMethod method,
+    Uri uri,
+    Map<String, String> headers,
+    String? body,
+    Future<void>? abortSignal,
+  ) async {
+    final idleTimeout = IdleTimeout(_requestTimeout);
+    final request = idleTimeout.request(
+      method.value,
+      uri,
+      abortSignal: abortSignal,
+    )..headers.addAll(headers);
     if (body != null) {
       request.headers.putIfAbsent(
         HttpHeader.contentType,
         () => 'application/json',
       );
-      request.body = json.encode(body);
+      request.body = body;
     }
-
-    icebergLogger.finest('Request: ${method.value} ${uri.redacted}');
+    final accessToken = _accessToken;
+    if (accessToken != null) {
+      final token = await resolveAccessToken(accessToken);
+      if (token != null) {
+        request.headers.putIfAbsent(
+          HttpHeader.authorization,
+          () => 'Bearer $token',
+        );
+      }
+    }
 
     final http.StreamedResponse streamedResponse;
     try {
-      streamedResponse = await request.sendWith(_httpClient);
+      streamedResponse = await idleTimeout.send(request, _transport);
+    } on http.RequestAbortedException {
+      rethrow;
     } on SupabaseException {
       rethrow;
+    } on TimeoutException catch (error) {
+      throw IcebergNetworkException('Request timed out', cause: error);
     } catch (error) {
       throw IcebergNetworkException(
         'Network request failed: $error',
@@ -149,15 +301,17 @@ class IcebergRestCatalog {
       );
     }
 
-    final http.Response response;
     try {
-      response = await http.Response.fromStream(streamedResponse);
+      return await http.Response.fromStream(streamedResponse);
+    } on http.RequestAbortedException {
+      rethrow;
     } catch (error) {
       // A body that stops arriving on a success status leaves the caller with
-      // nothing usable, so it is a network failure. On an error status the
-      // status itself is the answer, so it is kept with the read error as the
-      // details.
-      if (isSuccessStatusCode(streamedResponse.statusCode)) {
+      // nothing usable, so it is a network failure, and so is a timeout on any
+      // status. Otherwise, on an error status the status itself is the answer,
+      // so it is kept with the read error as the details.
+      if (isSuccessStatusCode(streamedResponse.statusCode) ||
+          error is TimeoutException) {
         throw IcebergNetworkException(
           'Failed to read the response: $error',
           cause: error,
@@ -169,39 +323,77 @@ class IcebergRestCatalog {
         headers: streamedResponse.headers,
       );
     }
+  }
 
+  /// Decodes [response], throwing the matching [IcebergApiException] for an
+  /// error status.
+  ///
+  /// A body labeled JSON that does not parse is kept as text on an error
+  /// status, where it still explains the failure, and fails a success status
+  /// with an [IcebergUnknownException].
+  _IcebergResponse _parse(http.Response response) {
     if (response.statusCode == 304) {
-      return _IcebergResponse(304, response.headers, null);
+      return _IcebergResponse(304, response.headers, null, '');
     }
 
-    final isJson = response.headers.mediaType == 'application/json';
-    final decoded = isJson && response.body.isNotEmpty
-        ? json.decode(response.body)
-        : response.body;
+    final isSuccess = isSuccessStatusCode(response.statusCode);
+    final text = response.body;
+    Object? decoded = text;
+    if (response.headers.mediaType == 'application/json' && text.isNotEmpty) {
+      try {
+        decoded = json.decode(text);
+      } on FormatException catch (error) {
+        if (isSuccess) {
+          throw IcebergUnknownException(
+            'Failed to decode the JSON response: ${error.message}',
+            statusCode: response.statusCode,
+            details: text,
+            headers: response.headers,
+            body: text,
+            requestId: response.headers.requestId,
+          );
+        }
+      }
+    }
 
-    if (!isSuccessStatusCode(response.statusCode)) {
+    if (!isSuccess) {
       throw IcebergApiException.fromResponse(
         response.statusCode,
         decoded,
         headers: response.headers,
-        body: response.body,
+        body: text,
       );
     }
 
-    return _IcebergResponse(response.statusCode, response.headers, decoded);
+    return _IcebergResponse(
+      response.statusCode,
+      response.headers,
+      decoded,
+      text,
+    );
   }
 
   Map<String, String> _accessDelegationHeader() => _accessDelegation == null
       ? const {}
       : {'X-Iceberg-Access-Delegation': _accessDelegation};
 
+  /// Closes the HTTP client the catalog created for itself.
+  ///
+  /// An `httpClient` passed to the constructor belongs to the caller and is
+  /// left open. A request made after closing fails with an
+  /// [IcebergNetworkException].
+  void close() => _defaultHttpClient?.close();
+
   /// Lists namespaces in the catalog, optionally under a parent namespace.
-  Future<ListNamespacesResult> listNamespaces([
+  ///
+  /// {@macro iceberg_abort_signal}
+  Future<ListNamespacesResult> listNamespaces({
     ListNamespacesOptions? options,
-  ]) async {
-    final prefix = await _resolvePrefix();
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     final query = <String, String>{
-      if (options?.parent != null) 'parent': options!.parent!.join(''),
+      if (options?.parent != null) 'parent': options!.parent!.join('\u001F'),
       if (options?.pageToken != null) 'pageToken': options!.pageToken!,
       if (options?.pageSize != null) 'pageSize': '${options!.pageSize}',
     };
@@ -209,8 +401,9 @@ class IcebergRestCatalog {
       HttpMethod.get,
       '$prefix/namespaces',
       query: query.isEmpty ? null : query,
+      abortSignal: abortSignal,
     );
-    final body = response.body as Map<String, dynamic>;
+    final body = response.object;
     return ListNamespacesResult(
       namespaces: (body['namespaces'] as List? ?? [])
           .map((namespace) => List<String>.from(namespace as List))
@@ -220,11 +413,14 @@ class IcebergRestCatalog {
   }
 
   /// Creates a namespace with optional [properties].
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<List<String>> createNamespace(
     List<String> namespace, {
     Map<String, String>? properties,
+    Future<void>? abortSignal,
   }) async {
-    final prefix = await _resolvePrefix();
+    final prefix = await _resolvePrefix(abortSignal);
     final response = await _request(
       HttpMethod.post,
       '$prefix/namespaces',
@@ -232,32 +428,37 @@ class IcebergRestCatalog {
         'namespace': namespace,
         'properties': ?properties,
       },
-      headers: {'Idempotency-Key': _idempotencyKey()},
+      abortSignal: abortSignal,
     );
-    final body = response.body as Map<String, dynamic>;
-    return List<String>.from(body['namespace'] as List);
+    return List<String>.from(response.object['namespace'] as List);
   }
 
   /// Loads the properties of a namespace.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<Map<String, String>> loadNamespaceMetadata(
-    List<String> namespace,
-  ) async {
-    final prefix = await _resolvePrefix();
+    List<String> namespace, {
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     final response = await _request(
       HttpMethod.get,
       '$prefix/namespaces/${_namespaceToPath(namespace)}',
+      abortSignal: abortSignal,
     );
-    final body = response.body as Map<String, dynamic>;
-    return Map.from(body['properties'] as Map? ?? const {});
+    return Map.from(response.object['properties'] as Map? ?? const {});
   }
 
   /// Sets and removes properties on a namespace.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<UpdateNamespacePropertiesResult> updateNamespaceProperties(
     List<String> namespace, {
     Map<String, String>? updates,
     List<String>? removals,
+    Future<void>? abortSignal,
   }) async {
-    final prefix = await _resolvePrefix();
+    final prefix = await _resolvePrefix(abortSignal);
     final response = await _request(
       HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/properties',
@@ -265,30 +466,39 @@ class IcebergRestCatalog {
         'updates': ?updates,
         'removals': ?removals,
       },
-      headers: {'Idempotency-Key': _idempotencyKey()},
+      abortSignal: abortSignal,
     );
-    return UpdateNamespacePropertiesResult.fromJson(
-      response.body as Map<String, dynamic>,
-    );
+    return UpdateNamespacePropertiesResult.fromJson(response.object);
   }
 
   /// Drops a namespace. The namespace must contain no tables.
-  Future<void> dropNamespace(List<String> namespace) async {
-    final prefix = await _resolvePrefix();
+  ///
+  /// {@macro iceberg_abort_signal}
+  Future<void> dropNamespace(
+    List<String> namespace, {
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     await _request(
       HttpMethod.delete,
       '$prefix/namespaces/${_namespaceToPath(namespace)}',
-      headers: {'Idempotency-Key': _idempotencyKey()},
+      abortSignal: abortSignal,
     );
   }
 
   /// Whether a namespace exists in the catalog.
-  Future<bool> namespaceExists(List<String> namespace) async {
-    final prefix = await _resolvePrefix();
+  ///
+  /// {@macro iceberg_abort_signal}
+  Future<bool> namespaceExists(
+    List<String> namespace, {
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     try {
       await _request(
         HttpMethod.head,
         '$prefix/namespaces/${_namespaceToPath(namespace)}',
+        abortSignal: abortSignal,
       );
       return true;
     } on IcebergNotFoundException {
@@ -297,23 +507,33 @@ class IcebergRestCatalog {
   }
 
   /// Creates a namespace, returning `null` if it already exists.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<List<String>?> createNamespaceIfNotExists(
     List<String> namespace, {
     Map<String, String>? properties,
+    Future<void>? abortSignal,
   }) async {
     try {
-      return await createNamespace(namespace, properties: properties);
+      return await createNamespace(
+        namespace,
+        properties: properties,
+        abortSignal: abortSignal,
+      );
     } on IcebergConflictException {
       return null;
     }
   }
 
   /// Lists tables in a namespace.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<ListTablesResult> listTables(
-    List<String> namespace, [
+    List<String> namespace, {
     ListTablesOptions? options,
-  ]) async {
-    final prefix = await _resolvePrefix();
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     final query = <String, String>{
       if (options?.pageToken != null) 'pageToken': options!.pageToken!,
       if (options?.pageSize != null) 'pageSize': '${options!.pageSize}',
@@ -322,8 +542,9 @@ class IcebergRestCatalog {
       HttpMethod.get,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/tables',
       query: query.isEmpty ? null : query,
+      abortSignal: abortSignal,
     );
-    final body = response.body as Map<String, dynamic>;
+    final body = response.object;
     return ListTablesResult(
       identifiers: (body['identifiers'] as List? ?? [])
           .map(
@@ -336,67 +557,80 @@ class IcebergRestCatalog {
   }
 
   /// Creates a table in a namespace and returns its metadata.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<TableMetadata> createTable(
     List<String> namespace,
-    CreateTableRequest request,
-  ) async {
-    final result = await createTableResult(namespace, request);
+    CreateTableRequest request, {
+    Future<void>? abortSignal,
+  }) async {
+    final result = await createTableResult(
+      namespace,
+      request,
+      abortSignal: abortSignal,
+    );
     return result.metadata;
   }
 
   /// Creates a table and returns the full load result, including any server
   /// vended storage credentials.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<LoadTableResult> createTableResult(
     List<String> namespace,
-    CreateTableRequest request,
-  ) async {
-    final prefix = await _resolvePrefix();
+    CreateTableRequest request, {
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     final response = await _request(
       HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/tables',
       body: request.toJson(),
-      headers: {
-        'Idempotency-Key': _idempotencyKey(),
-        ..._accessDelegationHeader(),
-      },
+      headers: _accessDelegationHeader(),
+      abortSignal: abortSignal,
     );
     return LoadTableResult.fromJson(
-      response.body as Map<String, dynamic>,
+      response.object,
       etag: response.headers['etag'],
     );
   }
 
   /// Creates a table if it does not already exist.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<TableMetadata> createTableIfNotExists(
     List<String> namespace,
-    CreateTableRequest request,
-  ) async {
+    CreateTableRequest request, {
+    Future<void>? abortSignal,
+  }) async {
     try {
-      return await createTable(namespace, request);
+      return await createTable(namespace, request, abortSignal: abortSignal);
     } on IcebergConflictException {
       return loadTable(
         TableIdentifier(namespace: namespace, name: request.name),
+        abortSignal: abortSignal,
       );
     }
   }
 
   /// Registers an existing metadata file as a table.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<TableMetadata> registerTable(
     List<String> namespace,
-    RegisterTableRequest request,
-  ) async {
-    final prefix = await _resolvePrefix();
+    RegisterTableRequest request, {
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     final response = await _request(
       HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/register',
       body: request.toJson(),
-      headers: {
-        'Idempotency-Key': _idempotencyKey(),
-        ..._accessDelegationHeader(),
-      },
+      headers: _accessDelegationHeader(),
+      abortSignal: abortSignal,
     );
     return LoadTableResult.fromJson(
-      response.body as Map<String, dynamic>,
+      response.object,
       etag: response.headers['etag'],
     ).metadata;
   }
@@ -404,22 +638,35 @@ class IcebergRestCatalog {
   /// Loads a table's metadata.
   ///
   /// Use [loadTableResult] instead if you need a conditional request via
-  /// `ifNoneMatch`, or the full load result including server configuration
-  /// and vended storage credentials.
-  Future<TableMetadata> loadTable(TableIdentifier id) async {
-    final result = await loadTableResult(id);
+  /// `ifNoneMatch`, or the full load result including the metadata location,
+  /// server configuration and vended storage credentials.
+  ///
+  /// {@macro iceberg_abort_signal}
+  Future<TableMetadata> loadTable(
+    TableIdentifier id, {
+    Future<void>? abortSignal,
+  }) async {
+    final result = await loadTableResult(id, abortSignal: abortSignal);
     return result!.metadata;
   }
 
   /// Loads a table and returns the full load result, or `null` when a
   /// conditional request with [LoadTableOptions.ifNoneMatch] is not modified.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<LoadTableResult?> loadTableResult(
-    TableIdentifier id, [
+    TableIdentifier id, {
     LoadTableOptions? options,
-  ]) async {
-    final prefix = await _resolvePrefix();
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
+    final snapshots = options?.snapshots;
     final query = <String, String>{
-      if (options?.snapshots != null) 'snapshots': options!.snapshots!.name,
+      if (snapshots != null)
+        'snapshots': switch (snapshots) {
+          TableSnapshotScope.all => 'all',
+          TableSnapshotScope.references => 'refs',
+        },
     };
     final response = await _request(
       HttpMethod.get,
@@ -431,25 +678,32 @@ class IcebergRestCatalog {
         if (options?.ifNoneMatch != null)
           'If-None-Match': options!.ifNoneMatch!,
       },
+      abortSignal: abortSignal,
     );
     if (response.statusCode == 304) {
       return null;
     }
     return LoadTableResult.fromJson(
-      response.body as Map<String, dynamic>,
+      response.object,
       etag: response.headers['etag'],
     );
   }
 
   /// Whether a table exists in the catalog.
-  Future<bool> tableExists(TableIdentifier id) async {
-    final prefix = await _resolvePrefix();
+  ///
+  /// {@macro iceberg_abort_signal}
+  Future<bool> tableExists(
+    TableIdentifier id, {
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     try {
       await _request(
         HttpMethod.head,
         '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
         '${Uri.encodeComponent(id.name)}',
         headers: _accessDelegationHeader(),
+        abortSignal: abortSignal,
       );
       return true;
     } on IcebergNotFoundException {
@@ -458,12 +712,15 @@ class IcebergRestCatalog {
   }
 
   /// Commits [updates] to a table, optionally guarded by [requirements].
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<CommitTableResult> updateTable(
     TableIdentifier id, {
     required List<TableUpdate> updates,
     List<TableRequirement> requirements = const [],
+    Future<void>? abortSignal,
   }) async {
-    final prefix = await _resolvePrefix();
+    final prefix = await _resolvePrefix(abortSignal);
     final response = await _request(
       HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
@@ -474,9 +731,9 @@ class IcebergRestCatalog {
             .toList(),
         'updates': updates.map((update) => update.toJson()).toList(),
       },
-      headers: {'Idempotency-Key': _idempotencyKey()},
+      abortSignal: abortSignal,
     );
-    final body = response.body as Map<String, dynamic>;
+    final body = response.object;
     final metadataLocation = body['metadata-location'] as String?;
     if (metadataLocation == null) {
       throw IcebergUnknownException(
@@ -495,28 +752,37 @@ class IcebergRestCatalog {
   }
 
   /// Drops a table, optionally purging its underlying data files.
-  Future<void> dropTable(TableIdentifier id, {bool purge = false}) async {
-    final prefix = await _resolvePrefix();
+  ///
+  /// {@macro iceberg_abort_signal}
+  Future<void> dropTable(
+    TableIdentifier id, {
+    bool purge = false,
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     await _request(
       HttpMethod.delete,
       '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
       '${Uri.encodeComponent(id.name)}',
       query: {'purgeRequested': '$purge'},
-      headers: {'Idempotency-Key': _idempotencyKey()},
+      abortSignal: abortSignal,
     );
   }
 
   /// Renames a table. Servers may or may not support cross namespace renames.
+  ///
+  /// {@macro iceberg_abort_signal}
   Future<void> renameTable(
     TableIdentifier source,
-    TableIdentifier destination,
-  ) async {
-    final prefix = await _resolvePrefix();
+    TableIdentifier destination, {
+    Future<void>? abortSignal,
+  }) async {
+    final prefix = await _resolvePrefix(abortSignal);
     await _request(
       HttpMethod.post,
       '$prefix/tables/rename',
       body: {'source': source.toJson(), 'destination': destination.toJson()},
-      headers: {'Idempotency-Key': _idempotencyKey()},
+      abortSignal: abortSignal,
     );
   }
 }

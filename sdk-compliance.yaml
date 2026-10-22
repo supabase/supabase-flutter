@@ -2518,6 +2518,7 @@ features:
     supporting_symbols:
       - IcebergRestCatalog
       - IcebergRestCatalog.IcebergRestCatalog
+      - IcebergRestCatalog.close
 
   # storage — configuration
   storage.configuration.auto_retry:
@@ -3522,6 +3523,10 @@ supporting_symbols:
   - TableSchema.identifierFieldIds
   - TableSchema.schemaId
   - TableSchema.toJson
+  - UnknownType
+  - UnknownType.UnknownType
+  - UnknownType.json
+  - UnknownType.toJson
   - User
   - User.==
   - User.User
