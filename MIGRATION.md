@@ -543,6 +543,8 @@ explicitly:
   where a failing catalog configuration request now fails the operation
 - [Transforms that sent a different request now throw or narrow](#transforms-that-sent-a-different-request-now-throw-or-narrow),
   where `head()` after a write and a reversed `range()` throw at the call site
+- [`supabase_test` fails fast and signs in with `signedIn`](#supabase_test-fails-fast-and-signs-in-with-signedin),
+  where unmatched requests fail the test and listeners waiting for `tokenRefreshed` never fire
 - [Edge Function responses decode every JSON type](#edge-function-responses-decode-every-json-type),
   so an empty JSON body is `null` and a check for `""` no longer matches
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
@@ -2421,13 +2423,17 @@ the call. Otherwise:
   functions.setAccessToken(jwt);
   ```
 
-  ```dart
+  ```dart file
   // After
-  final functions = FunctionsClient(
-    'https://your-project.supabase.co/functions/v1',
-    {'apikey': 'your-publishable-key'},
-    accessToken: () async => supabase.auth.currentSession?.accessToken,
-  );
+  import 'package:supabase/supabase.dart';
+
+  FunctionsClient functionsClient(Future<String?> Function() currentJwt) {
+    return FunctionsClient(
+      'https://your-project.supabase.co/functions/v1',
+      {'apikey': 'your-publishable-key'},
+      accessToken: currentJwt,
+    );
+  }
   ```
 
 - For a single call, pass the header to that call, through `headers:` on `invoke()` or

@@ -1,7 +1,6 @@
-// Analyzes every Dart snippet in the package skills, the package READMEs,
-// the root README, MIGRATION.md and the example READMEs against the
-// workspace, so they cannot show code that does not compile, and runs the
-// ones that are tests.
+// Analyzes every Dart snippet in the Markdown files of the repository, apart
+// from the changelogs, against the workspace, so they cannot show code that
+// does not compile, and runs the ones that are tests.
 //
 // The fence of a block says how it is checked:
 //
@@ -172,33 +171,23 @@ String _packageOf(String sourceFile) {
   return segments.first == 'packages' ? segments[1] : 'supabase_flutter';
 }
 
-Iterable<String> _snippetFiles() sync* {
-  yield 'README.md';
-  yield 'MIGRATION.md';
-  final examples =
-      Directory('examples')
-          .listSync()
-          .map((example) => File('${example.path}/README.md'))
-          .where((readme) => readme.existsSync())
-          .map((readme) => readme.path)
-          .toList()
-        ..sort();
-  yield* examples;
-  for (final package in Directory('packages').listSync()) {
-    final readme = File('${package.path}/README.md');
-    if (readme.existsSync()) yield readme.path;
-    final skills = Directory('${package.path}/skills');
-    if (!skills.existsSync()) continue;
-    final files =
-        skills
-            .listSync(recursive: true, followLinks: false)
-            .whereType<File>()
-            .where((file) => file.path.endsWith('.md'))
-            .map((file) => file.path)
-            .toList()
-          ..sort();
-    yield* files;
-  }
+List<String> _snippetFiles() {
+  final files = Process.runSync('git', [
+    'ls-files',
+    '--cached',
+    '--others',
+    '--exclude-standard',
+    '*.md',
+  ]).stdout.toString().split('\n');
+  return files
+      .where(
+        (path) =>
+            path.isNotEmpty &&
+            !path.endsWith('CHANGELOG.md') &&
+            !FileSystemEntity.isLinkSync(path),
+      )
+      .toList()
+    ..sort();
 }
 
 typedef _Block = ({String mode, int firstLine, List<String> lines});

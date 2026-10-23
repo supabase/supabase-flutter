@@ -91,8 +91,11 @@ final supabase = SupabaseClient(
 The client keeps the session, and the code verifiers of the default PKCE
 flow, in memory for as long as the process runs. Pass an `AuthAsyncStorage`
 as the `asyncStorage` of `AuthClientOptions` when a sign-in has to survive a
-restart, such as one completed from an email link, and to persist the session
-with `persistSession: true`, which throws without one.
+restart, such as one completed from an email link.
+
+To persist the session as well, set `persistSession: true` next to the
+storage. The client throws when it is created with `persistSession: true` and
+no storage, unless it uses an `accessToken` callback.
 
 ### 3. Generate the typed schema
 
