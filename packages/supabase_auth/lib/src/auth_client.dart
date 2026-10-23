@@ -1489,11 +1489,15 @@ class AuthClient {
   ///
   /// [scope] determines which sessions should be logged out.
   ///
-  /// With [SignOutScope.local] the session is removed from this device right
-  /// away, so signing out works offline. Revoking it on the server runs in
-  /// the background and is best effort: when that fails it is logged rather
-  /// than thrown, and the refresh token stays valid on the server until it
-  /// expires.
+  /// With [SignOutScope.local] the session is removed from this device and
+  /// [AuthChangeEvent.signedOut] is emitted as soon as this is called, so
+  /// signing out works offline and the app can navigate away without awaiting
+  /// the returned future. The session is then revoked on the server,
+  /// refreshing an expired access token before. The future waits for the
+  /// revoke for up to 10 seconds, so disposing the client after awaiting it
+  /// cannot abort the request. When the revoke fails or times out, the future
+  /// completes with an error, but the session stays removed from this device,
+  /// and its refresh token stays valid on the server until it expires.
   ///
   /// With [SignOutScope.global] and [SignOutScope.others] the sessions are
   /// revoked on the server first, refreshing an expired access token before.
@@ -1504,59 +1508,71 @@ class AuthClient {
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
   /// is fired!
-  Future<void> signOut({SignOutScope scope = SignOutScope.local}) =>
-      _signOut(scope: scope, reason: SignOutReason.userInitiated);
-
-  Future<void> _signOut({
-    required SignOutScope scope,
-    required SignOutReason reason,
-  }) async {
+  Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
     authLogger.info('Signing out user with scope: ${scope.name}');
 
     if (scope == SignOutScope.local) {
-      final accessToken = currentSession?.accessToken;
-      await _signOutLocally(reason);
-      if (accessToken != null) {
-        unawaited(
-          _revokeSessions(accessToken, scope).then(
-            (_) {},
-            onError: (Object error, StackTrace stackTrace) {
-              authLogger.warning(
-                'Signed out locally, but could not revoke the session on the '
-                'server',
-                error,
-                stackTrace,
-              );
-            },
-          ),
-        );
+      final session = _currentSession;
+      await _signOutLocally(SignOutReason.userInitiated);
+      if (session != null) {
+        await _revokeRemovedSession(session);
       }
       return;
     }
 
-    // An expired access token would be rejected with a 401, which counts as
-    // already signed out, so the sessions would never be revoked.
-    String? accessToken;
+    final sessionBeforeRefresh = _currentSession;
+    Session? session;
     try {
-      accessToken = (await getSession())?.accessToken;
+      session = await getSession();
     } on AuthException {
-      if (_currentSession == null) {
-        // The failed refresh has already signed the session out.
-        await _pkceVerifierStore?.removeAll();
-        return;
+      final current = _currentSession;
+      if (current == null) {
+        // The failed refresh has already signed this device out, but no
+        // session was revoked on the server.
+        if (scope == SignOutScope.global) {
+          await _pkceVerifierStore?.removeAll();
+        }
+        rethrow;
       }
-      accessToken = _currentSession?.accessToken;
+      // The server rejects an expired access token with a 401, so the
+      // sessions could not be revoked with it.
+      if (!identical(current, sessionBeforeRefresh) ||
+          current.isExpiredWithoutMargin) {
+        rethrow;
+      }
+      session = current;
     }
     final versionBeforeRevoke = _sessionVersion;
-    if (accessToken != null) {
-      await _revokeSessions(accessToken, scope);
+    if (session != null) {
+      await _revokeSessions(session, scope);
     }
     // A sign-in or sign-out that happened while the request was in flight is
     // newer than this sign-out.
     if (scope == SignOutScope.global &&
         _sessionVersion == versionBeforeRevoke) {
-      await _signOutLocally(reason);
+      await _signOutLocally(SignOutReason.userInitiated);
     }
+  }
+
+  /// Signs out on this device for [reason], revoking the session on the
+  /// server in the background on a best effort basis.
+  Future<void> _discardSession(SignOutReason reason) async {
+    final session = _currentSession;
+    await _signOutLocally(reason);
+    if (session == null) return;
+    unawaited(
+      _revokeRemovedSession(session).then(
+        (_) {},
+        onError: (Object error, StackTrace stackTrace) {
+          authLogger.warning(
+            'Signed out locally, but could not revoke the session on the '
+            'server',
+            error,
+            stackTrace,
+          );
+        },
+      ),
+    );
   }
 
   /// Removes the session and every pending PKCE verifier from this device.
@@ -1574,20 +1590,77 @@ class AuthClient {
     }
   }
 
-  /// Revokes the sessions [scope] covers on the server.
-  Future<void> _revokeSessions(String accessToken, SignOutScope scope) async {
-    try {
-      await admin.signOut(accessToken, scope: scope);
-    } on AuthApiException catch (error) {
-      // Ignore 401s since an invalid or expired JWT should sign out the
-      // current session.
-      // Ignore 403s since the user might not exist anymore.
-      // Ignore 404s since the user might not exist anymore.
-      if (error.statusCode != 401 &&
-          error.statusCode != 403 &&
-          error.statusCode != 404) {
-        rethrow;
+  /// Refresh errors that prove the session can no longer be used, so there is
+  /// nothing left to revoke.
+  static final _sessionGoneCodes = {
+    ErrorCode.refreshTokenNotFound.code,
+    ErrorCode.refreshTokenAlreadyUsed.code,
+    ErrorCode.sessionNotFound.code,
+    ErrorCode.sessionExpired.code,
+    ErrorCode.userNotFound.code,
+  };
+
+  /// Revokes [session], which was already removed from this device, on the
+  /// server, refreshing it first when its access token is about to expire.
+  Future<void> _revokeRemovedSession(Session session) async {
+    Future<void> revoke() async {
+      var current = session;
+      if (current.isExpired) {
+        final refreshToken = current.refreshToken;
+        try {
+          if (refreshToken == null) {
+            throw AuthException(
+              'Could not revoke the session on the server, its access token '
+              'has expired and it has no refresh token.',
+              errorCode: ErrorCode.sessionExpired.code,
+            );
+          }
+          // A single attempt, so the logout request still fits in the
+          // timeout.
+          current = await _refreshAccessToken(
+            refreshToken,
+            attemptOptions: const SupabaseRetryOptions(enabled: false),
+          );
+        } on AuthException catch (error) {
+          if (error is AuthApiException &&
+              _sessionGoneCodes.contains(error.errorCode)) {
+            return;
+          }
+          // An access token inside the expiry margin can still revoke the
+          // session.
+          if (current.isExpiredWithoutMargin) rethrow;
+        }
       }
+      await _revokeSessions(current, SignOutScope.local);
+    }
+
+    try {
+      await revoke().timeout(AuthConstants.signOutRevokeTimeout);
+    } on TimeoutException catch (error) {
+      throw AuthRetryableFetchException(
+        message: 'Timed out revoking the session on the server.',
+        cause: error,
+      );
+    }
+  }
+
+  /// Revokes the sessions [scope] covers on the server, using the access token
+  /// of [session].
+  Future<void> _revokeSessions(Session session, SignOutScope scope) async {
+    try {
+      await admin.signOut(session.accessToken, scope: scope);
+    } on AuthApiException catch (error) {
+      // A 401 for an expired token says nothing about the sessions. For a
+      // valid token it means the session is already gone.
+      // Ignore 403s and 404s since the session or the user might not exist
+      // anymore.
+      final ignored = switch (error.statusCode) {
+        401 =>
+          !error.message.contains('expired') && !session.isExpiredWithoutMargin,
+        403 || 404 => true,
+        _ => false,
+      };
+      if (!ignored) rethrow;
     }
   }
 
@@ -1729,10 +1802,7 @@ class AuthClient {
     final session = Session.fromJson(json.decode(jsonString));
     if (session == null) {
       // sign out to delete the local storage from supabase_flutter
-      await _signOut(
-        scope: SignOutScope.local,
-        reason: SignOutReason.sessionMissing,
-      );
+      await _discardSession(SignOutReason.sessionMissing);
       throw notifyException(
         AuthSessionMissingException(
           message: 'Initial session is missing data.',
@@ -1763,10 +1833,7 @@ class AuthClient {
         authLogger.warning(
           "Can't recover session from string, session is null",
         );
-        await _signOut(
-          scope: SignOutScope.local,
-          reason: SignOutReason.sessionMissing,
-        );
+        await _discardSession(SignOutReason.sessionMissing);
         // The `catch` below notifies subscribers, so throw without notifying
         // here to avoid emitting the error onto the stream twice.
         throw AuthSessionMissingException(
@@ -1801,10 +1868,7 @@ class AuthClient {
 
       final token = session.refreshToken;
       if (token == null) {
-        await _signOut(
-          scope: SignOutScope.local,
-          reason: SignOutReason.sessionExpired,
-        );
+        await _discardSession(SignOutReason.sessionExpired);
         throw AuthException(
           'Session expired.',
           errorCode: ErrorCode.sessionExpired.code,
@@ -1931,15 +1995,20 @@ class AuthClient {
 
   /// Generates a new JWT.
   /// [refreshToken] A valid refresh token that was returned on login.
-  Future<Session> _refreshAccessToken(String refreshToken) async {
+  Future<Session> _refreshAccessToken(
+    String refreshToken, {
+    SupabaseRetryOptions? attemptOptions,
+  }) async {
+    final effectiveRetryOptions = attemptOptions ?? retryOptions;
     final startedAt = clock.now();
     var attempt = 0;
     Duration? retryAfterOf(Object outcome) => outcome is SupabaseApiException
         ? parseRetryAfter(outcome.headers)
         : null;
-    final unjittered = retryOptions.copyWith(randomizationFactor: 0);
+    final unjittered = effectiveRetryOptions.copyWith(randomizationFactor: 0);
     Duration longestBackoff(int retries) =>
-        unjittered.delay(retries) * (1 + retryOptions.randomizationFactor);
+        unjittered.delay(retries) *
+        (1 + effectiveRetryOptions.randomizationFactor);
 
     return await retry(
       () async {
@@ -1957,7 +2026,7 @@ class AuthClient {
         );
         return _sessionFromResponse(response);
       },
-      options: retryOptions,
+      options: effectiveRetryOptions,
       retryAfter: retryAfterOf,
       retryIf: (e) {
         // Do not retry if the next retry could come after the next tick. The

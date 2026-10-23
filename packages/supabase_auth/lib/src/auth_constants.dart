@@ -24,6 +24,10 @@ class AuthConstants {
   /// Current session will be checked for refresh at this interval.
   static const autoRefreshTickDuration = Duration(seconds: 10);
 
+  /// How long a local sign out waits for the session to be revoked on the
+  /// server.
+  static const signOutRevokeTimeout = Duration(seconds: 10);
+
   /// A token refresh will be attempted this many ticks before the current
   /// session expires.
   static const autoRefreshTickThreshold = 3;
