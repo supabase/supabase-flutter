@@ -4,8 +4,10 @@ A live chat room that shows all three of Supabase Realtime's features working
 together on a single channel:
 
 - **Postgres Changes** stream inserts and deletes on the `messages` table, so the
-  chat log stays in sync across every open window without re-fetching
-  (`onTableChanges`, which decodes each change into the generated row type).
+  chat log stays in sync across every open window (`onTableChanges`, which
+  decodes each change into the generated row type). The history is loaded
+  once the channel is live, and again after every rejoin, since changes made
+  while the app was in the background are not streamed afterwards.
 - **Broadcast** relays ephemeral "typing" pings that are never written to the
   database, only forwarded to the other clients (`sendBroadcastMessage`,
   `onBroadcast`).
