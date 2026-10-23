@@ -730,6 +730,7 @@ void main() {
       await supabase.auth.signOut();
 
       expect(supabase.auth.currentSession, isNull);
+      await pumpEventQueue();
       final request = httpClient.requestsTo('/auth/v1/logout').single;
       expect(request.method, 'POST');
     });

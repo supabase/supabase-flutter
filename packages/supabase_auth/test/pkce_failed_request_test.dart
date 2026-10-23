@@ -72,7 +72,7 @@ void main() {
 
       final exchange = httpClient.requestsTo(
         '/auth/v1/token',
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
       );
       expect(
         generatePKCEChallenge(exchange.single.jsonBody['code_verifier']),
@@ -122,7 +122,7 @@ void main() {
       httpClient.stub(
         rateLimited,
         path: '/auth/v1/user',
-        method: HttpMethod.put.value,
+        method: HttpMethod.put,
         statusCode: 429,
       );
       await signInTestUser(client);

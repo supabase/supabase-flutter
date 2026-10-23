@@ -1544,7 +1544,7 @@ class Team {
     'badge!badge_team_fkey',
     columns: [id],
     referencedTable: 'badge',
-    referencedColumns: [Badge.team],
+    referencedColumns: [BadgeTable.team],
     alias: 'badge_via_team',
   );
 
@@ -1635,7 +1635,7 @@ class Profile {
     'badge',
     columns: [id],
     referencedTable: 'badge',
-    referencedColumns: [Badge.profile],
+    referencedColumns: [BadgeTable.profile],
   );
 }
 
@@ -1679,8 +1679,8 @@ extension type const BadgeUpdate._(Map<String, dynamic> _json)
 }
 
 /// Typed access to the `badge` table.
-class Badge {
-  const Badge._();
+class BadgeTable {
+  const BadgeTable._();
 
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable<BadgeRow, BadgeInsert, BadgeUpdate>(
@@ -1783,7 +1783,7 @@ class TeamBadge {
     'badge',
     columns: [badgeId],
     referencedTable: 'badge',
-    referencedColumns: [Badge.id],
+    referencedColumns: [BadgeTable.id],
   );
 }
 
