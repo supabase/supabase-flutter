@@ -179,6 +179,7 @@ void main() {
         await supabase.dispose();
 
         expect(() => supabase.client, throwsStateError);
+        expect(() => supabase.oauthLauncher, throwsStateError);
       });
 
       test('instance asserts that supabase is initialized', () async {

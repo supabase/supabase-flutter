@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -68,6 +70,20 @@ void main() {
           expect(mockStorage.readKeys, isEmpty);
         },
       );
+    });
+
+    test('generateRawNonce returns 16 fresh random bytes', () async {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        authOptions: FlutterAuthClientOptions(asyncStorage: MockAsyncStorage()),
+      );
+      final auth = Supabase.instance.client.auth;
+
+      final nonce = auth.generateRawNonce();
+
+      expect(base64Url.decode(nonce), hasLength(16));
+      expect(auth.generateRawNonce(), isNot(nonce));
     });
 
     group('Auth state stream error handling', () {

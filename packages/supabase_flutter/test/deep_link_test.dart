@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -290,6 +291,122 @@ void main() {
       expect(exception.statusCode, 403);
     });
   });
+  group('Deep Link with only an error description or code', () {
+    Future<AuthException> surfacedException(String link) async {
+      final exception = Completer<AuthException>();
+      mockAppLink(
+        mockMethodChannel: false,
+        mockEventChannel: true,
+        initialLink: link,
+      );
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: MockAsyncStorage(),
+        ),
+      );
+      Supabase.instance.client.auth.onAuthStateChange.listen(
+        (_) {},
+        onError: (Object error) {
+          if (error is AuthException && !exception.isCompleted) {
+            exception.complete(error);
+          }
+        },
+      );
+      return exception.future.timeout(const Duration(seconds: 5));
+    }
+
+    test(
+      'an error_code in the fragment is treated as an auth callback',
+      () async {
+        final exception = await surfacedException(
+          'com.supabase://callback/#error_code=otp_expired',
+        );
+
+        expect(exception.errorCode, 'otp_expired');
+      },
+    );
+
+    test(
+      'an error_description in the query is treated as an auth callback',
+      () async {
+        final exception = await surfacedException(
+          'com.supabase://callback/?error_description=Link+expired',
+        );
+
+        expect(exception.message, 'Link expired');
+      },
+    );
+  });
+
+  group('Deep Link errors from the platform', () {
+    const methodChannel = MethodChannel('com.llfbandit.app_links/messages');
+    const eventChannel = MethodChannel('com.llfbandit.app_links/events');
+
+    Future<LogRecord> receivingWarning() => Logger.root.onRecord
+        .firstWhere(
+          (record) =>
+              record.level == Level.WARNING &&
+              record.message == 'Error while receiving deeplink',
+        )
+        .timeout(const Duration(seconds: 5));
+
+    test('a failing initial link lookup is logged', () async {
+      mockNativeAppLinks();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            methodChannel,
+            (_) => throw PlatformException(
+              code: 'unavailable',
+              message: 'No initial link',
+            ),
+          );
+      final warning = receivingWarning();
+
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: MockAsyncStorage(),
+        ),
+      );
+
+      expect((await warning).error, 'No initial link');
+    });
+
+    test('an error on the link stream is logged', () async {
+      mockNativeAppLinks();
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: MockAsyncStorage(),
+        ),
+      );
+      final warning = receivingWarning();
+
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .handlePlatformMessage(
+            eventChannel.name,
+            const StandardMethodCodec().encodeErrorEnvelope(
+              code: 'broken',
+              message: 'Link stream broke',
+            ),
+            (_) {},
+          );
+
+      expect(
+        (await warning).error,
+        isA<PlatformException>().having(
+          (error) => error.message,
+          'message',
+          'Link stream broke',
+        ),
+      );
+    });
+  });
+
   group('Deep Link with malformed percent-encoding', () {
     Future<void> expectIgnoredDeeplink(
       String link, {
