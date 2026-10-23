@@ -25,6 +25,9 @@ class Push {
   String _ref = '';
   Map<String, dynamic>? _receivedResponse;
   final List<Hook> _receiveHooks = [];
+
+  /// Called every time this push is handed to the socket.
+  void Function()? onSent;
   String? _refEvent;
 
   /// The channel
@@ -77,6 +80,7 @@ class Push {
         joinRef: _channel.joinRef,
       ),
     );
+    onSent?.call();
   }
 
   void updatePayload(Map<String, dynamic> newPayload) {

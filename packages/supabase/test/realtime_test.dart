@@ -45,24 +45,31 @@ void main() {
       await mockServer.close(force: true);
     });
 
-    /// subscribe on existing subscription fail
+    /// subscribe on existing subscription
     ///
     /// 1. create a subscription
     /// 2. subscribe on existing subscription
     ///
     /// expectation:
-    /// - error
-    test('subscribe on existing subscription fail', () {
+    /// - the second call returns the same channel
+    test('subscribe on existing subscription does nothing', () {
       channel.onPostgresChanges(
         event: PostgresChangeEvent.insert,
         schema: 'public',
         table: 'countries',
       );
       channel.subscribe();
-      expect(
-        () => channel.subscribe(),
-        throwsStateError,
-      );
+
+      expect(channel.subscribe(), same(channel));
+    });
+
+    /// same channel name
+    ///
+    /// expectation:
+    /// - the channel already registered under the name is returned
+    test('same channel name returns the registered channel', () {
+      expect(supabase.channel('realtime'), same(channel));
+      expect(supabase.channels, [channel]);
     });
 
     /// two realtime channels

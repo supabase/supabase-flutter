@@ -42,7 +42,7 @@ class SupabaseQuerySchema {
       schema: _schema,
       table: table,
       httpClient: _authHttpClient,
-      incrementId: _counter.increment(),
+      counter: _counter,
       jsonCodec: _jsonCodec,
       retryOptions: _rest.retryOptions,
       requestTimeout: _rest.requestTimeout,

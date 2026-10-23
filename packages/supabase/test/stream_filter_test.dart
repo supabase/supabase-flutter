@@ -66,6 +66,30 @@ void main() {
     });
   }
 
+  test('streams from one builder join their own channels', () async {
+    final users = supabase.from('users');
+    final online = users
+        .stream(primaryKey: ['username'])
+        .eq('status', 'ONLINE')
+        .listen(null);
+    addTearDown(online.cancel);
+    final offline = users
+        .stream(primaryKey: ['username'])
+        .eq('status', 'OFFLINE')
+        .listen(null);
+    addTearDown(offline.cancel);
+
+    await _eventually(
+      () => postgresChanges.length == 2,
+      'both channels to join',
+    );
+
+    expect(postgresChanges.map((change) => change['filter']), [
+      'status=eq.ONLINE',
+      'status=eq.OFFLINE',
+    ]);
+  });
+
   test('a negated inFilter needs a List of values', () {
     final stream = supabase.from('users').stream(primaryKey: ['username']);
 

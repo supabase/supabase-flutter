@@ -445,23 +445,10 @@ class Supabase {
       // where no disconnect happened).
       if (realtime.isConnected) return;
 
+      // The client rejoins the channels the disconnect left behind once the
+      // connection opens.
       // ignore: invalid_use_of_internal_member
       await realtime.connect();
-
-      // Abort rejoin if app went back to background during connect.
-      if (_targetLifecycleState != AppLifecycleState.resumed) return;
-
-      // Re-send join messages for channels that were previously joined.
-      // After a disconnect/reconnect the WebSocket is fresh, but the
-      // channel objects still have joined state — forceRejoin() restores
-      // the server-side subscriptions.
-      for (final channel in realtime.channels) {
-        // ignore: invalid_use_of_internal_member
-        if (channel.isJoined) {
-          // ignore: invalid_use_of_internal_member
-          channel.forceRejoin();
-        }
-      }
     } else {
       if (!_realtimeLifecycleOptions.managed) return;
 
