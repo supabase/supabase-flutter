@@ -248,44 +248,47 @@ void main() {
   });
 
   group('a heartbeat timeout', () {
-    test('reconnects when closing the connection never completes', () async {
-      var connections = 0;
-      final connection = MockIOWebSocketChannel();
-      final sink = MockWebSocketSink();
-      when(() => connection.sink).thenReturn(sink);
-      when(() => connection.ready).thenAnswer((_) => Future.value());
-      when(
-        () => connection.stream,
-      ).thenAnswer((_) => StreamController<dynamic>().stream);
-      when(() => sink.add(any())).thenAnswer((_) {});
-      when(() => sink.close()).thenAnswer((_) => Future.value());
-      when(
-        () => sink.close(any(), any()),
-      ).thenAnswer((_) => Completer<void>().future);
+    for (final (description, close) in [
+      ('never completes', () => Completer<void>().future),
+      ('completes without ending the stream', Future<void>.value),
+    ]) {
+      test('reconnects when closing the connection $description', () async {
+        var connections = 0;
+        final connection = MockIOWebSocketChannel();
+        final sink = MockWebSocketSink();
+        when(() => connection.sink).thenReturn(sink);
+        when(() => connection.ready).thenAnswer((_) => Future.value());
+        when(
+          () => connection.stream,
+        ).thenAnswer((_) => StreamController<dynamic>().stream);
+        when(() => sink.add(any())).thenAnswer((_) {});
+        when(() => sink.close()).thenAnswer((_) => Future.value());
+        when(() => sink.close(any(), any())).thenAnswer((_) => close());
 
-      client = RealtimeClient(
-        'ws://localhost:0',
-        transport: (url, headers) {
-          connections++;
-          return connection;
-        },
-        connectionCloseTimeout: const Duration(milliseconds: 10),
-        reconnectAfter: (_) => Duration.zero,
-      );
-      await client.connect();
-      final statuses = client.onStatusChange.map((change) => change.status);
+        client = RealtimeClient(
+          'ws://localhost:0',
+          transport: (url, headers) {
+            connections++;
+            return connection;
+          },
+          connectionCloseTimeout: const Duration(milliseconds: 10),
+          reconnectAfter: (_) => Duration.zero,
+        );
+        await client.connect();
+        final statuses = client.onStatusChange.map((change) => change.status);
 
-      await client.sendHeartbeat();
-      await client.sendHeartbeat();
+        await client.sendHeartbeat();
+        await client.sendHeartbeat();
 
-      await expectLater(
-        statuses,
-        emitsInOrder([
-          RealtimeConnectionStatus.closed,
-          RealtimeConnectionStatus.open,
-        ]),
-      );
-      expect(connections, 2);
-    });
+        await expectLater(
+          statuses,
+          emitsInOrder([
+            RealtimeConnectionStatus.closed,
+            RealtimeConnectionStatus.open,
+          ]),
+        );
+        expect(connections, 2);
+      });
+    }
   });
 }

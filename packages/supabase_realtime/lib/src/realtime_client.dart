@@ -1193,12 +1193,16 @@ class RealtimeClient {
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       final timedOutConnection = _connection;
       unawaited(
-        timedOutConnection?.sink
-            .close(RealtimeConstants.webSocketCloseNormal, 'heartbeat timeout')
-            .timeout(
-              connectionCloseTimeout,
-              onTimeout: () => _closeAfterHeartbeatTimeout(timedOutConnection),
-            ),
+        timedOutConnection?.sink.close(
+          RealtimeConstants.webSocketCloseNormal,
+          'heartbeat timeout',
+        ),
+      );
+      unawaited(
+        Future<void>.delayed(
+          connectionCloseTimeout,
+          () => _closeAfterHeartbeatTimeout(timedOutConnection),
+        ),
       );
       return;
     }
@@ -1229,9 +1233,9 @@ class RealtimeClient {
     }
   }
 
-  /// Handles [timedOutConnection] as closed when its sink close after a
-  /// heartbeat timeout has not closed it within [connectionCloseTimeout].
-  void _closeAfterHeartbeatTimeout(WebSocketChannel timedOutConnection) {
+  /// Handles [timedOutConnection] as closed when it is still open
+  /// [connectionCloseTimeout] after a heartbeat timeout closed its sink.
+  void _closeAfterHeartbeatTimeout(WebSocketChannel? timedOutConnection) {
     if (!_isCurrentOpenConnection(timedOutConnection)) {
       return;
     }

@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:supabase/src/counter.dart';
 import 'package:supabase/supabase.dart';
 
 /// A [PostgrestQueryBuilder] that can also stream a table's rows over
@@ -13,21 +14,21 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
     required String super.schema,
     required String table,
     super.httpClient,
-    required int incrementId,
+    required Counter counter,
     required super.jsonCodec,
     super.retryOptions,
     super.requestTimeout,
   }) : _realtime = realtime,
        _schema = schema,
        _table = table,
-       _incrementId = incrementId,
+       _counter = counter,
        super(
          url: Uri.parse(url),
        );
   final RealtimeClient _realtime;
   final String _schema;
   final String _table;
-  final int _incrementId;
+  final Counter _counter;
 
   /// Combines the current state of your table from PostgREST with changes from
   /// the realtime server to return real-time data from your table as a
@@ -121,7 +122,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
     return SupabaseStreamFilterBuilder(
       queryBuilder: this,
       realtimeClient: _realtime,
-      realtimeTopic: '$_schema:$_table:$_incrementId',
+      realtimeTopic: '$_schema:$_table:${_counter.increment()}',
       schema: _schema,
       table: _table,
       primaryKey: primaryKey,
