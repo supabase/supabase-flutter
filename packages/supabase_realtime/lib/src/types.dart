@@ -1,5 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart'
+    show postgresTimestampLiteral;
 import 'package:supabase_realtime/supabase_realtime.dart';
 
 @internal
@@ -554,9 +556,14 @@ class PostgresChangeFilter {
   /// Quotes a scalar value PostgREST-style when it contains a reserved
   /// character (`,`, `(`, `)`, `"`, `\`) or surrounding whitespace, so the
   /// server's filter parser doesn't misread it as a condition/list boundary.
-  /// Values without reserved characters are sent verbatim.
+  /// Values without reserved characters are sent verbatim, and a [DateTime]
+  /// in ISO 8601 with its offset from UTC.
   static String _serializeScalar(Object? value) {
-    final serialized = value == null ? 'null' : '$value';
+    final serialized = switch (value) {
+      null => 'null',
+      DateTime() => postgresTimestampLiteral(value),
+      _ => '$value',
+    };
     final needsQuoting =
         RegExp(r'[,()"\\]').hasMatch(serialized) ||
         serialized != serialized.trim();

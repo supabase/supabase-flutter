@@ -28,7 +28,8 @@ Future<String?> resolveAccessToken(
 /// with an [AccessTokenException] before anything is sent.
 ///
 /// A request that already carries an `Authorization` header keeps it, which is
-/// how a per-request override wins over the resolved token.
+/// how a per-request override wins over the resolved token. The token is not
+/// resolved for such a request, so a failing callback does not fail it.
 class AccessTokenClient extends BaseClient {
   AccessTokenClient(this._accessToken, this._inner);
 
@@ -40,12 +41,11 @@ class AccessTokenClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    final accessToken = await resolveAccessToken(_accessToken);
-    if (accessToken != null) {
-      request.headers.putIfAbsent(
-        HttpHeader.authorization,
-        () => 'Bearer $accessToken',
-      );
+    if (!request.headers.containsKey(HttpHeader.authorization)) {
+      final accessToken = await resolveAccessToken(_accessToken);
+      if (accessToken != null) {
+        request.headers[HttpHeader.authorization] = 'Bearer $accessToken';
+      }
     }
     return request.sendWith(_inner);
   }

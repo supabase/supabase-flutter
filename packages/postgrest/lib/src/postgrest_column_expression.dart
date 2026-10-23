@@ -386,7 +386,11 @@ extension PostgrestBooleanFilters<Row>
 ///
 /// ```dart
 /// class Books {
-///   static const table = PostgrestTable('books', BooksRow.new);
+///   static const table = PostgrestTable<BooksRow, BooksInsert, BooksUpdate>(
+///     'books',
+///     BooksRow.new,
+///     primaryKey: [id],
+///   );
 ///   static const id = PostgrestColumn<BooksRow, int>('id');
 ///   static const title = PostgrestColumn<BooksRow, String>('title');
 ///   static const dueDate = PostgrestNullableColumn<BooksRow, DateTime>(

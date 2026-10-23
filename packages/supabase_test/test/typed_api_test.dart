@@ -43,7 +43,10 @@ void main() {
   setUp(() {
     httpClient = MockSupabaseHttpClient();
     realtime = MockRealtimeTransport();
-    supabase = testSupabaseClient(httpClient: httpClient, realtime: realtime);
+    supabase = testSupabaseClient(
+      httpClient: httpClient,
+      realtimeTransport: realtime.call,
+    );
     addTearDown(supabase.dispose);
   });
 
@@ -137,7 +140,7 @@ void main() {
   test('a typed insert sends the row and returns it through select', () async {
     httpClient.stubTable(
       'todos',
-      method: 'POST',
+      method: HttpMethod.post,
       statusCode: 201,
       rows: [
         {'id': 7, 'task': 'Write tests', 'status': false},

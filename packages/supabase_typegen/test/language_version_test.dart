@@ -83,6 +83,94 @@ void main() {
     });
   });
 
+  group('unsupportedSupabaseDependency', () {
+    void writeLockfile(Map<String, String> versions) {
+      if (!File('${directory.path}/pubspec.yaml').existsSync()) {
+        writePubspec('name: app\n');
+      }
+      File('${directory.path}/pubspec.lock').writeAsStringSync(
+        'packages:\n'
+        '${versions.entries.map((entry) => '  ${entry.key}:\n'
+            '    version: "${entry.value}"\n').join()}',
+      );
+    }
+
+    test('is null without a lockfile', () {
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
+    });
+
+    test('is null for version 3 releases and prereleases', () {
+      writeLockfile({
+        'supabase_flutter': '3.0.0-dev.12',
+        'supabase': '3.0.0',
+        'postgrest': '3.1.2',
+      });
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
+    });
+
+    test('is the first package resolved before version 3', () {
+      writeLockfile({'supabase': '2.10.0', 'postgrest': '2.4.2'});
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), (
+        'supabase',
+        Version(2, 10, 0),
+      ));
+    });
+
+    test('reads the lockfile next to the pubspec of the package', () {
+      writePubspec('name: app\n');
+      writeLockfile({'postgrest': '2.4.2'});
+      final nested = Directory('${directory.path}/lib/generated')
+        ..createSync(recursive: true);
+
+      expect(unsupportedSupabaseDependency(startDirectory: nested), (
+        'postgrest',
+        Version(2, 4, 2),
+      ));
+    });
+
+    test('reads the lockfile of the workspace root for a member', () {
+      writePubspec('name: root\nworkspace:\n  - packages/app\n');
+      writeLockfile({'postgrest': '2.4.2'});
+      final member = Directory('${directory.path}/packages/app')
+        ..createSync(recursive: true);
+      File(
+        '${member.path}/pubspec.yaml',
+      ).writeAsStringSync('name: app\nresolution: workspace\n');
+
+      expect(unsupportedSupabaseDependency(startDirectory: member), (
+        'postgrest',
+        Version(2, 4, 2),
+      ));
+    });
+
+    test('ignores the lockfile of an unrelated ancestor project', () {
+      writePubspec('name: legacy\n');
+      writeLockfile({'supabase_flutter': '2.8.0'});
+      final app = Directory('${directory.path}/tools/app')
+        ..createSync(recursive: true);
+      File('${app.path}/pubspec.yaml').writeAsStringSync('name: app\n');
+
+      expect(unsupportedSupabaseDependency(startDirectory: app), isNull);
+    });
+
+    test('is null for a lockfile that is not valid YAML', () {
+      writePubspec('name: app\n');
+      File(
+        '${directory.path}/pubspec.lock',
+      ).writeAsStringSync('<<<<<<< HEAD\npackages: [\n');
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
+    });
+
+    test('ignores other packages', () {
+      writeLockfile({'http': '1.2.0'});
+
+      expect(unsupportedSupabaseDependency(startDirectory: directory), isNull);
+    });
+  });
+
   group('packageImportUri', () {
     test('is postgrest without a pubspec', () {
       expect(

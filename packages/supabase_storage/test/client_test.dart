@@ -78,8 +78,10 @@ void main() {
   });
 
   test('Create new bucket', () async {
-    final response = await storage.createBucket(newBucketName);
-    expect(response, newBucketName);
+    await storage.createBucket(newBucketName);
+    final bucket = await storage.getBucket(newBucketName);
+    expect(bucket.name, newBucketName);
+    expect(bucket.public, isFalse);
   });
   test('createSignedUrls completes successfully', () async {
     await storage.from(newBucketName).upload(uploadPath, file);
@@ -104,15 +106,14 @@ void main() {
     final newBucketName = '${_bucketNamespace}bucket-${DateTime.now()}';
     await storage.createBucket(newBucketName);
 
-    final updateResult = await storage.updateBucket(
+    await storage.updateBucket(
       newBucketName,
       const BucketOptions(
         public: true,
-        fileSizeLimit: '20mb', // 20 mb
+        fileSizeLimit: 20000000,
         allowedMimeTypes: ['image/jpeg'],
       ),
     );
-    expect(updateResult, 'Successfully updated');
 
     final bucket = await storage.getBucket(newBucketName);
     expect(bucket.public, isTrue);
@@ -127,15 +128,14 @@ void main() {
       newBucketName,
       const BucketOptions(
         public: true,
-        fileSizeLimit: '20mb', // 20 mb
+        fileSizeLimit: 20000000,
         allowedMimeTypes: ['image/jpeg'],
       ),
     );
-    final updateResult = await storage.updateBucket(
+    await storage.updateBucket(
       newBucketName,
       const BucketOptions(public: false),
     );
-    expect(updateResult, 'Successfully updated');
     final bucket = await storage.getBucket(newBucketName);
     expect(bucket.public, isFalse);
     expect(bucket.fileSizeLimit, 20000000);
@@ -143,17 +143,33 @@ void main() {
     expect(bucket.allowedMimeTypes!.first, 'image/jpeg');
   });
 
-  test('Empty bucket', () async {
-    final response = await storage.emptyBucket(newBucketName);
-    expect(
-      response,
-      'Empty bucket has been queued. Completion may take up to an hour.',
+  test('updating other options keeps a public bucket public', () async {
+    final newBucketName = '${_bucketNamespace}bucket-${DateTime.now()}';
+    await storage.createBucket(
+      newBucketName,
+      const BucketOptions(public: true),
     );
+
+    await storage.updateBucket(
+      newBucketName,
+      const BucketOptions(allowedMimeTypes: ['image/png']),
+    );
+
+    final bucket = await storage.getBucket(newBucketName);
+    expect(bucket.public, isTrue);
+    expect(bucket.allowedMimeTypes, ['image/png']);
+  });
+
+  test('Empty bucket', () async {
+    await expectLater(storage.emptyBucket(newBucketName), completes);
   });
 
   test('Delete bucket', () async {
-    final response = await storage.deleteBucket(newBucketName);
-    expect(response, 'Successfully deleted');
+    await storage.deleteBucket(newBucketName);
+    await expectLater(
+      storage.getBucket(newBucketName),
+      throwsA(isA<StorageApiException>()),
+    );
   });
 
   group('Signed upload URL', () {
@@ -478,10 +494,7 @@ void main() {
       final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
-        const BucketOptions(
-          public: true,
-          fileSizeLimit: '1mb', // 1mb
-        ),
+        const BucketOptions(public: true, fileSizeLimit: 1000000),
       );
 
       final response = await storage.from(bucketName).upload(uploadPath, file);
@@ -496,7 +509,7 @@ void main() {
         bucketName,
         const BucketOptions(
           public: true,
-          fileSizeLimit: '1kb',
+          fileSizeLimit: 1000,
         ),
       );
 
@@ -576,9 +589,12 @@ void main() {
           ),
         ),
       );
-      await client
+      final copied = await client
           .from(newBucketName)
           .copy(uploadPath, uploadPath, destinationBucket: 'bucket2');
+      expect(copied.id, isNotNull);
+      expect(copied.path, uploadPath);
+      expect(copied.fullPath, 'bucket2/$uploadPath');
       try {
         await client.from('bucket2').download(uploadPath);
       } catch (error) {
@@ -1355,16 +1371,15 @@ void main() {
       });
 
       lifecycleTest('is deleted, even when already absent', () async {
-        final message = await storage.deleteBucketLifecycle(bucketName);
+        await storage.deleteBucketLifecycle(bucketName);
 
-        expect(message, 'Successfully deleted');
         await expectLater(
           storage.getBucketLifecycle(bucketName),
           throwsNoSuchLifecycleConfiguration,
         );
-        expect(
-          await storage.deleteBucketLifecycle(bucketName),
-          'Successfully deleted',
+        await expectLater(
+          storage.deleteBucketLifecycle(bucketName),
+          completes,
         );
       });
     });

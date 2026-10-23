@@ -79,8 +79,8 @@ class _DelayedTokenMockClient extends BaseClient {
           Stream.value(
             utf8.encode(
               jsonEncode({
-                'error': 'invalid_grant',
-                'error_description': 'Token has been revoked',
+                'code': 'refresh_token_not_found',
+                'msg': 'Invalid Refresh Token: Refresh Token Not Found',
               }),
             ),
           ),

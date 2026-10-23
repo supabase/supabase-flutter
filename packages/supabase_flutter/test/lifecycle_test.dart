@@ -108,7 +108,7 @@ void main() {
       url: supabaseUrl,
       publishableKey: supabaseKey,
       authOptions: FlutterAuthClientOptions(asyncStorage: MockAsyncStorage()),
-      realtimeClientOptions: RealtimeClientOptions(
+      realtimeOptions: RealtimeClientOptions(
         transport: (url, headers) {
           final completer = Completer<void>();
           readyCompleters.add(completer);

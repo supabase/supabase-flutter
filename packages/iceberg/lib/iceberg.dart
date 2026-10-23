@@ -3,9 +3,11 @@ library;
 
 export 'package:supabase_common/supabase_common.dart'
     show
+        AccessTokenException,
         SortDirection,
         SupabaseApiException,
         SupabaseException,
+        SupabaseRetryOptions,
         SupabaseTransportException;
 
 export 'src/iceberg_error.dart';

@@ -10,7 +10,10 @@ void main() {
   setUp(() {
     httpClient = MockSupabaseHttpClient();
     realtime = MockRealtimeTransport();
-    supabase = testSupabaseClient(httpClient: httpClient, realtime: realtime);
+    supabase = testSupabaseClient(
+      httpClient: httpClient,
+      realtimeTransport: realtime.call,
+    );
     addTearDown(supabase.dispose);
   });
 
@@ -263,7 +266,11 @@ void main() {
         (message) => message.event == 'broadcast',
       );
       expect(sent.topic, 'realtime:room');
-      expect(sent.payload, {'type': 'broadcast', 'event': 'cursor', 'x': 3});
+      expect(sent.payload, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 3},
+      });
     });
   });
 

@@ -159,7 +159,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       id,
       retryOptions,
       storageFetch,
-      resumableUploadRegistry: _resumableUploadRegistry,
+      _resumableUploadRegistry,
     );
   }
 
@@ -206,7 +206,8 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// Returns an Iceberg REST Catalog client for an analytics bucket.
   ///
   /// [bucketId] is the identifier of the analytics bucket (the warehouse) whose
-  /// namespaces and tables you want to manage.
+  /// namespaces and tables you want to manage. The catalog shares the HTTP
+  /// client, headers and request timeout of this client.
   ///
   /// ```dart
   /// final catalog = storage.analyticsCatalog('my-analytics-bucket');
@@ -222,6 +223,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       warehouse: bucketId,
       accessDelegation: accessDelegation,
       httpClient: storageFetch.httpClient,
+      requestTimeout: storageFetch.requestTimeout,
     );
   }
 

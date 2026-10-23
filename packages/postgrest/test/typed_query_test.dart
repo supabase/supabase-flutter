@@ -24,6 +24,32 @@ extension type const BookUpdate._(Map<String, dynamic> _json)
   BookUpdate({String? title}) : this._({'title': ?title});
 }
 
+class JsonBookInsert {
+  const JsonBookInsert({required this.title, this.id});
+
+  final String title;
+  final int? id;
+
+  Map<String, dynamic> toJson() => {'title': title, 'id': ?id};
+}
+
+class CountingInsert {
+  int calls = 0;
+
+  Map<String, dynamic> toJson() {
+    calls++;
+    return {'title': 'foo'};
+  }
+}
+
+class JsonBooks {
+  static const table = PostgrestTable<Book, JsonBookInsert, Never>(
+    'books',
+    Book.new,
+    primaryKey: [Books.id],
+  );
+}
+
 extension type const Author(Map<String, dynamic> _json)
     implements Map<String, dynamic> {}
 
@@ -574,6 +600,19 @@ void main() {
       );
       stream.listen(expectAsync1((books) {}));
     });
+
+    test('sends the request before anyone listens and does not replay '
+        'the result', () async {
+      httpClient.stub(bookRows);
+
+      final stream = client.table(Books.table).select().asStream();
+      await pumpEventQueue();
+
+      expect(httpClient.requests, hasLength(1));
+      await expectLater(stream, emitsInOrder([hasLength(2), emitsDone]));
+      await expectLater(stream, emitsDone);
+      expect(httpClient.requests, hasLength(1));
+    });
   });
 
   group('transforms', () {
@@ -987,13 +1026,13 @@ void main() {
       expect(httpClient.requests.last.body, '{"title":"foo"}');
     });
 
-    test('insertAll posts every row and names the columns', () async {
+    test('insertAll posts every row and applies column defaults', () async {
       httpClient.stub(null);
 
       await client.table(Books.table).insertAll([
         BookInsert(title: 'foo'),
         BookInsert(id: 2, title: 'bar'),
-      ], defaultToNull: false);
+      ]);
 
       expect(httpClient.requests.last.method, 'POST');
       expect(
@@ -1004,6 +1043,108 @@ void main() {
       expect(
         httpClient.requests.last.headers['Prefer'],
         contains('missing=default'),
+      );
+    });
+
+    test('insertAll with defaultToNull writes NULL for missing keys', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).insertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(id: 2, title: 'bar'),
+      ], defaultToNull: true);
+
+      expect(requestParameters()['columns'], '"title","id"');
+      expect(httpClient.requests.last.headers['Prefer'], isNull);
+    });
+
+    test('upsertAll applies column defaults to missing keys', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).upsertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(id: 2, title: 'bar'),
+      ]);
+
+      expect(requestParameters()['columns'], '"title","id"');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        allOf(
+          contains('resolution=merge-duplicates'),
+          contains('missing=default'),
+        ),
+      );
+    });
+
+    test('upsertAll with defaultToNull writes NULL for missing keys', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).upsertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(id: 2, title: 'bar'),
+      ], defaultToNull: true);
+
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        isNot(contains('missing=default')),
+      );
+    });
+
+    test('insertAll names the columns of rows encoded with toJson', () async {
+      httpClient.stub(null);
+
+      await client.table(JsonBooks.table).insertAll([
+        const JsonBookInsert(title: 'foo'),
+        const JsonBookInsert(title: 'bar', id: 2),
+      ]);
+
+      expect(
+        httpClient.requests.last.body,
+        '[{"title":"foo"},{"title":"bar","id":2}]',
+      );
+      expect(requestParameters()['columns'], '"title","id"');
+    });
+
+    test(
+      'insert of a list names the columns of rows encoded with toJson',
+      () async {
+        httpClient.stub(null);
+
+        await client.from('books').insert([
+          const JsonBookInsert(title: 'foo'),
+          const JsonBookInsert(title: 'bar', id: 2),
+        ]);
+
+        expect(requestParameters()['columns'], '"title","id"');
+      },
+    );
+
+    test('insert of a list with a row that is not an object throws', () {
+      expect(
+        () => client.from('books').insert([
+          {'title': 'foo'},
+          'bar',
+        ]),
+        throwsArgumentError,
+      );
+    });
+
+    test('insert of a list calls toJson once per row', () async {
+      httpClient.stub(null);
+      final row = CountingInsert();
+
+      await client.from('books').insert([row]);
+
+      expect(row.calls, 1);
+      expect(httpClient.requests.last.body, '[{"title":"foo"}]');
+    });
+
+    test('insert of a list with a non-String key throws', () {
+      expect(
+        () => client.from('books').insert([
+          {1: 'foo'},
+        ]),
+        throwsArgumentError,
       );
     });
 
@@ -1171,6 +1312,20 @@ void main() {
       expect(httpClient.requests.last.method, 'PATCH');
       expect(requestParameters(), isEmpty);
       expect(httpClient.requests.last.body, '{"title":"bar"}');
+    });
+
+    test('an Update of Never makes delete uncallable', () {
+      // The tear-off types are checked statically, so picking the wrong
+      // extension fails the analysis; the runtime checks pin them down too.
+      final PostgrestTypedUnscopedBuilder<Book> Function() deletable = client
+          .table(Books.table)
+          .delete;
+      final PostgrestTypedUnscopedBuilder<Author> Function(Never) readOnly =
+          client.table(Authors.table).delete;
+
+      expect(deletable, isA<Object? Function()>());
+      expect(readOnly, isNot(isA<Object? Function()>()));
+      expect(httpClient.requests, isEmpty);
     });
 
     test('all() deletes every row without a filter', () async {

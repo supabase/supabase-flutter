@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:supabase/src/api_key.dart';
 import 'package:supabase/src/auth_http_client.dart';
+import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
@@ -120,6 +121,25 @@ void main() {
     });
 
     test(
+      'keeps a request Authorization header without resolving the session',
+      () async {
+        mockClient = MockSupabaseHttpClient()..stub(null);
+        final client = AuthHttpClient(
+          'legacy-anon-key',
+          mockClient,
+          () async => throw const AuthException('refresh failed'),
+        );
+        await client.get(
+          Uri.parse('https://example.com'),
+          headers: {'Authorization': 'Bearer user-token'},
+        );
+
+        expect(capturedHeaders()['authorization'], 'Bearer user-token');
+        expect(capturedHeaders()['apikey'], 'legacy-anon-key');
+      },
+    );
+
+    test(
       'without the flag, a new-format key is still sent as Bearer',
       () async {
         final client = buildClient(
@@ -130,6 +150,32 @@ void main() {
         await client.get(Uri.parse('https://example.com'));
 
         expect(capturedHeaders()['authorization'], 'Bearer sb_publishable_abc');
+      },
+    );
+  });
+
+  group('SupabaseClient', () {
+    test(
+      'sends a new-format key as Bearer to rest but not to functions',
+      () async {
+        final httpClient = MockSupabaseHttpClient()..stub([]);
+        final client = testSupabaseClient(
+          httpClient: httpClient,
+          publishableKey: 'sb_publishable_abc',
+        );
+        addTearDown(client.dispose);
+
+        await client.from('todos').select();
+        await client.functions.invoke('hello');
+
+        expect(
+          httpClient.requestsTo('/rest/v1/todos').single.headers,
+          containsPair('authorization', 'Bearer sb_publishable_abc'),
+        );
+        expect(
+          httpClient.requestsTo('/functions/v1/hello').single.headers,
+          isNot(contains('authorization')),
+        );
       },
     );
   });

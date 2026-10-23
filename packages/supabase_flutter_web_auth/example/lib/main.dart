@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supabase_flutter_web_auth/supabase_flutter_web_auth.dart';
@@ -48,10 +49,11 @@ class _MyHomePageState extends State<MyHomePage> {
           _user = data.session?.user;
         });
       },
-      onError: (error, stackTrace) {
-        // Network errors (e.g. offline) are emitted as stream errors.
-        // Handle or log them here; omitting this handler causes an unhandled
-        // exception when the device has no connectivity.
+      onError: (Object error, StackTrace stackTrace) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Authentication error: $error')),
+        );
       },
     );
   }
@@ -74,18 +76,32 @@ class _MyHomePageState extends State<MyHomePage> {
 class _SignInForm extends StatelessWidget {
   const _SignInForm();
 
-  Future<void> _signInWithGitHub() {
-    return Supabase.instance.client.auth.signInWithOAuth(
-      OAuthProvider.github,
-      redirectTo: 'io.supabase.flutterwebauthexample://callback',
-    );
+  Future<void> _signInWithGitHub(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final launched = await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.github,
+        redirectTo: kIsWeb
+            ? null
+            : 'io.supabase.flutterwebauthexample://oauth-callback',
+      );
+      if (!launched) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Sign-in was cancelled')),
+        );
+      }
+    } on Object catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not start sign-in: $error')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: ElevatedButton(
-        onPressed: () => unawaited(_signInWithGitHub()),
+        onPressed: () => unawaited(_signInWithGitHub(context)),
         child: const Text('Sign in with GitHub'),
       ),
     );

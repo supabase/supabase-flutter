@@ -12,14 +12,17 @@ import 'mock_realtime_transport.dart';
 import 'session_fixture.dart';
 import 'test_jwt.dart';
 
+const _testPublishableKey = 'sb_publishable_supabase_test';
+
 /// A [SupabaseClient] wired for tests.
 ///
-/// Compared to constructing one directly, this configures the in-memory
-/// storage the pkce flow requires, turns off the token auto refresh so no
-/// timer outlives the test, and defaults the API key to an unsigned anon JWT.
-/// Answer its requests by passing a `MockSupabaseHttpClient` as [httpClient],
-/// and its realtime traffic by passing a [MockRealtimeTransport] as
-/// [realtime]:
+/// Compared to constructing one directly, this turns off the token auto
+/// refresh so no timer outlives the test, and defaults [publishableKey] to
+/// an `sb_publishable_` key, so signed-out requests carry the headers a
+/// production publishable key produces. Answer its requests by passing a
+/// `MockSupabaseHttpClient` as [httpClient], and its realtime traffic by
+/// passing the `call` method of a [MockRealtimeTransport] as
+/// [realtimeTransport]:
 ///
 /// ```dart
 /// final httpClient = MockSupabaseHttpClient()
@@ -37,20 +40,17 @@ import 'test_jwt.dart';
 @visibleForTesting
 SupabaseClient testSupabaseClient({
   Client? httpClient,
-  MockRealtimeTransport? realtime,
   String url = 'http://localhost:54321',
-  String? apiKey,
+  String? publishableKey,
+  WebSocketTransport? realtimeTransport,
   bool autoRefreshToken = false,
 }) {
   return SupabaseClient(
     url,
-    apiKey ?? unsignedTestJwt({'role': 'anon', 'iss': 'supabase_test'}),
+    publishableKey ?? _testPublishableKey,
     httpClient: httpClient,
-    authOptions: AuthClientOptions(
-      autoRefreshToken: autoRefreshToken,
-      asyncStorage: MemoryAuthAsyncStorage(),
-    ),
-    realtimeClientOptions: RealtimeClientOptions(transport: realtime?.call),
+    authOptions: AuthClientOptions(autoRefreshToken: autoRefreshToken),
+    realtimeOptions: RealtimeClientOptions(transport: realtimeTransport),
   );
 }
 

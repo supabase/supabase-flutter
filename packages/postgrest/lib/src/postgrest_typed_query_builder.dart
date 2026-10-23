@@ -191,12 +191,12 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ]);
   /// ```
   ///
-  /// [rows] needs at least one row.
-  ///
-  /// See [insert] and [PostgrestQueryBuilder.insert] for [defaultToNull].
+  /// [rows] needs at least one row. A column left out of a row gets its
+  /// database default, even when other rows set it. Pass [defaultToNull] as
+  /// `true` to write `NULL` for it instead.
   PostgrestTypedTransformBuilder<Row, void> insertAll(
     List<Insert> rows, {
-    bool defaultToNull = true,
+    bool defaultToNull = false,
   }) => _insertion(
     _request(PostgrestTableOperation.insert).copyWith(
       payload: _nonEmpty(rows),
@@ -246,15 +246,17 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// );
   /// ```
   ///
-  /// [rows] needs at least one row.
+  /// [rows] needs at least one row. A column left out of a row that another
+  /// row sets is written as its database default, also when the row merges
+  /// into an existing one. See [insertAll] for [defaultToNull].
   ///
   /// See [upsert] for [onConflict] and [PostgrestQueryBuilder.upsert] for
-  /// [ignoreDuplicates] and [defaultToNull].
+  /// [ignoreDuplicates].
   PostgrestTypedTransformBuilder<Row, void> upsertAll(
     List<Insert> rows, {
     List<PostgrestStoredColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
-    bool defaultToNull = true,
+    bool defaultToNull = false,
   }) => _upsert(
     _nonEmpty(rows),
     onConflict: onConflict,
@@ -314,22 +316,6 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     ).copyWith(payload: values as Object),
   );
 
-  /// Perform a DELETE on the table or view.
-  ///
-  /// The rows to delete are chosen with [PostgrestTypedUnscopedBuilder.where],
-  /// or every row with [PostgrestTypedUnscopedBuilder.all]; nothing is sent
-  /// before one of them is called.
-  ///
-  /// By default no data is returned. Use a trailing [select] to return the
-  /// deleted rows typed as [Row].
-  ///
-  /// ```dart
-  /// await client.table(Books.table).delete().where(Books.id.eq(1));
-  /// ```
-  @UseResult('Call where() or all() to send the request')
-  PostgrestTypedUnscopedBuilder<Row> delete() =>
-      _mutation(_request(PostgrestTableOperation.delete));
-
   /// Only performs a count query on the table or view.
   ///
   /// ```dart
@@ -346,4 +332,43 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     (result) => result.count!,
     table.rowFromJson,
   );
+}
+
+/// The DELETE of a table or view whose rows can be updated.
+///
+/// It is an extension rather than a member so that
+/// [PostgrestTypedReadOnlyDelete] can take its place on a relation whose
+/// `Update` type is `Never`.
+@experimental
+extension PostgrestTypedDelete<Row, Insert, Update>
+    on PostgrestTypedQueryBuilder<Row, Insert, Update> {
+  /// Perform a DELETE on the table or view.
+  ///
+  /// The rows to delete are chosen with [PostgrestTypedUnscopedBuilder.where],
+  /// or every row with [PostgrestTypedUnscopedBuilder.all]; nothing is sent
+  /// before one of them is called.
+  ///
+  /// By default no data is returned. Use a trailing
+  /// [PostgrestTypedUnscopedBuilder.select] to return the deleted rows typed
+  /// as [Row].
+  ///
+  /// ```dart
+  /// await client.table(Books.table).delete().where(Books.id.eq(1));
+  /// ```
+  @UseResult('Call where() or all() to send the request')
+  PostgrestTypedUnscopedBuilder<Row> delete() =>
+      _mutation(_request(PostgrestTableOperation.delete));
+}
+
+/// Blocks the DELETE of a relation whose `Update` type is `Never`, such as a
+/// view that cannot be updated, the same way `Never` blocks its writes.
+///
+/// It is more specific than [PostgrestTypedDelete], so it is the one chosen
+/// for such a relation, and its [delete] cannot be called since no value has
+/// the type `Never`.
+@experimental
+extension PostgrestTypedReadOnlyDelete<Row, Insert>
+    on PostgrestTypedQueryBuilder<Row, Insert, Never> {
+  /// The relation cannot be deleted from.
+  PostgrestTypedUnscopedBuilder<Row> delete(Never unsupported) => unsupported;
 }

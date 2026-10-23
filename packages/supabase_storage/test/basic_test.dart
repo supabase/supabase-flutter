@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' show ClientException;
-import 'package:supabase_common/supabase_common.dart' show HttpMethod;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_test/internal.dart';
 import 'package:supabase_test/supabase_test.dart';
@@ -120,9 +119,12 @@ void main() {
 
       customHttpClient.stub({'name': 'test_bucket'});
 
-      final response = await client.createBucket(testBucketId);
-      expect(response, isA<String>());
-      expect(response, 'test_bucket');
+      await client.createBucket(testBucketId);
+
+      expect(customHttpClient.requests.last.jsonBody, {
+        'id': testBucketId,
+        'name': testBucketId,
+      });
     });
 
     test('should get bucket', () async {
@@ -141,8 +143,15 @@ void main() {
 
       customHttpClient.stub({'message': 'Emptied'});
 
-      final response = await client.emptyBucket(testBucketId);
-      expect(response, 'Emptied');
+      await client.emptyBucket(testBucketId);
+
+      expect(
+        customHttpClient.requestsTo(
+          '/storage/v1/bucket/$testBucketId/empty',
+          method: HttpMethod.post,
+        ),
+        hasLength(1),
+      );
     });
 
     test('should delete bucket', () async {
@@ -150,14 +159,21 @@ void main() {
 
       customHttpClient.stub({'message': 'Deleted'});
 
-      final response = await client.deleteBucket(testBucketId);
-      expect(response, 'Deleted');
+      await client.deleteBucket(testBucketId);
+
+      expect(
+        customHttpClient.requestsTo(
+          '/storage/v1/bucket/$testBucketId',
+          method: HttpMethod.delete,
+        ),
+        hasLength(1),
+      );
     });
 
     test('should purgeBucketCache issuing DELETE to /cdn/{bucket}', () async {
       customHttpClient.stub({'message': 'success'});
 
-      final response = await client.purgeBucketCache('test_bucket');
+      await client.purgeBucketCache('test_bucket');
 
       final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
@@ -166,13 +182,12 @@ void main() {
         endsWith('/storage/v1/cdn/test_bucket'),
       );
       expect(request.url.query, isEmpty);
-      expect(response, 'success');
     });
 
     test('should purgeBucketCache with transformations query param', () async {
       customHttpClient.stub({'message': 'success'});
 
-      final response = await client.purgeBucketCache(
+      await client.purgeBucketCache(
         'test_bucket',
         transformations: true,
       );
@@ -180,31 +195,28 @@ void main() {
       final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
       expect(request.url.queryParameters['transformations'], 'true');
-      expect(response, 'success');
     });
 
     test('should purgeProjectCache issuing DELETE to /cdn/', () async {
       customHttpClient.stub({'message': 'success'});
 
-      final response = await client.purgeProjectCache();
+      await client.purgeProjectCache();
 
       final request = customHttpClient.requests.last;
       expect(request.method, HttpMethod.delete.value);
       expect(request.url.toString(), endsWith('/storage/v1/cdn/'));
       expect(request.url.query, isEmpty);
-      expect(response, 'success');
     });
 
     test('should purgeProjectCache with transformations query param', () async {
       customHttpClient.stub({'message': 'success'});
 
-      final response = await client.purgeProjectCache(transformations: true);
+      await client.purgeProjectCache(transformations: true);
 
       final request = customHttpClient.requests.last;
       expect(request.method, HttpMethod.delete.value);
       expect(request.url.path, endsWith('/storage/v1/cdn/'));
       expect(request.url.queryParameters['transformations'], 'true');
-      expect(response, 'success');
     });
 
     test('should create analytics bucket', () async {
@@ -261,7 +273,7 @@ void main() {
     test('should delete analytics bucket', () async {
       customHttpClient.stub({'message': 'Successfully deleted'});
 
-      final response = await client.deleteAnalyticsBucket('warehouse');
+      await client.deleteAnalyticsBucket('warehouse');
 
       final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
@@ -269,7 +281,6 @@ void main() {
         request.url.toString(),
         endsWith('/storage/v1/iceberg/bucket/warehouse'),
       );
-      expect(response, 'Successfully deleted');
     });
 
     test('should upload file', () async {
@@ -305,14 +316,19 @@ void main() {
     test('should move file', () async {
       customHttpClient.stub({'message': 'Move'});
 
-      final response = await client.from('public').move('a.txt', 'b.txt');
-      expect(response, 'Move');
+      await client.from('public').move('a.txt', 'b.txt');
+
+      expect(customHttpClient.requests.last.jsonBody, {
+        'bucketId': 'public',
+        'sourceKey': 'a.txt',
+        'destinationKey': 'b.txt',
+      });
     });
 
     test('should purgeCache issuing DELETE to /cdn/{bucket}/{path}', () async {
       customHttpClient.stub({'message': 'success'});
 
-      final response = await client.from('public').purgeCache('folder/a.txt');
+      await client.from('public').purgeCache('folder/a.txt');
 
       final request = customHttpClient.requests.last;
       expect(request.method, 'DELETE');
@@ -321,13 +337,12 @@ void main() {
         endsWith('/storage/v1/cdn/public/folder/a.txt'),
       );
       expect(request.url.query, isEmpty);
-      expect(response, 'success');
     });
 
     test('should purgeCache with transformations query param', () async {
       customHttpClient.stub({'message': 'success'});
 
-      final response = await client
+      await client
           .from('public')
           .purgeCache('folder/a.txt', transformations: true);
 
@@ -337,7 +352,6 @@ void main() {
         request.url.queryParameters['transformations'],
         'true',
       );
-      expect(response, 'success');
     });
 
     test('should createSignedUrl file', () async {
@@ -1029,6 +1043,37 @@ void main() {
         expect(sentBody(), isNot(contains('versioning_status')));
       });
 
+      test('updateBucket only sends the options that are set', () async {
+        customHttpClient.stub({'message': 'Successfully updated'});
+
+        await client.updateBucket(
+          'test_bucket',
+          const BucketOptions(versioningStatus: VersioningStatus.enabled),
+        );
+
+        expect(sentBody(), {
+          'id': 'test_bucket',
+          'name': 'test_bucket',
+          'versioning_status': 'ENABLED',
+        });
+      });
+
+      test('createBucket sends the file size limit in bytes', () async {
+        customHttpClient.stub({'name': 'test_bucket'});
+
+        await client.createBucket(
+          'test_bucket',
+          const BucketOptions(public: true, fileSizeLimit: 1024),
+        );
+
+        expect(sentBody(), {
+          'id': 'test_bucket',
+          'name': 'test_bucket',
+          'public': true,
+          'file_size_limit': 1024,
+        });
+      });
+
       test('updateBucket sends the versioning status', () async {
         customHttpClient.stub({'message': 'Successfully updated'});
 
@@ -1135,12 +1180,11 @@ void main() {
       test('deleteBucketLifecycle deletes the policy', () async {
         customHttpClient.stub({'message': 'Successfully deleted'});
 
-        final message = await client.deleteBucketLifecycle('test_bucket');
+        await client.deleteBucketLifecycle('test_bucket');
 
         final request = customHttpClient.requests.single;
         expect(request.method, 'DELETE');
         expect(request.url.path, endsWith('/bucket/test_bucket/lifecycle'));
-        expect(message, 'Successfully deleted');
       });
 
       test('list sends the version options and parses the fields', () async {
@@ -1287,6 +1331,23 @@ void main() {
         expect(body['sourceVersionId'], 'version-1');
         expect(body['sourceKey'], 'a.txt');
         expect(body['destinationKey'], 'a.txt');
+      });
+
+      test('copy returns where the copy was stored', () async {
+        customHttpClient.stub({
+          'Id': 'copy-id',
+          'Key': 'other/folder/b.txt',
+          'version': 'version-2',
+        });
+
+        final response = await client
+            .from('public')
+            .copy('a.txt', '/folder//b.txt', destinationBucket: 'other');
+
+        expect(response.id, 'copy-id');
+        expect(response.path, 'folder/b.txt');
+        expect(response.fullPath, 'other/folder/b.txt');
+        expect(response.versionId, isNull);
       });
 
       test('copy omits the source version by default', () async {
@@ -1785,6 +1846,59 @@ void main() {
         }, useNewHostname: true);
         expect(client.url, expectedUrl);
       });
+    });
+  });
+
+  group('analyticsCatalog', () {
+    late MockSupabaseHttpClient httpClient;
+
+    SupabaseStorageClient createClient({Duration? requestTimeout}) =>
+        SupabaseStorageClient(
+          '$supabaseUrl/storage/v1',
+          {'Authorization': 'Bearer $supabaseKey'},
+          httpClient: httpClient,
+          requestTimeout: requestTimeout,
+        );
+
+    setUp(() {
+      httpClient = MockSupabaseHttpClient();
+    });
+
+    test('addresses the bucket under the iceberg endpoint', () async {
+      httpClient
+        ..stub({'namespaces': []})
+        ..stub({'defaults': <String, String>{}}, path: '/v1/config');
+
+      await createClient().analyticsCatalog('warehouse').listNamespaces();
+
+      final config = httpClient.requestsTo('/v1/config').single;
+      expect(config.url.path, endsWith('/storage/v1/iceberg/v1/config'));
+      expect(config.queryParameters['warehouse'], 'warehouse');
+      expect(
+        httpClient.requests.last.url.path,
+        endsWith('/storage/v1/iceberg/v1/warehouse/namespaces'),
+      );
+      expect(
+        httpClient.requests.last.headers['Authorization'],
+        'Bearer $supabaseKey',
+      );
+    });
+
+    test('applies the request timeout of the storage client', () async {
+      httpClient.stubStall();
+
+      await expectLater(
+        createClient(
+          requestTimeout: const Duration(milliseconds: 50),
+        ).analyticsCatalog('warehouse').listNamespaces(),
+        throwsA(
+          isA<IcebergNetworkException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
+      );
     });
   });
 }

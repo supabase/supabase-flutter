@@ -69,6 +69,12 @@ sealed class IcebergApiException extends IcebergException
 
   /// Builds the appropriate [IcebergApiException] subtype from an error
   /// response, with [details] as its decoded body.
+  ///
+  /// [details] is read as the Iceberg error envelope
+  /// `{"error": {"message", "type", "code"}}`, or as the body Supabase Storage
+  /// answers with before a request reaches the catalog, for example on a
+  /// rejected token or a missing bucket:
+  /// `{"statusCode", "code", "error", "message"}`.
   factory IcebergApiException.fromResponse(
     int statusCode,
     Object? details, {
@@ -79,11 +85,19 @@ sealed class IcebergApiException extends IcebergException
     var message = 'Request failed with status $statusCode';
     String? errorCode;
     int? code;
-    if (details is Map<String, dynamic> && details['error'] is Map) {
-      final error = details['error'] as Map<String, dynamic>;
-      message = (error['message'] as String?) ?? message;
-      errorCode = error['type'] as String?;
-      code = error['code'] as int?;
+    switch (details) {
+      case {'error': final Map<String, dynamic> error}:
+        if (error['message'] case final String errorMessage) {
+          message = errorMessage;
+        }
+        errorCode = error['type']?.toString();
+        code = int.tryParse('${error['code']}');
+      case Map<String, dynamic>():
+        if (details['message'] case final String errorMessage) {
+          message = errorMessage;
+        }
+        errorCode = (details['code'] ?? details['error'])?.toString();
+        code = int.tryParse('${details['statusCode']}');
     }
 
     if (errorCode == 'CommitStateUnknownException') {

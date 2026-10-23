@@ -232,7 +232,9 @@ String _cleanFilterList(List<dynamic> filter) {
   // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
   return filter
       .map((s) {
-        final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+        final escaped = renderPostgrestQueryValue(
+          s,
+        ).replaceAll(r'\', r'\\').replaceAll('"', r'\"');
         return '"$escaped"';
       })
       .join(',');
@@ -407,10 +409,12 @@ class PostgrestBuilder<T> implements Future<T> {
   /// Bounds how long a single attempt of this request may go without
   /// progress, overriding the timeout configured on [PostgrestClient].
   ///
-  /// The timer restarts whenever a chunk of the response arrives, so a large
-  /// response that keeps arriving is not cut short. A timed-out attempt is
-  /// retried like any other failure, and a [PostgrestTransportException] whose
-  /// cause is a [TimeoutException] is thrown once the retries are exhausted.
+  /// The timer restarts whenever a chunk of the request body is sent or a
+  /// chunk of the response arrives, so a large transfer that keeps moving is
+  /// not cut short. A timed-out attempt is cancelled and throws a
+  /// [PostgrestTransportException] whose cause is a [TimeoutException], unless
+  /// it is a GET or HEAD request with retries left, which is retried instead.
+  /// See [retry].
   /// Use [abortSignal] to cancel the request outright, which stops retrying
   /// immediately.
   PostgrestBuilder<T> requestTimeout(Duration timeout) =>
@@ -737,24 +741,12 @@ class PostgrestBuilder<T> implements Future<T> {
     throw error;
   }
 
+  /// A broadcast stream of the one result. The request is sent when
+  /// [asStream] is called. The result is delivered to the first listener and
+  /// to every other listener subscribed at that moment; a listener added
+  /// after it was delivered only receives the done event.
   @override
-  Stream<T> asStream() {
-    final controller = StreamController<T>.broadcast();
-
-    unawaited(
-      then((value) {
-            controller.add(value);
-          })
-          .catchError((Object error, StackTrace stackTrace) {
-            controller.addError(error, stackTrace);
-          })
-          .whenComplete(() {
-            unawaited(controller.close());
-          }),
-    );
-
-    return controller.stream;
-  }
+  Stream<T> asStream() => then((value) => value).asStream().asBroadcastStream();
 
   @override
   Future<T> catchError(Function onError, {bool Function(Object error)? test}) {

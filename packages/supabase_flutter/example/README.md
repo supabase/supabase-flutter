@@ -33,26 +33,33 @@ create policy "Users can insert their own profile." on profiles
 create policy "Users can update own profile." on profiles
   for update using (auth.uid() = id);
 
--- Set up Realtime!
-begin;
-  drop publication if exists supabase_realtime;
-  create publication supabase_realtime;
-commit;
+-- Set up Realtime! Adds the table to the publication every project has,
+-- leaving the tables already in it untouched.
 alter publication supabase_realtime
   add table profiles;
 
--- Set up Storage!
-insert into storage.buckets (id, name)
-  values ('avatars', 'avatars');
+-- Set up Storage! Avatars are public to read, and each user writes only to
+-- the folder named after their own id, such as `<user id>/avatar.png`.
+insert into storage.buckets (id, name, public)
+  values ('avatars', 'avatars', true);
 
 create policy "Avatar images are publicly accessible." on storage.objects
   for select using (bucket_id = 'avatars');
 
-create policy "Anyone can upload an avatar." on storage.objects
-  for insert with check (bucket_id = 'avatars');
+create policy "Users can upload their own avatar." on storage.objects
+  for insert to authenticated with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+  );
 
-create policy "Anyone can update an avatar." on storage.objects
-  for update with check (bucket_id = 'avatars');
+create policy "Users can update their own avatar." on storage.objects
+  for update to authenticated using (
+    bucket_id = 'avatars'
+    and owner_id = (select auth.uid()::text)
+  ) with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+  );
 ```
 
 ## Generated types

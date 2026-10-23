@@ -21,8 +21,8 @@ it also takes care of several of the database changes further down. After it com
 [the changes the compiler will not catch](#changes-the-compiler-will-not-catch), and then every
 breaking change grouped by area: [packages and setup](#packages-and-setup),
 [database](#database), [auth](#auth), [realtime](#realtime), [storage](#storage),
-[errors](#errors), [requests, retries and tokens](#requests-retries-and-tokens) and
-[shared types](#shared-types).
+[errors](#errors), [requests, retries and tokens](#requests-retries-and-tokens),
+[shared types](#shared-types) and [testing](#testing).
 
 ### Install the package skills
 
@@ -304,6 +304,9 @@ Several rows go through `insertAll()` and `upsertAll()` instead of a list passed
 Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the column out of the
 request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
 generated `set…ToNull()` methods, which only exist for nullable columns.
+A column left out of only some of the rows passed to `insertAll()` or `upsertAll()` also gets its
+default, where an untyped `insert()` of a list writes `NULL`. Pass `defaultToNull: true` to write
+`NULL` instead.
 
 An `update()` or `delete()` sends nothing until it says which rows it acts on, through `where()`
 or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request,
@@ -480,10 +483,11 @@ explicitly:
 - [`RealtimeClient.connectionState` is now typed](#realtimeclientconnectionstate-is-now-typed)
 - [`HttpMethod` is one shared enum](#httpmethod-is-one-shared-enum), where the enum `index` shifted
 - [Confirming an email or phone change emits `userUpdated`](#confirming-an-email-or-phone-change-emits-userupdated)
-- [A client without an `asyncStorage` throws when it is created](#a-client-without-an-asyncstorage-throws-when-it-is-created),
-  where release builds used to skip the assert
+- [A client without an `asyncStorage` keeps pkce verifiers in memory](#a-client-without-an-asyncstorage-keeps-pkce-verifiers-in-memory),
+  so a pkce flow that leaves the process needs a persistent storage passed explicitly
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
+- [`DateTime` filter values carry their offset from UTC](#datetime-filter-values-carry-their-offset-from-utc)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),
   where writes without a `select()` now resolve to `void`
 - [`User.userMetadata` is never null](#userappmetadata-is-an-appmetadata-and-usermetadata-is-never-null),
@@ -496,6 +500,8 @@ explicitly:
   so a catch of the transport exception no longer matches a token failure
 - [The request timeout bounds idle time, not the whole request](#the-request-timeout-bounds-idle-time-not-the-whole-request),
   so a response that keeps arriving can take longer than `requestTimeout`
+- [Iceberg catalog options are named and take an `abortSignal`](#iceberg-catalog-options-are-named-and-take-an-abortsignal),
+  where a failing catalog configuration request now fails the operation
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
@@ -505,6 +511,9 @@ explicitly:
   result stored in `var` or interpolated into a string is no longer the key
 - [`exists()` only returns `false` for a missing object](#exists-only-returns-false-for-a-missing-object),
   so a missing bucket or an invalid token throws instead of returning `false`
+- [An `Authorization` header passed to `SupabaseClient` reaches the auth client](#an-authorization-header-passed-to-supabaseclient-reaches-the-auth-client)
+- [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so code that
+  reads the sent keys from the top of the received message gets `null`
 
 ### Packages and setup
 
@@ -594,6 +603,19 @@ final supabase = SupabaseClient(
 
 A Dart script that does not call `dispose()` on its `SupabaseClient` now waits a minute before
 exiting instead of 15 seconds.
+
+#### `realtimeClientOptions` is renamed to `realtimeOptions`
+
+The parameter of `SupabaseClient` and `Supabase.initialize` now matches `postgrestOptions`,
+`authOptions`, `storageOptions` and `functionsOptions`.
+
+```dart
+// Before
+SupabaseClient(url, key, realtimeClientOptions: RealtimeClientOptions(timeout: timeout));
+
+// After
+SupabaseClient(url, key, realtimeOptions: RealtimeClientOptions(timeout: timeout));
+```
 
 #### The SDK no longer prints logs
 
@@ -703,11 +725,12 @@ Across every package:
 | Before                                         | After                                       |
 | ---------------------------------------------- | ------------------------------------------- |
 | `StorageFileApi.info()`                        | `StorageFileApi.getMetadata()`              |
+| `SignedUploadURLResponse`                      | `SignedUploadUrlResponse`                   |
 | `VectorBucketEncryption.sseType`               | `serverSideEncryptionType`                  |
 | `PartitionSpec` and the Iceberg `spec` cluster | `PartitionSpecification`, `…Specification…` |
 | `TableMetadata.refs`                           | `TableMetadata.references`                  |
 | `TableField.doc`                               | `TableField.documentation`                  |
-| `LoadTableSnapshots.value`                     | `TableSnapshotScope.name`                   |
+| `LoadTableSnapshots.refs`                      | `TableSnapshotScope.references`             |
 
 These renames also change a type:
 
@@ -757,6 +780,26 @@ await supabase
     .order('price', ascending: false, nullsFirst: false);
 ```
 
+#### `DateTime` filter values carry their offset from UTC
+
+A `DateTime` passed to a filter, such as `gt()`, `eq()`, `inFilter()`, `match()` or `filter()`, to
+a `stream()` or `PostgresChangeFilter`, or as a `GET` function argument, is sent in ISO 8601 with
+its offset from UTC:
+`2026-01-01T12:00:00.000Z` for a UTC value and `2026-01-01T12:00:00.000-05:00` for a local one. v2
+sent `toString()`, `2026-01-01 12:00:00.000`, so the database read a local value in its own time
+zone, usually UTC, and a `timestamptz` filter compared against an instant shifted by the device
+offset. A `timestamp` column ignores the offset and still compares against the wall clock time.
+
+This is not a compile error, so check every filter that passes a `DateTime` from `DateTime.now()`
+or another local value. A filter that already passes a string, such as
+`value.toUtc().toIso8601String()`, is unaffected:
+
+```dart
+// Before: matched rows created up to the local time, read as UTC.
+// After: matches rows created before now.
+await supabase.from('messages').select().lt('created_at', DateTime.now());
+```
+
 #### The rest client and its builders are stateless
 
 | Before                                                                                       | After                                                                                      |
@@ -764,9 +807,11 @@ await supabase
 | `supabase.rest.headers['X-Foo'] = 'bar'`                                                     | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}`                                 |
 | `postgrest.headers['X-Foo'] = 'bar'`                                                         | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request     |
 | `await supabase.from('countries')`                                                           | does not compile, choose an operation first                                                |
-| `SupabaseQuerySchema(headers: …)`                                                            | removed, the headers of the `rest` client are used                                         |
-| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
+| `SupabaseQuerySchema(…)` and `SupabaseQueryBuilder(…)`                                       | internal, use `supabase.schema(…)` and `supabase.from(…)`                                  |
+| `PostgrestQueryBuilder(method: …, abortSignal: …)`                                           | removed, call `abortSignal()` on the query builder instead                                 |
+| `PostgrestRpcBuilder(abortSignal: …)`                                                        | removed, call `abortSignal()` on the builder `rpc()` returns                               |
 | `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`                 | removed                                                                                    |
+| `PostgrestFilterBuilder.copyWithUrl()` and `PostgrestTransformBuilder.copyWithUrl()`         | removed, build the request with the filters and transforms instead                         |
 | `PostgrestQueryBuilder<T>`                                                                   | `PostgrestQueryBuilder`                                                                    |
 
 `PostgrestClient.headers` is an unmodifiable map. Set headers on the constructor for all requests,
@@ -779,9 +824,10 @@ read `supabase.rest` or call `supabase.schema(…)` again after changing them.
 `insert()`, `upsert()`, `update()` and `delete()` without a trailing `select()` now resolve to
 `void`. The value was always `null`, so drop the assignment or add `select()` to return data.
 
-`supabase.from('countries')` by itself can no longer be awaited, converted with `withConverter()`,
-or given an `abortSignal()`. Call `select()`, `insert()`, `upsert()`, `update()`, `delete()` or
-`count()` first. `setHeader()` and `retry()` remain available before the operation.
+`supabase.from('countries')` by itself can no longer be awaited or converted with
+`withConverter()`. Call `select()`, `insert()`, `upsert()`, `update()`, `delete()` or `count()`
+first. `setHeader()`, `retry()`, `requestTimeout()` and `abortSignal()` remain available before the
+operation.
 
 #### The PostgREST builder has one type parameter and no wrapper classes
 
@@ -999,6 +1045,24 @@ listener that expects the email-change confirmation to arrive as `signedIn`, and
 `userUpdated` there instead. For the PKCE case, `AuthSessionUrlResponse.redirectType` is `'userUpdated'` instead of `null`, so
 you can also branch on the response of `exchangeCodeForSession()` directly.
 
+#### `FlutterWebAuth2OAuthLauncher` reports cancel and exchange failures without throwing
+
+With `supabase_flutter_web_auth`, closing the web auth session without signing in made
+`signInWithOAuth`, `signInWithSSO` and `linkIdentity` throw a `PlatformException` with the code
+`CANCELED`. They now return `false`, so check the result instead of catching the exception. A
+failed code exchange no longer throws either: the `AuthException` arrives as an error on
+`onAuthStateChange`, as it does with the default launcher.
+
+```dart
+final launched = await supabase.auth.signInWithOAuth(
+  OAuthProvider.github,
+  redirectTo: 'com.example.myapp://oauth-callback',
+);
+if (!launched) {
+  print('Sign-in was cancelled');
+}
+```
+
 #### Cross-tab session sync is opt-in for standalone clients
 
 On web the auth client keeps the tabs of a project in sync through a `BroadcastChannel`. It is now
@@ -1063,16 +1127,16 @@ session has been restored. `Supabase.initialize` awaits it for you.
 `supabase.auth.token-…` prefix are still read, so a sign-in link requested before the upgrade still
 completes after it.
 
-#### A client without an `asyncStorage` throws when it is created
+#### A client without an `asyncStorage` keeps pkce verifiers in memory
 
 The pkce flow, the default, keeps its code verifiers in the `asyncStorage` of `AuthClientOptions`.
-A `SupabaseClient` or `AuthClient` created without one used to fail an assert, so release builds
-only failed at the first pkce call. Both now throw an `ArgumentError` when they are created, in
-every build mode.
+A `SupabaseClient` created without one now falls back to a `MemoryAuthAsyncStorage`, so a script
+or a server needs no setup. The verifiers are lost when the process exits, so pass a persistent
+storage when the code comes back to another process, such as from an email link.
 
-`Supabase.initialize` configures a storage for you. A standalone script or a server has to pass
-one, such as `MemoryAuthAsyncStorage()`, or use the implicit flow. A client with a third-party
-`accessToken` needs no `asyncStorage`.
+`Supabase.initialize` configures a persistent storage for you. A `SupabaseClient` with
+`persistSession: true`, or an `AuthClient` using the pkce flow, still needs an `asyncStorage` and
+throws an `ArgumentError` when it is created without one, in every build mode.
 
 #### `AuthChangeEvent.initialSession` is emitted to every subscriber
 
@@ -1315,6 +1379,31 @@ await supabase.channel('room').httpSend(event: 'move', payload: data);
 
 Messages sent between `subscribe()` and the join are still buffered, so only channels that were
 never subscribed throw. `httpSend()` requires Realtime v2.97.0 or newer.
+
+#### Broadcast data arrives under `payload`
+
+`sendBroadcastMessage()` sends its `payload` under the `payload` key of the message, as `httpSend()`,
+database broadcasts and the JavaScript client already did. It used to put the keys next to `type`
+and `event`, so a listener only found them at the top level for messages sent from Dart. Read the
+data from `payload` on every `onBroadcast` message. If you wrapped the data in a `payload` key
+yourself, for example to match the JavaScript client or to send binary data, remove the wrapper,
+or the data arrives nested twice and a binary payload is sent as a JSON list of numbers:
+
+```dart skip
+// Before
+channel.onBroadcast(event: 'cursor').listen((message) => print(message['x']));
+await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
+await channel.sendBroadcastMessage(event: 'file', payload: {'payload': bytes});
+await channel.sendBroadcastMessage(event: 'ping', payload: {'payload': {'x': 30}});
+
+// After
+channel
+    .onBroadcast(event: 'cursor')
+    .listen((message) => print(message['payload']['x']));
+await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
+await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
+```
 
 #### Realtime listener callbacks are now streams
 
@@ -1596,6 +1685,27 @@ parameters and are named now, like on every other upload method:
 .uploadToSignedUrl(path, token, file, fileOptions: const FileOptions(upsert: true));
 ```
 
+#### Iceberg catalog options are named and take an `abortSignal`
+
+The options of `listNamespaces`, `listTables` and `loadTableResult` were optional positional
+parameters and are named now, so that every catalog operation can also take a
+`Future<void>? abortSignal`:
+
+```dart
+// Before
+await catalog.listNamespaces(const ListNamespacesOptions(pageSize: 100));
+
+// After
+await catalog.listNamespaces(options: const ListNamespacesOptions(pageSize: 100));
+```
+
+A nested type the client does not recognize decodes as the new `UnknownType` instead of failing the
+whole table, so a `switch` over `IcebergType` needs a case for it.
+
+A catalog whose `/v1/config` request fails now throws that error from the operation instead of
+falling back to the `v1/<warehouse>` path, so a rejected token or a missing bucket surfaces as the
+error the server sent.
+
 #### Storage uploads send the raw file body
 
 Uploads used to be `multipart/form-data` requests. The file is now the request body itself, with
@@ -1620,6 +1730,56 @@ await supabase.storage.from('avatars').uploadStream(
   contentLength: await file.length(),
 );
 ```
+
+#### `BucketOptions.public` is optional and `fileSizeLimit` is in bytes
+
+`updateBucket` only sends the options that are set, so changing the allowed MIME types or the
+versioning status no longer resets the visibility of the bucket. `BucketOptions.public` is
+optional for that reason, and a bucket created without it is private as before.
+
+`BucketOptions.fileSizeLimit` is the number of bytes as an `int`, the same type that
+`Bucket.fileSizeLimit` reports, instead of a string such as `'20MB'`:
+
+```dart
+// Before
+const BucketOptions(public: false, fileSizeLimit: '20MB');
+
+// After
+const BucketOptions(fileSizeLimit: 20 * 1000 * 1000);
+```
+
+#### Storage methods without a result return `void`
+
+The methods that only confirmed success with a message from the server complete with `void` and
+throw a `StorageException` on failure as before: `createBucket`, `updateBucket`, `emptyBucket`,
+`deleteBucket`, `deleteBucketLifecycle`, `purgeBucketCache`, `purgeProjectCache`,
+`deleteAnalyticsBucket`, `move` and `purgeCache`. `createBucket` used to return the id it was
+given, so keep using that id.
+
+`copy` returns an `UploadResponse` like `upload` does, instead of the key prefixed with the
+bucket id. That key is its `fullPath`, and `path` is the key within the bucket:
+
+```dart
+// Before
+final key = await supabase.storage.from('avatars').copy('a.png', 'b.png');
+
+// After
+final copy = await supabase.storage.from('avatars').copy('a.png', 'b.png');
+final key = copy.fullPath;
+```
+
+#### `SignedUrl` is removed
+
+`SignedUrl` was only the base class of the `createSignedUploadUrl` response, which is now the
+standalone `SignedUploadUrlResponse` with the same `path` and `signedUrl` fields and its `token`.
+`SignedUrl.copyWith` is gone with it.
+
+#### Storage wire helpers are internal
+
+The `StorageFileApi` constructor is internal. Get one for a bucket with
+`supabase.storage.from(bucketId)` instead. The methods that encode options for a request,
+`ListBucketsOptions.toQueryParameters`, `toMap` on `SearchOptions`, `SortBy`, `FileSort` and
+`PaginatedSearchOptions`, and `Vector.toJson`, are internal too.
 
 ### Errors
 
@@ -1930,12 +2090,19 @@ Assigning `SupabaseClient.headers` propagates the new headers to every sub-clien
 `SupabaseStorageClient.vectors` builds a new client on each access, so it always carries the
 current headers.
 
+#### An `Authorization` header passed to `SupabaseClient` reaches the auth client
+
+An `Authorization` or `apikey` header in the `headers:` of the `SupabaseClient` constructor used to
+be replaced with the API key on the auth client, while one assigned through `supabase.headers` was
+kept. Both are now kept, so auth requests send the header instead of the API key. To keep the old
+behavior, set the header on the individual calls instead of on the client.
+
 #### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
 
 `SupabaseClient`, `PostgrestClient` and `FunctionsClient` take an `AsyncJsonCodec` through
 `jsonCodec:` instead of a `YAJsonIsolate` through `isolate:`. The same rename applies to
-`PostgrestBuilder`, `PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `SupabaseQueryBuilder` and
-`SupabaseQuerySchema`, and `Supabase.initialize` takes `jsonCodec:` too.
+`PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder`, and `Supabase.initialize`
+takes `jsonCodec:` too.
 
 ```dart
 // Before
@@ -1960,8 +2127,8 @@ await jsonCodec.dispose();
 call. On web, `YAJsonIsolate` is no longer `const`, and using it after `dispose()` throws a
 `StateError` as it already did on other platforms.
 
-Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is not exported
-by `supabase` or `supabase_flutter`, so depend on `yet_another_json_isolate` directly to name it.
+Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is exported by
+`supabase` and `supabase_flutter`.
 
 #### `TracePropagationOptions` requires a `traceContextProvider`
 
@@ -2021,7 +2188,8 @@ behavioural details are worth checking:
 | `AuthenticatorAssuranceLevels` | `AuthenticatorAssuranceLevel` | `supabase_auth`     |
 | `LoadTableSnapshots`           | `TableSnapshotScope`          | `iceberg`           |
 
-No enum values changed, so the only work is renaming the type where you name it explicitly.
+Apart from `TableSnapshotScope.references`, no enum values changed, so the only work is renaming the
+type where you name it explicitly.
 
 #### One shared `SortDirection` for every sort direction
 
@@ -2048,3 +2216,21 @@ unaffected. For `functions.invoke`, two things changed:
   (3 to 5). This is not a compile error, so replace any persisted `index` with `name`.
 
 The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
+
+### Testing
+
+#### `supabase_test` matches methods with `HttpMethod` and takes the `initializeTestSupabase` names
+
+The `method` parameter of `MockSupabaseHttpClient.requestsTo` and of every `stub*` method is an
+`HttpMethod` instead of a `String`. `testSupabaseClient` takes the same parameter names as
+`initializeTestSupabase` from `package:supabase_flutter/testing.dart`.
+
+| Before                                   | After                                                  |
+| ---------------------------------------- | ------------------------------------------------------ |
+| `method: 'POST'`                         | `method: HttpMethod.post`                              |
+| `testSupabaseClient(apiKey: key)`        | `testSupabaseClient(publishableKey: key)`              |
+| `testSupabaseClient(realtime: realtime)` | `testSupabaseClient(realtimeTransport: realtime.call)` |
+
+Both helpers now default to an `sb_publishable_` key instead of an unsigned anon JWT. A signed-out
+edge function call therefore no longer sends an `Authorization` header, as with a production
+publishable key. Pass a JWT as `publishableKey` if a test relies on the old headers.

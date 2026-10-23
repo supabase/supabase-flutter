@@ -19,6 +19,7 @@ dependencies:
 dev_dependencies:
   supabase_typegen: ^0.6.0
   supabase_lints: ^0.1.2
+  supabase_test: ^0.5.2
   flutter_test:
     sdk: flutter
   integration_test:

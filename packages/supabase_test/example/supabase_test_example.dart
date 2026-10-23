@@ -54,11 +54,14 @@ void main() {
   });
 
   test('sends the new todo to the table', () async {
-    httpClient.stubTable('todos', method: 'POST', statusCode: 201);
+    httpClient.stubTable('todos', method: HttpMethod.post, statusCode: 201);
 
     await repository.add('Release');
 
-    final insert = httpClient.requestsTo('/rest/v1/todos', method: 'POST');
+    final insert = httpClient.requestsTo(
+      '/rest/v1/todos',
+      method: HttpMethod.post,
+    );
     expect(insert.single.jsonBody, {'task': 'Release', 'status': false});
   });
 

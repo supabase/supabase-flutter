@@ -46,6 +46,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   /// redirect paths.
   final bool Function(Uri uri)? detectSessionInUriPredicate;
 
+  @override
   FlutterAuthClientOptions copyWith({
     AuthFlowType? authFlowType,
     bool? autoRefreshToken,

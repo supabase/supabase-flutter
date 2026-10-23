@@ -598,4 +598,16 @@ void main() {
         .lte('inserted_at', DateTime.parse('2021-06-30').toIso8601String());
     expect(response.length, 2);
   });
+
+  test('a local DateTime filters the instant it names', () async {
+    final local = DateTime.parse('2021-06-25T04:28:21.598Z').toLocal();
+
+    final response = await postgrest
+        .from('messages')
+        .select('message')
+        .eq('inserted_at', local);
+    expect(response, [
+      {'message': 'Hello World 👋'},
+    ]);
+  });
 }

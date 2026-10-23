@@ -7,7 +7,6 @@ import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'api_key.dart';
 import 'auth_http_client.dart';
@@ -44,7 +43,7 @@ import 'trace_http_client.dart';
 /// [functionsOptions] overrides it for that client. `null` (the default)
 /// applies no timeout.
 ///
-/// [realtimeClientOptions] specifies different options you can pass to
+/// [realtimeOptions] specifies different options you can pass to
 /// `RealtimeClient`.
 ///
 /// [accessToken] Optional function for using a third-party authentication
@@ -63,13 +62,14 @@ import 'trace_http_client.dart';
 ///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `asyncStorage` field of [authOptions].
-/// Pass a persistent implementation whenever the flow can leave the process
-/// before the code comes back, which covers every email link and every
-/// redirect to an OAuth provider. `MemoryAuthAsyncStorage` only suits flows
+/// Without one, a `MemoryAuthAsyncStorage` is used, which only suits flows
 /// that start and complete in the same process, such as tests and command line
-/// tools that keep a redirect listener open. Without an `asyncStorage` the
-/// constructor throws an [ArgumentError] for the pkce flow or a persisted
-/// session, unless an [accessToken] is used.
+/// tools that keep a redirect listener open. Pass a persistent implementation
+/// whenever the flow can leave the process before the code comes back, which
+/// covers every email link and every redirect to an OAuth provider. A
+/// persisted session needs an `asyncStorage` too, so without one the
+/// constructor throws an [ArgumentError] when `persistSession` is set, unless
+/// an [accessToken] is used.
 /// {@endtemplate}
 class SupabaseClient {
   /// {@macro supabase_client}
@@ -80,7 +80,7 @@ class SupabaseClient {
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
-    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    RealtimeClientOptions realtimeOptions = const RealtimeClientOptions(),
     TracePropagationOptions? tracePropagationOptions,
     this.accessToken,
     Map<String, String>? headers,
@@ -89,11 +89,11 @@ class SupabaseClient {
     Duration? requestTimeout,
   }) : _supabaseKey = supabaseKey,
        _functionsOptions = functionsOptions,
-       _restUrl = '$supabaseUrl/rest/v1',
-       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
-       _authUrl = '$supabaseUrl/auth/v1',
-       _storageUrl = '$supabaseUrl/storage/v1',
-       _functionsUrl = '$supabaseUrl/functions/v1',
+       _restUrl = _serviceUrl(supabaseUrl, 'rest/v1'),
+       _realtimeUrl = _serviceUrl(supabaseUrl, 'realtime/v1', webSocket: true),
+       _authUrl = _serviceUrl(supabaseUrl, 'auth/v1'),
+       _storageUrl = _serviceUrl(supabaseUrl, 'storage/v1'),
+       _functionsUrl = _serviceUrl(supabaseUrl, 'functions/v1'),
        _postgrestOptions = postgrestOptions,
        _requestTimeout = requestTimeout,
        _headers = {
@@ -105,9 +105,8 @@ class SupabaseClient {
        _ownsJsonCodec = jsonCodec == null {
     if (accessToken == null &&
         authOptions.asyncStorage == null &&
-        (authOptions.authFlowType == AuthFlowType.pkce ||
-            authOptions.persistSession)) {
-      throw ArgumentError(_missingAsyncStorageMessage(authOptions));
+        authOptions.persistSession) {
+      throw ArgumentError(_missingAsyncStorageMessage);
     }
     final baseHttpClient = httpClient ?? createDefaultHttpClient();
     final tracedHttpClient = tracePropagationOptions == null
@@ -136,7 +135,7 @@ class SupabaseClient {
     _rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(storageOptions);
-    realtime = _initRealtimeClient(options: realtimeClientOptions);
+    realtime = _initRealtimeClient(options: realtimeOptions);
     if (accessToken == null) {
       clientLogger.config(
         'Initialize SupabaseClient v$version with no custom access token',
@@ -221,11 +220,7 @@ class SupabaseClient {
 
     if (accessToken == null) {
       // ignore: invalid_use_of_internal_member
-      auth.replaceHeaders({
-        ...SupabaseConstants.defaultHeaders,
-        ..._getAuthHeaders(),
-        ..._headers,
-      });
+      auth.replaceHeaders(_authClientHeaders());
     }
 
     // To apply the new headers in the realtime client,
@@ -350,15 +345,16 @@ class SupabaseClient {
     }
   }
 
-  /// Disconnects realtime, closes the auth state subscription, and disposes
-  /// the functions, PostgREST, and its internally owned JSON codec.
+  /// Closes the auth state subscription, disconnects realtime, and disposes
+  /// the functions, PostgREST, and auth clients, the JSON codec and the http
+  /// client it created itself.
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
-    await realtime.disconnect();
     // Cancelling a broadcast subscription takes effect immediately and returns
     // a future of the root zone. Awaiting it would resume this method outside
     // the fake async zone of a widget test, which then never completes.
     unawaited(_authStateSubscription?.cancel());
+    await realtime.disconnect();
     await functions.dispose();
     await _rest.dispose();
     if (_ownsJsonCodec) {
@@ -371,16 +367,12 @@ class SupabaseClient {
   }
 
   AuthClient _initSupabaseAuthClient(AuthClientOptions authOptions) {
-    final authHeaders = {...headers};
-    authHeaders[HttpHeader.apiKey] = _supabaseKey;
-    authHeaders[HttpHeader.authorization] = 'Bearer $_supabaseKey';
-
     return AuthClient(
       url: _authUrl,
-      headers: authHeaders,
+      headers: _authClientHeaders(),
       autoRefreshToken: authOptions.autoRefreshToken,
       httpClient: _authApiHttpClient,
-      asyncStorage: authOptions.asyncStorage,
+      asyncStorage: authOptions.asyncStorage ?? MemoryAuthAsyncStorage(),
       persistSession: authOptions.persistSession,
       storageKey: authOptions.storageKey,
       flowType: authOptions.authFlowType,
@@ -454,15 +446,25 @@ class SupabaseClient {
     );
   }
 
-  /// Requires the `auth` instance, so no custom `accessToken` is allowed.
-  Map<String, String> _getAuthHeaders() {
-    final authBearer = auth.currentSession?.accessToken ?? _supabaseKey;
-    final defaultHeaders = {
-      HttpHeader.apiKey: _supabaseKey,
-      HttpHeader.authorization: 'Bearer $authBearer',
-    };
-    final mergedHeaders = {...defaultHeaders, ..._headers};
-    return mergedHeaders;
+  /// The static headers of the auth client, which sends the session token of
+  /// a user only on the requests that act on behalf of that user.
+  ///
+  /// A user `apikey` or `Authorization` header is stored under its canonical
+  /// name, so the session token of such a request still replaces it.
+  Map<String, String> _authClientHeaders() => {
+    HttpHeader.apiKey: _supabaseKey,
+    HttpHeader.authorization: 'Bearer $_supabaseKey',
+    for (final MapEntry(:key, :value) in _headers.entries)
+      _canonicalHeaderName(key): value,
+  };
+
+  static String _canonicalHeaderName(String name) {
+    for (final canonical in [HttpHeader.apiKey, HttpHeader.authorization]) {
+      if (name.toLowerCase() == canonical.toLowerCase()) {
+        return canonical;
+      }
+    }
+    return name;
   }
 
   void _listenForAuthEvents() {
@@ -484,23 +486,25 @@ class SupabaseClient {
   }
 }
 
-String _missingAsyncStorageMessage(AuthClientOptions authOptions) {
-  final message = authOptions.authFlowType == AuthFlowType.pkce
-      ? 'SupabaseClient uses the pkce flow by default, which needs an '
-            'asyncStorage to keep its code verifiers in. Pass one through '
-            'authOptions, for example '
-            '`authOptions: AuthClientOptions(asyncStorage: '
-            'MemoryAuthAsyncStorage())` when the verifiers do not need to '
-            'outlive the process, or set '
-            '`authFlowType: AuthFlowType.implicit`.'
-      : 'SupabaseClient needs an asyncStorage to persist the session in. Pass '
-            'one through authOptions, for example '
-            '`authOptions: AuthClientOptions(asyncStorage: '
-            'MemoryAuthAsyncStorage())`, or set `persistSession: false`.';
-  if (Zone.current[#test.invoker] == null) {
-    return message;
-  }
-  return '$message In a test, `testSupabaseClient` from '
-      'package:supabase_test builds a client with the storage already '
-      'configured.';
+String _serviceUrl(
+  String supabaseUrl,
+  String servicePath, {
+  bool webSocket = false,
+}) {
+  final baseUrl = Uri.parse(supabaseUrl);
+  final basePath = baseUrl.path.replaceFirst(RegExp(r'/+$'), '');
+  final scheme = switch (baseUrl.scheme) {
+    'http' when webSocket => 'ws',
+    'https' when webSocket => 'wss',
+    final otherScheme => otherScheme,
+  };
+  return baseUrl
+      .replace(scheme: scheme, path: '$basePath/$servicePath')
+      .toString();
 }
+
+const _missingAsyncStorageMessage =
+    'SupabaseClient needs an asyncStorage to persist the session in. Pass an '
+    'AuthAsyncStorage that writes to disk through '
+    '`authOptions: AuthClientOptions(asyncStorage: …)`, or set '
+    '`persistSession: false`.';

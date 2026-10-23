@@ -34,7 +34,10 @@ void main() {
   setUp(() {
     httpClient = MockSupabaseHttpClient();
     realtime = MockRealtimeTransport();
-    supabase = testSupabaseClient(httpClient: httpClient, realtime: realtime);
+    supabase = testSupabaseClient(
+      httpClient: httpClient,
+      realtimeTransport: realtime.call,
+    );
   });
 
   tearDown(() async {

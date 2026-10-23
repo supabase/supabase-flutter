@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:convert/convert.dart' show hex;
 import 'package:meta/meta.dart';
 
+import '../timestamp.dart';
+
 part 'postgres_bytea.dart';
 part 'postgres_date.dart';
 part 'postgres_geometry.dart';

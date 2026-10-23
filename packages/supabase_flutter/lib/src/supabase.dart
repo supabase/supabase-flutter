@@ -40,8 +40,11 @@ class Supabase {
 
   /// Gets the current supabase instance.
   ///
-  /// An [AssertionError] is thrown if supabase isn't initialized yet.
-  /// Call [Supabase.initialize] to initialize it.
+  /// When assertions are enabled, as in debug builds, an [AssertionError] is
+  /// thrown if supabase isn't initialized yet. Profile and release builds
+  /// return the instance anyway, and [client] throws a [StateError] when it
+  /// is used. Call [Supabase.initialize] to
+  /// initialize it.
   static Supabase get instance {
     assert(
       _instance._isInitialized,
@@ -73,7 +76,7 @@ class Supabase {
   /// passed here is owned by the caller, so it is not disposed together with
   /// the client. One is created internally when this is omitted.
   ///
-  /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
+  /// [realtimeOptions], [postgrestOptions], and [storageOptions]
   /// configure their respective underlying clients, for example
   /// `storageOptions.retryOptions` configures how an upload to Supabase
   /// storage that failed due to a network interruption is retried. The
@@ -111,7 +114,7 @@ class Supabase {
     required String publishableKey,
     Map<String, String>? headers,
     Client? httpClient,
-    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    RealtimeClientOptions realtimeOptions = const RealtimeClientOptions(),
     RealtimeLifecycleOptions realtimeLifecycleOptions =
         const RealtimeLifecycleOptions(),
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
@@ -149,7 +152,7 @@ class Supabase {
       publishableKey,
       httpClient: httpClient,
       customHeaders: headers,
-      realtimeClientOptions: realtimeClientOptions,
+      realtimeOptions: realtimeOptions,
       realtimeLifecycleOptions: realtimeLifecycleOptions,
       authOptions: authOptions,
       postgrestOptions: postgrestOptions,
@@ -301,7 +304,7 @@ class Supabase {
     String supabaseKey, {
     Client? httpClient,
     Map<String, String>? customHeaders,
-    required RealtimeClientOptions realtimeClientOptions,
+    required RealtimeClientOptions realtimeOptions,
     required RealtimeLifecycleOptions realtimeLifecycleOptions,
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
@@ -321,7 +324,7 @@ class Supabase {
       supabaseKey,
       httpClient: httpClient,
       headers: headers,
-      realtimeClientOptions: realtimeClientOptions,
+      realtimeOptions: realtimeOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
       authOptions: authOptions,

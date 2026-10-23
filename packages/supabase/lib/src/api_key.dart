@@ -7,8 +7,10 @@ const _secretKeyPrefix = 'sb_secret_';
 /// Whether [key] uses the new Supabase API key format
 /// (`sb_publishable_...` / `sb_secret_...`).
 ///
-/// These keys are not JWTs and must never be sent as an
-/// `Authorization: Bearer` token.
+/// These keys are not JWTs. The API gateway accepts one as an
+/// `Authorization: Bearer` token for the rest, auth and storage services, but
+/// an Edge Function that verifies the JWT rejects it, so the functions client
+/// leaves it out of that header.
 @internal
 bool isNewApiKey(String key) =>
     key.startsWith(_publishableKeyPrefix) || key.startsWith(_secretKeyPrefix);

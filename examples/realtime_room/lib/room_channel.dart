@@ -9,7 +9,7 @@ import 'supabase_schema.g.dart';
 /// this example demonstrates:
 ///
 /// * **Postgres Changes** stream inserts and deletes on the `messages` table,
-///   so the chat log stays in sync without re-fetching.
+///   so the chat log stays in sync while the channel is joined.
 /// * **Broadcast** relays ephemeral "typing" pings that are never written to
 ///   the database, only forwarded to the other connected clients.
 /// * **Presence** tracks who is currently in the room and exposes the live
@@ -44,12 +44,16 @@ class RoomChannel {
     // Broadcast: transient "typing" pings. Our own pings are filtered out.
     onTyping = _channel
         .onBroadcast(event: _typingEvent)
-        .map((payload) => payload['username'] as String)
+        .map((message) => message['payload']['username'] as String)
         .where((name) => name != username);
 
     // Presence: fires whenever the roster changes. Read the full state back
     // and map it to the connected users.
     onlineUsers = _channel.onPresenceSync.map((_) => _currentUsers());
+
+    onReplicationReady = _channel.onSystemEvents.where(
+      (system) => system.extension == 'system' && system.status == 'ok',
+    );
   }
 
   final SupabaseClient _client;
@@ -74,6 +78,13 @@ class RoomChannel {
 
   /// The current room roster (recomputed on every presence sync event).
   late final Stream<List<OnlineUser>> onlineUsers;
+
+  /// Fires each time Postgres Changes replication is live: once after
+  /// [subscribe], and again after every rejoin, for example when the app
+  /// comes back from the background or the network returns. Changes made
+  /// while the channel was away are not streamed afterwards, so this is the
+  /// moment to load the table.
+  late final Stream<void> onReplicationReady;
 
   static const _typingEvent = 'typing';
 

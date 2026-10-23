@@ -405,9 +405,12 @@ class FileObjectV2 {
 
 /// Options for [StorageBucketApi.createBucket] and
 /// [StorageBucketApi.updateBucket].
+///
+/// An option left as `null` is not sent, so [StorageBucketApi.updateBucket]
+/// leaves that setting of the bucket as it is.
 class BucketOptions {
   const BucketOptions({
-    required this.public,
+    this.public,
     this.fileSizeLimit,
     this.allowedMimeTypes,
     this.versioningStatus,
@@ -415,18 +418,16 @@ class BucketOptions {
 
   /// The visibility of the bucket. Public buckets don't require an
   /// authorization token to download objects, but still require a valid token
-  /// for all other operations. By default, buckets are private.
-  final bool public;
+  /// for all other operations. A bucket created without it is private.
+  final bool? public;
 
-  /// The file size limit that this bucket can accept during upload, in a
-  /// format such as `20GB`, `20MB`, `30KB` or `3B`.
-  final String? fileSizeLimit;
+  /// The maximum size, in bytes, an uploaded object may be.
+  final int? fileSizeLimit;
 
   /// The allowed mime types that this bucket can accept during upload.
   final List<String>? allowedMimeTypes;
 
-  /// Whether the bucket keeps previous versions of its objects. Left as is
-  /// when `null`.
+  /// Whether the bucket keeps previous versions of its objects.
   ///
   /// A bucket is created [VersioningStatus.disabled] or
   /// [VersioningStatus.enabled], and once created can only move to
@@ -474,6 +475,7 @@ class ListBucketsOptions {
   /// A search term used to filter buckets by name.
   final String? search;
 
+  @internal
   Map<String, String> toQueryParameters() {
     return {
       'limit': ?limit?.toString(),
@@ -572,6 +574,7 @@ class SearchOptions {
   /// When `true`, only lists objects whose key is exactly the given path.
   final bool? exactMatch;
 
+  @internal
   Map<String, dynamic> toMap() {
     return {
       'limit': limit,
@@ -598,6 +601,7 @@ class SortBy {
   /// The sort direction.
   final SortDirection order;
 
+  @internal
   Map<String, dynamic> toMap() {
     return {
       'column': column ?? 'name',
@@ -632,6 +636,7 @@ class FileSort {
   /// The sort direction.
   final SortDirection order;
 
+  @internal
   Map<String, dynamic> toMap() {
     return {
       'column': column.snakeCase,
@@ -686,6 +691,7 @@ class PaginatedSearchOptions {
   /// When `true`, only lists objects whose key is exactly [prefix].
   final bool? exactMatch;
 
+  @internal
   Map<String, dynamic> toMap() {
     return {
       'limit': ?limit,
@@ -835,46 +841,6 @@ class PaginatedListResult {
   final String? nextCursor;
 }
 
-/// A signed URL for downloading a private object.
-class SignedUrl {
-  const SignedUrl({
-    required this.path,
-    required this.signedUrl,
-  });
-
-  /// The file path, including the current file name. For example
-  /// `folder/image.png`.
-  final String path;
-
-  /// Full signed URL of the files.
-  final String signedUrl;
-
-  @override
-  String toString() => 'SignedUrl(path: $path, signedUrl: $signedUrl)';
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is SignedUrl &&
-        other.path == path &&
-        other.signedUrl == signedUrl;
-  }
-
-  @override
-  int get hashCode => path.hashCode ^ signedUrl.hashCode;
-
-  SignedUrl copyWith({
-    String? path,
-    String? signedUrl,
-  }) {
-    return SignedUrl(
-      path: path ?? this.path,
-      signedUrl: signedUrl ?? this.signedUrl,
-    );
-  }
-}
-
 /// Represents a per-item result from [StorageFileApi.createSignedUrls].
 ///
 /// Use exhaustive pattern matching to handle both outcomes:
@@ -919,8 +885,8 @@ final class SignedUrlFailure extends SignedUrlResult {
   String toString() => 'SignedUrlFailure(path: $path, error: $error)';
 }
 
-/// Response of an upload or update operation, describing where the object was
-/// stored.
+/// Response of an upload, update or copy operation, describing where the
+/// object was stored.
 class UploadResponse {
   const UploadResponse({
     this.id,
@@ -953,15 +919,38 @@ class UploadResponse {
 }
 
 /// The response of `StorageFileApi.createSignedUploadUrl`.
-class SignedUploadURLResponse extends SignedUrl {
-  const SignedUploadURLResponse({
-    required super.signedUrl,
-    required super.path,
+class SignedUploadUrlResponse {
+  const SignedUploadUrlResponse({
+    required this.path,
+    required this.signedUrl,
     required this.token,
   });
 
+  /// The file path the URL uploads to, including the file name. For example
+  /// `folder/image.png`.
+  final String path;
+
+  /// The full signed upload URL, including [token].
+  final String signedUrl;
+
   /// Token to be used when uploading files with the `uploadToSignedUrl` method.
   final String token;
+
+  @override
+  String toString() =>
+      'SignedUploadUrlResponse(path: $path, signedUrl: $signedUrl)';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SignedUploadUrlResponse &&
+        other.path == path &&
+        other.signedUrl == signedUrl &&
+        other.token == token;
+  }
+
+  @override
+  int get hashCode => Object.hash(path, signedUrl, token);
 }
 
 /// Thrown when a storage operation fails.

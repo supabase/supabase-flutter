@@ -21,12 +21,26 @@ class PostgrestClientOptions {
   /// Bounds how long a single request attempt may go without progress,
   /// overriding the `requestTimeout` of `SupabaseClient`.
   ///
-  /// The timer restarts whenever a chunk of the response arrives, and a
-  /// timed-out attempt is cancelled and retried like any other failure. A
-  /// `PostgrestTransportException` caused by a `TimeoutException` is thrown
-  /// once the retries are exhausted. Use `PostgrestBuilder.requestTimeout` to
-  /// override it for a single request.
+  /// The timer restarts whenever a chunk of the request body is sent or a
+  /// chunk of the response arrives. A timed-out attempt is cancelled and
+  /// throws a `PostgrestTransportException` caused by a `TimeoutException`,
+  /// unless it is a GET or HEAD request with retries left, which is retried
+  /// instead. Use `PostgrestBuilder.requestTimeout` to override it for a
+  /// single request.
   final Duration? requestTimeout;
+
+  /// Returns a copy with the given fields replaced.
+  PostgrestClientOptions copyWith({
+    String? schema,
+    SupabaseRetryOptions? retryOptions,
+    Duration? requestTimeout,
+  }) {
+    return PostgrestClientOptions(
+      schema: schema ?? this.schema,
+      retryOptions: retryOptions ?? this.retryOptions,
+      requestTimeout: requestTimeout ?? this.requestTimeout,
+    );
+  }
 }
 
 /// Configuration for the auth client used by `SupabaseClient.auth`.
@@ -62,8 +76,8 @@ class AuthClientOptions {
 
   /// Storage for the session and the code verifiers of the pkce flow.
   ///
-  /// Required when [authFlowType] is [AuthFlowType.pkce] or [persistSession]
-  /// is true.
+  /// Required when [persistSession] is true. Otherwise `SupabaseClient` falls
+  /// back to a [MemoryAuthAsyncStorage].
   ///
   /// A persistent implementation is needed whenever a pkce flow can leave the
   /// process before the code comes back. Email links do so by definition, and
@@ -108,6 +122,30 @@ class AuthClientOptions {
   /// Check your redirect URL allow list first, see
   /// [AuthClient.appendPkceFlowIdToRedirects].
   final bool appendPkceFlowIdToRedirects;
+
+  /// Returns a copy with the given fields replaced.
+  AuthClientOptions copyWith({
+    bool? autoRefreshToken,
+    AuthAsyncStorage? asyncStorage,
+    bool? persistSession,
+    String? storageKey,
+    AuthFlowType? authFlowType,
+    bool? appendPkceFlowIdToRedirects,
+    SupabaseRetryOptions? retryOptions,
+    Duration? requestTimeout,
+  }) {
+    return AuthClientOptions(
+      autoRefreshToken: autoRefreshToken ?? this.autoRefreshToken,
+      asyncStorage: asyncStorage ?? this.asyncStorage,
+      persistSession: persistSession ?? this.persistSession,
+      storageKey: storageKey ?? this.storageKey,
+      authFlowType: authFlowType ?? this.authFlowType,
+      appendPkceFlowIdToRedirects:
+          appendPkceFlowIdToRedirects ?? this.appendPkceFlowIdToRedirects,
+      retryOptions: retryOptions ?? this.retryOptions,
+      requestTimeout: requestTimeout ?? this.requestTimeout,
+    );
+  }
 }
 
 /// Configuration for the storage client used by `SupabaseClient.storage`.
@@ -184,4 +222,12 @@ class FunctionsClientOptions {
   /// `requestTimeout` of `SupabaseClient`, overridable per call with
   /// `FunctionsClient.invoke`'s own `requestTimeout` parameter.
   final Duration? requestTimeout;
+
+  /// Returns a copy with the given fields replaced.
+  FunctionsClientOptions copyWith({String? region, Duration? requestTimeout}) {
+    return FunctionsClientOptions(
+      region: region ?? this.region,
+      requestTimeout: requestTimeout ?? this.requestTimeout,
+    );
+  }
 }

@@ -1213,7 +1213,6 @@ features:
     supporting_symbols:
       - PostgrestClientOptions.schema
       - SupabaseQuerySchema
-      - SupabaseQuerySchema.SupabaseQuerySchema
       - SupabaseQuerySchema.from
       - SupabaseQuerySchema.rpc
       - SupabaseQuerySchema.schema
@@ -1248,8 +1247,11 @@ features:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.delete
-      - PostgrestTypedQueryBuilder.delete
+      - PostgrestTypedDelete.delete
     supporting_symbols:
+      - PostgrestTypedDelete
+      - PostgrestTypedReadOnlyDelete
+      - PostgrestTypedReadOnlyDelete.delete
       - PostgrestTypedUnscopedBuilder
       - PostgrestTypedUnscopedBuilder.all
       - PostgrestTypedUnscopedBuilder.where
@@ -1549,7 +1551,7 @@ features:
       - PostgrestTypedTransformBuilder.geojson
   database.using_modifiers.relationship_embed:
     status: implemented
-    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Ordering and limiting the rows inside a to-many embed is a scope on the builder, `.embedded(Authors.books, (books) => books.order(Books.createdAt.desc()).limit(1))`, typed against the embedded table; scopes nest into dotted paths. Filtering inside an embed and the `!inner` counterpart are not on the typed surface yet; embeddedFilterName is the form filtering will use."
+    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Ordering and limiting the rows inside a to-many embed is a scope on the builder, `.embedded(Authors.books, (books) => books.order(Books.createdAt.desc()).limit(1))`, typed against the embedded table; scopes nest into dotted paths. Filtering inside an embed and the `!inner` counterpart are not on the typed surface yet."
     symbols:
       - PostgrestTransformBuilder.select
       - PostgrestToOneRelation.call
@@ -1622,6 +1624,9 @@ features:
     symbols:
       - PostgrestBuilder.abortSignal
     supporting_symbols:
+      - PostgrestFilterBuilder.abortSignal
+      - PostgrestQueryBuilder.abortSignal
+      - PostgrestTransformBuilder.abortSignal
       - PostgrestTypedBuilder.abortSignal
       - PostgrestTypedFilterBuilder.abortSignal
       - PostgrestTypedQueryBuilder.abortSignal
@@ -1859,7 +1864,6 @@ features:
       - FileSort.FileSort
       - FileSort.column
       - FileSort.order
-      - FileSort.toMap
       - FileSortColumn
       - PaginatedFile
       - PaginatedFile.PaginatedFile
@@ -1889,7 +1893,6 @@ features:
       - PaginatedSearchOptions.limit
       - PaginatedSearchOptions.prefix
       - PaginatedSearchOptions.sortBy
-      - PaginatedSearchOptions.toMap
       - PaginatedSearchOptions.withDelimiter
       - SearchOptions
       - SearchOptions.SearchOptions
@@ -1898,12 +1901,10 @@ features:
       - SearchOptions.offset
       - SearchOptions.search
       - SearchOptions.sortBy
-      - SearchOptions.toMap
       - SortBy
       - SortBy.SortBy
       - SortBy.column
       - SortBy.order
-      - SortBy.toMap
   storage.file_buckets.move:
     status: implemented
     symbols:
@@ -1948,14 +1949,6 @@ features:
     symbols:
       - StorageFileApi.createSignedUrls
     supporting_symbols:
-      - SignedUrl
-      - SignedUrl.==
-      - SignedUrl.SignedUrl
-      - SignedUrl.copyWith
-      - SignedUrl.hashCode
-      - SignedUrl.path
-      - SignedUrl.signedUrl
-      - SignedUrl.toString
       - SignedUrlFailure
       - SignedUrlFailure.SignedUrlFailure
       - SignedUrlFailure.error
@@ -1972,9 +1965,14 @@ features:
     symbols:
       - StorageFileApi.createSignedUploadUrl
     supporting_symbols:
-      - SignedUploadURLResponse
-      - SignedUploadURLResponse.SignedUploadURLResponse
-      - SignedUploadURLResponse.token
+      - SignedUploadUrlResponse
+      - SignedUploadUrlResponse.==
+      - SignedUploadUrlResponse.SignedUploadUrlResponse
+      - SignedUploadUrlResponse.hashCode
+      - SignedUploadUrlResponse.path
+      - SignedUploadUrlResponse.signedUrl
+      - SignedUploadUrlResponse.toString
+      - SignedUploadUrlResponse.token
   storage.file_buckets.get_public_url:
     status: implemented
     symbols:
@@ -2026,7 +2024,6 @@ features:
       - ListBucketsOptions.search
       - ListBucketsOptions.sortColumn
       - ListBucketsOptions.sortOrder
-      - ListBucketsOptions.toQueryParameters
       - BucketSortColumn
   storage.file_buckets.update_bucket:
     status: implemented
@@ -2227,7 +2224,6 @@ features:
       - Vector.key
       - Vector.data
       - Vector.metadata
-      - Vector.toJson
   storage.vector_buckets.get_vectors:
     status: implemented
     symbols:
@@ -2518,6 +2514,7 @@ features:
     supporting_symbols:
       - IcebergRestCatalog
       - IcebergRestCatalog.IcebergRestCatalog
+      - IcebergRestCatalog.close
 
   # storage — configuration
   storage.configuration.auto_retry:
@@ -3067,6 +3064,7 @@ supporting_symbols:
   - AuthApiException.headers
   - AuthClientOptions
   - AuthClientOptions.AuthClientOptions
+  - AuthClientOptions.copyWith
   - AuthClientOptions.requestTimeout
   - AuthException
   - AuthException.==
@@ -3159,6 +3157,7 @@ supporting_symbols:
   - FunctionsClient.dispose
   - FunctionsClientOptions
   - FunctionsClientOptions.FunctionsClientOptions
+  - FunctionsClientOptions.copyWith
   - AuthAdminApi
   - AuthAdminApi.AuthAdminApi
   - AuthAdminMFAApi
@@ -3312,10 +3311,10 @@ supporting_symbols:
   - PostgrestClient.url
   - PostgrestClientOptions
   - PostgrestClientOptions.PostgrestClientOptions
+  - PostgrestClientOptions.copyWith
   - PostgrestConverter
   - PostgrestFilterBuilder
   - PostgrestFilterBuilder.PostgrestFilterBuilder
-  - PostgrestFilterBuilder.copyWithUrl
   - PostgrestList
   - PostgrestListResponse
   - PostgrestMap
@@ -3333,7 +3332,6 @@ supporting_symbols:
   - PostgrestRpcBuilder.PostgrestRpcBuilder
   - PostgrestTransformBuilder
   - PostgrestTransformBuilder.PostgrestTransformBuilder
-  - PostgrestTransformBuilder.copyWithUrl
   - PrimitiveType
   - PrimitiveType.PrimitiveType
   - PrimitiveType.name
@@ -3352,6 +3350,7 @@ supporting_symbols:
   - RealtimeClient.timeout
   - RealtimeClientOptions
   - RealtimeClientOptions.RealtimeClientOptions
+  - RealtimeClientOptions.copyWith
   - RealtimeClientOptions.timeout
   - RealtimeConstants
   - RealtimeConstants.defaultTimeout
@@ -3442,7 +3441,6 @@ supporting_symbols:
   - StorageCredential.fromJson
   - StorageCredential.prefix
   - StorageFileApi
-  - StorageFileApi.StorageFileApi
   - StorageFileApi.bucketId
   - StorageFileApi.url
   - StructType
@@ -3465,7 +3463,6 @@ supporting_symbols:
   - SupabaseClient.rest
   - SupabaseClient.storage
   - SupabaseQueryBuilder
-  - SupabaseQueryBuilder.SupabaseQueryBuilder
   - SupabaseQueryBuilder.stream
   - SupabaseStorageClient
   - SupabaseStorageClient.SupabaseStorageClient
@@ -3522,6 +3519,10 @@ supporting_symbols:
   - TableSchema.identifierFieldIds
   - TableSchema.schemaId
   - TableSchema.toJson
+  - UnknownType
+  - UnknownType.UnknownType
+  - UnknownType.json
+  - UnknownType.toJson
   - User
   - User.==
   - User.User

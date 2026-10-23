@@ -10,6 +10,56 @@ void main() {
     expect(supabase.auth.currentSession, isNull);
   });
 
+  test('a signed-out request carries a publishable key', () async {
+    final httpClient = MockSupabaseHttpClient()
+      ..stubTable('todos', rows: [])
+      ..stubEdgeFunction('hello');
+    final supabase = testSupabaseClient(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+
+    await supabase.from('todos').select();
+    await supabase.functions.invoke('hello');
+
+    final [rest, function] = httpClient.requests;
+    final key = rest.headers['apikey'];
+    expect(key, startsWith('sb_publishable_'));
+    expect(rest.headers['Authorization'], 'Bearer $key');
+    expect(function.headers['apikey'], key);
+    expect(function.headers['Authorization'], isNull);
+  });
+
+  test('a custom publishable key is passed through', () async {
+    final httpClient = MockSupabaseHttpClient()..stubTable('todos', rows: []);
+    final supabase = testSupabaseClient(
+      httpClient: httpClient,
+      publishableKey: 'sb_publishable_custom',
+    );
+    addTearDown(supabase.dispose);
+
+    await supabase.from('todos').select();
+
+    expect(
+      httpClient.requests.single.headers['apikey'],
+      'sb_publishable_custom',
+    );
+  });
+
+  test('a realtime transport is wired into the client', () async {
+    final urls = <String>[];
+    final supabase = testSupabaseClient(
+      realtimeTransport: (url, headers) {
+        urls.add(url);
+        throw StateError('no socket in this test');
+      },
+    );
+    addTearDown(supabase.dispose);
+
+    supabase.channel('room').subscribe();
+    await pumpEventQueue();
+
+    expect(urls.single, startsWith('ws://localhost:54321/realtime/v1'));
+  });
+
   group('signInTestUser', () {
     late MockSupabaseHttpClient httpClient;
     late SupabaseClient supabase;

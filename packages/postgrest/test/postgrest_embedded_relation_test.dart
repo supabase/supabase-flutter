@@ -160,12 +160,14 @@ void main() {
     );
   });
 
-  test('the filter form is dotted and separate', () {
+  test('an embedded column is not filterable', () {
     final Object projected = Todos.orders(Orders.id);
-
-    expect(Todos.orders(Orders.id).embeddedFilterName, 'orders.id');
-    expect(Orders.todo(Todos.title).embeddedFilterName, 'todo.title');
     final Object toOne = Orders.todo(Todos.title);
+
+    expect(
+      () => (toOne as dynamic).embeddedFilterName,
+      throwsNoSuchMethodError,
+    );
 
     expect(projected, isNot(isA<PostgrestFilterableExpression<Todo, int>>()));
     expect(toOne, isNot(isA<PostgrestFilterableExpression<Order, String>>()));
@@ -197,14 +199,6 @@ void main() {
     expect(
       Orders.todo(Todos.orders(Orders.amount)).expression,
       'todo(orders(amount))',
-    );
-    expect(
-      Orders.todo(Todos.orders(Orders.amount)).embeddedFilterName,
-      'todo.orders.amount',
-    );
-    expect(
-      Orders.todo(Todos.orders(Orders.amount).sum()).embeddedFilterName,
-      'todo.orders.amount.sum()',
     );
   });
 
@@ -295,16 +289,12 @@ void main() {
       );
     });
 
-    test('addresses the embed by the alias in order and filter', () {
+    test('addresses the embed by the alias in order', () {
       expect(
         Orders.parentTodo(Todos.title).desc().orderKey,
         'parent_todo(title).desc',
       );
       expect(Orders.parentTodo(Todos.title).orderKey, 'parent_todo(title)');
-      expect(
-        Orders.parentTodo(Todos.title).embeddedFilterName,
-        'parent_todo.title',
-      );
       expect(
         Orders.parentTodo(Todos.orders(Orders.id)).orderKey,
         'parent_todo(orders(id))',
@@ -323,7 +313,6 @@ void main() {
         'todo!orders_parent_id_fkey(title)',
       );
       expect(hintedTodo(Todos.title).desc().orderKey, 'todo(title).desc');
-      expect(hintedTodo(Todos.title).embeddedFilterName, 'todo.title');
     });
   });
 
