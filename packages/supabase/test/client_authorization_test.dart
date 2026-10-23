@@ -55,7 +55,7 @@ void main() {
         );
 
         final signIn = httpClient
-            .requestsTo('/auth/v1/token', method: HttpMethod.post.value)
+            .requestsTo('/auth/v1/token', method: HttpMethod.post)
             .single;
         expect(
           signIn.headers[HttpHeader.authorization],
@@ -92,7 +92,7 @@ void main() {
       await supabase.auth.getUser();
 
       final request = httpClient
-          .requestsTo('/auth/v1/user', method: HttpMethod.get.value)
+          .requestsTo('/auth/v1/user', method: HttpMethod.get)
           .single;
       expect(
         request.headers[HttpHeader.authorization],
