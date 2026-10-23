@@ -7,7 +7,8 @@
   <h1 align="center">supabase_lints</h1>
 
   <p align="center">
-    Shared analyzer and <a href="https://dcm.dev">DCM</a> lint configuration for the Supabase Flutter packages.
+    Shared analyzer and <a href="https://dcm.dev">DCM</a> lint configuration for the Supabase
+    Flutter packages.
   </p>
 </p>
 

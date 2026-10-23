@@ -967,15 +967,15 @@ listening and setting levels on `Logger.root`.
 
 ### Package loggers
 
-| Package              | Logger                              |
-| -------------------- | ----------------------------------- |
-| `supabase_flutter`   | `Logger('supabase.flutter')`        |
-| `supabase`           | `Logger('supabase.dart')`           |
-| `postgrest`          | `Logger('supabase.postgrest')`      |
-| `supabase_auth`      | `Logger('supabase.auth')`           |
-| `supabase_realtime`  | `Logger('supabase.realtime')`       |
-| `supabase_storage`   | `Logger('supabase.storage')`        |
-| `supabase_functions` | `Logger('supabase.functions')`      |
+| Package              | Logger                               |
+| -------------------- | ------------------------------------ |
+| `supabase_flutter`   | `Logger('supabase.flutter')`         |
+| `supabase`           | `Logger('supabase.dart')`            |
+| `postgrest`          | `Logger('supabase.postgrest')`       |
+| `supabase_auth`      | `Logger('supabase.auth')`            |
+| `supabase_realtime`  | `Logger('supabase.realtime')`        |
+| `supabase_storage`   | `Logger('supabase.storage')`         |
+| `supabase_functions` | `Logger('supabase.functions')`       |
 | `iceberg`            | `Logger('supabase.storage.iceberg')` |
 
 ## Request ids and tracing

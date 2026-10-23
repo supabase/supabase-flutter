@@ -7,7 +7,8 @@
   <h1 align="center">supabase_realtime</h1>
 
   <p align="center">
-    Dart client library for <a href="https://supabase.com/docs/guides/realtime">Supabase Realtime</a>, to listen to changes in a PostgreSQL database over websockets.
+    Dart client library for <a href="https://supabase.com/docs/guides/realtime">Supabase
+    Realtime</a>, to listen to changes in a PostgreSQL database over websockets.
   </p>
 
   <p align="center">
@@ -26,7 +27,8 @@
 
 > **Note**
 >
-> This package was published as `realtime_client` up to and including v2. That package is discontinued in favour of `supabase_realtime`.
+> This package was published as `realtime_client` up to and including v2. That package is
+> discontinued in favour of `supabase_realtime`.
 
 ## Docs
 

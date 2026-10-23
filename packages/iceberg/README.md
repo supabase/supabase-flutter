@@ -7,7 +7,8 @@
   <h1 align="center">iceberg</h1>
 
   <p align="center">
-    Dart client library for the <a href="https://iceberg.apache.org/rest-catalog-spec/">Apache Iceberg REST Catalog</a>.
+    Dart client library for the <a href="https://iceberg.apache.org/rest-catalog-spec/">Apache
+    Iceberg REST Catalog</a>.
   </p>
 
   <p align="center">

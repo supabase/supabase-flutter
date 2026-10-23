@@ -4,13 +4,16 @@ This file provides guidance to the agents when working with code in this reposit
 
 ## Overview
 
-This is a monorepo for the Supabase Flutter SDK, managed by [Melos](https://melos.invertase.dev/). It contains multiple independently versioned packages that provide Flutter and Dart clients for Supabase services.
+This is a monorepo for the Supabase Flutter SDK, managed by
+[Melos](https://melos.invertase.dev/). It contains multiple independently
+versioned packages that provide Flutter and Dart clients for Supabase services.
 
 ## Package Architecture
 
 The repository follows a layered dependency structure:
 
-- **supabase_flutter**: Flutter-specific wrapper with platform integrations (deep links, local storage, app lifecycle)
+- **supabase_flutter**: Flutter-specific wrapper with platform integrations
+  (deep links, local storage, app lifecycle)
 - **supabase**: Core Dart client that orchestrates all service clients
 - **supabase_auth**: Authentication client (sessions, JWT, OAuth)
 - **postgrest**: Database query client with ORM-style API
@@ -53,9 +56,15 @@ melos format
 
 ### Testing
 
-Most packages have unit tests. The `postgrest`, `supabase`, `supabase_auth`, `supabase_realtime`, `supabase_storage`, and `supabase_typegen` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
+Most packages have unit tests. The `postgrest`, `supabase`, `supabase_auth`,
+`supabase_realtime`, `supabase_storage`, and `supabase_typegen` packages run
+against a local Supabase stack started with the Supabase CLI. This requires
+Docker and the
+[Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
+installed.
 
-**For packages requiring a backend (postgrest, supabase, supabase_auth, supabase_realtime, supabase_storage, supabase_typegen):**
+**For packages requiring a backend (postgrest, supabase, supabase_auth,
+supabase_realtime, supabase_storage, supabase_typegen):**
 
 ```bash
 # 1. Start the local Supabase stack from the repository root
@@ -69,9 +78,16 @@ dart test -j 1
 supabase stop
 ```
 
-The single `supabase/` config at the repository root serves every package: its migrations and `seed.sql` create the schemas, functions, and test data these packages rely on. The stack binds ports 14420 to 14429 (gateway on `http://127.0.0.1:14421`, database on `127.0.0.1:14422`), off the CLI defaults so it can run alongside another local Supabase project and below Linux's default ephemeral port range so an outgoing connection cannot claim a port the stack still needs to bind.
+The single `supabase/` config at the repository root serves every package: its
+migrations and `seed.sql` create the schemas, functions, and test data these
+packages rely on. The stack binds ports 14420 to 14429 (gateway on
+`http://127.0.0.1:14421`, database on `127.0.0.1:14422`), off the CLI defaults
+so it can run alongside another local Supabase project and below Linux's default
+ephemeral port range so an outgoing connection cannot claim a port the stack
+still needs to bind.
 
-The `-j 1` flag runs tests sequentially (not concurrently), which is required since tests share the same backend.
+The `-j 1` flag runs tests sequentially (not concurrently), which is required
+since tests share the same backend.
 
 **For packages without a backend requirement:**
 
@@ -110,12 +126,17 @@ dart test test/specific_test.dart -n "test name pattern"
 
 Build tests on the `supabase_test` package instead of writing mocks by hand:
 
-- Answer HTTP calls with `MockSupabaseHttpClient` and its `stub`, `stubHandler`, `stubError` and `stubTable`/`stubRpc`/`stubStorage*` helpers. Do not subclass `BaseClient` in a test. Match methods with `HttpMethod.post` and friends.
+- Answer HTTP calls with `MockSupabaseHttpClient` and its `stub`, `stubHandler`,
+  `stubError` and `stubTable`/`stubRpc`/`stubStorage*` helpers. Do not subclass
+  `BaseClient` in a test. Match methods with `HttpMethod.post` and friends.
 - Assert on what was sent with `requests` and `requestsTo(path, method:)`.
-- Put a client into a signed-in state with `signInTestUser`, and build server payloads with `testUserJson`, `testSessionResponseJson` and `unsignedTestJwt`. Do not hand-assemble JWTs or session JSON.
+- Put a client into a signed-in state with `signInTestUser`, and build server
+  payloads with `testUserJson`, `testSessionResponseJson` and `unsignedTestJwt`.
+  Do not hand-assemble JWTs or session JSON.
 - Construct clients with `testSupabaseClient` where a whole `SupabaseClient` is needed.
 
-Fakes for things `supabase_test` does not cover, such as a platform plugin interface, are written in the test file itself.
+Fakes for things `supabase_test` does not cover, such as a platform plugin
+interface, are written in the test file itself.
 
 ### Package Management
 
@@ -143,8 +164,10 @@ melos version
 
 - **AuthClient** manages sessions, tokens, and JWT validation
 - Emits auth state changes via `Stream<AuthState>`
-- **supabase_flutter** adds session persistence via `SharedPreferencesAsync` (mobile) or browser localStorage (web)
-- Deep link handling for OAuth callbacks (detects `?code=` for PKCE or `#access_token=` for implicit flow)
+- **supabase_flutter** adds session persistence via `SharedPreferencesAsync`
+  (mobile) or browser localStorage (web)
+- Deep link handling for OAuth callbacks (detects `?code=` for PKCE or
+  `#access_token=` for implicit flow)
 - Auth tokens are automatically injected into all HTTP requests via `AuthHttpClient`
 - Realtime client receives token updates when auth state changes
 
@@ -255,6 +278,9 @@ await Supabase.initialize(
   `package:my_app/supabase_schema.g.dart`. MIGRATION.md, which the
   migrate-v3 skills link, is not checked
 - Line length limit is 80 characters
+- Markdown lines are at most 100 characters, outside code blocks and tables,
+  and tables are padded so their columns line up. `melos run check-markdown`
+  checks both and `--fix` pads the tables. Changelogs are not checked
 - Use `dart format` for consistent formatting
 
 ### Adding a new public API

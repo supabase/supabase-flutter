@@ -98,14 +98,14 @@ requires:
 Replace the scheme and host with those of the `redirectTo` URL you pass to
 `signInWithOAuth`/`signInWithSSO`/`linkIdentity`.
 
-If `.MainActivity` already has an intent filter for magic links or other
-email redirects, make sure it cannot match the callback URL. When that filter
-names a host, give the callback activity a different host. When it only names
-a scheme, it matches every host of that scheme, so give the callback activity
-a different scheme or add a host to the `.MainActivity` filter. When both activities match the same URL, the
-callback can be delivered to the wrong one, and `app_links` and this launcher
-can both try to exchange the same code. Add the new redirect URL to the
-project's redirect URL allow list too.
+If `.MainActivity` already has an intent filter for magic links or other email
+redirects, make sure it cannot match the callback URL. When that filter names a
+host, give the callback activity a different host. When it only names a scheme,
+it matches every host of that scheme, so give the callback activity a different
+scheme or add a host to the `.MainActivity` filter. When both activities match
+the same URL, the callback can be delivered to the wrong one, and `app_links`
+and this launcher can both try to exchange the same code. Add the new redirect
+URL to the project's redirect URL allow list too.
 
 If the provider page closes after signing in but the method returns `false`,
 the callback did not reach the callback activity: `flutter_web_auth_2`

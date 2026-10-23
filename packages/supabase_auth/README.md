@@ -26,7 +26,8 @@
 
 > **Note**
 >
-> This package was published as `gotrue` up to and including v2. That package is discontinued in favour of `supabase_auth`.
+> This package was published as `gotrue` up to and including v2. That package is discontinued in
+> favour of `supabase_auth`.
 
 ## Docs
 

@@ -7,7 +7,8 @@
   <h1 align="center">supabase</h1>
 
   <p align="center">
-    Dart client library for <a href="https://supabase.com">Supabase</a>, for use in non-Flutter Dart environments.
+    Dart client library for <a href="https://supabase.com">Supabase</a>, for use in non-Flutter Dart
+    environments.
   </p>
 
   <p align="center">
