@@ -148,7 +148,7 @@ void main() {
       expect(
         customHttpClient.requestsTo(
           '/storage/v1/bucket/$testBucketId/empty',
-          method: HttpMethod.post.value,
+          method: HttpMethod.post,
         ),
         hasLength(1),
       );
@@ -164,7 +164,7 @@ void main() {
       expect(
         customHttpClient.requestsTo(
           '/storage/v1/bucket/$testBucketId',
-          method: HttpMethod.delete.value,
+          method: HttpMethod.delete,
         ),
         hasLength(1),
       );
