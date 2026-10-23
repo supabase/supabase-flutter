@@ -524,7 +524,7 @@ explicitly:
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
   second channel with the same name shares the first one instead of replacing it
 - [`stream()` keeps running through reconnects](#stream-keeps-running-through-reconnects), so
-  `onDone` no longer fires after a failed fetch
+  `onDone` no longer fires after a failed fetch that a retry can fix
 
 ### Packages and setup
 

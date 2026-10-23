@@ -196,7 +196,8 @@ await supabase.removeChannel(channel);
 A typed `stream()` reports its failures, including a `RealtimeException`, as
 errors of the stream itself, and keeps running: a failed fetch is retried, and
 a dropped connection is not reported, since the rows are fetched again once the
-channel rejoins.
+channel rejoins. A client error that a retry cannot fix, such as a missing
+table, closes the stream.
 {{#flutter}}
 
 ## The app lifecycle
