@@ -802,17 +802,17 @@ await supabase.from('messages').select().lt('created_at', DateTime.now());
 
 #### The rest client and its builders are stateless
 
-| Before                                                                                       | After                                                                                      |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `supabase.rest.headers['X-Foo'] = 'bar'`                                                     | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}`                                 |
-| `postgrest.headers['X-Foo'] = 'bar'`                                                         | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request     |
-| `await supabase.from('countries')`                                                           | does not compile, choose an operation first                                                |
-| `SupabaseQuerySchema(…)` and `SupabaseQueryBuilder(…)`                                       | internal, use `supabase.schema(…)` and `supabase.from(…)`                                  |
-| `PostgrestQueryBuilder(method: …, abortSignal: …)`                                           | removed, call `abortSignal()` on the query builder instead                                 |
-| `PostgrestRpcBuilder(abortSignal: …)`                                                        | removed, call `abortSignal()` on the builder `rpc()` returns                               |
-| `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`                 | removed                                                                                    |
-| `PostgrestFilterBuilder.copyWithUrl()` and `PostgrestTransformBuilder.copyWithUrl()`         | removed, build the request with the filters and transforms instead                         |
-| `PostgrestQueryBuilder<T>`                                                                   | `PostgrestQueryBuilder`                                                                    |
+| Before                                                                               | After                                                                                  |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `supabase.rest.headers['X-Foo'] = 'bar'`                                             | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}`                             |
+| `postgrest.headers['X-Foo'] = 'bar'`                                                 | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request |
+| `await supabase.from('countries')`                                                   | does not compile, choose an operation first                                            |
+| `SupabaseQuerySchema(…)` and `SupabaseQueryBuilder(…)`                               | internal, use `supabase.schema(…)` and `supabase.from(…)`                              |
+| `PostgrestQueryBuilder(method: …, abortSignal: …)`                                   | removed, call `abortSignal()` on the query builder instead                             |
+| `PostgrestRpcBuilder(abortSignal: …)`                                                | removed, call `abortSignal()` on the builder `rpc()` returns                           |
+| `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()`         | removed                                                                                |
+| `PostgrestFilterBuilder.copyWithUrl()` and `PostgrestTransformBuilder.copyWithUrl()` | removed, build the request with the filters and transforms instead                     |
+| `PostgrestQueryBuilder<T>`                                                           | `PostgrestQueryBuilder`                                                                |
 
 `PostgrestClient.headers` is an unmodifiable map. Set headers on the constructor for all requests,
 or with `setHeader()` on a builder for a single request.
@@ -896,7 +896,8 @@ PostgrestFilterBuilder<dynamic> call(String fn) => supabase.rpc(fn);
 `PostgrestFilterBuilder`, and the typed `insert()`, `insertAll()`, `upsert()` and `upsertAll()`
 return a `PostgrestTypedTransformBuilder` instead of a `PostgrestTypedFilterBuilder`. PostgREST
 always ignored a filter on an insert, so drop it, or use `update()` to change existing rows.
-`select()`, `order()`, `limit()` and the other transforms are still available. Code that stores one of these builders in a variable typed as `PostgrestFilterBuilder<void>` or
+`select()`, `order()`, `limit()` and the other transforms are still available. Code that stores one
+of these builders in a variable typed as `PostgrestFilterBuilder<void>` or
 `PostgrestTypedFilterBuilder<Row, void>` needs the `Transform` type instead.
 
 #### Typed `update()` and `delete()` require a filter or `all()`
@@ -1053,11 +1054,11 @@ event, such as `'passwordRecovery'`, for a PKCE code, so a check like `redirectT
 never matched a PKCE password reset. It is now an `AuthRedirectType` with the same value for both
 flows, and never `null`:
 
-| Redirect                   | Before (implicit) | Before (PKCE)        | After                               |
-| -------------------------- | ----------------- | -------------------- | ----------------------------------- |
-| Password recovery          | `'recovery'`      | `'passwordRecovery'` | `AuthRedirectType.passwordRecovery` |
-| Email change               | `'email_change'`  | `'userUpdated'`      | `AuthRedirectType.emailChange`      |
-| Any other sign-in or link  | `type` or `null`  | `null`               | `AuthRedirectType.signIn`           |
+| Redirect                  | Before (implicit) | Before (PKCE)        | After                               |
+| ------------------------- | ----------------- | -------------------- | ----------------------------------- |
+| Password recovery         | `'recovery'`      | `'passwordRecovery'` | `AuthRedirectType.passwordRecovery` |
+| Email change              | `'email_change'`  | `'userUpdated'`      | `AuthRedirectType.emailChange`      |
+| Any other sign-in or link | `type` or `null`  | `null`               | `AuthRedirectType.signIn`           |
 
 ```dart
 final response = await supabase.auth.getSessionFromUrl(Uri.base);
@@ -1109,8 +1110,9 @@ only opened when the session is persisted. `AuthClientOptions` and `AuthClient` 
 
 `Supabase.initialize` still defaults it to `true` through `FlutterAuthClientOptions`, so an app
 initialized that way is unaffected. A client you construct directly no longer takes part unless you
-pass `persistSession: true` to its `AuthClientOptions`. An app that passes `persistSession: false` keeps its session in memory and no longer syncs it
-across tabs. A client configured with a third-party `accessToken` never opens the channel.
+pass `persistSession: true` to its `AuthClientOptions`. An app that passes `persistSession: false`
+keeps its session in memory and no longer syncs it across tabs. A client configured with a
+third-party `accessToken` never opens the channel.
 
 #### The auth client persists the session itself
 

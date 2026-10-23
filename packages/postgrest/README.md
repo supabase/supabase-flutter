@@ -7,7 +7,8 @@
   <h1 align="center">postgrest</h1>
 
   <p align="center">
-    Dart client library for <a href="https://postgrest.org">PostgREST</a>, providing an ORM-like interface to the <a href="https://supabase.com/docs/guides/database">Supabase database</a>.
+    Dart client library for <a href="https://postgrest.org">PostgREST</a>, providing an ORM-like
+    interface to the <a href="https://supabase.com/docs/guides/database">Supabase database</a>.
   </p>
 
   <p align="center">

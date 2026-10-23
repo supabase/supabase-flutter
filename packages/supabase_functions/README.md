@@ -7,7 +7,8 @@
   <h1 align="center">supabase_functions</h1>
 
   <p align="center">
-    Dart client library to interact with <a href="https://supabase.com/docs/guides/functions">Supabase Edge Functions</a>.
+    Dart client library to interact with
+    <a href="https://supabase.com/docs/guides/functions">Supabase Edge Functions</a>.
   </p>
 
   <p align="center">
@@ -26,7 +27,8 @@
 
 > **Note**
 >
-> This package was published as `functions_client` up to and including v2. That package is discontinued in favour of `supabase_functions`.
+> This package was published as `functions_client` up to and including v2. That package is
+> discontinued in favour of `supabase_functions`.
 
 ## Usage
 

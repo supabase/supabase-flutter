@@ -170,8 +170,8 @@ To use a local checkout in an app:
 
 ## Testing this repo
 
-The tests for the packages `postgrest`, `supabase_auth`, `supabase_realtime` and `supabase_storage` run against a
-local Supabase stack. To run these tests locally you need `docker` and the
+The tests for the packages `postgrest`, `supabase_auth`, `supabase_realtime` and `supabase_storage`
+run against a local Supabase stack. To run these tests locally you need `docker` and the
 [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
 The single configuration for the stack lives in the `supabase` directory at the repository root.
