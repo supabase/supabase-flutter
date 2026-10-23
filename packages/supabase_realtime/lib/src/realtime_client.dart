@@ -241,6 +241,15 @@ class RealtimeClient {
   String? get accessToken => _accessToken;
   String? _accessToken;
 
+  /// Incremented whenever an access token resolution starts and on
+  /// [disconnect], so a slower, earlier resolution cannot overwrite the token
+  /// of a later one.
+  int _accessTokenResolution = 0;
+
+  /// Whether a heartbeat is waiting on [customAccessToken], so overlapping
+  /// heartbeats share one provider request instead of superseding each other.
+  bool _refreshingAccessTokenOnHeartbeat = false;
+
   /// The channels registered on this client, as an unmodifiable view.
   ///
   /// Create channels with [channel] and remove them with [removeChannel] or
@@ -374,8 +383,8 @@ class RealtimeClient {
   SocketState? get connectionState => _connectionState;
   SocketState? _connectionState;
 
-  /// Resolves the access token used for a connection or reconnection,
-  /// instead of the token passed to [setAccessToken].
+  /// Resolves the access token used for a connection, a reconnection and
+  /// every heartbeat, instead of the token passed to [setAccessToken].
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
@@ -454,6 +463,7 @@ class RealtimeClient {
   /// Disconnects the socket with status [code] and [reason] for the disconnect
   Future<void> disconnect({int? code, String? reason}) async {
     _cancelPendingDisconnect();
+    _accessTokenResolution++;
     final localConnection = _connection;
     if (localConnection != null) {
       final oldState = _connectionState;
@@ -896,11 +906,27 @@ class RealtimeClient {
   /// Sets the JWT access token used for channel subscription authorization and
   /// Realtime RLS.
   ///
-  /// `token` A JWT strings.
+  /// A null [token] asks [customAccessToken] for a fresh one, and keeps the
+  /// current token when there is no provider. A provider that returns null
+  /// reports no session, which falls back to the API key.
   Future<void> setAccessToken(String? token) async {
-    final tokenToSend =
-        token ?? (await customAccessToken?.call()) ?? _accessToken;
+    final resolution = ++_accessTokenResolution;
+    final tokenToSend = token ?? await _provideAccessToken();
+    if (resolution != _accessTokenResolution) {
+      return;
+    }
     _applyAccessToken(tokenToSend);
+  }
+
+  /// Asks [customAccessToken] for a token, falling back to the API key when it
+  /// has none, or returns the current token when there is no provider.
+  Future<String?> _provideAccessToken() async {
+    final customAccessToken = this.customAccessToken;
+    if (customAccessToken == null) {
+      return _accessToken;
+    }
+    final providedToken = await customAccessToken();
+    return providedToken ?? parameters['apikey'];
   }
 
   /// Applies an already resolved access token to the socket and its channels.
@@ -1056,10 +1082,12 @@ class RealtimeClient {
   /// error surfaces as a `channelError` status and on [onStatusChange], the
   /// buffer stays unsent, and the connection is closed so the reconnect
   /// backoff retries the provider. A resolution that outlives its connection
-  /// is dropped entirely, success and error alike.
+  /// is dropped entirely, success and error alike, and one superseded by a
+  /// later [setAccessToken] flushes with the current token instead.
   Future<void> _resolveAccessTokenAndFlush() async {
     final customAccessToken = this.customAccessToken;
     if (customAccessToken != null) {
+      final resolution = ++_accessTokenResolution;
       final originConnection = _connection;
       final String? providedToken;
       try {
@@ -1085,7 +1113,9 @@ class RealtimeClient {
       if (!_isCurrentOpenConnection(originConnection)) {
         return;
       }
-      _applyAccessToken(providedToken ?? _accessToken);
+      if (resolution == _accessTokenResolution) {
+        _applyAccessToken(providedToken ?? parameters['apikey']);
+      }
       final resolvedToken = _accessToken;
       if (resolvedToken != null) {
         // Snapshot before patching and rejoining, in case either removes a
@@ -1171,6 +1201,19 @@ class RealtimeClient {
       ),
     );
     _heartbeatController.add(RealtimeHeartbeatStatus.sent);
-    await setAccessToken(_accessToken);
+    if (customAccessToken == null || _refreshingAccessTokenOnHeartbeat) {
+      return;
+    }
+    _refreshingAccessTokenOnHeartbeat = true;
+    try {
+      await setAccessToken(null);
+    } catch (error) {
+      realtimeLogger.warning(
+        'Error resolving access token on heartbeat',
+        error,
+      );
+    } finally {
+      _refreshingAccessTokenOnHeartbeat = false;
+    }
   }
 }
