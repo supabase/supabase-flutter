@@ -523,6 +523,8 @@ explicitly:
   reads the sent keys from the top of the received message gets `null`
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
   second channel with the same name shares the first one instead of replacing it
+- [`stream()` keeps running through reconnects](#stream-keeps-running-through-reconnects), so
+  `onDone` no longer fires after a failed fetch that a retry can fix
 
 ### Packages and setup
 
@@ -1719,6 +1721,17 @@ Logger('supabase.realtime').onRecord.listen((record) {
 
 Without `hierarchicalLoggingEnabled = true`, listen on `Logger.root` and filter on
 `LogRecord.loggerName` instead.
+
+#### `stream()` keeps running through reconnects
+
+A failed PostgREST fetch no longer closes the stream. It is reported once and retried until it
+succeeds, unless it is a client error that a retry cannot fix, such as a missing table, which still
+closes it. A dropped connection or a join that timed out is no longer reported as a
+`RealtimeSubscribeException`, since the channel rejoins and the rows are fetched again. Rebuilding
+the stream in `onDone` or `onError` to recover is no longer needed.
+
+The rows are fetched once the server streams the changes, rather than alongside the join, so the
+first snapshot holds every change made in the meantime and arrives slightly later.
 
 ### Storage
 

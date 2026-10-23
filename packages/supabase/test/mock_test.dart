@@ -39,6 +39,7 @@ void main() {
   WebSocket? webSocket;
   bool hasListener = false;
   StreamSubscription<dynamic>? listener;
+  var restRequests = 0;
 
   /// `testFilter` is used to test incoming realtime filter. The value should
   /// match the realtime filter set by the library.
@@ -54,6 +55,7 @@ void main() {
       }
       final url = request.uri.toString();
       if (url.startsWith("/rest")) {
+        restRequests++;
         final foundApiKey = headers.value('apikey');
         expect(foundApiKey, apiKey);
         if (foundApiKey == customApiKey) {
@@ -138,6 +140,14 @@ void main() {
           return;
         }
         hasListener = true;
+        void send(String frame) {
+          try {
+            webSocket!.add(frame);
+          } on StateError {
+            // The test ended and closed the socket.
+          }
+        }
+
         listener = webSocket!.listen((message) {
           unawaited(() async {
             /// Protocol 2.0.0 text frames are positional arrays:
@@ -192,10 +202,32 @@ void main() {
                 'status': 'ok',
               },
             ]);
-            webSocket!.add(replyString);
+            final restRequestsBeforeJoin = restRequests;
+            send(replyString);
+            send(
+              jsonEncode([
+                null,
+                null,
+                topic,
+                'system',
+                {
+                  'extension': 'postgres_changes',
+                  'status': 'ok',
+                  'message': 'Subscribed to PostgreSQL',
+                },
+              ]),
+            );
 
-            // Send an insert event
-            await Future.delayed(Duration(milliseconds: 10));
+            // Changes that arrive while stream() fetches its rows are merged
+            // into the first snapshot, so wait for the fetch.
+            for (
+              var i = 0;
+              i < 100 && restRequests == restRequestsBeforeJoin;
+              i++
+            ) {
+              await Future.delayed(Duration(milliseconds: 10));
+            }
+            await Future.delayed(Duration(milliseconds: 50));
             final insertString = postgresChangesFrame(
               topic,
               ids: [77086988],
@@ -209,7 +241,7 @@ void main() {
                 'columns': todoColumns,
               },
             );
-            webSocket!.add(insertString);
+            send(insertString);
 
             // Send an update event for id = 2
             await Future.delayed(Duration(milliseconds: 10));
@@ -228,7 +260,7 @@ void main() {
                 'filter': ?realtimeFilter,
               },
             );
-            webSocket!.add(updateString);
+            send(updateString);
 
             // Send delete event for id=2
             await Future.delayed(Duration(milliseconds: 10));
@@ -246,7 +278,7 @@ void main() {
                 'filter': ?realtimeFilter,
               },
             );
-            webSocket!.add(deleteString);
+            send(deleteString);
 
             /// Send an update event for id = 4
             /// Record with id = 4 did not exist in the initial data fetch,
@@ -267,7 +299,7 @@ void main() {
                 'filter': ?realtimeFilter,
               },
             );
-            webSocket!.add(updateId4);
+            send(updateId4);
 
             // Send delete event for id=5
             /// Should be ignored by the SDK
@@ -286,7 +318,7 @@ void main() {
                 'filter': ?realtimeFilter,
               },
             );
-            webSocket!.add(ignoredDeleteString);
+            send(ignoredDeleteString);
           }());
         });
       } else {

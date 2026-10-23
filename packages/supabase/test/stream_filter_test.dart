@@ -327,6 +327,15 @@ Future<void> _handleRequest(
           },
         ]),
       );
+      socket.sink.add(
+        json.encode([
+          null,
+          null,
+          frame[2],
+          'system',
+          {'extension': 'postgres_changes', 'status': 'ok', 'message': ''},
+        ]),
+      );
     });
     return;
   }

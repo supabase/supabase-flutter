@@ -19,7 +19,8 @@ typedef _StreamPostgrestFilter = ({
 typedef _Order = ({String column, bool ascending});
 
 /// Delivered to the stream's error handler when the underlying Realtime
-/// channel fails to subscribe.
+/// channel fails to subscribe and does not retry, for example because the
+/// server declined the join.
 class RealtimeSubscribeException extends RealtimeException {
   RealtimeSubscribeException(this.status, [this.details])
     : super(
@@ -30,9 +31,8 @@ class RealtimeSubscribeException extends RealtimeException {
 
   /// The subscription status that caused this exception.
   ///
-  /// When emitted by [SupabaseStreamBuilder], this is always
-  /// [RealtimeSubscribeStatus.channelError] or
-  /// [RealtimeSubscribeStatus.timedOut].
+  /// When emitted by [SupabaseStreamBuilder], this is
+  /// [RealtimeSubscribeStatus.channelError].
   final RealtimeSubscribeStatus status;
 
   /// The error reported alongside [status], if any.
@@ -121,6 +121,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Subscription on the channel's subscription status stream.
   StreamSubscription<RealtimeSubscribeStatusChange>? _statusSubscription;
 
+  /// Subscription on the channel's system events, which confirm that the
+  /// server streams the changes.
+  StreamSubscription<RealtimeSystemPayload>? _systemSubscription;
+
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
 
@@ -133,8 +137,39 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Count of record to be returned
   int? _limit;
 
-  /// Flag that the stream has at least one time been subscribed to realtime
-  bool _wasSubscribed = false;
+  /// The changes that arrived while a snapshot is being fetched, applied on
+  /// top of it once it arrives. `null` when no snapshot is pending.
+  List<PostgresChangePayload>? _pendingChanges;
+
+  /// Identifies the latest snapshot fetch, so the result of a superseded or
+  /// cancelled one is dropped.
+  int _fetchId = 0;
+
+  /// Whether a snapshot request is waiting for its response.
+  bool _isFetching = false;
+
+  /// Whether a snapshot has been fetched since the stream was listened to.
+  bool _hasSnapshot = false;
+
+  /// How many snapshot fetches in a row have failed.
+  int _failedFetches = 0;
+
+  /// Retries a failed snapshot fetch.
+  Timer? _retryTimer;
+
+  /// Whether the server confirmed that it streams the changes since the
+  /// channel last joined.
+  bool _isReplicating = false;
+
+  /// Fetches the snapshot when the server does not confirm the replication
+  /// within the timeout of the realtime client.
+  Timer? _replicationTimer;
+
+  /// Whether another snapshot is needed once the one in flight arrives.
+  bool _refetchRequested = false;
+
+  /// The status codes of client errors that a later fetch can recover from.
+  static const _retryableClientErrors = {401, 408, 429};
 
   /// Orders the result with the specified [column].
   ///
@@ -191,25 +226,53 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Sets up the stream controller and calls the method to get data as
   /// necessary
   void _setupStream() {
-    _streamController ??= ReplaySubject(
-      onListen: () {
-        _getStreamData();
-      },
-      onCancel: () {
-        clientLogger.fine('stream controller for table: $_table got closed');
-        unawaited(_changesSubscription?.cancel());
-        unawaited(_statusSubscription?.cancel());
-        _changesSubscription = null;
-        _statusSubscription = null;
-        unawaited(_channel?.unsubscribe());
-        unawaited(_streamController?.close());
-        _streamController = null;
-      },
+    if (_streamController != null) {
+      return;
+    }
+    final controller = ReplaySubject<SupabaseStreamEvent>(
+      onListen: _getStreamData,
     );
+    controller.onCancel = () {
+      if (_streamController == controller) {
+        clientLogger.fine('stream controller for table: $_table got closed');
+        _tearDown();
+      }
+    };
+    _streamController = controller;
+  }
+
+  /// Stops listening to the channel, leaves it unless [leaveChannel] is
+  /// false, and closes the stream.
+  void _tearDown({bool leaveChannel = true}) {
+    _fetchId++;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _replicationTimer?.cancel();
+    _replicationTimer = null;
+    _pendingChanges = null;
+    unawaited(_changesSubscription?.cancel());
+    unawaited(_statusSubscription?.cancel());
+    unawaited(_systemSubscription?.cancel());
+    _changesSubscription = null;
+    _statusSubscription = null;
+    _systemSubscription = null;
+    if (leaveChannel) {
+      unawaited(_channel?.unsubscribe());
+    }
+    _channel = null;
+    final controller = _streamController;
+    _streamController = null;
+    unawaited(controller?.close());
   }
 
   void _getStreamData() {
     _streamData = [];
+    _hasSnapshot = false;
+    _isFetching = false;
+    _failedFetches = 0;
+    _isReplicating = false;
+    _refetchRequested = false;
+    _pendingChanges = [];
     final realtimeFilters = _streamFilters
         .map(
           (filter) => PostgresChangeFilter(
@@ -221,14 +284,14 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         )
         .toList();
 
-    _channel = _realtimeClient.channel(
+    final channel = _channel = _realtimeClient.channel(
       _realtimeTopic,
       RealtimeChannelConfig(
         private: _private,
       ),
     );
 
-    _changesSubscription = _channel!
+    _changesSubscription = channel
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: _schema,
@@ -236,60 +299,130 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           filters: realtimeFilters,
           select: _effectiveSelect,
         )
-        .listen((payload) {
-          switch (payload.eventType) {
-            // An insert can arrive for a row that a refetch after a
-            // reconnect already returned, so it replaces that row.
-            case PostgresChangeEvent.insert || PostgresChangeEvent.update:
-              final index = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
-
-              final record = payload.newRecord;
-              if (index >= 0) {
-                _streamData[index] = record;
-              } else {
-                _streamData.add(record);
-              }
-              _addStream();
-            case PostgresChangeEvent.delete:
-              final deletedIndex = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
-              if (deletedIndex >= 0) {
-                /// Delete the data from in memory cache if it was found
-                _streamData.removeAt(deletedIndex);
-                _addStream();
-              }
-            case PostgresChangeEvent.all || PostgresChangeEvent.unknown:
-              break;
-          }
-        });
-    _statusSubscription = _channel!.onStatusChange.listen((change) {
-      switch (change.status) {
-        case RealtimeSubscribeStatus.subscribed:
-          // Reload all data from PostgREST after a realtime reconnect, so
-          // that changes missed while the socket was down are picked up.
-          // The first subscribe is skipped because the initial load is
-          // already started below, right after subscribing.
-          if (_wasSubscribed) {
-            unawaited(_getPostgrestData());
-          }
-          _wasSubscribed = true;
-        case RealtimeSubscribeStatus.closed:
-          unawaited(_streamController?.close());
-        case RealtimeSubscribeStatus.timedOut:
-        case RealtimeSubscribeStatus.channelError:
-          _addException(
-            RealtimeSubscribeException(change.status, change.error),
-          );
+        .listen(_onChange);
+    _systemSubscription = channel.onSystemEvents.listen((event) {
+      if (event.extension == 'postgres_changes' && event.status == 'ok') {
+        _isReplicating = true;
+        _replicationTimer?.cancel();
+        _replicationTimer = null;
+        unawaited(_fetchSnapshot());
       }
     });
-    _channel!.subscribe();
-    unawaited(_getPostgrestData());
+    _statusSubscription = channel.onStatusChange.listen((change) {
+      switch (change.status) {
+        case RealtimeSubscribeStatus.subscribed:
+          if (!_isReplicating) {
+            _replicationTimer?.cancel();
+            _replicationTimer = Timer(_realtimeClient.timeout, () {
+              _replicationTimer = null;
+              unawaited(_fetchSnapshot());
+            });
+          }
+        case RealtimeSubscribeStatus.closed:
+          _tearDown(leaveChannel: false);
+        case RealtimeSubscribeStatus.timedOut:
+        case RealtimeSubscribeStatus.channelError:
+          _isReplicating = false;
+          _replicationTimer?.cancel();
+          _replicationTimer = null;
+          if (!_hasSnapshot && !_isFetching && _retryTimer == null) {
+            unawaited(_fetchSnapshot());
+          }
+          // ignore: invalid_use_of_internal_member
+          if (channel.isErrored) {
+            clientLogger.fine(
+              'stream channel for table: $_table rejoins after '
+              '${change.status.name}',
+              change.error,
+            );
+          } else {
+            _addException(
+              RealtimeSubscribeException(change.status, change.error),
+            );
+          }
+      }
+    });
+    channel.subscribe();
   }
 
-  Future<void> _getPostgrestData() async {
+  void _onChange(PostgresChangePayload payload) {
+    if (payload.eventType
+        case PostgresChangeEvent.all || PostgresChangeEvent.unknown) {
+      return;
+    }
+    final errors = payload.errors;
+    if (errors is List && errors.isNotEmpty) {
+      clientLogger.fine(
+        'refetching table: $_table after a ${payload.eventType.name} arrived '
+        'without its full record: ${errors.join(', ')}',
+      );
+      _requestRefetch();
+      return;
+    }
+    final pendingChanges = _pendingChanges;
+    if (pendingChanges != null) {
+      pendingChanges.add(payload);
+      return;
+    }
+    if (_hasSnapshot && _applyChange(payload)) {
+      _addStream();
+    }
+  }
+
+  /// Fetches a new snapshot once the one in flight or the pending retry is
+  /// done, so that a burst of changes causes one fetch.
+  void _requestRefetch() {
+    if (_isFetching) {
+      _refetchRequested = true;
+    } else if (_retryTimer == null) {
+      unawaited(_fetchSnapshot());
+    }
+  }
+
+  /// Applies [payload] to [_streamData], and returns whether it changed.
+  bool _applyChange(PostgresChangePayload payload) {
+    switch (payload.eventType) {
+      case PostgresChangeEvent.insert || PostgresChangeEvent.update:
+        final index = _streamData.indexWhere(
+          (element) => _isTargetRecord(record: element, payload: payload),
+        );
+
+        final record = payload.newRecord;
+        if (index >= 0) {
+          _streamData[index] = record;
+        } else {
+          _streamData.add(record);
+        }
+        return true;
+      case PostgresChangeEvent.delete:
+        final deletedIndex = _streamData.indexWhere(
+          (element) => _isTargetRecord(record: element, payload: payload),
+        );
+        if (deletedIndex < 0) {
+          return false;
+        }
+        _streamData.removeAt(deletedIndex);
+        return true;
+      case PostgresChangeEvent.all || PostgresChangeEvent.unknown:
+        return false;
+    }
+  }
+
+  /// Fetches the rows from PostgREST and replaces [_streamData] with them,
+  /// applying the changes that arrived in the meantime on top.
+  ///
+  /// A failed fetch is retried with the backoff of the realtime client, and
+  /// only the first failure in a row is added to the stream. A client error
+  /// that a retry cannot fix is added and closes the stream. Until the retry,
+  /// changes are applied to the previous snapshot, if there is one.
+  Future<void> _fetchSnapshot() async {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    final fetchId = ++_fetchId;
+    _pendingChanges = [];
+    _isFetching = true;
+    _refetchRequested = false;
+
     PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select(
       _effectiveSelect?.join(',') ?? '*',
     );
@@ -310,17 +443,51 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       transformQuery = (transformQuery ?? query).limit(_limit!);
     }
 
+    final PostgrestList data;
     try {
-      final data = await (transformQuery ?? query);
-      final rows = SupabaseStreamEvent.of(data);
-      _streamData = rows;
-      _addStream();
+      data = await (transformQuery ?? query);
     } catch (error, stackTrace) {
-      _addException(error, stackTrace);
-      // In case the postgrest call fails, there is no need to keep the
-      // realtime connection open
-      unawaited(_channel?.unsubscribe());
-      unawaited(_streamController?.close());
+      if (fetchId != _fetchId) {
+        return;
+      }
+      _isFetching = false;
+      _pendingChanges = null;
+      _failedFetches++;
+      clientLogger.warning(
+        'fetching the rows of table: $_table failed',
+        error,
+        stackTrace,
+      );
+      if (error is PostgrestApiException &&
+          error.statusCode >= 400 &&
+          error.statusCode < 500 &&
+          !_retryableClientErrors.contains(error.statusCode)) {
+        _addException(error, stackTrace);
+        _tearDown();
+        return;
+      }
+      if (_failedFetches == 1) {
+        _addException(error, stackTrace);
+      }
+      _retryTimer = Timer(
+        _realtimeClient.reconnectAfter(_failedFetches),
+        () => unawaited(_fetchSnapshot()),
+      );
+      return;
+    }
+    if (fetchId != _fetchId) {
+      return;
+    }
+    _isFetching = false;
+    _failedFetches = 0;
+    _hasSnapshot = true;
+    _streamData = SupabaseStreamEvent.of(data);
+    final pendingChanges = _pendingChanges ?? const [];
+    _pendingChanges = null;
+    pendingChanges.forEach(_applyChange);
+    _addStream();
+    if (_refetchRequested) {
+      unawaited(_fetchSnapshot());
     }
   }
 
