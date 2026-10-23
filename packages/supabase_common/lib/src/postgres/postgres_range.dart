@@ -12,7 +12,7 @@ part of 'postgres_values.dart';
 /// A `null` bound is unbounded and always exclusive, the form Postgres
 /// canonicalizes an omitted bound to, so a parsed value compares equal to the
 /// one that was written. A [PostgresValue] bound renders as its literal and a
-/// `DateTime` bound in ISO 8601.
+/// `DateTime` bound in ISO 8601 with its offset from UTC.
 @experimental
 final class PostgresRange<Bound extends Object> implements PostgresValue {
   /// A range including [lower] and excluding [upper], `[lower,upper)`, the
@@ -125,7 +125,8 @@ final class PostgresRange<Bound extends Object> implements PostgresValue {
   }
 
   /// The Postgres literal, with a [PostgresValue] bound rendered as its
-  /// literal, a `DateTime` bound in ISO 8601, a `Uint8List` bound as a hex
+  /// literal, a `DateTime` bound in ISO 8601 with its offset from UTC, a
+  /// `Uint8List` bound as a hex
   /// `bytea` literal and any other through [Object.toString].
   @override
   String get literal => render(_renderBound);
@@ -218,6 +219,6 @@ String _quoteRangeBound(String raw) {
 String _renderBound(Object bound) => switch (bound) {
   PostgresValue() => bound.literal,
   Uint8List() => postgresBytea.encode(bound),
-  DateTime() => bound.toIso8601String(),
+  DateTime() => postgresTimestampLiteral(bound),
   _ => bound.toString(),
 };

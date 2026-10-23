@@ -476,6 +476,7 @@ explicitly:
   where release builds used to skip the assert
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
+- [`DateTime` filter values carry their offset from UTC](#datetime-filter-values-carry-their-offset-from-utc)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),
   where writes without a `select()` now resolve to `void`
 - [`User.userMetadata` is never null](#userappmetadata-is-an-appmetadata-and-usermetadata-is-never-null),
@@ -741,6 +742,26 @@ await supabase
     .from('books')
     .select()
     .order('price', ascending: false, nullsFirst: false);
+```
+
+#### `DateTime` filter values carry their offset from UTC
+
+A `DateTime` passed to a filter, such as `gt()`, `eq()`, `inFilter()`, `match()` or `filter()`, to
+a `stream()` or `PostgresChangeFilter`, or as a `GET` function argument, is sent in ISO 8601 with
+its offset from UTC:
+`2026-01-01T12:00:00.000Z` for a UTC value and `2026-01-01T12:00:00.000-05:00` for a local one. v2
+sent `toString()`, `2026-01-01 12:00:00.000`, so the database read a local value in its own time
+zone, usually UTC, and a `timestamptz` filter compared against an instant shifted by the device
+offset. A `timestamp` column ignores the offset and still compares against the wall clock time.
+
+This is not a compile error, so check every filter that passes a `DateTime` from `DateTime.now()`
+or another local value. A filter that already passes a string, such as
+`value.toUtc().toIso8601String()`, is unaffected:
+
+```dart
+// Before: matched rows created up to the local time, read as UTC.
+// After: matches rows created before now.
+await supabase.from('messages').select().lt('created_at', DateTime.now());
 ```
 
 #### The rest client and its builders are stateless

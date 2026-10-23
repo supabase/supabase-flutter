@@ -1,3 +1,5 @@
+import 'package:supabase_common/supabase_common.dart'
+    show postgresTimestampLiteral;
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
@@ -52,6 +54,35 @@ void main() {
       );
 
       expect(filter.toString(), 'id=eq.2');
+    });
+
+    test('sends a DateTime in ISO 8601 with its offset from UTC', () {
+      final local = DateTime(2026, 1, 1, 12);
+
+      expect(
+        PostgresChangeFilter(
+          type: PostgresChangeFilterType.gt,
+          column: 'created_at',
+          value: DateTime.utc(2026, 1, 1, 12),
+        ).toString(),
+        'created_at=gt.2026-01-01T12:00:00.000Z',
+      );
+      expect(
+        PostgresChangeFilter(
+          type: PostgresChangeFilterType.gt,
+          column: 'created_at',
+          value: local,
+        ).toString(),
+        'created_at=gt.${postgresTimestampLiteral(local)}',
+      );
+      expect(
+        PostgresChangeFilter(
+          type: PostgresChangeFilterType.inFilter,
+          column: 'created_at',
+          value: [local],
+        ).toString(),
+        'created_at=in.(${postgresTimestampLiteral(local)})',
+      );
     });
 
     test('quotes a scalar value containing a reserved character', () {

@@ -232,7 +232,9 @@ String _cleanFilterList(List<dynamic> filter) {
   // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
   return filter
       .map((s) {
-        final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+        final escaped = renderPostgrestQueryValue(
+          s,
+        ).replaceAll(r'\', r'\\').replaceAll('"', r'\"');
         return '"$escaped"';
       })
       .join(',');

@@ -50,6 +50,20 @@ void main() {
       );
     });
 
+    test('local DateTime bounds render with their offset from UTC', () {
+      const offset = r'[+-]\d{2}:\d{2}(:\d{2})?';
+
+      expect(
+        PostgresRange.closedOpen(DateTime(2024), DateTime(2025)).literal,
+        matches(
+          RegExp(
+            '^\\[2024-01-01T00:00:00\\.000$offset,'
+            '2025-01-01T00:00:00\\.000$offset\\)\$',
+          ),
+        ),
+      );
+    });
+
     test('bounds are quoted when the literal requires it', () {
       expect(
         const PostgresRange.closedOpen('a,b', 'c d').literal,

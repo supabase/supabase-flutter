@@ -36,7 +36,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         );
       }
     } else {
-      url = _url.appendSearchParameters(column, 'not.$operator.$value');
+      url = _url.appendSearchParameters(
+        column,
+        'not.$operator.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -74,7 +77,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'eq.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'eq.$value');
+      url = _url.appendSearchParameters(
+        column,
+        'eq.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -96,7 +102,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'neq.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'neq.$value');
+      url = _url.appendSearchParameters(
+        column,
+        'neq.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -111,7 +120,12 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .gt('id', 1);
   /// ```
   PostgrestFilterBuilder<T> gt(String column, Object value) {
-    return copyWithUrl(_url.appendSearchParameters(column, 'gt.$value'));
+    return copyWithUrl(
+      _url.appendSearchParameters(
+        column,
+        'gt.${renderPostgrestQueryValue(value)}',
+      ),
+    );
   }
 
   /// Finds all rows whose value on the stated [column] is greater than or equal
@@ -124,7 +138,12 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .gte('id', 1);
   /// ```
   PostgrestFilterBuilder<T> gte(String column, Object value) {
-    return copyWithUrl(_url.appendSearchParameters(column, 'gte.$value'));
+    return copyWithUrl(
+      _url.appendSearchParameters(
+        column,
+        'gte.${renderPostgrestQueryValue(value)}',
+      ),
+    );
   }
 
   /// Finds all rows whose value on the stated [column] is less than the
@@ -137,7 +156,12 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .lt('id', 2);
   /// ```
   PostgrestFilterBuilder<T> lt(String column, Object value) {
-    return copyWithUrl(_url.appendSearchParameters(column, 'lt.$value'));
+    return copyWithUrl(
+      _url.appendSearchParameters(
+        column,
+        'lt.${renderPostgrestQueryValue(value)}',
+      ),
+    );
   }
 
   /// Finds all rows whose value on the stated [column] is less than or equal to
@@ -150,7 +174,12 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .lte('id', 2);
   /// ```
   PostgrestFilterBuilder<T> lte(String column, Object value) {
-    return copyWithUrl(_url.appendSearchParameters(column, 'lte.$value'));
+    return copyWithUrl(
+      _url.appendSearchParameters(
+        column,
+        'lte.${renderPostgrestQueryValue(value)}',
+      ),
+    );
   }
 
   /// Finds all rows whose value in the stated [column] matches the supplied
@@ -351,7 +380,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'cs.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'cs.${json.encode(value)}');
+      url = _url.appendSearchParameters(
+        column,
+        'cs.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -394,7 +426,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         'cd.{${_cleanFilterList(value)}}',
       );
     } else {
-      url = _url.appendSearchParameters(column, 'cd.${json.encode(value)}');
+      url = _url.appendSearchParameters(
+        column,
+        'cd.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -483,7 +518,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     } else {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
       // keep it simple and accept a string
-      url = _url.appendSearchParameters(column, 'ov.$value');
+      url = _url.appendSearchParameters(
+        column,
+        'ov.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -546,7 +584,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
         );
       }
     } else {
-      url = _url.appendSearchParameters(column, '$operator.$value');
+      url = _url.appendSearchParameters(
+        column,
+        '$operator.${renderPostgrestQueryValue(value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -563,7 +604,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder<T> match(Map<String, Object> query) {
     var url = _url;
     for (final entry in query.entries) {
-      url = url.appendSearchParameters(entry.key, 'eq.${entry.value}');
+      url = url.appendSearchParameters(
+        entry.key,
+        'eq.${renderPostgrestQueryValue(entry.value)}',
+      );
     }
     return copyWithUrl(url);
   }
@@ -607,7 +651,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> isDistinct(String column, Object? value) {
     return copyWithUrl(
-      _url.appendSearchParameters(column, 'isdistinct.$value'),
+      _url.appendSearchParameters(
+        column,
+        'isdistinct.${renderPostgrestQueryValue(value)}',
+      ),
     );
   }
 
