@@ -159,7 +159,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       id,
       retryOptions,
       storageFetch,
-      resumableUploadRegistry: _resumableUploadRegistry,
+      _resumableUploadRegistry,
     );
   }
 

@@ -188,6 +188,7 @@ class Vector {
   /// Optional arbitrary metadata stored alongside the vector.
   final Map<String, dynamic>? metadata;
 
+  @internal
   Map<String, dynamic> toJson() {
     return {
       'key': key,

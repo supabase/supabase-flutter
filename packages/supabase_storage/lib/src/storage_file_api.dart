@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:http/http.dart' show RequestAbortedException;
+import 'package:meta/meta.dart';
 import 'package:supabase_storage/src/fetch.dart';
 import 'package:supabase_storage/src/resumable_upload.dart';
 import 'package:supabase_storage/src/types.dart';
@@ -11,22 +12,15 @@ import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 /// API namespace for managing the objects within a bucket, obtained with
 /// `SupabaseStorageClient.from`.
 class StorageFileApi {
+  @internal
   StorageFileApi(
     this.url,
     Map<String, String> headers,
     this.bucketId,
     this._retryOptions,
-    this._storageFetch, {
-    ResumableUploadRegistry? resumableUploadRegistry,
-  }) : _headers = {...headers},
-       _resumableUploadRegistry =
-           resumableUploadRegistry ??
-           ResumableUploadRegistry(
-             url: url,
-             options: const ResumableUploadOptions(),
-             storageKey: 'resumable-uploads',
-             fetch: _storageFetch,
-           );
+    this._storageFetch,
+    this._resumableUploadRegistry,
+  ) : _headers = {...headers};
 
   /// The storage endpoint requests are sent to.
   final String url;
@@ -502,7 +496,7 @@ class StorageFileApi {
   ///
   /// When [upsert] is `true` the signed URL allows overwriting an existing
   /// file at [path]. It defaults to `false`.
-  Future<SignedUploadURLResponse> createSignedUploadUrl(
+  Future<SignedUploadUrlResponse> createSignedUploadUrl(
     String path, {
     bool upsert = false,
   }) async {
@@ -526,7 +520,7 @@ class StorageFileApi {
       throw StorageException('No token returned by API');
     }
 
-    return SignedUploadURLResponse(
+    return SignedUploadUrlResponse(
       signedUrl: signedUrl.toString(),
       path: cleanPath,
       token: token,
@@ -675,14 +669,13 @@ class StorageFileApi {
   /// [sourceVersionId] moves that version of the file instead of the current
   /// one. Moving a version onto its own path makes it the current version
   /// again.
-  Future<String> move(
+  Future<void> move(
     String fromPath,
     String toPath, {
     String? destinationBucket,
     String? sourceVersionId,
   }) async {
-    final options = _fetchOptions;
-    final response = await _storageFetch.post<Map<String, dynamic>>(
+    await _storageFetch.post(
       '$url/object/move',
       {
         'bucketId': bucketId,
@@ -691,9 +684,8 @@ class StorageFileApi {
         'destinationBucket': ?destinationBucket,
         'sourceVersionId': ?sourceVersionId,
       },
-      options: options,
+      options: _fetchOptions,
     );
-    return response['message'] as String;
   }
 
   /// Copies an existing file.
@@ -709,25 +701,27 @@ class StorageFileApi {
   ///
   /// [sourceVersionId] copies that version of the file instead of the current
   /// one.
-  Future<String> copy(
+  ///
+  /// Returns where the copy was stored.
+  Future<UploadResponse> copy(
     String fromPath,
     String toPath, {
     String? destinationBucket,
     String? sourceVersionId,
   }) async {
-    final options = _fetchOptions;
+    final destinationKey = _removeEmptyFolders(toPath);
     final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/copy',
       {
         'bucketId': bucketId,
         'sourceKey': _removeEmptyFolders(fromPath),
-        'destinationKey': _removeEmptyFolders(toPath),
+        'destinationKey': destinationKey,
         'destinationBucket': ?destinationBucket,
         'sourceVersionId': ?sourceVersionId,
       },
-      options: options,
+      options: _fetchOptions,
     );
-    return response['Key'] as String;
+    return _uploadResponse(destinationKey, response);
   }
 
   /// Create signed URL to download file without requiring permissions. This URL
@@ -1142,7 +1136,7 @@ class StorageFileApi {
   ///
   /// Requires the service-role key and the tenant `purgeCache` feature to be
   /// enabled on the storage server.
-  Future<String> purgeCache(
+  Future<void> purgeCache(
     String path, {
     bool transformations = false,
   }) async {
@@ -1153,12 +1147,11 @@ class StorageFileApi {
         queryParameters: {'transformations': 'true'},
       );
     }
-    final response = await _storageFetch.delete<Map<String, dynamic>>(
+    await _storageFetch.delete(
       requestUrl.toString(),
       {},
       options: _fetchOptions,
     );
-    return response['message'] as String;
   }
 
   /// Lists all the files within a bucket.
