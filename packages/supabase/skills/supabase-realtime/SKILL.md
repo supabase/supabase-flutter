@@ -97,9 +97,10 @@ asks the server for fewer columns.
 
 ```dart
 final channel = supabase.channel('room-1');
-channel
-    .onBroadcast(event: 'cursor')
-    .listen((message) => print('Cursor at ${message['payload']['x']}'));
+channel.onBroadcast(event: 'cursor').listen((message) {
+  final data = message['payload'] ?? message;
+  print('Cursor at ${data['x']}');
+});
 channel.subscribe();
 
 await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
@@ -107,8 +108,10 @@ await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 
 Every `onBroadcast` message is a map with `type`, `event` and the sent data
 under `payload`, whether it came from `sendBroadcastMessage`, `httpSend`,
-the database or another Supabase client. Pass binary data such as a
-`Uint8List` as the `payload` itself to send it as a binary frame.
+the database or another Supabase client. Apps still on v2 send the data at
+the top level instead, which is why the example falls back to `message`.
+Pass binary data such as a `Uint8List` as the `payload` itself to send it as
+a binary frame.
 
 Pass `RealtimeChannelConfig(self: true)` as `options` to `supabase.channel`
 to receive your own broadcasts, and `private: true` for a channel guarded by
