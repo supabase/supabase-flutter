@@ -599,6 +599,137 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
       ],
     ),
+    // Joined to profile by keys in both directions, and loaded by the
+    // embedding integration test from the local stack.
+    TableDescription(
+      schema: 'public',
+      name: 'team',
+      primaryKey: ['id'],
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: true,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'name',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'owner_id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+      ],
+    ),
+    // Its key into team is a column named like the table it references.
+    TableDescription(
+      schema: 'public',
+      name: 'profile',
+      primaryKey: ['id'],
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: true,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'name',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'team',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+      ],
+    ),
+    // A single key into profile, through a column named like the table, and
+    // a key into team next to the junction table between the two.
+    TableDescription(
+      schema: 'public',
+      name: 'badge',
+      primaryKey: ['id'],
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: true,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'name',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'profile',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'team',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+      ],
+    ),
+    // A junction table between team and badge, whose primary key covers both
+    // keys.
+    TableDescription(
+      schema: 'public',
+      name: 'team_badge',
+      primaryKey: ['team_id', 'badge_id'],
+      columns: [
+        ColumnDescription(
+          name: 'team_id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'badge_id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
   ],
   relationships: [
     // A self reference: PostgREST cannot embed it, so no member is generated.
@@ -641,6 +772,65 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       targetTable: 'map',
       targetColumns: ['list'],
       isOneToOne: true,
+    ),
+    // Keys in opposite directions between two tables: the plain table name
+    // is ambiguous either way, and the embed key of the first is a column.
+    RelationshipDescription(
+      foreignKeyName: 'profile_team_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'profile',
+      sourceColumns: ['team'],
+      targetSchema: 'public',
+      targetTable: 'team',
+      targetColumns: ['id'],
+    ),
+    RelationshipDescription(
+      foreignKeyName: 'team_owner_id_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'team',
+      sourceColumns: ['owner_id'],
+      targetSchema: 'public',
+      targetTable: 'profile',
+      targetColumns: ['id'],
+    ),
+    // The only key between the two tables, but its embed key is a column.
+    RelationshipDescription(
+      foreignKeyName: 'badge_profile_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'badge',
+      sourceColumns: ['profile'],
+      targetSchema: 'public',
+      targetTable: 'profile',
+      targetColumns: ['id'],
+    ),
+    // A single key, but the junction table makes a second relationship
+    // between badge and team.
+    RelationshipDescription(
+      foreignKeyName: 'badge_team_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'badge',
+      sourceColumns: ['team'],
+      targetSchema: 'public',
+      targetTable: 'team',
+      targetColumns: ['id'],
+    ),
+    RelationshipDescription(
+      foreignKeyName: 'team_badge_team_id_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'team_badge',
+      sourceColumns: ['team_id'],
+      targetSchema: 'public',
+      targetTable: 'team',
+      targetColumns: ['id'],
+    ),
+    RelationshipDescription(
+      foreignKeyName: 'team_badge_badge_id_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'team_badge',
+      sourceColumns: ['badge_id'],
+      targetSchema: 'public',
+      targetTable: 'badge',
+      targetColumns: ['id'],
     ),
   ],
   functions: [

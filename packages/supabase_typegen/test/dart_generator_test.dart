@@ -615,6 +615,123 @@ void main() {
     );
   });
 
+  test('keys in opposite directions both carry the hint', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstteamByTeam=PostgrestToOneRelation<ProfileRow,TeamRow>"
+        "('team!profile_team_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstteamViaOwnerId=PostgrestToManyRelation<ProfileRow,"
+        "TeamRow>('team!team_owner_id_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstprofileByOwnerId=PostgrestToOneRelation<TeamRow,"
+        "ProfileRow>('profile!team_owner_id_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstprofileViaTeam=PostgrestToManyRelation<TeamRow,"
+        "ProfileRow>('profile!profile_team_fkey',",
+      ),
+    );
+  });
+
+  test('a junction table makes a single key ambiguous', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstteamByTeam=PostgrestToOneRelation<BadgeRow,TeamRow>"
+        "('team!badge_team_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstbadgeViaTeam=PostgrestToManyRelation<TeamRow,BadgeRow>"
+        "('badge!badge_team_fkey',",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstteam=PostgrestToOneRelation<TeamBadgeRow,TeamRow>"
+        "('team',",
+      ),
+    );
+  });
+
+  test('a junction table needs its primary key to cover both keys', () {
+    final withoutJunction = DatabaseDescription(
+      schemaNames: hostileSchema.schemaNames,
+      tables: [
+        for (final table in hostileSchema.tables)
+          if (table.name == 'team_badge')
+            TableDescription(
+              schema: table.schema,
+              name: table.name,
+              primaryKey: const ['team_id'],
+              columns: table.columns,
+            )
+          else
+            table,
+      ],
+      enums: hostileSchema.enums,
+      relationships: hostileSchema.relationships,
+    );
+    final compact = _normalize(
+      generateDartCode(withoutJunction),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstteamByTeam=PostgrestToOneRelation<BadgeRow,TeamRow>"
+        "('team',",
+      ),
+    );
+  });
+
+  test('an embed whose key is a column name is aliased', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(
+        "staticconstprofileByProfile=PostgrestToOneRelation<BadgeRow,"
+        "ProfileRow>('profile',columns:[profile],referencedTable:'profile',"
+        "referencedColumns:[Profile.id],alias:'profile_by_profile',);",
+      ),
+    );
+    expect(
+      compact,
+      contains(
+        "staticconstbadge=PostgrestToManyRelation<ProfileRow,BadgeRow>"
+        "('badge',columns:[id],referencedTable:'badge',"
+        "referencedColumns:[Badge.profile],);",
+      ),
+    );
+  });
+
   test('aliases of relations that share a member name stay distinct', () {
     // Two constraints over the same columns claim `mapByMood` and
     // `mapByMood$`, which snake case alone would both turn into `map_by_mood`.

@@ -132,13 +132,20 @@ String generateDartCode(
         typeNames.taken,
       ),
   };
+  final relationshipCounts = _relationshipCounts(database);
   for (final table in tables) {
     _writeTable(
       buffer,
       table,
       tableNames[(table.schema, table.name)]!,
       tableMembers[(table.schema, table.name)]!,
-      _relationMembers(table, database, tableNames, tableMembers),
+      _relationMembers(
+        table,
+        database,
+        tableNames,
+        tableMembers,
+        relationshipCounts,
+      ),
       typeNames.taken,
       enumTypeNames,
       decoders,
@@ -475,8 +482,9 @@ class _RelationMember {
   /// relationship.
   String get key => isComputed ? embedName : referencedTable;
 
-  /// Whether another key joins the same two tables, so the embed carries a
-  /// hint and is aliased to the member name to come back under its own key.
+  /// Whether PostgREST sees another relationship between the same two
+  /// tables, so the embed carries a hint. A hinted embed is always aliased;
+  /// one whose [key] is a column or computed field name is aliased too.
   final bool ambiguous;
 
   /// The column constants of this table the relation joins on.
@@ -512,6 +520,7 @@ List<_RelationMember> _relationMembers(
   DatabaseDescription database,
   Map<(String, String), _TableNames> tableNames,
   Map<(String, String), _TableMembers> tableMembers,
+  Map<_TablePair, int> relationshipCounts,
 ) {
   final members = <_RelationMember>[];
   for (final relationship in database.relationships) {
@@ -539,14 +548,9 @@ List<_RelationMember> _relationMembers(
     // holds.
     final byColumns = 'By${pascalCase(columns)}';
     final viaColumns = 'Via${pascalCase(columns)}';
-    // Several keys between the same two tables make the plain table name
-    // ambiguous for PostgREST, so the embed carries the hint.
-    final ambiguous = database.relationships.any(
-      (other) =>
-          other != relationship &&
-          (other.sourceSchema, other.sourceTable) == sourceKey &&
-          (other.targetSchema, other.targetTable) == targetKey,
-    );
+    // Several relationships between the same two tables make the plain
+    // table name ambiguous for PostgREST, so the embed carries the hint.
+    final ambiguous = relationshipCounts[_tablePair(sourceKey, targetKey)]! > 1;
 
     if (sourceKey == (table.schema, table.name)) {
       final targetName = memberIdentifier(relationship.targetTable);
@@ -616,6 +620,58 @@ List<_RelationMember> _relationMembers(
   return members;
 }
 
+/// Two tables in a fixed order, so both directions share one key.
+typedef _TablePair = ((String, String), (String, String));
+
+_TablePair _tablePair((String, String) first, (String, String) second) {
+  final schemaOrder = first.$1.compareTo(second.$1);
+  final inOrder =
+      schemaOrder < 0 ||
+      (schemaOrder == 0 && first.$2.compareTo(second.$2) <= 0);
+  return inOrder ? (first, second) : (second, first);
+}
+
+/// The number of relationships PostgREST sees between each pair of tables:
+/// the foreign keys in either direction, and the many-to-many relationships
+/// through a junction table whose primary key covers a foreign key to each
+/// of the two.
+Map<_TablePair, int> _relationshipCounts(DatabaseDescription database) {
+  final counts = <_TablePair, int>{};
+  void count(_TablePair pair) =>
+      counts.update(pair, (count) => count + 1, ifAbsent: () => 1);
+  for (final relationship in database.relationships) {
+    count(
+      _tablePair(
+        (relationship.sourceSchema, relationship.sourceTable),
+        (relationship.targetSchema, relationship.targetTable),
+      ),
+    );
+  }
+  for (final junction in database.tables) {
+    final primaryKey = junction.primaryKey.toSet();
+    final keys = [
+      for (final relationship in database.relationships)
+        if (relationship.sourceSchema == junction.schema &&
+            relationship.sourceTable == junction.name &&
+            relationship.targetSchema == junction.schema &&
+            relationship.targetTable != junction.name &&
+            primaryKey.containsAll(relationship.sourceColumns))
+          relationship,
+    ];
+    for (final (index, first) in keys.indexed) {
+      for (final second in keys.skip(index + 1)) {
+        count(
+          _tablePair(
+            (first.targetSchema, first.targetTable),
+            (second.targetSchema, second.targetTable),
+          ),
+        );
+      }
+    }
+  }
+  return counts;
+}
+
 /// The column constants of [columns] in the namespace of [table].
 ///
 /// A key over a column the document does not list for its table is a
@@ -658,7 +714,7 @@ void _writeTable(
       field.name: _bindingFor(_computedFieldShape(field), enumTypeNames),
   };
   final relationNames = _relationNames(typeNames, members, relations);
-  final relationKeys = _embedKeys(relations, relationNames);
+  final relationAliases = _embedAliases(table, relations, relationNames);
 
   _writeRow(
     buffer,
@@ -712,7 +768,7 @@ void _writeTable(
     computedFieldBindings,
     relations,
     relationNames,
-    relationKeys,
+    relationAliases,
     decoders,
   );
 }
@@ -750,24 +806,35 @@ List<String> _relationNames(
   ];
 }
 
-/// The keys the embedded rows of [relations] come back under: the table name
-/// for a plain embed, the function name for a computed relationship and, for
-/// a hinted one, an alias made of the member name in snake case, kept apart
-/// from every other key of the table.
-List<String> _embedKeys(
+/// The aliases of [relations], or `null` for a relation that comes back under
+/// its plain key: the table name for a foreign key embed, the function name
+/// for a computed relationship.
+///
+/// A hinted embed is aliased to its member name in snake case, and so is an
+/// embed whose plain key is also the name of a column or computed field of
+/// [table], which would otherwise come back under the same key. Aliases are
+/// kept apart from every other key of the table.
+List<String?> _embedAliases(
+  TableDescription table,
   List<_RelationMember> relations,
   List<String> relationNames,
 ) {
+  final fieldNames = {
+    for (final column in table.columns) column.name,
+    for (final field in table.computedFields) field.name,
+  };
+  bool needsAlias(_RelationMember relation) =>
+      relation.ambiguous || fieldNames.contains(relation.key);
   final used = {
+    ...fieldNames,
     for (final relation in relations)
-      if (!relation.ambiguous) relation.key,
+      if (!needsAlias(relation)) relation.key,
   };
   return [
     for (final (index, relation) in relations.indexed)
-      if (relation.ambiguous)
-        _claimAlias(used, snakeCase(relationNames[index]))
-      else
-        relation.key,
+      needsAlias(relation)
+          ? _claimAlias(used, snakeCase(relationNames[index]))
+          : null,
   ];
 }
 
@@ -892,7 +959,7 @@ void _writeNamespace(
   Map<String, _Binding> computedFieldBindings,
   List<_RelationMember> relations,
   List<String> relationNames,
-  List<String> relationKeys,
+  List<String?> relationAliases,
   _DecoderRegistry decoders,
 ) {
   final _TableNames(:rowType, :insertType, :updateType, :namespaceType) = names;
@@ -975,8 +1042,8 @@ void _writeNamespace(
         '    referencedColumns: [${relation.referencedColumns.join(', ')}],',
       );
     }
-    if (relation.ambiguous) {
-      buffer.writeln('    alias: ${_stringLiteral(relationKeys[index])},');
+    if (relationAliases[index] case final alias?) {
+      buffer.writeln('    alias: ${_stringLiteral(alias)},');
     }
     buffer.writeln('  );');
   }

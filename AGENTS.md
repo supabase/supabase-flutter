@@ -53,9 +53,9 @@ melos format
 
 ### Testing
 
-Most packages have unit tests. The `postgrest`, `supabase_auth`, `supabase_realtime`, and `supabase_storage` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
+Most packages have unit tests. The `postgrest`, `supabase`, `supabase_auth`, `supabase_realtime`, `supabase_storage`, and `supabase_typegen` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-**For packages requiring a backend (postgrest, supabase_auth, supabase_realtime, supabase_storage):**
+**For packages requiring a backend (postgrest, supabase, supabase_auth, supabase_realtime, supabase_storage, supabase_typegen):**
 
 ```bash
 # 1. Start the local Supabase stack from the repository root
@@ -69,7 +69,7 @@ dart test -j 1
 supabase stop
 ```
 
-The single `supabase/` config at the repository root serves every package: its migrations and `seed.sql` create the schemas, functions, and test data all four packages rely on. The stack binds ports 14420 to 14429 (gateway on `http://127.0.0.1:14421`, database on `127.0.0.1:14422`), off the CLI defaults so it can run alongside another local Supabase project and below Linux's default ephemeral port range so an outgoing connection cannot claim a port the stack still needs to bind.
+The single `supabase/` config at the repository root serves every package: its migrations and `seed.sql` create the schemas, functions, and test data these packages rely on. The stack binds ports 14420 to 14429 (gateway on `http://127.0.0.1:14421`, database on `127.0.0.1:14422`), off the CLI defaults so it can run alongside another local Supabase project and below Linux's default ephemeral port range so an outgoing connection cannot claim a port the stack still needs to bind.
 
 The `-j 1` flag runs tests sequentially (not concurrently), which is required since tests share the same backend.
 

@@ -51,6 +51,38 @@ values
 insert into public.addresses (username, location)
 values ('supabot', 'SRID=4326;POINT(-71.10044 42.373695)');
 
+-- Tables of supabase/migrations/20240101000005_embed_disambiguation.sql.
+insert into public.team (name) values ('Rockets');
+insert into public.team (name) values ('Comets');
+
+insert into public.profile (name, team)
+values ('Ada', (select id from public.team where name = 'Rockets'));
+insert into public.profile (name, team)
+values ('Grace', (select id from public.team where name = 'Rockets'));
+insert into public.profile (name, team) values ('Linus', null);
+
+update public.team
+set owner_id = (select id from public.profile where name = 'Grace')
+where name = 'Rockets';
+update public.team
+set owner_id = (select id from public.profile where name = 'Ada')
+where name = 'Comets';
+
+insert into public.badge (name, profile, team)
+values (
+    'Founder',
+    (select id from public.profile where name = 'Ada'),
+    (select id from public.team where name = 'Rockets')
+);
+insert into public.badge (name, profile, team)
+values ('Mentor', (select id from public.profile where name = 'Ada'), null);
+
+insert into public.team_badge (team_id, badge_id)
+values (
+    (select id from public.team where name = 'Comets'),
+    (select id from public.badge where name = 'Founder')
+);
+
 -- ---------------------------------------------------------------------------
 -- supabase_storage dummy data (ported from infra/storage_client/postgres/dummy-data.sql)
 -- The storage tests authenticate with the service_role key, which bypasses RLS,
