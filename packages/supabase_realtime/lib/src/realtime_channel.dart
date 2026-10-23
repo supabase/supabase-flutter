@@ -803,9 +803,10 @@ class RealtimeChannel {
   ///
   /// [payload] must be either a `Map<String, dynamic>`, which is JSON-encoded,
   /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
-  /// is sent as `application/octet-stream`. Receivers get it under the
-  /// `payload` key of the message emitted by [onBroadcast], the same as
-  /// messages sent with [sendBroadcastMessage].
+  /// is sent as `application/octet-stream`. Any other payload throws an
+  /// [ArgumentError]. Receivers get it under the `payload` key of the message
+  /// emitted by [onBroadcast], the same as messages sent with
+  /// [sendBroadcastMessage].
   ///
   /// [event] is the name of the broadcast event.
   /// [timeout] is an optional timeout duration.
@@ -832,13 +833,8 @@ class RealtimeChannel {
     required Object payload,
     Duration? timeout,
   }) async {
+    _checkBroadcastPayload(payload);
     final isBinary = payload is TypedData || payload is ByteBuffer;
-
-    assert(
-      isBinary || payload is Map<String, dynamic>,
-      'httpSend payload must be a Map<String, dynamic> or binary '
-      '(TypedData/ByteBuffer)',
-    );
 
     final headers = {
       ..._broadcastHeaders,
@@ -900,6 +896,20 @@ class RealtimeChannel {
     );
   }
 
+  void _checkBroadcastPayload(Object payload) {
+    if (payload is Map<String, dynamic> ||
+        payload is TypedData ||
+        payload is ByteBuffer) {
+      return;
+    }
+    throw ArgumentError.value(
+      payload,
+      'payload',
+      'Must be a Map<String, dynamic> or binary data (TypedData or '
+          'ByteBuffer)',
+    );
+  }
+
   Uint8List _asBytes(Object payload) {
     if (payload is ByteBuffer) {
       return payload.asUint8List();
@@ -915,9 +925,10 @@ class RealtimeChannel {
   ///
   /// [payload] must be either a `Map<String, dynamic>`, which is sent as JSON,
   /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
-  /// is sent as a WebSocket binary frame. Receivers get it under the `payload`
-  /// key of the message emitted by [onBroadcast], the same as messages sent
-  /// with [httpSend], from the database or from other Supabase clients.
+  /// is sent as a WebSocket binary frame. Any other payload throws an
+  /// [ArgumentError]. Receivers get it under the `payload` key of the message
+  /// emitted by [onBroadcast], the same as messages sent with [httpSend], from
+  /// the database or from other Supabase clients.
   ///
   /// ```dart
   /// await channel.sendBroadcastMessage(
@@ -929,13 +940,7 @@ class RealtimeChannel {
     required String event,
     required Object payload,
   }) {
-    assert(
-      payload is Map<String, dynamic> ||
-          payload is TypedData ||
-          payload is ByteBuffer,
-      'sendBroadcastMessage payload must be a Map<String, dynamic> or binary '
-      '(TypedData/ByteBuffer)',
-    );
+    _checkBroadcastPayload(payload);
     return send(
       type: RealtimeListenType.broadcast,
       event: event,

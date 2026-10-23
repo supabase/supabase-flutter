@@ -44,7 +44,7 @@ class RoomChannel {
     // Broadcast: transient "typing" pings. Our own pings are filtered out.
     onTyping = _channel
         .onBroadcast(event: _typingEvent)
-        .map((message) => message['payload']['username'] as String)
+        .expand((message) => [?_typingUsername(message)])
         .where((name) => name != username);
 
     // Presence: fires whenever the roster changes. Read the full state back
@@ -138,6 +138,17 @@ class RoomChannel {
     event: _typingEvent,
     payload: {'username': username},
   );
+
+  /// Reads the sender from a typing ping. Clients still on supabase_flutter v2
+  /// send the data next to `type` and `event` instead of under `payload`, and
+  /// a ping without a username is skipped instead of failing the stream.
+  static String? _typingUsername(Map<String, dynamic> message) {
+    return switch (message) {
+      {'payload': {'username': final String name}} => name,
+      {'username': final String name} => name,
+      _ => null,
+    };
+  }
 
   /// Flattens the presence state into one [OnlineUser] per connected client.
   List<OnlineUser> _currentUsers() {

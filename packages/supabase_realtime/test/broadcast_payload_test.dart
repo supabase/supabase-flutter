@@ -98,6 +98,30 @@ void main() {
     expect(frame.sublist(frame.length - bytes.length), bytes);
   });
 
+  test('rejects a payload that is neither a map nor binary', () async {
+    expect(
+      () => channel.sendBroadcastMessage(event: 'cursor', payload: 'text'),
+      throwsArgumentError,
+    );
+    expect(
+      () => channel.sendBroadcastMessage(event: 'cursor', payload: [1, 2]),
+      throwsArgumentError,
+    );
+    await pumpEventQueue();
+
+    expect(
+      realtime.sent.where((message) => message.event == 'broadcast'),
+      isEmpty,
+    );
+  });
+
+  test('httpSend rejects a payload that is neither a map nor binary', () {
+    return expectLater(
+      channel.httpSend(event: 'cursor', payload: 'text'),
+      throwsArgumentError,
+    );
+  });
+
   test(
     'a sent broadcast is received in the same shape as one from JavaScript',
     () async {

@@ -129,6 +129,32 @@ void main() {
     expect(httpClient.requestsTo('/rest/v1/messages'), hasLength(2));
     await _closeRoom(tester, supabase);
   });
+
+  testWidgets('shows typing pings from v2 and v3 clients', (tester) async {
+    httpClient.stubTable('messages', rows: []);
+    final supabase = await openRoom(tester);
+    _emitReplicationReady(realtime);
+    await tester.pumpAndSettle();
+
+    // A client still on v2 sends the data next to `type` and `event`.
+    realtime.emit(
+      RealtimeMessage(
+        topic: _topic,
+        event: 'broadcast',
+        payload: {'type': 'broadcast', 'event': 'typing', 'username': 'bob'},
+      ),
+    );
+    realtime.emitBroadcast(
+      _topic,
+      event: 'typing',
+      payload: {'username': 'carol'},
+    );
+    await _pumpUntil(
+      tester,
+      () => find.text('bob, carol are typing…').evaluate().isNotEmpty,
+    );
+    await _closeRoom(tester, supabase);
+  });
 }
 
 Map<String, dynamic> _message(String id, String content) => {
