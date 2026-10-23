@@ -29,8 +29,8 @@ class PostgrestRpcBuilder {
   ///
   /// [params] is an optional object to pass as arguments to the function call.
   ///
-  /// When [get] is set to `true`, [params] must be a [Map], and the function
-  /// is called with read-only access mode.
+  /// When [get] is set to `true`, [params] must be a [Map] or `null`, and the
+  /// function is called with read-only access mode.
   PostgrestFilterBuilder<T> rpc<T>([
     Object? params,
     bool get = false,
@@ -39,20 +39,19 @@ class PostgrestRpcBuilder {
     final HttpMethod method;
     if (get) {
       method = HttpMethod.get;
-      if (params is Map) {
-        for (final entry in params.entries) {
-          assert(
-            entry.key is String,
-            "RPC params map keys must be of type String",
-          );
-
-          newUrl = newUrl.appendSearchParameters(
-            entry.key.toString(),
-            renderPostgrestQueryValue(entry.value),
-          );
-        }
-      } else {
+      if (params is! Map?) {
         throw ArgumentError.value(params, 'params', 'argument must be a Map');
+      }
+      for (final entry in {...?params}.entries) {
+        assert(
+          entry.key is String,
+          "RPC params map keys must be of type String",
+        );
+
+        newUrl = newUrl.appendSearchParameters(
+          entry.key.toString(),
+          renderPostgrestQueryValue(entry.value),
+        );
       }
     } else {
       method = HttpMethod.post;

@@ -22,7 +22,7 @@ double _doubleFromJson(Object json) => (json as num).toDouble();
 DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
 
 class Orders {
-  static const table = PostgrestTable<Order, Never, Never>(
+  static const table = PostgrestTable<Order, Never, Map<String, dynamic>>(
     'orders',
     Order.new,
     primaryKey: [id],

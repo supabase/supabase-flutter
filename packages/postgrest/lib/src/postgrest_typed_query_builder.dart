@@ -316,22 +316,6 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     ).copyWith(payload: values as Object),
   );
 
-  /// Perform a DELETE on the table or view.
-  ///
-  /// The rows to delete are chosen with [PostgrestTypedUnscopedBuilder.where],
-  /// or every row with [PostgrestTypedUnscopedBuilder.all]; nothing is sent
-  /// before one of them is called.
-  ///
-  /// By default no data is returned. Use a trailing [select] to return the
-  /// deleted rows typed as [Row].
-  ///
-  /// ```dart
-  /// await client.table(Books.table).delete().where(Books.id.eq(1));
-  /// ```
-  @UseResult('Call where() or all() to send the request')
-  PostgrestTypedUnscopedBuilder<Row> delete() =>
-      _mutation(_request(PostgrestTableOperation.delete));
-
   /// Only performs a count query on the table or view.
   ///
   /// ```dart
@@ -348,4 +332,43 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     (result) => result.count!,
     table.rowFromJson,
   );
+}
+
+/// The DELETE of a table or view whose rows can be updated.
+///
+/// It is an extension rather than a member so that
+/// [PostgrestTypedReadOnlyDelete] can take its place on a relation whose
+/// `Update` type is `Never`.
+@experimental
+extension PostgrestTypedDelete<Row, Insert, Update>
+    on PostgrestTypedQueryBuilder<Row, Insert, Update> {
+  /// Perform a DELETE on the table or view.
+  ///
+  /// The rows to delete are chosen with [PostgrestTypedUnscopedBuilder.where],
+  /// or every row with [PostgrestTypedUnscopedBuilder.all]; nothing is sent
+  /// before one of them is called.
+  ///
+  /// By default no data is returned. Use a trailing
+  /// [PostgrestTypedUnscopedBuilder.select] to return the deleted rows typed
+  /// as [Row].
+  ///
+  /// ```dart
+  /// await client.table(Books.table).delete().where(Books.id.eq(1));
+  /// ```
+  @UseResult('Call where() or all() to send the request')
+  PostgrestTypedUnscopedBuilder<Row> delete() =>
+      _mutation(_request(PostgrestTableOperation.delete));
+}
+
+/// Blocks the DELETE of a relation whose `Update` type is `Never`, such as a
+/// view that cannot be updated, the same way `Never` blocks its writes.
+///
+/// It is more specific than [PostgrestTypedDelete], so it is the one chosen
+/// for such a relation, and its [delete] cannot be called since no value has
+/// the type `Never`.
+@experimental
+extension PostgrestTypedReadOnlyDelete<Row, Insert>
+    on PostgrestTypedQueryBuilder<Row, Insert, Never> {
+  /// The relation cannot be deleted from.
+  PostgrestTypedUnscopedBuilder<Row> delete(Never unsupported) => unsupported;
 }

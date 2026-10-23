@@ -50,7 +50,9 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 /// `Map<String, dynamic>` as above. Both have to be spelled out, since nothing
 /// in the constructor arguments can infer them. A read-only relation, such as a
 /// materialized view, uses `Never` for the write types it does not support,
-/// which makes the corresponding methods uncallable.
+/// which makes the corresponding methods uncallable. An [Update] of `Never`
+/// also makes `delete()` uncallable, so a relation that can be deleted from
+/// has to declare an [Update] type.
 ///
 /// Extension types over the decoded JSON map (as above) are the recommended
 /// row representation since they carry no conversion cost, but any converter

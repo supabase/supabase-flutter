@@ -3,7 +3,7 @@ part of 'postgrest_typed_builder.dart';
 /// An `update` or `delete` that does not say yet which rows it acts on.
 ///
 /// Returned by [PostgrestTypedQueryBuilder.update] and
-/// [PostgrestTypedQueryBuilder.delete]. It does not implement `Future` and
+/// [PostgrestTypedDelete.delete]. It does not implement `Future` and
 /// sends nothing: a filter has to be added with [where], or every row chosen
 /// on purpose with [all], before there is a request to await. A forgotten
 /// filter, which would write every row in the table, has to be spelled out
