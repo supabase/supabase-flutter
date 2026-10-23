@@ -222,7 +222,7 @@ void main() {
               }),
               user: testUserJson(),
             ),
-            method: HttpMethod.post.value,
+            method: HttpMethod.post,
             path: '/auth/v1/token',
           );
         final supabase = SupabaseClient(
@@ -239,7 +239,7 @@ void main() {
         await supabase.auth.exchangeCodeForSession('auth-code');
 
         final exchange = httpClient
-            .requestsTo('/auth/v1/token', method: HttpMethod.post.value)
+            .requestsTo('/auth/v1/token', method: HttpMethod.post)
             .single;
         expect(signInUrl.url.queryParameters, contains('code_challenge'));
         expect(exchange.jsonBody, containsPair('auth_code', 'auth-code'));

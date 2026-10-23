@@ -161,7 +161,7 @@ void main() {
         final httpClient = MockSupabaseHttpClient()..stub([]);
         final client = testSupabaseClient(
           httpClient: httpClient,
-          apiKey: 'sb_publishable_abc',
+          publishableKey: 'sb_publishable_abc',
         );
         addTearDown(client.dispose);
 
