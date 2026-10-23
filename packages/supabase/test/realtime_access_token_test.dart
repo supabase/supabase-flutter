@@ -11,7 +11,10 @@ void main() {
 
   setUp(() {
     httpClient = MockSupabaseHttpClient();
-    supabase = testSupabaseClient(httpClient: httpClient, apiKey: apiKey);
+    supabase = testSupabaseClient(
+      httpClient: httpClient,
+      publishableKey: apiKey,
+    );
   });
 
   tearDown(() => supabase.dispose());
@@ -64,7 +67,7 @@ void main() {
     final aal2Token = accessTokenWith({'aal': 'aal2'});
     httpClient.stub(
       testSessionResponseJson(accessToken: aal2Token),
-      method: HttpMethod.post.value,
+      method: HttpMethod.post,
       path: '/auth/v1/factors/factor-id/verify',
     );
 

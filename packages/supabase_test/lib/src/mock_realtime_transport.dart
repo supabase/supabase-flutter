@@ -25,7 +25,7 @@ import 'realtime_frames.dart';
 /// final realtime = MockRealtimeTransport();
 /// final supabase = testSupabaseClient(
 ///   httpClient: httpClient,
-///   realtime: realtime,
+///   realtimeTransport: realtime.call,
 /// );
 ///
 /// final channel = supabase.channel('todos');

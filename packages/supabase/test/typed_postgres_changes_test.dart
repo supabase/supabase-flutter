@@ -40,7 +40,7 @@ void main() {
 
   setUp(() {
     realtime = MockRealtimeTransport();
-    supabase = testSupabaseClient(realtime: realtime);
+    supabase = testSupabaseClient(realtimeTransport: realtime.call);
     channel = supabase.channel('todos');
   });
 

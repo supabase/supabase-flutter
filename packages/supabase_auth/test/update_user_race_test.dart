@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -24,7 +23,7 @@ void main() {
             testUserJson(email: 'updated@email.com'),
           );
         },
-        method: HttpMethod.put.value,
+        method: HttpMethod.put,
         path: '/user',
       );
     client = AuthClient(

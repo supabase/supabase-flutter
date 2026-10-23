@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' show ClientException;
-import 'package:supabase_common/supabase_common.dart' show HttpMethod;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_test/internal.dart';
 import 'package:supabase_test/supabase_test.dart';

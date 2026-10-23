@@ -73,12 +73,12 @@ void main() {
     final httpClient = MockSupabaseHttpClient()
       ..stub(
         null,
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: '/storage/v1/upload/resumable',
         statusCode: 201,
         headers: {'location': uploadUrl},
       )
-      ..stubStall(method: HttpMethod.patch.value);
+      ..stubStall(method: HttpMethod.patch);
     final supabase = await Supabase.initialize(
       url: 'https://project.supabase.co',
       publishableKey: supabaseKey,

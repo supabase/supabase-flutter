@@ -68,7 +68,7 @@ void main() {
   }) {
     httpClient.stub(
       body,
-      method: HttpMethod.post.value,
+      method: HttpMethod.post,
       path: '/token',
       query: refreshQuery,
       statusCode: statusCode,
@@ -80,7 +80,7 @@ void main() {
   void stubRefreshHtml(int statusCode, {int? times}) {
     httpClient.stubText(
       htmlPage,
-      method: HttpMethod.post.value,
+      method: HttpMethod.post,
       path: '/token',
       query: refreshQuery,
       statusCode: statusCode,

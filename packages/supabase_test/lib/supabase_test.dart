@@ -10,6 +10,8 @@
 /// warns when a helper leaks outside of test code.
 library;
 
+export 'package:supabase/supabase.dart' show HttpMethod;
+
 export 'src/mock_http_clients.dart';
 export 'src/mock_realtime_transport.dart';
 export 'src/mock_supabase_http_client.dart';

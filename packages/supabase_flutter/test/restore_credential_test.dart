@@ -107,12 +107,12 @@ void main() {
     httpClient = MockSupabaseHttpClient()
       ..stub(
         _registrationOptions(),
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: _registrationOptionsPath,
       )
       ..stub(
         _passkeyJson('Google Password Manager'),
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: _registrationVerifyPath,
       )
       ..stubHandler(
@@ -120,12 +120,12 @@ void main() {
           final body = request.jsonBody as Map<String, dynamic>;
           return jsonResponse(_passkeyJson(body['friendly_name'] as String));
         },
-        method: HttpMethod.patch.value,
+        method: HttpMethod.patch,
         path: _passkeyPath,
       )
       ..stub(
         _authenticationOptions,
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: _authenticationOptionsPath,
       )
       ..stub(
@@ -135,7 +135,7 @@ void main() {
             'role': 'authenticated',
           }),
         ),
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: _authenticationVerifyPath,
       );
     client = AuthClient(
@@ -186,7 +186,7 @@ void main() {
     test('uses a custom friendly name for the key and account label', () async {
       httpClient.stub(
         _registrationOptions(withUserName: false),
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: _registrationOptionsPath,
       );
       final restore = _FakeRestoreCredential();
@@ -224,7 +224,7 @@ void main() {
           'error_code': 'validation_failed',
           'msg': 'Invalid credential',
         },
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: _registrationVerifyPath,
         statusCode: 400,
       );
@@ -249,7 +249,7 @@ void main() {
           'error_code': 'unexpected_failure',
           'msg': 'Database error',
         },
-        method: HttpMethod.patch.value,
+        method: HttpMethod.patch,
         path: _passkeyPath,
         statusCode: 500,
       );

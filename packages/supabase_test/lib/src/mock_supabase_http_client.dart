@@ -10,6 +10,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase/supabase.dart' show HttpMethod;
 
 import 'internal_http_clients.dart';
 import 'mock_http_clients.dart';
@@ -73,7 +74,7 @@ class _Stub {
     this.bareEndpoint,
   });
 
-  final String? method;
+  final HttpMethod? method;
   final String? path;
 
   /// The path this stub also answers when it is matched exactly, so a
@@ -93,8 +94,7 @@ class _Stub {
     if (remaining == 0) {
       return false;
     }
-    if (method != null &&
-        method!.toUpperCase() != request.method.toUpperCase()) {
+    if (!_methodMatches(request.method, method)) {
       return false;
     }
     if (path != null &&
@@ -122,7 +122,8 @@ class _Stub {
   /// either targets `public`.
   static String _requestSchema(BaseRequest request) {
     final method = request.method.toUpperCase();
-    final header = method == 'GET' || method == 'HEAD'
+    final header =
+        method == HttpMethod.get.value || method == HttpMethod.head.value
         ? 'Accept-Profile'
         : 'Content-Profile';
     return request.headers[header] ?? 'public';
@@ -135,7 +136,7 @@ class _Stub {
         ? ''
         : '?${Uri(queryParameters: query).query}';
     final schemaSuffix = schema == null ? '' : ' (schema $schema)';
-    return '${method ?? '(any method)'} ${path ?? '(any path)'}'
+    return '${method?.value ?? '(any method)'} ${path ?? '(any path)'}'
         '$querySuffix$schemaSuffix';
   }
 }
@@ -152,6 +153,10 @@ bool _pathMatches(String requestPath, String stubPath) {
   }
   final boundary = requestPath.length - stubPath.length;
   return stubPath.startsWith('/') || requestPath[boundary - 1] == '/';
+}
+
+bool _methodMatches(String requestMethod, HttpMethod? method) {
+  return method == null || method.value == requestMethod.toUpperCase();
 }
 
 const _singleObjectAccept = 'application/vnd.pgrst.object+json';
@@ -196,16 +201,18 @@ class MockSupabaseHttpClient extends BaseClient {
   /// narrowed to [method], oldest first.
   ///
   /// ```dart
-  /// final inserts = httpClient.requestsTo('/rest/v1/todos', method: 'POST');
+  /// final inserts = httpClient.requestsTo(
+  ///   '/rest/v1/todos',
+  ///   method: HttpMethod.post,
+  /// );
   /// expect(inserts.single.jsonBody, {'task': 'Write tests'});
   /// ```
-  List<RecordedRequest> requestsTo(String path, {String? method}) {
+  List<RecordedRequest> requestsTo(String path, {HttpMethod? method}) {
     return requests
         .where(
           (request) =>
               _pathMatches(request.url.path, path) &&
-              (method == null ||
-                  method.toUpperCase() == request.method.toUpperCase()),
+              _methodMatches(request.method, method),
         )
         .toList();
   }
@@ -234,7 +241,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// state that changes between calls.
   void stub(
     Object? body, {
-    String? method,
+    HttpMethod? method,
     String? path,
     Map<String, String>? query,
     int statusCode = 200,
@@ -254,7 +261,7 @@ class MockSupabaseHttpClient extends BaseClient {
 
   void _stub(
     Object? body, {
-    String? method,
+    HttpMethod? method,
     String? path,
     String? bareEndpoint,
     Map<String, String>? query,
@@ -288,7 +295,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// do for [stub].
   void stubText(
     String body, {
-    String? method,
+    HttpMethod? method,
     String? path,
     Map<String, String>? query,
     int statusCode = 200,
@@ -333,7 +340,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// [method], [path] and [query] match as they do for [stub].
   void stubError(
     Object error, {
-    String? method,
+    HttpMethod? method,
     String? path,
     Map<String, String>? query,
     int? times,
@@ -357,7 +364,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// code under test a timeout. [method], [path], [query] and [times] match
   /// as they do for [stub].
   void stubStall({
-    String? method,
+    HttpMethod? method,
     String? path,
     Map<String, String>? query,
     int? times,
@@ -388,7 +395,7 @@ class MockSupabaseHttpClient extends BaseClient {
   void stubStatuses(
     List<int> statuses, {
     Object? body,
-    String? method,
+    HttpMethod? method,
     String? path,
     Map<String, String>? query,
     Map<String, String> headers = const {},
@@ -439,7 +446,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// [method], [path], [query] and [times] match as they do for [stub].
   void stubHandler(
     StubHandler handler, {
-    String? method,
+    HttpMethod? method,
     String? path,
     Map<String, String>? query,
     int? times,
@@ -470,12 +477,13 @@ class MockSupabaseHttpClient extends BaseClient {
   ///
   /// Stubs the PostgREST endpoint `/rest/v1/[table]` that `select`, `insert`,
   /// `update`, `upsert` and `delete` are served through. A null [method]
-  /// matches all of them; pass `'GET'` or `'POST'` to answer reads and writes
-  /// differently. [query] narrows the stub to queries carrying the given
-  /// PostgREST filters, `{'id': 'eq.1'}` for example, so differently filtered
-  /// reads of one table receive different rows. [schema] narrows it to
-  /// requests addressing that schema, so tables of the same name in different
-  /// schemas receive different rows; a null [schema] matches every schema.
+  /// matches all of them; pass [HttpMethod.get] or [HttpMethod.post] to answer
+  /// reads and writes differently. [query] narrows the stub to queries
+  /// carrying the given PostgREST filters, `{'id': 'eq.1'}` for example, so
+  /// differently filtered reads of one table receive different rows. [schema]
+  /// narrows it to requests addressing that schema, so tables of the same
+  /// name in different schemas receive different rows; a null [schema]
+  /// matches every schema.
   ///
   /// The response is shaped the way PostgREST shapes it for the request: a
   /// query ending in `single()` receives the only row of a one-row list, or
@@ -485,7 +493,7 @@ class MockSupabaseHttpClient extends BaseClient {
   void stubTable(
     String table, {
     Object? rows,
-    String? method,
+    HttpMethod? method,
     Map<String, String>? query,
     String? schema,
     int statusCode = 200,
@@ -561,7 +569,7 @@ class MockSupabaseHttpClient extends BaseClient {
   }) {
     _stub(
       _sessionJson(user: user, expiresAt: expiresAt),
-      method: 'POST',
+      method: HttpMethod.post,
       path: '/auth/v1/token',
       bareEndpoint: '/token',
       times: times,
@@ -578,7 +586,7 @@ class MockSupabaseHttpClient extends BaseClient {
   }) {
     _stub(
       _sessionJson(user: user, expiresAt: expiresAt),
-      method: 'POST',
+      method: HttpMethod.post,
       path: '/auth/v1/signup',
       bareEndpoint: '/signup',
       times: times,
@@ -589,7 +597,7 @@ class MockSupabaseHttpClient extends BaseClient {
   void stubSignOut({int? times}) {
     _stub(
       null,
-      method: 'POST',
+      method: HttpMethod.post,
       path: '/auth/v1/logout',
       bareEndpoint: '/logout',
       statusCode: 204,
@@ -619,7 +627,7 @@ class MockSupabaseHttpClient extends BaseClient {
     int? times,
   }) {
     final objectPath = _storageObjectPath(bucket, path);
-    for (final method in ['POST', 'PUT']) {
+    for (final method in [HttpMethod.post, HttpMethod.put]) {
       stub(
         {'Key': '$bucket/${_cleanStoragePath(path)}', 'Id': id},
         method: method,
@@ -644,7 +652,7 @@ class MockSupabaseHttpClient extends BaseClient {
     for (final endpoint in ['object', 'render/image/authenticated']) {
       stub(
         bytes,
-        method: 'GET',
+        method: HttpMethod.get,
         path: '/storage/v1/$endpoint/$objectPath',
         statusCode: statusCode,
         headers: {'content-type': contentType},
@@ -666,7 +674,7 @@ class MockSupabaseHttpClient extends BaseClient {
     final objectPath = _storageObjectPath(bucket, path);
     stub(
       {'signedURL': '/object/sign/$objectPath?token=$token'},
-      method: 'POST',
+      method: HttpMethod.post,
       path: '/storage/v1/object/sign/$objectPath',
       statusCode: statusCode,
       times: times,
@@ -683,7 +691,7 @@ class MockSupabaseHttpClient extends BaseClient {
   }) {
     stub(
       objects,
-      method: 'POST',
+      method: HttpMethod.post,
       path: '/storage/v1/object/list/$bucket',
       statusCode: statusCode,
       times: times,
@@ -703,7 +711,7 @@ class MockSupabaseHttpClient extends BaseClient {
         for (final path in paths)
           storageObjectJson(_cleanStoragePath(path), bucketId: bucket),
       ],
-      method: 'DELETE',
+      method: HttpMethod.delete,
       path: '/storage/v1/object/$bucket',
       statusCode: statusCode,
       times: times,
@@ -721,7 +729,7 @@ class MockSupabaseHttpClient extends BaseClient {
     int? times,
   }) {
     final path = '/storage/v1/bucket/$bucket/lifecycle';
-    for (final method in ['GET', 'PUT']) {
+    for (final method in [HttpMethod.get, HttpMethod.put]) {
       stub(
         {'rules': rules},
         method: method,
@@ -732,7 +740,7 @@ class MockSupabaseHttpClient extends BaseClient {
     }
     stub(
       {'message': 'Successfully deleted'},
-      method: 'DELETE',
+      method: HttpMethod.delete,
       path: path,
       statusCode: statusCode,
       times: times,
@@ -768,7 +776,7 @@ class MockSupabaseHttpClient extends BaseClient {
     Object? body, {
     required String path,
     required int statusCode,
-    String? method,
+    HttpMethod? method,
     Map<String, String>? query,
     String? schema,
     int? count,
@@ -815,7 +823,7 @@ class MockSupabaseHttpClient extends BaseClient {
           : '*';
       headers['content-range'] = '$range/$rowCount';
     }
-    if (request.method.toUpperCase() == 'HEAD') {
+    if (request.method.toUpperCase() == HttpMethod.head.value) {
       return _response(
         null,
         request: request,

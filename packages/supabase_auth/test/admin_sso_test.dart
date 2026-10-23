@@ -1,5 +1,4 @@
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -229,7 +228,7 @@ void main() {
       final request = mockClient
           .requestsTo(
             '/admin/sso/providers',
-            method: HttpMethod.get.value,
+            method: HttpMethod.get,
           )
           .single;
       expect(request.queryParameters, {'resource_id_prefix': 'ac'});
@@ -250,7 +249,7 @@ void main() {
       final request = mockClient
           .requestsTo(
             '/admin/sso/providers',
-            method: HttpMethod.post.value,
+            method: HttpMethod.post,
           )
           .single;
       expect(request.jsonBody, {
@@ -268,7 +267,7 @@ void main() {
       expect(
         mockClient.requestsTo(
           '/admin/sso/providers/resource_acme',
-          method: HttpMethod.get.value,
+          method: HttpMethod.get,
         ),
         hasLength(1),
       );
@@ -288,7 +287,7 @@ void main() {
       final request = mockClient
           .requestsTo(
             '/admin/sso/providers/$_providerId',
-            method: HttpMethod.put.value,
+            method: HttpMethod.put,
           )
           .single;
       expect(request.jsonBody, {
@@ -306,7 +305,7 @@ void main() {
       expect(
         mockClient.requestsTo(
           '/admin/sso/providers/$_providerId',
-          method: HttpMethod.delete.value,
+          method: HttpMethod.delete,
         ),
         hasLength(1),
       );

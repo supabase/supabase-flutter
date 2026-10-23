@@ -1,5 +1,4 @@
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -38,7 +37,7 @@ void main() {
 
     final requests = httpClient.requestsTo(
       '/admin/users/$userId/factors/$factorId',
-      method: HttpMethod.put.value,
+      method: HttpMethod.put,
     );
     expect(requests, hasLength(1));
     expect(requests.single.jsonBody, {
