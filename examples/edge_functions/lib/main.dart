@@ -216,7 +216,7 @@ class _ShoutCardState extends State<_ShoutCard> {
 }
 
 /// Invokes `word-count`, which validates its input and responds with a 400 when
-/// the text is empty, surfacing here as a [FunctionException].
+/// the text is empty, surfacing here as a [FunctionsException].
 class _WordCountCard extends StatefulWidget {
   const _WordCountCard({required this.repository});
 
@@ -258,7 +258,7 @@ class _WordCountCardState extends State<_WordCountCard> {
       title: 'Validation and errors',
       description:
           'Sends text to the word-count function. Clearing the field makes it '
-          'respond with a 400, which surfaces as a FunctionException shown '
+          'respond with a 400, which surfaces as a FunctionsException shown '
           'below.',
       children: [
         TextField(
@@ -356,11 +356,11 @@ class _Result extends StatelessWidget {
 }
 
 void _showError(Object error) {
-  // A function that responds with a non-2xx status throws a FunctionException.
+  // A function that responds with a non-2xx status throws a FunctionsException.
   // Its `details` hold the response body, which is the `{ "error": ... }` JSON
   // the word-count function returns when validation fails.
   String message;
-  if (error is FunctionException) {
+  if (error is FunctionsException) {
     final details = error.details;
     final fallback = error is FunctionsApiException
         ? 'Function failed with status ${error.statusCode}'

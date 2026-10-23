@@ -42,11 +42,14 @@ final response = await supabase.functions.invoke(
   body: {'name': 'Ada'},
 );
 print('${response.statusCode}: ${response.data}');
+print(response.headers['content-type']);
 ```
 
-`data` depends on the `Content-Type` of the response: `application/json` is
-decoded, `application/octet-stream` is a `Uint8List`, `text/event-stream` is a
-`ByteStream` to listen to, and every other type is a `String`.
+`data` depends on the `Content-Type` of the response: `application/json` and
+every `+json` type are decoded, with an empty body as `null`,
+`application/octet-stream` is a `Uint8List`, `text/event-stream` is a
+`ByteStream` to listen to, and every other type is a `String`. The response
+headers are in `headers`.
 
 Standalone, create a `FunctionsClient` with the functions URL of your project
 and the `apikey` header. Pass `accessToken` to send the token of a signed-in
@@ -68,11 +71,12 @@ Future<void> main() async {
       'hello-world',
       method: HttpMethod.get,
       queryParameters: {'name': 'Ada'},
+      region: FunctionsRegion.euWest1,
     );
     print(response.data);
   } on FunctionsApiException catch (error) {
     print('The function failed: ${error.statusCode} ${error.details}');
-  } on FunctionException catch (error) {
+  } on FunctionsException catch (error) {
     print('The invocation failed: ${error.message}');
   } finally {
     await functions.dispose();
@@ -83,7 +87,9 @@ Future<void> main() async {
 A non-2xx response throws a `FunctionsApiException` with the status code and
 the response body as `details`. A request that gets no response throws a
 `FunctionsFetchException`, and an error of the Supabase relay a
-`FunctionsRelayException`. All three extend `FunctionException`.
+`FunctionsRelayException`. All three extend `FunctionsException`. When the
+error body is a JSON object, its `message` and `code` become the `message` and
+`errorCode` of the exception.
 
 ## Docs
 

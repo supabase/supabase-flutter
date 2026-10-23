@@ -504,6 +504,8 @@ explicitly:
   where a failing catalog configuration request now fails the operation
 - [Transforms that sent a different request now throw or narrow](#transforms-that-sent-a-different-request-now-throw-or-narrow),
   where `head()` after a write and a reversed `range()` throw at the call site
+- [Edge Function responses decode every JSON type](#edge-function-responses-decode-every-json-type),
+  so an empty JSON body is `null` and a check for `""` no longer matches
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
@@ -1883,7 +1885,7 @@ The `StorageFileApi` constructor is internal. Get one for a bucket with
 
 #### Service exceptions share one base
 
-`AuthException`, `PostgrestException`, `StorageException`, `FunctionException`,
+`AuthException`, `PostgrestException`, `StorageException`, `FunctionsException`,
 `RealtimeException` and `IcebergException` now extend a shared `SupabaseException`. The ones
 reporting a response from a service also mix in `SupabaseApiException`, and the ones thrown when
 no response arrived mix in `SupabaseTransportException`:
@@ -1932,10 +1934,12 @@ The renames:
 | `PostgrestException.fromJson(json, code: 409)` | `PostgrestApiException.fromJson(json, statusCode: 409)`                    |
 | `PostgrestException.toJson()` key `code`       | keys `statusCode` and `errorCode`                                          |
 | `FunctionsHttpException`                       | `FunctionsApiException`                                                    |
+| `FunctionException`                            | `FunctionsException`                                                       |
 | `FunctionException.status` (`int`)             | `FunctionsApiException.statusCode`                                         |
 | `FunctionException.reasonPhrase`               | folded into `message`                                                      |
 | `FunctionsFetchException.status == 0`          | no status at all, no response reached the client                           |
-| `FunctionResponse.status`                      | `FunctionResponse.statusCode`                                              |
+| `FunctionResponse`                             | `FunctionsResponse`                                                        |
+| `FunctionResponse.status`                      | `FunctionsResponse.statusCode`                                             |
 
 The per-service bases no longer have a status, so narrow a catch that reads one to the API type,
 for example `on AuthApiException` with `error.statusCode == 429` instead of `on AuthException` with
@@ -1951,20 +1955,21 @@ Four changes go beyond a rename:
   `message` as a named parameter.
 - `AuthRetryableFetchException` covers only the case where the request never reached the service.
   A retryable 5xx is an `AuthRetryableApiException`. Catch `AuthRetryableException` to get both.
-- `FunctionException` gained a `message`, taken from the response's reason phrase or a per-subtype
-  default. The response body is still in `details`.
+- `FunctionsException` gained a `message` and an `errorCode`, taken from the `message` and `code`
+  of a JSON error body, then from the response's reason phrase or a per-subtype default. The
+  response body is still in `details`.
 
 `AuthUnknownException` no longer reports a status of its own. Read it from `originalError` when that
 is an `http.Response`.
 
-#### `FunctionException` is sealed
+#### `FunctionsException` is sealed
 
-`FunctionException` is a `sealed class`, so a switch over it is exhaustive at compile time:
+`FunctionsException` is a `sealed class`, so a switch over it is exhaustive at compile time:
 
 ```dart
 try {
   await supabase.functions.invoke('hello');
-} on FunctionException catch (error) {
+} on FunctionsException catch (error) {
   final message = switch (error) {
     FunctionsFetchException() => 'The request never reached the function',
     FunctionsRelayException() => 'The relay reported an error',
@@ -1974,8 +1979,38 @@ try {
 ```
 
 `FunctionsRelayException` extends `FunctionsApiException`, so it has to come first. A bare
-`FunctionException` can no longer be constructed, extended or implemented; name one of the three
+`FunctionsException` can no longer be constructed, extended or implemented; name one of the three
 subtypes instead.
+
+Every failure of `invoke()` other than an abort or a failing `accessToken` callback, which throws
+an `AccessTokenException`, is one of the three. A body that cannot be encoded as JSON, or a
+multipart `body` that is not a map of strings, throws a `FunctionsFetchException` before anything
+is sent, where it used to throw a `JsonUnsupportedObjectError` or a `TypeError`. A
+successful response whose body is not valid JSON or UTF-8 throws a `FunctionsFetchException` caused
+by the `FormatException`, where it used to throw the `FormatException` itself.
+
+#### Edge Function regions are a `FunctionsRegion`
+
+The `region` of `invoke()`, `FunctionsClient` and `FunctionsClientOptions` takes a
+`FunctionsRegion` instead of a `String`. The named constants rule out spelling mistakes, and a raw
+string no longer compiles as a `region`; `FunctionsRegion.custom` still takes any string:
+
+```dart skip
+// Before
+await supabase.functions.invoke('hello', region: 'eu-west-1');
+
+// After
+await supabase.functions.invoke('hello', region: FunctionsRegion.euWest1);
+```
+
+`FunctionsRegion.any` replaces `'any'`, and `FunctionsRegion.custom('me-central-1')` sends a
+region that has no constant yet.
+
+#### Edge Function responses decode every JSON type
+
+`FunctionsResponse.data` is decoded as JSON for `application/json` and for every `+json` type,
+such as `application/problem+json`, which used to come back as a `String`. An empty JSON body is
+`null` instead of `""`. The response headers are now in `FunctionsResponse.headers`.
 
 #### The Iceberg exceptions join the same hierarchy
 

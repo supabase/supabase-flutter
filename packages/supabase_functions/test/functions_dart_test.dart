@@ -185,19 +185,19 @@ void main() {
       );
     });
 
-    test('the subtypes remain catchable as FunctionException', () async {
+    test('the subtypes remain catchable as FunctionsException', () async {
       await expectLater(
         functionsCustomHttpClient.invoke('relay-error'),
-        throwsA(isA<FunctionException>()),
+        throwsA(isA<FunctionsException>()),
       );
       await expectLater(
         functionsCustomHttpClient.invoke('network-error'),
-        throwsA(isA<FunctionException>()),
+        throwsA(isA<FunctionsException>()),
       );
     });
 
-    test('exhaustive switch over FunctionException subtypes', () {
-      String describeError(FunctionException exception) {
+    test('exhaustive switch over FunctionsException subtypes', () {
+      String describeError(FunctionsException exception) {
         return switch (exception) {
           FunctionsFetchException(:final message) => 'fetch: $message',
           FunctionsRelayException(:final statusCode) => 'relay: $statusCode',
@@ -260,7 +260,13 @@ void main() {
         // rather than silently degrading to a raw String.
         await expectLater(
           functionsCustomHttpClient.invoke('success-invalid-json'),
-          throwsA(isA<FormatException>()),
+          throwsA(
+            isA<FunctionsFetchException>().having(
+              (exception) => exception.cause,
+              'cause',
+              isA<FormatException>(),
+            ),
+          ),
         );
       },
     );
@@ -268,7 +274,13 @@ void main() {
     test('a success text body that is not valid UTF-8 still throws', () async {
       await expectLater(
         functionsCustomHttpClient.invoke('latin1-plain'),
-        throwsA(isA<FormatException>()),
+        throwsA(
+          isA<FunctionsFetchException>().having(
+            (exception) => exception.cause,
+            'cause',
+            isA<FormatException>(),
+          ),
+        ),
       );
     });
 
@@ -786,7 +798,7 @@ void main() {
         () async {
           await functionsCustomHttpClient.invoke(
             'function',
-            region: 'us-west-1',
+            region: FunctionsRegion.usWest1,
           );
 
           final request = customHttpClient.receivedRequests.last;
@@ -798,10 +810,10 @@ void main() {
         },
       );
 
-      test('region "any" does not add header or query param', () async {
+      test('FunctionsRegion.any does not add header or query param', () async {
         await functionsCustomHttpClient.invoke(
           'function',
-          region: 'any',
+          region: FunctionsRegion.any,
         );
 
         final request = customHttpClient.receivedRequests.last;
@@ -819,7 +831,7 @@ void main() {
             "",
             {},
             httpClient: customHttpClient,
-            region: 'eu-west-1',
+            region: FunctionsRegion.euWest1,
           );
 
           await client.invoke('function');
@@ -838,10 +850,10 @@ void main() {
           "",
           {},
           httpClient: customHttpClient,
-          region: 'eu-west-1',
+          region: FunctionsRegion.euWest1,
         );
 
-        await client.invoke('function', region: 'us-east-1');
+        await client.invoke('function', region: FunctionsRegion.usEast1);
 
         final request = customHttpClient.receivedRequests.last;
         expect(request.headers['x-region'], 'us-east-1');
@@ -851,7 +863,7 @@ void main() {
       test('region works with other query parameters', () async {
         await functionsCustomHttpClient.invoke(
           'function',
-          region: 'ap-south-1',
+          region: FunctionsRegion.apSouth1,
           queryParameters: {'key': 'value', 'foo': 'bar'},
         );
 
@@ -881,6 +893,7 @@ void main() {
 
       test('constructor with minimal parameters', () {
         final client = FunctionsClient('https://example.com', {});
+        addTearDown(client.dispose);
 
         expect(client.headers, contains('X-Client-Info'));
       });
@@ -1078,13 +1091,13 @@ void main() {
       test('handles empty JSON response', () async {
         final response = await functionsCustomHttpClient.invoke('empty-json');
 
-        expect(response.data, '');
+        expect(response.data, isNull);
         expect(response.statusCode, 200);
       });
     });
 
     group('Error handling', () {
-      test('FunctionException contains all error details', () async {
+      test('FunctionsException contains all error details', () async {
         await expectLater(
           functionsCustomHttpClient.invoke('error-function'),
           throwsA(
@@ -1107,7 +1120,8 @@ void main() {
         expect(
           exception.toString(),
           'FunctionsApiException(message: Edge Function returned a non-2xx '
-          'status code, statusCode: 500, requestId: request-1, details: boom)',
+          'status code, statusCode: 500, errorCode: null, requestId: '
+          'request-1, details: boom)',
         );
         expect(
           const FunctionsFetchException(cause: 'offline').toString(),
@@ -1187,16 +1201,24 @@ void main() {
 
     group('Edge cases', () {
       test(
-        'multipart request with invalid body type throws assertion',
+        'multipart request with invalid body type throws a '
+        'FunctionsFetchException',
         () async {
-          expect(
-            () => functionsCustomHttpClient.invoke(
+          await expectLater(
+            functionsCustomHttpClient.invoke(
               'function',
-              body: 42, // Invalid: should be Map<String, String> for multipart
+              body: 42,
               files: [MultipartFile.fromString('file', 'content')],
             ),
-            throwsA(isA<AssertionError>()),
+            throwsA(
+              isA<FunctionsFetchException>().having(
+                (exception) => exception.cause,
+                'cause',
+                isA<ArgumentError>(),
+              ),
+            ),
           );
+          expect(customHttpClient.receivedRequests, isEmpty);
         },
       );
     });

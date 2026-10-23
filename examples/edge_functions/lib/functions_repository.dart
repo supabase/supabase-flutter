@@ -53,7 +53,7 @@ class FunctionsRepository {
   /// Invokes the `word-count` function, which validates its input.
   ///
   /// When [text] is empty the function replies with a 400 and a JSON error
-  /// body, which surfaces here as a [FunctionException] whose `details` hold
+  /// body, which surfaces here as a [FunctionsException] whose `details` hold
   /// that body. The caller is expected to handle that exception.
   Future<WordCount> countWords(String text) async {
     final response = await _functions.invoke(

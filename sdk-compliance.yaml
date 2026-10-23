@@ -2899,7 +2899,7 @@ features:
   functions.invocation.invoke:
     status: implemented
     symbols:
-      - FunctionResponse.statusCode
+      - FunctionsResponse.statusCode
       - FunctionsFetchException
       - FunctionsFetchException.FunctionsFetchException
       - FunctionsFetchException.exceptionName
@@ -2910,8 +2910,9 @@ features:
       - FunctionsApiException.FunctionsApiException
       - FunctionsApiException.exceptionName
     supporting_symbols:
-      - FunctionResponse
-      - FunctionResponse.FunctionResponse
+      - FunctionsResponse
+      - FunctionsResponse.FunctionsResponse
+      - FunctionsResponse.headers
   functions.invocation.set_auth_token:
     status: implemented
     note: "There is no setter. The token is supplied as an accessToken callback that is resolved before every invocation, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single invocation can override it with an Authorization header."
@@ -2926,11 +2927,31 @@ features:
   functions.invocation.streaming_response:
     status: implemented
     symbols:
-      - FunctionResponse.data
+      - FunctionsResponse.data
   functions.invocation.region_selection:
     status: implemented
     symbols:
       - FunctionsClientOptions.region
+    supporting_symbols:
+      - FunctionsRegion
+      - FunctionsRegion.any
+      - FunctionsRegion.apNortheast1
+      - FunctionsRegion.apNortheast2
+      - FunctionsRegion.apSouth1
+      - FunctionsRegion.apSoutheast1
+      - FunctionsRegion.apSoutheast2
+      - FunctionsRegion.caCentral1
+      - FunctionsRegion.custom
+      - FunctionsRegion.euCentral1
+      - FunctionsRegion.euWest1
+      - FunctionsRegion.euWest2
+      - FunctionsRegion.euWest3
+      - FunctionsRegion.saEast1
+      - FunctionsRegion.usEast1
+      - FunctionsRegion.usWest1
+      - FunctionsRegion.usWest2
+      - FunctionsRegion.value
+      - FunctionsRegion.values
   functions.invocation.timeout:
     status: implemented
     symbols:
@@ -3172,10 +3193,10 @@ supporting_symbols:
   - FlutterAuthClientOptions
   - FlutterAuthClientOptions.FlutterAuthClientOptions
   - FlutterAuthClientOptions.copyWith
-  - FunctionException
-  - FunctionException.FunctionException
-  - FunctionException.details
-  - FunctionException.toString
+  - FunctionsException
+  - FunctionsException.FunctionsException
+  - FunctionsException.details
+  - FunctionsException.toString
   - FunctionsApiException.statusCode
   - FunctionsApiException.toString
   - FunctionsApiException.body

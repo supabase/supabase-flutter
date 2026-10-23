@@ -27,12 +27,16 @@ class FunctionsClient {
   ///
   /// [requestTimeout] bounds how long an invocation may go without progress,
   /// see [invoke].
+  ///
+  /// Without an [httpClient], the client creates one of its own so that
+  /// invocations reuse connections, and closes it in [dispose]. A client
+  /// passed here belongs to the caller and is left open.
   FunctionsClient(
     String url,
     Map<String, String> headers, {
     http.Client? httpClient,
     AsyncJsonCodec? jsonCodec,
-    String? region,
+    FunctionsRegion? region,
     Future<String?> Function()? accessToken,
     Duration? requestTimeout,
   }) : assert(
@@ -45,12 +49,9 @@ class FunctionsClient {
        _headers = {...FunctionsConstants.defaultHeaders, ...headers},
        _jsonCodec = jsonCodec ?? YAJsonIsolate(),
        _ownsJsonCodec = jsonCodec == null,
-       // The transport belongs to the caller, so the client never closes it,
-       // the same way it leaves a caller-provided JSON codec alone.
-       // ignore: dispose-class-fields
-       _httpClient = accessToken == null
-           ? httpClient
-           : AccessTokenClient(accessToken, httpClient),
+       _ownedHttpClient = httpClient == null ? createDefaultHttpClient() : null,
+       _httpClient = httpClient,
+       _accessToken = accessToken,
        _region = region,
        _requestTimeout = requestTimeout {
     functionsLogger.config(
@@ -62,10 +63,15 @@ class FunctionsClient {
   }
   final String _url;
   final Map<String, String> _headers;
+
+  /// The transport passed by the caller, which the client never closes, the
+  /// same way it leaves a caller-provided JSON codec alone.
   final http.Client? _httpClient;
+  final http.Client? _ownedHttpClient;
+  final Future<String?> Function()? _accessToken;
   final AsyncJsonCodec _jsonCodec;
   final bool _ownsJsonCodec;
-  final String? _region;
+  final FunctionsRegion? _region;
   final Duration? _requestTimeout;
 
   /// The headers sent with every invocation, as an unmodifiable view.
@@ -90,6 +96,20 @@ class FunctionsClient {
     return this;
   }
 
+  /// The transport invocations are sent over, resolving [_accessToken] first
+  /// when one was given.
+  ///
+  /// Closing it would close the caller's client too, so [dispose] closes only
+  /// [_ownedHttpClient].
+  // ignore: dispose-class-fields
+  late final http.Client _transport = switch (_accessToken) {
+    null => _httpClient ?? _ownedHttpClient!,
+    final accessToken => AccessTokenClient(
+      accessToken,
+      _httpClient ?? _ownedHttpClient,
+    ),
+  };
+
   /// Replaces the invocation headers with [newHeaders].
   @internal
   void replaceHeaders(Map<String, String> newHeaders) {
@@ -107,13 +127,19 @@ class FunctionsClient {
   /// [body] of the request when [files] is null and can be of type String,
   /// [Uint8List], or an Object that is encodable to JSON with `jsonEncode`.
   /// If [files] is not null, [body] represents the fields of the
-  /// [MultipartRequest] and must be of type `Map<String, String>`.
+  /// [MultipartRequest] and must be a map of strings to strings. A body that
+  /// cannot be encoded throws a [FunctionsFetchException] before anything is
+  /// sent.
   ///
   /// [files] to send in a `MultipartRequest`. [body] is used for the fields.
   ///
+  /// [queryParameters] are added to the URL. A value is sent as its
+  /// `toString()`, an [Iterable] value as one parameter per element, and a
+  /// `null` value is left out.
+  ///
   /// [region] optionally specify the region to invoke the function in. When
-  /// specified and not equal to `'any'`, adds both the `x-region` header and
-  /// the `forceFunctionRegion` query parameter.
+  /// specified and not [FunctionsRegion.any], adds both the `x-region` header
+  /// and the `forceFunctionRegion` query parameter.
   ///
   /// [abortSignal] cancels the in-flight request when the provided [Future]
   /// completes. It must not complete with an error. On abort, a
@@ -172,25 +198,32 @@ class FunctionsClient {
   ///   httpClient: fetchClient,
   /// );
   /// ```
-  Future<FunctionResponse> invoke(
+  Future<FunctionsResponse> invoke(
     String functionName, {
     // ignore: avoid-shadowing
     Map<String, String>? headers,
     Object? body,
     Iterable<http.MultipartFile>? files,
-    Map<String, dynamic>? queryParameters,
+    Map<String, Object?>? queryParameters,
     HttpMethod method = HttpMethod.post,
-    String? region,
+    FunctionsRegion? region,
     Future<void>? abortSignal,
     Duration? requestTimeout,
   }) async {
     final effectiveRegion = region ?? _region;
+    final forcedRegion = effectiveRegion == FunctionsRegion.any
+        ? null
+        : effectiveRegion?.value;
     final idleTimeout = IdleTimeout(requestTimeout ?? _requestTimeout);
 
-    final effectiveQueryParameters = <String, dynamic>{
-      ...?queryParameters,
-      if (effectiveRegion != null && effectiveRegion != 'any')
-        'forceFunctionRegion': effectiveRegion,
+    final effectiveQueryParameters = <String, Object>{
+      if (queryParameters != null)
+        for (final MapEntry(:key, :value) in queryParameters.entries)
+          if (value != null)
+            key: value is Iterable
+                ? [for (final element in value) _queryValue(element)]
+                : _queryValue(value),
+      'forceFunctionRegion': ?forcedRegion,
     };
 
     final uri = Uri.parse('$_url/$functionName').replace(
@@ -202,17 +235,12 @@ class FunctionsClient {
     final finalHeaders = <String, String>{
       ..._headers,
       ...?headers,
-      if (effectiveRegion != null && effectiveRegion != 'any')
-        'x-region': effectiveRegion,
+      'x-region': ?forcedRegion,
     };
 
     final http.BaseRequest request;
     if (files != null) {
-      assert(
-        body == null || body is Map<String, String>,
-        'body must be of type Map',
-      );
-      final fields = (body as Map?)?.cast<String, String>();
+      final fields = _multipartFields(body);
 
       // No content type is set here: a multipart request generates its own
       // boundary while it is being finalized and sets the header itself.
@@ -223,7 +251,7 @@ class FunctionsClient {
               abortSignal: abortSignal,
             )
             ..headers.addAll(finalHeaders)
-            ..fields.addAll(fields ?? {})
+            ..fields.addAll(fields)
             ..files.addAll(files);
     } else {
       final bodyRequest = idleTimeout.request(
@@ -250,7 +278,7 @@ class FunctionsClient {
         } else if (body is Uint8List) {
           bodyRequest.bodyBytes = body;
         } else {
-          bodyRequest.body = await _jsonCodec.encode(body);
+          bodyRequest.body = await _encodeJson(body);
         }
       }
       request = bodyRequest;
@@ -262,7 +290,7 @@ class FunctionsClient {
     );
 
     final response = await _guardTransport(
-      () => idleTimeout.send(request, _httpClient),
+      () => idleTimeout.send(request, _transport),
     );
     final responseType = response.headers.mediaType ?? 'text/plain';
 
@@ -275,9 +303,10 @@ class FunctionsClient {
       // caller. On an error status there is nothing to stream, so the body is
       // drained below to become the exception `details` and the connection
       // isn't left open.
-      return FunctionResponse(
+      return FunctionsResponse(
         data: response.stream,
         statusCode: response.statusCode,
+        headers: response.headers,
       );
     }
     final Uint8List bodyBytes;
@@ -291,39 +320,46 @@ class FunctionsClient {
       // any status. Otherwise, on an error status the status itself is the
       // answer, so it is kept with the read error as the details.
       if (isSuccessStatus || error is TimeoutException) {
-        throw FunctionsFetchException(
-          message: 'Failed to read the response of the Edge Function',
-          cause: error,
-        );
+        throw _unreadableResponse(error);
       }
       throw _apiException(response, isRelayError, details: error);
     }
     final dynamic data;
-    if (responseType == 'application/json') {
+    if (_isJson(responseType)) {
       if (bodyBytes.isEmpty) {
-        data = "";
+        data = null;
       } else {
         dynamic decoded;
         try {
           decoded = await _jsonCodec.decodeBytes(bodyBytes);
-        } on FormatException {
+        } on FormatException catch (error) {
           // A body labeled JSON that doesn't parse is only tolerated on an
           // error status, where the raw text still needs to reach the caller
           // as the exception `details`. On a success status it's a real
-          // anomaly, so keep surfacing it instead of handing back a String.
-          if (isSuccessStatus) rethrow;
-          decoded = utf8.decode(bodyBytes, allowMalformed: !isSuccessStatus);
+          // anomaly, so surface it instead of handing back a String.
+          if (isSuccessStatus) throw _unreadableResponse(error);
+          decoded = utf8.decode(bodyBytes, allowMalformed: true);
         }
         data = decoded;
       }
     } else if (responseType == 'application/octet-stream') {
       data = bodyBytes;
+    } else if (isSuccessStatus) {
+      try {
+        data = utf8.decode(bodyBytes);
+      } on FormatException catch (error) {
+        throw _unreadableResponse(error);
+      }
     } else {
-      data = utf8.decode(bodyBytes, allowMalformed: !isSuccessStatus);
+      data = utf8.decode(bodyBytes, allowMalformed: true);
     }
 
     if (isSuccessStatus) {
-      return FunctionResponse(data: data, statusCode: response.statusCode);
+      return FunctionsResponse(
+        data: data,
+        statusCode: response.statusCode,
+        headers: response.headers,
+      );
     }
     throw _apiException(
       response,
@@ -333,11 +369,58 @@ class FunctionsClient {
     );
   }
 
+  /// Whether [mediaType] is JSON, `application/json` or a structured syntax
+  /// type such as `application/problem+json`.
+  static bool _isJson(String mediaType) =>
+      mediaType == 'application/json' || mediaType.endsWith('+json');
+
+  /// The fields of a multipart request, from a [body] that must be a map of
+  /// strings to strings.
+  static Map<String, String> _multipartFields(Object? body) {
+    return switch (body) {
+      null => const {},
+      Map<String, String>() => body,
+      Map() when body.entries.every((entry) => entry.value is String) => {
+        for (final MapEntry(:key, :value) in body.entries) '$key': '$value',
+      },
+      _ => throw FunctionsFetchException(
+        message:
+            'The body of a multipart request must be a map of strings to '
+            'strings',
+        cause: ArgumentError.value(body, 'body'),
+      ),
+    };
+  }
+
+  /// The exception for a response whose body could not be read, or, on a
+  /// success status, could not be decoded.
+  static FunctionsFetchException _unreadableResponse(Object error) =>
+      FunctionsFetchException(
+        message: 'Failed to read the response of the Edge Function',
+        cause: error,
+      );
+
+  /// A query parameter [value] as text, a [DateTime] in ISO 8601.
+  static String _queryValue(Object? value) =>
+      value is DateTime ? value.toIso8601String() : '$value';
+
+  Future<String> _encodeJson(Object body) async {
+    try {
+      return await _jsonCodec.encode(body);
+    } on JsonUnsupportedObjectError catch (error) {
+      throw FunctionsFetchException(
+        message: 'Failed to encode the request body as JSON',
+        cause: error,
+      );
+    }
+  }
+
   /// Builds the exception for an error [response], a relay one when
   /// [isRelayError].
   ///
-  /// The reason phrase is the only message the response itself carries; when
-  /// it is absent, as it is over HTTP/2, each exception uses its own default.
+  /// A JSON object body supplies the message and the error code. Otherwise the
+  /// message is the reason phrase, and when that is absent too, as it is over
+  /// HTTP/2, each exception uses its own default.
   FunctionsApiException _apiException(
     http.StreamedResponse response,
     bool isRelayError, {
@@ -345,24 +428,44 @@ class FunctionsClient {
     String? body,
   }) {
     final requestId = response.headers.requestId;
+    final (:message, :errorCode) = switch (details) {
+      Map() => (
+        message:
+            _stringField(details, 'message') ??
+            _stringField(details, 'error') ??
+            response.reasonPhrase,
+        errorCode:
+            _stringField(details, 'code') ??
+            _stringField(details, 'error_code'),
+      ),
+      _ => (message: response.reasonPhrase, errorCode: null),
+    };
     if (isRelayError) {
       return FunctionsRelayException(
         statusCode: response.statusCode,
         details: details,
+        errorCode: errorCode,
         requestId: requestId,
         headers: response.headers,
         body: body,
-        message: response.reasonPhrase,
+        message: message,
       );
     }
     return FunctionsApiException(
       statusCode: response.statusCode,
       details: details,
+      errorCode: errorCode,
       requestId: requestId,
       headers: response.headers,
       body: body,
-      message: response.reasonPhrase,
+      message: message,
     );
+  }
+
+  /// The value of [key] in [map] when it is a non-empty string.
+  static String? _stringField(Map<dynamic, dynamic> map, String key) {
+    final value = map[key];
+    return value is String && value.isNotEmpty ? value : null;
   }
 
   /// Runs [action], wrapping a failure to get a response in a
@@ -380,12 +483,14 @@ class FunctionsClient {
     }
   }
 
-  /// Disposes the JSON codec the client created for itself.
+  /// Disposes the JSON codec and closes the HTTP client the client created
+  /// for itself.
   ///
-  /// Does nothing when a codec was passed to the constructor, since that one
-  /// belongs to the caller.
+  /// Leaves a codec or an HTTP client passed to the constructor alone, since
+  /// those belong to the caller.
   Future<void> dispose() async {
     functionsLogger.fine("Dispose FunctionsClient");
+    _ownedHttpClient?.close();
     if (_ownsJsonCodec) {
       return _jsonCodec.dispose();
     }

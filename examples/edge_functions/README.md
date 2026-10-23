@@ -11,7 +11,7 @@ A small app that shows how to call Supabase Edge Functions with
   response.
 - **Send and receive plain text**: a `String` body is sent as `text/plain` and a
   `text/plain` response comes back as a `String` (`invoke('shout', body: text)`).
-- **Handle errors**: a non-2xx response throws a `FunctionException` whose
+- **Handle errors**: a non-2xx response throws a `FunctionsException` whose
   `details` carry the response body (`invoke('word-count', ...)`).
 
 All Edge Function access is in
@@ -56,12 +56,12 @@ There are two end-to-end test files, both run against the local stack:
 - [`integration_test/functions_test.dart`](integration_test/functions_test.dart)
   drives the flow through the repository (a JSON greeting over POST and GET, a
   plain-text transform, and a validation error that surfaces as a
-  `FunctionException`) and drives the app widgets to greet through the UI.
+  `FunctionsException`) and drives the app widgets to greet through the UI.
 - [`integration_test/invoke_test.dart`](integration_test/invoke_test.dart)
   covers the full surface of `functions.invoke`: every HTTP method, query
   parameters, custom headers, JSON / text / binary / multipart request bodies, a
   region, every response type (JSON, text, binary, an SSE `ByteStream`), custom
-  status codes, the three `FunctionException` variants and request aborting. It
+  status codes, the three `FunctionsException` variants and request aborting. It
   drives an `echo` test-support function (in `../supabase/functions/echo`) that
   reflects the request back in whatever shape a query parameter asks for. That
   function is not used by the example UI.

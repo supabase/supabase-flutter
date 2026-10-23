@@ -19,7 +19,7 @@ const supabasePublishableKey = String.fromEnvironment(
 /// depending on its query parameters). Between them the tests exercise every
 /// request option (method, query, headers, JSON / text / binary / multipart
 /// bodies, region), every response type, custom status codes, the three
-/// `FunctionException` variants and request aborting.
+/// `FunctionsException` variants and request aborting.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -117,7 +117,10 @@ void main() {
 
     testWidgets('a region adds the forceFunctionRegion query and x-region '
         'header', (_) async {
-      final response = await functions.invoke('echo', region: 'us-east-1');
+      final response = await functions.invoke(
+        'echo',
+        region: FunctionsRegion.usEast1,
+      );
       expect(
         response.data['query'],
         containsPair('forceFunctionRegion', 'us-east-1'),

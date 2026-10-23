@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('every functions exception names itself in toString', () {
-    final exceptions = <String, FunctionException>{
+    final exceptions = <String, FunctionsException>{
       'FunctionsFetchException': const FunctionsFetchException(),
       'FunctionsApiException': const FunctionsApiException(statusCode: 500),
       'FunctionsRelayException': const FunctionsRelayException(
