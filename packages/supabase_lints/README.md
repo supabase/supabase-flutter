@@ -18,15 +18,19 @@
 
 </div>
 
-This package is meant for internal use across this monorepo.
+> [!WARNING]
+> This package is the lint configuration of the Supabase client packages in
+> this monorepo. It is published so those packages can depend on it, not as a
+> general purpose lint set. Rules are added and tightened whenever the client
+> packages need it, without a major version, so depend on it only if you want
+> the same rules as the client packages.
 
 ## Usage
 
-Add it to your `dev_dependencies`:
+Add it as a dev dependency:
 
-```yaml
-dev_dependencies:
-  supabase_lints: any
+```sh
+dart pub add dev:supabase_lints
 ```
 
 Include the rules in your `analysis_options.yaml`.
@@ -43,7 +47,14 @@ For a Flutter package:
 include: package:supabase_lints/analysis_options_flutter.yaml
 ```
 
-Both configurations enable the DCM `recommended` preset. Rules that the existing
+The analyzer rules are strict. Among others, they report lines longer than 80
+characters, missing type arguments and unawaited futures.
+
+Both configurations also configure [DCM](https://dcm.dev), a separate,
+licensed tool that `dart analyze` does not run. Its rules only apply when you
+run `dcm analyze`. They enable the DCM `recommended` preset and report an
+import of `dart:io` in `lib/` as an error, except in files ending in
+`_io.dart`, so that the code keeps running on the web. Rules that the existing
 codebase does not yet pass are disabled in `analysis_options.yaml` and are
 re-enabled one by one as the violations get fixed.
 

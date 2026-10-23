@@ -84,8 +84,13 @@ import 'package:supabase/supabase.dart';
 final supabase = SupabaseClient(
   'https://your-project.supabase.co',
   'your-publishable-key',
+  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
 );
 ```
+
+A client without an `asyncStorage` throws when it is created, since the
+default PKCE flow keeps its code verifiers there. `MemoryAuthAsyncStorage`
+keeps them, and the session, in memory for as long as the process runs.
 
 ### 3. Generate the typed schema
 
@@ -164,6 +169,7 @@ token of that request as the `Authorization` header of the call. The client only
 `Authorization` header when the request has none:
 
 ```dart file
+import 'package:my_app/supabase_schema.g.dart';
 import 'package:supabase/supabase.dart';
 
 Future<List<BooksRow>> booksOfUser(

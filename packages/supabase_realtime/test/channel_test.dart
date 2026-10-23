@@ -122,6 +122,37 @@ void main() {
 
       expect(joinPush.timeout, newTimeout);
     });
+
+    test(
+      'reports a declined join as a status change, not a stream error',
+      () async {
+        final changes = <RealtimeSubscribeStatusChange>[];
+        final errors = <Object>[];
+        channel.onStatusChange.listen(changes.add, onError: errors.add);
+        channel.subscribe();
+
+        channel.joinPush.trigger('error', {'reason': 'Unauthorized'});
+        await Future<void>.delayed(Duration.zero);
+
+        expect(errors, isEmpty);
+        expect(
+          changes,
+          contains(
+            isA<RealtimeSubscribeStatusChange>()
+                .having(
+                  (change) => change.status,
+                  'status',
+                  RealtimeSubscribeStatus.channelError,
+                )
+                .having(
+                  (change) => change.error,
+                  'error',
+                  isA<RealtimeException>(),
+                ),
+          ),
+        );
+      },
+    );
   });
 
   group("joinPush 'ok' setAccessToken error handling", () {

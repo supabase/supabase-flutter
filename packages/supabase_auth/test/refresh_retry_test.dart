@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:http/http.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
 
@@ -98,5 +99,29 @@ void main() {
         1,
       );
     });
+  });
+
+  test('an offline refresh is an error of onAuthStateChange', () async {
+    final httpClient = MockSupabaseHttpClient()
+      ..stubError(ClientException('Offline'));
+    final client = AuthClient(
+      url: authUrl,
+      asyncStorage: TestAsyncStorage(),
+      httpClient: httpClient,
+      autoRefreshToken: false,
+      retryOptions: const SupabaseRetryOptions(enabled: false),
+    );
+    final errors = <Object>[];
+    final subscription = client.onAuthStateChange.listen(
+      (_) {},
+      onError: errors.add,
+    );
+    addTearDown(subscription.cancel);
+
+    await client.setInitialSession(createExpiredSessionForUser1());
+    await expectLater(client.getSession(), throwsA(isA<AuthException>()));
+    await pumpEventQueue();
+
+    expect(errors, [isA<AuthRetryableFetchException>()]);
   });
 }

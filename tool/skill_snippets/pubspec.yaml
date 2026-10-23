@@ -1,5 +1,5 @@
 name: skill_snippets
-description: Compiles the Dart snippets of the package skills against the workspace.
+description: Compiles the Dart snippets of the package skills and READMEs against the workspace.
 
 publish_to: 'none'
 

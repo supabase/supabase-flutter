@@ -53,7 +53,7 @@ Observe the result on `onAuthStateChange`, as with the default launcher:
 - When the user closes the session without signing in, the method returns
   `false` and nothing is emitted.
 
-```dart
+```dart file
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

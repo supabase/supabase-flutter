@@ -39,6 +39,7 @@ it against this file. To upgrade an existing v2 project, use the
 
 ```dart file
 import 'package:flutter/widgets.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -152,21 +153,26 @@ final user = session.user;
 complete without a session.
 
 `AuthState` is sealed, with one subtype per event. Every new listener first
-receives `AuthInitialSession` with the current session or `null`:
+receives `AuthInitialSession` with the current session or `null`. A failed
+token refresh, for example while offline, is an error of the stream, so every
+listener passes `onError`:
 
 ```dart
-final subscription = supabase.auth.onAuthStateChange.listen((state) {
-  switch (state) {
-    case AuthInitialSession(:final session):
-      // The session when this listener attached, or null.
-      print(session?.user.id);
-    case AuthSignedIn(:final session):
-      print('Signed in as ${session.user.email}');
-    case AuthSignedOut():
-      print('Signed out');
-    case _:
-  }
-});
+final subscription = supabase.auth.onAuthStateChange.listen(
+  (state) {
+    switch (state) {
+      case AuthInitialSession(:final session):
+        // The session when this listener attached, or null.
+        print(session?.user.id);
+      case AuthSignedIn(:final session):
+        print('Signed in as ${session.user.email}');
+      case AuthSignedOut():
+        print('Signed out');
+      case _:
+    }
+  },
+  onError: (Object error) => print('Auth error: $error'),
+);
 ```
 
 `user.userMetadata` is never null, and `user.appMetadata` is an
@@ -233,6 +239,8 @@ resubscribes:
 
 ```dart file
 import 'package:flutter/widgets.dart';
+import 'package:my_app/supabase_schema.g.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BookList extends StatefulWidget {
   const BookList({super.key});

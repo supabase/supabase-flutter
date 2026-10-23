@@ -95,6 +95,7 @@ no registration.
 
 ```dart file
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const redirectUrl = 'com.example.myapp://login-callback';
 
@@ -125,22 +126,27 @@ session up from.
 Listen once, early, for example in the root widget's `initState`:
 
 ```dart
-final subscription = supabase.auth.onAuthStateChange.listen((state) {
-  switch (state) {
-    case AuthInitialSession(:final session):
-      // The session restored at startup, or null.
-      print(session == null ? 'Show sign in' : 'Show home');
-    case AuthSignedIn():
-      // OAuth, magic link and email confirmation end here.
-      print('Show home');
-    case AuthPasswordRecovery():
-      // A password reset link was opened: ask for the new password.
-      print('Show new password form');
-    case AuthSignedOut():
-      print('Show sign in');
-    case _:
-  }
-});
+final subscription = supabase.auth.onAuthStateChange.listen(
+  (state) {
+    switch (state) {
+      case AuthInitialSession(:final session):
+        // The session restored at startup, or null.
+        print(session == null ? 'Show sign in' : 'Show home');
+      case AuthSignedIn():
+        // OAuth, magic link and email confirmation end here.
+        print('Show home');
+      case AuthPasswordRecovery():
+        // A password reset link was opened: ask for the new password.
+        print('Show new password form');
+      case AuthSignedOut():
+        print('Show sign in');
+      case _:
+    }
+  },
+  // A failed exchange, such as an expired link, or a token refresh that
+  // failed while offline.
+  onError: (Object error) => print('Auth error: $error'),
+);
 ```
 
 Finish a password reset with the new password:
@@ -150,8 +156,9 @@ await supabase.auth.updateUser(UserAttributes(password: 'a-new-password'));
 ```
 
 A failed exchange, for example an expired link, arrives as an
-`AuthException` error on the same stream, so pass `onError` when the app
-should tell the user.
+`AuthException` error on the same stream, and so does a token refresh that
+failed while the device was offline. Always pass `onError`: without it these
+errors are unhandled and reach the zone's error handler.
 
 ## When the app does not open, or opens without a session
 

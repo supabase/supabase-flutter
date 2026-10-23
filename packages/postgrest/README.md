@@ -49,6 +49,7 @@ to `table()`. Filters are methods on the column constants, so the compiler
 checks every column name and value:
 
 ```dart file
+import 'package:my_app/supabase_schema.g.dart';
 import 'package:postgrest/postgrest.dart';
 
 Future<void> main() async {

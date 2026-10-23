@@ -4,13 +4,11 @@ import 'package:supabase_functions/supabase_functions.dart';
 
 /// Example to use with Supabase Edge Functions https://supabase.com/
 Future<void> main() async {
-  const supabaseUrl = '';
-  const supabaseKey = '';
+  const supabaseUrl = 'https://your-project.supabase.co';
+  const supabaseKey = 'your-publishable-key';
   final client = FunctionsClient(
     '$supabaseUrl/functions/v1',
-    {
-      'Authorization': 'Bearer $supabaseKey',
-    },
+    {'apikey': supabaseKey},
   );
 
   try {
@@ -24,5 +22,7 @@ Future<void> main() async {
     print('Function error: ${error.statusCode} ${error.details}');
   } on FunctionException catch (error) {
     print('Function error: ${error.message} ${error.details}');
+  } finally {
+    await client.dispose();
   }
 }

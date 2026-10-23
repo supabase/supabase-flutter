@@ -28,6 +28,61 @@
 >
 > This package was published as `functions_client` up to and including v2. That package is discontinued in favour of `supabase_functions`.
 
+## Usage
+
+In an app that uses `supabase` or `supabase_flutter`, invoke functions
+through `supabase.functions`, which sends the API key and the access token of
+the signed-in user for you:
+
+```dart
+final response = await supabase.functions.invoke(
+  'hello-world',
+  body: {'name': 'Ada'},
+);
+print('${response.statusCode}: ${response.data}');
+```
+
+`data` depends on the `Content-Type` of the response: `application/json` is
+decoded, `application/octet-stream` is a `Uint8List`, `text/event-stream` is a
+`ByteStream` to listen to, and every other type is a `String`.
+
+Standalone, create a `FunctionsClient` with the functions URL of your project
+and the `apikey` header. Pass `accessToken` to send the token of a signed-in
+user as `Authorization: Bearer <token>`. With a legacy JWT anon key, a
+function that verifies the JWT also needs the key as
+`Authorization: Bearer <key>` when no user is signed in:
+
+```dart file
+import 'package:supabase_functions/supabase_functions.dart';
+
+Future<void> main() async {
+  final functions = FunctionsClient(
+    'https://your-project.supabase.co/functions/v1',
+    {'apikey': 'your-publishable-key'},
+  );
+
+  try {
+    final response = await functions.invoke(
+      'hello-world',
+      method: HttpMethod.get,
+      queryParameters: {'name': 'Ada'},
+    );
+    print(response.data);
+  } on FunctionsApiException catch (error) {
+    print('The function failed: ${error.statusCode} ${error.details}');
+  } on FunctionException catch (error) {
+    print('The invocation failed: ${error.message}');
+  } finally {
+    await functions.dispose();
+  }
+}
+```
+
+A non-2xx response throws a `FunctionsApiException` with the status code and
+the response body as `details`. A request that gets no response throws a
+`FunctionsFetchException`, and an error of the Supabase relay a
+`FunctionsRelayException`. All three extend `FunctionException`.
+
 ## Docs
 
 The docs can be found on the official Supabase website.

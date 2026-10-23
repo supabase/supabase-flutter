@@ -245,11 +245,15 @@ await Supabase.initialize(
   "Package skills" CI check fails. The script also pads every Markdown table.
   The skills symlink `MIGRATION.md`, so links in it must be absolute URLs or
   anchors
-- Every ```dart block in a skill must compile: `melos run check-skill-snippets`
-  analyzes them against the workspace and the supabase_typegen schema golden.
-  A plain block is checked as a function body, ```dart file as a whole
-  library, ```dart test and ```dart test-file are also run as tests, and
-  ```dart skip is not checked, for code such as v2 "before" examples
+- Every ```dart block in a skill or a package README must compile:
+  `melos run check-skill-snippets` analyzes them against the workspace and the
+  supabase_typegen schema golden. A plain block is checked as a function body,
+  ```dart file as a whole library, ```dart test and ```dart test-file are also
+  run as tests, and ```dart skip is not checked, for code such as v2 "before"
+  examples or code that needs a third-party package. A whole library gets no
+  imports injected, so it imports everything it uses, the schema as
+  `package:my_app/supabase_schema.g.dart`. MIGRATION.md, which the
+  migrate-v3 skills link, is not checked
 - Line length limit is 80 characters
 - Use `dart format` for consistent formatting
 

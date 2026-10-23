@@ -131,15 +131,22 @@ current client's state.
 
 ## Status, errors and cleanup
 
-`onStatusChange` reports the subscription status, and errors such as a join
-the server declined arrive as `RealtimeException` errors on it:
+`onStatusChange` reports the subscription status. A failure, such as a join
+the server declined, is a `channelError` status that carries the
+`RealtimeException` as `change.error`, not an error of the stream:
 
 ```dart
 final channel = supabase.channel('room-1');
-channel.onStatusChange.listen(
-  (change) => print('Channel is ${change.status.name}'),
-  onError: (Object error) => print('Channel failed: $error'),
-);
+channel.onStatusChange.listen((change) {
+  switch (change.status) {
+    case RealtimeSubscribeStatus.channelError:
+      print('Channel failed: ${change.error}');
+    case RealtimeSubscribeStatus.timedOut:
+      print('Channel timed out');
+    case _:
+      print('Channel is ${change.status.name}');
+  }
+});
 channel.subscribe();
 
 await supabase.removeChannel(channel);
