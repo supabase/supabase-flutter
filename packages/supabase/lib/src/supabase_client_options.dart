@@ -224,7 +224,10 @@ class FunctionsClientOptions {
   final Duration? requestTimeout;
 
   /// Returns a copy with the given fields replaced.
-  FunctionsClientOptions copyWith({String? region, Duration? requestTimeout}) {
+  FunctionsClientOptions copyWith({
+    FunctionsRegion? region,
+    Duration? requestTimeout,
+  }) {
     return FunctionsClientOptions(
       region: region ?? this.region,
       requestTimeout: requestTimeout ?? this.requestTimeout,

@@ -35,11 +35,11 @@ void main() {
   });
 
   test('FunctionsClientOptions.copyWith replaces only the given fields', () {
-    const options = FunctionsClientOptions(region: 'eu-west-1');
+    const options = FunctionsClientOptions(region: FunctionsRegion.euWest1);
 
     final copy = options.copyWith(requestTimeout: const Duration(seconds: 5));
 
-    expect(copy.region, 'eu-west-1');
+    expect(copy.region, FunctionsRegion.euWest1);
     expect(copy.requestTimeout, const Duration(seconds: 5));
   });
 
