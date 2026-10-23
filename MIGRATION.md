@@ -486,6 +486,9 @@ explicitly:
 - [A client without an `asyncStorage` keeps pkce verifiers in memory](#a-client-without-an-asyncstorage-keeps-pkce-verifiers-in-memory),
   so a pkce flow that leaves the process needs a persistent storage passed explicitly
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
+- [`Supabase.initialize` rejects another url or key](#supabaseinitialize-rejects-another-url-or-key),
+  and `initializeTestSupabase` throws when an earlier test did not dispose
+- [A web callback URL is exchanged after `Supabase.initialize` completes](#a-web-callback-url-is-exchanged-after-supabaseinitialize-completes)
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
 - [`DateTime` filter values carry their offset from UTC](#datetime-filter-values-carry-their-offset-from-utc)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),
@@ -584,6 +587,17 @@ await Supabase.initialize(url: url, anonKey: anonKey);
 // After
 await Supabase.initialize(url: url, publishableKey: anonKey);
 ```
+
+#### `Supabase.initialize` rejects another url or key
+
+A second call used to return at once, even while the first was still restoring the session, and
+ignored its arguments. It now completes with the same instance once that instance is fully
+initialized, and throws a `StateError` when its `url` or `publishableKey` differ. Call
+`Supabase.instance.dispose()` first to switch to another project.
+
+`initializeTestSupabase` throws a `StateError` too when an earlier test left the instance
+initialized, since it would otherwise hand back that test's mocks. Dispose it at the end of every
+test, for example with `addTearDown(supabase.dispose)`.
 
 #### `SupabaseClient` builds its own default HTTP client
 
@@ -950,6 +964,19 @@ These used to compile and send something other than what was asked for:
 #### `AuthClient.getSSOSignInUrl` returns a `Uri`
 
 It returned a `String` before. Call `toString()` on the result if you need the string.
+
+#### `signInWithSSO` takes `authScreenLaunchMode`
+
+Its `launchMode:` argument is renamed to `authScreenLaunchMode:`, the name `signInWithOAuth` and
+`linkIdentity` use.
+
+#### A web callback URL is exchanged after `Supabase.initialize` completes
+
+On web the callback URL of a sign-in used to be exchanged before `Supabase.initialize` completed,
+while on mobile the link that opened the app was exchanged after it. Both platforms now exchange it
+right after, so a listener that subscribes to `onAuthStateChange` once `initialize` completes gets
+`signedIn` or `passwordRecovery` on web too. Code that read `currentSession` right after
+`initialize` to find the session of the callback should wait for that event instead.
 
 #### `OAuthResponse.url` is a `Uri`
 

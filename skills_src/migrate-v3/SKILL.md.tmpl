@@ -204,7 +204,9 @@ decide for the summary in step 9.
 | Cross-tab session sync is opt-in for standalone clients | `AuthClientOptions\(` | On web, pass `persistSession: true` where the session must be shared and persisted. |
 {{/dart}}
 {{#flutter}}
-| The session is persisted with `SharedPreferencesAsync` | `SharedPreferences\.getInstance` | Migrate the app's own preferences to `SharedPreferencesAsync`, or use the legacy storage from the reference. Widget tests that call `Supabase.initialize` need the `InMemorySharedPreferencesAsync` setup. |
+| `Supabase.initialize` rejects another url or key                      | `Supabase\.initialize\|initializeTestSupabase` | Initialize once per configuration, dispose before switching projects, and dispose in every test that initializes.                                                                                          |
+| A web callback URL is exchanged after `Supabase.initialize` completes | `currentSession`                               | On web, wait for `signedIn` or `passwordRecovery` instead of reading the session of the callback right after `initialize`.                                                                                 |
+| The session is persisted with `SharedPreferencesAsync`                | `SharedPreferences\.getInstance`               | Migrate the app's own preferences to `SharedPreferencesAsync`, or use the legacy storage from the reference. Widget tests that call `Supabase.initialize` need the `InMemorySharedPreferencesAsync` setup. |
 {{/flutter}}
 
 Search `lib`, `test`, `bin` and any other source folders with

@@ -50,6 +50,8 @@ const testPublishableKey = 'sb_publishable_supabase_flutter_testing';
 ///
 /// Dispose the instance when the test ends, for example with
 /// `addTearDown(supabase.dispose)`, so the next test can initialize again.
+/// Throws a [StateError] when an earlier test left [Supabase] initialized,
+/// since that instance still holds the earlier test's mocks.
 @visibleForTesting
 Future<Supabase> initializeTestSupabase({
   Client? httpClient,
@@ -60,6 +62,14 @@ Future<Supabase> initializeTestSupabase({
   AuthAsyncStorage? asyncStorage,
   bool autoRefreshToken = false,
 }) {
+  if (Supabase.isInitializingOrInitialized) {
+    return Future.error(
+      StateError(
+        'Supabase is already initialized. Dispose it at the end of every '
+        'test, for example with addTearDown(supabase.dispose).',
+      ),
+    );
+  }
   return Supabase.initialize(
     url: url,
     publishableKey: publishableKey ?? testPublishableKey,

@@ -203,6 +203,91 @@ void main() {
         await expectLater(supabase.dispose(), completes);
       });
 
+      test('a concurrent call waits for the first one to finish', () async {
+        final asyncStorage = BlockingAsyncStorage();
+        final first = Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          authOptions: FlutterAuthClientOptions(asyncStorage: asyncStorage),
+        );
+        var secondCompleted = false;
+        final second = Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+        ).whenComplete(() => secondCompleted = true);
+
+        await pumpEventQueue();
+        expect(secondCompleted, isFalse);
+
+        asyncStorage.release();
+        expect(await second, same(await first));
+      });
+
+      test(
+        'a call disposed while pending waits for the next initialization',
+        () async {
+          final firstStorage = BlockingAsyncStorage();
+          var firstCompleted = false;
+          final first = Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            authOptions: FlutterAuthClientOptions(asyncStorage: firstStorage),
+          ).whenComplete(() => firstCompleted = true);
+          await pumpEventQueue();
+          await Supabase.instance.dispose();
+
+          final secondStorage = BlockingAsyncStorage();
+          final second = Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            authOptions: FlutterAuthClientOptions(asyncStorage: secondStorage),
+          );
+          firstStorage.release();
+          await pumpEventQueue();
+          expect(firstCompleted, isFalse);
+
+          secondStorage.release();
+          expect(await first, same(await second));
+        },
+      );
+
+      test('a call with another url or key throws', () async {
+        final asyncStorage = BlockingAsyncStorage();
+        final first = Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          authOptions: FlutterAuthClientOptions(asyncStorage: asyncStorage),
+        );
+
+        await expectLater(
+          Supabase.initialize(
+            url: 'https://other.supabase.co',
+            publishableKey: supabaseKey,
+          ),
+          throwsStateError,
+        );
+
+        asyncStorage.release();
+        await first;
+
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: 'other-key'),
+          throwsStateError,
+        );
+      });
+
+      test('a call after a failed initialization tries again', () async {
+        await expectLater(
+          Supabase.initialize(url: 'http://[', publishableKey: supabaseKey),
+          throwsA(anything),
+        );
+
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey),
+          completes,
+        );
+      });
+
       test('handles multiple initializations correctly', () async {
         await Supabase.initialize(
           url: supabaseUrl,
