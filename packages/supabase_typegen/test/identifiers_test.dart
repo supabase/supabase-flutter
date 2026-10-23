@@ -18,6 +18,18 @@ void main() {
     test('prefixes names starting with a digit', () {
       expect(pascalCase('2fa_codes'), r'$2faCodes');
     });
+
+    test('spells characters outside ASCII by their code point', () {
+      expect(pascalCase('статус'), 'U441U442U430U442U443U441');
+      expect(pascalCase('café_menu'), 'CafUe9Menu');
+      expect(camelCase('名前'), 'u540dU524d');
+      expect(pascalCase('новый'), isNot(pascalCase('готов')));
+    });
+
+    test('splits words at other characters outside ASCII', () {
+      expect(camelCase('quote\u2029tail'), 'quoteTail');
+      expect(pascalCase('page\u00a0count'), 'PageCount');
+    });
   });
 
   group('camelCase', () {

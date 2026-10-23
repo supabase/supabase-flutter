@@ -1848,4 +1848,57 @@ void main() {
       });
     });
   });
+
+  group('analyticsCatalog', () {
+    late MockSupabaseHttpClient httpClient;
+
+    SupabaseStorageClient createClient({Duration? requestTimeout}) =>
+        SupabaseStorageClient(
+          '$supabaseUrl/storage/v1',
+          {'Authorization': 'Bearer $supabaseKey'},
+          httpClient: httpClient,
+          requestTimeout: requestTimeout,
+        );
+
+    setUp(() {
+      httpClient = MockSupabaseHttpClient();
+    });
+
+    test('addresses the bucket under the iceberg endpoint', () async {
+      httpClient
+        ..stub({'namespaces': []})
+        ..stub({'defaults': <String, String>{}}, path: '/v1/config');
+
+      await createClient().analyticsCatalog('warehouse').listNamespaces();
+
+      final config = httpClient.requestsTo('/v1/config').single;
+      expect(config.url.path, endsWith('/storage/v1/iceberg/v1/config'));
+      expect(config.queryParameters['warehouse'], 'warehouse');
+      expect(
+        httpClient.requests.last.url.path,
+        endsWith('/storage/v1/iceberg/v1/warehouse/namespaces'),
+      );
+      expect(
+        httpClient.requests.last.headers['Authorization'],
+        'Bearer $supabaseKey',
+      );
+    });
+
+    test('applies the request timeout of the storage client', () async {
+      httpClient.stubStall();
+
+      await expectLater(
+        createClient(
+          requestTimeout: const Duration(milliseconds: 50),
+        ).analyticsCatalog('warehouse').listNamespaces(),
+        throwsA(
+          isA<IcebergNetworkException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
+      );
+    });
+  });
 }

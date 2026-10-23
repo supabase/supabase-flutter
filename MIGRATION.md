@@ -489,6 +489,8 @@ explicitly:
   so a catch of the transport exception no longer matches a token failure
 - [The request timeout bounds idle time, not the whole request](#the-request-timeout-bounds-idle-time-not-the-whole-request),
   so a response that keeps arriving can take longer than `requestTimeout`
+- [Iceberg catalog options are named and take an `abortSignal`](#iceberg-catalog-options-are-named-and-take-an-abortsignal),
+  where a failing catalog configuration request now fails the operation
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
@@ -710,7 +712,7 @@ Across every package:
 | `PartitionSpec` and the Iceberg `spec` cluster | `PartitionSpecification`, `…Specification…` |
 | `TableMetadata.refs`                           | `TableMetadata.references`                  |
 | `TableField.doc`                               | `TableField.documentation`                  |
-| `LoadTableSnapshots.value`                     | `TableSnapshotScope.name`                   |
+| `LoadTableSnapshots.refs`                      | `TableSnapshotScope.references`             |
 
 These renames also change a type:
 
@@ -1631,6 +1633,27 @@ parameters and are named now, like on every other upload method:
 .uploadToSignedUrl(path, token, file, fileOptions: const FileOptions(upsert: true));
 ```
 
+#### Iceberg catalog options are named and take an `abortSignal`
+
+The options of `listNamespaces`, `listTables` and `loadTableResult` were optional positional
+parameters and are named now, so that every catalog operation can also take a
+`Future<void>? abortSignal`:
+
+```dart
+// Before
+await catalog.listNamespaces(const ListNamespacesOptions(pageSize: 100));
+
+// After
+await catalog.listNamespaces(options: const ListNamespacesOptions(pageSize: 100));
+```
+
+A nested type the client does not recognize decodes as the new `UnknownType` instead of failing the
+whole table, so a `switch` over `IcebergType` needs a case for it.
+
+A catalog whose `/v1/config` request fails now throws that error from the operation instead of
+falling back to the `v1/<warehouse>` path, so a rejected token or a missing bucket surfaces as the
+error the server sent.
+
 #### Storage uploads send the raw file body
 
 Uploads used to be `multipart/form-data` requests. The file is now the request body itself, with
@@ -2104,7 +2127,8 @@ behavioural details are worth checking:
 | `AuthenticatorAssuranceLevels` | `AuthenticatorAssuranceLevel` | `supabase_auth`     |
 | `LoadTableSnapshots`           | `TableSnapshotScope`          | `iceberg`           |
 
-No enum values changed, so the only work is renaming the type where you name it explicitly.
+Apart from `TableSnapshotScope.references`, no enum values changed, so the only work is renaming the
+type where you name it explicitly.
 
 #### One shared `SortDirection` for every sort direction
 

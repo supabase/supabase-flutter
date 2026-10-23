@@ -24,8 +24,8 @@
 
 ## Usage
 
-Against a Supabase analytics bucket, get a catalog from `StorageClient` instead
-of constructing one yourself:
+Against a Supabase analytics bucket, get a catalog from `SupabaseStorageClient`
+instead of constructing one yourself:
 
 ```dart
 final catalog = supabase.storage.analyticsCatalog('my-analytics-bucket');

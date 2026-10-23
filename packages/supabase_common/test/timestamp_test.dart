@@ -335,6 +335,14 @@ void main() {
   });
 
   group('postgresTimestampLiteral', () {
+    test('the extreme instants are written as infinity', () {
+      expect(postgresTimestampLiteral(postgresTimestampInfinity), 'infinity');
+      expect(
+        postgresTimestampLiteral(postgresTimestampNegativeInfinity),
+        '-infinity',
+      );
+    });
+
     test('a UTC value ends in Z', () {
       expect(
         postgresTimestampLiteral(DateTime.utc(2026, 1, 1, 12)),
@@ -398,6 +406,9 @@ class _LocalDateTime implements DateTime {
 
   @override
   String toIso8601String() => '2026-01-01T12:00:00.000';
+
+  @override
+  bool isAtSameMomentAs(DateTime other) => false;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

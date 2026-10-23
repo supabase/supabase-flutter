@@ -70,11 +70,18 @@ enum AccessDelegation {
 }
 
 /// Which snapshots the server should include when loading a table.
-enum TableSnapshotScope { all, refs }
+enum TableSnapshotScope {
+  /// Every snapshot of the table.
+  all,
+
+  /// Only the snapshots a branch or tag references.
+  references,
+}
 
 /// A type in the Iceberg type system. Either a [PrimitiveType] represented by
-/// a type string, or one of the nested types [StructType], [ListType] and
-/// [MapType].
+/// a type string, one of the nested types [StructType], [ListType] and
+/// [MapType], or an [UnknownType] this version of the client does not
+/// recognize.
 sealed class IcebergType {
   const IcebergType();
 
@@ -85,17 +92,23 @@ sealed class IcebergType {
       return PrimitiveType(json);
     }
     final map = json as Map<String, dynamic>;
-    switch (map['type']) {
-      case 'struct':
-        return StructType.fromJson(map);
-      case 'list':
-        return ListType.fromJson(map);
-      case 'map':
-        return MapType.fromJson(map);
-      default:
-        throw ArgumentError('Unknown Iceberg type: ${map['type']}');
-    }
+    return switch (map['type']) {
+      'struct' => StructType.fromJson(map),
+      'list' => ListType.fromJson(map),
+      'map' => MapType.fromJson(map),
+      _ => UnknownType(map),
+    };
   }
+}
+
+/// A nested type this version of the client does not recognize, kept as the
+/// [json] the server sent so that it is written back unchanged.
+class UnknownType extends IcebergType {
+  const UnknownType(this.json);
+  final Map<String, dynamic> json;
+
+  @override
+  Object toJson() => json;
 }
 
 /// A primitive Iceberg type such as `int`, `string`, `decimal(10,2)` or

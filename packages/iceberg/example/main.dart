@@ -49,8 +49,8 @@ Future<void> main() async {
 
   // Load the table back
   try {
-    final loaded = await catalog.loadTable(identifier);
-    print('metadata location : ${loaded.metadataLocation}');
+    final loaded = await catalog.loadTableResult(identifier);
+    print('metadata location : ${loaded?.metadataLocation}');
   } on IcebergNotFoundException {
     print('the table does not exist');
   } on IcebergNetworkException catch (error) {
@@ -59,4 +59,5 @@ Future<void> main() async {
 
   await catalog.dropTable(identifier);
   await catalog.dropNamespace(['analytics']);
+  catalog.close();
 }
