@@ -1,6 +1,6 @@
-// Analyzes every Dart snippet in the package skills and package READMEs
-// against the workspace, so they cannot show code that does not compile, and
-// runs the ones that are tests.
+// Analyzes every Dart snippet in the Markdown files of the repository, apart
+// from the changelogs, against the workspace, so they cannot show code that
+// does not compile, and runs the ones that are tests.
 //
 // The fence of a block says how it is checked:
 //
@@ -11,7 +11,8 @@
 // - ```dart test-file: a whole test library with a `main()`, which is run.
 // - ```dart skip: not checked, for example v2 code shown as "before".
 //
-// A function or test body has the library of its package, and the generated
+// A function or test body has the library of its package, or of
+// supabase_flutter outside of a package, and the generated
 // schema golden of supabase_typegen (`Books`, `Authors`, ...), in scope. A
 // test body also has supabase_test and the test framework of the package. A
 // whole library imports everything it uses, as the code a user copies has
@@ -65,7 +66,7 @@ Future<void> main() async {
   final snippets = <String, _Snippet>{};
   var testCount = 0;
   for (final sourceFile in _snippetFiles()) {
-    final package = sourceFile.split('/')[1];
+    final package = _packageOf(sourceFile);
     for (final (index, block) in _dartBlocks(sourceFile).indexed) {
       if (block.mode == 'skip') continue;
       final isTest = block.mode.startsWith('test');
@@ -165,22 +166,28 @@ Future<void> main() async {
   stdout.writeln('Every snippet that is a test passes.');
 }
 
-Iterable<String> _snippetFiles() sync* {
-  for (final package in Directory('packages').listSync()) {
-    final readme = File('${package.path}/README.md');
-    if (readme.existsSync()) yield readme.path;
-    final skills = Directory('${package.path}/skills');
-    if (!skills.existsSync()) continue;
-    final files =
-        skills
-            .listSync(recursive: true, followLinks: false)
-            .whereType<File>()
-            .where((file) => file.path.endsWith('.md'))
-            .map((file) => file.path)
-            .toList()
-          ..sort();
-    yield* files;
-  }
+String _packageOf(String sourceFile) {
+  final segments = sourceFile.split('/');
+  return segments.first == 'packages' ? segments[1] : 'supabase_flutter';
+}
+
+List<String> _snippetFiles() {
+  final files = Process.runSync('git', [
+    'ls-files',
+    '--cached',
+    '--others',
+    '--exclude-standard',
+    '*.md',
+  ]).stdout.toString().split('\n');
+  return files
+      .where(
+        (path) =>
+            path.isNotEmpty &&
+            !path.endsWith('CHANGELOG.md') &&
+            !FileSystemEntity.isLinkSync(path),
+      )
+      .toList()
+    ..sort();
 }
 
 typedef _Block = ({String mode, int firstLine, List<String> lines});
