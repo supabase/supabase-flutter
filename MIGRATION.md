@@ -488,6 +488,7 @@ explicitly:
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
+- [An `Authorization` header passed to `SupabaseClient` reaches the auth client](#an-authorization-header-passed-to-supabaseclient-reaches-the-auth-client)
 
 ### Packages and setup
 
@@ -1878,6 +1879,13 @@ Every `headers` getter returns an unmodifiable view, and mutating one throws an 
 Assigning `SupabaseClient.headers` propagates the new headers to every sub-client at once.
 `SupabaseStorageClient.vectors` builds a new client on each access, so it always carries the
 current headers.
+
+#### An `Authorization` header passed to `SupabaseClient` reaches the auth client
+
+An `Authorization` or `apikey` header in the `headers:` of the `SupabaseClient` constructor used to
+be replaced with the API key on the auth client, while one assigned through `supabase.headers` was
+kept. Both are now kept, so auth requests send the header instead of the API key. To keep the old
+behavior, set the header on the individual calls instead of on the client.
 
 #### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
 

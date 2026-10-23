@@ -89,11 +89,11 @@ class SupabaseClient {
     Duration? requestTimeout,
   }) : _supabaseKey = supabaseKey,
        _functionsOptions = functionsOptions,
-       _restUrl = '$supabaseUrl/rest/v1',
-       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
-       _authUrl = '$supabaseUrl/auth/v1',
-       _storageUrl = '$supabaseUrl/storage/v1',
-       _functionsUrl = '$supabaseUrl/functions/v1',
+       _restUrl = _serviceUrl(supabaseUrl, 'rest/v1'),
+       _realtimeUrl = _serviceUrl(supabaseUrl, 'realtime/v1', webSocket: true),
+       _authUrl = _serviceUrl(supabaseUrl, 'auth/v1'),
+       _storageUrl = _serviceUrl(supabaseUrl, 'storage/v1'),
+       _functionsUrl = _serviceUrl(supabaseUrl, 'functions/v1'),
        _postgrestOptions = postgrestOptions,
        _requestTimeout = requestTimeout,
        _headers = {
@@ -221,11 +221,7 @@ class SupabaseClient {
 
     if (accessToken == null) {
       // ignore: invalid_use_of_internal_member
-      auth.replaceHeaders({
-        ...SupabaseConstants.defaultHeaders,
-        ..._getAuthHeaders(),
-        ..._headers,
-      });
+      auth.replaceHeaders(_authClientHeaders());
     }
 
     // To apply the new headers in the realtime client,
@@ -371,13 +367,9 @@ class SupabaseClient {
   }
 
   AuthClient _initSupabaseAuthClient(AuthClientOptions authOptions) {
-    final authHeaders = {...headers};
-    authHeaders[HttpHeader.apiKey] = _supabaseKey;
-    authHeaders[HttpHeader.authorization] = 'Bearer $_supabaseKey';
-
     return AuthClient(
       url: _authUrl,
-      headers: authHeaders,
+      headers: _authClientHeaders(),
       autoRefreshToken: authOptions.autoRefreshToken,
       httpClient: _authApiHttpClient,
       asyncStorage: authOptions.asyncStorage,
@@ -454,15 +446,25 @@ class SupabaseClient {
     );
   }
 
-  /// Requires the `auth` instance, so no custom `accessToken` is allowed.
-  Map<String, String> _getAuthHeaders() {
-    final authBearer = auth.currentSession?.accessToken ?? _supabaseKey;
-    final defaultHeaders = {
-      HttpHeader.apiKey: _supabaseKey,
-      HttpHeader.authorization: 'Bearer $authBearer',
-    };
-    final mergedHeaders = {...defaultHeaders, ..._headers};
-    return mergedHeaders;
+  /// The static headers of the auth client, which sends the session token of
+  /// a user only on the requests that act on behalf of that user.
+  ///
+  /// A user `apikey` or `Authorization` header is stored under its canonical
+  /// name, so the session token of such a request still replaces it.
+  Map<String, String> _authClientHeaders() => {
+    HttpHeader.apiKey: _supabaseKey,
+    HttpHeader.authorization: 'Bearer $_supabaseKey',
+    for (final MapEntry(:key, :value) in _headers.entries)
+      _canonicalHeaderName(key): value,
+  };
+
+  static String _canonicalHeaderName(String name) {
+    for (final canonical in [HttpHeader.apiKey, HttpHeader.authorization]) {
+      if (name.toLowerCase() == canonical.toLowerCase()) {
+        return canonical;
+      }
+    }
+    return name;
   }
 
   void _listenForAuthEvents() {
@@ -482,6 +484,23 @@ class SupabaseClient {
       event == AuthChangeEvent.signedOut ? _supabaseKey : token,
     );
   }
+}
+
+String _serviceUrl(
+  String supabaseUrl,
+  String servicePath, {
+  bool webSocket = false,
+}) {
+  final baseUrl = Uri.parse(supabaseUrl);
+  final basePath = baseUrl.path.replaceFirst(RegExp(r'/+$'), '');
+  final scheme = switch (baseUrl.scheme) {
+    'http' when webSocket => 'ws',
+    'https' when webSocket => 'wss',
+    final otherScheme => otherScheme,
+  };
+  return baseUrl
+      .replace(scheme: scheme, path: '$basePath/$servicePath')
+      .toString();
 }
 
 String _missingAsyncStorageMessage(AuthClientOptions authOptions) {

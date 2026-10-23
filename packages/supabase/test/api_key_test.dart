@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:supabase/src/api_key.dart';
 import 'package:supabase/src/auth_http_client.dart';
+import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
@@ -118,6 +119,25 @@ void main() {
 
       expect(capturedHeaders()['authorization'], 'Bearer legacy-anon-key');
     });
+
+    test(
+      'keeps a request Authorization header without resolving the session',
+      () async {
+        mockClient = MockSupabaseHttpClient()..stub(null);
+        final client = AuthHttpClient(
+          'legacy-anon-key',
+          mockClient,
+          () async => throw const AuthException('refresh failed'),
+        );
+        await client.get(
+          Uri.parse('https://example.com'),
+          headers: {'Authorization': 'Bearer user-token'},
+        );
+
+        expect(capturedHeaders()['authorization'], 'Bearer user-token');
+        expect(capturedHeaders()['apikey'], 'legacy-anon-key');
+      },
+    );
 
     test(
       'without the flag, a new-format key is still sent as Bearer',
