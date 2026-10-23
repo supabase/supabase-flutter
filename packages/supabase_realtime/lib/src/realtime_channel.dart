@@ -557,10 +557,14 @@ class RealtimeChannel {
   /// Returns a broadcast stream of the matching messages. Repeated calls with
   /// the same [event] return the same stream.
   ///
+  /// Each message is a map with the `type` (always `broadcast`), the `event`
+  /// name and the sent data under `payload`. Messages broadcast from the
+  /// database also carry a `meta` map.
+  ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
-  /// channel.onBroadcast(event: 'position').listen((payload) {
-  ///   print(payload);
+  /// channel.onBroadcast(event: 'position').listen((message) {
+  ///   print(message['payload']['x']);
   /// });
   /// channel.subscribe();
   /// ```
@@ -774,9 +778,9 @@ class RealtimeChannel {
   ///
   /// [payload] must be either a `Map<String, dynamic>`, which is JSON-encoded,
   /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
-  /// is sent as `application/octet-stream`. Map payloads keep `httpSend`
-  /// consistent with [onBroadcast], which delivers received payloads as
-  /// `Map<String, dynamic>`.
+  /// is sent as `application/octet-stream`. Receivers get it under the
+  /// `payload` key of the message emitted by [onBroadcast], the same as
+  /// messages sent with [sendBroadcastMessage].
   ///
   /// [event] is the name of the broadcast event.
   /// [timeout] is an optional timeout duration.
@@ -884,26 +888,33 @@ class RealtimeChannel {
   /// The channel has to be subscribed first, otherwise this throws. Use
   /// [httpSend] to broadcast over the REST API without subscribing.
   ///
-  /// With protocol `2.0.0` the message is sent as a positional JSON text frame.
-  ///
-  /// To send a raw binary payload over a WebSocket binary frame (avoiding JSON
-  /// encoding on the server), set a `Uint8List` (or any `TypedData`) under the
-  /// `payload` key:
+  /// [payload] must be either a `Map<String, dynamic>`, which is sent as JSON,
+  /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
+  /// is sent as a WebSocket binary frame. Receivers get it under the `payload`
+  /// key of the message emitted by [onBroadcast], the same as messages sent
+  /// with [httpSend], from the database or from other Supabase clients.
   ///
   /// ```dart
-  /// channel.sendBroadcastMessage(
-  ///   event: 'file',
-  ///   payload: {'payload': myUint8List},
+  /// await channel.sendBroadcastMessage(
+  ///   event: 'cursor-pos',
+  ///   payload: {'x': 123, 'y': 456},
   /// );
   /// ```
   Future<ChannelResponse> sendBroadcastMessage({
     required String event,
-    required Map<String, dynamic> payload,
+    required Object payload,
   }) {
+    assert(
+      payload is Map<String, dynamic> ||
+          payload is TypedData ||
+          payload is ByteBuffer,
+      'sendBroadcastMessage payload must be a Map<String, dynamic> or binary '
+      '(TypedData/ByteBuffer)',
+    );
     return send(
       type: RealtimeListenType.broadcast,
       event: event,
-      payload: payload,
+      payload: {'payload': payload},
     );
   }
 
@@ -921,23 +932,24 @@ class RealtimeChannel {
   }) {
     final completer = Completer<ChannelResponse>();
 
-    payload['type'] = type.toType();
-    if (event != null) {
-      payload['event'] = event;
-    }
+    final message = <String, dynamic>{
+      ...payload,
+      'type': type.toType(),
+      'event': ?event,
+    };
 
     final Push push;
     try {
       push = this.push(
-        ChannelEvent.fromValue(payload['type']),
-        payload,
+        ChannelEvent.fromValue(message['type']),
+        message,
         options['timeout'] ?? _timeout,
       );
     } catch (error, stackTrace) {
       return Future.error(error, stackTrace);
     }
 
-    if (payload['type'] == 'broadcast' &&
+    if (message['type'] == 'broadcast' &&
         (_parameters['config']?['broadcast']?['ack'] == null ||
             _parameters['config']?['broadcast']?['ack'] == false)) {
       if (!completer.isCompleted) {

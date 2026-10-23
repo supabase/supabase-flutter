@@ -493,6 +493,8 @@ explicitly:
   so a catch of `String` or a `toString()` comparison around `subscribe()` or `httpSend()` no
   longer matches
 - [An `Authorization` header passed to `SupabaseClient` reaches the auth client](#an-authorization-header-passed-to-supabaseclient-reaches-the-auth-client)
+- [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so code that
+  reads the sent keys from the top of the received message gets `null`
 
 ### Packages and setup
 
@@ -1322,6 +1324,31 @@ await supabase.channel('room').httpSend(event: 'move', payload: data);
 
 Messages sent between `subscribe()` and the join are still buffered, so only channels that were
 never subscribed throw. `httpSend()` requires Realtime v2.97.0 or newer.
+
+#### Broadcast data arrives under `payload`
+
+`sendBroadcastMessage()` sends its `payload` under the `payload` key of the message, as `httpSend()`,
+database broadcasts and the JavaScript client already did. It used to put the keys next to `type`
+and `event`, so a listener only found them at the top level for messages sent from Dart. Read the
+data from `payload` on every `onBroadcast` message. If you wrapped the data in a `payload` key
+yourself, for example to match the JavaScript client or to send binary data, remove the wrapper,
+or the data arrives nested twice and a binary payload is sent as a JSON list of numbers:
+
+```dart skip
+// Before
+channel.onBroadcast(event: 'cursor').listen((message) => print(message['x']));
+await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
+await channel.sendBroadcastMessage(event: 'file', payload: {'payload': bytes});
+await channel.sendBroadcastMessage(event: 'ping', payload: {'payload': {'x': 30}});
+
+// After
+channel
+    .onBroadcast(event: 'cursor')
+    .listen((message) => print(message['payload']['x']));
+await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
+await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
+```
 
 #### Realtime listener callbacks are now streams
 

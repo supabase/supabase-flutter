@@ -263,7 +263,11 @@ void main() {
         (message) => message.event == 'broadcast',
       );
       expect(sent.topic, 'realtime:room');
-      expect(sent.payload, {'type': 'broadcast', 'event': 'cursor', 'x': 3});
+      expect(sent.payload, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 3},
+      });
     });
   });
 
