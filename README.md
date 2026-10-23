@@ -78,6 +78,8 @@ from `supabase_schema.g.dart`:
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'supabase_schema.g.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(

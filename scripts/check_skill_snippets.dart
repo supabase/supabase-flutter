@@ -1,6 +1,7 @@
-// Analyzes every Dart snippet in the package skills and package READMEs
-// against the workspace, so they cannot show code that does not compile, and
-// runs the ones that are tests.
+// Analyzes every Dart snippet in the package skills, the package READMEs,
+// the root README, MIGRATION.md and the example READMEs against the
+// workspace, so they cannot show code that does not compile, and runs the
+// ones that are tests.
 //
 // The fence of a block says how it is checked:
 //
@@ -11,7 +12,8 @@
 // - ```dart test-file: a whole test library with a `main()`, which is run.
 // - ```dart skip: not checked, for example v2 code shown as "before".
 //
-// A function or test body has the library of its package, and the generated
+// A function or test body has the library of its package, or of
+// supabase_flutter outside of a package, and the generated
 // schema golden of supabase_typegen (`Books`, `Authors`, ...), in scope. A
 // test body also has supabase_test and the test framework of the package. A
 // whole library imports everything it uses, as the code a user copies has
@@ -65,7 +67,7 @@ Future<void> main() async {
   final snippets = <String, _Snippet>{};
   var testCount = 0;
   for (final sourceFile in _snippetFiles()) {
-    final package = sourceFile.split('/')[1];
+    final package = _packageOf(sourceFile);
     for (final (index, block) in _dartBlocks(sourceFile).indexed) {
       if (block.mode == 'skip') continue;
       final isTest = block.mode.startsWith('test');
@@ -165,7 +167,23 @@ Future<void> main() async {
   stdout.writeln('Every snippet that is a test passes.');
 }
 
+String _packageOf(String sourceFile) {
+  final segments = sourceFile.split('/');
+  return segments.first == 'packages' ? segments[1] : 'supabase_flutter';
+}
+
 Iterable<String> _snippetFiles() sync* {
+  yield 'README.md';
+  yield 'MIGRATION.md';
+  final examples =
+      Directory('examples')
+          .listSync()
+          .map((example) => File('${example.path}/README.md'))
+          .where((readme) => readme.existsSync())
+          .map((readme) => readme.path)
+          .toList()
+        ..sort();
+  yield* examples;
   for (final package in Directory('packages').listSync()) {
     final readme = File('${package.path}/README.md');
     if (readme.existsSync()) yield readme.path;
