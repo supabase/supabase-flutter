@@ -181,4 +181,29 @@ void main() {
       expect(client.currentSession, isNull);
     });
   });
+
+  test('a token response with a malformed session throws a retryable '
+      'exception', () async {
+    final httpClient = MockSupabaseHttpClient()
+      ..stub({'access_token': 'token', 'token_type': 'bearer'});
+    final client = AuthClient(
+      url: 'http://localhost:9999',
+      httpClient: httpClient,
+      autoRefreshToken: false,
+      asyncStorage: TestAsyncStorage(),
+    );
+    addTearDown(client.dispose);
+
+    await expectLater(
+      client.signInWithPassword(email: 'fake1@email.com', password: 'password'),
+      throwsA(
+        isA<AuthRetryableFetchException>().having(
+          (error) => error.cause,
+          'cause',
+          isA<FormatException>(),
+        ),
+      ),
+    );
+    expect(client.currentSession, isNull);
+  });
 }

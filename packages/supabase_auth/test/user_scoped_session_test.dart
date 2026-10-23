@@ -115,6 +115,7 @@ void main() {
     bool autoRefreshToken = false,
     AuthAsyncStorage? storage,
     bool persistSession = false,
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
   }) {
     final created = AuthClient(
       url: _authUrl,
@@ -122,6 +123,7 @@ void main() {
       autoRefreshToken: autoRefreshToken,
       asyncStorage: storage ?? TestAsyncStorage(),
       persistSession: persistSession,
+      retryOptions: retryOptions,
     );
     addTearDown(created.dispose);
     return created;
@@ -258,6 +260,57 @@ void main() {
       expect(authorization, startsWith('Bearer '));
       expect(authorization, isNot('Bearer $expired'));
     });
+
+    final malformedRefreshBodies = <String, Object>{
+      'without a user': {'access_token': 'token', 'token_type': 'bearer'},
+      'with a user without an id': {
+        'access_token': 'token',
+        'token_type': 'bearer',
+        'user': <String, Object>{},
+      },
+      'with a token that is not a string': {
+        'access_token': 42,
+        'token_type': 'bearer',
+        'user': testUserJson(),
+      },
+      'with a body that is not an object': <Object>[],
+    };
+
+    for (final MapEntry(key: description, value: body)
+        in malformedRefreshBodies.entries) {
+      test(
+        'clears the session when the refresh answers $description',
+        () async {
+          client = createClient(
+            retryOptions: const SupabaseRetryOptions(enabled: false),
+          );
+          httpClient
+            ..stub(
+              body,
+              method: HttpMethod.post.value,
+              path: '/token',
+              query: {'grant_type': 'refresh_token'},
+            )
+            ..stubSignOut();
+          await client.setInitialSession(
+            _sessionString(
+              expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+            ),
+          );
+          await listen(client);
+          final expired = client.currentSession!.accessToken;
+
+          await client.signOut(scope: SignOutScope.global);
+
+          expect(client.currentSession, isNull);
+          expect(events, [AuthChangeEvent.signedOut]);
+          expect(
+            httpClient.requestsTo('/logout').single.headers['Authorization'],
+            'Bearer $expired',
+          );
+        },
+      );
+    }
   });
 
   group('getClaims', () {

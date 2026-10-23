@@ -2016,8 +2016,18 @@ class AuthClient {
 
   /// Parses the session out of a token response, failing when the server
   /// answered without one.
+  ///
+  /// A body that does not hold a well formed session, such as a proxy's answer
+  /// in the service's place, throws an [AuthRetryableFetchException].
   Session _sessionFromResponse(({dynamic body, Response response}) result) {
-    final session = Session.fromJson(result.body);
+    final Session? session;
+    try {
+      session = Session.fromJson(result.body);
+    } on FormatException catch (error) {
+      throw _undecodableSession(result.response, error);
+    } on TypeError catch (error) {
+      throw _undecodableSession(result.response, error);
+    }
     if (session == null) {
       throw AuthSessionMissingException(
         message: 'The server response did not contain a session.',
@@ -2026,6 +2036,15 @@ class AuthClient {
     }
     return session;
   }
+
+  AuthRetryableFetchException _undecodableSession(
+    Response response,
+    Object error,
+  ) => AuthRetryableFetchException(
+    message: 'The server response did not contain a valid session: $error',
+    requestId: response.headers.requestId,
+    cause: error,
+  );
 
   /// Sets the current session and persists it.
   void _saveSession(Session session) {
