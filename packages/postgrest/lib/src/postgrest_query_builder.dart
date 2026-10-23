@@ -104,15 +104,18 @@ class PostgrestQueryBuilder {
     }
 
     Uri url = _config.url;
+    Object body = values;
     if (values is List) {
-      url = _setColumnsSearchParam(values);
+      final rows = _jsonRows(values);
+      url = _setColumnsSearchParam(rows);
+      body = rows;
     }
 
     return _transformBuilder(
       _config.copyWith(
         method: HttpMethod.post,
         headers: newHeaders,
-        body: values,
+        body: body,
         url: url,
       ),
     );
@@ -165,9 +168,11 @@ class PostgrestQueryBuilder {
     ]);
 
     Uri url = _config.url;
-
+    Object body = values;
     if (values is List) {
-      url = _setColumnsSearchParam(values);
+      final rows = _jsonRows(values);
+      url = _setColumnsSearchParam(rows);
+      body = rows;
     }
 
     if (onConflict != null) {
@@ -183,7 +188,7 @@ class PostgrestQueryBuilder {
       _config.copyWith(
         method: HttpMethod.post,
         headers: newHeaders,
-        body: values,
+        body: body,
         url: url,
       ),
     );
@@ -251,14 +256,33 @@ class PostgrestQueryBuilder {
     );
   }
 
-  Uri _setColumnsSearchParam(List<dynamic> values) {
-    final newValues = PostgrestList.from(values);
-    final columns = [for (final element in newValues) ...element.keys];
-    if (newValues.isNotEmpty) {
-      final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      return _config.url.appendSearchParameters("columns", uniqueColumns);
+  Uri _setColumnsSearchParam(List<Map<String, dynamic>> rows) {
+    if (rows.isEmpty) return _config.url;
+    final columns = {for (final row in rows) ...row.keys};
+    final uniqueColumns = columns.map((e) => '"$e"').join(',');
+    return _config.url.appendSearchParameters("columns", uniqueColumns);
+  }
+
+  /// [values] as JSON objects, calling `toJson()` once on a row that is not
+  /// a map, so that the columns and the body come from the same keys.
+  List<Map<String, dynamic>> _jsonRows(List<dynamic> values) => [
+    for (final row in values) _jsonRow(row),
+  ];
+
+  Map<String, dynamic> _jsonRow(Object? row) {
+    Object? json = row;
+    if (row is! Map) {
+      try {
+        // ignore: avoid_dynamic_calls
+        json = (row as dynamic).toJson();
+      } on NoSuchMethodError {
+        json = null;
+      }
     }
-    return _config.url;
+    if (json is! Map || json.keys.any((key) => key is! String)) {
+      throw ArgumentError.value(row, 'values', 'Every row must be an object');
+    }
+    return json.cast();
   }
 
   /// Only performs a count query on the table or view.

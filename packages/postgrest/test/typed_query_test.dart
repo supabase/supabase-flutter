@@ -24,6 +24,32 @@ extension type const BookUpdate._(Map<String, dynamic> _json)
   BookUpdate({String? title}) : this._({'title': ?title});
 }
 
+class JsonBookInsert {
+  const JsonBookInsert({required this.title, this.id});
+
+  final String title;
+  final int? id;
+
+  Map<String, dynamic> toJson() => {'title': title, 'id': ?id};
+}
+
+class CountingInsert {
+  int calls = 0;
+
+  Map<String, dynamic> toJson() {
+    calls++;
+    return {'title': 'foo'};
+  }
+}
+
+class JsonBooks {
+  static const table = PostgrestTable<Book, JsonBookInsert, Never>(
+    'books',
+    Book.new,
+    primaryKey: [Books.id],
+  );
+}
+
 extension type const Author(Map<String, dynamic> _json)
     implements Map<String, dynamic> {}
 
@@ -1000,13 +1026,13 @@ void main() {
       expect(httpClient.requests.last.body, '{"title":"foo"}');
     });
 
-    test('insertAll posts every row and names the columns', () async {
+    test('insertAll posts every row and applies column defaults', () async {
       httpClient.stub(null);
 
       await client.table(Books.table).insertAll([
         BookInsert(title: 'foo'),
         BookInsert(id: 2, title: 'bar'),
-      ], defaultToNull: false);
+      ]);
 
       expect(httpClient.requests.last.method, 'POST');
       expect(
@@ -1017,6 +1043,108 @@ void main() {
       expect(
         httpClient.requests.last.headers['Prefer'],
         contains('missing=default'),
+      );
+    });
+
+    test('insertAll with defaultToNull writes NULL for missing keys', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).insertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(id: 2, title: 'bar'),
+      ], defaultToNull: true);
+
+      expect(requestParameters()['columns'], '"title","id"');
+      expect(httpClient.requests.last.headers['Prefer'], isNull);
+    });
+
+    test('upsertAll applies column defaults to missing keys', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).upsertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(id: 2, title: 'bar'),
+      ]);
+
+      expect(requestParameters()['columns'], '"title","id"');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        allOf(
+          contains('resolution=merge-duplicates'),
+          contains('missing=default'),
+        ),
+      );
+    });
+
+    test('upsertAll with defaultToNull writes NULL for missing keys', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).upsertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(id: 2, title: 'bar'),
+      ], defaultToNull: true);
+
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        isNot(contains('missing=default')),
+      );
+    });
+
+    test('insertAll names the columns of rows encoded with toJson', () async {
+      httpClient.stub(null);
+
+      await client.table(JsonBooks.table).insertAll([
+        const JsonBookInsert(title: 'foo'),
+        const JsonBookInsert(title: 'bar', id: 2),
+      ]);
+
+      expect(
+        httpClient.requests.last.body,
+        '[{"title":"foo"},{"title":"bar","id":2}]',
+      );
+      expect(requestParameters()['columns'], '"title","id"');
+    });
+
+    test(
+      'insert of a list names the columns of rows encoded with toJson',
+      () async {
+        httpClient.stub(null);
+
+        await client.from('books').insert([
+          const JsonBookInsert(title: 'foo'),
+          const JsonBookInsert(title: 'bar', id: 2),
+        ]);
+
+        expect(requestParameters()['columns'], '"title","id"');
+      },
+    );
+
+    test('insert of a list with a row that is not an object throws', () {
+      expect(
+        () => client.from('books').insert([
+          {'title': 'foo'},
+          'bar',
+        ]),
+        throwsArgumentError,
+      );
+    });
+
+    test('insert of a list calls toJson once per row', () async {
+      httpClient.stub(null);
+      final row = CountingInsert();
+
+      await client.from('books').insert([row]);
+
+      expect(row.calls, 1);
+      expect(httpClient.requests.last.body, '[{"title":"foo"}]');
+    });
+
+    test('insert of a list with a non-String key throws', () {
+      expect(
+        () => client.from('books').insert([
+          {1: 'foo'},
+        ]),
+        throwsArgumentError,
       );
     });
 
