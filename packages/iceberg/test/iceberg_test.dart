@@ -1,123 +1,205 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart';
+import 'package:http/testing.dart';
 import 'package:iceberg/iceberg.dart';
+import 'package:supabase_common/supabase_common.dart'
+    show HttpHeader, HttpMethod;
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
 const String supabaseUrl = 'SUPABASE_TEST_URL';
 const String supabaseKey = 'SUPABASE_TEST_KEY';
 
-StreamedResponse _json(
-  Object body,
-  int statusCode,
-  BaseRequest request, {
-  Map<String, String> headers = const {},
-}) => jsonStreamedResponse(
-  body,
-  statusCode: statusCode,
-  request: request,
-  headers: headers,
+const _noRetries = SupabaseRetryOptions(enabled: false);
+
+const _immediateRetries = SupabaseRetryOptions(
+  initialDelay: Duration.zero,
+  randomizationFactor: 0,
 );
 
-class MockCatalogClient extends BaseClient {
-  final List<Request> requests = <Request>[];
+Map<String, dynamic> _config({
+  String prefix = 'warehouse',
+  bool idempotencyKeys = false,
+}) => {
+  'defaults': <String, String>{},
+  'overrides': {'prefix': prefix},
+  if (idempotencyKeys) 'idempotency-key-lifetime': 'PT30M',
+};
 
-  /// Response returned for every non config request.
-  StreamedResponse Function(Request request)? handler;
+void main() {
+  late MockSupabaseHttpClient httpClient;
+  late IcebergRestCatalog catalog;
 
-  /// Prefix returned by the mocked `/v1/config` endpoint.
-  String configPrefix = 'warehouse';
+  IcebergRestCatalog createCatalog({
+    Client? client,
+    SupabaseRetryOptions retryOptions = _noRetries,
+    Duration? requestTimeout,
+    Future<String?> Function()? accessToken,
+    Map<String, String> headers = const {
+      'Authorization': 'Bearer $supabaseKey',
+    },
+  }) => IcebergRestCatalog(
+    baseUrl: '$supabaseUrl/storage/v1/iceberg',
+    headers: headers,
+    warehouse: 'warehouse',
+    httpClient: client ?? httpClient,
+    retryOptions: retryOptions,
+    requestTimeout: requestTimeout,
+    accessToken: accessToken,
+  );
 
-  /// When true the mocked `/v1/config` endpoint responds with a server error.
-  bool configFails = false;
+  /// Answers every catalog operation with [body], while `/v1/config` keeps
+  /// answering with [_config].
+  void stubOperation(
+    Object? body, {
+    int statusCode = 200,
+    Map<String, String> headers = const {},
+  }) {
+    httpClient
+      ..stub(body, statusCode: statusCode, headers: headers)
+      ..stub(_config(), method: HttpMethod.get.value, path: '/v1/config');
+  }
 
-  List<Request> get operationRequests => requests
+  List<RecordedRequest> operations() => httpClient.requests
       .where((request) => !request.url.path.endsWith('/v1/config'))
       .toList();
 
-  Request get lastOperation => operationRequests.last;
+  RecordedRequest lastOperation() => operations().last;
 
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    final typed = request as Request;
-    requests.add(typed);
-    if (typed.url.path.endsWith('/v1/config')) {
-      if (configFails) {
-        return _json(
-          {
-            'error': {'message': 'no config', 'type': 'Error', 'code': 500},
-          },
-          500,
-          typed,
-        );
+  /// A catalog whose operations are answered with [statusCode] and a body
+  /// that fails to arrive.
+  IcebergRestCatalog failingBodyCatalog(
+    int statusCode, {
+    Map<String, String> headers = const {},
+  }) => createCatalog(
+    client: MockClient.streaming((request, _) async {
+      if (request.url.path.endsWith('/v1/config')) {
+        return jsonStreamedResponse(_config(), request: request);
       }
-      return _json(
-        {
-          'defaults': <String, String>{},
-          'overrides': {'prefix': configPrefix},
-        },
-        200,
-        typed,
+      return StreamedResponse(
+        Stream.error(ClientException('Connection reset', request.url)),
+        statusCode,
+        request: request,
+        headers: headers,
       );
-    }
-    return (handler ?? (r) => _json(<String, dynamic>{}, 200, r))(typed);
-  }
-}
-
-void main() {
-  late MockCatalogClient mockClient;
-  late IcebergRestCatalog catalog;
+    }),
+  );
 
   setUp(() {
-    mockClient = MockCatalogClient();
-    catalog = IcebergRestCatalog(
-      baseUrl: '$supabaseUrl/storage/v1/iceberg',
-      headers: {'Authorization': 'Bearer $supabaseKey'},
-      warehouse: 'warehouse',
-      httpClient: mockClient,
-    );
+    httpClient = MockSupabaseHttpClient();
+    catalog = createCatalog();
   });
-
-  Map<String, dynamic> bodyOf(Request request) =>
-      jsonDecode(request.body) as Map<String, dynamic>;
 
   group('prefix resolution', () {
     test('uses the server returned prefix for operation paths', () async {
-      mockClient.handler = (request) => _json({'namespaces': []}, 200, request);
+      stubOperation({'namespaces': []});
 
       await catalog.listNamespaces();
 
       expect(
-        mockClient.lastOperation.url.path,
+        lastOperation().url.path,
         endsWith('/storage/v1/iceberg/v1/warehouse/namespaces'),
       );
     });
 
-    test('falls back to the warehouse segment when config fails', () async {
-      mockClient.configFails = true;
-      mockClient.handler = (request) => _json({'namespaces': []}, 200, request);
+    test(
+      'falls back to the warehouse segment without a server prefix',
+      () async {
+        httpClient
+          ..stub({'namespaces': []})
+          ..stub({'defaults': <String, String>{}}, path: '/v1/config');
 
+        await catalog.listNamespaces();
+
+        expect(
+          lastOperation().url.path,
+          endsWith('/storage/v1/iceberg/v1/warehouse/namespaces'),
+        );
+      },
+    );
+
+    test('fails the operation with the config error', () async {
+      httpClient
+        ..stub({'namespaces': []})
+        ..stub(
+          {
+            'statusCode': '403',
+            'error': 'Unauthorized',
+            'message': 'Invalid Compact JWS',
+          },
+          statusCode: 403,
+          path: '/v1/config',
+        );
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergUnknownException>()
+              .having((error) => error.statusCode, 'statusCode', 403)
+              .having(
+                (error) => error.message,
+                'message',
+                'Invalid Compact JWS',
+              ),
+        ),
+      );
+      expect(operations(), isEmpty);
+    });
+
+    test('fails the operation when the config cannot be fetched', () async {
+      httpClient
+        ..stub({'namespaces': []})
+        ..stubError(
+          const SocketException('no route to host'),
+          path: '/v1/config',
+        );
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergNetworkException>()),
+      );
+      expect(operations(), isEmpty);
+    });
+
+    test('fetches the config again after a failure, then caches it', () async {
+      httpClient
+        ..stub({'namespaces': []})
+        ..stub(_config(prefix: 'server'), path: '/v1/config')
+        ..stubError(
+          const SocketException('no route to host'),
+          path: '/v1/config',
+          times: 1,
+        );
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergNetworkException>()),
+      );
+      await catalog.listNamespaces();
       await catalog.listNamespaces();
 
-      expect(
-        mockClient.lastOperation.url.path,
-        endsWith('/storage/v1/iceberg/v1/warehouse/namespaces'),
-      );
+      expect(httpClient.requestsTo('/v1/config'), hasLength(2));
+      expect(lastOperation().url.path, endsWith('/v1/server/namespaces'));
+    });
+
+    test('concurrent operations share one config request', () async {
+      stubOperation({'namespaces': []});
+
+      await Future.wait([catalog.listNamespaces(), catalog.listNamespaces()]);
+
+      expect(httpClient.requestsTo('/v1/config'), hasLength(1));
+      expect(operations(), hasLength(2));
     });
   });
 
   group('namespaces', () {
     test('createNamespace sends namespace and properties', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'namespace': ['analytics'],
-          'properties': {'owner': 'team'},
-        },
-        200,
-        request,
-      );
+      stubOperation({
+        'namespace': ['analytics'],
+        'properties': {'owner': 'team'},
+      });
 
       final namespace = await catalog.createNamespace(
         ['analytics'],
@@ -125,10 +207,10 @@ void main() {
       );
 
       expect(namespace, ['analytics']);
-      final request = mockClient.lastOperation;
-      expect(request.method, 'POST');
+      final request = lastOperation();
+      expect(request.method, HttpMethod.post.value);
       expect(request.url.path, endsWith('/v1/warehouse/namespaces'));
-      expect(bodyOf(request), {
+      expect((request.jsonBody as Map<String, dynamic>), {
         'namespace': ['analytics'],
         'properties': {'owner': 'team'},
       });
@@ -136,20 +218,16 @@ void main() {
     });
 
     test('listNamespaces parses namespaces and page token', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'namespaces': [
-            ['analytics'],
-            ['logs', 'app'],
-          ],
-          'next-page-token': 'token-2',
-        },
-        200,
-        request,
-      );
+      stubOperation({
+        'namespaces': [
+          ['analytics'],
+          ['logs', 'app'],
+        ],
+        'next-page-token': 'token-2',
+      });
 
       final result = await catalog.listNamespaces(
-        const ListNamespacesOptions(pageSize: 100),
+        options: const ListNamespacesOptions(pageSize: 100),
       );
 
       expect(result.namespaces, [
@@ -157,48 +235,40 @@ void main() {
         ['logs', 'app'],
       ]);
       expect(result.nextPageToken, 'token-2');
-      expect(mockClient.lastOperation.url.queryParameters['pageSize'], '100');
+      expect(lastOperation().url.queryParameters['pageSize'], '100');
     });
 
     test('listNamespaces encodes multi part parent with 0x1F', () async {
-      mockClient.handler = (request) => _json({'namespaces': []}, 200, request);
+      stubOperation({'namespaces': []});
 
       await catalog.listNamespaces(
-        const ListNamespacesOptions(parent: ['a', 'b']),
+        options: const ListNamespacesOptions(parent: ['a', 'b']),
       );
 
       expect(
-        mockClient.lastOperation.url.query,
+        lastOperation().url.query,
         contains('parent=a%1Fb'),
       );
     });
 
     test('loadNamespaceMetadata returns properties', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'namespace': ['analytics'],
-          'properties': {'owner': 'team'},
-        },
-        200,
-        request,
-      );
+      stubOperation({
+        'namespace': ['analytics'],
+        'properties': {'owner': 'team'},
+      });
 
       final properties = await catalog.loadNamespaceMetadata(['analytics']);
 
       expect(properties, {'owner': 'team'});
-      expect(mockClient.lastOperation.method, 'GET');
+      expect(lastOperation().method, HttpMethod.get.value);
     });
 
     test('updateNamespaceProperties returns the update result', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'updated': ['owner'],
-          'removed': ['stale'],
-          'missing': ['ghost'],
-        },
-        200,
-        request,
-      );
+      stubOperation({
+        'updated': ['owner'],
+        'removed': ['stale'],
+        'missing': ['ghost'],
+      });
 
       final result = await catalog.updateNamespaceProperties(
         ['analytics'],
@@ -209,49 +279,39 @@ void main() {
       expect(result.updated, ['owner']);
       expect(result.removed, ['stale']);
       expect(result.missing, ['ghost']);
-      expect(mockClient.lastOperation.url.path, endsWith('/properties'));
+      expect(lastOperation().url.path, endsWith('/properties'));
     });
 
     test('dropNamespace issues a DELETE', () async {
-      mockClient.handler = (request) =>
-          _json(<String, dynamic>{}, 200, request);
+      stubOperation(<String, dynamic>{});
 
       await catalog.dropNamespace(['analytics']);
 
-      expect(mockClient.lastOperation.method, 'DELETE');
+      expect(lastOperation().method, HttpMethod.delete.value);
       expect(
-        mockClient.lastOperation.url.path,
+        lastOperation().url.path,
         endsWith('/v1/warehouse/namespaces/analytics'),
       );
     });
 
     test('namespaceExists maps 200 and 404', () async {
-      mockClient.handler = (request) =>
-          _json(<String, dynamic>{}, 200, request);
+      stubOperation(<String, dynamic>{});
       expect(await catalog.namespaceExists(['analytics']), isTrue);
 
-      mockClient.handler = (request) => _json(
-        {
-          'error': {
-            'message': 'not found',
-            'type': 'NoSuchNamespaceException',
-            'code': 404,
-          },
+      stubOperation({
+        'error': {
+          'message': 'not found',
+          'type': 'NoSuchNamespaceException',
+          'code': 404,
         },
-        404,
-        request,
-      );
+      }, statusCode: 404);
       expect(await catalog.namespaceExists(['missing']), isFalse);
     });
 
     test('createNamespaceIfNotExists returns null on conflict', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'error': {'message': 'exists', 'type': 'Conflict', 'code': 409},
-        },
-        409,
-        request,
-      );
+      stubOperation({
+        'error': {'message': 'exists', 'type': 'Conflict', 'code': 409},
+      }, statusCode: 409);
 
       final result = await catalog.createNamespaceIfNotExists(['analytics']);
 
@@ -326,10 +386,8 @@ void main() {
     };
 
     test('createTable serializes schema and partition spec', () async {
-      mockClient.handler = (request) => _json(
+      stubOperation(
         loadTableJson(),
-        200,
-        request,
         headers: const {
           'etag': 'W/"1"',
         },
@@ -355,7 +413,7 @@ void main() {
       expect(metadata.tableUuid, 'uuid-1');
       expect(metadata.currentSchema?.fields.first.name, 'id');
 
-      final body = bodyOf(mockClient.lastOperation);
+      final body = (lastOperation().jsonBody as Map<String, dynamic>);
       expect(body['name'], 'events');
       final fields = body['schema']['fields'] as List;
       expect(fields.first['type'], 'long');
@@ -369,10 +427,8 @@ void main() {
     });
 
     test('createTableResult exposes the etag', () async {
-      mockClient.handler = (request) => _json(
+      stubOperation(
         loadTableJson(),
-        200,
-        request,
         headers: const {
           'etag': 'W/"42"',
         },
@@ -388,18 +444,14 @@ void main() {
     });
 
     test('listTables parses identifiers', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'identifiers': [
-            {
-              'namespace': ['analytics'],
-              'name': 'events',
-            },
-          ],
-        },
-        200,
-        request,
-      );
+      stubOperation({
+        'identifiers': [
+          {
+            'namespace': ['analytics'],
+            'name': 'events',
+          },
+        ],
+      });
 
       final result = await catalog.listTables(['analytics']);
 
@@ -408,55 +460,49 @@ void main() {
     });
 
     test('loadTableResult returns null on 304', () async {
-      mockClient.handler = (request) => StreamedResponse(
-        const Stream.empty(),
-        304,
-        request: request,
-      );
+      stubOperation(null, statusCode: 304);
 
       final result = await catalog.loadTableResult(
         const TableIdentifier(namespace: ['analytics'], name: 'events'),
-        const LoadTableOptions(ifNoneMatch: 'W/"1"'),
+        options: const LoadTableOptions(ifNoneMatch: 'W/"1"'),
       );
 
       expect(result, isNull);
-      expect(mockClient.lastOperation.headers['If-None-Match'], 'W/"1"');
+      expect(lastOperation().headers['If-None-Match'], 'W/"1"');
     });
 
     test('dropTable passes purgeRequested', () async {
-      mockClient.handler = (request) =>
-          _json(<String, dynamic>{}, 200, request);
+      stubOperation(<String, dynamic>{});
 
       await catalog.dropTable(
         const TableIdentifier(namespace: ['analytics'], name: 'events'),
         purge: true,
       );
 
-      expect(mockClient.lastOperation.method, 'DELETE');
+      expect(lastOperation().method, HttpMethod.delete.value);
       expect(
-        mockClient.lastOperation.url.queryParameters['purgeRequested'],
+        lastOperation().url.queryParameters['purgeRequested'],
         'true',
       );
     });
 
     test('renameTable posts source and destination', () async {
-      mockClient.handler = (request) =>
-          _json(<String, dynamic>{}, 200, request);
+      stubOperation(<String, dynamic>{});
 
       await catalog.renameTable(
         const TableIdentifier(namespace: ['analytics'], name: 'events'),
         const TableIdentifier(namespace: ['analytics'], name: 'events_v2'),
       );
 
-      final request = mockClient.lastOperation;
+      final request = lastOperation();
       expect(request.url.path, endsWith('/v1/warehouse/tables/rename'));
-      final body = bodyOf(request);
+      final body = (request.jsonBody as Map<String, dynamic>);
       expect(body['source']['name'], 'events');
       expect(body['destination']['name'], 'events_v2');
     });
 
     test('updateTable sends requirements and updates', () async {
-      mockClient.handler = (request) => _json(loadTableJson(), 200, request);
+      stubOperation(loadTableJson());
 
       final result = await catalog.updateTable(
         const TableIdentifier(namespace: ['analytics'], name: 'events'),
@@ -467,7 +513,7 @@ void main() {
       );
 
       expect(result.metadataLocation, 's3://bucket/events/metadata.json');
-      final body = bodyOf(mockClient.lastOperation);
+      final body = (lastOperation().jsonBody as Map<String, dynamic>);
       expect(body['requirements'].first['type'], 'assert-table-uuid');
       expect(body['requirements'].first['uuid'], 'uuid-1');
       expect(body['updates'].first['action'], 'set-properties');
@@ -478,11 +524,7 @@ void main() {
     });
 
     test('updateTable throws when metadata-location is missing', () async {
-      mockClient.handler = (request) => _json(
-        {'metadata': loadTableJson()['metadata']},
-        200,
-        request,
-      );
+      stubOperation({'metadata': loadTableJson()['metadata']});
 
       expect(
         () => catalog.updateTable(
@@ -496,8 +538,7 @@ void main() {
     });
 
     test('tableExists maps 200 and 404', () async {
-      mockClient.handler = (request) =>
-          _json(<String, dynamic>{}, 200, request);
+      stubOperation(<String, dynamic>{});
       expect(
         await catalog.tableExists(
           const TableIdentifier(namespace: ['analytics'], name: 'events'),
@@ -505,17 +546,13 @@ void main() {
         isTrue,
       );
 
-      mockClient.handler = (request) => _json(
-        {
-          'error': {
-            'message': 'missing',
-            'type': 'NoSuchTableException',
-            'code': 404,
-          },
+      stubOperation({
+        'error': {
+          'message': 'missing',
+          'type': 'NoSuchTableException',
+          'code': 404,
         },
-        404,
-        request,
-      );
+      }, statusCode: 404);
       expect(
         await catalog.tableExists(
           const TableIdentifier(namespace: ['analytics'], name: 'ghost'),
@@ -525,19 +562,488 @@ void main() {
     });
   });
 
+  group('Supabase error bodies', () {
+    test('reads the message and codes of a Supabase Storage body', () async {
+      stubOperation(
+        {
+          'statusCode': '403',
+          'code': 'AccessDenied',
+          'error': 'Unauthorized',
+          'message': 'new row violates row-level security policy',
+        },
+        statusCode: 403,
+      );
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergUnknownException>()
+              .having((error) => error.statusCode, 'statusCode', 403)
+              .having(
+                (error) => error.message,
+                'message',
+                'new row violates row-level security policy',
+              )
+              .having((error) => error.errorCode, 'errorCode', 'AccessDenied')
+              .having((error) => error.code, 'code', 403),
+        ),
+      );
+    });
+
+    test('falls back to the error field without a code', () async {
+      stubOperation(
+        {
+          'statusCode': '404',
+          'error': 'Bucket not found',
+          'message': 'Bucket not found',
+        },
+        statusCode: 404,
+      );
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergNotFoundException>()
+              .having((error) => error.message, 'message', 'Bucket not found')
+              .having(
+                (error) => error.errorCode,
+                'errorCode',
+                'Bucket not found',
+              ),
+        ),
+      );
+    });
+
+    test('tolerates an Iceberg envelope with unexpected field types', () {
+      final exception = IcebergApiException.fromResponse(400, {
+        'error': {'message': 42, 'type': 7, 'code': '400'},
+      });
+
+      expect(exception.message, 'Request failed with status 400');
+      expect(exception.errorCode, '7');
+      expect(exception.code, 400);
+    });
+  });
+
+  group('malformed responses', () {
+    test('a malformed JSON error body is kept as text', () async {
+      httpClient
+        ..stubText(
+          '{"error": ',
+          statusCode: 500,
+          contentType: 'application/json',
+        )
+        ..stub(_config(), path: '/v1/config');
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergServerException>()
+              .having((error) => error.statusCode, 'statusCode', 500)
+              .having((error) => error.details, 'details', '{"error": ')
+              .having((error) => error.body, 'body', '{"error": '),
+        ),
+      );
+    });
+
+    test('a malformed JSON success body is an IcebergException', () async {
+      httpClient
+        ..stubText('{"namespaces": ', contentType: 'application/json')
+        ..stub(_config(), path: '/v1/config');
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergUnknownException>()
+              .having((error) => error.statusCode, 'statusCode', 200)
+              .having((error) => error.body, 'body', '{"namespaces": '),
+        ),
+      );
+    });
+
+    test('a success body that is not JSON is an IcebergException', () async {
+      httpClient
+        ..stubText('<html>proxy</html>', contentType: 'text/html')
+        ..stub(_config(), path: '/v1/config');
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergUnknownException>()
+              .having((error) => error.statusCode, 'statusCode', 200)
+              .having((error) => error.body, 'body', '<html>proxy</html>'),
+        ),
+      );
+    });
+  });
+
+  group('timeout and abort', () {
+    test('a stalled request times out as a network failure', () async {
+      catalog = createCatalog(
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+      httpClient
+        ..stubStall()
+        ..stub(_config(), path: '/v1/config');
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergNetworkException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<TimeoutException>(),
+          ),
+        ),
+      );
+    });
+
+    test('a stalled config request times out as well', () async {
+      catalog = createCatalog(
+        requestTimeout: const Duration(milliseconds: 50),
+      );
+      httpClient.stubStall();
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergNetworkException>()),
+      );
+    });
+
+    test('a timed-out read is retried', () async {
+      catalog = createCatalog(
+        requestTimeout: const Duration(milliseconds: 50),
+        retryOptions: _immediateRetries,
+      );
+      httpClient
+        ..stub({'namespaces': []})
+        ..stubStall(times: 1, path: '/v1/warehouse/namespaces')
+        ..stub(_config(), path: '/v1/config');
+
+      final result = await catalog.listNamespaces();
+
+      expect(result.namespaces, isEmpty);
+      expect(operations(), hasLength(2));
+    });
+
+    test('the abort signal cancels an in-flight request', () async {
+      final abort = Completer<void>();
+      httpClient
+        ..stubStall()
+        ..stub(_config(), path: '/v1/config');
+
+      final result = catalog.dropNamespace(
+        ['analytics'],
+        abortSignal: abort.future,
+      );
+      await pumpEventQueue();
+      abort.complete();
+
+      await expectLater(result, throwsA(isA<RequestAbortedException>()));
+    });
+
+    test('an abandoned config request is not reused', () async {
+      final abort = Completer<void>();
+      httpClient
+        ..stub({'namespaces': []})
+        ..stub(_config(prefix: 'server'), path: '/v1/config')
+        ..stubStall(path: '/v1/config', times: 1);
+
+      final abandoned = catalog.listNamespaces(abortSignal: abort.future);
+      await pumpEventQueue();
+      abort.complete();
+      await expectLater(abandoned, throwsA(isA<RequestAbortedException>()));
+
+      await catalog.listNamespaces();
+
+      expect(httpClient.requestsTo('/v1/config'), hasLength(2));
+      expect(lastOperation().url.path, endsWith('/v1/server/namespaces'));
+    });
+
+    test('the abort signal cancels the wait for the config', () async {
+      final abort = Completer<void>();
+      httpClient.stubStall();
+
+      final result = catalog.listNamespaces(abortSignal: abort.future);
+      await pumpEventQueue();
+      abort.complete();
+
+      await expectLater(result, throwsA(isA<RequestAbortedException>()));
+    });
+  });
+
+  group('retries', () {
+    setUp(() {
+      catalog = createCatalog(retryOptions: _immediateRetries);
+    });
+
+    test('a read answered with 503 is retried', () async {
+      httpClient
+        ..stubStatuses([503, 200], body: {'namespaces': []})
+        ..stub(_config(), path: '/v1/config');
+
+      final result = await catalog.listNamespaces();
+
+      expect(result.namespaces, isEmpty);
+      expect(operations(), hasLength(2));
+    });
+
+    test('a read that failed at the network level is retried', () async {
+      httpClient
+        ..stub({'namespaces': []})
+        ..stubError(
+          const SocketException('connection reset'),
+          path: '/v1/warehouse/namespaces',
+          times: 1,
+        )
+        ..stub(_config(), path: '/v1/config');
+
+      await catalog.listNamespaces();
+
+      expect(operations(), hasLength(2));
+    });
+
+    test('a failed config request is retried', () async {
+      httpClient
+        ..stub({'namespaces': []})
+        ..stubStatuses([503, 200], body: _config(), path: '/v1/config');
+
+      await catalog.listNamespaces();
+
+      expect(httpClient.requestsTo('/v1/config'), hasLength(2));
+    });
+
+    test('a 503 whose body fails to arrive is retried', () async {
+      var attempts = 0;
+      catalog = createCatalog(
+        retryOptions: _immediateRetries,
+        client: MockClient.streaming((request, _) async {
+          if (request.url.path.endsWith('/v1/config')) {
+            return jsonStreamedResponse(_config(), request: request);
+          }
+          if (attempts++ == 0) {
+            return StreamedResponse(
+              Stream.error(ClientException('Connection reset', request.url)),
+              503,
+              request: request,
+            );
+          }
+          return jsonStreamedResponse({'namespaces': []}, request: request);
+        }),
+      );
+
+      final result = await catalog.listNamespaces();
+
+      expect(result.namespaces, isEmpty);
+      expect(attempts, 2);
+    });
+
+    test('a read answered with a client error is not retried', () async {
+      stubOperation({'message': 'denied'}, statusCode: 403);
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergUnknownException>()),
+      );
+      expect(operations(), hasLength(1));
+    });
+
+    test('a write is not retried without idempotency key support', () async {
+      httpClient
+        ..stubStatuses(
+          [503, 200],
+          body: {
+            'namespace': ['analytics'],
+          },
+        )
+        ..stub(_config(), path: '/v1/config');
+
+      await expectLater(
+        catalog.createNamespace(['analytics']),
+        throwsA(isA<IcebergServerException>()),
+      );
+      expect(operations(), hasLength(1));
+    });
+
+    test('a write is retried with the same Idempotency-Key when the catalog '
+        'supports idempotency keys', () async {
+      httpClient
+        ..stubStatuses(
+          [503, 200],
+          body: {
+            'namespace': ['analytics'],
+          },
+        )
+        ..stub(_config(idempotencyKeys: true), path: '/v1/config');
+
+      final namespace = await catalog.createNamespace(['analytics']);
+
+      expect(namespace, ['analytics']);
+      final keys = operations()
+          .map((request) => request.headers['Idempotency-Key'])
+          .toList();
+      expect(keys, hasLength(2));
+      expect(keys.first, isNotNull);
+      expect(keys.last, keys.first);
+    });
+
+    test('separate writes carry separate Idempotency-Keys', () async {
+      stubOperation(<String, dynamic>{});
+
+      await catalog.dropNamespace(['a']);
+      await catalog.dropNamespace(['b']);
+
+      final keys = operations()
+          .map((request) => request.headers['Idempotency-Key'])
+          .toSet();
+      expect(keys, hasLength(2));
+    });
+  });
+
+  group('access token', () {
+    test('is resolved for every request, including retries', () async {
+      var calls = 0;
+      catalog = createCatalog(
+        headers: const {},
+        retryOptions: _immediateRetries,
+        accessToken: () async => 'token-${++calls}',
+      );
+      httpClient
+        ..stubStatuses([503, 200], body: {'namespaces': []})
+        ..stub(_config(), path: '/v1/config');
+
+      await catalog.listNamespaces();
+
+      expect(
+        httpClient.requests.map(
+          (request) => request.headers[HttpHeader.authorization],
+        ),
+        ['Bearer token-1', 'Bearer token-2', 'Bearer token-3'],
+      );
+    });
+
+    test('a null token sends no Authorization header', () async {
+      catalog = createCatalog(headers: const {}, accessToken: () async => null);
+      stubOperation({'namespaces': []});
+
+      await catalog.listNamespaces();
+
+      expect(
+        lastOperation().headers[HttpHeader.authorization],
+        isNull,
+      );
+    });
+
+    test('a failing callback is an AccessTokenException', () async {
+      catalog = createCatalog(
+        headers: const {},
+        accessToken: () async => throw StateError('signed out'),
+      );
+      stubOperation({'namespaces': []});
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<AccessTokenException>()),
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+  });
+
+  group('close', () {
+    test('leaves a caller-provided client open', () async {
+      stubOperation({'namespaces': []});
+
+      catalog.close();
+      await catalog.listNamespaces();
+
+      expect(operations(), hasLength(1));
+    });
+
+    test('a closed catalog that created its own client throws', () async {
+      final ownCatalog = IcebergRestCatalog(baseUrl: 'http://localhost')
+        ..close();
+
+      await expectLater(ownCatalog.listNamespaces(), throwsStateError);
+    });
+  });
+
+  group('types', () {
+    test('an unknown nested type decodes and round trips', () {
+      final field = TableField.fromJson({
+        'id': 1,
+        'name': 'shape',
+        'required': false,
+        'type': {'type': 'geometry', 'crs': 'EPSG:4326'},
+      });
+
+      expect(
+        field.type,
+        isA<UnknownType>().having(
+          (type) => type.json['type'],
+          'type',
+          'geometry',
+        ),
+      );
+      expect(field.toJson()['type'], {'type': 'geometry', 'crs': 'EPSG:4326'});
+    });
+
+    test('a table with an unknown nested type still loads', () async {
+      stubOperation({
+        'metadata': {
+          'format-version': 2,
+          'table-uuid': 'uuid-1',
+          'location': 's3://bucket/events',
+          'schemas': [
+            {
+              'type': 'struct',
+              'schema-id': 0,
+              'fields': [
+                {
+                  'id': 1,
+                  'name': 'shape',
+                  'required': false,
+                  'type': {'type': 'variant-of-the-future'},
+                },
+              ],
+            },
+          ],
+          'current-schema-id': 0,
+          'partition-specs': [],
+          'sort-orders': [],
+          'properties': {},
+        },
+      });
+
+      final metadata = await catalog.loadTable(
+        const TableIdentifier(namespace: ['analytics'], name: 'events'),
+      );
+
+      expect(metadata.currentSchema?.fields.single.type, isA<UnknownType>());
+    });
+
+    test('TableSnapshotScope.references is sent as refs', () async {
+      stubOperation(null, statusCode: 304);
+
+      await catalog.loadTableResult(
+        const TableIdentifier(namespace: ['analytics'], name: 'events'),
+        options: const LoadTableOptions(
+          snapshots: TableSnapshotScope.references,
+        ),
+      );
+
+      expect(lastOperation().url.queryParameters['snapshots'], 'refs');
+    });
+  });
+
   group('errors and serialization', () {
     test('IcebergApiException carries the error code and code', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'error': {
-            'message': 'boom',
-            'type': 'BadRequestException',
-            'code': 400,
-          },
+      stubOperation({
+        'error': {
+          'message': 'boom',
+          'type': 'BadRequestException',
+          'code': 400,
         },
-        400,
-        request,
-      );
+      }, statusCode: 400);
 
       await expectLater(
         catalog.listNamespaces(),
@@ -555,37 +1061,25 @@ void main() {
     });
 
     test('maps status codes to sealed exception subtypes', () async {
-      mockClient.handler = (request) => _json(
-        {
-          'error': {'message': 'gone', 'type': 'NoSuchTableException'},
-        },
-        404,
-        request,
-      );
+      stubOperation({
+        'error': {'message': 'gone', 'type': 'NoSuchTableException'},
+      }, statusCode: 404);
       await expectLater(
         catalog.listNamespaces(),
         throwsA(isA<IcebergNotFoundException>()),
       );
 
-      mockClient.handler = (request) => _json(
-        {
-          'error': {'message': 'dupe', 'type': 'AlreadyExistsException'},
-        },
-        409,
-        request,
-      );
+      stubOperation({
+        'error': {'message': 'dupe', 'type': 'AlreadyExistsException'},
+      }, statusCode: 409);
       await expectLater(
         catalog.listNamespaces(),
         throwsA(isA<IcebergConflictException>()),
       );
 
-      mockClient.handler = (request) => _json(
-        {
-          'error': {'message': 'boom', 'type': 'ServiceUnavailable'},
-        },
-        503,
-        request,
-      );
+      stubOperation({
+        'error': {'message': 'boom', 'type': 'ServiceUnavailable'},
+      }, statusCode: 503);
       await expectLater(
         catalog.listNamespaces(),
         throwsA(isA<IcebergServerException>()),
@@ -621,8 +1115,11 @@ void main() {
     test(
       'a network failure keeps the originating error as its cause',
       () async {
-        mockClient.handler = (request) =>
-            throw const SocketException('no route to host');
+        stubOperation(null);
+        httpClient.stubError(
+          const SocketException('no route to host'),
+          path: '/v1/warehouse/namespaces',
+        );
 
         await expectLater(
           catalog.listNamespaces(),
@@ -645,8 +1142,11 @@ void main() {
     );
 
     test('passes an exception the HTTP client classified through', () async {
-      mockClient.handler = (request) =>
-          throw const IcebergNotFoundException('session expired');
+      stubOperation(null);
+      httpClient.stubError(
+        const IcebergNotFoundException('session expired'),
+        path: '/v1/warehouse/namespaces',
+      );
 
       await expectLater(
         catalog.listNamespaces(),
@@ -664,10 +1164,8 @@ void main() {
     });
 
     test('a body that fails to arrive on an error status keeps it', () async {
-      mockClient.handler = (request) => StreamedResponse(
-        Stream.error(ClientException('Connection reset', request.url)),
+      catalog = failingBodyCatalog(
         401,
-        request: request,
         headers: {'sb-request-id': 'request-1'},
       );
 
@@ -688,11 +1186,7 @@ void main() {
 
     test('a body that fails to arrive on a success status is a network '
         'failure', () async {
-      mockClient.handler = (request) => StreamedResponse(
-        Stream.error(ClientException('Connection reset', request.url)),
-        200,
-        request: request,
-      );
+      catalog = failingBodyCatalog(200);
 
       await expectLater(
         catalog.listNamespaces(),
@@ -709,12 +1203,11 @@ void main() {
     test(
       'an error response carries its headers, body and request id',
       () async {
-        mockClient.handler = (request) => _json(
+        stubOperation(
           {
             'error': {'message': 'gone', 'type': 'NoSuchTableException'},
           },
-          404,
-          request,
+          statusCode: 404,
           headers: {'sb-request-id': 'request-1'},
         );
 
