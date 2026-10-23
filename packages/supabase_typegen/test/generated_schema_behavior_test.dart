@@ -361,6 +361,21 @@ void main() {
     },
   );
 
+  test('infinite timestamps read and write as infinity', () async {
+    final row = BooksRow({'created_at': 'infinity'});
+    expect(row.createdAt, postgresTimestamp.infinity);
+
+    httpClient.stub(null);
+    await client
+        .table(Books.table)
+        .update(BooksUpdate(createdAt: row.createdAt))
+        .where(Books.createdAt.lt(postgresTimestamp.infinity));
+
+    final request = httpClient.requests.last;
+    expect((request.jsonBody as Map)['created_at'], 'infinity');
+    expect(request.queryParameters['created_at'], 'lt.infinity');
+  });
+
   test(
     'timestamp column tokens filter on the instant an update writes',
     () async {
@@ -617,7 +632,9 @@ void main() {
     final request = httpClient.requests.last;
     expect(request.jsonBody, {
       'availability': '{[2026-06-01,2026-06-08),[2026-07-01,2026-07-08)}',
-      'shifts': '{[2026-07-23T09:00:00.000,2026-07-23T17:00:00.000)}',
+      'shifts':
+          '{[${postgresTimestamp.encode(DateTime(2026, 7, 23, 9))},'
+          '${postgresTimestamp.encode(DateTime(2026, 7, 23, 17))})}',
     });
     expect(
       request.queryParameters['availability'],
@@ -836,16 +853,19 @@ void main() {
     },
   );
 
-  test('unknown enum wire values throw a descriptive error', () {
+  test('an enum label this code does not know reads as unknown', () {
+    expect(Mood.fromWire('grumpy'), Mood.unknown);
+    expect(Mood.fromWire('happy'), Mood.happy);
+    expect(Mood.unknown.toString(), 'Mood.unknown');
+  });
+
+  test('the unknown enum value is never sent', () {
+    expect(() => Mood.unknown.wireName, throwsArgumentError);
+    expect(() => BooksUpdate(mood: Mood.unknown), throwsArgumentError);
     expect(
-      () => Mood.fromWire('grumpy'),
-      throwsA(
-        isA<ArgumentError>().having(
-          (error) => error.message,
-          'message',
-          contains('No Mood value'),
-        ),
-      ),
+      () =>
+          client.table(Books.table).select().where(Books.mood.eq(Mood.unknown)),
+      throwsArgumentError,
     );
   });
 

@@ -112,6 +112,8 @@ constants but no insert or update type, so writes to them do not compile.
 - **A relation constant is missing.** Foreign keys into another schema and
   self-referencing foreign keys get no relation, since PostgREST cannot embed
   them. Query those through a second request.
+- **A name has a suffix.** A table named like a Supabase or Flutter type
+  gets `Table`, so `user` is `UserTable` with `UserRow`, and an enum `Enum`.
 - **A function has no method.** The generated file has a comment where the
   method would be, explaining why. Call it untyped with
   `supabase.rpc('fn', params: {...})`.

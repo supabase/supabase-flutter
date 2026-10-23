@@ -180,7 +180,10 @@ String _qualifiedFormat(String format, String typeSchema) =>
 /// `function_id` names, and volatile when there is none. Fields the
 /// generator does not need are ignored.
 ///
-/// Tables and foreign tables are always insertable and updatable. Views use
+/// Tables are always insertable and updatable, and foreign tables when their
+/// foreign data wrapper can write, which it reports by marking their columns
+/// updatable. Postgres asks the wrapper whether it supports both `UPDATE` and
+/// `DELETE`, so a wrapper that only inserts reads as read-only. Views use
 /// the `is_insert_enabled` and `is_update_enabled` flags, falling back to
 /// `is_updatable` for documents that predate the flags. Materialized views
 /// are never writable.
@@ -226,6 +229,25 @@ DatabaseDescription _parseGeneratorMetadata(
       if (documentSchemas.isEmpty || documentSchemas.contains(schema)) schema,
   };
 
+  // Document order is kept: `sortGeneratorMetadata` orders columns by name
+  // within a table, the canonical order every postgrest-typegen generator
+  // emits.
+  final columnsByRelationId = <int, List<Map<String, dynamic>>>{};
+  for (final column
+      in (document['columns'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()) {
+    columnsByRelationId
+        .putIfAbsent(column['table_id'] as int, () => [])
+        .add(column);
+  }
+
+  // A foreign data wrapper that cannot write reports every column of its
+  // tables as not updatable.
+  bool isWritableForeignTable(Map<String, dynamic> foreignTable) =>
+      (columnsByRelationId[foreignTable['id'] as int] ?? const []).any(
+        (column) => column['is_updatable'] as bool,
+      );
+
   final relations = [
     for (final table in _relationsOf(document, 'tables', schemas))
       (relation: table, isInsertable: true, isUpdatable: true, isView: false),
@@ -234,12 +256,13 @@ DatabaseDescription _parseGeneratorMetadata(
       'foreignTables',
       schemas,
     ))
-      (
-        relation: foreignTable,
-        isInsertable: true,
-        isUpdatable: true,
-        isView: false,
-      ),
+      if (isWritableForeignTable(foreignTable) case final isWritable)
+        (
+          relation: foreignTable,
+          isInsertable: isWritable,
+          isUpdatable: isWritable,
+          isView: false,
+        ),
     for (final view in _relationsOf(document, 'views', schemas))
       (
         relation: view,
@@ -261,18 +284,6 @@ DatabaseDescription _parseGeneratorMetadata(
         isView: true,
       ),
   ];
-
-  // Document order is kept: `sortGeneratorMetadata` orders columns by name
-  // within a table, the canonical order every postgrest-typegen generator
-  // emits.
-  final columnsByRelationId = <int, List<Map<String, dynamic>>>{};
-  for (final column
-      in (document['columns'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()) {
-    columnsByRelationId
-        .putIfAbsent(column['table_id'] as int, () => [])
-        .add(column);
-  }
 
   final foreignKeysByColumn = _foreignKeysByColumn(document, schemas);
   final primaryKeysByTable = _primaryKeysByTable(document, schemas);

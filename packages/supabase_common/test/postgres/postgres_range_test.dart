@@ -50,6 +50,16 @@ void main() {
       );
     });
 
+    test('infinite DateTime bounds render as infinity', () {
+      expect(
+        PostgresRange.closedOpen(
+          DateTime.utc(2024),
+          postgresTimestamp.infinity,
+        ).literal,
+        '[2024-01-01T00:00:00.000Z,"infinity")',
+      );
+    });
+
     test('local DateTime bounds render with their offset from UTC', () {
       const offset = r'[+-]\d{2}:\d{2}(:\d{2})?';
 

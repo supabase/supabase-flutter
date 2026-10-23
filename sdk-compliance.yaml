@@ -985,6 +985,13 @@ features:
       - PostgresByteaCodec.decoder
       - PostgresByteaCodec.decode
       - postgresBytea
+      - PostgresTimestampCodec
+      - PostgresTimestampCodec.PostgresTimestampCodec
+      - PostgresTimestampCodec.infinity
+      - PostgresTimestampCodec.negativeInfinity
+      - PostgresTimestampCodec.encoder
+      - PostgresTimestampCodec.decoder
+      - postgresTimestamp
       - PostgresVectorCodec
       - PostgresVectorCodec.PostgresVectorCodec
       - PostgresVectorCodec.encoder

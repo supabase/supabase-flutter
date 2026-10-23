@@ -115,12 +115,13 @@ void main() {
     expect(code, contains("'season': ?season?.literal,"));
     expect(
       code,
-      contains("'shift': shift.render((bound) => bound.toIso8601String()),"),
+      contains("'shift': shift.render(postgresTimestamp.encode),"),
     );
     expect(
       compact,
       contains(
-        "'during':?during?.render((bound)=>bound.toUtc().toIso8601String()),",
+        "'during':?during?.render("
+        "(bound)=>postgresTimestamp.encode(bound.toUtc()),),",
       ),
     );
   });
@@ -137,8 +138,11 @@ void main() {
         'version 1.\n// Do not edit by hand.\n',
       ),
     );
-    expect(code, contains('enum InventoryCondition {'));
-    expect(code, contains('enum Mood {'));
+    expect(
+      code,
+      contains('enum InventoryCondition implements PostgresValue {'),
+    );
+    expect(code, contains('enum Mood implements PostgresValue {'));
     expect(code, contains('extension type const InventoryBooksRow('));
     expect(code, contains('extension type const BooksRow('));
     expect(code, contains('class InventoryStock {'));
@@ -292,7 +296,8 @@ void main() {
     expect(
       compact,
       contains(
-        "DateTime_dateTimeFromJson(Objectjson)=>DateTime.parse(jsonasString);",
+        'DateTime_dateTimeFromJson(Objectjson)=>'
+        'postgresTimestamp.decode(jsonasString);',
       ),
     );
     expect(
@@ -684,8 +689,8 @@ void main() {
     expect(
       code,
       contains(
-        "DateTime get createdAt => "
-        "DateTime.parse(_json['created_at'] as String);",
+        "DateTime get createdAt =>\n"
+        "      postgresTimestamp.decode(_json['created_at'] as String);",
       ),
     );
   });
@@ -817,8 +822,8 @@ void main() {
     );
 
     expect(code, contains('/// Postgres enum `tenant.v1.status`.'));
-    expect(code, contains('enum TenantV1Status {'));
-    expect(code, contains('enum TenantV1Status\$ {'));
+    expect(code, contains('enum TenantV1Status implements PostgresValue {'));
+    expect(code, contains('enum TenantV1Status\$ implements PostgresValue {'));
     // Each column resolves to the Dart enum of its own Postgres enum even
     // though both share the qualified string.
     expect(code, contains('TenantV1Status get mood'));
@@ -911,7 +916,7 @@ void main() {
     );
 
     expect(code, contains('enum String\$ '));
-    expect(code, contains('final String wireName;'));
+    expect(code, contains('final String? _wireName;'));
     expect(code, isNot(contains('extension type const PostgrestTable._')));
   });
 
@@ -945,7 +950,7 @@ void main() {
       ),
     );
 
-    expect(code, contains(r'enum $2faMethod {'));
+    expect(code, contains(r'enum $2faMethod implements PostgresValue {'));
     expect(code, contains(r'$2faMethod get $2faMethod$ =>'));
     expect(
       code,
@@ -1015,14 +1020,15 @@ void main() {
     expect(code, contains('static const double\$ ='));
   });
 
-  test('an enum named without ASCII letters gets a decoder', () {
+  test('an enum named without ASCII letters is spelled by its code points', () {
     final code = generateDartCode(hostileSchema);
 
-    expect(code, contains('fromJson: _fromJson,'));
     expect(
       code,
-      contains(r'$ _fromJson(Object json) => $.fromWire(json as String);'),
+      contains('enum U441U442U430U442U443U441 implements PostgresValue {'),
     );
+    expect(code, contains("  u43dU43eU432U44bU439('новый'),"));
+    expect(code, contains('fromJson: _u441U442U430U442U443U441FromJson,'));
   });
 
   test('floating array elements convert through num', () {
@@ -1154,21 +1160,21 @@ void main() {
       compact,
       contains(
         "List<DateTime>?getstamps=>(_json['stamps']asList<dynamic>?)"
-        "?.map((element)=>DateTime.parse(elementasString)).toList();",
+        "?.map((element)=>postgresTimestamp.decode(elementasString)).toList();",
       ),
     );
     expect(
       compact,
       contains(
-        "'stamps':?stamps?.map((element)=>element.toUtc().toIso8601String())"
-        ".toList(),",
+        "'stamps':?stamps?.map("
+        "(element)=>postgresTimestamp.encode(element.toUtc())).toList(),",
       ),
     );
     expect(
       compact,
       contains(
-        "'shifts':?shifts?.map((element)=>element.render((bound)=>"
-        "bound.toIso8601String()),).toList(),",
+        "'shifts':?shifts?.map("
+        "(element)=>element.render(postgresTimestamp.encode)).toList(),",
       ),
     );
     expect(
@@ -1628,6 +1634,92 @@ void main() {
 
     expect(code, contains("import 'dart:typed_data';"));
     expect(code, contains('PostgrestComputedField<TodosRow, Uint8List>'));
+  });
+
+  group('names', () {
+    ColumnDescription textColumn(String name) => ColumnDescription(
+      name: name,
+      postgresFormat: 'text',
+      typeKind: ColumnTypeKind.text,
+      isRequired: false,
+      hasDefault: false,
+      isNullable: true,
+    );
+
+    TableDescription table(String name, [List<String> columns = const []]) =>
+        TableDescription(
+          schema: 'public',
+          name: name,
+          columns: [
+            textColumn('id'),
+            for (final column in columns) textColumn(column),
+          ],
+        );
+
+    String generate({
+      List<TableDescription> tables = const [],
+      List<EnumDescription> enums = const [],
+    }) => generateDartCode(
+      DatabaseDescription(
+        schemaNames: const ['public'],
+        tables: tables,
+        enums: enums,
+      ),
+    );
+
+    test('names the Supabase or Flutter libraries export get a suffix', () {
+      final code = generate(
+        tables: [table('user'), table('image')],
+        enums: const [
+          EnumDescription(schema: 'public', name: 'session', values: ['a']),
+        ],
+      );
+
+      expect(code, contains('class UserTable {'));
+      expect(code, contains('extension type const UserRow('));
+      expect(code, contains('class ImageTable {'));
+      expect(code, contains('enum SessionEnum implements PostgresValue {'));
+    });
+
+    test('columns converting to one identifier keep their names whatever '
+        'their order', () {
+      for (final columns in [
+        ['Name', 'name'],
+        ['name', 'Name'],
+      ]) {
+        final code = generate(tables: [table('books', columns)]);
+
+        expect(code, contains("String? get name => _json['name']"));
+        expect(code, contains(r"String? get name$Name => _json['Name']"));
+      }
+    });
+
+    test('adding a colliding column does not move an existing getter', () {
+      final code = generate(
+        tables: [
+          table('books', ['CreatedAt', 'created_at']),
+        ],
+      );
+
+      expect(code, contains("get createdAt => _json['created_at']"));
+      expect(code, contains(r"get createdAt$CreatedAt => _json['CreatedAt']"));
+    });
+
+    test('a label named unknown keeps its name', () {
+      final code = generate(
+        enums: const [
+          EnumDescription(
+            schema: 'public',
+            name: 'mood',
+            values: ['unknown', 'known'],
+          ),
+        ],
+      );
+
+      expect(code, contains("  unknown('unknown'),"));
+      expect(code, contains(r'  unknown$(null);'));
+      expect(code, contains(r'orElse: () => unknown$,'));
+    });
   });
 
   group('functions', () {

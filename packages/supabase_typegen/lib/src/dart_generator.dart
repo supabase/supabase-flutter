@@ -5,6 +5,7 @@ import 'identifiers.dart';
 import 'language_version_io.dart';
 import 'sdk_formatter_io.dart';
 import 'schema_description.dart';
+import 'sdk_type_names.dart';
 import 'version.dart';
 
 class _Binding {
@@ -107,9 +108,11 @@ String generateDartCode(
   final decoders = _DecoderRegistry();
 
   for (final enumDescription in database.enums) {
-    final typeName = typeNames.claim(
-      _typeBaseName(enumDescription.schema, enumDescription.name),
+    final baseName = _typeBaseName(
+      enumDescription.schema,
+      enumDescription.name,
     );
+    final typeName = typeNames.claim(baseName, fallback: '${baseName}Enum');
     enumTypeNames[(enumDescription.schema, enumDescription.name)] = typeName;
     _writeEnum(buffer, enumDescription, typeName);
   }
@@ -170,11 +173,11 @@ String _displayName(String schema, String name) =>
       ' ',
     );
 
-/// Hands out unique top level type names, suffixing `$` on collisions.
+/// Hands out unique top level type names.
 ///
 /// Starts out with every identifier the generated source references
 /// unqualified, so a schema object named like one of them (for example an
-/// enum named `string`) cannot shadow it.
+/// enum named `string`) cannot shadow it, and refuses the [sdkTypeNames].
 class _TypeNameRegistry {
   final _taken = {
     'String',
@@ -215,6 +218,7 @@ class _TypeNameRegistry {
     'PostgresPath',
     'PostgresPolygon',
     'PostgresCircle',
+    'PostgresValue',
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
@@ -223,7 +227,19 @@ class _TypeNameRegistry {
     'PostgrestTypedFilterBuilder',
   };
 
-  String claim(String name) => _claimName(_taken, name);
+  /// Claims [name], or [fallback] when [name] is named like a type of the
+  /// Supabase or Flutter libraries, suffixed with `\$` until it is free.
+  String claim(String name, {String? fallback}) {
+    var candidate = sdkTypeNames.contains(name) ? (fallback ?? name) : name;
+    while (!_isFree(candidate)) {
+      candidate = '$candidate\$';
+    }
+    _taken.add(candidate);
+    return candidate;
+  }
+
+  bool _isFree(String name) =>
+      !_taken.contains(name) && !sdkTypeNames.contains(name);
 
   Set<String> get taken => _taken;
 }
@@ -233,54 +249,78 @@ void _writeEnum(
   EnumDescription enumDescription,
   String typeName,
 ) {
+  final reserved = {
+    typeName,
+    'index',
+    'name',
+    'values',
+    'wireName',
+    'literal',
+    'fromWire',
+    'toString',
+    'hashCode',
+    'runtimeType',
+    'noSuchMethod',
+  };
   final valueNames = _uniqueMemberNames(
     enumDescription.values,
-    reserved: {
-      typeName,
-      'index',
-      'name',
-      'values',
-      'wireName',
-      'fromWire',
-      'toString',
-      'hashCode',
-      'runtimeType',
-      'noSuchMethod',
-    },
+    reserved: reserved,
   );
+  // A label named unknown keeps the name, so the fallback gives way to it.
+  final unknownName = _claimName({
+    ...reserved,
+    ...valueNames.values,
+  }, 'unknown');
 
   _writeDocComment(
     buffer,
     'Postgres enum '
     '`${enumDescription.qualifiedName.replaceAll(_lineTerminators, ' ')}`.',
   );
-  buffer.writeln('enum $typeName {');
+  buffer.writeln('enum $typeName implements PostgresValue {');
   for (final value in enumDescription.values) {
     buffer.writeln("  ${valueNames[value]}(${_stringLiteral(value)}),");
   }
+  _writeDocComment(
+    buffer,
+    'A label this code does not know, such as one a later migration added. '
+    'Sending it throws an [ArgumentError].',
+    indent: '  ',
+  );
   buffer
-    ..writeln(';')
+    ..writeln('  $unknownName(null);')
     ..writeln()
-    ..writeln('  const $typeName(this.wireName);')
+    ..writeln('  const $typeName(this._wireName);')
+    ..writeln()
+    ..writeln('  final String? _wireName;')
     ..writeln()
     ..writeln('  /// The value as stored in the database.')
-    ..writeln('  final String wireName;')
+    ..writeln('  ///')
+    ..writeln('  /// Throws an [ArgumentError] for [$unknownName].')
+    ..writeln('  String get wireName =>')
+    ..writeln('      _wireName ??')
+    ..writeln('      (throw ArgumentError.value(')
+    ..writeln('        this,')
+    ..writeln("        'value',")
+    ..writeln(
+      '        ${_stringLiteral('An unknown $typeName value cannot be sent')},',
+    )
+    ..writeln('      ));')
     ..writeln()
-    ..writeln('  /// Parses the database representation of the enum.')
+    ..writeln('  @override\n  String get literal => wireName;')
+    ..writeln()
+    ..writeln('  /// Parses the database representation of the enum, reading a')
+    ..writeln('  /// label this code does not know as [$unknownName].')
     ..writeln('  static $typeName fromWire(String wireName) =>')
     ..writeln('      values.firstWhere(')
-    ..writeln('        (value) => value.wireName == wireName,')
-    ..writeln('        orElse: () => throw ArgumentError.value(')
-    ..writeln('          wireName,')
-    ..writeln("          'wireName',")
-    ..writeln(
-      '          ${_stringLiteral('No $typeName value with this wire name')},',
-    )
-    ..writeln('        ),')
+    ..writeln('        (value) => value._wireName == wireName,')
+    ..writeln('        orElse: () => $unknownName,')
     ..writeln('      );')
     ..writeln()
-    ..writeln('  @override')
-    ..writeln('  String toString() => wireName;')
+    ..writeln(
+      '  @override\n  String toString() => '
+      '_wireName ?? ${_stringLiteral('$typeName.$unknownName')};',
+    )
     ..writeln('}')
     ..writeln();
 }
@@ -301,15 +341,15 @@ class _TableNames {
     _TypeNameRegistry typeNames,
   ) {
     final baseName = _typeBaseName(table.schema, table.name);
+    String claim(String suffix) => typeNames.claim(
+      '$baseName$suffix',
+      fallback: '${baseName}Table$suffix',
+    );
     return _TableNames(
-      rowType: typeNames.claim('${baseName}Row'),
-      insertType: table.isInsertable
-          ? typeNames.claim('${baseName}Insert')
-          : null,
-      updateType: table.isUpdatable
-          ? typeNames.claim('${baseName}Update')
-          : null,
-      namespaceType: typeNames.claim(baseName),
+      rowType: claim('Row'),
+      insertType: table.isInsertable ? claim('Insert') : null,
+      updateType: table.isUpdatable ? claim('Update') : null,
+      namespaceType: claim(''),
       displayName: _displayName(table.schema, table.name),
     );
   }
@@ -1260,10 +1300,9 @@ String _boundDartType(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
 String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
   ColumnTypeKind.integer ||
   ColumnTypeKind.numeric ||
-  ColumnTypeKind.date ||
+  ColumnTypeKind.date => '${_boundDartType(boundTypeKind)}.parse',
   ColumnTypeKind.timestamp ||
-  ColumnTypeKind.timestampWithTimeZone =>
-    '${_boundDartType(boundTypeKind)}.parse',
+  ColumnTypeKind.timestampWithTimeZone => 'postgresTimestamp.decode',
   ColumnTypeKind.integerString ||
   ColumnTypeKind.bigInteger ||
   ColumnTypeKind.time ||
@@ -1335,8 +1374,8 @@ String? _readConversion(
   ColumnTypeKind.floating => '($value as num).toDouble()',
   ColumnTypeKind.integerString => 'int.parse($value as String)',
   ColumnTypeKind.bigInteger => 'BigInt.parse($value as String)',
-  ColumnTypeKind.timestamp ||
-  ColumnTypeKind.timestampWithTimeZone ||
+  ColumnTypeKind.timestamp || ColumnTypeKind.timestampWithTimeZone =>
+    'postgresTimestamp.decode($value as String)',
   ColumnTypeKind.date ||
   ColumnTypeKind.time ||
   ColumnTypeKind.interval ||
@@ -1416,9 +1455,13 @@ _Rendering? _writeConversion(_Binding binding, String value) {
     ColumnTypeKind.path ||
     ColumnTypeKind.polygon ||
     ColumnTypeKind.circle => chain('.literal'),
-    ColumnTypeKind.timestamp => chain('.toIso8601String()'),
-    ColumnTypeKind.timestampWithTimeZone => chain(
-      '.toUtc().toIso8601String()',
+    ColumnTypeKind.timestamp => (
+      expression: 'postgresTimestamp.encode($value)',
+      chained: false,
+    ),
+    ColumnTypeKind.timestampWithTimeZone => (
+      expression: 'postgresTimestamp.encode($value.toUtc())',
+      chained: false,
     ),
     ColumnTypeKind.enumType => chain('.wireName'),
     ColumnTypeKind.bigInteger => chain('.toString()'),
@@ -1433,11 +1476,9 @@ _Rendering? _writeConversion(_Binding binding, String value) {
     ),
     ColumnTypeKind.range ||
     ColumnTypeKind.multirange => switch (binding.boundKind) {
-      ColumnTypeKind.timestamp => chain(
-        '.render((bound) => bound.toIso8601String())',
-      ),
+      ColumnTypeKind.timestamp => chain('.render(postgresTimestamp.encode)'),
       ColumnTypeKind.timestampWithTimeZone => chain(
-        '.render((bound) => bound.toUtc().toIso8601String())',
+        '.render((bound) => postgresTimestamp.encode(bound.toUtc()))',
       ),
       ColumnTypeKind.date ||
       ColumnTypeKind.time ||
@@ -1493,17 +1534,40 @@ _Rendering? _writeConversion(_Binding binding, String value) {
 /// [reserved] seeds identifiers that must not be produced. When [existing] is
 /// given, names are kept identical to it where possible so that, for example,
 /// column tokens and row getters share their spelling.
+///
+/// Of several names converting to the same identifier, one in lowercase keeps
+/// it and every other gets `\$` and its own spelling, `name\$Name` for a
+/// column `Name` next to `name`, so adding a column never moves the getter of
+/// a lowercase one. Names are claimed in sorted order, so the result does not
+/// depend on their order in the schema.
 Map<String, String> _uniqueMemberNames(
   List<String> names, {
   Set<String> reserved = const {},
   Map<String, String>? existing,
 }) {
-  final used = {...reserved};
-  return {
-    for (final name in names)
-      name: _claimName(used, existing?[name] ?? memberIdentifier(name)),
+  final identifiers = {
+    for (final name in names) name: existing?[name] ?? memberIdentifier(name),
   };
+  final counts = <String, int>{};
+  for (final identifier in identifiers.values) {
+    counts[identifier] = (counts[identifier] ?? 0) + 1;
+  }
+  final used = {...reserved};
+  final claimed = {
+    for (final name in [...names]..sort())
+      name: _claimName(
+        used,
+        counts[identifiers[name]]! > 1 && !_lowercaseName.hasMatch(name)
+            ? '${identifiers[name]}\$${_suffix(name)}'
+            : identifiers[name]!,
+      ),
+  };
+  return {for (final name in names) name: claimed[name]!};
 }
+
+final _lowercaseName = RegExp(r'^[a-z_][a-z0-9_]*$');
+
+String _suffix(String name) => name.replaceAll(RegExp('[^a-zA-Z0-9]'), r'$');
 
 /// Adds [candidate] to [used], suffixed with `\$` until no earlier name
 /// matches, and returns the name added.
@@ -1594,7 +1658,7 @@ Iterable<_TypeShape> _functionShapes(FunctionDescription function) sync* {
 const _rpcMembers = {'call', 'rows', 'value'};
 
 /// The top-level codecs the generated conversions call unqualified.
-const _codecs = {'postgresBytea', 'postgresVector'};
+const _codecs = {'postgresBytea', 'postgresTimestamp', 'postgresVector'};
 
 /// One overload of a function that gets a generated method.
 class _FunctionMethod {
@@ -1711,8 +1775,14 @@ void _writeFunctions(
   for (final method in methods) {
     if (method.overload.result case FunctionColumnsResult(:final columns)) {
       final baseName = pascalCase(method.name);
-      final rowType = typeNames.claim('${baseName}Row');
-      final namespaceType = typeNames.claim(baseName);
+      final rowType = typeNames.claim(
+        '${baseName}Row',
+        fallback: '${baseName}ResultRow',
+      );
+      final namespaceType = typeNames.claim(
+        baseName,
+        fallback: '${baseName}Result',
+      );
       final names = [for (final column in columns) column.name];
       final rowMembers = _uniqueMemberNames(
         names,
