@@ -690,16 +690,27 @@ Future<void> _waitUntilJoined() async {
 /// free of guessed delays.
 Future<void> _warmUpReplication(SupabaseClient client) async {
   final received = <String>{};
+  final snapshotFetched = Completer<void>();
   Object? streamError;
   final subscription = client
       .from('users')
       .stream(primaryKey: ['username'])
       .listen(
-        (rows) => received.addAll(_usernames(rows)),
+        (rows) {
+          if (snapshotFetched.isCompleted) {
+            received.addAll(_usernames(rows));
+          } else {
+            snapshotFetched.complete();
+          }
+        },
         onError: (Object error) => streamError ??= error,
       );
 
   try {
+    // A row inserted before the snapshot is fetched arrives with it, which
+    // says nothing about whether changes are streamed. Its change would then
+    // reach the first test instead.
+    await snapshotFetched.future.timeout(_streamTimeout);
     // The budget has to stay well below the timeout of the test that runs
     // this, so that a stack which never delivers changes fails with the
     // message below instead of an unexplained timeout.
