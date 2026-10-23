@@ -223,6 +223,34 @@ void main() {
         expect(await second, same(await first));
       });
 
+      test(
+        'a call disposed while pending waits for the next initialization',
+        () async {
+          final firstStorage = BlockingAsyncStorage();
+          var firstCompleted = false;
+          final first = Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            authOptions: FlutterAuthClientOptions(asyncStorage: firstStorage),
+          ).whenComplete(() => firstCompleted = true);
+          await pumpEventQueue();
+          await Supabase.instance.dispose();
+
+          final secondStorage = BlockingAsyncStorage();
+          final second = Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            authOptions: FlutterAuthClientOptions(asyncStorage: secondStorage),
+          );
+          firstStorage.release();
+          await pumpEventQueue();
+          expect(firstCompleted, isFalse);
+
+          secondStorage.release();
+          expect(await first, same(await second));
+        },
+      );
+
       test('a call with another url or key throws', () async {
         final asyncStorage = BlockingAsyncStorage();
         final first = Supabase.initialize(

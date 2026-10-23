@@ -243,6 +243,11 @@ class Supabase {
       final supabaseAuth = SupabaseAuth();
       _instance._supabaseAuth = supabaseAuth;
       await supabaseAuth.initialize(options: authOptions);
+      final currentInitialization = _instance._initialization;
+      if (!identical(_instance._supabaseAuth, supabaseAuth) &&
+          currentInitialization != null) {
+        return currentInitialization.future;
+      }
     }
 
     flutterLogger.info('Supabase initialization completed');
