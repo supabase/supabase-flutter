@@ -1,3 +1,5 @@
+import 'package:clock/clock.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -60,6 +62,35 @@ void main() {
     expect(urls.single, startsWith('ws://localhost:54321/realtime/v1'));
   });
 
+  test('testSupabaseClient does not retry by default', () async {
+    final httpClient = MockSupabaseHttpClient()
+      ..stubStatuses([503, 200], body: []);
+    final supabase = testSupabaseClient(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+
+    await expectLater(
+      () => supabase.from('todos').select(),
+      throwsA(isA<PostgrestApiException>()),
+    );
+    expect(httpClient.requests, hasLength(1));
+  });
+
+  test('testSupabaseClient retries with the given options', () async {
+    final httpClient = MockSupabaseHttpClient()
+      ..stubStatuses([503, 503, 200], body: []);
+    final supabase = testSupabaseClient(
+      httpClient: httpClient,
+      retryOptions: const SupabaseRetryOptions(
+        initialDelay: Duration.zero,
+        maxDelay: Duration.zero,
+      ),
+    );
+    addTearDown(supabase.dispose);
+
+    expect(await supabase.from('todos').select(), isEmpty);
+    expect(httpClient.requests, hasLength(3));
+  });
+
   group('signInTestUser', () {
     late MockSupabaseHttpClient httpClient;
     late SupabaseClient supabase;
@@ -107,5 +138,146 @@ void main() {
         'Bearer ${session.accessToken}',
       );
     });
+
+    test('emits signedIn', () async {
+      final events = supabase.auth.onAuthStateChange
+          .map((state) => state.event)
+          .where((event) => event != AuthChangeEvent.initialSession);
+
+      final next = events.first;
+      await signInTestUser(supabase.auth);
+
+      expect(await next, AuthChangeEvent.signedIn);
+    });
+
+    test('carries the role into the user and the token', () async {
+      final session = await signInTestUser(supabase.auth, role: 'admin');
+
+      expect(decodeTestJwtClaims(session.accessToken)['role'], 'admin');
+      expect(session.user.role, 'admin');
+      expect(session.user.audience, 'authenticated');
+    });
+
+    test('follows a clock set ahead of the wall clock', () async {
+      final ahead = DateTime.now().add(const Duration(days: 365));
+
+      final session = await withClock(
+        Clock.fixed(ahead),
+        () => signInTestUser(supabase.auth),
+      );
+
+      expect(
+        session.expiresAt?.difference(ahead).inMinutes,
+        inInclusiveRange(59, 60),
+      );
+      expect(withClock(Clock.fixed(ahead), () => session.isExpired), isFalse);
+    });
+
+    test('accepts an expiry within the refresh margin', () async {
+      final session = await signInTestUser(
+        supabase.auth,
+        expiresAt: clock.now().add(const Duration(seconds: 10)),
+      );
+
+      expect(supabase.auth.currentSession, same(session));
+    });
+
+    test('rejects an expiry that rounds down to the past', () async {
+      final now = DateTime.fromMillisecondsSinceEpoch(1700000000000);
+
+      await expectLater(
+        () => withClock(
+          Clock.fixed(now),
+          () => signInTestUser(
+            supabase.auth,
+            expiresAt: now.add(const Duration(milliseconds: 500)),
+          ),
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('rejects an expiry in the past', () async {
+      await expectLater(
+        () => signInTestUser(
+          supabase.auth,
+          expiresAt: clock.now().subtract(const Duration(seconds: 1)),
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('stubSignIn', () {
+    late MockSupabaseHttpClient httpClient;
+    late SupabaseClient supabase;
+
+    setUp(() {
+      httpClient = MockSupabaseHttpClient()..stubSignIn();
+      supabase = testSupabaseClient(httpClient: httpClient);
+      addTearDown(supabase.dispose);
+    });
+
+    test('answers verifyOTP', () async {
+      final response = await supabase.auth.verifyOTP(
+        type: OtpType.email,
+        email: 'fake1@email.com',
+        token: '123456',
+      );
+
+      expect(response.session?.user.id, testUserId);
+      expect(httpClient.requestsTo('/auth/v1/verify'), hasLength(1));
+    });
+
+    test('issues sessions that are valid under the current clock', () async {
+      final ahead = DateTime.now().add(const Duration(days: 365));
+
+      final session = await withClock(
+        Clock.fixed(ahead),
+        () => supabase.auth.signInWithPassword(
+          email: 'fake1@email.com',
+          password: 'password',
+        ),
+      );
+
+      expect(
+        withClock(Clock.fixed(ahead), () => session.isExpired),
+        isFalse,
+      );
+    });
+  });
+
+  group('fixtures', () {
+    test('testUserJson describes an authenticated user', () {
+      final user = User.fromJson(testUserJson())!;
+
+      expect(user.audience, 'authenticated');
+      expect(user.role, 'authenticated');
+    });
+
+    test('unsignedTestJwt carries no base64 padding', () {
+      for (final length in [1, 2, 3, 4]) {
+        final jwt = unsignedTestJwt({'sub': 'x' * length});
+
+        expect(jwt, isNot(contains('=')));
+        expect(decodeTestJwtClaims(jwt), {'sub': 'x' * length});
+      }
+    });
+  });
+
+  test('stubError with retries off fails every request', () async {
+    final httpClient = MockSupabaseHttpClient()
+      ..stubError(http.ClientException('Offline'));
+    final supabase = testSupabaseClient(httpClient: httpClient);
+    addTearDown(supabase.dispose);
+
+    await expectLater(
+      () => supabase.auth.signInWithPassword(
+        email: 'someone@example.com',
+        password: 'password',
+      ),
+      throwsA(isA<AuthException>()),
+    );
+    expect(httpClient.requests, hasLength(1));
   });
 }

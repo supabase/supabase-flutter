@@ -23,7 +23,7 @@ void main() {
 
   testWidgets('swaps to the account screen on sign in', (tester) async {
     final supabase = await initializeTestSupabase(
-      httpClient: MockSupabaseHttpClient(),
+      httpClient: MockSupabaseHttpClient()..stubUser(),
     );
     addTearDown(supabase.dispose);
     await tester.pumpWidget(const AuthExampleApp());

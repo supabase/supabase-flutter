@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart' show HttpMethod;
@@ -45,8 +46,13 @@ class RecordedRequest {
   final Map<String, String> headers;
   final Uint8List bodyBytes;
 
-  /// The query parameters of [url].
+  /// The query parameters of [url], holding the last value of a repeated
+  /// key.
   Map<String, String> get queryParameters => url.queryParameters;
+
+  /// Every value of each query parameter of [url], so the two filters of
+  /// `.gt('id', 1).lt('id', 10)` are both visible.
+  Map<String, List<String>> get queryParametersAll => url.queryParametersAll;
 
   /// The request body decoded as UTF-8.
   String get body => utf8.decode(bodyBytes);
@@ -104,9 +110,9 @@ class _Stub {
     }
     final query = this.query;
     if (query != null) {
-      final requestQuery = request.url.queryParameters;
+      final requestQuery = request.url.queryParametersAll;
       for (final MapEntry(:key, :value) in query.entries) {
-        if (requestQuery[key] != value) {
+        if (!(requestQuery[key]?.contains(value) ?? false)) {
           return false;
         }
       }
@@ -181,8 +187,12 @@ const _singleObjectAccept = 'application/vnd.pgrst.object+json';
 /// The latest registered stub that matches a request answers it, so a stub
 /// registered inside a test overrides one registered in `setUp`. A request no
 /// stub matches throws a [StateError] naming the request and the registered
-/// stubs. The auth shorthands answer their endpoint both under the
-/// `/auth/v1` prefix and at the root, where a bare `AuthClient` addresses it.
+/// stubs, and unless [reportUnmatchedRequests] is off, reports it to the
+/// current zone as an uncaught error as well, so the test fails even when the
+/// client under test wraps the error, the way auth and functions report it as
+/// a `SupabaseTransportException`. The auth shorthands answer their endpoint
+/// both under the `/auth/v1` prefix and at the root, where a bare
+/// `AuthClient` addresses it.
 ///
 /// A request can be failed instead of answered with [stubError], stalled
 /// with [stubStall], and driven through a sequence of statuses with
@@ -192,6 +202,14 @@ const _singleObjectAccept = 'application/vnd.pgrst.object+json';
 /// for example, is registered with [stubHandler].
 @visibleForTesting
 class MockSupabaseHttpClient extends BaseClient {
+  MockSupabaseHttpClient({this.reportUnmatchedRequests = true});
+
+  /// Whether a request no stub matches is reported to the current zone as an
+  /// uncaught error, which fails the running test, on top of being thrown.
+  ///
+  /// Turn it off for a test that expects the unmatched request to fail.
+  final bool reportUnmatchedRequests;
+
   final _stubs = <_Stub>[];
 
   /// Every request this client has answered, oldest first.
@@ -240,7 +258,9 @@ class MockSupabaseHttpClient extends BaseClient {
   /// stub for `/rest/v1/todos` also answers a project served under a path
   /// prefix. [query] narrows the match further to requests whose query
   /// carries every one of its entries, so two stubs of the same endpoint can
-  /// answer differently filtered queries. A [Uint8List]
+  /// answer differently filtered queries. An entry matches a key repeated in
+  /// the query when any of its values equals the entry, so
+  /// `{'id': 'lt.10'}` answers `.gt('id', 1).lt('id', 10)`. A [Uint8List]
   /// body is sent as is with the content type `application/octet-stream`, any
   /// other body is encoded as JSON, and a null [body] produces an empty
   /// response body. [headers] are added to the response, and override the
@@ -257,7 +277,7 @@ class MockSupabaseHttpClient extends BaseClient {
     int? times,
   }) {
     _stub(
-      body,
+      () => body,
       method: method,
       path: path,
       query: query,
@@ -267,8 +287,10 @@ class MockSupabaseHttpClient extends BaseClient {
     );
   }
 
+  /// Registers a stub answering with the body [body] builds when a request
+  /// arrives.
   void _stub(
-    Object? body, {
+    Object? Function() body, {
     HttpMethod? method,
     String? path,
     String? bareEndpoint,
@@ -286,7 +308,7 @@ class MockSupabaseHttpClient extends BaseClient {
         schema: null,
         remaining: times,
         respond: (request, _) => _response(
-          body,
+          body(),
           request: request,
           statusCode: statusCode,
           headers: headers,
@@ -335,15 +357,20 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Fails requests matching [method] and [path] by throwing [error] instead
   /// of answering them, the way a client fails when the network is gone.
   ///
-  /// Pair it with [times] to fail the first requests only, so retry handling
-  /// can be exercised:
+  /// Pair it with [times] to fail the first requests only, so recovery can be
+  /// exercised:
   ///
   /// ```dart
   /// httpClient
   ///   ..stubTable('todos', rows: [])
   ///   ..stubError(ClientException('Offline'), times: 2);
-  /// // The first two reads throw, every one after that returns no rows.
+  /// // The first two requests fail, every one after that returns no rows.
   /// ```
+  ///
+  /// Each failed request counts against [times], including the attempts a
+  /// client with retries makes on its own, so whether a read throws depends on
+  /// the retry options of the client. `testSupabaseClient` turns retries off,
+  /// so there every read fails until [times] runs out.
   ///
   /// [method], [path] and [query] match as they do for [stub].
   void stubError(
@@ -564,24 +591,27 @@ class MockSupabaseHttpClient extends BaseClient {
     );
   }
 
-  /// Answers the token endpoint, so password, OTP and refresh token sign-ins
-  /// succeed with a session for [user], which defaults to [testUserJson].
+  /// Answers the token and verify endpoints, so password, refresh token and
+  /// `verifyOTP` sign-ins succeed with a session for [user], which defaults
+  /// to [testUserJson].
   ///
   /// The session carries an unsigned access token holding the id of [user] as
   /// its `sub` claim and expiring at [expiresAt], which defaults to an hour
-  /// from now.
+  /// after `clock.now()` at the time of the request. [times] applies to each
+  /// endpoint on its own.
   void stubSignIn({
     Map<String, dynamic>? user,
     DateTime? expiresAt,
     int? times,
   }) {
-    _stub(
-      _sessionJson(user: user, expiresAt: expiresAt),
-      method: HttpMethod.post,
-      path: '/auth/v1/token',
-      bareEndpoint: '/token',
-      times: times,
-    );
+    for (final endpoint in ['/token', '/verify']) {
+      _stubSession(
+        endpoint,
+        user: user,
+        expiresAt: expiresAt,
+        times: times,
+      );
+    }
   }
 
   /// Answers the sign-up endpoint the way an auto-confirming project does:
@@ -592,11 +622,10 @@ class MockSupabaseHttpClient extends BaseClient {
     DateTime? expiresAt,
     int? times,
   }) {
-    _stub(
-      _sessionJson(user: user, expiresAt: expiresAt),
-      method: HttpMethod.post,
-      path: '/auth/v1/signup',
-      bareEndpoint: '/signup',
+    _stubSession(
+      '/signup',
+      user: user,
+      expiresAt: expiresAt,
       times: times,
     );
   }
@@ -604,7 +633,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Answers the logout endpoint, so `signOut` completes.
   void stubSignOut({int? times}) {
     _stub(
-      null,
+      () => null,
       method: HttpMethod.post,
       path: '/auth/v1/logout',
       bareEndpoint: '/logout',
@@ -617,7 +646,7 @@ class MockSupabaseHttpClient extends BaseClient {
   /// so `getUser` and `updateUser` succeed.
   void stubUser({Map<String, dynamic>? user, int? times}) {
     _stub(
-      user ?? testUserJson(),
+      () => user ?? testUserJson(),
       path: '/auth/v1/user',
       bareEndpoint: '/user',
       times: times,
@@ -766,16 +795,33 @@ class MockSupabaseHttpClient extends BaseClient {
     return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
   }
 
+  /// Answers `POST /auth/v1[endpoint]` with a session built when the request
+  /// arrives, so its default expiry follows the clock of the request.
+  void _stubSession(
+    String endpoint, {
+    required Map<String, dynamic>? user,
+    required DateTime? expiresAt,
+    required int? times,
+  }) {
+    _stub(
+      () => _sessionJson(user: user, expiresAt: expiresAt),
+      method: HttpMethod.post,
+      path: '/auth/v1$endpoint',
+      bareEndpoint: endpoint,
+      times: times,
+    );
+  }
+
   Map<String, dynamic> _sessionJson({
     Map<String, dynamic>? user,
     DateTime? expiresAt,
   }) {
     final userJson = user ?? testUserJson();
-    final expiry = expiresAt ?? DateTime.now().add(const Duration(hours: 1));
+    final expiry = expiresAt ?? clock.now().add(const Duration(hours: 1));
     final accessToken = unsignedTestJwt({
       'exp': expiry.millisecondsSinceEpoch ~/ 1000,
       'sub': userJson['id'],
-      'role': 'authenticated',
+      'role': userJson['role'] ?? 'authenticated',
     });
     return testSessionResponseJson(accessToken: accessToken, user: userJson);
   }
@@ -923,9 +969,13 @@ class MockSupabaseHttpClient extends BaseClient {
     final stubs = _stubs.isEmpty
         ? '  (none)'
         : _stubs.reversed.map((registered) => '  $registered').join('\n');
-    throw StateError(
+    final error = StateError(
       'No stub matches ${request.method} ${request.url}.\n'
       'Registered stubs, in matching order:\n$stubs',
     );
+    if (reportUnmatchedRequests) {
+      Zone.current.handleUncaughtError(error, StackTrace.current);
+    }
+    throw error;
   }
 }

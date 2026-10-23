@@ -43,7 +43,9 @@ const testPublishableKey = 'sb_publishable_supabase_flutter_testing';
 /// code verifier in memory through [asyncStorage], which defaults to a fresh
 /// [MemoryAuthAsyncStorage], turns off the token auto refresh so no timer
 /// outlives the test, disables deep link detection so no platform channel is
-/// touched, and defaults [publishableKey] to [testPublishableKey]. Pass a
+/// touched, turns off the retries of database requests and token refreshes so
+/// a stubbed failure surfaces at once, and defaults [publishableKey] to
+/// [testPublishableKey]. Pass [retryOptions] to exercise retry handling. Pass a
 /// `MockSupabaseHttpClient` as [httpClient] to answer the requests, and the
 /// `call` method of a `MockRealtimeTransport` as [realtimeTransport] to
 /// answer the realtime traffic, the same way `testSupabaseClient` takes them.
@@ -61,6 +63,9 @@ Future<Supabase> initializeTestSupabase({
   WebSocketTransport? realtimeTransport,
   AuthAsyncStorage? asyncStorage,
   bool autoRefreshToken = false,
+  SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(
+    enabled: false,
+  ),
 }) {
   if (Supabase.isInitializingOrInitialized) {
     return Future.error(
@@ -76,8 +81,10 @@ Future<Supabase> initializeTestSupabase({
     httpClient: httpClient,
     headers: headers,
     realtimeOptions: RealtimeClientOptions(transport: realtimeTransport),
+    postgrestOptions: PostgrestClientOptions(retryOptions: retryOptions),
     authOptions: FlutterAuthClientOptions(
       autoRefreshToken: autoRefreshToken,
+      retryOptions: retryOptions,
       asyncStorage: asyncStorage ?? MemoryAuthAsyncStorage(),
       detectSessionInUri: false,
     ),

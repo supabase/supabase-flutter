@@ -86,17 +86,19 @@ MockSupabaseHttpClient _stubUserScopedEndpoints() {
     ..stub(<Object>[], path: '/user/oauth/grants');
 }
 
-/// A persisted session for [testUserId] whose access token expires at
+/// A persisted session for [userId] whose access token expires at
 /// [expiresAt], carrying a refresh token when [withRefreshToken] is set.
 String _sessionString({
   required DateTime expiresAt,
+  String userId = testUserId,
   bool withRefreshToken = true,
 }) {
   final json = testSessionResponseJson(
     accessToken: unsignedTestJwt({
       'exp': expiresAt.millisecondsSinceEpoch ~/ 1000,
-      'sub': testUserId,
+      'sub': userId,
     }),
+    user: testUserJson(id: userId),
   );
   if (withRefreshToken) {
     json['refresh_token'] = 'expired-refresh-token';
@@ -378,7 +380,12 @@ void main() {
       await pumpEventQueue();
       events.clear();
 
-      await signInTestUser(client, userId: 'second-user');
+      await client.recoverSession(
+        _sessionString(
+          userId: 'second-user',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
       await pumpEventQueue();
 
       expect(events, [AuthChangeEvent.signedIn]);
@@ -390,10 +397,11 @@ void main() {
       await pumpEventQueue();
       events.clear();
 
-      await signInTestUser(
-        client,
-        userId: 'first-user',
-        expiresAt: DateTime.now().add(const Duration(hours: 2)),
+      await client.recoverSession(
+        _sessionString(
+          userId: 'first-user',
+          expiresAt: DateTime.now().add(const Duration(hours: 2)),
+        ),
       );
       await pumpEventQueue();
 
@@ -401,7 +409,12 @@ void main() {
     });
 
     test('emits signedIn when nobody was signed in', () async {
-      await signInTestUser(client, userId: 'first-user');
+      await client.recoverSession(
+        _sessionString(
+          userId: 'first-user',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+      );
       await pumpEventQueue();
 
       expect(events, [AuthChangeEvent.signedIn]);

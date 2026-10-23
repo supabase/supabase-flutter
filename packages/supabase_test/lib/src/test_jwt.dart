@@ -13,10 +13,10 @@ String _base64UrlNoPadding(List<int> bytes) =>
 /// code paths that decode without verifying.
 @visibleForTesting
 String unsignedTestJwt(Map<String, dynamic> claims) {
-  final header = base64Url.encode(
+  final header = _base64UrlNoPadding(
     utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
   );
-  final body = base64Url.encode(utf8.encode(jsonEncode(claims)));
+  final body = _base64UrlNoPadding(utf8.encode(jsonEncode(claims)));
   const signature = 'AAAA';
   return '$header.$body.$signature';
 }

@@ -4,17 +4,18 @@ import 'package:meta/meta.dart';
 @visibleForTesting
 const testUserId = '18bc7a4e-c095-4573-93dc-e0be29bada97';
 
-/// The JSON form of a fixed test user carrying an unverified TOTP factor and
-/// an email identity, as the auth server would return it.
+/// The JSON form of a fixed test user in [role] carrying an unverified TOTP
+/// factor and an email identity, as the auth server would return it.
 @visibleForTesting
 Map<String, dynamic> testUserJson({
   String id = testUserId,
   String email = 'fake1@email.com',
   String phone = '166600000000',
+  String role = 'authenticated',
 }) => {
   'id': id,
-  'aud': '',
-  'role': '',
+  'aud': 'authenticated',
+  'role': role,
   'email': email,
   'email_confirmed_at': '2023-04-01T09:38:59.784028Z',
   'phone': phone,
@@ -25,7 +26,7 @@ Map<String, dynamic> testUserJson({
     'provider': 'email',
     'providers': ['email'],
   },
-  'user_metadata': {},
+  'user_metadata': <String, dynamic>{},
   'factors': [
     {
       'id': '1d3aa138-da96-4aea-8217-af07daa6b82d',
