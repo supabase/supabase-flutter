@@ -1011,6 +1011,24 @@ listener that expects the email-change confirmation to arrive as `signedIn`, and
 `userUpdated` there instead. For the PKCE case, `AuthSessionUrlResponse.redirectType` is `'userUpdated'` instead of `null`, so
 you can also branch on the response of `exchangeCodeForSession()` directly.
 
+#### `FlutterWebAuth2OAuthLauncher` reports cancel and exchange failures without throwing
+
+With `supabase_flutter_web_auth`, closing the web auth session without signing in made
+`signInWithOAuth`, `signInWithSSO` and `linkIdentity` throw a `PlatformException` with the code
+`CANCELED`. They now return `false`, so check the result instead of catching the exception. A
+failed code exchange no longer throws either: the `AuthException` arrives as an error on
+`onAuthStateChange`, as it does with the default launcher.
+
+```dart
+final launched = await supabase.auth.signInWithOAuth(
+  OAuthProvider.github,
+  redirectTo: 'com.example.myapp://oauth-callback',
+);
+if (!launched) {
+  print('Sign-in was cancelled');
+}
+```
+
 #### Cross-tab session sync is opt-in for standalone clients
 
 On web the auth client keeps the tabs of a project in sync through a `BroadcastChannel`. It is now

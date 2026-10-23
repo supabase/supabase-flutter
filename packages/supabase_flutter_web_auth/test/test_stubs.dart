@@ -13,6 +13,9 @@ class FakeFlutterWebAuth2 extends FlutterWebAuth2Platform
   /// The callback URL the fake session resolves with.
   final String callbackUrl;
 
+  /// When set, the fake session throws this instead of resolving.
+  Object? error;
+
   String? authenticatedUrl;
   String? capturedCallbackUrlScheme;
   Map<String, dynamic>? capturedOptions;
@@ -26,6 +29,7 @@ class FakeFlutterWebAuth2 extends FlutterWebAuth2Platform
     authenticatedUrl = url;
     capturedCallbackUrlScheme = callbackUrlScheme;
     capturedOptions = options;
+    if (error case final pendingError?) throw pendingError;
     return callbackUrl;
   }
 

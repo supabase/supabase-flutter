@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,6 +17,13 @@ import 'oauth_redirect_stub.dart'
 /// unlike [UrlLauncherOAuthLauncher], this does not rely on `app_links` to
 /// observe the callback.
 ///
+/// [launch] returns `false` when the user dismisses the session without
+/// finishing sign-in. A failed exchange of the callback URL is reported as an
+/// [AuthException] error on [AuthClient.onAuthStateChange], the same as a
+/// failed deep link callback with the default launcher, and [launch] still
+/// returns `true`. After a successful exchange, the session is set by the
+/// time [launch] completes.
+///
 /// Unlike [UrlLauncherOAuthLauncher], this never forces an external browser
 /// for Google sign-in on Android: Custom Tabs runs as Chrome's own sandboxed
 /// process, not an embedded user-agent under the app's control, so it already
@@ -23,6 +31,8 @@ import 'oauth_redirect_stub.dart'
 /// https://developers.google.com/identity/protocols/oauth2/resources/best-practices.
 class FlutterWebAuth2OAuthLauncher extends OAuthLauncher {
   const FlutterWebAuth2OAuthLauncher();
+
+  static const _canceledCode = 'CANCELED';
 
   @override
   Future<bool> launch(
@@ -46,17 +56,28 @@ class FlutterWebAuth2OAuthLauncher extends OAuthLauncher {
     }
 
     final isHttps = redirectTo.scheme == 'https';
-    final result = await FlutterWebAuth2.authenticate(
-      url: url.toString(),
-      callbackUrlScheme: redirectTo.scheme,
-      options: FlutterWebAuth2Options(
-        preferEphemeral: preferEphemeral,
-        httpsHost: isHttps ? redirectTo.host : null,
-        httpsPath: isHttps ? redirectTo.path : null,
-      ),
-    );
+    final String result;
+    try {
+      result = await FlutterWebAuth2.authenticate(
+        url: url.toString(),
+        callbackUrlScheme: redirectTo.scheme,
+        options: FlutterWebAuth2Options(
+          preferEphemeral: preferEphemeral,
+          httpsHost: isHttps ? redirectTo.host : null,
+          httpsPath: isHttps ? redirectTo.path : null,
+        ),
+      );
+    } on PlatformException catch (error) {
+      if (error.code == _canceledCode) return false;
+      rethrow;
+    }
 
-    await client.getSessionFromUrl(Uri.parse(result));
+    try {
+      await client.getSessionFromUrl(Uri.parse(result));
+    } on AuthException catch (error, stackTrace) {
+      // ignore: invalid_use_of_internal_member
+      client.notifyException(error, stackTrace);
+    }
     return true;
   }
 }
