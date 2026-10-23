@@ -39,8 +39,11 @@ class RealtimeSubscribeException extends RealtimeException {
   final Object? details;
 
   @override
+  String get exceptionName => 'RealtimeSubscribeException';
+
+  @override
   String toString() {
-    return 'RealtimeSubscribeException(status: ${status.name}, details: '
+    return '$exceptionName(status: ${status.name}, details: '
         '$details)';
   }
 }

@@ -8,9 +8,9 @@ const _maxExponent = 31;
 /// [attempt], where attempt `0` is the first failure.
 ///
 /// The delay starts at [initialDelay] and doubles every attempt, capped at
-/// [maxDelay]. When [randomizationFactor] is greater than zero the delay is
-/// jittered by up to that fraction in either direction before being capped,
-/// which keeps many clients from retrying in lockstep.
+/// [maxDelay]. When [randomizationFactor] is greater than zero the capped
+/// delay is jittered by up to that fraction in either direction, which keeps
+/// many clients from retrying in lockstep, also once they reached the cap.
 ///
 /// [random] is only meant for tests that need a deterministic jitter.
 Duration exponentialBackoff(
@@ -24,7 +24,6 @@ Duration exponentialBackoff(
   final randomization = randomizationFactor == 0
       ? 1.0
       : randomizationFactor * ((random ?? Random()).nextDouble() * 2 - 1) + 1;
-  final delay =
-      initialDelay * pow(2.0, min(attempt, _maxExponent)) * randomization;
-  return delay < maxDelay ? delay : maxDelay;
+  final delay = initialDelay * pow(2.0, min(attempt, _maxExponent));
+  return (delay < maxDelay ? delay : maxDelay) * randomization;
 }

@@ -77,9 +77,9 @@ class _SessionState {
 /// service, or that the service answered with a 5xx, is retried. Another
 /// failure that keeps the session, such as a rate limit, is only retried
 /// within the tick when its `Retry-After` header asks for it. A refresh also
-/// stops retrying once the next backoff would fall after the next refresh
-/// tick, so the count only caps how many attempts a short backoff can squeeze
-/// into that window.
+/// stops retrying once the longest the next backoff could be would fall after
+/// the next refresh tick, so the count only caps how many attempts a short
+/// backoff can squeeze into that window.
 ///
 /// [requestTimeout] bounds how long a request to the auth service may go
 /// without progress. A timed-out request is cancelled and throws an
@@ -1782,16 +1782,12 @@ class AuthClient {
   Future<Session> _refreshAccessToken(String refreshToken) async {
     final startedAt = clock.now();
     var attempt = 0;
-    Duration? retryAfterOf(Object outcome) {
-      final requested = outcome is SupabaseApiException
-          ? parseRetryAfter(outcome.headers)
-          : null;
-      if (requested == null) {
-        return null;
-      }
-      final maxDelay = retryOptions.maxDelay;
-      return requested < maxDelay ? requested : maxDelay;
-    }
+    Duration? retryAfterOf(Object outcome) => outcome is SupabaseApiException
+        ? parseRetryAfter(outcome.headers)
+        : null;
+    final unjittered = retryOptions.copyWith(randomizationFactor: 0);
+    Duration longestBackoff(int retries) =>
+        unjittered.delay(retries) * (1 + retryOptions.randomizationFactor);
 
     return await retry(
       () async {
@@ -1812,10 +1808,10 @@ class AuthClient {
       options: retryOptions,
       retryAfter: retryAfterOf,
       retryIf: (e) {
-        // Do not retry if the next retry comes after the next tick. The
+        // Do not retry if the next retry could come after the next tick. The
         // deadline is the real bound here, so the configured count only caps
         // how many attempts a short backoff can squeeze into the tick.
-        final nextBackOff = retryAfterOf(e) ?? retryOptions.delay(attempt - 1);
+        final nextBackOff = retryAfterOf(e) ?? longestBackoff(attempt - 1);
 
         final retryable =
             e is AuthRetryableException ||

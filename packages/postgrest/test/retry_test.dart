@@ -370,7 +370,7 @@ void main() {
     test('a Retry-After header replaces the backoff', () async {
       final mock = _MockRetryClient(
         [
-          _status(503, headers: {'retry-after': '0'}),
+          _status(503, headers: {'retry-after': '1'}),
           _ok(),
         ],
         responseLatency: (_) => Duration.zero,
@@ -393,10 +393,10 @@ void main() {
       expect(mock.callCount, 2);
     });
 
-    test('a Retry-After header is capped at maxDelay', () async {
+    test('a Retry-After longer than maxDelay is not retried', () async {
       final mock = _MockRetryClient(
         [
-          _status(503, headers: {'retry-after': '3600'}),
+          _status(503, headers: {'retry-after': '120'}),
           _ok(),
         ],
         responseLatency: (_) => Duration.zero,
@@ -404,19 +404,20 @@ void main() {
       final client = PostgrestClient(
         'http://localhost:3000',
         httpClient: mock,
-        retryOptions: const SupabaseRetryOptions(
-          count: 1,
-          maxDelay: Duration(milliseconds: 10),
-        ),
+        retryOptions: const SupabaseRetryOptions(count: 1),
       );
 
-      final result = await client
-          .from('users')
-          .select()
-          .timeout(const Duration(seconds: 5));
-
-      expect(result, isEmpty);
-      expect(mock.callCount, 2);
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (error) => error.statusCode,
+            'statusCode',
+            503,
+          ),
+        ),
+      );
+      expect(mock.callCount, 1);
     });
 
     test('an abort during the backoff ends the request at once', () async {

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' show RequestAbortedException;
@@ -21,13 +20,15 @@ import 'package:supabase_common/src/retry_options.dart';
 ///
 /// The delay before the next attempt is the one [retryAfter] returns for the
 /// outcome being retried, the thrown exception or the result, typically read
-/// from a `Retry-After` header with [parseRetryAfter] and capped at
-/// [SupabaseRetryOptions.maxDelay]. When [retryAfter] is omitted or returns
-/// `null`, the jittered backoff of [options] is waited instead.
+/// from a `Retry-After` header with [parseRetryAfter]. An outcome [retryAfter]
+/// asks to wait longer than [SupabaseRetryOptions.maxDelay] for is not
+/// retried, but rethrown or returned as is. When [retryAfter] is omitted or
+/// returns `null`, the jittered backoff of [options] is waited instead.
 ///
-/// A [RequestAbortedException] is never retried. Completing [abortSignal]
-/// while the delay before the next attempt is running ends the loop with a
-/// [RequestAbortedException] instead of making that attempt.
+/// A [RequestAbortedException] is never retried. Completing [abortSignal],
+/// with a value or an error, while the delay before the next attempt is
+/// running ends the loop with a [RequestAbortedException] instead of making
+/// that attempt.
 Future<T> retry<T extends Object>(
   FutureOr<T> Function() action, {
   SupabaseRetryOptions options = const SupabaseRetryOptions(),
@@ -38,13 +39,12 @@ Future<T> retry<T extends Object>(
   Future<void>? abortSignal,
 }) async {
   var retries = 0;
-  Future<void> waitBeforeRetry(Object outcome) async {
+  Duration? delayBefore(Object outcome) {
     final requestedDelay = retryAfter?.call(outcome);
-    final delay = requestedDelay == null
-        ? options.delay(retries)
-        : _min(requestedDelay, options.maxDelay);
-    await _delayUnlessAborted(delay, abortSignal);
-    retries++;
+    if (requestedDelay == null) {
+      return options.delay(retries);
+    }
+    return requestedDelay <= options.maxDelay ? requestedDelay : null;
   }
 
   while (true) {
@@ -58,25 +58,36 @@ Future<T> retry<T extends Object>(
       if (!canRetry || (retryIf != null && !(await retryIf(error)))) {
         rethrow;
       }
+      final delay = delayBefore(error);
+      if (delay == null) {
+        rethrow;
+      }
       if (onRetry != null) {
         await onRetry(error);
       }
-      await waitBeforeRetry(error);
+      await _delayUnlessAborted(delay, abortSignal);
+      retries++;
       continue;
     }
     if (!canRetry || retryIfResult == null || !(await retryIfResult(result))) {
       return result;
     }
-    await waitBeforeRetry(result);
+    final delay = delayBefore(result);
+    if (delay == null) {
+      return result;
+    }
+    await _delayUnlessAborted(delay, abortSignal);
+    retries++;
   }
 }
 
 /// The wait a `Retry-After` header in [headers] asks for, or `null` when there
 /// is none or it carries no usable timing.
 ///
-/// The header holds either a number of seconds or an HTTP date. A date that is
-/// not after the current time is ignored, since waiting zero would make every
-/// client that saw it repeat its request at the same instant.
+/// The header holds either a number of seconds or an HTTP date. A value of
+/// zero seconds or a date that is not after the current time is ignored,
+/// since waiting zero would make every client that saw it repeat its request
+/// at the same instant.
 Duration? parseRetryAfter(
   Map<String, String> headers,
 ) {
@@ -91,7 +102,7 @@ Duration? parseRetryAfter(
   }
   final seconds = int.tryParse(value);
   if (seconds != null) {
-    return seconds >= 0 ? Duration(seconds: seconds) : null;
+    return seconds > 0 ? Duration(seconds: seconds) : null;
   }
   final DateTime date;
   try {
@@ -103,20 +114,23 @@ Duration? parseRetryAfter(
   return delay > Duration.zero ? delay : null;
 }
 
-Duration _min(Duration a, Duration b) =>
-    Duration(microseconds: min(a.inMicroseconds, b.inMicroseconds));
-
 Future<void> _delayUnlessAborted(
   Duration duration,
   Future<void>? abortSignal,
-) async {
-  final delay = Future<void>.delayed(duration);
-  if (abortSignal == null) {
-    return delay;
+) {
+  final stackTrace = StackTrace.current;
+  final completer = Completer<void>();
+  final timer = Timer(duration, completer.complete);
+  void abort() {
+    if (completer.isCompleted) {
+      return;
+    }
+    timer.cancel();
+    completer.completeError(RequestAbortedException(), stackTrace);
   }
-  var aborted = false;
-  await Future.any([delay, abortSignal.whenComplete(() => aborted = true)]);
-  if (aborted) {
-    throw RequestAbortedException();
-  }
+
+  unawaited(
+    abortSignal?.then<void>((_) => abort(), onError: (Object _) => abort()),
+  );
+  return completer.future;
 }

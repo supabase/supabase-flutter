@@ -5,9 +5,10 @@ import 'package:supabase_common/src/backoff.dart';
 /// worth repeating.
 ///
 /// Every Supabase client takes this type, while what counts as a retryable
-/// failure stays with the client: PostgREST repeats a read that answered with
-/// `503` or `520`, storage repeats an upload that hit a network error, and
-/// auth repeats a token refresh that never reached the service.
+/// failure stays with the client: PostgREST repeats a read that hit a network
+/// error or answered with `503` or `520`, storage repeats an upload that hit a
+/// network error, and auth repeats a token refresh that hit a network error or
+/// answered with a `5xx` status.
 ///
 /// ```dart
 /// final supabase = SupabaseClient(
@@ -46,7 +47,11 @@ class SupabaseRetryOptions {
   /// that until [maxDelay] is reached.
   final Duration initialDelay;
 
-  /// The upper bound of the delay between two attempts.
+  /// The longest the backoff grows before it is randomized by
+  /// [randomizationFactor].
+  ///
+  /// A server that asks for a longer wait with a `Retry-After` header is not
+  /// retried at all.
   final Duration maxDelay;
 
   /// The fraction between 0 and 1 the delay is randomized by, which keeps many

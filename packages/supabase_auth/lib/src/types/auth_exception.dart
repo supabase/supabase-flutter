@@ -14,6 +14,9 @@ class AuthException extends SupabaseException {
   const AuthException(super.message, {super.errorCode, super.requestId});
 
   @override
+  String get exceptionName => 'AuthException';
+
+  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
@@ -32,6 +35,9 @@ class AuthException extends SupabaseException {
 /// needed to exchange it for a session.
 class AuthPKCEGrantCodeExchangeError extends AuthException {
   const AuthPKCEGrantCodeExchangeError(super.message);
+
+  @override
+  String get exceptionName => 'AuthPKCEGrantCodeExchangeError';
 }
 
 /// Thrown when required session data is unavailable, such as when no session
@@ -43,6 +49,9 @@ class AuthSessionMissingException extends AuthException {
         message ?? 'Auth session missing!',
         errorCode: ErrorCode.sessionMissing.code,
       );
+
+  @override
+  String get exceptionName => 'AuthSessionMissingException';
 }
 
 /// Thrown when an auth request failed in a way that is worth retrying.
@@ -68,6 +77,9 @@ class AuthRetryableFetchException extends AuthRetryableException
 
   @override
   final Object? cause;
+
+  @override
+  String get exceptionName => 'AuthRetryableFetchException';
 }
 
 /// Thrown when the auth service answered with a 5xx status, which is worth
@@ -93,6 +105,9 @@ class AuthRetryableApiException extends AuthRetryableException
   /// How long the auth service asked the client to wait before trying again,
   /// read from the `Retry-After` header of the response.
   Duration? get retryAfter => parseRetryAfter(headers);
+
+  @override
+  String get exceptionName => 'AuthRetryableApiException';
 
   @override
   bool operator ==(Object other) =>
@@ -124,6 +139,9 @@ class AuthApiException extends AuthException with SupabaseApiException {
   final String? body;
 
   @override
+  String get exceptionName => 'AuthApiException';
+
+  @override
   bool operator ==(Object other) =>
       other is AuthApiException &&
       super == other &&
@@ -149,8 +167,11 @@ class AuthUnknownException extends AuthException {
   final Object originalError;
 
   @override
+  String get exceptionName => 'AuthUnknownException';
+
+  @override
   String toString() =>
-      '$runtimeType(message: $message, errorCode: $errorCode, '
+      '$exceptionName(message: $message, errorCode: $errorCode, '
       'requestId: $requestId, originalError: $originalError)';
 }
 
@@ -169,8 +190,11 @@ class AuthWeakPasswordException extends AuthApiException {
   final List<String> reasons;
 
   @override
+  String get exceptionName => 'AuthWeakPasswordException';
+
+  @override
   String toString() =>
-      '$runtimeType(message: $message, statusCode: $statusCode, '
+      '$exceptionName(message: $message, statusCode: $statusCode, '
       'errorCode: $errorCode, requestId: $requestId, reasons: $reasons)';
 }
 
@@ -179,4 +203,7 @@ class AuthWeakPasswordException extends AuthApiException {
 class AuthInvalidJwtException extends AuthException {
   const AuthInvalidJwtException(super.message)
     : super(errorCode: 'invalid_jwt');
+
+  @override
+  String get exceptionName => 'AuthInvalidJwtException';
 }

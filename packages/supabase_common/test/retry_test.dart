@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:http/http.dart' show RequestAbortedException;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
@@ -205,21 +206,143 @@ void main() {
       expect(stopwatch.elapsed, greaterThanOrEqualTo(_fiftyMilliseconds));
     });
 
-    test('caps the delay retryAfter returns at maxDelay', () async {
-      var attempts = 0;
-      final stopwatch = Stopwatch()..start();
-      await retry(
-        () async {
-          attempts++;
-          if (attempts < 2) throw const FormatException('fail');
-          return 'ok';
-        },
-        options: _fast.copyWith(maxDelay: _fiftyMilliseconds),
-        retryAfter: (error) => const Duration(hours: 1),
-      );
-      stopwatch.stop();
+    test('waits a retryAfter delay equal to maxDelay', () {
+      fakeAsync((async) {
+        var attempts = 0;
+        String? result;
+        unawaited(
+          retry(
+            () async {
+              attempts++;
+              if (attempts < 2) throw const FormatException('fail');
+              return 'ok';
+            },
+            options: _fast.copyWith(maxDelay: const Duration(seconds: 30)),
+            retryAfter: (error) => const Duration(seconds: 30),
+          ).then((value) => result = value),
+        );
 
-      expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)));
+        async.elapse(const Duration(seconds: 29));
+        expect(attempts, 1);
+        async.elapse(const Duration(seconds: 1));
+        expect(result, 'ok');
+      });
+    });
+
+    test('rethrows an exception retryAfter asks to wait longer than maxDelay '
+        'for', () async {
+      final seenErrors = <Exception>[];
+      var attempts = 0;
+      await expectLater(
+        retry(
+          () async {
+            attempts++;
+            throw const FormatException('fail');
+          },
+          options: _fast.copyWith(maxDelay: const Duration(seconds: 30)),
+          onRetry: seenErrors.add,
+          retryAfter: (error) => const Duration(seconds: 120),
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      expect(attempts, 1);
+      expect(seenErrors, isEmpty);
+    });
+
+    test('returns a result retryAfter asks to wait longer than maxDelay '
+        'for', () async {
+      var attempts = 0;
+      final result = await retry(
+        () => ++attempts,
+        options: _fast.copyWith(maxDelay: const Duration(seconds: 30)),
+        retryIfResult: (attempt) => true,
+        retryAfter: (outcome) => const Duration(seconds: 120),
+      );
+      expect(result, 1);
+    });
+
+    test('the delays at maxDelay keep their jitter', () {
+      fakeAsync((async) {
+        final attemptTimes = <Duration>[];
+        retry(
+          () async {
+            attemptTimes.add(async.elapsed);
+            throw const FormatException('fail');
+          },
+          options: const SupabaseRetryOptions(
+            count: 5,
+            initialDelay: Duration(seconds: 30),
+          ),
+        ).ignore();
+        async.elapse(const Duration(minutes: 5));
+
+        final delays = [
+          for (var i = 1; i < attemptTimes.length; i++)
+            attemptTimes[i] - attemptTimes[i - 1],
+        ];
+        expect(delays, hasLength(5));
+        expect(
+          delays,
+          everyElement(
+            allOf(
+              greaterThanOrEqualTo(const Duration(milliseconds: 22500)),
+              lessThanOrEqualTo(const Duration(milliseconds: 37500)),
+            ),
+          ),
+        );
+        expect(delays.toSet().length, greaterThan(1));
+      });
+    });
+
+    test('an abort during the delay cancels its timer', () {
+      fakeAsync((async) {
+        final abortSignal = Completer<void>();
+        Object? error;
+        unawaited(
+          retry(
+            () async => throw const FormatException('fail'),
+            options: const SupabaseRetryOptions(
+              initialDelay: Duration(hours: 1),
+            ),
+            abortSignal: abortSignal.future,
+          ).then<void>((_) {}, onError: (Object e) => error = e),
+        );
+        async.flushMicrotasks();
+        expect(async.pendingTimers, hasLength(1));
+
+        abortSignal.complete();
+        async.flushMicrotasks();
+
+        expect(error, isA<RequestAbortedException>());
+        expect(async.pendingTimers, isEmpty);
+      });
+    });
+
+    test('an abort signal that completes with an error ends the loop with a '
+        'RequestAbortedException', () {
+      fakeAsync((async) {
+        final abortSignal = Completer<void>();
+        Object? error;
+        unawaited(
+          retry(
+            () async => throw const FormatException('fail'),
+            options: const SupabaseRetryOptions(
+              initialDelay: Duration(hours: 1),
+            ),
+            abortSignal: abortSignal.future,
+          ).then<void>((_) {}, onError: (Object e) => error = e),
+        );
+        async.flushMicrotasks();
+
+        abortSignal.completeError(
+          StateError('signal failed'),
+          StackTrace.current,
+        );
+        async.flushMicrotasks();
+
+        expect(error, isA<RequestAbortedException>());
+        expect(async.pendingTimers, isEmpty);
+      });
     });
 
     test('an abort during a retryAfter delay ends the loop', () async {
@@ -286,8 +409,9 @@ void main() {
       );
     });
 
-    test('ignores a missing, negative or unparseable value', () {
+    test('ignores a missing, zero, negative or unparseable value', () {
       expect(parse({}), isNull);
+      expect(parse({'retry-after': '0'}), isNull);
       expect(parse({'retry-after': '-5'}), isNull);
       expect(parse({'retry-after': 'soon'}), isNull);
     });

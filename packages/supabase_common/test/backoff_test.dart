@@ -66,6 +66,20 @@ void main() {
       expect(jittered(1), const Duration(seconds: 5));
     });
 
+    test('jitters a delay that reached the maximum', () {
+      Duration jittered(double random) => exponentialBackoff(
+        10,
+        initialDelay: const Duration(seconds: 1),
+        maxDelay: const Duration(seconds: 30),
+        randomizationFactor: 0.25,
+        random: _FixedRandom(random),
+      );
+
+      expect(jittered(0), const Duration(milliseconds: 22500));
+      expect(jittered(0.5), const Duration(seconds: 30));
+      expect(jittered(1), const Duration(milliseconds: 37500));
+    });
+
     test('rejects a negative attempt', () {
       expect(
         () => backoff(-1),
