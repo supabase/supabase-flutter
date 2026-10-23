@@ -59,7 +59,7 @@ void main() {
   }) {
     httpClient
       ..stub(body, statusCode: statusCode, headers: headers)
-      ..stub(_config(), method: HttpMethod.get.value, path: '/v1/config');
+      ..stub(_config(), method: HttpMethod.get, path: '/v1/config');
   }
 
   List<RecordedRequest> operations() => httpClient.requests
