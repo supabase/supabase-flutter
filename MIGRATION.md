@@ -1950,7 +1950,8 @@ final client = SupabaseClient(
   jsonCodec: jsonCodec,
 );
 
-// A codec passed in belongs to the caller, so dispose it with the client.
+// A codec passed in belongs to the caller. Dispose it after every client that
+// uses it.
 await client.dispose();
 await jsonCodec.dispose();
 ```
