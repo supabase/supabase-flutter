@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_test/supabase_test.dart';
 
 import 'widget_test_stubs.dart';
 
@@ -19,6 +20,7 @@ void main() {
       () => Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
+        httpClient: MockSupabaseHttpClient()..stubSignOut(),
         authOptions: FlutterAuthClientOptions(
           asyncStorage: MockAsyncStorage.withSession(
             DateTime.now().add(const Duration(hours: 1)),

@@ -293,7 +293,13 @@ class _ProfileFormState extends State<_ProfileForm> {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => unawaited(
-                  Supabase.instance.client.auth.signOut(),
+                  Supabase.instance.client.auth
+                      .signOut()
+                      .onError<AuthException>(
+                        (error, _) => debugPrint(
+                          'Could not revoke the session on the server: $error',
+                        ),
+                      ),
                 ),
                 child: const Text('Sign Out'),
               ),

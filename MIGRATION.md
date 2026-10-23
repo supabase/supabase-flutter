@@ -1135,10 +1135,10 @@ devices stayed signed in, and the token needed to retry was gone.
   be refreshed, `signOut()` throws and the session is kept, so you can retry.
   `SignOutScope.global` signs out on the device once the server has revoked the sessions.
 
-Navigate to the sign-in screen from `AuthSignedOut` rather than after `signOut()` returns, and
-catch the exception of a local `signOut()` if you want to tell the user that the session could not
-be revoked on the server. Where you sign out globally, handle the exception, for example by
-offering a retry or falling back to a local sign-out.
+The session is gone from the device as soon as `signOut()` is called, so you can navigate away
+without awaiting it and handle a failed revoke in the background, for example with
+`signOut().onError<AuthException>(...)`. Where you sign out globally, handle the exception, for
+example by offering a retry or falling back to a local sign-out.
 
 #### `FlutterWebAuth2OAuthLauncher` reports cancel and exchange failures without throwing
 
