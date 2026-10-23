@@ -1669,7 +1669,7 @@ void main() {
 
     test('names the Supabase or Flutter libraries export get a suffix', () {
       final code = generate(
-        tables: [table('user'), table('image')],
+        tables: [table('user'), table('image'), table('state')],
         enums: const [
           EnumDescription(schema: 'public', name: 'session', values: ['a']),
         ],
@@ -1678,6 +1678,7 @@ void main() {
       expect(code, contains('class UserTable {'));
       expect(code, contains('extension type const UserRow('));
       expect(code, contains('class ImageTable {'));
+      expect(code, contains('class StateTable {'));
       expect(code, contains('enum SessionEnum implements PostgresValue {'));
     });
 
