@@ -574,7 +574,8 @@ class RealtimeChannel {
   ///
   /// Each message is a map with the `type` (always `broadcast`), the `event`
   /// name and the sent data under `payload`. Messages broadcast from the
-  /// database also carry a `meta` map.
+  /// database also carry a `meta` map. Apps still on supabase_flutter v2 send
+  /// the data at the top level instead of under `payload`.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
@@ -801,7 +802,7 @@ class RealtimeChannel {
   /// connection state, so it is the way to broadcast without subscribing to
   /// the channel first.
   ///
-  /// [payload] must be either a `Map<String, dynamic>`, which is JSON-encoded,
+  /// [payload] must be either a map with string keys, which is JSON-encoded,
   /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
   /// is sent as `application/octet-stream`. Any other payload throws an
   /// [ArgumentError]. Receivers get it under the `payload` key of the message
@@ -833,8 +834,7 @@ class RealtimeChannel {
     required Object payload,
     Duration? timeout,
   }) async {
-    _checkBroadcastPayload(payload);
-    final isBinary = payload is TypedData || payload is ByteBuffer;
+    final isBinary = _isBinaryBroadcastPayload(payload);
 
     final headers = {
       ..._broadcastHeaders,
@@ -896,17 +896,13 @@ class RealtimeChannel {
     );
   }
 
-  void _checkBroadcastPayload(Object payload) {
-    if (payload is Map<String, dynamic> ||
-        payload is TypedData ||
-        payload is ByteBuffer) {
-      return;
-    }
-    throw ArgumentError.value(
-      payload,
+  bool _isBinaryBroadcastPayload(Object payload) {
+    if (payload is TypedData || payload is ByteBuffer) return true;
+    if (payload is Map) return false;
+    throw ArgumentError(
+      'Must be a map or binary data (TypedData or ByteBuffer), got '
+          '${payload.runtimeType}',
       'payload',
-      'Must be a Map<String, dynamic> or binary data (TypedData or '
-          'ByteBuffer)',
     );
   }
 
@@ -923,7 +919,7 @@ class RealtimeChannel {
   /// The channel has to be subscribed first, otherwise this throws. Use
   /// [httpSend] to broadcast over the REST API without subscribing.
   ///
-  /// [payload] must be either a `Map<String, dynamic>`, which is sent as JSON,
+  /// [payload] must be either a map with string keys, which is sent as JSON,
   /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
   /// is sent as a WebSocket binary frame. Any other payload throws an
   /// [ArgumentError]. Receivers get it under the `payload` key of the message
@@ -940,12 +936,14 @@ class RealtimeChannel {
     required String event,
     required Object payload,
   }) {
-    _checkBroadcastPayload(payload);
-    return send(
-      type: RealtimeListenType.broadcast,
-      event: event,
-      payload: {'payload': payload},
-    );
+    return Future.sync(() {
+      _isBinaryBroadcastPayload(payload);
+      return send(
+        type: RealtimeListenType.broadcast,
+        event: event,
+        payload: {'payload': payload},
+      );
+    });
   }
 
   /// Sends a `postgres_changes`, broadcast, or presence message over the

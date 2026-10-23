@@ -521,6 +521,8 @@ explicitly:
 - [An `Authorization` header passed to `SupabaseClient` reaches the auth client](#an-authorization-header-passed-to-supabaseclient-reaches-the-auth-client)
 - [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so code that
   reads the sent keys from the top of the received message gets `null`
+- [Invalid broadcast payloads throw in release builds](#invalid-broadcast-payloads-throw-in-release-builds),
+  so a `String` or `List` payload that used to be sent now fails
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
   second channel with the same name shares the first one instead of replacing it
 - [`stream()` keeps running through reconnects](#stream-keeps-running-through-reconnects), so
@@ -1524,20 +1526,40 @@ await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
 
 Apps built with v2 keep sending the data at the top level, so while those builds are still in use a
 v3 listener gets messages from them without a `payload` key. Read both shapes until every sender
-is on v3. The same listener works on v2, which already received messages from `httpSend()`, the
-database and the JavaScript client under `payload`, so ship it before the v3 senders to keep older
-builds reading new messages:
+is on v3. The same read works in a v2 `onBroadcast` callback, since v2 already received messages
+from `httpSend()`, the database and the JavaScript client under `payload`. Ship it before the v3
+senders to keep older builds reading new messages:
 
 ```dart skip
+// v3
 channel.onBroadcast(event: 'cursor').listen((message) {
   final data = message['payload'] ?? message;
   print(data['x']);
 });
+
+// v2
+channel.onBroadcast(
+  event: 'cursor',
+  callback: (message) {
+    final data = message['payload'] ?? message;
+    print(data['x']);
+  },
+);
 ```
 
-A `payload` that is neither a `Map<String, dynamic>` nor binary data throws an `ArgumentError`
-from `sendBroadcastMessage()` and `httpSend()`. It used to be checked only by an assert, so a
-release build sent it anyway.
+#### Invalid broadcast payloads throw in release builds
+
+`sendBroadcastMessage()` and `httpSend()` complete with an `ArgumentError` when `payload` is
+neither a map nor binary data (`TypedData` or `ByteBuffer`). Only a debug assert checked it before,
+so a release build sent a `String` or a `List` anyway. Send such values inside a map instead:
+
+```dart skip
+// Before
+await channel.sendBroadcastMessage(event: 'note', payload: 'hello');
+
+// After
+await channel.sendBroadcastMessage(event: 'note', payload: {'text': 'hello'});
+```
 
 #### A channel name in use returns its channel
 

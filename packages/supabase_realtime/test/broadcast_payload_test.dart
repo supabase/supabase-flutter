@@ -72,6 +72,16 @@ void main() {
     expect((await lastSentBroadcast())['payload'], {'x': 1});
   });
 
+  test('accepts a map without type arguments', () async {
+    final status = await channel.sendBroadcastMessage(
+      event: 'cursor',
+      payload: Map<Object?, Object?>.from({'x': 1}),
+    );
+
+    expect(status, ChannelResponse.ok);
+    expect((await lastSentBroadcast())['payload'], {'x': 1});
+  });
+
   test('leaves the payload map of the caller unchanged', () async {
     final payload = <String, dynamic>{'x': 1};
 
@@ -99,12 +109,12 @@ void main() {
   });
 
   test('rejects a payload that is neither a map nor binary', () async {
-    expect(
-      () => channel.sendBroadcastMessage(event: 'cursor', payload: 'text'),
+    await expectLater(
+      channel.sendBroadcastMessage(event: 'cursor', payload: 'text'),
       throwsArgumentError,
     );
-    expect(
-      () => channel.sendBroadcastMessage(event: 'cursor', payload: [1, 2]),
+    await expectLater(
+      channel.sendBroadcastMessage(event: 'cursor', payload: [1, 2]),
       throwsArgumentError,
     );
     await pumpEventQueue();
