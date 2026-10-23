@@ -107,9 +107,24 @@ class AuthSessionUrlResponse {
   /// The session obtained from the URL.
   final Session session;
 
-  /// The `type` query parameter of the URL, for example `'recovery'` or
-  /// `'email_change'`, `null` when the URL did not carry one.
-  final String? redirectType;
+  /// What the URL completed, the same for PKCE codes and implicit links.
+  final AuthRedirectType redirectType;
+}
+
+/// What a callback URL handed to `AuthClient.getSessionFromUrl` or a code
+/// handed to `AuthClient.exchangeCodeForSession` completed.
+enum AuthRedirectType {
+  /// A sign-in, sign-up, magic link, invite or OAuth sign-in, which emits
+  /// [AuthChangeEvent.signedIn].
+  signIn,
+
+  /// A password reset started by `AuthClient.resetPasswordForEmail`, which
+  /// emits [AuthChangeEvent.passwordRecovery].
+  passwordRecovery,
+
+  /// An email change started by `AuthClient.updateUser`, which emits
+  /// [AuthChangeEvent.userUpdated].
+  emailChange,
 }
 
 /// The response of `AuthAdminApi.generateLink`.
