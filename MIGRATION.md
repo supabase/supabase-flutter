@@ -1982,16 +1982,18 @@ try {
 `FunctionsException` can no longer be constructed, extended or implemented; name one of the three
 subtypes instead.
 
-Every failure of `invoke()` other than an abort is one of the three. A body that cannot be encoded
-as JSON, or a multipart `body` that is not a map of strings, throws a `FunctionsFetchException`
-before anything is sent, where it used to throw a `JsonUnsupportedObjectError` or a `TypeError`. A
+Every failure of `invoke()` other than an abort or a failing `accessToken` callback, which throws
+an `AccessTokenException`, is one of the three. A body that cannot be encoded as JSON, or a
+multipart `body` that is not a map of strings, throws a `FunctionsFetchException` before anything
+is sent, where it used to throw a `JsonUnsupportedObjectError` or a `TypeError`. A
 successful response whose body is not valid JSON or UTF-8 throws a `FunctionsFetchException` caused
 by the `FormatException`, where it used to throw the `FormatException` itself.
 
 #### Edge Function regions are a `FunctionsRegion`
 
 The `region` of `invoke()`, `FunctionsClient` and `FunctionsClientOptions` takes a
-`FunctionsRegion` instead of a `String`, so a misspelled region no longer reaches the server:
+`FunctionsRegion` instead of a `String`. The named constants rule out spelling mistakes, and a raw
+string no longer compiles as a `region`; `FunctionsRegion.custom` still takes any string:
 
 ```dart skip
 // Before
