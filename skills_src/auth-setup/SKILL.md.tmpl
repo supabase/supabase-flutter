@@ -160,6 +160,24 @@ A failed exchange, for example an expired link, arrives as an
 failed while the device was offline. Always pass `onError`: without it these
 errors are unhandled and reach the zone's error handler.
 
+## Sign out
+
+`signOut()` removes the session from the device first, so `AuthSignedOut`
+arrives even offline, and then waits up to 10 seconds for the server to
+revoke it. When that fails it throws an `AuthException`, but the user is
+already signed out on the device. Navigate from `AuthSignedOut`, not after the
+call, and catch the exception:
+
+```dart
+try {
+  await supabase.auth.signOut();
+} on AuthException catch (error) {
+  // Signed out on this device, but the session is still valid on the server
+  // until it expires.
+  print('Could not revoke the session: ${error.message}');
+}
+```
+
 ## When the app does not open, or opens without a session
 
 | Symptom                                              | Cause and fix                                                                                                     |
