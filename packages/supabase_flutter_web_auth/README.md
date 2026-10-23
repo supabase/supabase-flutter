@@ -54,6 +54,9 @@ Observe the result on `onAuthStateChange`, as with the default launcher:
   `false` and nothing is emitted.
 
 ```dart
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 Future<void> signIn(SupabaseClient supabase) async {
   final launched = await supabase.auth.signInWithOAuth(
     OAuthProvider.github,
@@ -96,8 +99,10 @@ Replace the scheme and host with those of the `redirectTo` URL you pass to
 `signInWithOAuth`/`signInWithSSO`/`linkIdentity`.
 
 If `.MainActivity` already has an intent filter for magic links or other
-email redirects, give the callback activity a different host, or a different
-scheme, than that filter. When both activities match the same URL, the
+email redirects, make sure it cannot match the callback URL. When that filter
+names a host, give the callback activity a different host. When it only names
+a scheme, it matches every host of that scheme, so give the callback activity
+a different scheme or add a host to the `.MainActivity` filter. When both activities match the same URL, the
 callback can be delivered to the wrong one, and `app_links` and this launcher
 can both try to exchange the same code. Add the new redirect URL to the
 project's redirect URL allow list too.
