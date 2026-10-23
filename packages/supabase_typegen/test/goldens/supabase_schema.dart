@@ -11,52 +11,80 @@ import 'dart:typed_data';
 import 'package:postgrest/postgrest.dart';
 
 /// Postgres enum `inventory.condition`.
-enum InventoryCondition {
+enum InventoryCondition implements PostgresValue {
   new$('new'),
-  used('used');
+  used('used'),
 
-  const InventoryCondition(this.wireName);
+  /// A label this code does not know, such as one a later migration added.
+  /// Sending it throws an [ArgumentError].
+  unknown(null);
+
+  const InventoryCondition(this._wireName);
+
+  final String? _wireName;
 
   /// The value as stored in the database.
-  final String wireName;
+  ///
+  /// Throws an [ArgumentError] for [unknown].
+  String get wireName =>
+      _wireName ??
+      (throw ArgumentError.value(
+        this,
+        'value',
+        'An unknown InventoryCondition value cannot be sent',
+      ));
 
-  /// Parses the database representation of the enum.
+  @override
+  String get literal => wireName;
+
+  /// Parses the database representation of the enum, reading a
+  /// label this code does not know as [unknown].
   static InventoryCondition fromWire(String wireName) => values.firstWhere(
-    (value) => value.wireName == wireName,
-    orElse: () => throw ArgumentError.value(
-      wireName,
-      'wireName',
-      'No InventoryCondition value with this wire name',
-    ),
+    (value) => value._wireName == wireName,
+    orElse: () => unknown,
   );
 
   @override
-  String toString() => wireName;
+  String toString() => _wireName ?? 'InventoryCondition.unknown';
 }
 
 /// Postgres enum `public.mood`.
-enum Mood {
+enum Mood implements PostgresValue {
   happy('happy'),
   veryHappy('very happy'),
-  sad('sad');
+  sad('sad'),
 
-  const Mood(this.wireName);
+  /// A label this code does not know, such as one a later migration added.
+  /// Sending it throws an [ArgumentError].
+  unknown(null);
+
+  const Mood(this._wireName);
+
+  final String? _wireName;
 
   /// The value as stored in the database.
-  final String wireName;
+  ///
+  /// Throws an [ArgumentError] for [unknown].
+  String get wireName =>
+      _wireName ??
+      (throw ArgumentError.value(
+        this,
+        'value',
+        'An unknown Mood value cannot be sent',
+      ));
 
-  /// Parses the database representation of the enum.
+  @override
+  String get literal => wireName;
+
+  /// Parses the database representation of the enum, reading a
+  /// label this code does not know as [unknown].
   static Mood fromWire(String wireName) => values.firstWhere(
-    (value) => value.wireName == wireName,
-    orElse: () => throw ArgumentError.value(
-      wireName,
-      'wireName',
-      'No Mood value with this wire name',
-    ),
+    (value) => value._wireName == wireName,
+    orElse: () => unknown,
   );
 
   @override
-  String toString() => wireName;
+  String toString() => _wireName ?? 'Mood.unknown';
 }
 
 /// A row of the `inventory.books` table, as `select()` reads it with every
@@ -478,7 +506,8 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   String? get coverUuid => _json['cover_uuid'] as String?;
 
   /// When the row was created
-  DateTime get createdAt => DateTime.parse(_json['created_at'] as String);
+  DateTime get createdAt =>
+      postgresTimestamp.decode(_json['created_at'] as String);
   int get id => _json['id'] as int;
   bool get inPrint => _json['in_print'] as bool;
   Object? get metadata => _json['metadata'] as Object?;
@@ -497,7 +526,7 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
   String get title => _json['title'] as String;
   DateTime? get updatedAt => switch (_json['updated_at']) {
     null => null,
-    final Object value => DateTime.parse(value as String),
+    final Object value => postgresTimestamp.decode(value as String),
   };
 
   /// The row as decoded from the response.
@@ -534,7 +563,10 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
            final value => postgresBytea.encode(value),
          },
          'cover_uuid': ?coverUuid,
-         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'created_at': ?switch (createdAt) {
+           null => null,
+           final value => postgresTimestamp.encode(value.toUtc()),
+         },
          'id': ?id,
          'in_print': ?inPrint,
          'metadata': ?metadata,
@@ -545,7 +577,10 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
          'rating': ?rating,
          'tags': ?tags,
          'title': title,
-         'updated_at': ?updatedAt?.toIso8601String(),
+         'updated_at': ?switch (updatedAt) {
+           null => null,
+           final value => postgresTimestamp.encode(value),
+         },
        });
 
   /// Returns a copy with `cover_image` set to SQL NULL, overriding any database
@@ -623,7 +658,10 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
            final value => postgresBytea.encode(value),
          },
          'cover_uuid': ?coverUuid,
-         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'created_at': ?switch (createdAt) {
+           null => null,
+           final value => postgresTimestamp.encode(value.toUtc()),
+         },
          'id': ?id,
          'in_print': ?inPrint,
          'metadata': ?metadata,
@@ -634,7 +672,10 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
          'rating': ?rating,
          'tags': ?tags,
          'title': ?title,
-         'updated_at': ?updatedAt?.toIso8601String(),
+         'updated_at': ?switch (updatedAt) {
+           null => null,
+           final value => postgresTimestamp.encode(value),
+         },
        });
 
   /// Returns a copy with `cover_image` set to SQL NULL, overriding any database
@@ -939,14 +980,18 @@ extension DatabaseFunctions on PostgrestRpc {
     'touch_book',
     arguments: {
       'book_id': bookId,
-      'touched_at': ?touchedAt?.toUtc().toIso8601String(),
+      'touched_at': ?switch (touchedAt) {
+        null => null,
+        final value => postgresTimestamp.encode(value.toUtc()),
+      },
     },
     fromJson: (_) {},
     schema: 'public',
   );
 }
 
-DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
+DateTime _dateTimeFromJson(Object json) =>
+    postgresTimestamp.decode(json as String);
 
 double _doubleFromJson(Object json) => (json as num).toDouble();
 

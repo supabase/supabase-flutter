@@ -45,7 +45,9 @@ For every table the generator emits:
   column, and a computed relationship named like the table of a foreign key
   embed replaces that embed, since PostgREST resolves the name to the
   function,
-- Dart enums for Postgres enums, with wire-name mapping,
+- Dart enums for Postgres enums, with wire-name mapping and an `unknown`
+  value that a label added by a later migration reads as. Sending `unknown`
+  throws an `ArgumentError`,
 - an extension method on `PostgrestRpc` for every function PostgREST exposes
   under `/rpc`, so `client.rpc.searchBooks(query: 'dart')` takes the
   arguments as typed parameters, optional where the function declares a
@@ -67,6 +69,13 @@ named after themselves, `books` becomes `Books`, `BooksRow`, `BooksInsert`
 and `BooksUpdate`; objects of any other schema carry the schema as a prefix,
 so `inventory.books` becomes `InventoryBooks` and `InventoryBooksRow`, and
 its `condition` enum `InventoryCondition`.
+
+A table named like a type of the Supabase or Flutter libraries gets a `Table`
+suffix, so `user` becomes `UserTable` with `UserRow`, and an enum an `Enum`
+suffix, `SessionEnum`. A name the generated code itself uses, such as
+`String`, gets `$`. When several columns or enum labels convert to the
+same Dart name, the one in lowercase keeps it and the others get `$` and
+their own spelling, `name` and `name$Name`.
 
 ## Usage
 
@@ -165,10 +174,13 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
   representation (`List<String>`) because a filter could not tell a vector
   element from a nested array; `postgresVector` decodes them.
 - `timestamptz` values are written back in UTC and naive `timestamp` values
-  as local wall time. `date`, `time`, `timetz` and `interval` columns map to
-  `PostgresDate`, `PostgresTime` and `PostgresInterval`, which parse what
-  Postgres emits, including `infinity` dates and every `IntervalStyle`, and
-  write themselves back as the literal Postgres accepts.
+  as local wall time. `infinity` and `-infinity` read as
+  `postgresTimestamp.infinity` and `postgresTimestamp.negativeInfinity` and
+  are written back the same way. `date`, `time`, `timetz` and `interval`
+  columns map to `PostgresDate`, `PostgresTime` and `PostgresInterval`,
+  which parse what Postgres emits, including `infinity` dates and every
+  `IntervalStyle`, and write themselves back as the literal Postgres
+  accepts.
 - `bytea` columns map to `Uint8List` and are written back as hex literals,
   the format Postgres emits by default; the escape output format is decoded
   as well.
@@ -186,6 +198,7 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
   those of the matching range type. Their range operators take a
   `PostgresMultirange`, since PostgREST reads the operand as the column's
   type.
+- `int8` columns map to `int`, which loses precision beyond 2^53 on the web.
 - `oid` columns map to `int` and `xid8` columns to `BigInt`, parsed from the
   JSON strings PostgREST sends them as. `numeric` columns map to `num`:
   PostgREST sends them as JSON numbers, and decoding keeps only what a Dart
@@ -200,6 +213,8 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
   same way but filtered with an array literal, which the server rejects. A
   typed stream rejects filters on these columns, because realtime cannot
   compare their values.
+- Foreign tables only get `Insert` and `Update` types when their foreign data
+  wrapper reports their columns as updatable.
 - Foreign keys into another schema get no relation member, since PostgREST
   only embeds tables of the schema a request addresses. The foreign key
   itself is still described, so the column is typed like any other.
@@ -211,3 +226,5 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
 - The parameters of a function are typed non-nullable unless they have a
   default, matching the supabase-js type generator; pass SQL NULL to a
   function without a default through `client.rpc`.
+- A domain used by a function, as a parameter, result or computed field, is
+  typed `Object`, since the metadata does not record its base type there.

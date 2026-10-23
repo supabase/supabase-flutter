@@ -11,75 +11,118 @@ import 'dart:typed_data';
 import 'package:postgrest/postgrest.dart';
 
 /// Postgres enum `public.string`.
-enum String$ {
+enum String$ implements PostgresValue {
   itSATrap('it\'s \$a\u{2028}trap'),
-  plain('plain');
+  plain('plain'),
 
-  const String$(this.wireName);
+  /// A label this code does not know, such as one a later migration added.
+  /// Sending it throws an [ArgumentError].
+  unknown(null);
+
+  const String$(this._wireName);
+
+  final String? _wireName;
 
   /// The value as stored in the database.
-  final String wireName;
+  ///
+  /// Throws an [ArgumentError] for [unknown].
+  String get wireName =>
+      _wireName ??
+      (throw ArgumentError.value(
+        this,
+        'value',
+        'An unknown String\$ value cannot be sent',
+      ));
 
-  /// Parses the database representation of the enum.
+  @override
+  String get literal => wireName;
+
+  /// Parses the database representation of the enum, reading a
+  /// label this code does not know as [unknown].
   static String$ fromWire(String wireName) => values.firstWhere(
-    (value) => value.wireName == wireName,
-    orElse: () => throw ArgumentError.value(
-      wireName,
-      'wireName',
-      'No String\$ value with this wire name',
-    ),
+    (value) => value._wireName == wireName,
+    orElse: () => unknown,
   );
 
   @override
-  String toString() => wireName;
+  String toString() => _wireName ?? 'String\$.unknown';
 }
 
 /// Postgres enum `public.big_int`.
-enum BigInt$ {
+enum BigInt$ implements PostgresValue {
   small('small'),
-  large('large');
+  large('large'),
 
-  const BigInt$(this.wireName);
+  /// A label this code does not know, such as one a later migration added.
+  /// Sending it throws an [ArgumentError].
+  unknown(null);
+
+  const BigInt$(this._wireName);
+
+  final String? _wireName;
 
   /// The value as stored in the database.
-  final String wireName;
+  ///
+  /// Throws an [ArgumentError] for [unknown].
+  String get wireName =>
+      _wireName ??
+      (throw ArgumentError.value(
+        this,
+        'value',
+        'An unknown BigInt\$ value cannot be sent',
+      ));
 
-  /// Parses the database representation of the enum.
+  @override
+  String get literal => wireName;
+
+  /// Parses the database representation of the enum, reading a
+  /// label this code does not know as [unknown].
   static BigInt$ fromWire(String wireName) => values.firstWhere(
-    (value) => value.wireName == wireName,
-    orElse: () => throw ArgumentError.value(
-      wireName,
-      'wireName',
-      'No BigInt\$ value with this wire name',
-    ),
+    (value) => value._wireName == wireName,
+    orElse: () => unknown,
   );
 
   @override
-  String toString() => wireName;
+  String toString() => _wireName ?? 'BigInt\$.unknown';
 }
 
 /// Postgres enum `public.статус`.
-enum $ {
-  $$('новый'),
-  $$$('готов');
+enum U441U442U430U442U443U441 implements PostgresValue {
+  u43dU43eU432U44bU439('новый'),
+  u433U43eU442U43eU432('готов'),
 
-  const $(this.wireName);
+  /// A label this code does not know, such as one a later migration added.
+  /// Sending it throws an [ArgumentError].
+  unknown(null);
+
+  const U441U442U430U442U443U441(this._wireName);
+
+  final String? _wireName;
 
   /// The value as stored in the database.
-  final String wireName;
-
-  /// Parses the database representation of the enum.
-  static $ fromWire(String wireName) => values.firstWhere(
-    (value) => value.wireName == wireName,
-    orElse: () => throw ArgumentError.value(
-      wireName,
-      'wireName',
-      'No \$ value with this wire name',
-    ),
-  );
+  ///
+  /// Throws an [ArgumentError] for [unknown].
+  String get wireName =>
+      _wireName ??
+      (throw ArgumentError.value(
+        this,
+        'value',
+        'An unknown U441U442U430U442U443U441 value cannot be sent',
+      ));
 
   @override
-  String toString() => wireName;
+  String get literal => wireName;
+
+  /// Parses the database representation of the enum, reading a
+  /// label this code does not know as [unknown].
+  static U441U442U430U442U443U441 fromWire(String wireName) =>
+      values.firstWhere(
+        (value) => value._wireName == wireName,
+        orElse: () => unknown,
+      );
+
+  @override
+  String toString() => _wireName ?? 'U441U442U430U442U443U441.unknown';
 }
 
 /// A row of the `postgrest_table` table, as `select()` reads it with every
@@ -125,12 +168,15 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
       ?.map((element) => PostgresRange.parse(element as String, int.parse))
       .toList();
   List<DateTime>? get stamps => (_json['stamps'] as List<dynamic>?)
-      ?.map((element) => DateTime.parse(element as String))
+      ?.map((element) => postgresTimestamp.decode(element as String))
       .toList();
   List<PostgresRange<DateTime>>? get shifts =>
       (_json['shifts'] as List<dynamic>?)
           ?.map(
-            (element) => PostgresRange.parse(element as String, DateTime.parse),
+            (element) => PostgresRange.parse(
+              element as String,
+              postgresTimestamp.decode,
+            ),
           )
           .toList();
 
@@ -182,12 +228,10 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
          'moods': ?moods?.map((element) => element.wireName).toList(),
          'spans': ?spans?.map((element) => element.literal).toList(),
          'stamps': ?stamps
-             ?.map((element) => element.toUtc().toIso8601String())
+             ?.map((element) => postgresTimestamp.encode(element.toUtc()))
              .toList(),
          'shifts': ?shifts
-             ?.map(
-               (element) => element.render((bound) => bound.toIso8601String()),
-             )
+             ?.map((element) => element.render(postgresTimestamp.encode))
              .toList(),
        });
 
@@ -290,12 +334,10 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
          'moods': ?moods?.map((element) => element.wireName).toList(),
          'spans': ?spans?.map((element) => element.literal).toList(),
          'stamps': ?stamps
-             ?.map((element) => element.toUtc().toIso8601String())
+             ?.map((element) => postgresTimestamp.encode(element.toUtc()))
              .toList(),
          'shifts': ?shifts
-             ?.map(
-               (element) => element.render((bound) => bound.toIso8601String()),
-             )
+             ?.map((element) => element.render(postgresTimestamp.encode))
              .toList(),
        });
 
@@ -506,7 +548,7 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
   int get list => _json['list'] as int;
   DateTime? get dateTime => switch (_json['date_time']) {
     null => null,
-    final Object value => DateTime.parse(value as String),
+    final Object value => postgresTimestamp.decode(value as String),
   };
   PostgresRange<int> get pages =>
       PostgresRange.parse(_json['pages'] as String, int.parse);
@@ -517,10 +559,13 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
   PostgresRange<PostgresDate> get season =>
       PostgresRange.parse(_json['season'] as String, PostgresDate.parse);
   PostgresRange<DateTime> get shift =>
-      PostgresRange.parse(_json['shift'] as String, DateTime.parse);
+      PostgresRange.parse(_json['shift'] as String, postgresTimestamp.decode);
   PostgresRange<DateTime>? get during => switch (_json['during']) {
     null => null,
-    final Object value => PostgresRange.parse(value as String, DateTime.parse),
+    final Object value => PostgresRange.parse(
+      value as String,
+      postgresTimestamp.decode,
+    ),
   };
   PostgresDate get since => PostgresDate.parse(_json['since'] as String);
   PostgresTime get opensAt => PostgresTime.parse(_json['opens_at'] as String);
@@ -617,7 +662,7 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
     null => null,
     final Object value => PostgresMultirange.parse(
       value as String,
-      DateTime.parse,
+      postgresTimestamp.decode,
     ),
   };
   PostgresLogSequenceNumber? get position => switch (_json['position']) {
@@ -677,12 +722,17 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     List<PostgresMacAddress>? hardwareHistory,
   }) : this._({
          'list': list,
-         'date_time': ?dateTime?.toUtc().toIso8601String(),
+         'date_time': ?switch (dateTime) {
+           null => null,
+           final value => postgresTimestamp.encode(value.toUtc()),
+         },
          'pages': pages.literal,
          'prices': ?prices?.literal,
          'season': ?season?.literal,
-         'shift': shift.render((bound) => bound.toIso8601String()),
-         'during': ?during?.render((bound) => bound.toUtc().toIso8601String()),
+         'shift': shift.render(postgresTimestamp.encode),
+         'during': ?during?.render(
+           (bound) => postgresTimestamp.encode(bound.toUtc()),
+         ),
          'since': since.literal,
          'opens_at': opensAt.literal,
          'closes_at': ?closesAt?.literal,
@@ -705,7 +755,7 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
          'reach': ?reach?.literal,
          'availability': ?availability?.literal,
          'blackouts': ?blackouts?.map((element) => element.literal).toList(),
-         'shifts': ?shifts?.render((bound) => bound.toIso8601String()),
+         'shifts': ?shifts?.render(postgresTimestamp.encode),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -858,12 +908,17 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     List<PostgresMacAddress>? hardwareHistory,
   }) : this._({
          'list': ?list,
-         'date_time': ?dateTime?.toUtc().toIso8601String(),
+         'date_time': ?switch (dateTime) {
+           null => null,
+           final value => postgresTimestamp.encode(value.toUtc()),
+         },
          'pages': ?pages?.literal,
          'prices': ?prices?.literal,
          'season': ?season?.literal,
-         'shift': ?shift?.render((bound) => bound.toIso8601String()),
-         'during': ?during?.render((bound) => bound.toUtc().toIso8601String()),
+         'shift': ?shift?.render(postgresTimestamp.encode),
+         'during': ?during?.render(
+           (bound) => postgresTimestamp.encode(bound.toUtc()),
+         ),
          'since': ?since?.literal,
          'opens_at': ?opensAt?.literal,
          'closes_at': ?closesAt?.literal,
@@ -886,7 +941,7 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
          'reach': ?reach?.literal,
          'availability': ?availability?.literal,
          'blackouts': ?blackouts?.map((element) => element.literal).toList(),
-         'shifts': ?shifts?.render((bound) => bound.toIso8601String()),
+         'shifts': ?shifts?.render(postgresTimestamp.encode),
          'position': ?position?.literal,
          'hardware': ?hardware?.literal,
          'hardware_history': ?hardwareHistory
@@ -1248,7 +1303,8 @@ class CoreTypeNames {
 
 /// A row of the `orders` table, as `select()` reads it with every column.
 extension type const OrdersRow(Map<String, dynamic> _json) implements Object {
-  $ get status => $.fromWire(_json['status'] as String);
+  U441U442U430U442U443U441 get status =>
+      U441U442U430U442U443U441.fromWire(_json['status'] as String);
 
   /// The row as decoded from the response.
   Map<String, dynamic> toJson() => _json;
@@ -1261,7 +1317,8 @@ extension type const OrdersRow(Map<String, dynamic> _json) implements Object {
 /// to insert SQL NULL explicitly.
 extension type const OrdersInsert._(Map<String, dynamic> _json)
     implements Object {
-  OrdersInsert({required $ status}) : this._({'status': status.wireName});
+  OrdersInsert({required U441U442U430U442U443U441 status})
+    : this._({'status': status.wireName});
 }
 
 /// Values for updating rows of `orders`. All columns are optional; passing
@@ -1269,7 +1326,8 @@ extension type const OrdersInsert._(Map<String, dynamic> _json)
 /// to write SQL NULL explicitly.
 extension type const OrdersUpdate._(Map<String, dynamic> _json)
     implements Object {
-  OrdersUpdate({$? status}) : this._({'status': ?status?.wireName});
+  OrdersUpdate({U441U442U430U442U443U441? status})
+    : this._({'status': ?status?.wireName});
 }
 
 /// Typed access to the `orders` table.
@@ -1284,9 +1342,9 @@ class Orders {
     primaryKey: [],
   );
 
-  static const status = PostgrestColumn<OrdersRow, $>(
+  static const status = PostgrestColumn<OrdersRow, U441U442U430U442U443U441>(
     'status',
-    fromJson: _fromJson,
+    fromJson: _u441U442U430U442U443U441FromJson,
   );
 }
 
@@ -1531,7 +1589,7 @@ extension DatabaseFunctions on PostgrestRpc {
   >
   evilMultilineSchemaNameItS({required DateTime at}) => rows(
     'it\'s',
-    arguments: {'at': at.toIso8601String()},
+    arguments: {'at': postgresTimestamp.encode(at)},
     rowFromJson: EvilMultilineSchemaNamePostgrestColumnRow.new,
     schema: 'evil\nmultiline "schema" name',
   );
@@ -1539,10 +1597,11 @@ extension DatabaseFunctions on PostgrestRpc {
 
 BigInt _bigIntFromJson(Object json) => BigInt.parse(json as String);
 
-DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
+DateTime _dateTimeFromJson(Object json) =>
+    postgresTimestamp.decode(json as String);
 
 List<DateTime> _dateTimeListFromJson(Object json) => (json as List<dynamic>)
-    .map((element) => DateTime.parse(element as String))
+    .map((element) => postgresTimestamp.decode(element as String))
     .toList();
 
 double _doubleFromJson(Object json) => (json as num).toDouble();
@@ -1553,8 +1612,6 @@ List<double> _doubleListFromJson(Object json) => (json as List<dynamic>)
 
 List<double> _doubleListFromJson$(Object json) =>
     postgresVector.decode(json as String);
-
-$ _fromJson(Object json) => $.fromWire(json as String);
 
 int _intFromJson(Object json) => int.parse(json as String);
 
@@ -1598,7 +1655,7 @@ List<PostgresMacAddress> _postgresMacAddressListFromJson(Object json) =>
 
 PostgresMultirange<DateTime> _postgresMultirangeOfDateTimeFromJson(
   Object json,
-) => PostgresMultirange.parse(json as String, DateTime.parse);
+) => PostgresMultirange.parse(json as String, postgresTimestamp.decode);
 
 List<PostgresMultirange<int>> _postgresMultirangeOfIntListFromJson(
   Object json,
@@ -1628,12 +1685,15 @@ PostgresPolygon _postgresPolygonFromJson(Object json) =>
     PostgresPolygon.parse(json as String);
 
 PostgresRange<DateTime> _postgresRangeOfDateTimeFromJson(Object json) =>
-    PostgresRange.parse(json as String, DateTime.parse);
+    PostgresRange.parse(json as String, postgresTimestamp.decode);
 
 List<PostgresRange<DateTime>> _postgresRangeOfDateTimeListFromJson(
   Object json,
 ) => (json as List<dynamic>)
-    .map((element) => PostgresRange.parse(element as String, DateTime.parse))
+    .map(
+      (element) =>
+          PostgresRange.parse(element as String, postgresTimestamp.decode),
+    )
     .toList();
 
 PostgresRange<int> _postgresRangeOfIntFromJson(Object json) =>
@@ -1660,6 +1720,9 @@ List<String> _stringListFromJson(Object json) => (json as List<dynamic>).cast();
 List<String$> _stringListFromJson$(Object json) => (json as List<dynamic>)
     .map((element) => String$.fromWire(element as String))
     .toList();
+
+U441U442U430U442U443U441 _u441U442U430U442U443U441FromJson(Object json) =>
+    U441U442U430U442U443U441.fromWire(json as String);
 
 Uint8List _uint8ListFromJson(Object json) =>
     postgresBytea.decode(json as String);
