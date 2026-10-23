@@ -244,7 +244,7 @@ void main() {
       stubRefreshJson(
         rateLimit,
         statusCode: 429,
-        headers: {'retry-after': '0'},
+        headers: {'retry-after': '1'},
         times: 1,
       );
 
