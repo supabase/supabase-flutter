@@ -1784,7 +1784,7 @@ void main() {
       ),
     );
 
-    test('names the Supabase or Flutter libraries export get a suffix', () {
+    test('names the Supabase or Flutter libraries export keep their name', () {
       final code = generate(
         tables: [table('user'), table('image'), table('state')],
         enums: const [
@@ -1792,11 +1792,11 @@ void main() {
         ],
       );
 
-      expect(code, contains('class UserTable {'));
+      expect(code, contains('class User {'));
       expect(code, contains('extension type const UserRow('));
-      expect(code, contains('class ImageTable {'));
-      expect(code, contains('class StateTable {'));
-      expect(code, contains('enum SessionEnum implements PostgresValue {'));
+      expect(code, contains('class Image {'));
+      expect(code, contains('class State {'));
+      expect(code, contains('enum Session implements PostgresValue {'));
     });
 
     test('columns converting to one identifier keep their names whatever '

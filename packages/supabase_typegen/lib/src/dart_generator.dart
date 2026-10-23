@@ -5,7 +5,6 @@ import 'identifiers.dart';
 import 'language_version_io.dart';
 import 'sdk_formatter_io.dart';
 import 'schema_description.dart';
-import 'sdk_type_names.dart';
 import 'version.dart';
 
 class _Binding {
@@ -112,7 +111,7 @@ String generateDartCode(
       enumDescription.schema,
       enumDescription.name,
     );
-    final typeName = typeNames.claim(baseName, fallback: '${baseName}Enum');
+    final typeName = typeNames.claim(baseName);
     enumTypeNames[(enumDescription.schema, enumDescription.name)] = typeName;
     _writeEnum(buffer, enumDescription, typeName);
   }
@@ -184,7 +183,7 @@ String _displayName(String schema, String name) =>
 ///
 /// Starts out with every identifier the generated source references
 /// unqualified, so a schema object named like one of them (for example an
-/// enum named `string`) cannot shadow it, and refuses the [sdkTypeNames].
+/// enum named `string`) cannot shadow it.
 class _TypeNameRegistry {
   final _taken = {
     'String',
@@ -234,19 +233,8 @@ class _TypeNameRegistry {
     'PostgrestTypedFilterBuilder',
   };
 
-  /// Claims [name], or [fallback] when [name] is named like a type of the
-  /// Supabase or Flutter libraries, suffixed with `\$` until it is free.
-  String claim(String name, {String? fallback}) {
-    var candidate = sdkTypeNames.contains(name) ? (fallback ?? name) : name;
-    while (!_isFree(candidate)) {
-      candidate = '$candidate\$';
-    }
-    _taken.add(candidate);
-    return candidate;
-  }
-
-  bool _isFree(String name) =>
-      !_taken.contains(name) && !sdkTypeNames.contains(name);
+  /// Claims [name], suffixed with `\$` until it is free.
+  String claim(String name) => _claimName(_taken, name);
 
   Set<String> get taken => _taken;
 }
@@ -348,10 +336,7 @@ class _TableNames {
     _TypeNameRegistry typeNames,
   ) {
     final baseName = _typeBaseName(table.schema, table.name);
-    String claim(String suffix) => typeNames.claim(
-      '$baseName$suffix',
-      fallback: '${baseName}Table$suffix',
-    );
+    String claim(String suffix) => typeNames.claim('$baseName$suffix');
     return _TableNames(
       rowType: claim('Row'),
       insertType: table.isInsertable ? claim('Insert') : null,
@@ -1842,14 +1827,8 @@ void _writeFunctions(
   for (final method in methods) {
     if (method.overload.result case FunctionColumnsResult(:final columns)) {
       final baseName = pascalCase(method.name);
-      final rowType = typeNames.claim(
-        '${baseName}Row',
-        fallback: '${baseName}ResultRow',
-      );
-      final namespaceType = typeNames.claim(
-        baseName,
-        fallback: '${baseName}Result',
-      );
+      final rowType = typeNames.claim('${baseName}Row');
+      final namespaceType = typeNames.claim(baseName);
       final names = [for (final column in columns) column.name];
       final rowMembers = _uniqueMemberNames(
         names,
