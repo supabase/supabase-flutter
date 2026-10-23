@@ -190,7 +190,7 @@ void main() {
       expect(client.currentUser?.factors, hasLength(1));
       expect(httpClient.requestsTo('/token'), isEmpty);
       expect(
-        httpClient.requestsTo('/user', method: HttpMethod.get.value),
+        httpClient.requestsTo('/user', method: HttpMethod.get),
         hasLength(1),
       );
       await pumpEventQueue();
@@ -287,7 +287,7 @@ void main() {
           httpClient
             ..stub(
               body,
-              method: HttpMethod.post.value,
+              method: HttpMethod.post,
               path: '/token',
               query: {'grant_type': 'refresh_token'},
             )
