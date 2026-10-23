@@ -1526,25 +1526,13 @@ await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
 
 Apps built with v2 keep sending the data at the top level, so while those builds are still in use a
 v3 listener gets messages from them without a `payload` key. Read both shapes until every sender
-is on v3. The same read works in a v2 `onBroadcast` callback, since v2 already received messages
-from `httpSend()`, the database and the JavaScript client under `payload`. Ship it before the v3
-senders to keep older builds reading new messages:
+is on v3:
 
 ```dart skip
-// v3
 channel.onBroadcast(event: 'cursor').listen((message) {
   final data = message['payload'] ?? message;
   print(data['x']);
 });
-
-// v2
-channel.onBroadcast(
-  event: 'cursor',
-  callback: (message) {
-    final data = message['payload'] ?? message;
-    print(data['x']);
-  },
-);
 ```
 
 #### Invalid broadcast payloads throw in release builds
