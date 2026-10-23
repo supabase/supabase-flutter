@@ -777,21 +777,36 @@ By default, every link with a `code`, `access_token`, `error`, `error_code` or
 auth callback. If your app receives other links with one of those parameters,
 pass `detectSessionInUriPredicate` to tell the auth callbacks apart, for
 example by the redirect URL they arrive on. On the web the predicate receives
-the URL of the page, so keep the default rule there:
+the URL of the page, so check only the parameters there:
 
 ```dart file
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+const _authParameters = {
+  'access_token',
+  'code',
+  'error',
+  'error_code',
+  'error_description',
+};
+
+bool _isAuthCallback(Uri uri) {
+  if (!kIsWeb && uri.host != 'login-callback') return false;
+  final fragmentParameters = Uri.splitQueryString(uri.fragment);
+  return _authParameters.any(
+    (parameter) =>
+        uri.queryParameters.containsKey(parameter) ||
+        fragmentParameters.containsKey(parameter),
+  );
+}
 
 Future<void> initializeSupabase() async {
   await Supabase.initialize(
     url: 'https://your-project.supabase.co',
     publishableKey: 'your-publishable-key',
     authOptions: FlutterAuthClientOptions(
-      detectSessionInUriPredicate: (uri) =>
-          (kIsWeb || uri.host == 'login-callback') &&
-          (uri.queryParameters.containsKey('code') ||
-              uri.queryParameters.containsKey('error')),
+      detectSessionInUriPredicate: _isAuthCallback,
     ),
   );
 }
