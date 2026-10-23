@@ -494,7 +494,8 @@ class StorageFileApi {
   /// Creates a signed upload URL.
   ///
   /// Signed upload URLs can be used to upload files to the bucket without
-  /// further authentication. They are valid for one minute.
+  /// further authentication. The storage server decides how long they stay
+  /// valid, so the expiry cannot be chosen per request.
   ///
   /// [path] The file path, including the current file name. For example
   /// `folder/image.png`.

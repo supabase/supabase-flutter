@@ -21,11 +21,12 @@ class PostgrestClientOptions {
   /// Bounds how long a single request attempt may go without progress,
   /// overriding the `requestTimeout` of `SupabaseClient`.
   ///
-  /// The timer restarts whenever a chunk of the response arrives, and a
-  /// timed-out attempt is cancelled and retried like any other failure. A
-  /// `PostgrestTransportException` caused by a `TimeoutException` is thrown
-  /// once the retries are exhausted. Use `PostgrestBuilder.requestTimeout` to
-  /// override it for a single request.
+  /// The timer restarts whenever a chunk of the request body is sent or a
+  /// chunk of the response arrives. A timed-out attempt is cancelled and
+  /// throws a `PostgrestTransportException` caused by a `TimeoutException`,
+  /// unless it is a GET or HEAD request with retries left, which is retried
+  /// instead. Use `PostgrestBuilder.requestTimeout` to override it for a
+  /// single request.
   final Duration? requestTimeout;
 }
 

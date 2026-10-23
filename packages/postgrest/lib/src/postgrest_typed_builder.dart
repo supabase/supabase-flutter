@@ -291,8 +291,10 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   PostgrestTypedBuilder<T> setHeader(String key, String value) =>
       _with(_request._header(key, value));
 
-  /// A broadcast stream of the one result. The request runs when the first
-  /// listener subscribes, so a listener added later still receives it.
+  /// A broadcast stream of the one result. The request is sent when
+  /// [asStream] is called. The result is delivered to the first listener and
+  /// to every other listener subscribed at that moment; a listener added
+  /// after it was delivered only receives the done event.
   @override
   Stream<T> asStream() => _execute().asStream().asBroadcastStream();
 
