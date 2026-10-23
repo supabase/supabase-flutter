@@ -127,7 +127,7 @@ void main() {
     test('signInWithSSO returns false', () async {
       pkceHttpClient.stub(
         {'url': 'https://idp.example.com/sso'},
-        method: HttpMethod.post.value,
+        method: HttpMethod.post,
         path: '/sso',
       );
 
@@ -143,7 +143,7 @@ void main() {
       await signInTestUser(Supabase.instance.client.auth);
       pkceHttpClient.stub(
         {'url': 'https://github.com/login/oauth/authorize'},
-        method: HttpMethod.get.value,
+        method: HttpMethod.get,
         path: '/user/identities/authorize',
       );
 
@@ -175,7 +175,7 @@ void main() {
         'error_code': 'flow_state_not_found',
         'msg': 'invalid flow state, no valid flow state found',
       },
-      method: HttpMethod.post.value,
+      method: HttpMethod.post,
       path: '/token',
       statusCode: 400,
     );
