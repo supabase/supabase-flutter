@@ -11,18 +11,15 @@ void main() {
     postgrest = PostgrestClient('https://example.com', httpClient: httpClient);
   });
 
-  test('maybeSingle() does not override the Accept header', () async {
+  test('maybeSingle() does not override the Accept header of a read', () async {
     httpClient.stub([], path: '/users');
 
     await postgrest.from('users').select().maybeSingle();
-    await postgrest.from('users').update({'name': 'x'}).select().maybeSingle();
 
-    for (final request in httpClient.requests) {
-      expect(
-        request.headers['Accept'],
-        isNot('application/vnd.pgrst.object+json'),
-      );
-    }
+    expect(
+      httpClient.requests.single.headers['Accept'],
+      isNot('application/vnd.pgrst.object+json'),
+    );
   });
 
   test(
@@ -36,8 +33,8 @@ void main() {
 
       final response = await postgrest
           .from('users')
-          .update({'name': 'x'})
           .select()
+          .eq('name', 'x')
           .maybeSingle()
           .count();
 
@@ -46,15 +43,14 @@ void main() {
     },
   );
 
-  test('maybeSingle() throws when a write returns more than one row', () async {
+  test('maybeSingle() throws when a read returns more than one row', () async {
     httpClient.stub([
       {'name': 'a'},
       {'name': 'b'},
     ], path: '/users');
 
     await expectLater(
-      () =>
-          postgrest.from('users').update({'name': 'x'}).select().maybeSingle(),
+      () => postgrest.from('users').select().maybeSingle(),
       throwsA(
         isA<PostgrestApiException>()
             .having((e) => e.statusCode, 'statusCode', 406)

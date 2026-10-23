@@ -1,5 +1,7 @@
 part of 'postgrest_builder.dart';
 
+const _objectMediaType = 'application/vnd.pgrst.object+json';
+
 /// A builder for shaping the result of a query, such as ordering or limiting
 /// it.
 class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
@@ -174,21 +176,29 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   ///     .select('messages(*)')
   ///     .range(1, 1, referencedTable: 'messages');
   /// ```
+  ///
+  /// Throws an [ArgumentError] when [to] is less than [from].
   PostgrestTransformBuilder<T> range(
     int from,
     int to, {
     String? referencedTable,
   }) {
-    final keyOffset = referencedTable == null
-        ? 'offset'
-        : '$referencedTable.offset';
-    final keyLimit = referencedTable == null
-        ? 'limit'
-        : '$referencedTable.limit';
+    checkPostgrestRange(from, to);
+    return window(from, to - from + 1, referencedTable: referencedTable);
+  }
 
+  /// Skips [offset] rows and limits the result to the [count] rows after
+  /// them, or the rows of [referencedTable] when it is given.
+  @internal
+  PostgrestTransformBuilder<T> window(
+    int offset,
+    int count, {
+    String? referencedTable,
+  }) {
+    final prefix = referencedTable == null ? '' : '$referencedTable.';
     final url = _url
-        .overrideSearchParameters(keyOffset, '$from')
-        .overrideSearchParameters(keyLimit, '${to - from + 1}');
+        .overrideSearchParameters('${prefix}offset', '$offset')
+        .overrideSearchParameters('${prefix}limit', '$count');
     return _copyWithUrl(url);
   }
 
@@ -205,11 +215,12 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// ```
   PostgrestTransformBuilder<PostgrestMap> single() {
     final newHeaders = {..._headers};
-    newHeaders[HttpHeader.accept] = 'application/vnd.pgrst.object+json';
+    newHeaders[HttpHeader.accept] = _objectMediaType;
 
     return PostgrestTransformBuilder(
       _copyWithType(
         headers: newHeaders,
+        maybeSingle: false,
       ),
     );
   }
@@ -219,13 +230,23 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// Result must be at most one row or nullable
   /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
   /// otherwise this will result in an error.
+  ///
+  /// An insert, upsert, update or delete asks PostgREST for a single object,
+  /// so a write that affects more than one row is rolled back before the
+  /// error is thrown.
   PostgrestTransformBuilder<PostgrestMap?> maybeSingle() {
-    // The single-row constraint is enforced client-side instead of via the
-    // `application/vnd.pgrst.object+json` Accept header, so that a request
-    // matching zero rows resolves to `null` without PostgREST answering 406
-    // and polluting the API logs.
+    // A read, or a function call, enforces the single-row constraint
+    // client-side, so that matching zero rows resolves to `null` without
+    // PostgREST answering 406 and polluting the API logs.
+    final isRead =
+        _method == HttpMethod.get ||
+        _method == HttpMethod.head ||
+        _config.functionCall;
     return PostgrestTransformBuilder(
       _copyWithType(
+        headers: isRead
+            ? null
+            : {..._headers, HttpHeader.accept: _objectMediaType},
         maybeSingle: true,
       ),
     );
@@ -287,8 +308,30 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   /// ```dart
   /// supabase.rpc("function").head();
   ///```
+  ///
+  /// The arguments of a function call are sent as query parameters, so they
+  /// have to be a [Map] that PostgREST passes on to the function: no `null`
+  /// values, no names such as `limit` or `order`, and no values that read
+  /// as a filter, such as `eq.1`. Anything else throws an [ArgumentError].
+  ///
+  /// Throws a [StateError] after an insert, upsert, update or delete, which a
+  /// head request cannot perform.
   PostgrestBuilder<void> head() {
-    return _copyWithType(method: HttpMethod.head);
+    final method = _method;
+    if (method == HttpMethod.get || method == HttpMethod.head) {
+      return _copyWithType(method: HttpMethod.head);
+    }
+    if (_config.functionCall) {
+      checkPostgrestHeadArguments(_body);
+      return _copyWithType(
+        method: HttpMethod.head,
+        url: _appendArguments(_url, _body),
+      );
+    }
+    throw StateError(
+      'head() only applies to a select or a function call, not to a '
+      '${method?.value} request',
+    );
   }
 
   /// Enables support for GeoJSON for use with PostGIS data types

@@ -12,6 +12,7 @@ import 'package:supabase_common/supabase_common.dart'
     show SortDirection, postgresTimestampLiteral;
 
 part 'postgrest_column_expression.dart';
+part 'postgrest_typed_count_builder.dart';
 part 'postgrest_derived_expression.dart';
 part 'postgrest_embedded_relation.dart';
 part 'postgrest_embedded_scope.dart';
@@ -142,6 +143,15 @@ List<PostgrestSelectable<Row>> _checkedSelections<Row>(
     );
   }
   return selections;
+}
+
+/// Throws an [ArgumentError] when [to] comes before [from] in a `range`
+/// call, which would otherwise send a negative limit.
+@internal
+void checkPostgrestRange(int from, int to) {
+  if (to < from) {
+    throw ArgumentError.value(to, 'to', 'Must not be less than from ($from)');
+  }
 }
 
 /// The per-request options the typed builders set, see
