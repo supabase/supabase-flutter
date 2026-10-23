@@ -101,7 +101,7 @@ class SupabaseClient {
          ...?headers,
        },
        _httpClient = httpClient,
-       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _jsonCodec = jsonCodec ?? YAJsonIsolate(),
        _ownsJsonCodec = jsonCodec == null {
     if (accessToken == null &&
         authOptions.asyncStorage == null &&
@@ -477,26 +477,10 @@ class SupabaseClient {
     );
   }
 
-  Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) async {
-    if (event == AuthChangeEvent.initialSession ||
-        event == AuthChangeEvent.tokenRefreshed ||
-        event == AuthChangeEvent.signedIn) {
-      try {
-        await realtime.setAccessToken(token);
-      } on FormatException catch (error) {
-        if (error.message.contains('InvalidJWTToken')) {
-          // The exception is thrown by RealtimeClient when the token is
-          // expired for example on app launch after the app has been closed
-          // for a while.
-        } else {
-          rethrow;
-        }
-      }
-    } else if (event == AuthChangeEvent.signedOut) {
-      // Token is removed
-
-      await realtime.setAccessToken(_supabaseKey);
-    }
+  Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) {
+    return realtime.setAccessToken(
+      event == AuthChangeEvent.signedOut ? _supabaseKey : token,
+    );
   }
 }
 

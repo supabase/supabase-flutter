@@ -7,7 +7,7 @@
   <h1 align="center">yet_another_json_isolate</h1>
 
   <p align="center">
-    JSON parsing that never blocks the main isolate for long: small payloads are processed inline, large payloads on short lived isolates that hand their result back without copying.
+    JSON parsing that never blocks the main isolate for long: small payloads are processed inline, large payloads on short lived isolates that hand their result back without copying. On web, which has no isolates, every payload is processed inline on the main thread.
   </p>
 </p>
 

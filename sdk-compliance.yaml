@@ -3576,4 +3576,3 @@ supporting_symbols:
   - YAJsonIsolate.decodeBytes
   - YAJsonIsolate.dispose
   - YAJsonIsolate.encode
-  - YAJsonIsolate.initialize

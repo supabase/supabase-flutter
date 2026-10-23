@@ -18,13 +18,50 @@ final _largeValue = List.generate(
   },
 );
 
+class _Book {
+  _Book(this.title);
+
+  final String title;
+  int toJsonCalls = 0;
+
+  Map<String, Object?> toJson() {
+    toJsonCalls++;
+    return {'title': title};
+  }
+}
+
+class _Catalog {
+  _Catalog(this.rows);
+
+  final List<Map<String, Object?>> rows;
+  int toJsonCalls = 0;
+
+  List<Map<String, Object?>> toJson() {
+    toJsonCalls++;
+    return rows;
+  }
+}
+
+class _Throwing {
+  const _Throwing();
+
+  Object toJson() => throw StateError('not serializable');
+}
+
+class _Wrapping {
+  const _Wrapping(this.value);
+
+  final Object value;
+
+  Object toJson() => value;
+}
+
 void main() {
   late YAJsonIsolate isolate;
 
-  group('with manual initialize', () {
-    setUp(() async {
+  group('basics', () {
+    setUp(() {
       isolate = YAJsonIsolate();
-      await isolate.initialize();
     });
 
     tearDown(() async {
@@ -38,9 +75,16 @@ void main() {
     test('encodes a JSON object', () async {
       expect(await isolate.encode(_jsonMap), _jsonString);
     });
+
+    test('consumes the value before the caller can mutate it', () async {
+      final value = <String, Object?>{'a': 1};
+      final pending = isolate.encode(value);
+      value['a'] = 2;
+      expect(await pending, '{"a":1}');
+    });
   });
 
-  group('without manual initialize', () {
+  group('objects with toJson', () {
     setUp(() {
       isolate = YAJsonIsolate();
     });
@@ -49,12 +93,75 @@ void main() {
       await isolate.dispose();
     });
 
-    test('decodes lazily on first call', () async {
-      expect(await isolate.decode(_jsonString), _jsonMap);
+    test('calls toJson once on the calling isolate', () async {
+      final book = _Book('Dune');
+      expect(await isolate.encode(book), '{"title":"Dune"}');
+      expect(book.toJsonCalls, 1);
     });
 
-    test('encodes lazily on first call', () async {
-      expect(await isolate.encode(_jsonMap), _jsonString);
+    test('calls toJson on objects nested in lists and maps', () async {
+      final first = _Book('Dune');
+      final second = _Book('Emma');
+      final encoded = await isolate.encode({
+        'books': [first, second],
+        'featured': first,
+      });
+      expect(
+        encoded,
+        '{"books":[{"title":"Dune"},{"title":"Emma"}],'
+        '"featured":{"title":"Dune"}}',
+      );
+      expect(first.toJsonCalls, 2);
+      expect(second.toJsonCalls, 1);
+    });
+
+    test('calls toJson on the calling isolate for a large object', () async {
+      final catalog = _Catalog(_largeValue);
+      final encoded = await isolate.encode(catalog);
+      expect(encoded.length, greaterThan(64 * 1024));
+      expect(jsonDecode(encoded), _largeValue);
+      expect(catalog.toJsonCalls, 1);
+    });
+
+    test('calls toJson on objects inside a large structure', () async {
+      final book = _Book('Dune');
+      final encoded = await isolate.encode([..._largeValue, book]);
+      expect((jsonDecode(encoded) as List<dynamic>).last, {'title': 'Dune'});
+      expect(book.toJsonCalls, 1);
+    });
+
+    test('leaves the original structure untouched', () async {
+      final value = <String, Object?>{'book': _Book('Dune')};
+      await isolate.encode(value);
+      expect(value['book'], isA<_Book>());
+    });
+
+    test('throws when toJson throws', () async {
+      await expectLater(
+        isolate.encode(const _Throwing()),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
+    });
+
+    test('throws when toJson returns an unencodable value', () async {
+      await expectLater(
+        isolate.encode([_Wrapping(DateTime(2026))]),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
+    });
+
+    test('throws for a map with keys that are not strings', () async {
+      await expectLater(
+        isolate.encode({1: _Book('Dune')}),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
+    });
+
+    test('throws for a number that is not finite', () async {
+      await expectLater(
+        isolate.encode([double.nan]),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
     });
   });
 
@@ -250,9 +357,8 @@ void main() {
   });
 
   group('concurrency and ordering', () {
-    setUp(() async {
+    setUp(() {
       isolate = YAJsonIsolate();
-      await isolate.initialize();
     });
 
     tearDown(() async {
@@ -295,6 +401,28 @@ void main() {
   });
 
   group('lifecycle', () {
+    test('every operation throws after dispose', () async {
+      final disposed = YAJsonIsolate();
+      await disposed.dispose();
+
+      await expectLater(disposed.decode('{}'), throwsStateError);
+      await expectLater(
+        disposed.decodeBytes(utf8.encode('{}')),
+        throwsStateError,
+      );
+      await expectLater(disposed.encode({}), throwsStateError);
+    });
+
+    test('dispose can be called more than once', () async {
+      final disposed = YAJsonIsolate();
+      await disposed.dispose();
+      await expectLater(disposed.dispose(), completes);
+    });
+
+    test('exposes the provided debug name', () {
+      expect(YAJsonIsolate(debugName: 'json').debugName, 'json');
+    });
+
     test('dispose can be awaited on a lazily initialized isolate', () async {
       final lazyIsolate = YAJsonIsolate();
       await lazyIsolate.decode(_jsonString);

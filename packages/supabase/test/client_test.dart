@@ -618,7 +618,6 @@ void main() {
         'does not dispose a supplied codec, so the caller keeps ownership',
         () async {
           final jsonCodec = YAJsonIsolate();
-          await jsonCodec.initialize();
 
           final client = SupabaseClient(
             supabaseUrl,

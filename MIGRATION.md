@@ -1955,6 +1955,10 @@ await client.dispose();
 await jsonCodec.dispose();
 ```
 
+`YAJsonIsolate.initialize()` is removed, because there is nothing to initialize, so delete the
+call. On web, `YAJsonIsolate` is no longer `const`, and using it after `dispose()` throws a
+`StateError` as it already did on other platforms.
+
 Implement `AsyncJsonCodec` to encode and decode JSON your own way. `YAJsonIsolate` is not exported
 by `supabase` or `supabase_flutter`, so depend on `yet_another_json_isolate` directly to name it.
 

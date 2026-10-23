@@ -349,8 +349,7 @@ class RealtimeChannel {
         // channel rejoins (e.g. after the device wakes from a long
         // sleep). Auth state listeners will re-call setAccessToken with a
         // fresh token shortly after, so swallow this specific error
-        // to avoid surfacing it as an uncaught exception. The same
-        // filter is applied in `SupabaseClient._handleTokenChanged`.
+        // to avoid surfacing it as an uncaught exception.
         if (!error.message.contains('InvalidJWTToken')) {
           rethrow;
         }

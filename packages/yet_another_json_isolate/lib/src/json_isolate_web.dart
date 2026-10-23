@@ -9,36 +9,57 @@ final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
 
 /// Web variant of [YAJsonIsolate].
 ///
-/// The web platform has no isolates, so all work happens inline. Decoding
-/// from bytes still fuses the UTF-8 and JSON decoding steps, which avoids
-/// materializing the intermediate string.
+/// The web platform has no isolates, so all work happens inline on the
+/// calling thread and a large payload blocks it for as long as the work
+/// takes. Decoding from bytes still fuses the UTF-8 and JSON decoding steps,
+/// which avoids materializing the intermediate string.
 class YAJsonIsolate implements AsyncJsonCodec {
-  /// [debugName] is accepted for API parity with the IO implementation but
-  /// unused, since there are no isolates on web.
-  const YAJsonIsolate({
-    String? debugName,
+  /// Creates a codec. [debugName] is unused on web, where there are no
+  /// isolates to name.
+  YAJsonIsolate({
+    this.debugName,
   });
 
-  /// Kept for backwards compatibility; there is nothing to initialize on web.
-  Future<void> initialize() => Future.value();
+  /// The debug name used for the isolates spawned by this instance on other
+  /// platforms.
+  final String? debugName;
 
+  bool _isDisposed = false;
+
+  void _throwIfDisposed() {
+    if (_isDisposed) {
+      throw StateError('This YAJsonIsolate has already been disposed.');
+    }
+  }
+
+  /// Dispose the instance.
+  ///
+  /// Safe to call more than once. Using the instance afterwards throws a
+  /// [StateError].
   @override
-  Future<void> dispose() => Future.value();
+  Future<void> dispose() {
+    _isDisposed = true;
+    return Future.value();
+  }
 
   @override
   Future<dynamic> decode(String json) async {
+    _throwIfDisposed();
     await null;
     return jsonDecode(json);
   }
 
   @override
   Future<dynamic> decodeBytes(Uint8List encodedJson) {
-    return Future.sync(() => _utf8JsonDecoder.convert(encodedJson));
+    return Future.sync(() {
+      _throwIfDisposed();
+      return _utf8JsonDecoder.convert(encodedJson);
+    });
   }
 
   @override
   Future<String> encode(Object? json) async {
-    await null;
+    _throwIfDisposed();
     return jsonEncode(json);
   }
 }

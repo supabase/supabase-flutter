@@ -43,7 +43,7 @@ class FunctionsClient {
        ),
        _url = url,
        _headers = {...FunctionsConstants.defaultHeaders, ...headers},
-       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _jsonCodec = jsonCodec ?? YAJsonIsolate(),
        _ownsJsonCodec = jsonCodec == null,
        // The transport belongs to the caller, so the client never closes it,
        // the same way it leaves a caller-provided JSON codec alone.
