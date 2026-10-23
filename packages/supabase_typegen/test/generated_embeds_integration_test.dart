@@ -102,18 +102,21 @@ void main() {
 
   test('an embed named like a column keeps the column readable', () async {
     final badges = await client
-        .table(Badge.table)
+        .table(BadgeTable.table)
         .selectOnly([
-          Badge.profile,
-          Badge.profileByProfile.select([Profile.name]),
+          BadgeTable.profile,
+          BadgeTable.profileByProfile.select([Profile.name]),
         ])
-        .order(Badge.id);
+        .order(BadgeTable.id);
 
-    expect([for (final badge in badges) badge.read(Badge.profile)], [1, 1]);
+    expect(
+      [for (final badge in badges) badge.read(BadgeTable.profile)],
+      [1, 1],
+    );
     expect(
       [
         for (final badge in badges)
-          badge.read(Badge.profileByProfile)?.read(Profile.name),
+          badge.read(BadgeTable.profileByProfile)?.read(Profile.name),
       ],
       ['Ada', 'Ada'],
     );
@@ -121,18 +124,21 @@ void main() {
 
   test('a key next to a junction table resolves', () async {
     final badges = await client
-        .table(Badge.table)
+        .table(BadgeTable.table)
         .selectOnly([
-          Badge.team,
-          Badge.teamByTeam.select([Team.name]),
+          BadgeTable.team,
+          BadgeTable.teamByTeam.select([Team.name]),
         ])
-        .order(Badge.id);
+        .order(BadgeTable.id);
 
-    expect([for (final badge in badges) badge.read(Badge.team)], [1, null]);
+    expect(
+      [for (final badge in badges) badge.read(BadgeTable.team)],
+      [1, null],
+    );
     expect(
       [
         for (final badge in badges)
-          badge.read(Badge.teamByTeam)?.read(Team.name),
+          badge.read(BadgeTable.teamByTeam)?.read(Team.name),
       ],
       ['Rockets', null],
     );
@@ -140,7 +146,7 @@ void main() {
     final teams = await client
         .table(Team.table)
         .selectOnly([
-          Team.badgeViaTeam.select([Badge.name]),
+          Team.badgeViaTeam.select([BadgeTable.name]),
         ])
         .order(Team.id);
 
@@ -149,7 +155,7 @@ void main() {
         for (final team in teams)
           [
             for (final badge in team.read(Team.badgeViaTeam))
-              badge.read(Badge.name),
+              badge.read(BadgeTable.name),
           ],
       ],
       [

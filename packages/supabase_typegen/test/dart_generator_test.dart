@@ -727,7 +727,7 @@ void main() {
       contains(
         "staticconstbadge=PostgrestToManyRelation<ProfileRow,BadgeRow>"
         "('badge',columns:[id],referencedTable:'badge',"
-        "referencedColumns:[Badge.profile],);",
+        "referencedColumns:[BadgeTable.profile],);",
       ),
     );
   });
