@@ -537,6 +537,142 @@ void main() {
       );
     });
 
+    test('createTableIfNotExists loads the table on a conflict', () async {
+      httpClient
+        ..stub(
+          {
+            'error': {
+              'message': 'exists',
+              'type': 'AlreadyExistsException',
+              'code': 409,
+            },
+          },
+          statusCode: 409,
+          method: HttpMethod.post,
+          path: '/namespaces/analytics/tables',
+        )
+        ..stub(
+          loadTableJson(),
+          method: HttpMethod.get,
+          path: '/namespaces/analytics/tables/events',
+        )
+        ..stub(_config(), method: HttpMethod.get, path: '/v1/config');
+
+      final metadata = await catalog.createTableIfNotExists(
+        ['analytics'],
+        CreateTableRequest(name: 'events', schema: schema()),
+      );
+
+      expect(metadata.tableUuid, 'uuid-1');
+      expect(operations().map((request) => request.method), [
+        HttpMethod.post.value,
+        HttpMethod.get.value,
+      ]);
+    });
+
+    test('registerTable posts the metadata location', () async {
+      stubOperation(loadTableJson());
+      final delegatingCatalog = IcebergRestCatalog(
+        baseUrl: '$supabaseUrl/storage/v1/iceberg',
+        warehouse: 'warehouse',
+        accessDelegation: const [
+          AccessDelegation.vendedCredentials,
+          AccessDelegation.remoteSigning,
+        ],
+        httpClient: httpClient,
+        retryOptions: _noRetries,
+      );
+
+      final metadata = await delegatingCatalog.registerTable(
+        ['analytics'],
+        const RegisterTableRequest(
+          name: 'events',
+          metadataLocation: 's3://bucket/events/metadata.json',
+          overwrite: true,
+        ),
+      );
+
+      expect(metadata.tableUuid, 'uuid-1');
+      final request = lastOperation();
+      expect(request.method, HttpMethod.post.value);
+      expect(
+        request.url.path,
+        endsWith('/warehouse/namespaces/analytics/register'),
+      );
+      expect(request.jsonBody, {
+        'name': 'events',
+        'metadata-location': 's3://bucket/events/metadata.json',
+        'overwrite': true,
+      });
+      expect(
+        request.headers['X-Iceberg-Access-Delegation'],
+        'vended-credentials,remote-signing',
+      );
+    });
+
+    test('listTables sends paging options and parses the page', () async {
+      stubOperation({
+        'identifiers': [
+          {
+            'namespace': ['analytics'],
+            'name': 'events',
+          },
+        ],
+        'next-page-token': 'page-2',
+      });
+
+      final result = await catalog.listTables(
+        ['analytics'],
+        options: const ListTablesOptions(pageToken: 'page-1', pageSize: 10),
+      );
+
+      expect(result.identifiers.single.name, 'events');
+      expect(result.nextPageToken, 'page-2');
+      expect(lastOperation().url.queryParameters, {
+        'pageToken': 'page-1',
+        'pageSize': '10',
+      });
+    });
+
+    test('loadTableResult parses credentials, config and references', () async {
+      final json = loadTableJson();
+      (json['metadata'] as Map<String, dynamic>)['refs'] = {
+        'main': {
+          'type': 'branch',
+          'snapshot-id': 42,
+          'max-ref-age-ms': 1000,
+          'max-snapshot-age-ms': 2000,
+          'min-snapshots-to-keep': 3,
+        },
+      };
+      json['config'] = {'client.region': 'us-east-1'};
+      json['storage-credentials'] = [
+        {
+          'prefix': 's3://bucket/events',
+          'config': {'s3.access-key-id': 'key'},
+        },
+      ];
+      stubOperation(json);
+
+      final result = await catalog.loadTableResult(
+        const TableIdentifier(namespace: ['analytics'], name: 'events'),
+      );
+
+      expect(result!.config, {'client.region': 'us-east-1'});
+      final credential = result.storageCredentials!.single;
+      expect(credential.prefix, 's3://bucket/events');
+      expect(credential.config, {'s3.access-key-id': 'key'});
+      final reference = result.metadata.references!['main']!;
+      expect(reference.type, SnapshotReferenceType.branch);
+      expect(reference.toJson(), {
+        'type': 'branch',
+        'snapshot-id': 42,
+        'max-ref-age-ms': 1000,
+        'max-snapshot-age-ms': 2000,
+        'min-snapshots-to-keep': 3,
+      });
+    });
+
     test('tableExists maps 200 and 404', () async {
       stubOperation(<String, dynamic>{});
       expect(
@@ -987,6 +1123,70 @@ void main() {
       expect(field.toJson()['type'], {'type': 'geometry', 'crs': 'EPSG:4326'});
     });
 
+    test('nested struct, list and map types decode and round trip', () {
+      final json = {
+        'id': 1,
+        'name': 'payload',
+        'required': true,
+        'type': {
+          'type': 'struct',
+          'fields': [
+            {
+              'id': 2,
+              'name': 'tags',
+              'required': false,
+              'type': {
+                'type': 'list',
+                'element-id': 3,
+                'element': 'string',
+                'element-required': true,
+              },
+            },
+            {
+              'id': 4,
+              'name': 'counts',
+              'required': false,
+              'type': {
+                'type': 'map',
+                'key-id': 5,
+                'key': 'string',
+                'value-id': 6,
+                'value': 'long',
+                'value-required': false,
+              },
+            },
+          ],
+        },
+      };
+
+      final field = TableField.fromJson(json);
+
+      final struct = field.type as StructType;
+      final list = struct.fields.first.type as ListType;
+      expect(list.elementId, 3);
+      expect((list.element as PrimitiveType).name, 'string');
+      expect(list.elementRequired, isTrue);
+      final map = struct.fields.last.type as MapType;
+      expect(map.keyId, 5);
+      expect((map.key as PrimitiveType).name, 'string');
+      expect(map.valueId, 6);
+      expect((map.value as PrimitiveType).name, 'long');
+      expect(map.valueRequired, isFalse);
+      expect(field.toJson(), json);
+    });
+
+    test('TableSchema decodes its identifier field ids', () {
+      final schema = TableSchema.fromJson({
+        'schema-id': 0,
+        'identifier-field-ids': [1],
+        'fields': [
+          {'id': 1, 'name': 'id', 'type': 'long', 'required': true},
+        ],
+      });
+
+      expect(schema.identifierFieldIds, [1]);
+    });
+
     test('a table with an unknown nested type still loads', () async {
       stubOperation({
         'metadata': {
@@ -1250,6 +1450,178 @@ void main() {
         'action': 'add-snapshot',
         'snapshot': {'snapshot-id': 1},
       });
+    });
+
+    test('every table requirement serializes its type and value', () {
+      const requirements = <TableRequirement, Map<String, dynamic>>{
+        AssertCreate(): {'type': 'assert-create'},
+        AssertTableUuid('uuid-1'): {
+          'type': 'assert-table-uuid',
+          'uuid': 'uuid-1',
+        },
+        AssertReferenceSnapshotId(reference: 'main', snapshotId: 42): {
+          'type': 'assert-ref-snapshot-id',
+          'ref': 'main',
+          'snapshot-id': 42,
+        },
+        AssertReferenceSnapshotId(reference: 'new-branch'): {
+          'type': 'assert-ref-snapshot-id',
+          'ref': 'new-branch',
+          'snapshot-id': null,
+        },
+        AssertLastAssignedFieldId(7): {
+          'type': 'assert-last-assigned-field-id',
+          'last-assigned-field-id': 7,
+        },
+        AssertCurrentSchemaId(1): {
+          'type': 'assert-current-schema-id',
+          'current-schema-id': 1,
+        },
+        AssertLastAssignedPartitionId(1000): {
+          'type': 'assert-last-assigned-partition-id',
+          'last-assigned-partition-id': 1000,
+        },
+        AssertDefaultSpecificationId(2): {
+          'type': 'assert-default-spec-id',
+          'default-spec-id': 2,
+        },
+        AssertDefaultSortOrderId(3): {
+          'type': 'assert-default-sort-order-id',
+          'default-sort-order-id': 3,
+        },
+      };
+
+      for (final MapEntry(key: requirement, value: json)
+          in requirements.entries) {
+        expect(
+          requirement.toJson(),
+          json,
+          reason: '${requirement.runtimeType}',
+        );
+      }
+    });
+
+    test('every table update serializes its action and value', () {
+      const schema = TableSchema(
+        schemaId: 1,
+        fields: [
+          TableField(
+            id: 1,
+            name: 'id',
+            type: PrimitiveType('long'),
+            required: true,
+          ),
+        ],
+      );
+      const specification = PartitionSpecification(
+        specificationId: 1,
+        fields: [
+          PartitionField(
+            sourceId: 1,
+            name: 'id_bucket',
+            transform: 'bucket[8]',
+          ),
+        ],
+      );
+      const sortOrder = SortOrder(
+        orderId: 1,
+        fields: [
+          SortField(
+            sourceId: 1,
+            transform: 'identity',
+            direction: SortDirection.ascending,
+            nullOrder: NullOrder.nullsFirst,
+          ),
+        ],
+      );
+      final updates = <TableUpdate, Map<String, dynamic>>{
+        const AssignUuidUpdate('uuid-1'): {
+          'action': 'assign-uuid',
+          'uuid': 'uuid-1',
+        },
+        const UpgradeFormatVersionUpdate(3): {
+          'action': 'upgrade-format-version',
+          'format-version': 3,
+        },
+        const AddSchemaUpdate(schema): {
+          'action': 'add-schema',
+          'schema': schema.toJson(),
+        },
+        const SetCurrentSchemaUpdate(1): {
+          'action': 'set-current-schema',
+          'schema-id': 1,
+        },
+        const AddPartitionSpecificationUpdate(specification): {
+          'action': 'add-spec',
+          'spec': specification.toJson(),
+        },
+        const SetDefaultSpecificationUpdate(1): {
+          'action': 'set-default-spec',
+          'spec-id': 1,
+        },
+        const AddSortOrderUpdate(sortOrder): {
+          'action': 'add-sort-order',
+          'sort-order': sortOrder.toJson(),
+        },
+        const SetDefaultSortOrderUpdate(1): {
+          'action': 'set-default-sort-order',
+          'sort-order-id': 1,
+        },
+        const SetLocationUpdate('s3://bucket/moved'): {
+          'action': 'set-location',
+          'location': 's3://bucket/moved',
+        },
+        const RemovePropertiesUpdate(['a', 'b']): {
+          'action': 'remove-properties',
+          'removals': ['a', 'b'],
+        },
+        const RemovePartitionSpecificationsUpdate([0]): {
+          'action': 'remove-partition-specs',
+          'spec-ids': [0],
+        },
+        const RemoveSchemasUpdate([0]): {
+          'action': 'remove-schemas',
+          'schema-ids': [0],
+        },
+        const SetSnapshotReferenceUpdate(
+          referenceName: 'release',
+          reference: SnapshotReference(
+            type: SnapshotReferenceType.tag,
+            snapshotId: 42,
+          ),
+        ): {
+          'action': 'set-snapshot-ref',
+          'ref-name': 'release',
+          'type': 'tag',
+          'snapshot-id': 42,
+        },
+        const RemoveSnapshotReferenceUpdate('release'): {
+          'action': 'remove-snapshot-ref',
+          'ref-name': 'release',
+        },
+        const RemoveSnapshotsUpdate([41, 42]): {
+          'action': 'remove-snapshots',
+          'snapshot-ids': [41, 42],
+        },
+      };
+
+      for (final MapEntry(key: update, value: json) in updates.entries) {
+        expect(update.toJson(), json, reason: '${update.runtimeType}');
+      }
+    });
+
+    test('Snapshot serializes back to its wire form', () {
+      final json = {
+        'snapshot-id': 42,
+        'parent-snapshot-id': 41,
+        'sequence-number': 3,
+        'timestamp-ms': 1700000000000,
+        'manifest-list': 's3://bucket/manifest-list.avro',
+        'summary': {'operation': 'append'},
+        'schema-id': 0,
+      };
+
+      expect(Snapshot.fromJson(json).toJson(), json);
     });
 
     test('TableUpdate raw does not let the body override the action', () {
