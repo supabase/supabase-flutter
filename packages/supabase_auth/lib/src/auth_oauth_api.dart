@@ -261,14 +261,14 @@ class AuthOAuthApi {
   Future<OAuthAuthorizationResponse> getAuthorizationDetails(
     String authorizationId,
   ) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/oauth/authorizations/$authorizationId',
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -284,14 +284,14 @@ class AuthOAuthApi {
   Future<OAuthConsentResponse> approveAuthorization(
     String authorizationId,
   ) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
         body: {
           'action': 'approve',
         },
@@ -310,14 +310,14 @@ class AuthOAuthApi {
   Future<OAuthConsentResponse> denyAuthorization(
     String authorizationId,
   ) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
         body: {
           'action': 'deny',
         },
@@ -331,14 +331,14 @@ class AuthOAuthApi {
   ///
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   Future<List<OAuthGrant>> listGrants() async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/user/oauth/grants',
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -350,14 +350,14 @@ class AuthOAuthApi {
   ///
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   Future<void> revokeGrant(String clientId) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     await _fetch.request(
       '${_client._url}/user/oauth/grants',
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
         query: {'client_id': clientId},
         noResolveJson: true,
       ),

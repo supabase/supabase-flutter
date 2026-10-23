@@ -61,7 +61,7 @@ SupabaseClient testSupabaseClient({
 /// [email] and [claims], and a user built by [testUserJson], so code under
 /// test observes `currentUser`, `currentSession` and the `Authorization`
 /// header exactly as after a real sign-in. Subscribers of
-/// `onAuthStateChange` receive a `tokenRefreshed` event.
+/// `onAuthStateChange` receive a `signedIn` event.
 ///
 /// [expiresAt] defaults to an hour from now and must lie in the future; to
 /// exercise expiry handling, build an expired session from the fixtures

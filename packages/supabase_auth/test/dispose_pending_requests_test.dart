@@ -69,6 +69,7 @@ void main() {
     });
 
     test('returns the response of mfa.verify', () async {
+      await signInTestUser(client);
       final verified = await completeAfterDispose(
         client.mfa.verify(
           factorId: 'factor-id',

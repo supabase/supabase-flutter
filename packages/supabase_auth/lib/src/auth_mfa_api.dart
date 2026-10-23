@@ -21,14 +21,14 @@ class AuthMFAApi {
   /// A user has to have an `aal2` authenticator level in order to unenroll a
   /// `verified` factor.
   Future<AuthMFAUnenrollResponse> unenroll(String factorId) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/factors/$factorId',
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -61,8 +61,6 @@ class AuthMFAApi {
     String? friendlyName,
     String? phone,
   }) async {
-    final session = _client.currentSession;
-
     final body = <String, dynamic>{
       'friendly_name': friendlyName,
       'factor_type': factorType.snakeCase,
@@ -92,7 +90,7 @@ class AuthMFAApi {
       options: AuthRequestOptions(
         headers: _client._headers,
         body: body,
-        jwt: session?.accessToken,
+        jwt: await _client._userAccessToken(),
       ),
     );
 
@@ -114,7 +112,7 @@ class AuthMFAApi {
     required String challengeId,
     required String code,
   }) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/factors/$factorId/verify',
@@ -125,7 +123,7 @@ class AuthMFAApi {
           'challenge_id': challengeId,
           'code': code,
         },
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -155,7 +153,7 @@ class AuthMFAApi {
     required String factorId,
     OtpChannel? channel,
   }) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/factors/$factorId/challenge',
@@ -163,7 +161,7 @@ class AuthMFAApi {
       options: AuthRequestOptions(
         headers: _client._headers,
         body: channel == null ? null : {'channel': channel.name},
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -189,10 +187,15 @@ class AuthMFAApi {
 
   /// Returns the list of MFA factors enabled for this user.
   ///
-  /// Automatically refreshes the session to get the latest list of factors.
+  /// Fetches the user from the server to get the latest list of factors, and
+  /// stores it on the current session so [getAuthenticatorAssuranceLevel]
+  /// sees them too.
   Future<AuthMFAListFactorsResponse> listFactors() async {
-    await _client.refreshSession();
-    final user = _client.currentUser;
+    final user = (await _client.getUser()).user;
+    final session = _client.currentSession;
+    if (user != null && session != null && session.user.id == user.id) {
+      _client._saveSession(session.copyWith(user: user));
+    }
     final factors = user?.factors ?? [];
     final totp = factors
         .where(

@@ -49,7 +49,7 @@ class AuthMFARecoveryCodesApi {
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: _client.currentSession?.accessToken,
+        jwt: await _client._userAccessToken(),
       ),
     );
 
@@ -81,7 +81,7 @@ class AuthMFARecoveryCodesApi {
       options: AuthRequestOptions(
         headers: _client._headers,
         body: friendlyName == null ? null : {'friendly_name': friendlyName},
-        jwt: _client.currentSession?.accessToken,
+        jwt: await _client._userAccessToken(),
       ),
     );
 
@@ -112,7 +112,7 @@ class AuthMFARecoveryCodesApi {
       options: AuthRequestOptions(
         headers: _client._headers,
         body: {'code': code},
-        jwt: _client.currentSession?.accessToken,
+        jwt: await _client._userAccessToken(),
       ),
     );
 
@@ -145,7 +145,7 @@ class AuthMFARecoveryCodesApi {
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: _client.currentSession?.accessToken,
+        jwt: await _client._userAccessToken(),
       ),
     );
 
@@ -162,7 +162,7 @@ class AuthMFARecoveryCodesApi {
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: _client.currentSession?.accessToken,
+        jwt: await _client._userAccessToken(),
       ),
     );
 

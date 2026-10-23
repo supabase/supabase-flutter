@@ -1102,6 +1102,31 @@ if (!launched) {
 }
 ```
 
+#### Switching to another user's session emits `signedIn`
+
+`setSession()`, `refreshSession()` and `recoverSession()` now emit `AuthChangeEvent.signedIn`
+instead of `AuthChangeEvent.tokenRefreshed` when the session they store belongs to another user than
+the current one, or when nobody was signed in. Refreshing the current user's session still emits
+`tokenRefreshed`. Handle `signedIn` in any `onAuthStateChange` listener that relied on
+`tokenRefreshed` to notice the new user.
+
+#### User-scoped auth calls throw when signed out
+
+The `mfa`, `passkey` and `oauth` calls that act on the signed-in user, `unlinkIdentity()`,
+`getLinkIdentityUrl()` and `linkIdentityWithIdToken()` now throw an `AuthSessionMissingException`
+without a request when nobody is signed in, like `getUser()` and `updateUser()` already did. Before,
+they sent the request without a user token and the server rejected it.
+
+#### An expired session is kept when `autoRefreshToken` is off
+
+With `autoRefreshToken: false`, an expired session restored at startup is no longer signed out. It
+stays in `currentSession` and `getSession()` refreshes it when it is next needed, so check
+`Session.isExpired`, or await `getSession()`, instead of treating a non-null `currentSession` as
+valid. `recoverSession()` now refreshes an expired session whatever `autoRefreshToken` is set to.
+
+`getSession()` signs out an expired session that has no refresh token and throws an
+`AuthSessionMissingException`, instead of returning the expired session.
+
 #### Cross-tab session sync is opt-in for standalone clients
 
 On web the auth client keeps the tabs of a project in sync through a `BroadcastChannel`. It is now

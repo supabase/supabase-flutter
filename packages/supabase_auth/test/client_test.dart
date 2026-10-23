@@ -730,7 +730,7 @@ void main() {
         // the method should throw
       }
       expect(httpClient.retryCount, 4);
-      expect((await event).event, AuthChangeEvent.tokenRefreshed);
+      expect((await event).event, AuthChangeEvent.signedIn);
     });
   });
 

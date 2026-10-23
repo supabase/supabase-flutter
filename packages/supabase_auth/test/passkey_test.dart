@@ -229,6 +229,7 @@ void main() {
         asyncStorage: TestAsyncStorage(),
       );
       addTearDown(malformedClient.dispose);
+      await signInTestUser(malformedClient);
 
       expect(malformedClient.passkey.list(), throwsFormatException);
     });

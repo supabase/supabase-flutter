@@ -212,7 +212,7 @@ void main() {
       await client.setSession('some-refresh-token', accessToken: accessToken);
     });
 
-    test('expired-fallback path emits tokenRefreshed (not signedIn)', () async {
+    test('expired-fallback path emits signedIn (not tokenRefreshed)', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // Clearly expired token (exp well in the past).
       final accessToken = unsignedTestJwt({
@@ -227,13 +227,55 @@ void main() {
           predicate<AuthState>(
             (s) => s.event == AuthChangeEvent.initialSession,
           ),
-          predicate<AuthState>(
-            (s) => s.event == AuthChangeEvent.tokenRefreshed,
-          ),
+          predicate<AuthState>((s) => s.event == AuthChangeEvent.signedIn),
         ]),
       );
 
       await client.setSession('some-refresh-token', accessToken: accessToken);
+    });
+  });
+
+  group('setSession with only a refresh token', () {
+    Future<List<AuthChangeEvent>> eventsOf(Future<void> Function() act) async {
+      final events = <AuthChangeEvent>[];
+      final subscription = client.onAuthStateChange.listen(
+        (state) => events.add(state.event),
+      );
+      await pumpEventQueue();
+      events.clear();
+      await act();
+      await pumpEventQueue();
+      await subscription.cancel();
+      return events;
+    }
+
+    test('emits signedIn when it switches to another user', () async {
+      await signInTestUser(client, userId: 'other-user-id');
+
+      final events = await eventsOf(
+        () => client.setSession('some-refresh-token'),
+      );
+
+      expect(events, [AuthChangeEvent.signedIn]);
+      expect(client.currentUser?.id, 'mock-user-id');
+    });
+
+    test('emits signedIn when nobody was signed in', () async {
+      final events = await eventsOf(
+        () => client.setSession('some-refresh-token'),
+      );
+
+      expect(events, [AuthChangeEvent.signedIn]);
+    });
+
+    test('emits tokenRefreshed for the user already signed in', () async {
+      await signInTestUser(client, userId: 'mock-user-id');
+
+      final events = await eventsOf(
+        () => client.setSession('some-refresh-token'),
+      );
+
+      expect(events, [AuthChangeEvent.tokenRefreshed]);
     });
   });
 }

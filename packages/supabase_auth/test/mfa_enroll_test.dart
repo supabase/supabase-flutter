@@ -8,7 +8,7 @@ void main() {
     late MockSupabaseHttpClient http;
     late AuthClient client;
 
-    setUp(() {
+    setUp(() async {
       // A minimal enroll payload, so the call the test inspects succeeds.
       http = MockSupabaseHttpClient()
         ..stub({
@@ -26,6 +26,7 @@ void main() {
         httpClient: http,
         asyncStorage: TestAsyncStorage(),
       );
+      await signInTestUser(client);
     });
 
     test('a TOTP factor enrolls without an issuer', () async {

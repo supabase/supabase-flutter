@@ -64,7 +64,7 @@ class AuthPasskeyApi {
   Future<PasskeyRegistrationOptionsResponse> startRegistration({
     String? friendlyName,
   }) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/passkeys/registration/options',
@@ -72,7 +72,7 @@ class AuthPasskeyApi {
       options: AuthRequestOptions(
         headers: _client._headers,
         body: {},
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -118,7 +118,7 @@ class AuthPasskeyApi {
     required String challengeId,
     required Map<String, dynamic> credential,
   }) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/passkeys/registration/verify',
@@ -129,7 +129,7 @@ class AuthPasskeyApi {
           'challenge_id': challengeId,
           'credential': credential,
         },
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -193,14 +193,14 @@ class AuthPasskeyApi {
 
   /// Returns the list of passkeys registered to the signed in user.
   Future<List<Passkey>> list() async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/passkeys',
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -218,7 +218,7 @@ class AuthPasskeyApi {
     required String passkeyId,
     required String friendlyName,
   }) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.request(
       '${_client._url}/passkeys/$passkeyId',
@@ -226,7 +226,7 @@ class AuthPasskeyApi {
       options: AuthRequestOptions(
         headers: _client._headers,
         body: {'friendly_name': friendlyName},
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
 
@@ -238,14 +238,14 @@ class AuthPasskeyApi {
   /// If the user has verified MFA factors, the session has to be at `aal2`
   /// to manage passkeys.
   Future<void> delete({required String passkeyId}) async {
-    final session = _client.currentSession;
+    final accessToken = await _client._userAccessToken();
 
     await _fetch.request(
       '${_client._url}/passkeys/$passkeyId',
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _client._headers,
-        jwt: session?.accessToken,
+        jwt: accessToken,
       ),
     );
   }
