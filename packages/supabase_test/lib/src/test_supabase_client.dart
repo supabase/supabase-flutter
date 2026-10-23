@@ -16,10 +16,9 @@ const _testPublishableKey = 'sb_publishable_supabase_test';
 
 /// A [SupabaseClient] wired for tests.
 ///
-/// Compared to constructing one directly, this configures the in-memory
-/// storage the pkce flow requires, turns off the token auto refresh so no
-/// timer outlives the test, and defaults [publishableKey] to an
-/// `sb_publishable_` key, so signed-out requests carry the headers a
+/// Compared to constructing one directly, this turns off the token auto
+/// refresh so no timer outlives the test, and defaults [publishableKey] to
+/// an `sb_publishable_` key, so signed-out requests carry the headers a
 /// production publishable key produces. Answer its requests by passing a
 /// `MockSupabaseHttpClient` as [httpClient], and its realtime traffic by
 /// passing the `call` method of a [MockRealtimeTransport] as
@@ -50,11 +49,8 @@ SupabaseClient testSupabaseClient({
     url,
     publishableKey ?? _testPublishableKey,
     httpClient: httpClient,
-    authOptions: AuthClientOptions(
-      autoRefreshToken: autoRefreshToken,
-      asyncStorage: MemoryAuthAsyncStorage(),
-    ),
-    realtimeClientOptions: RealtimeClientOptions(transport: realtimeTransport),
+    authOptions: AuthClientOptions(autoRefreshToken: autoRefreshToken),
+    realtimeOptions: RealtimeClientOptions(transport: realtimeTransport),
   );
 }
 

@@ -197,6 +197,14 @@ class MockSupabaseHttpClient extends BaseClient {
   /// Every request this client has answered, oldest first.
   final requests = <RecordedRequest>[];
 
+  /// Whether [close] has been called, so a test can tell whether the code
+  /// under test released a client it was handed.
+  bool get isClosed => _isClosed;
+  bool _isClosed = false;
+
+  @override
+  void close() => _isClosed = true;
+
   /// The answered requests whose URL path ends in [path], optionally
   /// narrowed to [method], oldest first.
   ///

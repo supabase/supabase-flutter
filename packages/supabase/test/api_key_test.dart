@@ -153,4 +153,30 @@ void main() {
       },
     );
   });
+
+  group('SupabaseClient', () {
+    test(
+      'sends a new-format key as Bearer to rest but not to functions',
+      () async {
+        final httpClient = MockSupabaseHttpClient()..stub([]);
+        final client = testSupabaseClient(
+          httpClient: httpClient,
+          publishableKey: 'sb_publishable_abc',
+        );
+        addTearDown(client.dispose);
+
+        await client.from('todos').select();
+        await client.functions.invoke('hello');
+
+        expect(
+          httpClient.requestsTo('/rest/v1/todos').single.headers,
+          containsPair('authorization', 'Bearer sb_publishable_abc'),
+        );
+        expect(
+          httpClient.requestsTo('/functions/v1/hello').single.headers,
+          isNot(contains('authorization')),
+        );
+      },
+    );
+  });
 }

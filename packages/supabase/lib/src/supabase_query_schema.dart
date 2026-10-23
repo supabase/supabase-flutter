@@ -7,6 +7,8 @@ import 'counter.dart';
 /// Used to perform [rpc] and [from] operations with a different schema than in
 /// [SupabaseClient].
 class SupabaseQuerySchema {
+  /// Use [SupabaseClient.schema] to create one.
+  @internal
   const SupabaseQuerySchema({
     required Counter counter,
     required String restUrl,

@@ -42,14 +42,14 @@ it against this file. To upgrade an existing v2 project, use the
 final supabase = SupabaseClient(
   'https://your-project.supabase.co',
   'your-publishable-key',
-  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
 );
 ```
 
-A client without an `asyncStorage` throws when it is created, since the
-default pkce flow stores its code verifier there. Pass `persistSession: true`
-and a storage that writes to disk to keep the session across runs, then
-`await supabase.auth.initialized` before reading `currentSession`.
+A client without an `asyncStorage` keeps the code verifiers of the default
+pkce flow in memory, so pass a storage that writes to disk when the flow
+completes in another process, such as from an email link. Pass
+`persistSession: true` and such a storage to keep the session across runs,
+then `await supabase.auth.initialized` before reading `currentSession`.
 
 ## Reading rows
 
