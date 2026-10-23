@@ -80,10 +80,26 @@ const _objectMembers = {
 final _wordSeparator = RegExp('[^a-zA-Z0-9]+');
 final _camelHumpBoundary = RegExp('(?<=[a-z0-9])(?=[A-Z])');
 
+/// The words of [name]. A letter or digit outside ASCII is a word of its
+/// own, spelled as `u` and its code point in hex, so `статус` gets an
+/// identifier of its own instead of none. Any other character outside ASCII
+/// separates words.
 List<String> _words(String name) => [
-  for (final part in name.split(_wordSeparator))
+  for (final part in _spellNonAscii(name).split(_wordSeparator))
     ...part.split(_camelHumpBoundary),
 ].where((word) => word.isNotEmpty).toList();
+
+String _spellNonAscii(String name) => String.fromCharCodes([
+  for (final rune in name.runes)
+    if (rune < 0x80)
+      rune
+    else if (_letterOrDigit.hasMatch(String.fromCharCode(rune)))
+      ...' u${rune.toRadixString(16)} '.codeUnits
+    else
+      0x20,
+]);
+
+final _letterOrDigit = RegExp(r'[\p{L}\p{M}\p{N}]', unicode: true);
 
 /// Converts [name] to PascalCase, for example `author_stats` to
 /// `AuthorStats`.

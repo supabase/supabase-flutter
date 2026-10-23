@@ -1083,20 +1083,42 @@ void main() {
     expect(id.isRequired, isFalse);
   });
 
-  test('foreign tables are insertable and updatable', () {
-    final parsed = parseGeneratorMetadata({
-      'version': 1,
-      'tables': <dynamic>[],
-      'foreignTables': [
-        {'id': 1, 'schema': 'public', 'name': 'remote_logs', 'comment': null},
-      ],
-      'columns': [_column(tableId: 1, table: 'remote_logs', name: 'message')],
+  group('foreign tables', () {
+    TableDescription parseForeignTable(List<bool> updatableColumns) =>
+        parseGeneratorMetadata({
+          'version': 1,
+          'tables': <dynamic>[],
+          'foreignTables': [
+            {
+              'id': 1,
+              'schema': 'public',
+              'name': 'remote_logs',
+              'comment': null,
+            },
+          ],
+          'columns': [
+            for (final (index, isUpdatable) in updatableColumns.indexed)
+              {
+                ..._column(tableId: 1, table: 'remote_logs', name: 'c$index'),
+                'is_updatable': isUpdatable,
+              },
+          ],
+        }).tables.single;
+
+    test('are insertable and updatable when their wrapper can write', () {
+      final remoteLogs = parseForeignTable([true, false]);
+
+      expect(remoteLogs.name, 'remote_logs');
+      expect(remoteLogs.isInsertable, isTrue);
+      expect(remoteLogs.isUpdatable, isTrue);
     });
 
-    final remoteLogs = parsed.tables.single;
-    expect(remoteLogs.name, 'remote_logs');
-    expect(remoteLogs.isInsertable, isTrue);
-    expect(remoteLogs.isUpdatable, isTrue);
+    test('are read-only when their wrapper cannot write', () {
+      final remoteLogs = parseForeignTable([false, false]);
+
+      expect(remoteLogs.isInsertable, isFalse);
+      expect(remoteLogs.isUpdatable, isFalse);
+    });
   });
 
   group('view writability flags', () {

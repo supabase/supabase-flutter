@@ -16,6 +16,7 @@ part 'postgres_multirange.dart';
 part 'postgres_network_address.dart';
 part 'postgres_range.dart';
 part 'postgres_time.dart';
+part 'postgres_timestamp.dart';
 part 'postgres_vector.dart';
 
 /// A value of a Postgres type that has a literal of its own, such as a

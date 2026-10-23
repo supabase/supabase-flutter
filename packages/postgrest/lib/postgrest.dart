@@ -24,6 +24,7 @@ export 'package:supabase_common/supabase_common.dart'
         PostgresPolygon,
         PostgresRange,
         PostgresTime,
+        PostgresTimestampCodec,
         PostgresValue,
         PostgresVectorCodec,
         SupabaseApiException,
@@ -31,6 +32,7 @@ export 'package:supabase_common/supabase_common.dart'
         SupabaseTransportException,
         SupabaseRetryOptions,
         postgresBytea,
+        postgresTimestamp,
         postgresVector;
 
 export 'package:yet_another_json_isolate/yet_another_json_isolate.dart'

@@ -1,3 +1,6 @@
+// The timestamp codec is annotated @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart'
     show postgresTimestampLiteral;
@@ -208,6 +211,14 @@ void main() {
         Todos.due.eq(local).comparison!.renderedValue,
         postgresTimestampLiteral(local),
       );
+    });
+    test('infinity is sent as infinity', () {
+      expect(rendered(Todos.due.lt(postgresTimestamp.infinity)), [
+        'due=lt.infinity',
+      ]);
+      expect(rendered(Todos.due.gt(postgresTimestamp.negativeInfinity)), [
+        'due=gt.-infinity',
+      ]);
     });
   });
 
