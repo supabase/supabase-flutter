@@ -70,12 +70,10 @@ and `BooksUpdate`; objects of any other schema carry the schema as a prefix,
 so `inventory.books` becomes `InventoryBooks` and `InventoryBooksRow`, and
 its `condition` enum `InventoryCondition`.
 
-A table named like a type of the Supabase or Flutter libraries gets a `Table`
-suffix, so `user` becomes `UserTable` with `UserRow`, and an enum an `Enum`
-suffix, `SessionEnum`. A name the generated code itself uses, such as
-`String`, gets `$`. When several columns or enum labels convert to the
-same Dart name, the one in lowercase keeps it and the others get `$` and
-their own spelling, `name` and `name$Name`.
+A name the generated code itself uses, such as `String`, gets `$`. When
+several columns or enum labels convert to the same Dart name, the one in
+lowercase keeps it and the others get `$` and their own spelling, `name` and
+`name$Name`.
 
 ## Usage
 
