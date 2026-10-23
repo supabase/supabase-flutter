@@ -580,7 +580,8 @@ class RealtimeChannel {
   /// ```dart
   /// final channel = supabase.channel('my_channel');
   /// channel.onBroadcast(event: 'position').listen((message) {
-  ///   print(message['payload']['x']);
+  ///   final data = message['payload'] ?? message;
+  ///   print(data['x']);
   /// });
   /// channel.subscribe();
   /// ```
