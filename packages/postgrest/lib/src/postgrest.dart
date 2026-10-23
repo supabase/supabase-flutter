@@ -67,7 +67,7 @@ class PostgrestClient {
        _schema = schema,
        _schemaIsExplicit = false,
        headers = Map.unmodifiable({...defaultHeaders, ...?headers}),
-       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _jsonCodec = jsonCodec ?? YAJsonIsolate(),
        _ownsJsonCodec = jsonCodec == null {
     postgrestLogger.config(
       () =>
