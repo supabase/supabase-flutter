@@ -934,6 +934,7 @@ features:
       - PostgrestTableRequest.shape
       - PostgrestTableRequest.countOption
       - PostgrestTableRequest.payload
+      - PostgrestTableRequest.readOnly
       - PostgrestTableRequest.onConflict
       - PostgrestTableRequest.ignoreDuplicates
       - PostgrestTableRequest.defaultToNull
