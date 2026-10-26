@@ -1,4 +1,4 @@
-// The typed table executor this client hands its interceptors is @experimental.
+// The interceptors and the typed table executor they wrap are @experimental.
 // ignore_for_file: experimental_member_use
 
 import 'dart:async';
@@ -95,7 +95,7 @@ class SupabaseClient {
     Client? httpClient,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
-    List<SupabaseClientInterceptor> interceptors = const [],
+    @experimental List<SupabaseClientInterceptor> interceptors = const [],
   }) : _supabaseKey = supabaseKey,
        // Disposed one by one from dispose, which the rule cannot see.
        // ignore: dispose-class-fields
@@ -212,6 +212,7 @@ class SupabaseClient {
   /// typed table executor.
   ///
   /// Each interceptor is disposed from [dispose].
+  @experimental
   final List<SupabaseClientInterceptor> interceptors;
   StreamSubscription<AuthState>? _authStateSubscription;
   final AsyncJsonCodec _jsonCodec;

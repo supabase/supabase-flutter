@@ -7,6 +7,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
+import 'package:meta/meta.dart' show experimental;
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/auth_async_resumable_upload_storage.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
@@ -142,7 +143,7 @@ class Supabase {
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
-    List<SupabaseClientInterceptor> interceptors = const [],
+    @experimental List<SupabaseClientInterceptor> interceptors = const [],
   }) {
     final initialization = _instance._initialization;
     if (initialization != null) {
