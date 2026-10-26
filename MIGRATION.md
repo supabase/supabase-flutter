@@ -559,6 +559,8 @@ explicitly:
 - [An `Authorization` header passed to `SupabaseClient` reaches the auth client](#an-authorization-header-passed-to-supabaseclient-reaches-the-auth-client)
 - [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so code that
   reads the sent keys from the top of the received message gets `null`
+- [Invalid broadcast payloads throw in release builds](#invalid-broadcast-payloads-throw-in-release-builds),
+  so a `String` or `List` payload that used to be sent now fails
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
   second channel with the same name shares the first one instead of replacing it
 - [`stream()` keeps running through reconnects](#stream-keeps-running-through-reconnects), so
@@ -1639,6 +1641,24 @@ Future<void> broadcast(RealtimeChannel channel, Uint8List bytes) async {
   await channel.sendBroadcastMessage(event: 'file', payload: bytes);
   await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
 }
+```
+
+Clients on v2 and v3 cannot read each other's broadcasts: a v3 listener finds no `payload` in a
+message from a v2 app, and a v2 listener finds nothing at the top level of a message from a v3 app.
+Move every app that shares a channel to v3 together.
+
+#### Invalid broadcast payloads throw in release builds
+
+`sendBroadcastMessage()` and `httpSend()` complete with an `ArgumentError` when `payload` is
+neither a map nor binary data (`TypedData` or `ByteBuffer`). Only a debug assert checked it before,
+so a release build sent a `String` or a `List` anyway. Send such values inside a map instead:
+
+```dart skip
+// Before
+await channel.sendBroadcastMessage(event: 'note', payload: 'hello');
+
+// After
+await channel.sendBroadcastMessage(event: 'note', payload: {'text': 'hello'});
 ```
 
 #### A channel name in use returns its channel
