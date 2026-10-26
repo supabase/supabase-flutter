@@ -160,6 +160,19 @@ A failed exchange, for example an expired link, arrives as an
 failed while the device was offline. Always pass `onError`: without it these
 errors are unhandled and reach the zone's error handler.
 
+## Sign out
+
+`signOut()` removes the session from the device and emits `AuthSignedOut`
+as soon as it is called, so it works offline and the app can navigate to the
+sign in screen without awaiting it. The returned future waits up to 10 seconds
+for the server to revoke the session, so await it before disposing the client.
+It does not throw: a failed revoke is logged, since the session is already
+gone from the device and cannot be retried.
+
+To sign out every device, use `signOut(scope: SignOutScope.global)`. It asks
+the server first and throws an `AuthException` when that fails, keeping the
+session so the call can be retried.
+
 ## When the app does not open, or opens without a session
 
 | Symptom                                              | Cause and fix                                                                                                     |

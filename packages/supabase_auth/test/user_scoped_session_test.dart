@@ -281,7 +281,7 @@ void main() {
     for (final MapEntry(key: description, value: body)
         in malformedRefreshBodies.entries) {
       test(
-        'clears the session when the refresh answers $description',
+        'throws and keeps the session when the refresh answers $description',
         () async {
           client = createClient(
             retryOptions: const SupabaseRetryOptions(enabled: false),
@@ -293,23 +293,33 @@ void main() {
               path: '/token',
               query: {'grant_type': 'refresh_token'},
             )
-            ..stubSignOut();
+            ..stub(
+              {
+                'code': 'bad_jwt',
+                'msg':
+                    'invalid JWT: unable to parse or verify signature, token '
+                    'has invalid claims: token is expired',
+              },
+              method: HttpMethod.post,
+              path: '/logout',
+              statusCode: 403,
+            );
           await client.setInitialSession(
             _sessionString(
               expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
             ),
           );
           await listen(client);
-          final expired = client.currentSession!.accessToken;
+          final session = client.currentSession;
 
-          await client.signOut(scope: SignOutScope.global);
-
-          expect(client.currentSession, isNull);
-          expect(events, [AuthChangeEvent.signedOut]);
-          expect(
-            httpClient.requestsTo('/logout').single.headers['Authorization'],
-            'Bearer $expired',
+          await expectLater(
+            () => client.signOut(scope: SignOutScope.global),
+            throwsA(isA<AuthRetryableFetchException>()),
           );
+
+          expect(client.currentSession, session);
+          expect(events, isEmpty);
+          expect(httpClient.requestsTo('/logout'), isEmpty);
         },
       );
     }
