@@ -22,43 +22,51 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 final class PostgrestEmbeddedScope<Row> {
   PostgrestEmbeddedScope._(
-    this._relation, {
+    this.relation, {
     List<PostgrestOrdering<Row>> orderings = const [],
-    int? limit,
-    int? offset,
+    this.rowLimit,
+    this.rowOffset,
     List<PostgrestEmbeddedScope<Object?>> scopes = const [],
-  }) : _orderings = List.unmodifiable(orderings),
-       _limit = limit,
-       _offset = offset,
-       _scopes = List.unmodifiable(scopes);
+  }) : orderings = List.unmodifiable(orderings),
+       scopes = List.unmodifiable(scopes);
 
-  final PostgrestToManyRelation<Object?, Row> _relation;
-  final List<PostgrestOrdering<Row>> _orderings;
-  final int? _limit;
-  final int? _offset;
-  final List<PostgrestEmbeddedScope<Object?>> _scopes;
+  /// The embed whose rows the scope applies to.
+  final PostgrestToManyRelation<Object?, Row> relation;
+
+  /// The sort keys of the embedded rows, first key first.
+  final List<PostgrestOrdering<Row>> orderings;
+
+  /// The maximum number of embedded rows per parent row, set by [limit] and
+  /// [range].
+  final int? rowLimit;
+
+  /// The number of embedded rows to skip per parent row, set by [range].
+  final int? rowOffset;
+
+  /// The scopes of embeds nested in this one.
+  final List<PostgrestEmbeddedScope<Object?>> scopes;
 
   PostgrestEmbeddedScope<Row> _copyWith({
-    List<PostgrestOrdering<Row>>? orderings,
-    int? limit,
-    int? offset,
-    List<PostgrestEmbeddedScope<Object?>>? scopes,
+    List<PostgrestOrdering<Row>>? sortKeys,
+    int? limitCount,
+    int? offsetCount,
+    List<PostgrestEmbeddedScope<Object?>>? nested,
   }) => PostgrestEmbeddedScope._(
-    _relation,
-    orderings: orderings ?? _orderings,
-    limit: limit ?? _limit,
-    offset: offset ?? _offset,
-    scopes: scopes ?? _scopes,
+    relation,
+    orderings: sortKeys ?? orderings,
+    rowLimit: limitCount ?? rowLimit,
+    rowOffset: offsetCount ?? rowOffset,
+    scopes: nested ?? scopes,
   );
 
   /// Sorts the embedded rows by [ordering].
   ///
   /// Repeated calls append, so the second key breaks ties in the first.
   PostgrestEmbeddedScope<Row> order(PostgrestOrdering<Row> ordering) =>
-      _copyWith(orderings: [..._orderings, ordering]);
+      _copyWith(sortKeys: [...orderings, ordering]);
 
   /// Limits the embedded rows of each parent row to [count].
-  PostgrestEmbeddedScope<Row> limit(int count) => _copyWith(limit: count);
+  PostgrestEmbeddedScope<Row> limit(int count) => _copyWith(limitCount: count);
 
   /// Limits the embedded rows of each parent row to the ones within the
   /// specified range, inclusive.
@@ -66,32 +74,32 @@ final class PostgrestEmbeddedScope<Row> {
   /// Throws an [ArgumentError] when [to] is less than [from].
   PostgrestEmbeddedScope<Row> range(int from, int to) {
     checkPostgrestRange(from, to);
-    return _copyWith(offset: from, limit: to - from + 1);
+    return _copyWith(offsetCount: from, limitCount: to - from + 1);
   }
 
-  /// Applies [scope] to the rows of [relation], an embed nested in this one,
+  /// Applies [scope] to the rows of [embed], an embed nested in this one,
   /// under a dotted path such as `books.reviews.limit=3`.
   PostgrestEmbeddedScope<Row> embedded<Target>(
-    PostgrestToManyRelation<Row, Target> relation,
+    PostgrestToManyRelation<Row, Target> embed,
     PostgrestEmbeddedScope<Target> Function(
       PostgrestEmbeddedScope<Target> scope,
     )
     scope,
   ) => _copyWith(
-    scopes: [..._scopes, scope(PostgrestEmbeddedScope._(relation))],
+    nested: [...scopes, scope(PostgrestEmbeddedScope._(embed))],
   );
 
   /// The order keys, limit and offset of this scope and every nested one,
   /// each under the dotted path of its embed, with [prefix] in front.
   Iterable<_ScopedTransforms> _flattened([String prefix = '']) sync* {
-    final path = '$prefix${_relation._reference}';
+    final path = '$prefix${relation._reference}';
     yield (
       path: path,
-      orderKeys: [for (final ordering in _orderings) ordering.orderKey],
-      limit: _limit,
-      offset: _offset,
+      orderKeys: [for (final ordering in orderings) ordering.orderKey],
+      limit: rowLimit,
+      offset: rowOffset,
     );
-    for (final scope in _scopes) {
+    for (final scope in scopes) {
       yield* scope._flattened('$path.');
     }
   }

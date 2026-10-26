@@ -1,10 +1,4 @@
 import 'package:postgrest/postgrest.dart';
-import 'package:postgrest/src/postgrest_typed_builder.dart'
-    show
-        PostgrestHttpTableExecutor,
-        PostgrestResultShape,
-        PostgrestTableOperation,
-        PostgrestTableRequest;
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 

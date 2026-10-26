@@ -1,9 +1,13 @@
+// The interceptor seam is @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
+import 'package:meta/meta.dart' show experimental;
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/auth_async_resumable_upload_storage.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
@@ -115,6 +119,11 @@ class Supabase {
   /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
+  /// [interceptors] extend the client from the outside, see
+  /// [SupabaseClientInterceptor]. Each interceptor is paused when the app is
+  /// hidden, resumed when it returns to the foreground and disposed together
+  /// with the client.
+  ///
   /// All Supabase packages log through `package:logging` using loggers under
   /// the `supabase` hierarchy (for example `supabase.auth` or
   /// `supabase.realtime`). Nothing is printed by default; attach a listener
@@ -135,6 +144,7 @@ class Supabase {
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
+    @experimental List<SupabaseClientInterceptor> interceptors = const [],
   }) {
     final initialization = _instance._initialization;
     if (initialization != null) {
@@ -169,6 +179,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      interceptors: interceptors,
     );
     _instance._initialization = (
       future: future,
@@ -205,6 +216,7 @@ class Supabase {
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
     required Duration? requestTimeout,
+    required List<SupabaseClientInterceptor> interceptors,
   }) async {
     flutterLogger.config('Initialize Supabase v$version');
 
@@ -237,6 +249,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      interceptors: interceptors,
     );
 
     if (accessToken == null) {
@@ -331,6 +344,12 @@ class Supabase {
   /// operation is in flight, so [dispose] has nothing to await.
   Future<void>? _pendingLifecycleOperation;
 
+  /// The pause and resume work of each interceptor, one chain per interceptor
+  /// so the calls of one interceptor never overlap and run in the order of
+  /// the lifecycle events. [dispose] waits for the chains before disposing
+  /// the client.
+  final _interceptorLifecycles = <SupabaseClientInterceptor, Future<void>>{};
+
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
   /// (e.g. abort a reconnect if the app went back to background).
@@ -347,6 +366,8 @@ class Supabase {
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
     final pendingLifecycleOperation = _pendingLifecycleOperation;
+    final interceptorLifecycles = _interceptorLifecycles.values.toList();
+    _interceptorLifecycles.clear();
 
     _client = null;
     _supabaseAuth = null;
@@ -364,6 +385,7 @@ class Supabase {
     await _disposeAll([
       () => supabaseAuth?.dispose(),
       if (pendingLifecycleOperation != null) () => pendingLifecycleOperation,
+      () => Future.wait(interceptorLifecycles),
       currentClient.dispose,
     ]);
   }
@@ -406,6 +428,7 @@ class Supabase {
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
     required Duration? requestTimeout,
+    required List<SupabaseClientInterceptor> interceptors,
   }) {
     _realtimeLifecycleOptions = realtimeLifecycleOptions;
     final headers = {
@@ -425,6 +448,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      interceptors: interceptors,
     );
 
     // Close any previous realtime client that may still be connected due to
@@ -444,6 +468,10 @@ class Supabase {
       onStateChange: (state) {
         switch (state) {
           case AppLifecycleState.resumed:
+            _notifyInterceptors(
+              'resume',
+              (interceptor) => interceptor.resume(),
+            );
             final pauseExpired = _pendingPauseExpired();
             _cancelPendingPause();
             _enqueueLifecycle(state, replaceConnection: pauseExpired);
@@ -462,12 +490,37 @@ class Supabase {
                 _enqueueLifecycle(AppLifecycleState.paused);
               });
             }
-          case AppLifecycleState.inactive:
           case AppLifecycleState.hidden:
+            _notifyInterceptors('pause', (interceptor) => interceptor.pause());
+          case AppLifecycleState.inactive:
             break;
         }
       },
     );
+  }
+
+  /// Appends [notify] to the chain of each interceptor of the client, so
+  /// that a slow or failing interceptor delays or breaks neither the others
+  /// nor the realtime lifecycle.
+  void _notifyInterceptors(
+    String hook,
+    Future<void> Function(SupabaseClientInterceptor interceptor) notify,
+  ) {
+    final currentClient = _client;
+    if (currentClient == null) return;
+    for (final interceptor in currentClient.interceptors) {
+      final previous =
+          _interceptorLifecycles[interceptor] ?? Future<void>.value();
+      _interceptorLifecycles[interceptor] = previous
+          .then((_) => Future.sync(() => notify(interceptor)))
+          .catchError((Object error, StackTrace stackTrace) {
+            flutterLogger.warning(
+              'Interceptor ${interceptor.runtimeType} failed to $hook',
+              error,
+              stackTrace,
+            );
+          });
+    }
   }
 
   void _enqueueLifecycle(

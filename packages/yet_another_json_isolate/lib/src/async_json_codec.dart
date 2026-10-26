@@ -27,9 +27,18 @@ abstract interface class AsyncJsonCodec {
 
   /// Encodes [json] into a JSON string, like `jsonEncode`.
   ///
-  /// An implementation must consume the value before returning control to the
-  /// caller, which is free to mutate it as soon as the call returns.
+  /// An implementation may read the value until the returned future
+  /// completes, so the caller must not mutate it before then.
   Future<String> encode(Object? json);
+
+  /// Encodes [json] into UTF-8 encoded JSON.
+  ///
+  /// Preferred by the clients over [encode] for a request body, because it
+  /// avoids materializing the intermediate string.
+  ///
+  /// An implementation may read the value until the returned future
+  /// completes, so the caller must not mutate it before then.
+  Future<Uint8List> encodeBytes(Object? json);
 
   /// Releases whatever the codec holds.
   ///

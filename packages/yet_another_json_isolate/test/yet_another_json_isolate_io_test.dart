@@ -2,68 +2,10 @@
 library;
 
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
-import 'dart:isolate';
 
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
-
-/// JSON encodable through [toJson], but not sendable to another isolate
-/// because it holds a [ReceivePort].
-class _UnsendableButEncodable {
-  final ReceivePort port = ReceivePort();
-
-  Map<String, dynamic> toJson() => {'type': 'unsendable'};
-}
-
-/// Can be sent to another isolate, but throws from [toJson] an error that
-/// cannot be.
-class _ThrowsUnsendable {
-  const _ThrowsUnsendable();
-
-  /// The ports created on this isolate, so that a test can close them.
-  static final List<ReceivePort> ports = [];
-
-  Object toJson() {
-    final port = ReceivePort();
-    ports.add(port);
-    throw _UnsendableError(port);
-  }
-}
-
-class _UnsendableError extends Error {
-  _UnsendableError(this.port);
-
-  final ReceivePort port;
-
-  @override
-  String toString() => 'Unsendable error';
-}
-
-/// A JSON object that cannot be sent to another isolate because it holds a
-/// [ReceivePort].
-class _UnsendableMap extends MapBase<String, Object?> {
-  _UnsendableMap(this._entries);
-
-  final Map<String, Object?> _entries;
-  final ReceivePort port = ReceivePort();
-
-  @override
-  Object? operator [](Object? key) => _entries[key];
-
-  @override
-  void operator []=(String key, Object? value) => _entries[key] = value;
-
-  @override
-  void clear() => _entries.clear();
-
-  @override
-  Iterable<String> get keys => _entries.keys;
-
-  @override
-  Object? remove(Object? key) => _entries.remove(key);
-}
 
 /// Every disposal in this group is bounded, so a regression that makes
 /// `dispose()` wait forever fails the test instead of hanging the suite.
@@ -134,59 +76,7 @@ void main() {
       await pending;
     });
 
-    test('encodes a large structure holding an unsendable value', () async {
-      final isolate = YAJsonIsolate();
-      addTearDown(() => dispose(isolate));
-      final value = _UnsendableButEncodable();
-      addTearDown(value.port.close);
-      final large = [
-        for (var i = 0; i < 5000; i++) {'id': i, 'name': 'user_$i'},
-        value,
-      ];
-
-      final encoded = await isolate.encode(large);
-      final decoded = jsonDecode(encoded) as List<dynamic>;
-      expect(decoded, hasLength(5001));
-      expect(decoded.first, {'id': 0, 'name': 'user_0'});
-      expect(decoded[4999], {'id': 4999, 'name': 'user_4999'});
-      expect(decoded.last, {'type': 'unsendable'});
-    });
-
-    test('encodes a large unsendable map inline', () async {
-      final map = _UnsendableMap({
-        for (var i = 0; i < 5000; i++) 'user_$i': {'id': i},
-      });
-      addTearDown(map.port.close);
-      final isolate = YAJsonIsolate();
-      addTearDown(() => dispose(isolate));
-
-      final decoded = jsonDecode(await isolate.encode(map)) as Map;
-      expect(decoded, hasLength(5000));
-      expect(decoded['user_4999'], {'id': 4999});
-    });
-
-    test('reports an unencodable value without an isolate', () async {
-      final isolate = YAJsonIsolate();
-      addTearDown(() => dispose(isolate));
-      addTearDown(() {
-        for (final port in _ThrowsUnsendable.ports) {
-          port.close();
-        }
-      });
-
-      await expectLater(
-        isolate.encode([const _ThrowsUnsendable()]),
-        throwsA(
-          isA<JsonUnsupportedObjectError>().having(
-            (error) => error.cause,
-            'cause',
-            isA<_UnsendableError>(),
-          ),
-        ),
-      );
-    });
-
-    test('encodes a structure deeper than the conversion limit', () async {
+    test('encodes a deeply nested structure', () async {
       final isolate = YAJsonIsolate();
       addTearDown(() => dispose(isolate));
       Object? nested = 'leaf';

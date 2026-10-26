@@ -115,6 +115,12 @@ class _RecordingJsonCodec implements AsyncJsonCodec {
   }
 
   @override
+  Future<Uint8List> encodeBytes(Object? json) async {
+    encodedValues.add(json);
+    return utf8.encode(jsonEncode(json));
+  }
+
+  @override
   Future<void> dispose() async {
     isDisposed = true;
   }
