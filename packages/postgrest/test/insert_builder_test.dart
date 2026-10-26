@@ -65,4 +65,39 @@ void main() {
     expect(request.queryParameters['limit'], '1');
     expect(request.headers['Prefer'], 'return=representation');
   });
+
+  for (final (name, write) in [
+    (
+      'insert()',
+      (PostgrestQueryBuilder table, List<Object?> rows) => table.insert(rows),
+    ),
+    (
+      'upsert()',
+      (PostgrestQueryBuilder table, List<Object?> rows) => table.upsert(rows),
+    ),
+  ]) {
+    test('$name sends rows given as Map<dynamic, dynamic> and '
+        'Map<String, Object?>', () async {
+      await write(postgrest.from('users'), [
+        <dynamic, dynamic>{'username': 'foo'},
+        <String, Object?>{'username': 'bar', 'status': 'ONLINE'},
+      ]);
+
+      final request = httpClient.requests.last;
+      expect(
+        request.body,
+        '[{"username":"foo"},{"username":"bar","status":"ONLINE"}]',
+      );
+      expect(request.queryParameters['columns'], '"username","status"');
+    });
+
+    test('$name of a row with a non-String key throws', () {
+      expect(
+        () => write(postgrest.from('users'), [
+          <dynamic, dynamic>{1: 'foo'},
+        ]),
+        throwsArgumentError,
+      );
+    });
+  }
 }
