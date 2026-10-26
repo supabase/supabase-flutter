@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
 
@@ -102,35 +103,45 @@ void main() {
   }
 
   group('signOut with the local scope', () {
-    test('signs out on this device and throws while offline', () async {
+    late List<LogRecord> warnings;
+
+    setUp(() {
+      warnings = [];
+      final subscription = Logger.root.onRecord
+          .where(
+            (record) =>
+                record.loggerName == 'supabase.auth' &&
+                record.level == Level.WARNING,
+          )
+          .listen(warnings.add);
+      addTearDown(subscription.cancel);
+    });
+
+    test('signs out on this device and logs while offline', () async {
       stubOffline();
 
-      await expectLater(
-        client.signOut,
-        throwsA(isA<AuthRetryableFetchException>()),
-      );
+      await client.signOut();
       await pumpEventQueue();
 
       expect(client.currentSession, isNull);
       expect(events, [AuthChangeEvent.signedOut]);
       expect(httpClient.requestsTo('/auth/v1/logout'), hasLength(1));
+      expect(warnings.single.error, isA<AuthRetryableFetchException>());
     });
 
-    test('signs out on this device and throws on a server error', () async {
+    test('signs out on this device and logs a server error', () async {
       stubServerError();
 
-      await expectLater(
-        client.signOut,
-        throwsA(isA<AuthRetryableApiException>()),
-      );
+      await client.signOut();
 
       expect(client.currentSession, isNull);
+      expect(warnings.single.error, isA<AuthRetryableApiException>());
     });
 
     test('signs out on this device before the call completes', () async {
       httpClient.stubStall(path: '/auth/v1/logout');
 
-      unawaited(client.signOut().then((_) {}, onError: (Object _) {}));
+      unawaited(client.signOut());
 
       expect(client.currentSession, isNull);
       await pumpEventQueue();
@@ -152,27 +163,22 @@ void main() {
       await signOut;
 
       expect(done, isTrue);
+      expect(warnings, isEmpty);
     });
 
     test('gives up on the revoke after a timeout', () {
       fakeAsync((async) {
         httpClient.stubStall(path: '/auth/v1/logout');
-        Object? error;
-        unawaited(
-          client.signOut().then(
-            (_) {},
-            onError: (Object signOutError) {
-              error = signOutError;
-            },
-          ),
-        );
+        var done = false;
+        unawaited(client.signOut().then((_) => done = true));
 
         async.elapse(const Duration(seconds: 9));
-        expect(error, isNull);
+        expect(done, isFalse);
         expect(client.currentSession, isNull);
 
         async.elapse(const Duration(seconds: 1));
-        expect(error, isA<AuthRetryableFetchException>());
+        expect(done, isTrue);
+        expect(warnings.single.error, isA<AuthRetryableFetchException>());
       });
     });
 
@@ -192,10 +198,11 @@ void main() {
       expect(httpClient.requestsTo('/auth/v1/token'), hasLength(1));
       expect(client.currentSession, isNull);
       expect(events, [AuthChangeEvent.signedOut]);
+      expect(warnings, isEmpty);
     });
 
     test(
-      'succeeds when the server already revoked the refresh token',
+      'treats a refresh token the server already revoked as revoked',
       () async {
         await restoreExpiredSession();
         stubRejectedRefresh();
@@ -204,6 +211,7 @@ void main() {
 
         expect(client.currentSession, isNull);
         expect(httpClient.requestsTo('/auth/v1/logout'), isEmpty);
+        expect(warnings, isEmpty);
       },
     );
 
@@ -228,18 +236,20 @@ void main() {
           'Bearer $token',
         );
         expect(client.currentSession, isNull);
+        expect(warnings, isEmpty);
       },
     );
 
-    test('throws when an expired access token cannot be refreshed', () async {
+    test('logs when an expired access token cannot be refreshed', () async {
       await restoreExpiredSession();
       stubRateLimitedRefresh();
       stubExpiredTokenRejected();
 
-      await expectLater(client.signOut, throwsA(isA<AuthApiException>()));
+      await client.signOut();
 
       expect(client.currentSession, isNull);
       expect(httpClient.requestsTo('/auth/v1/logout'), isEmpty);
+      expect(warnings.single.error, isA<AuthApiException>());
     });
   });
 

@@ -1495,9 +1495,9 @@ class AuthClient {
   /// the returned future. The session is then revoked on the server,
   /// refreshing an expired access token before. The future waits for the
   /// revoke for up to 10 seconds, so disposing the client after awaiting it
-  /// cannot abort the request. When the revoke fails or times out, the future
-  /// completes with an error, but the session stays removed from this device,
-  /// and its refresh token stays valid on the server until it expires.
+  /// cannot abort the request. It never throws: the session is already gone
+  /// from this device, so a failed revoke is logged, and the refresh token
+  /// stays valid on the server until it expires.
   ///
   /// With [SignOutScope.global] and [SignOutScope.others] the sessions are
   /// revoked on the server first, refreshing an expired access token before.
@@ -1515,7 +1515,7 @@ class AuthClient {
       final session = _currentSession;
       await _signOutLocally(SignOutReason.userInitiated);
       if (session != null) {
-        await _revokeRemovedSession(session);
+        await _revokeRemovedSessionOrLog(session);
       }
       return;
     }
@@ -1559,20 +1559,23 @@ class AuthClient {
   Future<void> _discardSession(SignOutReason reason) async {
     final session = _currentSession;
     await _signOutLocally(reason);
-    if (session == null) return;
-    unawaited(
-      _revokeRemovedSession(session).then(
-        (_) {},
-        onError: (Object error, StackTrace stackTrace) {
-          authLogger.warning(
-            'Signed out locally, but could not revoke the session on the '
-            'server',
-            error,
-            stackTrace,
-          );
-        },
-      ),
-    );
+    if (session != null) {
+      unawaited(_revokeRemovedSessionOrLog(session));
+    }
+  }
+
+  /// Revokes [session] like [_revokeRemovedSession], logging a failure
+  /// instead of throwing it.
+  Future<void> _revokeRemovedSessionOrLog(Session session) async {
+    try {
+      await _revokeRemovedSession(session);
+    } catch (error, stackTrace) {
+      authLogger.warning(
+        'Signed out locally, but could not revoke the session on the server',
+        error,
+        stackTrace,
+      );
+    }
   }
 
   /// Removes the session and every pending PKCE verifier from this device.

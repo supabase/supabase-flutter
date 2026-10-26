@@ -123,11 +123,7 @@ class _SignedInView extends StatelessWidget {
           Text('Signed in as ${user.email}'),
           TextButton(
             onPressed: () => unawaited(
-              Supabase.instance.client.auth.signOut().onError<AuthException>(
-                (error, _) => debugPrint(
-                  'Could not revoke the session on the server: $error',
-                ),
-              ),
+              Supabase.instance.client.auth.signOut(),
             ),
             child: const Text('Sign out'),
           ),

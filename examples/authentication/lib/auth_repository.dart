@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Every `supabase.auth.*` call for the example lives here, so the UI stays
@@ -17,13 +16,8 @@ class AuthRepository {
   /// The signed in user, or `null` when there is no session.
   User? get currentUser => _client.auth.currentUser;
 
-  /// Ends the session and clears it from storage. When the server cannot
-  /// revoke the session, for example while offline, the user is still signed
-  /// out on this device, so the failure is only logged.
-  Future<void> signOut() => _client.auth.signOut().onError<AuthException>(
-    (error, _) =>
-        debugPrint('Could not revoke the session on the server: $error'),
-  );
+  /// Ends the session and clears it from storage.
+  Future<void> signOut() => _client.auth.signOut();
 
   // Email & password ---------------------------------------------------------
 
