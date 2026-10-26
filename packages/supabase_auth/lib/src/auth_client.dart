@@ -1495,19 +1495,22 @@ class AuthClient {
   /// the returned future. The session is then revoked on the server,
   /// refreshing an expired access token before. The future waits for the
   /// revoke for up to 10 seconds, so disposing the client after awaiting it
-  /// cannot abort the request. It never throws: the session is already gone
-  /// from this device, so a failed revoke is logged, and the refresh token
-  /// stays valid on the server until it expires.
+  /// cannot abort a revoke that finished in time. A revoke still running
+  /// after that continues in the background. It never throws: the session is
+  /// already gone from this device, so a failed revoke is logged, and the
+  /// refresh token stays valid on the server until it expires.
   ///
   /// With [SignOutScope.global] and [SignOutScope.others] the sessions are
   /// revoked on the server first, refreshing an expired access token before.
   /// When that fails, this throws and the session is kept, so the call can be
-  /// retried. With [SignOutScope.global] the session is removed from this
-  /// device once the server has revoked it, unless another sign-in or
-  /// sign-out happened in the meantime.
+  /// retried. When the server rejects the refresh token, the session can no
+  /// longer be used, so the failed refresh signs out this device as it does
+  /// for [getSession], and this throws. With [SignOutScope.global] the
+  /// session is removed from this device once the server has revoked it,
+  /// unless another sign-in or sign-out happened in the meantime.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
-  /// is fired!
+  /// is fired, unless the refresh token was rejected.
   Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
     authLogger.info('Signing out user with scope: ${scope.name}');
 
