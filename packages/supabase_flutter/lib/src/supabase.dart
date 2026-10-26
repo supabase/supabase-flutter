@@ -344,11 +344,11 @@ class Supabase {
   /// operation is in flight, so [dispose] has nothing to await.
   Future<void>? _pendingLifecycleOperation;
 
-  /// The pause and resume work of each interceptor, one chain per interceptor
-  /// so the calls of one interceptor never overlap and run in the order of
-  /// the lifecycle events. [dispose] waits for the chains before disposing
+  /// The resume work of each interceptor, one chain per interceptor so the
+  /// resumes of one interceptor never overlap and run in the order of the
+  /// lifecycle events. [dispose] waits for the chains before disposing
   /// the client.
-  final _interceptorLifecycles = <SupabaseClientInterceptor, Future<void>>{};
+  final _interceptorResumes = <SupabaseClientInterceptor, Future<void>>{};
 
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
@@ -366,8 +366,8 @@ class Supabase {
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
     final pendingLifecycleOperation = _pendingLifecycleOperation;
-    final interceptorLifecycles = _interceptorLifecycles.values.toList();
-    _interceptorLifecycles.clear();
+    final interceptorResumes = _interceptorResumes.values.toList();
+    _interceptorResumes.clear();
 
     _client = null;
     _supabaseAuth = null;
@@ -385,7 +385,7 @@ class Supabase {
     await _disposeAll([
       () => supabaseAuth?.dispose(),
       if (pendingLifecycleOperation != null) () => pendingLifecycleOperation,
-      () => Future.wait(interceptorLifecycles),
+      () => Future.wait(interceptorResumes),
       currentClient.dispose,
     ]);
   }
@@ -468,10 +468,7 @@ class Supabase {
       onStateChange: (state) {
         switch (state) {
           case AppLifecycleState.resumed:
-            _notifyInterceptors(
-              'resume',
-              (interceptor) => interceptor.resume(),
-            );
+            _resumeInterceptors();
             final pauseExpired = _pendingPauseExpired();
             _cancelPendingPause();
             _enqueueLifecycle(state, replaceConnection: pauseExpired);
@@ -491,7 +488,6 @@ class Supabase {
               });
             }
           case AppLifecycleState.hidden:
-            _notifyInterceptors('pause', (interceptor) => interceptor.pause());
           case AppLifecycleState.inactive:
             break;
         }
@@ -499,23 +495,19 @@ class Supabase {
     );
   }
 
-  /// Appends [notify] to the chain of each interceptor of the client, so
+  /// Appends a resume to the chain of each interceptor of the client, so
   /// that a slow or failing interceptor delays or breaks neither the others
   /// nor the realtime lifecycle.
-  void _notifyInterceptors(
-    String hook,
-    Future<void> Function(SupabaseClientInterceptor interceptor) notify,
-  ) {
+  void _resumeInterceptors() {
     final currentClient = _client;
     if (currentClient == null) return;
     for (final interceptor in currentClient.interceptors) {
-      final previous =
-          _interceptorLifecycles[interceptor] ?? Future<void>.value();
-      _interceptorLifecycles[interceptor] = previous
-          .then((_) => Future.sync(() => notify(interceptor)))
+      final previous = _interceptorResumes[interceptor] ?? Future<void>.value();
+      _interceptorResumes[interceptor] = previous
+          .then((_) => Future.sync(interceptor.resume))
           .catchError((Object error, StackTrace stackTrace) {
             flutterLogger.warning(
-              'Interceptor ${interceptor.runtimeType} failed to $hook',
+              'Interceptor ${interceptor.runtimeType} failed to resume',
               error,
               stackTrace,
             );
