@@ -279,10 +279,13 @@ class PostgrestQueryBuilder {
         json = null;
       }
     }
+    if (json is Map<String, dynamic>) {
+      return json;
+    }
     if (json is! Map || json.keys.any((key) => key is! String)) {
       throw ArgumentError.value(row, 'values', 'Every row must be an object');
     }
-    return json.cast();
+    return Map.from(json);
   }
 
   /// Only performs a count query on the table or view.
