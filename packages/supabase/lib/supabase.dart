@@ -14,6 +14,7 @@ export 'package:yet_another_json_isolate/yet_another_json_isolate.dart'
 export 'src/realtime_client_options.dart';
 export 'src/supabase_client.dart';
 export 'src/supabase_client_options.dart';
+export 'src/supabase_client_interceptor.dart';
 export 'src/supabase_query_builder.dart';
 export 'src/supabase_query_schema.dart';
 export 'src/supabase_stream_builder.dart';

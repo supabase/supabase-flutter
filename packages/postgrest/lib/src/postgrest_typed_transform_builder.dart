@@ -7,7 +7,7 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   const PostgrestTypedTransformBuilder._(
-    super._request,
+    super.request,
     super.executor,
     super.convert,
     this._rowFromJson,
@@ -28,7 +28,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     PostgrestResultShape shape,
     _ResultConverter<U> convert,
   ) => PostgrestTypedTransformBuilder._(
-    _request.copyWith(shape: shape),
+    request.copyWith(shape: shape),
     _executor,
     convert,
     _rowFromJson,
@@ -38,20 +38,20 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, T> retry({
     bool enabled = true,
     int? count,
-  }) => _with(_request._retry(enabled, count));
+  }) => _with(request._retry(enabled, count));
 
   @override
   PostgrestTypedTransformBuilder<Row, T> requestTimeout(Duration timeout) =>
-      _with(_request._requestTimeout(timeout));
+      _with(request._requestTimeout(timeout));
 
   @override
   PostgrestTypedTransformBuilder<Row, T> abortSignal(
     Future<void> abortSignal,
-  ) => _with(_request._abortSignal(abortSignal));
+  ) => _with(request._abortSignal(abortSignal));
 
   @override
   PostgrestTypedTransformBuilder<Row, T> setHeader(String key, String value) =>
-      _with(_request._header(key, value));
+      _with(request._header(key, value));
 
   /// Performs horizontal filtering with SELECT, returning the affected rows
   /// typed as [Row].
@@ -67,7 +67,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// See [selectOnly] to return some columns only.
   PostgrestTypedTransformBuilder<Row, List<Row>> select() =>
       PostgrestTypedTransformBuilder._(
-        _request.copyWith(
+        request.copyWith(
           columns: const [],
           shape: PostgrestResultShape.rows,
           returning: true,
@@ -92,7 +92,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, List<PostgrestPartialRow<Row>>>
   selectOnly(List<PostgrestSelectable<Row>> columns) =>
       PostgrestTypedTransformBuilder._(
-        _request.copyWith(
+        request.copyWith(
           columns: _checkedSelections(columns, 'columns'),
           shape: PostgrestResultShape.rows,
           returning: true,
@@ -116,13 +116,13 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// Repeated calls append, so the second key breaks ties in the first.
   PostgrestTypedTransformBuilder<Row, T> order(
     PostgrestOrdering<Row> ordering,
-  ) => _with(_request.copyWith(orderings: [..._request.orderings, ordering]));
+  ) => _with(request.copyWith(orderings: [...request.orderings, ordering]));
 
   /// Limits the result with the specified [count].
   ///
   /// See [embedded] to limit the rows of an embed instead.
   PostgrestTypedTransformBuilder<Row, T> limit(int count) =>
-      _with(_request.copyWith(limit: count));
+      _with(request.copyWith(limit: count));
 
   /// Limits the result to rows within the specified range, inclusive.
   ///
@@ -130,7 +130,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// [ArgumentError] when [to] is less than [from].
   PostgrestTypedTransformBuilder<Row, T> range(int from, int to) {
     checkPostgrestRange(from, to);
-    return _with(_request.copyWith(offset: from, limit: to - from + 1));
+    return _with(request.copyWith(offset: from, limit: to - from + 1));
   }
 
   /// Sorts and limits the rows of the to-many embed [relation] with [scope],
@@ -158,9 +158,9 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     )
     scope,
   ) => _with(
-    _request.copyWith(
+    request.copyWith(
       embeddedScopes: [
-        ..._request.embeddedScopes,
+        ...request.embeddedScopes,
         scope(PostgrestEmbeddedScope._(relation)),
       ],
     ),
@@ -172,7 +172,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// requires PostgREST 11.2 or higher. It applies to row and [single]
   /// responses, in either call order.
   PostgrestTypedTransformBuilder<Row, T> stripNulls() =>
-      _with(_request.copyWith(stripNulls: true));
+      _with(request.copyWith(stripNulls: true));
 
   /// Runs the query but rolls back the transaction, so no changes are
   /// persisted.
@@ -184,7 +184,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// await client.table(Books.table).insert(BookInsert(title: 'foo')).dryRun();
   /// ```
   PostgrestTypedTransformBuilder<Row, T> dryRun() =>
-      _with(_request.copyWith(dryRun: true));
+      _with(request.copyWith(dryRun: true));
 
   /// Sets the maximum number of rows that can be affected by the query.
   ///
@@ -199,7 +199,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ///     .maxAffected(10);
   /// ```
   PostgrestTypedTransformBuilder<Row, T> maxAffected(int value) =>
-      _with(_request.copyWith(maxAffected: value));
+      _with(request.copyWith(maxAffected: value));
 
   /// Retrieves the response as CSV.
   ///
@@ -222,7 +222,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// Throws a [StateError] after an insert, upsert, update or delete, which a
   /// head request cannot perform.
   PostgrestTypedBuilder<void> head() {
-    final operation = _request.operation;
+    final operation = request.operation;
     if (operation.isMutation && operation != PostgrestTableOperation.rpc) {
       throw StateError(
         'head() only applies to a select or a function call, not to '
@@ -230,7 +230,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
       );
     }
     return PostgrestTypedBuilder._(
-      _request.copyWith(shape: PostgrestResultShape.head),
+      request.copyWith(shape: PostgrestResultShape.head),
       _executor,
       _noResult,
     );
@@ -244,7 +244,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// https://supabase.com/docs/guides/database/extensions/postgis
   PostgrestTypedBuilder<Map<String, dynamic>> geojson() =>
       PostgrestTypedBuilder._(
-        _request.copyWith(shape: PostgrestResultShape.geojson),
+        request.copyWith(shape: PostgrestResultShape.geojson),
         _executor,
         (result) => result.data! as Map<String, dynamic>,
       );
@@ -266,7 +266,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     bool wal = false,
     ExplainFormat format = ExplainFormat.text,
   }) => PostgrestTypedBuilder._(
-    _request.copyWith(
+    request.copyWith(
       shape: PostgrestResultShape.explain,
       explainOptions: PostgrestExplainOptions(
         analyze: analyze,
@@ -295,7 +295,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedBuilder<PostgrestResponse<T>> count([
     CountOption option = CountOption.exact,
   ]) => PostgrestTypedBuilder._(
-    _request.copyWith(countOption: option),
+    request.copyWith(countOption: option),
     _executor,
     (result) => PostgrestResponse(
       data: _convert(result),

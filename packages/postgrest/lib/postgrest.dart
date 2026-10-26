@@ -42,14 +42,6 @@ export 'src/postgrest.dart';
 export 'src/postgrest_builder.dart';
 export 'src/postgrest_typed_builder.dart'
     hide
-        PostgrestExplainOptions,
-        PostgrestHttpTableExecutor,
-        PostgrestRequestOptions,
-        PostgrestResultShape,
-        PostgrestTableExecutor,
-        PostgrestTableOperation,
-        PostgrestTableRequest,
-        PostgrestTableResult,
         checkPostgrestHeadArguments,
         checkPostgrestRange,
         postgrestArgumentsFitQuery,

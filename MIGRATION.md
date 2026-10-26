@@ -50,6 +50,10 @@ and writes only accept the generated insert and update types. We recommend gener
 definitions for your project and using `table()` for every table they cover. `from()` keeps working,
 and both can be used on one client, so a codebase can move over one table at a time.
 
+Requests made through `table()` run through the executor that `SupabaseClientInterceptor`s wrap, so
+features built as interceptors, such as offline support, only apply to them. Requests made through
+`from()` bypass every interceptor.
+
 The typed API is marked `@experimental` while it settles. Referencing an experimental type such as
 `PostgrestFilter` directly reports `experimental_member_use`, which an
 `// ignore_for_file: experimental_member_use` silences; the generated file already carries it.
@@ -472,7 +476,7 @@ await supabase
 ```
 
 The generated table definition also lists `primaryKey` and `relations`. Neither changes how a
-request is sent; they describe the table to code that handles requests itself, such as a plugin
+request is sent; they describe the table to code that handles requests itself, such as an interceptor
 that caches rows and needs to tell them apart, or one that resolves an embed from local data.
 
 #### Realtime streams

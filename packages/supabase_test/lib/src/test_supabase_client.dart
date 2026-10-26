@@ -48,6 +48,8 @@ SupabaseClient testSupabaseClient({
   SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(
     enabled: false,
   ),
+  // ignore: experimental_member_use
+  @experimental List<SupabaseClientInterceptor> interceptors = const [],
 }) {
   return SupabaseClient(
     url,
@@ -59,6 +61,8 @@ SupabaseClient testSupabaseClient({
       retryOptions: retryOptions,
     ),
     realtimeOptions: RealtimeClientOptions(transport: realtimeTransport),
+    // ignore: experimental_member_use
+    interceptors: interceptors,
   );
 }
 
