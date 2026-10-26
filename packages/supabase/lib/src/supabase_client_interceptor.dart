@@ -36,8 +36,22 @@ abstract class SupabaseClientInterceptor {
   /// client exists.
   void attach(SupabaseClient client) {}
 
+  /// Called when the host application leaves the foreground, for example on
+  /// `AppLifecycleState.hidden` in Flutter, which precedes `paused` on mobile
+  /// and is the only background signal on the web and desktop.
+  ///
+  /// The operating system may suspend the application shortly after, so keep
+  /// the work short, such as flushing buffered metrics or stopping timers,
+  /// and store anything that must survive when it is written instead. The
+  /// host does not wait for the returned future, and an error the future
+  /// completes with is logged.
+  Future<void> pause() async {}
+
   /// Called when the host application returns to the foreground, for
   /// example on `AppLifecycleState.resumed` in Flutter.
+  ///
+  /// It usually follows a [pause], but also arrives without one when the
+  /// application was only inactive, for example behind a system dialog.
   ///
   /// The host does not wait for the returned future, so a long running
   /// reaction, a synchronization for example, does not delay anything else
