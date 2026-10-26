@@ -437,12 +437,41 @@ void main() {
       );
 
       expect(response.data, {'key': 'Hello World'});
-      expect(jsonCodec.encodedValues, [
+      expect(jsonCodec.encodedBytesValues, [
         {'name': 'Supabase'},
       ]);
+      expect(jsonCodec.encodedValues, isEmpty);
       expect(jsonCodec.decodedPayloads, 1);
       expect(jsonCodec.isDisposed, isFalse);
     });
+
+    test(
+      'encodes a body for a non JSON content type through the string codec',
+      () async {
+        final jsonCodec = _RecordingJsonCodec();
+        final httpClient = CustomHttpClient();
+        final client = FunctionsClient(
+          "",
+          {},
+          jsonCodec: jsonCodec,
+          httpClient: httpClient,
+        );
+        addTearDown(client.dispose);
+
+        await client.invoke(
+          'function',
+          headers: {'Content-Type': 'text/plain; charset=iso-8859-1'},
+          body: {'name': 'Ærlig'},
+        );
+
+        final request = httpClient.receivedRequests.last as Request;
+        expect(request.bodyBytes, latin1.encode('{"name":"Ærlig"}'));
+        expect(jsonCodec.encodedValues, [
+          {'name': 'Ærlig'},
+        ]);
+        expect(jsonCodec.encodedBytesValues, isEmpty);
+      },
+    );
 
     test('Listen to SSE event', () async {
       final response = await functionsCustomHttpClient.invoke('sse');
@@ -1230,6 +1259,7 @@ void main() {
 /// codec it was given and leaves its disposal to the caller.
 class _RecordingJsonCodec implements AsyncJsonCodec {
   final List<Object?> encodedValues = [];
+  final List<Object?> encodedBytesValues = [];
   int decodedPayloads = 0;
   bool isDisposed = false;
 
@@ -1249,6 +1279,12 @@ class _RecordingJsonCodec implements AsyncJsonCodec {
   Future<String> encode(Object? json) async {
     encodedValues.add(json);
     return jsonEncode(json);
+  }
+
+  @override
+  Future<Uint8List> encodeBytes(Object? json) async {
+    encodedBytesValues.add(json);
+    return utf8.encode(jsonEncode(json));
   }
 
   @override

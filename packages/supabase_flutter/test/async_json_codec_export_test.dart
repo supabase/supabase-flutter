@@ -18,6 +18,10 @@ class _InlineJsonCodec implements AsyncJsonCodec {
   Future<String> encode(Object? json) async => jsonEncode(json);
 
   @override
+  Future<Uint8List> encodeBytes(Object? json) async =>
+      utf8.encode(jsonEncode(json));
+
+  @override
   Future<void> dispose() async {}
 }
 
