@@ -574,14 +574,12 @@ class RealtimeChannel {
   ///
   /// Each message is a map with the `type` (always `broadcast`), the `event`
   /// name and the sent data under `payload`. Messages broadcast from the
-  /// database also carry a `meta` map. Apps still on supabase_flutter v2 send
-  /// the data at the top level instead of under `payload`.
+  /// database also carry a `meta` map.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
   /// channel.onBroadcast(event: 'position').listen((message) {
-  ///   final data = message['payload'] ?? message;
-  ///   print(data['x']);
+  ///   print(message['payload']['x']);
   /// });
   /// channel.subscribe();
   /// ```

@@ -130,7 +130,7 @@ void main() {
     await _closeRoom(tester, supabase);
   });
 
-  testWidgets('shows typing pings from v2 and v3 clients', (tester) async {
+  testWidgets('skips typing pings from v2 clients', (tester) async {
     httpClient.stubTable('messages', rows: []);
     final supabase = await openRoom(tester);
     _emitReplicationReady(realtime);
@@ -151,7 +151,7 @@ void main() {
     );
     await _pumpUntil(
       tester,
-      () => find.text('bob, carol are typing…').evaluate().isNotEmpty,
+      () => find.text('carol is typing…').evaluate().isNotEmpty,
     );
     await _closeRoom(tester, supabase);
   });

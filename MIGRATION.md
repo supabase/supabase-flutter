@@ -1524,16 +1524,9 @@ await channel.sendBroadcastMessage(event: 'file', payload: bytes);
 await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
 ```
 
-Apps built with v2 keep sending the data at the top level, so while those builds are still in use a
-v3 listener gets messages from them without a `payload` key. Read both shapes until every sender
-is on v3:
-
-```dart skip
-channel.onBroadcast(event: 'cursor').listen((message) {
-  final data = message['payload'] ?? message;
-  print(data['x']);
-});
-```
+Clients on v2 and v3 cannot read each other's broadcasts: a v3 listener finds no `payload` in a
+message from a v2 app, and a v2 listener finds nothing at the top level of a message from a v3 app.
+Move every app that shares a channel to v3 together.
 
 #### Invalid broadcast payloads throw in release builds
 
