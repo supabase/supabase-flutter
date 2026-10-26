@@ -72,6 +72,16 @@ void main() {
     expect((await lastSentBroadcast())['payload'], {'x': 1});
   });
 
+  test('accepts a map without type arguments', () async {
+    final status = await channel.sendBroadcastMessage(
+      event: 'cursor',
+      payload: Map<Object?, Object?>.from({'x': 1}),
+    );
+
+    expect(status, ChannelResponse.ok);
+    expect((await lastSentBroadcast())['payload'], {'x': 1});
+  });
+
   test('leaves the payload map of the caller unchanged', () async {
     final payload = <String, dynamic>{'x': 1};
 
@@ -96,6 +106,30 @@ void main() {
     expect(frame, isA<Uint8List>());
     expect((frame as Uint8List).first, Serializer.kindUserBroadcastPush);
     expect(frame.sublist(frame.length - bytes.length), bytes);
+  });
+
+  test('rejects a payload that is neither a map nor binary', () async {
+    await expectLater(
+      channel.sendBroadcastMessage(event: 'cursor', payload: 'text'),
+      throwsArgumentError,
+    );
+    await expectLater(
+      channel.sendBroadcastMessage(event: 'cursor', payload: [1, 2]),
+      throwsArgumentError,
+    );
+    await pumpEventQueue();
+
+    expect(
+      realtime.sent.where((message) => message.event == 'broadcast'),
+      isEmpty,
+    );
+  });
+
+  test('httpSend rejects a payload that is neither a map nor binary', () {
+    return expectLater(
+      channel.httpSend(event: 'cursor', payload: 'text'),
+      throwsArgumentError,
+    );
   });
 
   test(
