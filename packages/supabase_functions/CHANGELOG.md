@@ -1,3 +1,13 @@
+## 3.0.0-dev.10
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **BREAKING** **REFACTOR**(yet_another_json_isolate): drop initialize(), align web and IO behavior, and keep small toJson objects off the isolate ([#2041](https://github.com/supabase/supabase-flutter/issues/2041)). ([69474c10](https://github.com/supabase/supabase-flutter/commit/69474c10251f3cbda642396d025d88c4e685040f))
+ - **BREAKING** **PERF**(yet_another_json_isolate,postgrest,functions): encode request bodies to UTF-8 bytes on the calling isolate in slices ([#2057](https://github.com/supabase/supabase-flutter/issues/2057)). ([776b9f52](https://github.com/supabase/supabase-flutter/commit/776b9f527ac400a7f08bd499d76dcf2bafa7c043))
+ - **BREAKING** **FEAT**(functions): response headers, a region type, consistent naming and errors that stay in FunctionsException ([#2031](https://github.com/supabase/supabase-flutter/issues/2031)). ([48bb86ad](https://github.com/supabase/supabase-flutter/commit/48bb86ad63853df00efaadd9796d113b5f785148))
+
 ## 3.0.0-dev.9
 
 > Note: This release has breaking changes.

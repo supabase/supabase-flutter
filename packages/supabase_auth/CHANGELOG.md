@@ -1,3 +1,16 @@
+## 3.0.0-dev.11
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(auth): keep the session when a refresh is rate limited or answered by a proxy ([#2033](https://github.com/supabase/supabase-flutter/issues/2033)). ([8f8c5046](https://github.com/supabase/supabase-flutter/commit/8f8c5046156b0ad116b4c8df95d5b123b27482fc))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **FIX**(auth): signOut must not report success when the server revoke was skipped or lost ([#2053](https://github.com/supabase/supabase-flutter/issues/2053)). ([62b923e6](https://github.com/supabase/supabase-flutter/commit/62b923e65b18f53511afecc90bfe323efd6a6f15))
+ - **BREAKING** **FIX**(supabase_test): fast failures, clock-aware sessions, a real signedIn event and stubs that match what the SDK sends ([#2035](https://github.com/supabase/supabase-flutter/issues/2035)). ([9e74106e](https://github.com/supabase/supabase-flutter/commit/9e74106e95f8e35744a9a453af3ebb032bb95f78))
+ - **BREAKING** **FIX**(auth): refresh user-scoped tokens, keep restored sessions and announce user switches as signedIn ([#2037](https://github.com/supabase/supabase-flutter/issues/2037)). ([3ff29e0d](https://github.com/supabase/supabase-flutter/commit/3ff29e0dbe3cb8caf763cd309c17d4393696943a))
+ - **BREAKING** **FIX**(auth): harden PKCE verifiers, redirectType, signOut and dispose edge cases ([#2027](https://github.com/supabase/supabase-flutter/issues/2027)). ([c4dadffb](https://github.com/supabase/supabase-flutter/commit/c4dadffb64799eba4dc945fe51929ec92f8fece2))
+
 ## 3.0.0-dev.10
 
 > Note: This release has breaking changes.

@@ -1,3 +1,25 @@
+## 3.0.0-dev.13
+
+> Note: This release has breaking changes.
+
+ - **PERF**(postgrest): stop wrapping every inserted and upserted row in a cast view ([#2058](https://github.com/supabase/supabase-flutter/issues/2058)). ([a05c51bf](https://github.com/supabase/supabase-flutter/commit/a05c51bf5298150c1787f69c8c35c64acbe15371))
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(postgrest): buffer the untyped asStream result and correct dartdocs that disagree with behavior ([#2042](https://github.com/supabase/supabase-flutter/issues/2042)). ([ed797335](https://github.com/supabase/supabase-flutter/commit/ed797335edae3026cd00b2ad1642b6b92d78a7b0))
+ - **FIX**(postgrest): warn on a bare await of typed update() and delete() ([#2007](https://github.com/supabase/supabase-flutter/issues/2007)). ([ae452e4a](https://github.com/supabase/supabase-flutter/commit/ae452e4a99343e65d7bd764bd7c2f95da6000a58))
+ - **FEAT**(supabase): run the typed function calls through the client interceptors ([#2056](https://github.com/supabase/supabase-flutter/issues/2056)). ([60f8267c](https://github.com/supabase/supabase-flutter/commit/60f8267c925a802d0d0e8c2a4afab1cafd83fd18))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(postgrest): hide internals and align the untyped builder with the typed one ([#2029](https://github.com/supabase/supabase-flutter/issues/2029)). ([875ea125](https://github.com/supabase/supabase-flutter/commit/875ea125e65dccc0e938c37ba9c02ad71b59befc))
+ - **BREAKING** **REFACTOR**(yet_another_json_isolate): drop initialize(), align web and IO behavior, and keep small toJson objects off the isolate ([#2041](https://github.com/supabase/supabase-flutter/issues/2041)). ([69474c10](https://github.com/supabase/supabase-flutter/commit/69474c10251f3cbda642396d025d88c4e685040f))
+ - **BREAKING** **PERF**(yet_another_json_isolate,postgrest,functions): encode request bodies to UTF-8 bytes on the calling isolate in slices ([#2057](https://github.com/supabase/supabase-flutter/issues/2057)). ([776b9f52](https://github.com/supabase/supabase-flutter/commit/776b9f527ac400a7f08bd499d76dcf2bafa7c043))
+ - **BREAKING** **FIX**(postgrest): stop transforms from silently changing or dropping part of a request ([#2026](https://github.com/supabase/supabase-flutter/issues/2026)). ([f9924ac8](https://github.com/supabase/supabase-flutter/commit/f9924ac8c7167a7aab8e39885f3dd91f342b9b43))
+ - **BREAKING** **FIX**(typegen): suffix names that clash with SDK and Flutter types, and decode unknown enum labels and infinite timestamps ([#2044](https://github.com/supabase/supabase-flutter/issues/2044)). ([96e7e88f](https://github.com/supabase/supabase-flutter/commit/96e7e88fcc4b87bbcf75c8579d78933adbe34010))
+ - **BREAKING** **FIX**(postgrest): send DateTime filter operands with their offset from UTC ([#2024](https://github.com/supabase/supabase-flutter/issues/2024)). ([5248812b](https://github.com/supabase/supabase-flutter/commit/5248812bae286d9bdf16ccf9b57215db900ba2d8))
+ - **BREAKING** **FIX**(postgrest): apply column defaults to keys missing from some rows in insertAll and upsertAll ([#2032](https://github.com/supabase/supabase-flutter/issues/2032)). ([5a47e227](https://github.com/supabase/supabase-flutter/commit/5a47e227147a723c4f18e7a09071b8078f224d4f))
+ - **BREAKING** **FEAT**(supabase): run the typed table requests through client interceptors ([#1940](https://github.com/supabase/supabase-flutter/issues/1940)). ([4efd670b](https://github.com/supabase/supabase-flutter/commit/4efd670bfe3e6a521246a5372877b9aaae31222d))
+ - **BREAKING** **FEAT**(supabase): reject unsupported typed stream orderings at compile time ([#2014](https://github.com/supabase/supabase-flutter/issues/2014)). ([6083d666](https://github.com/supabase/supabase-flutter/commit/6083d666e515751f46f3c8547871bd11dcab0c17))
+ - **BREAKING** **FEAT**(supabase): typed stream order() takes a PostgrestOrdering like the typed query ([#2010](https://github.com/supabase/supabase-flutter/issues/2010)). ([4a32d1f5](https://github.com/supabase/supabase-flutter/commit/4a32d1f5198de07d195356e27d22c2705705049e))
+
 ## 3.0.0-dev.12
 
  - **FEAT**(supabase): add typed onTableChanges for postgres changes ([#2003](https://github.com/supabase/supabase-flutter/issues/2003)). ([74e9870b](https://github.com/supabase/supabase-flutter/commit/74e9870b8768bc42d6a93d88dbc5fecbef1417c1))

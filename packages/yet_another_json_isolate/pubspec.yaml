@@ -1,6 +1,6 @@
 name: yet_another_json_isolate
 description: JSON parsing off the main isolate, processing small payloads inline and large payloads on short lived isolates without copying results. Runs inline on web.
-version: 3.0.0-dev.2
+version: 3.0.0-dev.3
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/yet_another_json_isolate'
 issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'

@@ -1,3 +1,15 @@
+## 0.7.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(typegen): disambiguate embeds of opposite-direction keys and junction tables, alias embeds named like columns ([#2020](https://github.com/supabase/supabase-flutter/issues/2020)). ([587a2535](https://github.com/supabase/supabase-flutter/commit/587a2535f3da4875f3e0961d2e44e7abf38a3f67))
+ - **FIX**(typegen): respect formatter settings on stdout and fail loudly on bad input ([#2023](https://github.com/supabase/supabase-flutter/issues/2023)). ([428d3052](https://github.com/supabase/supabase-flutter/commit/428d3052ebe8e2ca38bd90fa1d50f485873c1afd))
+ - **FEAT**: ship agent skills with supabase_flutter, supabase, supabase_typegen and supabase_test ([#2011](https://github.com/supabase/supabase-flutter/issues/2011)). ([3f415f4e](https://github.com/supabase/supabase-flutter/commit/3f415f4e88a7d7c328583fb310480bd64d4bea9a))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **FIX**(typegen): stop renaming generated types that clash with supabase_flutter and Flutter names ([#2047](https://github.com/supabase/supabase-flutter/issues/2047)). ([3d6a2b87](https://github.com/supabase/supabase-flutter/commit/3d6a2b874bc509f55887f44f4be093981e60c371))
+ - **BREAKING** **FIX**(typegen): suffix names that clash with SDK and Flutter types, and decode unknown enum labels and infinite timestamps ([#2044](https://github.com/supabase/supabase-flutter/issues/2044)). ([96e7e88f](https://github.com/supabase/supabase-flutter/commit/96e7e88fcc4b87bbcf75c8579d78933adbe34010))
+ - **BREAKING** **FIX**(postgrest): send DateTime filter operands with their offset from UTC ([#2024](https://github.com/supabase/supabase-flutter/issues/2024)). ([5248812b](https://github.com/supabase/supabase-flutter/commit/5248812bae286d9bdf16ccf9b57215db900ba2d8))
+
 ## 0.6.0
 
 > Note: This release has breaking changes.

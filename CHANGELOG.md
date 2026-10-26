@@ -3,6 +3,193 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`iceberg` - `v0.3.0`](#iceberg---v030)
+ - [`postgrest` - `v3.0.0-dev.13`](#postgrest---v300-dev13)
+ - [`supabase` - `v3.0.0-dev.13`](#supabase---v300-dev13)
+ - [`supabase_auth` - `v3.0.0-dev.11`](#supabase_auth---v300-dev11)
+ - [`supabase_common` - `v3.0.0-dev.9`](#supabase_common---v300-dev9)
+ - [`supabase_flutter` - `v3.0.0-dev.13`](#supabase_flutter---v300-dev13)
+ - [`supabase_flutter_web_auth` - `v0.2.0`](#supabase_flutter_web_auth---v020)
+ - [`supabase_functions` - `v3.0.0-dev.10`](#supabase_functions---v300-dev10)
+ - [`supabase_realtime` - `v3.0.0-dev.11`](#supabase_realtime---v300-dev11)
+ - [`supabase_storage` - `v3.0.0-dev.10`](#supabase_storage---v300-dev10)
+ - [`supabase_test` - `v0.6.0`](#supabase_test---v060)
+ - [`supabase_typegen` - `v0.7.0`](#supabase_typegen---v070)
+ - [`yet_another_json_isolate` - `v3.0.0-dev.3`](#yet_another_json_isolate---v300-dev3)
+
+Packages with other changes:
+
+ - There are no other changes in this release.
+
+---
+
+#### `iceberg` - `v0.3.0`
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **FIX**(typegen): suffix names that clash with SDK and Flutter types, and decode unknown enum labels and infinite timestamps ([#2044](https://github.com/supabase/supabase-flutter/issues/2044)). ([96e7e88f](https://github.com/supabase/supabase-flutter/commit/96e7e88fcc4b87bbcf75c8579d78933adbe34010))
+ - **BREAKING** **FIX**(iceberg): parse Supabase error bodies, add timeout and abort, and stop swallowing config errors ([#2038](https://github.com/supabase/supabase-flutter/issues/2038)). ([6ea556d3](https://github.com/supabase/supabase-flutter/commit/6ea556d3fd980021d5fd16414de7de19f76299c9))
+
+#### `postgrest` - `v3.0.0-dev.13`
+
+ - **PERF**(postgrest): stop wrapping every inserted and upserted row in a cast view ([#2058](https://github.com/supabase/supabase-flutter/issues/2058)). ([a05c51bf](https://github.com/supabase/supabase-flutter/commit/a05c51bf5298150c1787f69c8c35c64acbe15371))
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(postgrest): buffer the untyped asStream result and correct dartdocs that disagree with behavior ([#2042](https://github.com/supabase/supabase-flutter/issues/2042)). ([ed797335](https://github.com/supabase/supabase-flutter/commit/ed797335edae3026cd00b2ad1642b6b92d78a7b0))
+ - **FIX**(postgrest): warn on a bare await of typed update() and delete() ([#2007](https://github.com/supabase/supabase-flutter/issues/2007)). ([ae452e4a](https://github.com/supabase/supabase-flutter/commit/ae452e4a99343e65d7bd764bd7c2f95da6000a58))
+ - **FEAT**(supabase): run the typed function calls through the client interceptors ([#2056](https://github.com/supabase/supabase-flutter/issues/2056)). ([60f8267c](https://github.com/supabase/supabase-flutter/commit/60f8267c925a802d0d0e8c2a4afab1cafd83fd18))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(postgrest): hide internals and align the untyped builder with the typed one ([#2029](https://github.com/supabase/supabase-flutter/issues/2029)). ([875ea125](https://github.com/supabase/supabase-flutter/commit/875ea125e65dccc0e938c37ba9c02ad71b59befc))
+ - **BREAKING** **REFACTOR**(yet_another_json_isolate): drop initialize(), align web and IO behavior, and keep small toJson objects off the isolate ([#2041](https://github.com/supabase/supabase-flutter/issues/2041)). ([69474c10](https://github.com/supabase/supabase-flutter/commit/69474c10251f3cbda642396d025d88c4e685040f))
+ - **BREAKING** **PERF**(yet_another_json_isolate,postgrest,functions): encode request bodies to UTF-8 bytes on the calling isolate in slices ([#2057](https://github.com/supabase/supabase-flutter/issues/2057)). ([776b9f52](https://github.com/supabase/supabase-flutter/commit/776b9f527ac400a7f08bd499d76dcf2bafa7c043))
+ - **BREAKING** **FIX**(postgrest): stop transforms from silently changing or dropping part of a request ([#2026](https://github.com/supabase/supabase-flutter/issues/2026)). ([f9924ac8](https://github.com/supabase/supabase-flutter/commit/f9924ac8c7167a7aab8e39885f3dd91f342b9b43))
+ - **BREAKING** **FIX**(typegen): suffix names that clash with SDK and Flutter types, and decode unknown enum labels and infinite timestamps ([#2044](https://github.com/supabase/supabase-flutter/issues/2044)). ([96e7e88f](https://github.com/supabase/supabase-flutter/commit/96e7e88fcc4b87bbcf75c8579d78933adbe34010))
+ - **BREAKING** **FIX**(postgrest): send DateTime filter operands with their offset from UTC ([#2024](https://github.com/supabase/supabase-flutter/issues/2024)). ([5248812b](https://github.com/supabase/supabase-flutter/commit/5248812bae286d9bdf16ccf9b57215db900ba2d8))
+ - **BREAKING** **FIX**(postgrest): apply column defaults to keys missing from some rows in insertAll and upsertAll ([#2032](https://github.com/supabase/supabase-flutter/issues/2032)). ([5a47e227](https://github.com/supabase/supabase-flutter/commit/5a47e227147a723c4f18e7a09071b8078f224d4f))
+ - **BREAKING** **FEAT**(supabase): run the typed table requests through client interceptors ([#1940](https://github.com/supabase/supabase-flutter/issues/1940)). ([4efd670b](https://github.com/supabase/supabase-flutter/commit/4efd670bfe3e6a521246a5372877b9aaae31222d))
+ - **BREAKING** **FEAT**(supabase): reject unsupported typed stream orderings at compile time ([#2014](https://github.com/supabase/supabase-flutter/issues/2014)). ([6083d666](https://github.com/supabase/supabase-flutter/commit/6083d666e515751f46f3c8547871bd11dcab0c17))
+ - **BREAKING** **FEAT**(supabase): typed stream order() takes a PostgrestOrdering like the typed query ([#2010](https://github.com/supabase/supabase-flutter/issues/2010)). ([4a32d1f5](https://github.com/supabase/supabase-flutter/commit/4a32d1f5198de07d195356e27d22c2705705049e))
+
+#### `supabase` - `v3.0.0-dev.13`
+
+ - **REFACTOR**(supabase): remove pause from the client interceptors ([#2059](https://github.com/supabase/supabase-flutter/issues/2059)). ([4152d15d](https://github.com/supabase/supabase-flutter/commit/4152d15d8af80cc44fee624c83f3fef23640e893))
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(postgrest): buffer the untyped asStream result and correct dartdocs that disagree with behavior ([#2042](https://github.com/supabase/supabase-flutter/issues/2042)). ([ed797335](https://github.com/supabase/supabase-flutter/commit/ed797335edae3026cd00b2ad1642b6b92d78a7b0))
+ - **FIX**(realtime): keep the realtime access token in sync with third-party auth and every session change ([#2016](https://github.com/supabase/supabase-flutter/issues/2016)). ([e934c86d](https://github.com/supabase/supabase-flutter/commit/e934c86d64b42138edf6f412bf7a8cf23791e14d))
+ - **FIX**(supabase_flutter): dispose Supabase inside testWidgets without hanging ([#2012](https://github.com/supabase/supabase-flutter/issues/2012)). ([05184afb](https://github.com/supabase/supabase-flutter/commit/05184afb7bf51efd25dfc3c61702192d6793e620))
+ - **FEAT**(supabase): run the typed function calls through the client interceptors ([#2056](https://github.com/supabase/supabase-flutter/issues/2056)). ([60f8267c](https://github.com/supabase/supabase-flutter/commit/60f8267c925a802d0d0e8c2a4afab1cafd83fd18))
+ - **FEAT**: ship agent skills with supabase_flutter, supabase, supabase_typegen and supabase_test ([#2011](https://github.com/supabase/supabase-flutter/issues/2011)). ([3f415f4e](https://github.com/supabase/supabase-flutter/commit/3f415f4e88a7d7c328583fb310480bd64d4bea9a))
+ - **DOCS**: fix stale v3 docs and compile-check the root README, MIGRATION.md and example READMEs ([#2052](https://github.com/supabase/supabase-flutter/issues/2052)). ([6d9c9554](https://github.com/supabase/supabase-flutter/commit/6d9c95543682d93e9ec187e06463eeedfdf25021))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(supabase): client setup and options consistency before 3.0.0 ([#2021](https://github.com/supabase/supabase-flutter/issues/2021)). ([1fc6cf16](https://github.com/supabase/supabase-flutter/commit/1fc6cf16e2aeec5d3ecd8ed4160b059d24013949))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **REFACTOR**(yet_another_json_isolate): drop initialize(), align web and IO behavior, and keep small toJson objects off the isolate ([#2041](https://github.com/supabase/supabase-flutter/issues/2041)). ([69474c10](https://github.com/supabase/supabase-flutter/commit/69474c10251f3cbda642396d025d88c4e685040f))
+ - **BREAKING** **FIX**(realtime): reject invalid broadcast payloads in release builds and document that v2 and v3 broadcasts are incompatible ([#2051](https://github.com/supabase/supabase-flutter/issues/2051)). ([9edc8083](https://github.com/supabase/supabase-flutter/commit/9edc8083c2ac4dd30f16a3719c80480f6cc110a4))
+ - **BREAKING** **FIX**(supabase): make stream() survive reconnects without losing or corrupting rows ([#2028](https://github.com/supabase/supabase-flutter/issues/2028)). ([bf951b88](https://github.com/supabase/supabase-flutter/commit/bf951b88925b08062bac14666a50553713440f6a))
+ - **BREAKING** **FIX**(realtime): rejoin after disconnect and keep one channel per name ([#2030](https://github.com/supabase/supabase-flutter/issues/2030)). ([9a5e18ff](https://github.com/supabase/supabase-flutter/commit/9a5e18ff7596260c3953bf442881d5f48c40fe8e))
+ - **BREAKING** **FIX**(realtime): send broadcast data under payload without mutating the caller's map ([#2036](https://github.com/supabase/supabase-flutter/issues/2036)). ([31695439](https://github.com/supabase/supabase-flutter/commit/31695439c3a7e4aae82f1641de0cb5579fff98e0))
+ - **BREAKING** **FIX**(postgrest): apply column defaults to keys missing from some rows in insertAll and upsertAll ([#2032](https://github.com/supabase/supabase-flutter/issues/2032)). ([5a47e227](https://github.com/supabase/supabase-flutter/commit/5a47e227147a723c4f18e7a09071b8078f224d4f))
+ - **BREAKING** **FIX**(supabase): keep the session token off static headers and parse service urls ([#2022](https://github.com/supabase/supabase-flutter/issues/2022)). ([919a940f](https://github.com/supabase/supabase-flutter/commit/919a940f68c026151ede499991963a5acae806e5))
+ - **BREAKING** **FEAT**(supabase): run the typed table requests through client interceptors ([#1940](https://github.com/supabase/supabase-flutter/issues/1940)). ([4efd670b](https://github.com/supabase/supabase-flutter/commit/4efd670bfe3e6a521246a5372877b9aaae31222d))
+ - **BREAKING** **FEAT**(functions): response headers, a region type, consistent naming and errors that stay in FunctionsException ([#2031](https://github.com/supabase/supabase-flutter/issues/2031)). ([48bb86ad](https://github.com/supabase/supabase-flutter/commit/48bb86ad63853df00efaadd9796d113b5f785148))
+ - **BREAKING** **FEAT**(supabase): reject unsupported typed stream orderings at compile time ([#2014](https://github.com/supabase/supabase-flutter/issues/2014)). ([6083d666](https://github.com/supabase/supabase-flutter/commit/6083d666e515751f46f3c8547871bd11dcab0c17))
+ - **BREAKING** **FEAT**(supabase): typed stream order() takes a PostgrestOrdering like the typed query ([#2010](https://github.com/supabase/supabase-flutter/issues/2010)). ([4a32d1f5](https://github.com/supabase/supabase-flutter/commit/4a32d1f5198de07d195356e27d22c2705705049e))
+
+#### `supabase_auth` - `v3.0.0-dev.11`
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(auth): keep the session when a refresh is rate limited or answered by a proxy ([#2033](https://github.com/supabase/supabase-flutter/issues/2033)). ([8f8c5046](https://github.com/supabase/supabase-flutter/commit/8f8c5046156b0ad116b4c8df95d5b123b27482fc))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **FIX**(auth): signOut must not report success when the server revoke was skipped or lost ([#2053](https://github.com/supabase/supabase-flutter/issues/2053)). ([62b923e6](https://github.com/supabase/supabase-flutter/commit/62b923e65b18f53511afecc90bfe323efd6a6f15))
+ - **BREAKING** **FIX**(supabase_test): fast failures, clock-aware sessions, a real signedIn event and stubs that match what the SDK sends ([#2035](https://github.com/supabase/supabase-flutter/issues/2035)). ([9e74106e](https://github.com/supabase/supabase-flutter/commit/9e74106e95f8e35744a9a453af3ebb032bb95f78))
+ - **BREAKING** **FIX**(auth): refresh user-scoped tokens, keep restored sessions and announce user switches as signedIn ([#2037](https://github.com/supabase/supabase-flutter/issues/2037)). ([3ff29e0d](https://github.com/supabase/supabase-flutter/commit/3ff29e0dbe3cb8caf763cd309c17d4393696943a))
+ - **BREAKING** **FIX**(auth): harden PKCE verifiers, redirectType, signOut and dispose edge cases ([#2027](https://github.com/supabase/supabase-flutter/issues/2027)). ([c4dadffb](https://github.com/supabase/supabase-flutter/commit/c4dadffb64799eba4dc945fe51929ec92f8fece2))
+
+#### `supabase_common` - `v3.0.0-dev.9`
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **BREAKING** **FIX**(typegen): suffix names that clash with SDK and Flutter types, and decode unknown enum labels and infinite timestamps ([#2044](https://github.com/supabase/supabase-flutter/issues/2044)). ([96e7e88f](https://github.com/supabase/supabase-flutter/commit/96e7e88fcc4b87bbcf75c8579d78933adbe34010))
+ - **BREAKING** **FIX**(postgrest): send DateTime filter operands with their offset from UTC ([#2024](https://github.com/supabase/supabase-flutter/issues/2024)). ([5248812b](https://github.com/supabase/supabase-flutter/commit/5248812bae286d9bdf16ccf9b57215db900ba2d8))
+ - **BREAKING** **FIX**(supabase): keep the session token off static headers and parse service urls ([#2022](https://github.com/supabase/supabase-flutter/issues/2022)). ([919a940f](https://github.com/supabase/supabase-flutter/commit/919a940f68c026151ede499991963a5acae806e5))
+
+#### `supabase_flutter` - `v3.0.0-dev.13`
+
+ - **REFACTOR**(supabase): remove pause from the client interceptors ([#2059](https://github.com/supabase/supabase-flutter/issues/2059)). ([4152d15d](https://github.com/supabase/supabase-flutter/commit/4152d15d8af80cc44fee624c83f3fef23640e893))
+ - **FIX**(examples): make the setup SQL safe, keep realtime room messages and create auth streams once ([#2040](https://github.com/supabase/supabase-flutter/issues/2040)). ([7bd1d4ce](https://github.com/supabase/supabase-flutter/commit/7bd1d4ce2c93f1f8ad3003e357d96c5983c28e09))
+ - **FIX**(postgrest): buffer the untyped asStream result and correct dartdocs that disagree with behavior ([#2042](https://github.com/supabase/supabase-flutter/issues/2042)). ([ed797335](https://github.com/supabase/supabase-flutter/commit/ed797335edae3026cd00b2ad1642b6b92d78a7b0))
+ - **FIX**(supabase_flutter): dispose Supabase inside testWidgets without hanging ([#2012](https://github.com/supabase/supabase-flutter/issues/2012)). ([05184afb](https://github.com/supabase/supabase-flutter/commit/05184afb7bf51efd25dfc3c61702192d6793e620))
+ - **FEAT**: ship agent skills with supabase_flutter, supabase, supabase_typegen and supabase_test ([#2011](https://github.com/supabase/supabase-flutter/issues/2011)). ([3f415f4e](https://github.com/supabase/supabase-flutter/commit/3f415f4e88a7d7c328583fb310480bd64d4bea9a))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(supabase): client setup and options consistency before 3.0.0 ([#2021](https://github.com/supabase/supabase-flutter/issues/2021)). ([1fc6cf16](https://github.com/supabase/supabase-flutter/commit/1fc6cf16e2aeec5d3ecd8ed4160b059d24013949))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **PERF**(yet_another_json_isolate,postgrest,functions): encode request bodies to UTF-8 bytes on the calling isolate in slices ([#2057](https://github.com/supabase/supabase-flutter/issues/2057)). ([776b9f52](https://github.com/supabase/supabase-flutter/commit/776b9f527ac400a7f08bd499d76dcf2bafa7c043))
+ - **BREAKING** **FIX**(auth): signOut must not report success when the server revoke was skipped or lost ([#2053](https://github.com/supabase/supabase-flutter/issues/2053)). ([62b923e6](https://github.com/supabase/supabase-flutter/commit/62b923e65b18f53511afecc90bfe323efd6a6f15))
+ - **BREAKING** **FIX**(realtime): reject invalid broadcast payloads in release builds and document that v2 and v3 broadcasts are incompatible ([#2051](https://github.com/supabase/supabase-flutter/issues/2051)). ([9edc8083](https://github.com/supabase/supabase-flutter/commit/9edc8083c2ac4dd30f16a3719c80480f6cc110a4))
+ - **BREAKING** **FIX**(supabase): make stream() survive reconnects without losing or corrupting rows ([#2028](https://github.com/supabase/supabase-flutter/issues/2028)). ([bf951b88](https://github.com/supabase/supabase-flutter/commit/bf951b88925b08062bac14666a50553713440f6a))
+ - **BREAKING** **FIX**(supabase_test): fast failures, clock-aware sessions, a real signedIn event and stubs that match what the SDK sends ([#2035](https://github.com/supabase/supabase-flutter/issues/2035)). ([9e74106e](https://github.com/supabase/supabase-flutter/commit/9e74106e95f8e35744a9a453af3ebb032bb95f78))
+ - **BREAKING** **FIX**(supabase_flutter): keep cold-start auth links and make initialize safe against concurrent calls and dispose ([#2034](https://github.com/supabase/supabase-flutter/issues/2034)). ([7d376e8e](https://github.com/supabase/supabase-flutter/commit/7d376e8eccea611c021428beb52408ed93e0cfd2))
+ - **BREAKING** **FIX**(realtime): rejoin after disconnect and keep one channel per name ([#2030](https://github.com/supabase/supabase-flutter/issues/2030)). ([9a5e18ff](https://github.com/supabase/supabase-flutter/commit/9a5e18ff7596260c3953bf442881d5f48c40fe8e))
+ - **BREAKING** **FIX**(auth): refresh user-scoped tokens, keep restored sessions and announce user switches as signedIn ([#2037](https://github.com/supabase/supabase-flutter/issues/2037)). ([3ff29e0d](https://github.com/supabase/supabase-flutter/commit/3ff29e0dbe3cb8caf763cd309c17d4393696943a))
+ - **BREAKING** **FIX**(realtime): send broadcast data under payload without mutating the caller's map ([#2036](https://github.com/supabase/supabase-flutter/issues/2036)). ([31695439](https://github.com/supabase/supabase-flutter/commit/31695439c3a7e4aae82f1641de0cb5579fff98e0))
+ - **BREAKING** **FIX**(postgrest): apply column defaults to keys missing from some rows in insertAll and upsertAll ([#2032](https://github.com/supabase/supabase-flutter/issues/2032)). ([5a47e227](https://github.com/supabase/supabase-flutter/commit/5a47e227147a723c4f18e7a09071b8078f224d4f))
+ - **BREAKING** **FEAT**(supabase): run the typed table requests through client interceptors ([#1940](https://github.com/supabase/supabase-flutter/issues/1940)). ([4efd670b](https://github.com/supabase/supabase-flutter/commit/4efd670bfe3e6a521246a5372877b9aaae31222d))
+ - **BREAKING** **FEAT**(functions): response headers, a region type, consistent naming and errors that stay in FunctionsException ([#2031](https://github.com/supabase/supabase-flutter/issues/2031)). ([48bb86ad](https://github.com/supabase/supabase-flutter/commit/48bb86ad63853df00efaadd9796d113b5f785148))
+
+#### `supabase_flutter_web_auth` - `v0.2.0`
+
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **FIX**(supabase_flutter_web_auth): report a cancelled sign-in without throwing ([#2018](https://github.com/supabase/supabase-flutter/issues/2018)). ([849aadca](https://github.com/supabase/supabase-flutter/commit/849aadca7f56e9a9dcda4b2998cb1d56e3228c8b))
+
+#### `supabase_functions` - `v3.0.0-dev.10`
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **BREAKING** **REFACTOR**(yet_another_json_isolate): drop initialize(), align web and IO behavior, and keep small toJson objects off the isolate ([#2041](https://github.com/supabase/supabase-flutter/issues/2041)). ([69474c10](https://github.com/supabase/supabase-flutter/commit/69474c10251f3cbda642396d025d88c4e685040f))
+ - **BREAKING** **PERF**(yet_another_json_isolate,postgrest,functions): encode request bodies to UTF-8 bytes on the calling isolate in slices ([#2057](https://github.com/supabase/supabase-flutter/issues/2057)). ([776b9f52](https://github.com/supabase/supabase-flutter/commit/776b9f527ac400a7f08bd499d76dcf2bafa7c043))
+ - **BREAKING** **FEAT**(functions): response headers, a region type, consistent naming and errors that stay in FunctionsException ([#2031](https://github.com/supabase/supabase-flutter/issues/2031)). ([48bb86ad](https://github.com/supabase/supabase-flutter/commit/48bb86ad63853df00efaadd9796d113b5f785148))
+
+#### `supabase_realtime` - `v3.0.0-dev.11`
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(realtime): keep the realtime access token in sync with third-party auth and every session change ([#2016](https://github.com/supabase/supabase-flutter/issues/2016)). ([e934c86d](https://github.com/supabase/supabase-flutter/commit/e934c86d64b42138edf6f412bf7a8cf23791e14d))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **BREAKING** **FIX**(realtime): reject invalid broadcast payloads in release builds and document that v2 and v3 broadcasts are incompatible ([#2051](https://github.com/supabase/supabase-flutter/issues/2051)). ([9edc8083](https://github.com/supabase/supabase-flutter/commit/9edc8083c2ac4dd30f16a3719c80480f6cc110a4))
+ - **BREAKING** **FIX**(realtime): rejoin after disconnect and keep one channel per name ([#2030](https://github.com/supabase/supabase-flutter/issues/2030)). ([9a5e18ff](https://github.com/supabase/supabase-flutter/commit/9a5e18ff7596260c3953bf442881d5f48c40fe8e))
+ - **BREAKING** **FIX**(realtime): send broadcast data under payload without mutating the caller's map ([#2036](https://github.com/supabase/supabase-flutter/issues/2036)). ([31695439](https://github.com/supabase/supabase-flutter/commit/31695439c3a7e4aae82f1641de0cb5579fff98e0))
+ - **BREAKING** **FIX**(postgrest): send DateTime filter operands with their offset from UTC ([#2024](https://github.com/supabase/supabase-flutter/issues/2024)). ([5248812b](https://github.com/supabase/supabase-flutter/commit/5248812bae286d9bdf16ccf9b57215db900ba2d8))
+
+#### `supabase_storage` - `v3.0.0-dev.10`
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(postgrest): buffer the untyped asStream result and correct dartdocs that disagree with behavior ([#2042](https://github.com/supabase/supabase-flutter/issues/2042)). ([ed797335](https://github.com/supabase/supabase-flutter/commit/ed797335edae3026cd00b2ad1642b6b92d78a7b0))
+ - **BREAKING** **REFACTOR**(storage): consistent bucket option types, return shapes and hidden wire helpers ([#2019](https://github.com/supabase/supabase-flutter/issues/2019)). ([362f8f85](https://github.com/supabase/supabase-flutter/commit/362f8f85dc2e4b6607afa76d6e1617ee3c3e3985))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **FIX**(iceberg): parse Supabase error bodies, add timeout and abort, and stop swallowing config errors ([#2038](https://github.com/supabase/supabase-flutter/issues/2038)). ([6ea556d3](https://github.com/supabase/supabase-flutter/commit/6ea556d3fd980021d5fd16414de7de19f76299c9))
+
+#### `supabase_test` - `v0.6.0`
+
+ - **FEAT**: ship agent skills with supabase_flutter, supabase, supabase_typegen and supabase_test ([#2011](https://github.com/supabase/supabase-flutter/issues/2011)). ([3f415f4e](https://github.com/supabase/supabase-flutter/commit/3f415f4e88a7d7c328583fb310480bd64d4bea9a))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(supabase): client setup and options consistency before 3.0.0 ([#2021](https://github.com/supabase/supabase-flutter/issues/2021)). ([1fc6cf16](https://github.com/supabase/supabase-flutter/commit/1fc6cf16e2aeec5d3ecd8ed4160b059d24013949))
+ - **BREAKING** **REFACTOR**(storage): consistent bucket option types, return shapes and hidden wire helpers ([#2019](https://github.com/supabase/supabase-flutter/issues/2019)). ([362f8f85](https://github.com/supabase/supabase-flutter/commit/362f8f85dc2e4b6607afa76d6e1617ee3c3e3985))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **FIX**(supabase): make stream() survive reconnects without losing or corrupting rows ([#2028](https://github.com/supabase/supabase-flutter/issues/2028)). ([bf951b88](https://github.com/supabase/supabase-flutter/commit/bf951b88925b08062bac14666a50553713440f6a))
+ - **BREAKING** **FIX**(supabase_test): fast failures, clock-aware sessions, a real signedIn event and stubs that match what the SDK sends ([#2035](https://github.com/supabase/supabase-flutter/issues/2035)). ([9e74106e](https://github.com/supabase/supabase-flutter/commit/9e74106e95f8e35744a9a453af3ebb032bb95f78))
+ - **BREAKING** **FIX**(auth): refresh user-scoped tokens, keep restored sessions and announce user switches as signedIn ([#2037](https://github.com/supabase/supabase-flutter/issues/2037)). ([3ff29e0d](https://github.com/supabase/supabase-flutter/commit/3ff29e0dbe3cb8caf763cd309c17d4393696943a))
+ - **BREAKING** **FIX**(realtime): send broadcast data under payload without mutating the caller's map ([#2036](https://github.com/supabase/supabase-flutter/issues/2036)). ([31695439](https://github.com/supabase/supabase-flutter/commit/31695439c3a7e4aae82f1641de0cb5579fff98e0))
+ - **BREAKING** **FEAT**(supabase): run the typed table requests through client interceptors ([#1940](https://github.com/supabase/supabase-flutter/issues/1940)). ([4efd670b](https://github.com/supabase/supabase-flutter/commit/4efd670bfe3e6a521246a5372877b9aaae31222d))
+
+#### `supabase_typegen` - `v0.7.0`
+
+ - **FIX**(typegen): disambiguate embeds of opposite-direction keys and junction tables, alias embeds named like columns ([#2020](https://github.com/supabase/supabase-flutter/issues/2020)). ([587a2535](https://github.com/supabase/supabase-flutter/commit/587a2535f3da4875f3e0961d2e44e7abf38a3f67))
+ - **FIX**(typegen): respect formatter settings on stdout and fail loudly on bad input ([#2023](https://github.com/supabase/supabase-flutter/issues/2023)). ([428d3052](https://github.com/supabase/supabase-flutter/commit/428d3052ebe8e2ca38bd90fa1d50f485873c1afd))
+ - **FEAT**: ship agent skills with supabase_flutter, supabase, supabase_typegen and supabase_test ([#2011](https://github.com/supabase/supabase-flutter/issues/2011)). ([3f415f4e](https://github.com/supabase/supabase-flutter/commit/3f415f4e88a7d7c328583fb310480bd64d4bea9a))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **FIX**(typegen): stop renaming generated types that clash with supabase_flutter and Flutter names ([#2047](https://github.com/supabase/supabase-flutter/issues/2047)). ([3d6a2b87](https://github.com/supabase/supabase-flutter/commit/3d6a2b874bc509f55887f44f4be093981e60c371))
+ - **BREAKING** **FIX**(typegen): suffix names that clash with SDK and Flutter types, and decode unknown enum labels and infinite timestamps ([#2044](https://github.com/supabase/supabase-flutter/issues/2044)). ([96e7e88f](https://github.com/supabase/supabase-flutter/commit/96e7e88fcc4b87bbcf75c8579d78933adbe34010))
+ - **BREAKING** **FIX**(postgrest): send DateTime filter operands with their offset from UTC ([#2024](https://github.com/supabase/supabase-flutter/issues/2024)). ([5248812b](https://github.com/supabase/supabase-flutter/commit/5248812bae286d9bdf16ccf9b57215db900ba2d8))
+
+#### `yet_another_json_isolate` - `v3.0.0-dev.3`
+
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(yet_another_json_isolate): drop initialize(), align web and IO behavior, and keep small toJson objects off the isolate ([#2041](https://github.com/supabase/supabase-flutter/issues/2041)). ([69474c10](https://github.com/supabase/supabase-flutter/commit/69474c10251f3cbda642396d025d88c4e685040f))
+ - **BREAKING** **PERF**(yet_another_json_isolate,postgrest,functions): encode request bodies to UTF-8 bytes on the calling isolate in slices ([#2057](https://github.com/supabase/supabase-flutter/issues/2057)). ([776b9f52](https://github.com/supabase/supabase-flutter/commit/776b9f527ac400a7f08bd499d76dcf2bafa7c043))
+
+
 ## 2026-10-21
 
 ### Changes

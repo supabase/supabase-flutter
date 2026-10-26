@@ -1,3 +1,15 @@
+## 3.0.0-dev.11
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(realtime): keep the realtime access token in sync with third-party auth and every session change ([#2016](https://github.com/supabase/supabase-flutter/issues/2016)). ([e934c86d](https://github.com/supabase/supabase-flutter/commit/e934c86d64b42138edf6f412bf7a8cf23791e14d))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **BREAKING** **FIX**(realtime): reject invalid broadcast payloads in release builds and document that v2 and v3 broadcasts are incompatible ([#2051](https://github.com/supabase/supabase-flutter/issues/2051)). ([9edc8083](https://github.com/supabase/supabase-flutter/commit/9edc8083c2ac4dd30f16a3719c80480f6cc110a4))
+ - **BREAKING** **FIX**(realtime): rejoin after disconnect and keep one channel per name ([#2030](https://github.com/supabase/supabase-flutter/issues/2030)). ([9a5e18ff](https://github.com/supabase/supabase-flutter/commit/9a5e18ff7596260c3953bf442881d5f48c40fe8e))
+ - **BREAKING** **FIX**(realtime): send broadcast data under payload without mutating the caller's map ([#2036](https://github.com/supabase/supabase-flutter/issues/2036)). ([31695439](https://github.com/supabase/supabase-flutter/commit/31695439c3a7e4aae82f1641de0cb5579fff98e0))
+ - **BREAKING** **FIX**(postgrest): send DateTime filter operands with their offset from UTC ([#2024](https://github.com/supabase/supabase-flutter/issues/2024)). ([5248812b](https://github.com/supabase/supabase-flutter/commit/5248812bae286d9bdf16ccf9b57215db900ba2d8))
+
 ## 3.0.0-dev.10
 
  - **FIX**(realtime): do not flush a join that its channel has since resent ([#1986](https://github.com/supabase/supabase-flutter/issues/1986)). ([4024fdb6](https://github.com/supabase/supabase-flutter/commit/4024fdb65699668e4e007520c98ffa95f491d03f))

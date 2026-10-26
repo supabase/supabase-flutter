@@ -1,3 +1,12 @@
+## 0.3.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **FIX**(typegen): suffix names that clash with SDK and Flutter types, and decode unknown enum labels and infinite timestamps ([#2044](https://github.com/supabase/supabase-flutter/issues/2044)). ([96e7e88f](https://github.com/supabase/supabase-flutter/commit/96e7e88fcc4b87bbcf75c8579d78933adbe34010))
+ - **BREAKING** **FIX**(iceberg): parse Supabase error bodies, add timeout and abort, and stop swallowing config errors ([#2038](https://github.com/supabase/supabase-flutter/issues/2038)). ([6ea556d3](https://github.com/supabase/supabase-flutter/commit/6ea556d3fd980021d5fd16414de7de19f76299c9))
+
 ## 0.2.1
 
  - Update a dependency to the latest release.
