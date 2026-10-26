@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:logging/logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
@@ -1871,4 +1873,85 @@ void main() {
       await streamController2.close();
     });
   });
+
+  group('message logging', () {
+    RealtimeClient receivingClient(_IterationCountingMap payload) =>
+        RealtimeClient(
+          socketEndpoint,
+          decode: (_) async => RealtimeMessage(
+            topic: 'realtime:room',
+            event: 'broadcast',
+            payload: payload,
+          ),
+        );
+
+    RealtimeMessage outgoing(_IterationCountingMap payload) => RealtimeMessage(
+      topic: 'realtime:room',
+      event: 'broadcast',
+      payload: payload,
+    );
+
+    test('does not format payloads while finest logging is off', () async {
+      final payload = _IterationCountingMap({'apikey': 'secret'});
+
+      RealtimeClient(socketEndpoint).push(outgoing(payload));
+      receivingClient(payload).onConnectionMessage('frame');
+      await pumpEventQueue();
+
+      expect(payload.iterations, 0);
+    });
+
+    test('logs redacted payloads while finest logging is on', () async {
+      final previousLevel = Logger.root.level;
+      Logger.root.level = Level.ALL;
+      addTearDown(() => Logger.root.level = previousLevel);
+      final records = <LogRecord>[];
+      final subscription = Logger.root.onRecord.listen(records.add);
+      addTearDown(subscription.cancel);
+      final payload = _IterationCountingMap({'apikey': 'secret'});
+
+      RealtimeClient(socketEndpoint).push(outgoing(payload));
+      receivingClient(payload).onConnectionMessage('frame');
+      await pumpEventQueue();
+
+      final messages = [for (final record in records) record.message];
+      expect(
+        messages,
+        containsAll([
+          startsWith('Push realtime:room broadcast'),
+          startsWith('Receive  realtime:room broadcast'),
+        ]),
+      );
+      expect(
+        messages.where((message) => message.contains('<redacted>')),
+        hasLength(2),
+      );
+      expect(messages, everyElement(isNot(contains('secret'))));
+    });
+  });
+}
+
+class _IterationCountingMap extends MapBase<String, Object?> {
+  _IterationCountingMap(this._entries);
+
+  final Map<String, Object?> _entries;
+  var iterations = 0;
+
+  @override
+  Object? operator [](Object? key) => _entries[key];
+
+  @override
+  void operator []=(String key, Object? value) => _entries[key] = value;
+
+  @override
+  void clear() => _entries.clear();
+
+  @override
+  Iterable<String> get keys {
+    iterations++;
+    return _entries.keys;
+  }
+
+  @override
+  Object? remove(Object? key) => _entries.remove(key);
 }
