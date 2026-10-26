@@ -141,9 +141,9 @@ await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 Every `onBroadcast` message is a map with `type`, `event` and the sent data
 under `payload`, whether it came from `sendBroadcastMessage`, `httpSend`,
 the database or another Supabase client. Apps on v2 put the data at the top
-level instead, so v2 and v3 clients cannot read each other's broadcasts. Pass
-binary data such as a `Uint8List` as the `payload` itself to send it as a
-binary frame.
+level instead, so v2 and v3 clients cannot read each other's broadcasts. Move
+every app that shares a channel to v3 together. Pass binary data such as a
+`Uint8List` as the `payload` itself to send it as a binary frame.
 
 Pass `RealtimeChannelConfig(self: true)` as `options` to `supabase.channel`
 to receive your own broadcasts, and `private: true` for a channel guarded by
