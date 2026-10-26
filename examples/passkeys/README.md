@@ -11,28 +11,38 @@ It lets you:
 
 ## How passkeys work here
 
-`supabase_flutter` performs the whole WebAuthn ceremony for you, including the
-platform prompt (Face ID / Touch ID / Windows Hello / security key), so the
-example just calls two methods:
+`supabase_flutter` performs the server side of the WebAuthn ceremony and hands
+the platform prompt (Face ID / Touch ID / Windows Hello / security key) to the
+`PasskeyAuthenticator` of the [`passkeys`](https://pub.dev/packages/passkeys)
+plugin, so the example just calls two methods:
 
-```dart
-// Register a passkey for the signed in user.
-await supabase.auth.registerPasskey();
+```dart file
+import 'package:passkeys/authenticator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Sign in with a passkey.
-await supabase.auth.signInWithPasskey();
+final supabase = Supabase.instance.client;
+final authenticator = PasskeyAuthenticator();
 
-// Manage passkeys with the server side API.
-final passkeys = await supabase.auth.passkey.list();
-await supabase.auth.passkey.update(passkeyId: passkeys.first.id, friendlyName: 'My phone');
-await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
+Future<void> passkeys() async {
+  // Register a passkey for the signed in user.
+  await supabase.auth.registerPasskey(authenticator);
+
+  // Sign in with a passkey.
+  await supabase.auth.signInWithPasskey(authenticator);
+
+  // Manage passkeys with the server side API.
+  final passkeys = await supabase.auth.passkey.list();
+  await supabase.auth.passkey.update(
+    passkeyId: passkeys.first.id,
+    friendlyName: 'My phone',
+  );
+  await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
+}
 ```
 
-The ceremony is driven by the
-[`passkeys`](https://pub.dev/packages/passkeys) plugin, which needs some setup
-per platform that the library cannot do for you. This web example loads the
-plugin's JavaScript bundle in [`web/index.html`](web/index.html); for iOS,
-Android and macOS see the
+The plugin needs some setup per platform that the library cannot do for you.
+This web example loads the plugin's JavaScript bundle in
+[`web/index.html`](web/index.html); for iOS, Android and macOS see the
 [`supabase_flutter` README](../../packages/supabase_flutter/README.md#passkeys).
 
 ## Prerequisites

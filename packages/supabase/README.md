@@ -85,13 +85,17 @@ import 'package:supabase/supabase.dart';
 final supabase = SupabaseClient(
   'https://your-project.supabase.co',
   'your-publishable-key',
-  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
 );
 ```
 
-A client without an `asyncStorage` throws when it is created, since the
-default PKCE flow keeps its code verifiers there. `MemoryAuthAsyncStorage`
-keeps them, and the session, in memory for as long as the process runs.
+The client keeps the session, and the code verifiers of the default PKCE
+flow, in memory for as long as the process runs. Pass an `AuthAsyncStorage`
+as the `asyncStorage` of `AuthClientOptions` when a sign-in has to survive a
+restart, such as one completed from an email link.
+
+To persist the session as well, set `persistSession: true` next to the
+storage. The client throws when it is created with `persistSession: true` and
+no storage, unless it uses an `accessToken` callback.
 
 ### 3. Generate the typed schema
 

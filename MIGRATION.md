@@ -95,13 +95,15 @@ and foreign key. Run the generator again after every migration so the types foll
 
 #### Reading rows
 
-```dart
+```dart skip
 // Before
 final List<Map<String, dynamic>> books = await supabase
     .from('books')
     .select();
 final title = books.first['title'] as String;
+```
 
+```dart
 // After
 final List<BooksRow> books = await supabase.table(Books.table).select();
 final String title = books.first.title;
@@ -120,11 +122,13 @@ To read some columns only, `selectOnly` replaces the column string of `select()`
 type of its column, and reading a column that was not selected throws a `StateError` instead of
 returning `null`:
 
-```dart
+```dart skip
 // Before
 final books = await supabase.from('books').select('id, title');
 final title = books.first['title'] as String;
+```
 
+```dart
 // After
 final books = await supabase.table(Books.table).selectOnly([
   Books.id,
@@ -153,14 +157,16 @@ Filters combine with `&` and `|` and negate with `not()`, so a nested `or()` str
 expression the compiler checks. Repeated `where()` calls combine with AND, like repeated filter
 calls did:
 
-```dart
+```dart skip
 // Before
 await supabase
     .from('books')
     .select()
     .eq('in_print', true)
     .or('price.lt.10,published_on.is.null');
+```
 
+```dart
 // After
 await supabase
     .table(Books.table)
@@ -173,21 +179,31 @@ await supabase
 
 A filter is a value, so one assembled conditionally no longer needs to reassign the builder:
 
-```dart
-var filter = Books.inPrint.isTrue();
-if (search != null) filter = filter & Books.title.ilike('%$search%');
-final books = await supabase.table(Books.table).select().where(filter);
+```dart file
+import 'package:my_app/supabase_schema.g.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<List<BooksRow>> books(SupabaseClient supabase, String? search) {
+  var filter = Books.inPrint.isTrue();
+  if (search != null) filter = filter & Books.title.ilike('%$search%');
+  return supabase.table(Books.table).select().where(filter);
+}
 ```
 
 A JSON path is built on the column, with `jsonText()` for a key read as text and `jsonObject()`
 to go deeper, and filters like any other column:
 
-```dart
+```dart skip
 // Before
-.eq('metadata->>edition', 'first')
+await supabase.from('books').select().eq('metadata->>edition', 'first');
+```
 
+```dart
 // After
-.where(Books.metadata.jsonText('edition').eq('first'))
+await supabase
+    .table(Books.table)
+    .select()
+    .where(Books.metadata.jsonText('edition').eq('first'));
 ```
 
 For an operator the API has no method for, `raw()` on a column keeps the column checked and takes
@@ -198,14 +214,16 @@ sides as strings, for an expression no column constant or JSON path can name.
 
 The direction of an ordering is spelled on the column:
 
-```dart
+```dart skip
 // Before
 await supabase
     .from('books')
     .select()
     .order('created_at', ascending: false)
     .range(0, 9);
+```
 
+```dart
 // After
 await supabase
     .table(Books.table)
@@ -222,14 +240,16 @@ Both APIs only send what was asked for, so `.order('price', ascending: false)` m
 of an embed are sorted and limited with `embedded()`, see [embedded selects](#embedded-selects).
 `single()` and `maybeSingle()` resolve to the row type:
 
-```dart
+```dart skip
 // Before
 final Map<String, dynamic> book = await supabase
     .from('books')
     .select()
     .eq('id', 1)
     .single();
+```
 
+```dart
 // After
 final BooksRow book = await supabase
     .table(Books.table)
@@ -247,14 +267,16 @@ final BooksRow? maybeBook = await supabase
 the typed rows and the count; on its own it is a count query that resolves to an `int` and takes
 filters like any other request:
 
-```dart
+```dart skip
 // Before
 final PostgrestResponse<List<Map<String, dynamic>>> response = await supabase
     .from('books')
     .select()
     .count(CountOption.exact);
 final int inPrint = await supabase.from('books').count().eq('in_print', true);
+```
 
+```dart
 // After
 final PostgrestResponse<List<BooksRow>> response = await supabase
     .table(Books.table)
@@ -272,7 +294,7 @@ final int inPrint = await supabase
 maps. A required column is a required parameter of `BooksInsert`, and a column the database always
 generates, such as `id` above, is not a parameter at all:
 
-```dart
+```dart skip
 // Before
 await supabase.from('books').insert({'author_id': 2, 'title': 'Dune'});
 await supabase.from('books').insert([
@@ -284,7 +306,9 @@ await supabase
     .update({'in_print': false, 'price': null})
     .eq('id', 1);
 await supabase.from('books').delete().eq('id', 1);
+```
 
+```dart
 // After
 await supabase
     .table(Books.table)
@@ -312,22 +336,26 @@ An `update()` or `delete()` sends nothing until it says which rows it acts on, t
 or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request,
 and the analyzer reports it as an `unused_result` warning:
 
-```dart
+```dart skip
 // Before
 await supabase.from('books').delete();
+```
 
+```dart
 // After
 await supabase.table(Books.table).delete().all();
 ```
 
 `onConflict` of `upsert()` is a list of columns instead of a comma separated string:
 
-```dart
+```dart skip
 // Before
 await supabase.from('authors').upsert({
   'name': 'Frank Herbert',
 }, onConflict: 'name');
+```
 
+```dart
 // After
 await supabase
     .table(Authors.table)
@@ -337,14 +365,16 @@ await supabase
 Writes resolve to `void` on both APIs. A trailing `select()` returns the written rows, typed as the
 row type:
 
-```dart
+```dart skip
 // Before
 final Map<String, dynamic> book = await supabase
     .from('books')
     .insert({'author_id': 2, 'title': 'Dune'})
     .select()
     .single();
+```
 
+```dart
 // After
 final BooksRow book = await supabase
     .table(Books.table)
@@ -361,7 +391,7 @@ sides, named after the table on the other side: `Books.authors` points at the au
 column of the other table or with `select()` for several of them, and the embedded rows are read
 back through it:
 
-```dart
+```dart skip
 // Before
 final books = await supabase.from('books').select('title, authors(name)');
 final authorName = books.first['authors']?['name'] as String?;
@@ -373,7 +403,9 @@ final authors = await supabase
 final titles = [
   for (final book in authors.first['books'] as List) book['title'] as String,
 ];
+```
 
+```dart
 // After
 final books = await supabase.table(Books.table).selectOnly([
   Books.title,
@@ -409,7 +441,7 @@ so each embed comes back under its own key without spelling `authors!books_autho
 a scope typed against the embedded table, so ordering by a column of another table does not compile,
 and a scope can reach an embed nested in it:
 
-```dart
+```dart skip
 // Before
 await supabase
     .from('authors')
@@ -417,8 +449,10 @@ await supabase
     .order('created_at', referencedTable: 'books', ascending: false)
     .limit(1, referencedTable: 'books')
     .limit(3, referencedTable: 'books.reviews');
+```
 
-// After
+```dart skip
+// After, for a schema with a reviews table
 await supabase
     .table(Authors.table)
     .selectOnly([
@@ -446,7 +480,7 @@ that caches rows and needs to tell them apart, or one that resolves an embed fro
 `stream()` on `table()` emits lists of the row type and takes the primary key as columns. Its filter
 method is named `filter()`, since `Stream.where` already exists, and takes a single operator:
 
-```dart
+```dart skip
 // Before
 supabase
     .from('books')
@@ -454,7 +488,9 @@ supabase
     .eq('author_id', 2)
     .order('created_at', ascending: false)
     .listen((List<Map<String, dynamic>> books) {});
+```
 
+```dart
 // After
 supabase
     .table(Books.table)
@@ -507,6 +543,8 @@ explicitly:
   where a failing catalog configuration request now fails the operation
 - [Transforms that sent a different request now throw or narrow](#transforms-that-sent-a-different-request-now-throw-or-narrow),
   where `head()` after a write and a reversed `range()` throw at the call site
+- [`supabase_test` fails fast and signs in with `signedIn`](#supabase_test-fails-fast-and-signs-in-with-signedin),
+  where unmatched requests fail the test and listeners waiting for `tokenRefreshed` never fire
 - [Edge Function responses decode every JSON type](#edge-function-responses-decode-every-json-type),
   so an empty JSON body is `null` and a check for `""` no longer matches
 - [Realtime throws exceptions instead of strings](#realtime-throws-exceptions-instead-of-strings),
@@ -582,12 +620,20 @@ directly to use an Iceberg REST Catalog without the rest of Storage.
 `anonKey` is removed and `publishableKey` is required. A legacy anon key is still a valid value, it
 just goes under the new name.
 
-```dart
+```dart skip
 // Before
-await Supabase.initialize(url: url, anonKey: anonKey);
+await Supabase.initialize(
+  url: 'https://your-project.supabase.co',
+  anonKey: 'your-anon-key',
+);
+```
 
+```dart
 // After
-await Supabase.initialize(url: url, publishableKey: anonKey);
+await Supabase.initialize(
+  url: 'https://your-project.supabase.co',
+  publishableKey: 'your-anon-key',
+);
 ```
 
 #### `Supabase.initialize` rejects another url or key
@@ -608,19 +654,25 @@ that keeps idle connections open for 60 seconds instead of 15. It no longer goes
 `Client()` factory of `package:http`, so a client installed with `runWithClient` is not picked up
 outside the web. Pass the client as `httpClient` instead, which every platform honors:
 
-```dart
+```dart skip
 // Before
 runWithClient(() {
   final supabase = SupabaseClient(supabaseUrl, supabaseKey);
 }, () => MockClient(handler));
+```
 
+```dart file
 // After
-final supabase = SupabaseClient(
-  supabaseUrl,
-  supabaseKey,
-  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
-  httpClient: MockClient(handler),
-);
+import 'package:http/testing.dart';
+import 'package:supabase/supabase.dart';
+
+SupabaseClient clientFor(MockClientHandler handler) {
+  return SupabaseClient(
+    'https://your-project.supabase.co',
+    'your-publishable-key',
+    httpClient: MockClient(handler),
+  );
+}
 ```
 
 A Dart script that does not call `dispose()` on its `SupabaseClient` now waits a minute before
@@ -629,14 +681,20 @@ exiting instead of 15 seconds.
 #### `realtimeClientOptions` is renamed to `realtimeOptions`
 
 The parameter of `SupabaseClient` and `Supabase.initialize` now matches `postgrestOptions`,
-`authOptions`, `storageOptions` and `functionsOptions`.
+`authOptions` and `storageOptions`, and the `functionsOptions` of `SupabaseClient`.
 
-```dart
+```dart skip
 // Before
 SupabaseClient(url, key, realtimeClientOptions: RealtimeClientOptions(timeout: timeout));
+```
 
+```dart
 // After
-SupabaseClient(url, key, realtimeOptions: RealtimeClientOptions(timeout: timeout));
+SupabaseClient(
+  'https://your-project.supabase.co',
+  'your-publishable-key',
+  realtimeOptions: const RealtimeClientOptions(timeout: Duration(seconds: 10)),
+);
 ```
 
 #### The SDK no longer prints logs
@@ -645,13 +703,20 @@ SupabaseClient(url, key, realtimeOptions: RealtimeClientOptions(timeout: timeout
 packages still emit their records through [`package:logging`](https://pub.dev/packages/logging)
 under the `supabase` logger hierarchy, so instead of `debug: true`, print them yourself:
 
-```dart
-Logger.root.onRecord.listen((record) {
-  if (record.loggerName.startsWith('supabase.')) {
-    debugPrint('${record.loggerName}: ${record.level.name}: '
-        '${record.message} ${record.error ?? ''}');
-  }
-});
+```dart file
+import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
+
+void printSupabaseLogs() {
+  Logger.root.onRecord.listen((record) {
+    if (record.loggerName.startsWith('supabase.')) {
+      debugPrint(
+        '${record.loggerName}: ${record.level.name}: '
+        '${record.message} ${record.error ?? ''}',
+      );
+    }
+  });
+}
 ```
 
 See the `Logging` section of the `supabase_flutter` README for level filtering with
@@ -868,14 +933,16 @@ to when awaited. `RawPostgrestBuilder` and `ResponsePostgrestBuilder` are gone; 
 `count()` nothing changes. With `count()`, call `withConverter()` first so the converter keeps
 receiving the data:
 
-```dart
+```dart skip
 // Before
 final response = await supabase
     .from('users')
     .select()
     .count(CountOption.exact)
     .withConverter((rows) => rows.map(User.fromJson).toList());
+```
 
+```dart
 // After
 final response = await supabase
     .from('users')
@@ -904,10 +971,12 @@ The per-request timeout override is a method of its own instead of a parameter o
 `PostgrestRpc` add typed calls such as `supabase.rpc.searchBooks(query: 'dart')`. Code that passes
 `rpc` itself around as a function no longer compiles; wrap it in a closure instead.
 
-```dart
+```dart skip
 // Before
 final call = supabase.rpc;
+```
 
+```dart
 // After
 PostgrestFilterBuilder<dynamic> call(String fn) => supabase.rpc(fn);
 ```
@@ -930,11 +999,14 @@ The typed `update()` and `delete()` return a `PostgrestTypedUnscopedBuilder` ins
 start with. A mutation that forgot its filter, and would have written every row in the table, no
 longer sends a request; writing every row is spelled out with `all()`.
 
-```dart
+```dart skip
 // Before: compiled, and deleted every book.
+// After: sends nothing, see below.
 await supabase.table(Books.table).delete();
+```
 
-// After: sends nothing, see below. Filter the rows, or ask for all of them.
+```dart
+// Filter the rows, or ask for all of them.
 await supabase.table(Books.table).delete().where(Books.id.eq(1));
 await supabase.table(Books.table).delete().all();
 ```
@@ -1000,14 +1072,19 @@ The auth methods that cannot complete without a session return it directly inste
 - `recoverSession()`
 - `passkey.verifyAuthentication()`, and with it `signInWithPasskey()` and `signInWithRestoreKey()`
 
-```dart
+```dart skip
 // Before
 final response = await supabase.auth.signInWithPassword(email: email, password: password);
 final session = response.session!;
 final user = response.user!;
+```
 
+```dart
 // After
-final session = await supabase.auth.signInWithPassword(email: email, password: password);
+final session = await supabase.auth.signInWithPassword(
+  email: 'user@example.com',
+  password: 'password',
+);
 final user = session.user;
 ```
 
@@ -1068,12 +1145,15 @@ the full map.
 `User.userMetadata` is no longer nullable. A user without metadata has an empty map. Both metadata
 objects are unmodifiable when parsed from the server.
 
-```dart
+```dart skip
 // Before
 final provider = user.appMetadata['provider'] as String?;
 final name = user.userMetadata?['name'] as String?;
+```
 
+```dart
 // After
+final user = supabase.auth.currentUser!;
 final provider = user.appMetadata.provider;
 final name = user.userMetadata['name'] as String?;
 ```
@@ -1216,7 +1296,7 @@ to `window.localStorage`, so the session is shared with supabase-js under the sa
 A custom storage implements the three methods of `AuthAsyncStorage` instead of the five of
 `LocalStorage`, and no longer needs to know the key:
 
-```dart
+```dart skip
 class MySecureStorage extends AuthAsyncStorage {
   final storage = FlutterSecureStorage();
 
@@ -1299,7 +1379,7 @@ null-checks `session` keeps compiling. What changes:
 - `AuthState` itself can no longer be constructed. Construct the subtype instead, for example in a
   test that feeds a fake stream.
 
-```dart
+```dart skip
 // Before
 supabase.auth.onAuthStateChange.listen((state) {
   if (state.event == AuthChangeEvent.signedOut) {
@@ -1311,25 +1391,35 @@ supabase.auth.onAuthStateChange.listen((state) {
     showHome(state.session!.user);
   }
 });
+```
 
+```dart file
 // After
-supabase.auth.onAuthStateChange.listen((state) {
-  switch (state) {
-    case AuthSignedOut(reason: SignOutReason.sessionExpired):
-      showSessionExpired();
-      showLogin();
-    case AuthSignedOut():
-    case AuthInitialSession(session: null):
-      showLogin();
-    case AuthInitialSession(session: final session?):
-    case AuthSignedIn(:final session):
-    case AuthTokenRefreshed(:final session):
-    case AuthUserUpdated(:final session):
-    case AuthPasswordRecovery(:final session):
-    case AuthMfaChallengeVerified(:final session):
-      showHome(session.user);
-  }
-});
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+void listenToAuth(SupabaseClient supabase) {
+  supabase.auth.onAuthStateChange.listen((state) {
+    switch (state) {
+      case AuthSignedOut(reason: SignOutReason.sessionExpired):
+        showSessionExpired();
+        showLogin();
+      case AuthSignedOut():
+      case AuthInitialSession(session: null):
+        showLogin();
+      case AuthInitialSession(session: final session?):
+      case AuthSignedIn(:final session):
+      case AuthTokenRefreshed(:final session):
+      case AuthUserUpdated(:final session):
+      case AuthPasswordRecovery(:final session):
+      case AuthMfaChallengeVerified(:final session):
+        showHome(session.user);
+    }
+  });
+}
+
+void showSessionExpired() {}
+void showLogin() {}
+void showHome(User user) {}
 ```
 
 #### The session is persisted with `SharedPreferencesAsync`
@@ -1347,7 +1437,10 @@ by the SDK can now drop preferences you wrote through the legacy API, and the ot
 [Migrate your code to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache)
 as well, or pass an `AuthAsyncStorage` that keeps the session in the legacy store:
 
-```dart
+```dart file
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class LegacySharedPreferencesStorage extends AuthAsyncStorage {
   Future<SharedPreferences> get _preferences => SharedPreferences.getInstance();
 
@@ -1369,15 +1462,26 @@ Widget tests that call `Supabase.initialize` otherwise throw
 `StateError: The SharedPreferencesAsyncPlatform instance must be set.`, since
 `SharedPreferences.setMockInitialValues()` only covers the legacy API:
 
-```dart
+```dart test-file
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-setUp(() {
-  SharedPreferences.setMockInitialValues({});
-  SharedPreferencesAsyncPlatform.instance =
-      InMemorySharedPreferencesAsync.empty();
-});
+void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
+  test('the default session storage works', () async {
+    final storage = SharedPreferencesAuthAsyncStorage();
+    await storage.setItem('key', 'value');
+    expect(await storage.getItem('key'), 'value');
+  });
+}
 ```
 
 `shared_preferences_platform_interface` needs to be a `dev_dependency` for that import. Passing
@@ -1410,13 +1514,15 @@ token, so call `session.copyWith(accessToken: newAccessToken)` to change it.
 The request fields on `UserAttributes` and `AdminUserAttributes` are `final`, so pass them to the
 constructor instead of assigning after construction:
 
-```dart
+```dart skip
 // Before
 final attributes = UserAttributes();
 attributes.email = 'new@example.com';
 attributes.data = {'name': 'Alice'};
 await supabase.auth.updateUser(attributes);
+```
 
+```dart
 // After
 await supabase.auth.updateUser(
   UserAttributes(email: 'new@example.com', data: {'name': 'Alice'}),
@@ -1431,12 +1537,15 @@ await supabase.auth.updateUser(
 `connState` field is gone. This is not a compile error if you were only reading the string, so check
 every use site.
 
-```dart
+```dart skip
 // Before
 if (client.connectionState == 'open') {}
 final SocketStates? state = client.connState;
+```
 
+```dart
 // After
+final client = supabase.realtime;
 if (client.connectionState == SocketState.open) {}
 final SocketState? state = client.connectionState;
 ```
@@ -1490,12 +1599,14 @@ through `RealtimeChannelConfig` when creating the channel.
 `sendBroadcastMessage()` only sends over the WebSocket. Calling it on a channel that was never
 subscribed throws. Use `httpSend()` for the REST path, which works without subscribing:
 
-```dart
+```dart skip
 // Before: delivered over REST because the channel was never subscribed.
 await supabase.channel('room').sendBroadcastMessage(event: 'move', payload: data);
+```
 
+```dart
 // After
-await supabase.channel('room').httpSend(event: 'move', payload: data);
+await supabase.channel('room').httpSend(event: 'move', payload: {'x': 30});
 ```
 
 Messages sent between `subscribe()` and the join are still buffered, so only channels that were
@@ -1516,14 +1627,22 @@ channel.onBroadcast(event: 'cursor').listen((message) => print(message['x']));
 await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 await channel.sendBroadcastMessage(event: 'file', payload: {'payload': bytes});
 await channel.sendBroadcastMessage(event: 'ping', payload: {'payload': {'x': 30}});
+```
 
+```dart file
 // After
-channel
-    .onBroadcast(event: 'cursor')
-    .listen((message) => print(message['payload']['x']));
-await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
-await channel.sendBroadcastMessage(event: 'file', payload: bytes);
-await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
+import 'dart:typed_data';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> broadcast(RealtimeChannel channel, Uint8List bytes) async {
+  channel
+      .onBroadcast(event: 'cursor')
+      .listen((message) => print(message['payload']['x']));
+  await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
+  await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+  await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
+}
 ```
 
 #### A channel name in use returns its channel
@@ -1546,14 +1665,17 @@ On `RealtimeClient`, the four connection callbacks are replaced by two broadcast
 `onStatusChange` for the connection lifecycle and `onMessage` for every decoded frame. Connection
 errors are emitted as stream errors on `onStatusChange`:
 
-```dart
+```dart skip
 // Before
 client.onOpen(() => print('open'));
 client.onClose((event) => print('closed: $event'));
 client.onError((error) => print('error: $error'));
 client.onMessage((message) => print('message: $message'));
+```
 
+```dart
 // After
+final client = supabase.realtime;
 client.onStatusChange.listen(
   (change) => switch (change.status) {
     RealtimeConnectionStatus.open => print('open'),
@@ -1569,7 +1691,7 @@ and return a typed stream instead of the channel, so they can no longer be chain
 with the same arguments return the same stream. For `postgres_changes` the stream still has to be
 created before `subscribe()`, but it can be listened to at any point:
 
-```dart
+```dart skip
 // Before
 supabase
     .channel('room')
@@ -1584,7 +1706,9 @@ supabase
       callback: (payload) => print(payload),
     )
     .subscribe();
+```
 
+```dart
 // After
 final channel = supabase.channel('room');
 channel
@@ -1601,7 +1725,7 @@ channel.subscribe();
 The presence and system listeners are stream getters, and `onSystemEvents` emits a typed
 `RealtimeSystemPayload` instead of a raw payload:
 
-```dart
+```dart skip
 // Before
 channel.onPresenceSync((payload) { /* ... */ });
 channel.onPresenceJoin((payload) { /* ... */ });
@@ -1611,8 +1735,11 @@ channel.onSystemEvents((payload) {
     Map<String, dynamic>.from(payload as Map),
   );
 });
+```
 
+```dart
 // After
+final channel = supabase.channel('room');
 channel.onPresenceSync.listen((payload) { /* ... */ });
 channel.onPresenceJoin.listen((payload) { /* ... */ });
 channel.onPresenceLeave.listen((payload) { /* ... */ });
@@ -1624,7 +1751,7 @@ channel.onSystemEvents.listen((system) { /* ... */ });
 `RealtimeSubscribeStatus` and, for `channelError`, the error that caused it. The optional timeout is
 now the first positional parameter:
 
-```dart
+```dart skip
 // Before
 channel.subscribe((status, [error]) {
   if (status == RealtimeSubscribeStatus.subscribed) {
@@ -1633,8 +1760,11 @@ channel.subscribe((status, [error]) {
     print('error: $error');
   }
 }, const Duration(seconds: 10));
+```
 
+```dart
 // After
+final channel = supabase.channel('room');
 channel.onStatusChange.listen((change) {
   if (change.status == RealtimeSubscribeStatus.subscribed) {
     // ...
@@ -1667,6 +1797,7 @@ instead of `presence.state`.
 `SinglePresenceState.key` and the payloads in `SinglePresenceState.presences`. To rebuild the map:
 
 ```dart
+final channel = supabase.channel('room');
 final byKey = {
   for (final state in channel.presenceState()) state.key: state.presences,
 };
@@ -1716,11 +1847,15 @@ The legacy `1.0.0` Realtime protocol, with its object-shaped JSON frames, is no 
 The `logger` constructor parameter and the public `log` method are removed. Realtime diagnostics are
 emitted on the `supabase.realtime` logger, so listen there instead.
 
-```dart
-hierarchicalLoggingEnabled = true;
-Logger('supabase.realtime').onRecord.listen((record) {
-  print('${record.level.name}: ${record.message} ${record.error ?? ''}');
-});
+```dart file
+import 'package:logging/logging.dart';
+
+void printRealtimeLogs() {
+  hierarchicalLoggingEnabled = true;
+  Logger('supabase.realtime').onRecord.listen((record) {
+    print('${record.level.name}: ${record.message} ${record.error ?? ''}');
+  });
+}
 ```
 
 Without `hierarchicalLoggingEnabled = true`, listen on `Logger.root` and filter on
@@ -1747,13 +1882,23 @@ return the key, the path prefixed with the bucket id, which is now `fullPath`. T
 uploads used to return the path within the bucket, which is now `path`. Code that keeps the result
 in a `var` or interpolates it into a string still compiles, but gets the whole response:
 
-```dart
+```dart skip
 // Before
 final key = await supabase.storage.from('avatars').upload('avatar.png', file);
+```
 
+```dart file
 // After
-final response = await supabase.storage.from('avatars').upload('avatar.png', file);
-final key = response.fullPath;
+import 'dart:io';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<String> uploadAvatar(SupabaseClient supabase, File file) async {
+  final response = await supabase.storage
+      .from('avatars')
+      .upload('avatar.png', file);
+  return response.fullPath;
+}
 ```
 
 `UploadResponse` also carries the `id` of the stored object, and `versionId` for a resumable upload.
@@ -1800,17 +1945,24 @@ for (final result in results) {
 future aborts the in-flight request and stops any remaining retries, and the call throws a
 `RequestAbortedException`:
 
-```dart
-final abortSignal = Completer<void>();
-final upload = supabase.storage
-    .from('avatars')
-    .upload('avatar.png', file, abortSignal: abortSignal.future);
-abortSignal.complete();
+```dart file
+import 'dart:async';
+import 'dart:io';
 
-try {
-  await upload;
-} on RequestAbortedException {
-  print('upload aborted');
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> uploadAvatar(SupabaseClient supabase, File file) async {
+  final abortSignal = Completer<void>();
+  final upload = supabase.storage
+      .from('avatars')
+      .upload('avatar.png', file, abortSignal: abortSignal.future);
+  abortSignal.complete();
+
+  try {
+    await upload;
+  } on RequestAbortedException {
+    print('upload aborted');
+  }
 }
 ```
 
@@ -1821,12 +1973,27 @@ On `downloadStream` the abort surfaces as a `RequestAbortedException` error on t
 The options of `uploadToSignedUrl` and `uploadBinaryToSignedUrl` were optional positional
 parameters and are named now, like on every other upload method:
 
-```dart
+```dart skip
 // Before
 .uploadToSignedUrl(path, token, file, const FileOptions(upsert: true));
+```
 
+```dart file
 // After
-.uploadToSignedUrl(path, token, file, fileOptions: const FileOptions(upsert: true));
+import 'dart:io';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> upload(SupabaseClient supabase, String token, File file) async {
+  await supabase.storage
+      .from('avatars')
+      .uploadToSignedUrl(
+        'avatar.png',
+        token,
+        file,
+        fileOptions: const FileOptions(upsert: true),
+      );
+}
 ```
 
 #### Iceberg catalog options are named and take an `abortSignal`
@@ -1835,12 +2002,17 @@ The options of `listNamespaces`, `listTables` and `loadTableResult` were optiona
 parameters and are named now, so that every catalog operation can also take a
 `Future<void>? abortSignal`:
 
-```dart
+```dart skip
 // Before
 await catalog.listNamespaces(const ListNamespacesOptions(pageSize: 100));
+```
 
+```dart
 // After
-await catalog.listNamespaces(options: const ListNamespacesOptions(pageSize: 100));
+final catalog = supabase.storage.analyticsCatalog('analytics');
+await catalog.listNamespaces(
+  options: const ListNamespacesOptions(pageSize: 100),
+);
 ```
 
 A nested type the client does not recognize decodes as the new `UnknownType` instead of failing the
@@ -1864,15 +2036,19 @@ body need to read the raw body and the `x-metadata` header instead.
 `Stream<List<int>>` as it arrives, for example a file picked on the web. A stream can only be read
 once, so these are never retried:
 
-```dart
+```dart skip
 import 'package:cross_file/cross_file.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-final file = XFile.fileSystem(path: path);
-await supabase.storage.from('avatars').uploadStream(
-  'avatar.png',
-  file.openRead(),
-  contentLength: await file.length(),
-);
+Future<void> uploadAvatar(SupabaseClient supabase, XFile file) async {
+  await supabase.storage
+      .from('avatars')
+      .uploadStream(
+        'avatar.png',
+        file.openRead(),
+        contentLength: await file.length(),
+      );
+}
 ```
 
 #### `BucketOptions.public` is optional and `fileSizeLimit` is in bytes
@@ -1884,10 +2060,12 @@ optional for that reason, and a bucket created without it is private as before.
 `BucketOptions.fileSizeLimit` is the number of bytes as an `int`, the same type that
 `Bucket.fileSizeLimit` reports, instead of a string such as `'20MB'`:
 
-```dart
+```dart skip
 // Before
 const BucketOptions(public: false, fileSizeLimit: '20MB');
+```
 
+```dart
 // After
 const BucketOptions(fileSizeLimit: 20 * 1000 * 1000);
 ```
@@ -1903,10 +2081,12 @@ given, so keep using that id.
 `copy` returns an `UploadResponse` like `upload` does, instead of the key prefixed with the
 bucket id. That key is its `fullPath`, and `path` is the key within the bucket:
 
-```dart
+```dart skip
 // Before
 final key = await supabase.storage.from('avatars').copy('a.png', 'b.png');
+```
 
+```dart
 // After
 final copy = await supabase.storage.from('avatars').copy('a.png', 'b.png');
 final key = copy.fullPath;
@@ -1934,7 +2114,7 @@ The `StorageFileApi` constructor is internal. Get one for a bucket with
 reporting a response from a service also mix in `SupabaseApiException`, and the ones thrown when
 no response arrived mix in `SupabaseTransportException`:
 
-```dart
+```dart skip
 abstract class SupabaseException implements Exception {
   final String message;
   final String? errorCode;
@@ -2042,7 +2222,9 @@ string no longer compiles as a `region`; `FunctionsRegion.custom` still takes an
 ```dart skip
 // Before
 await supabase.functions.invoke('hello', region: 'eu-west-1');
+```
 
+```dart
 // After
 await supabase.functions.invoke('hello', region: FunctionsRegion.euWest1);
 ```
@@ -2096,7 +2278,7 @@ in an exception that mixes in `SupabaseTransportException`, with the original er
 
 A request aborted through its `abortSignal` still throws `RequestAbortedException`.
 
-```dart
+```dart skip
 // Before
 try {
   await supabase.from('countries').select();
@@ -2105,12 +2287,15 @@ try {
 } on TimeoutException {
   // the request timeout elapsed
 }
+```
 
+```dart
 // After
 try {
   await supabase.from('countries').select();
 } on SupabaseTransportException catch (error) {
-  // offline, or the request timeout elapsed; error.cause holds which
+  // Offline, or the request timeout elapsed.
+  print(error.cause);
 }
 ```
 
@@ -2187,12 +2372,16 @@ PostgREST reads therefore back off sooner than they did, and with jitter. Pass y
 `SupabaseRetryOptions` to keep the old curve:
 
 ```dart
-postgrestOptions: const PostgrestClientOptions(
-  retryOptions: SupabaseRetryOptions(
-    initialDelay: Duration(seconds: 1),
-    randomizationFactor: 0,
+SupabaseClient(
+  'https://your-project.supabase.co',
+  'your-publishable-key',
+  postgrestOptions: const PostgrestClientOptions(
+    retryOptions: SupabaseRetryOptions(
+      initialDelay: Duration(seconds: 1),
+      randomizationFactor: 0,
+    ),
   ),
-),
+);
 ```
 
 #### The request timeout bounds idle time, not the whole request
@@ -2232,17 +2421,23 @@ the call. Otherwise:
 - On a client you construct yourself, pass an `accessToken` callback, which is resolved before
   every request, or an `Authorization` header for a token that never changes. Passing both asserts.
 
-  ```dart
+  ```dart skip
   // Before
   final functions = FunctionsClient(functionsUrl, {'apikey': anonKey});
   functions.setAccessToken(jwt);
+  ```
 
+  ```dart file
   // After
-  final functions = FunctionsClient(
-    functionsUrl,
-    {'apikey': anonKey},
-    accessToken: () async => currentJwt,
-  );
+  import 'package:supabase/supabase.dart';
+
+  FunctionsClient functionsClient(Future<String?> Function() currentJwt) {
+    return FunctionsClient(
+      'https://your-project.supabase.co/functions/v1',
+      {'apikey': 'your-publishable-key'},
+      accessToken: currentJwt,
+    );
+  }
   ```
 
 - For a single call, pass the header to that call, through `headers:` on `invoke()` or
@@ -2282,16 +2477,17 @@ behavior, set the header on the individual calls instead of on the client.
 `PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder`, and `Supabase.initialize`
 takes `jsonCodec:` too.
 
-```dart
+```dart skip
 // Before
 final client = SupabaseClient(url, key, isolate: YAJsonIsolate()..initialize());
+```
 
+```dart
 // After
 final jsonCodec = YAJsonIsolate();
 final client = SupabaseClient(
-  url,
-  key,
-  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
+  'https://your-project.supabase.co',
+  'your-publishable-key',
   jsonCodec: jsonCodec,
 );
 
@@ -2334,17 +2530,19 @@ timestamp `int`.
 | `FileObjectV2`  | `updatedAt`, `lastModified`                                                                                                                   | `String?`             | `DateTime?` |
 | `PaginatedFile` | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
 
-```dart
+```dart skip
 // Before
 final expiresAt = supabase.auth.currentSession?.expiresAt;
 final expiry = expiresAt == null
     ? null
     : DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
 final createdAt = DateTime.parse(user.createdAt);
+```
 
+```dart
 // After
 final expiry = supabase.auth.currentSession?.expiresAt;
-final createdAt = user.createdAt;
+final createdAt = supabase.auth.currentUser?.createdAt;
 ```
 
 `toJson()` output is unchanged, so sessions persisted by v2 are still readable by v3. Three
@@ -2412,3 +2610,16 @@ The `method` parameter of `MockSupabaseHttpClient.requestsTo` and of every `stub
 Both helpers now default to an `sb_publishable_` key instead of an unsigned anon JWT. A signed-out
 edge function call therefore no longer sends an `Authorization` header, as with a production
 publishable key. Pass a JWT as `publishableKey` if a test relies on the old headers.
+
+#### `supabase_test` fails fast and signs in with `signedIn`
+
+- `testSupabaseClient` and `initializeTestSupabase` no longer retry database requests and token
+  refreshes, so a stubbed failure surfaces at once instead of after the backoff delays. Pass
+  `retryOptions: const SupabaseRetryOptions()` to a test that exercises retry handling.
+- A request no stub matches still throws a `StateError`, and is now also reported to the current
+  zone as an uncaught error. It therefore fails the test even when the code under test catches the
+  error, or auth and functions wrap it in a `SupabaseTransportException`. Pass
+  `MockSupabaseHttpClient(reportUnmatchedRequests: false)` to a test that expects an unmatched
+  request to fail.
+- `signInTestUser` emits `AuthChangeEvent.signedIn` instead of `tokenRefreshed`, as a real sign-in
+  does. Update listeners and expectations that waited for `tokenRefreshed`.
