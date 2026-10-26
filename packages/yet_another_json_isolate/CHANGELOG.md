@@ -1,3 +1,11 @@
+## 3.0.0-dev.3
+
+> Note: This release has breaking changes.
+
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(yet_another_json_isolate): drop initialize(), align web and IO behavior, and keep small toJson objects off the isolate ([#2041](https://github.com/supabase/supabase-flutter/issues/2041)). ([69474c10](https://github.com/supabase/supabase-flutter/commit/69474c10251f3cbda642396d025d88c4e685040f))
+ - **BREAKING** **PERF**(yet_another_json_isolate,postgrest,functions): encode request bodies to UTF-8 bytes on the calling isolate in slices ([#2057](https://github.com/supabase/supabase-flutter/issues/2057)). ([776b9f52](https://github.com/supabase/supabase-flutter/commit/776b9f527ac400a7f08bd499d76dcf2bafa7c043))
+
 ## 3.0.0-dev.2
 
 > Note: This release has breaking changes.

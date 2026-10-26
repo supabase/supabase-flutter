@@ -1,3 +1,13 @@
+## 3.0.0-dev.10
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_common): cancel the retry backoff on abort and honour long Retry-After and jitter at the cap ([#2043](https://github.com/supabase/supabase-flutter/issues/2043)). ([63dfd112](https://github.com/supabase/supabase-flutter/commit/63dfd1127fcef3c923913e5ed30542b595348f84))
+ - **FIX**(postgrest): buffer the untyped asStream result and correct dartdocs that disagree with behavior ([#2042](https://github.com/supabase/supabase-flutter/issues/2042)). ([ed797335](https://github.com/supabase/supabase-flutter/commit/ed797335edae3026cd00b2ad1642b6b92d78a7b0))
+ - **BREAKING** **REFACTOR**(storage): consistent bucket option types, return shapes and hidden wire helpers ([#2019](https://github.com/supabase/supabase-flutter/issues/2019)). ([362f8f85](https://github.com/supabase/supabase-flutter/commit/362f8f85dc2e4b6607afa76d6e1617ee3c3e3985))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **FIX**(iceberg): parse Supabase error bodies, add timeout and abort, and stop swallowing config errors ([#2038](https://github.com/supabase/supabase-flutter/issues/2038)). ([6ea556d3](https://github.com/supabase/supabase-flutter/commit/6ea556d3fd980021d5fd16414de7de19f76299c9))
+
 ## 3.0.0-dev.9
 
 > Note: This release has breaking changes.

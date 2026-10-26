@@ -1,3 +1,19 @@
+## 0.6.0
+
+> Note: This release has breaking changes.
+
+ - **FEAT**: ship agent skills with supabase_flutter, supabase, supabase_typegen and supabase_test ([#2011](https://github.com/supabase/supabase-flutter/issues/2011)). ([3f415f4e](https://github.com/supabase/supabase-flutter/commit/3f415f4e88a7d7c328583fb310480bd64d4bea9a))
+ - **DOCS**: fix README, MIGRATION.md and skill content that disagrees with the v3 code ([#2039](https://github.com/supabase/supabase-flutter/issues/2039)). ([26073d57](https://github.com/supabase/supabase-flutter/commit/26073d57936bfc812cd96e7950c2127f2f6c9bbb))
+ - **DOCS**: update every README to the v3 API ([#2008](https://github.com/supabase/supabase-flutter/issues/2008)). ([9357d479](https://github.com/supabase/supabase-flutter/commit/9357d479e5a12a1b72176e2846d714831da6b0f7))
+ - **BREAKING** **REFACTOR**(supabase): client setup and options consistency before 3.0.0 ([#2021](https://github.com/supabase/supabase-flutter/issues/2021)). ([1fc6cf16](https://github.com/supabase/supabase-flutter/commit/1fc6cf16e2aeec5d3ecd8ed4160b059d24013949))
+ - **BREAKING** **REFACTOR**(storage): consistent bucket option types, return shapes and hidden wire helpers ([#2019](https://github.com/supabase/supabase-flutter/issues/2019)). ([362f8f85](https://github.com/supabase/supabase-flutter/commit/362f8f85dc2e4b6607afa76d6e1617ee3c3e3985))
+ - **BREAKING** **REFACTOR**(supabase_test): take HttpMethod for method matching and align names with supabase_flutter's testing helpers ([#2025](https://github.com/supabase/supabase-flutter/issues/2025)). ([941320dd](https://github.com/supabase/supabase-flutter/commit/941320dd1180e82feec5bd9ff0021c3774d88f57))
+ - **BREAKING** **FIX**(supabase): make stream() survive reconnects without losing or corrupting rows ([#2028](https://github.com/supabase/supabase-flutter/issues/2028)). ([bf951b88](https://github.com/supabase/supabase-flutter/commit/bf951b88925b08062bac14666a50553713440f6a))
+ - **BREAKING** **FIX**(supabase_test): fast failures, clock-aware sessions, a real signedIn event and stubs that match what the SDK sends ([#2035](https://github.com/supabase/supabase-flutter/issues/2035)). ([9e74106e](https://github.com/supabase/supabase-flutter/commit/9e74106e95f8e35744a9a453af3ebb032bb95f78))
+ - **BREAKING** **FIX**(auth): refresh user-scoped tokens, keep restored sessions and announce user switches as signedIn ([#2037](https://github.com/supabase/supabase-flutter/issues/2037)). ([3ff29e0d](https://github.com/supabase/supabase-flutter/commit/3ff29e0dbe3cb8caf763cd309c17d4393696943a))
+ - **BREAKING** **FIX**(realtime): send broadcast data under payload without mutating the caller's map ([#2036](https://github.com/supabase/supabase-flutter/issues/2036)). ([31695439](https://github.com/supabase/supabase-flutter/commit/31695439c3a7e4aae82f1641de0cb5579fff98e0))
+ - **BREAKING** **FEAT**(supabase): run the typed table requests through client interceptors ([#1940](https://github.com/supabase/supabase-flutter/issues/1940)). ([4efd670b](https://github.com/supabase/supabase-flutter/commit/4efd670bfe3e6a521246a5372877b9aaae31222d))
+
 ## 0.5.2
 
  - **FEAT**(supabase): add typed onTableChanges for postgres changes ([#2003](https://github.com/supabase/supabase-flutter/issues/2003)). ([74e9870b](https://github.com/supabase/supabase-flutter/commit/74e9870b8768bc42d6a93d88dbc5fecbef1417c1))
