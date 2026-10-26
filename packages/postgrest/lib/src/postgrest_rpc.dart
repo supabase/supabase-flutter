@@ -42,6 +42,9 @@ final class PostgrestRpc {
   final bool _schemaIsExplicit;
   final PostgrestTableExecutor? _executor;
 
+  PostgrestTableExecutor get _tableExecutor =>
+      _executor ?? PostgrestHttpTableExecutor(_client);
+
   /// A copy of this that runs [rows] and [value] through [executor].
   @internal
   PostgrestRpc withExecutor(PostgrestTableExecutor executor) => PostgrestRpc(
@@ -113,7 +116,7 @@ final class PostgrestRpc {
     bool get = false,
   }) => PostgrestTypedFilterBuilder._(
     _request(function, arguments, rowFromJson, schema, get),
-    _executor ?? PostgrestHttpTableExecutor(_client),
+    _tableExecutor,
     (result) => [
       for (final row in result.data! as List<dynamic>)
         rowFromJson(row as Map<String, dynamic>),
@@ -147,7 +150,7 @@ final class PostgrestRpc {
       schema,
       get,
     ).copyWith(shape: PostgrestResultShape.value),
-    _executor ?? PostgrestHttpTableExecutor(_client),
+    _tableExecutor,
     (result) => fromJson(result.data),
   );
 
