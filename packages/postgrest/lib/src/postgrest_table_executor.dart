@@ -101,7 +101,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     switch (request.operation) {
       case PostgrestTableOperation.select:
         return _applyFilter(
-          _query(request).select(_selectList(request.columns)),
+          _query(request).select(_requestSelectList(request)),
           request,
         );
       case PostgrestTableOperation.update:
@@ -226,7 +226,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   ) {
     var transformed = operation;
     if (request.operation.isMutation && request.returning) {
-      transformed = transformed.select(_selectList(request.columns));
+      transformed = transformed.select(_requestSelectList(request));
     }
     for (final ordering in request.orderings) {
       transformed = transformed.appendOrderKey(ordering.orderKey);
@@ -241,6 +241,12 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     for (final scope in request.embeddedScopes) {
       for (final transforms in scope._flattened()) {
         final path = transforms.path;
+        for (final parameter in transforms.filterParameters) {
+          transformed = transformed.appendSearchParameter(
+            '$path.${parameter.key}',
+            parameter.value,
+          );
+        }
         for (final key in transforms.orderKeys) {
           transformed = transformed.appendOrderKey(key, referencedTable: path);
         }

@@ -1615,7 +1615,7 @@ features:
       - PostgrestTypedTransformBuilder.geojson
   database.using_modifiers.relationship_embed:
     status: implemented
-    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Ordering and limiting the rows inside a to-many embed is a scope on the builder, `.embedded(Authors.books, (books) => books.order(Books.createdAt.desc()).limit(1))`, typed against the embedded table; scopes nest into dotted paths. Filtering inside an embed and the `!inner` counterpart are not on the typed surface yet."
+    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and either projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server), or selects the embed as a whole with `Books.author.select([Authors.id, Authors.name])` and `Books.author.select()` for `author(*)`. Entries of one relation in a select list are merged into a single embed. Filtering, ordering and limiting the rows inside an embed is a scope on the builder, `.embedded(Authors.books, (books) => books.where(Books.title.eq('Dune')).limit(1))`, typed against the embedded table; scopes nest into dotted paths. `.requiring(relation, scope)` takes the same scope and sends the embed as `!inner`, and `relation.isNull()` is a filter for the parent rows without a match."
     symbols:
       - PostgrestTransformBuilder.select
       - PostgrestToOneRelation.call
@@ -1625,8 +1625,14 @@ features:
       - PostgrestToManyRelation.select
       - PostgrestToManyRelation.count
       - PostgrestTypedTransformBuilder.embedded
+      - PostgrestTypedTransformBuilder.requiring
+      - PostgrestRelation.isNull
     supporting_symbols:
       - PostgrestEmbeddedScope
+      - PostgrestEmbeddedScope.where
+      - PostgrestEmbeddedScope.requiring
+      - PostgrestEmbeddedScope.requiresMatch
+      - PostgrestEmbeddedScope.filter
       - PostgrestEmbeddedScope.order
       - PostgrestEmbeddedScope.limit
       - PostgrestEmbeddedScope.range

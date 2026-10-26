@@ -133,8 +133,8 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
     return _with(request.copyWith(offset: from, limit: to - from + 1));
   }
 
-  /// Sorts and limits the rows of the to-many embed [relation] with [scope],
-  /// leaving the parent rows as they are.
+  /// Filters, sorts and limits the rows of the embed [relation] with
+  /// [scope], leaving the parent rows as they are.
   ///
   /// ```dart
   /// final authors = await client
@@ -147,23 +147,56 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// // books.order=created_at.desc&books.limit=1
   /// ```
   ///
+  /// A filter in [scope] narrows the embedded rows only, so an author with
+  /// no matching book still comes back, with an empty list. Use [requiring]
+  /// to drop such parent rows instead.
+  ///
   /// [relation] has to be in the `select` list. Repeated calls for the same
-  /// embed append their sort keys, a later limit replaces the limit and a
-  /// later range replaces both the offset and the limit. See
-  /// [PostgrestEmbeddedScope] for what a scope offers.
+  /// embed combine their filters with logical AND and append their sort
+  /// keys, a later limit replaces the limit and a later range replaces both
+  /// the offset and the limit. See [PostgrestEmbeddedScope] for what a scope
+  /// offers.
   PostgrestTypedTransformBuilder<Row, T> embedded<Target>(
-    PostgrestToManyRelation<Row, Target> relation,
+    PostgrestRelation<Row, Target> relation,
     PostgrestEmbeddedScope<Target> Function(
       PostgrestEmbeddedScope<Target> scope,
     )
     scope,
+  ) => _scoped(scope(PostgrestEmbeddedScope._(relation)));
+
+  /// The same as [embedded], and drops the parent rows that have no
+  /// matching row in [relation], an inner join.
+  ///
+  /// ```dart
+  /// final authors = await client
+  ///     .table(Authors.table)
+  ///     .selectOnly([Authors.name, Authors.books.select([Books.title])])
+  ///     .requiring(
+  ///       Authors.books,
+  ///       (books) => books.where(Books.title.ilike('%dune%')),
+  ///     );
+  /// // select=name,books!inner(title)&books.title=ilike.%dune%
+  /// ```
+  ///
+  /// Without [scope], only the parent rows with at least one row in
+  /// [relation] come back. [relation] has to be in the `select` list, or
+  /// awaiting the request throws an [ArgumentError]. See
+  /// [PostgrestRelation.isNull] for the parent rows without a match.
+  ///
+  /// On a mutation it narrows the rows read back, not the rows the mutation
+  /// changes.
+  PostgrestTypedTransformBuilder<Row, T> requiring<Target>(
+    PostgrestRelation<Row, Target> relation, [
+    PostgrestEmbeddedScope<Target> Function(
+      PostgrestEmbeddedScope<Target> scope,
+    )?
+    scope,
+  ]) => _scoped(_requiringScope<Row, Target>(relation, scope));
+
+  PostgrestTypedTransformBuilder<Row, T> _scoped(
+    PostgrestEmbeddedScope<Object?> scope,
   ) => _with(
-    request.copyWith(
-      embeddedScopes: [
-        ...request.embeddedScopes,
-        scope(PostgrestEmbeddedScope._(relation)),
-      ],
-    ),
+    request.copyWith(embeddedScopes: [...request.embeddedScopes, scope]),
   );
 
   /// Omits `null`-valued properties from the response objects.

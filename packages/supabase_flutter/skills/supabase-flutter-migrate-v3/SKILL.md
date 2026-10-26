@@ -210,25 +210,28 @@ carries the schema as a prefix, `inventory.books` is `InventoryBooks`, and
 `supabase.table(InventoryBooks.table)`. Columns are camelCase constants on the
 table class, `Books.authorId`.
 
-| Untyped                                                | Typed                                                                     |
-| ------------------------------------------------------ | ------------------------------------------------------------------------- |
-| `.from('books').select()`                              | `.table(Books.table).select()`                                            |
-| `.select('id, title')`                                 | `.selectOnly([Books.id, Books.title])`, read with `row.read(Books.title)` |
-| `.select('title, authors(name)')`                      | `.selectOnly([Books.title, Books.authors(Authors.name)])`                 |
-| `.eq('author_id', 2)`                                  | `.where(Books.authorId.eq(2))`                                            |
-| `.or('price.lt.10,in_print.eq.false')`                 | `.where(Books.price.lt(10) \| Books.inPrint.isFalse())`                   |
-| `.order('created_at', ascending: false)`               | `.order(Books.createdAt.desc())`                                          |
-| `.order('price', ascending: false, nullsFirst: false)` | `.order(Books.price.desc().nullsLast())`                                  |
-| `.limit(3, referencedTable: 'books')`                  | `.embedded(Authors.books, (books) => books.limit(3))`                     |
-| `.insert({...})`                                       | `.insert(BooksInsert(...))`                                               |
-| `.insert([{...}, {...}])`                              | `.insertAll([BooksInsert(...), ...])`                                     |
-| `.update({...}).eq('id', 1)`                           | `.update(BooksUpdate(...)).where(Books.id.eq(1))`                         |
-| `.update({'price': null})`                             | `.update(BooksUpdate().setPriceToNull())`                                 |
-| `.delete().eq('id', 1)`                                | `.delete().where(Books.id.eq(1))`                                         |
-| `.delete()` with no filter                             | `.delete().all()`                                                         |
-| `.upsert({...}, onConflict: 'name')`                   | `.upsert(AuthorsInsert(...), onConflict: [Authors.name])`                 |
-| `.stream(primaryKey: ['id']).eq('author_id', 2)`       | `.stream(primaryKey: [Books.id]).filter(Books.authorId.eq(2))`            |
-| `.rpc('search_books', params: {'query': q})`           | `.rpc.searchBooks(query: q)`                                              |
+| Untyped                                                | Typed                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `.from('books').select()`                              | `.table(Books.table).select()`                                             |
+| `.select('id, title')`                                 | `.selectOnly([Books.id, Books.title])`, read with `row.read(Books.title)`  |
+| `.select('title, authors(name)')`                      | `.selectOnly([Books.title, Books.authors(Authors.name)])`                  |
+| `.eq('author_id', 2)`                                  | `.where(Books.authorId.eq(2))`                                             |
+| `.or('price.lt.10,in_print.eq.false')`                 | `.where(Books.price.lt(10) \| Books.inPrint.isFalse())`                    |
+| `.order('created_at', ascending: false)`               | `.order(Books.createdAt.desc())`                                           |
+| `.order('price', ascending: false, nullsFirst: false)` | `.order(Books.price.desc().nullsLast())`                                   |
+| `.limit(3, referencedTable: 'books')`                  | `.embedded(Authors.books, (books) => books.limit(3))`                      |
+| `.eq('books.title', 'Dune')`                           | `.embedded(Authors.books, (books) => books.where(Books.title.eq('Dune')))` |
+| `.select('name, books!inner(title)')`                  | `.selectOnly([...]).requiring(Authors.books)`                              |
+| `.isFilter('books', null)`                             | `.where(Authors.books.isNull())`                                           |
+| `.insert({...})`                                       | `.insert(BooksInsert(...))`                                                |
+| `.insert([{...}, {...}])`                              | `.insertAll([BooksInsert(...), ...])`                                      |
+| `.update({...}).eq('id', 1)`                           | `.update(BooksUpdate(...)).where(Books.id.eq(1))`                          |
+| `.update({'price': null})`                             | `.update(BooksUpdate().setPriceToNull())`                                  |
+| `.delete().eq('id', 1)`                                | `.delete().where(Books.id.eq(1))`                                          |
+| `.delete()` with no filter                             | `.delete().all()`                                                          |
+| `.upsert({...}, onConflict: 'name')`                   | `.upsert(AuthorsInsert(...), onConflict: [Authors.name])`                  |
+| `.stream(primaryKey: ['id']).eq('author_id', 2)`       | `.stream(primaryKey: [Books.id]).filter(Books.authorId.eq(2))`             |
+| `.rpc('search_books', params: {'query': q})`           | `.rpc.searchBooks(query: q)`                                               |
 
 Rules for the conversion:
 
@@ -258,8 +261,6 @@ Rules for the conversion:
 - a table, view or function missing from the generated file because its
   schema was not generated or is not exposed through the Data API,
 - a table name computed at runtime,
-- a filter inside an embed, such as `.eq('authors.name', 'Frank Herbert')`,
-  or an `!inner` embed, which the typed API does not support yet,
 - a function the generator gives no method, which it explains in a comment in
   the generated file.
 

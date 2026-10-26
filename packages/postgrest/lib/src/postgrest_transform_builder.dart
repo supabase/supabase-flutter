@@ -122,6 +122,13 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     );
   }
 
+  /// Appends [value] as another value of the query parameter [key].
+  @internal
+  PostgrestTransformBuilder<T> appendSearchParameter(
+    String key,
+    String value,
+  ) => _copyWithUrl(_url.appendSearchParameters(key, value));
+
   /// Merges the rendered sort key [key] into the `order` parameter, or into
   /// `referencedTable.order` when [referencedTable] is given, which PostgREST
   /// reads once, adding nothing to [key].

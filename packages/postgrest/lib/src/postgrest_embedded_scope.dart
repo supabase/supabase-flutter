@@ -1,7 +1,8 @@
 part of 'postgrest_typed_builder.dart';
 
-/// Sort keys and a row window applied to the rows of one to-many embed,
-/// built in the callback of [PostgrestTypedTransformBuilder.embedded].
+/// Filters, sort keys and a row window applied to the rows of one embed,
+/// built in the callback of [PostgrestTypedTransformBuilder.embedded] or
+/// [PostgrestTypedTransformBuilder.requiring].
 ///
 /// Everything here applies per parent row and targets the embedded table,
 /// whose rows are [Row], so a column of another table does not compile:
@@ -12,9 +13,12 @@ part of 'postgrest_typed_builder.dart';
 ///     .selectOnly([Authors.name, Authors.books.select([Books.title])])
 ///     .embedded(
 ///       Authors.books,
-///       (books) => books.order(Books.createdAt.desc()).limit(1),
+///       (books) => books
+///           .where(Books.title.ilike('%dune%'))
+///           .order(Books.createdAt.desc())
+///           .limit(1),
 ///     );
-/// // books.order=created_at.desc&books.limit=1
+/// // books.title=ilike.%dune%&books.order=created_at.desc&books.limit=1
 /// ```
 ///
 /// The parameters are named after the embed, its alias when it has one, and
@@ -23,6 +27,8 @@ part of 'postgrest_typed_builder.dart';
 final class PostgrestEmbeddedScope<Row> {
   PostgrestEmbeddedScope._(
     this.relation, {
+    this.requiresMatch = false,
+    this.filter,
     List<PostgrestOrdering<Row>> orderings = const [],
     this.rowLimit,
     this.rowOffset,
@@ -31,7 +37,14 @@ final class PostgrestEmbeddedScope<Row> {
        scopes = List.unmodifiable(scopes);
 
   /// The embed whose rows the scope applies to.
-  final PostgrestToManyRelation<Object?, Row> relation;
+  final PostgrestRelation<Object?, Row> relation;
+
+  /// Whether the parent rows without a matching embedded row are dropped,
+  /// sent as `!inner` on the embed's `select` entry.
+  final bool requiresMatch;
+
+  /// The filter on the embedded rows, or `null` for every one of them.
+  final PostgrestFilter<Row>? filter;
 
   /// The sort keys of the embedded rows, first key first.
   final List<PostgrestOrdering<Row>> orderings;
@@ -47,32 +60,58 @@ final class PostgrestEmbeddedScope<Row> {
   final List<PostgrestEmbeddedScope<Object?>> scopes;
 
   PostgrestEmbeddedScope<Row> _copyWith({
+    PostgrestFilter<Row>? rowFilter,
     List<PostgrestOrdering<Row>>? sortKeys,
     int? limitCount,
     int? offsetCount,
     List<PostgrestEmbeddedScope<Object?>>? nested,
   }) => PostgrestEmbeddedScope._(
     relation,
+    requiresMatch: requiresMatch,
+    filter: rowFilter ?? filter,
     orderings: sortKeys ?? orderings,
     rowLimit: limitCount ?? rowLimit,
     rowOffset: offsetCount ?? rowOffset,
     scopes: nested ?? scopes,
   );
 
+  /// Only the embedded rows satisfying [condition].
+  ///
+  /// The parent rows stay as they are, with an empty list or `null` where
+  /// no embedded row matches, unless the scope was opened with `requiring`.
+  /// [condition] can name a column the `select` list leaves out. Repeated
+  /// calls combine with logical AND.
+  PostgrestEmbeddedScope<Row> where(PostgrestFilter<Row> condition) {
+    final current = filter;
+    return _copyWith(
+      rowFilter: current == null ? condition : current & condition,
+    );
+  }
+
   /// Sorts the embedded rows by [ordering].
   ///
   /// Repeated calls append, so the second key breaks ties in the first.
-  PostgrestEmbeddedScope<Row> order(PostgrestOrdering<Row> ordering) =>
-      _copyWith(sortKeys: [...orderings, ordering]);
+  /// Throws an [UnsupportedError] for a to-one embed, which has one row.
+  PostgrestEmbeddedScope<Row> order(PostgrestOrdering<Row> ordering) {
+    _checkToMany('order');
+    return _copyWith(sortKeys: [...orderings, ordering]);
+  }
 
   /// Limits the embedded rows of each parent row to [count].
-  PostgrestEmbeddedScope<Row> limit(int count) => _copyWith(limitCount: count);
+  ///
+  /// Throws an [UnsupportedError] for a to-one embed, which has one row.
+  PostgrestEmbeddedScope<Row> limit(int count) {
+    _checkToMany('limit');
+    return _copyWith(limitCount: count);
+  }
 
   /// Limits the embedded rows of each parent row to the ones within the
   /// specified range, inclusive.
   ///
-  /// Throws an [ArgumentError] when [to] is less than [from].
+  /// Throws an [ArgumentError] when [to] is less than [from], and an
+  /// [UnsupportedError] for a to-one embed, which has one row.
   PostgrestEmbeddedScope<Row> range(int from, int to) {
+    _checkToMany('range');
     checkPostgrestRange(from, to);
     return _copyWith(offsetCount: from, limitCount: to - from + 1);
   }
@@ -80,7 +119,7 @@ final class PostgrestEmbeddedScope<Row> {
   /// Applies [scope] to the rows of [embed], an embed nested in this one,
   /// under a dotted path such as `books.reviews.limit=3`.
   PostgrestEmbeddedScope<Row> embedded<Target>(
-    PostgrestToManyRelation<Row, Target> embed,
+    PostgrestRelation<Row, Target> embed,
     PostgrestEmbeddedScope<Target> Function(
       PostgrestEmbeddedScope<Target> scope,
     )
@@ -89,12 +128,37 @@ final class PostgrestEmbeddedScope<Row> {
     nested: [...scopes, scope(PostgrestEmbeddedScope._(embed))],
   );
 
-  /// The order keys, limit and offset of this scope and every nested one,
-  /// each under the dotted path of its embed, with [prefix] in front.
+  /// The same as [embedded], and drops the rows of this embed that have no
+  /// matching row in [embed].
+  ///
+  /// Only this embed's rows are dropped, not the top-level parent rows,
+  /// unless this scope was opened with `requiring` as well.
+  PostgrestEmbeddedScope<Row> requiring<Target>(
+    PostgrestRelation<Row, Target> embed, [
+    PostgrestEmbeddedScope<Target> Function(
+      PostgrestEmbeddedScope<Target> scope,
+    )?
+    scope,
+  ]) => _copyWith(
+    nested: [...scopes, _requiringScope<Row, Target>(embed, scope)],
+  );
+
+  void _checkToMany(String method) {
+    if (relation is PostgrestToOneRelation) {
+      throw UnsupportedError(
+        '$method() on the to-one embed `${relation.key}`, which has one row',
+      );
+    }
+  }
+
+  /// The filters, order keys, limit and offset of this scope and every
+  /// nested one, each under the dotted path of its embed, with [prefix] in
+  /// front.
   Iterable<_ScopedTransforms> _flattened([String prefix = '']) sync* {
     final path = '$prefix${relation._reference}';
     yield (
       path: path,
+      filterParameters: filter?.queryParameters ?? const [],
       orderKeys: [for (final ordering in orderings) ordering.orderKey],
       limit: rowLimit,
       offset: rowOffset,
@@ -105,9 +169,85 @@ final class PostgrestEmbeddedScope<Row> {
   }
 }
 
+/// A scope on [relation] that drops the parent rows without a match, with
+/// [scope] applied when given.
+PostgrestEmbeddedScope<Target> _requiringScope<Row, Target>(
+  PostgrestRelation<Row, Target> relation,
+  PostgrestEmbeddedScope<Target> Function(
+    PostgrestEmbeddedScope<Target> scope,
+  )?
+  scope,
+) {
+  final opened = PostgrestEmbeddedScope._(
+    relation,
+    requiresMatch: true,
+  );
+  return scope == null ? opened : scope(opened);
+}
+
 typedef _ScopedTransforms = ({
   String path,
+  List<({String key, String value})> filterParameters,
   List<String> orderKeys,
   int? limit,
   int? offset,
 });
+
+/// The embeds the scopes of a request address, keyed by how each is spelled
+/// in the `select` list, for adding `!inner` to the ones that require a
+/// match.
+final class _JoinTree {
+  _JoinTree._();
+
+  /// The tree of [scopes], or `null` when none of them requires a match, so
+  /// the `select` list renders as it would without scopes.
+  static _JoinTree? of(List<PostgrestEmbeddedScope<Object?>> scopes) {
+    final root = _JoinTree._().._add(scopes);
+    return root._anyRequiresMatch ? root : null;
+  }
+
+  bool _requiresMatch = false;
+
+  /// Whether the `select` list holds the embed, set as it is rendered.
+  bool _rendered = false;
+
+  final Map<String, _JoinTree> _children = {};
+
+  void _add(List<PostgrestEmbeddedScope<Object?>> scopes) {
+    for (final scope in scopes) {
+      final child = _children.putIfAbsent(
+        scope.relation._selectName,
+        _JoinTree._,
+      );
+      child._requiresMatch |= scope.requiresMatch;
+      child._add(scope.scopes);
+    }
+  }
+
+  bool get _anyRequiresMatch =>
+      _children.values.any((child) => child._requiresMatch) ||
+      _children.values.any((child) => child._anyRequiresMatch);
+
+  /// The tree of the embed spelled [name], marked as rendered.
+  _JoinTree? _render(String name) => _children[name]?.._rendered = true;
+
+  /// How the embed spelled [name] is sent: with `!inner` after any foreign
+  /// key hint when it requires a match.
+  String _head(String name) => _requiresMatch ? '$name!inner' : name;
+
+  /// Throws an [ArgumentError] for an embed that requires a match but is not
+  /// in the `select` list, since the parent rows would come back unfiltered.
+  void checkRendered([String prefix = '']) {
+    for (final MapEntry(key: name, value: child) in _children.entries) {
+      final path = '$prefix$name';
+      if (child._requiresMatch && !child._rendered) {
+        throw ArgumentError.value(
+          path,
+          'requiring',
+          'The embed is not in the select list',
+        );
+      }
+      child.checkRendered('$path.');
+    }
+  }
+}
