@@ -3091,7 +3091,6 @@ features:
       - SupabaseClientInterceptor.SupabaseClientInterceptor
       - SupabaseClientInterceptor.wrapTableExecutor
       - SupabaseClientInterceptor.attach
-      - SupabaseClientInterceptor.pause
       - SupabaseClientInterceptor.resume
       - SupabaseClientInterceptor.dispose
   client.request_configuration.global_headers:
