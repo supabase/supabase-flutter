@@ -3097,6 +3097,7 @@ supporting_symbols:
   - AsyncJsonCodec.decodeBytes
   - AsyncJsonCodec.dispose
   - AsyncJsonCodec.encode
+  - AsyncJsonCodec.encodeBytes
   - AuthApiException
   - AuthApiException.==
   - AuthApiException.AuthApiException
@@ -3642,3 +3643,4 @@ supporting_symbols:
   - YAJsonIsolate.decodeBytes
   - YAJsonIsolate.dispose
   - YAJsonIsolate.encode
+  - YAJsonIsolate.encodeBytes

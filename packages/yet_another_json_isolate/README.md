@@ -7,9 +7,10 @@
   <h1 align="center">yet_another_json_isolate</h1>
 
   <p align="center">
-    JSON parsing that never blocks the main isolate for long: small payloads are processed inline,
-    large payloads on short lived isolates that hand their result back without copying. On web,
-    which has no isolates, every payload is processed inline on the main thread.
+    JSON processing that never blocks the main isolate for long: small payloads are decoded
+    inline, large payloads on short lived isolates that hand their result back without copying,
+    and a large list is encoded on the main isolate in slices that yield to the event loop. On
+    web, which has no isolates, every payload is decoded inline on the main thread.
   </p>
 </p>
 
@@ -23,6 +24,8 @@
 ## Usage
 
 ```dart file
+import 'dart:typed_data';
+
 import 'package:http/http.dart' as http;
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -30,10 +33,17 @@ Future<void> main() async {
   final isolate = YAJsonIsolate();
   try {
     // Serialize to a JSON string.
-    final String requestBody = await isolate.encode({'title': 'Dune'});
+    final String json = await isolate.encode({'title': 'Dune'});
+
+    // Serialize to UTF-8 encoded JSON bytes, such as an HTTP request body,
+    // without materializing the intermediate string.
+    final Uint8List requestBody = await isolate.encodeBytes([
+      {'title': 'Dune'},
+      {'title': 'Emma'},
+    ]);
 
     // Deserialize a JSON string.
-    final Object? json = await isolate.decode('{"title": "Dune"}');
+    final Object? book = await isolate.decode('{"title": "Dune"}');
 
     // Deserialize UTF-8 encoded JSON bytes, such as an HTTP response body,
     // without materializing the intermediate string on the calling isolate.
@@ -71,6 +81,10 @@ class TimedJsonCodec implements AsyncJsonCodec {
 
   @override
   Future<String> encode(Object? json) => _time(() => _inner.encode(json));
+
+  @override
+  Future<Uint8List> encodeBytes(Object? json) =>
+      _time(() => _inner.encodeBytes(json));
 
   @override
   Future<void> dispose() => _inner.dispose();

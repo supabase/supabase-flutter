@@ -277,8 +277,17 @@ class FunctionsClient {
           bodyRequest.body = body;
         } else if (body is Uint8List) {
           bodyRequest.bodyBytes = body;
+        } else if (_isJson(bodyRequest.headers.mediaType ?? '') &&
+            bodyRequest.encoding == utf8) {
+          // `Request.body` leaves a JSON content type as it is, so encoding
+          // straight to bytes sends the same request without the intermediate
+          // string.
+          bodyRequest.bodyBytes = await _encodeJson(
+            body,
+            _jsonCodec.encodeBytes,
+          );
         } else {
-          bodyRequest.body = await _encodeJson(body);
+          bodyRequest.body = await _encodeJson(body, _jsonCodec.encode);
         }
       }
       request = bodyRequest;
@@ -404,9 +413,12 @@ class FunctionsClient {
   static String _queryValue(Object? value) =>
       value is DateTime ? value.toIso8601String() : '$value';
 
-  Future<String> _encodeJson(Object body) async {
+  Future<T> _encodeJson<T>(
+    Object body,
+    Future<T> Function(Object? json) encode,
+  ) async {
     try {
-      return await _jsonCodec.encode(body);
+      return await encode(body);
     } on JsonUnsupportedObjectError catch (error) {
       throw FunctionsFetchException(
         message: 'Failed to encode the request body as JSON',

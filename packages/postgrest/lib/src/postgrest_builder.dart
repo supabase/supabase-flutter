@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -516,7 +517,7 @@ class PostgrestBuilder<T> implements Future<T> {
     }
     // Only a write carries a body, so a read skips the encode entirely and a
     // client with a codec does not pay for one on every select.
-    final bodyString = switch (method) {
+    final bodyBytes = switch (method) {
       HttpMethod.post ||
       HttpMethod.put ||
       HttpMethod.patch => await _encodeBody(),
@@ -544,7 +545,7 @@ class PostgrestBuilder<T> implements Future<T> {
       switch (method) {
         case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
           // Encoded above for exactly these methods.
-          request.body = bodyString!;
+          request.bodyBytes = bodyBytes!;
         case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
           break;
       }
@@ -622,12 +623,12 @@ class PostgrestBuilder<T> implements Future<T> {
 
   /// Encodes the request body, on the codec when there is one so that a large
   /// payload, a bulk insert for example, does not block the calling isolate.
-  Future<String> _encodeBody() async {
+  Future<Uint8List> _encodeBody() async {
     final jsonCodec = _jsonCodec;
     if (jsonCodec == null) {
-      return jsonEncode(_body);
+      return JsonUtf8Encoder().convert(_body) as Uint8List;
     }
-    return jsonCodec.encode(_body);
+    return jsonCodec.encodeBytes(_body);
   }
 
   /// Parse request response to json object if possible

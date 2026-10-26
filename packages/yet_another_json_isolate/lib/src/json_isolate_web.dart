@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'async_json_codec.dart';
+import 'sliced_json_encoder.dart';
 
 final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
   const JsonDecoder(),
@@ -10,9 +11,10 @@ final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
 /// Web variant of [YAJsonIsolate].
 ///
 /// The web platform has no isolates, so all work happens inline on the
-/// calling thread and a large payload blocks it for as long as the work
-/// takes. Decoding from bytes still fuses the UTF-8 and JSON decoding steps,
-/// which avoids materializing the intermediate string.
+/// calling thread. Decoding a large payload blocks it for as long as the work
+/// takes, while encoding a top level list is sliced the same way as on other
+/// platforms. Decoding from bytes still fuses the UTF-8 and JSON decoding
+/// steps, which avoids materializing the intermediate string.
 class YAJsonIsolate implements AsyncJsonCodec {
   /// Creates a codec. [debugName] is unused on web, where there are no
   /// isolates to name.
@@ -58,8 +60,14 @@ class YAJsonIsolate implements AsyncJsonCodec {
   }
 
   @override
-  Future<String> encode(Object? json) async {
+  Future<String> encode(Object? json) => Future.sync(() {
     _throwIfDisposed();
-    return jsonEncode(json);
-  }
+    return encodeJsonString(json);
+  });
+
+  @override
+  Future<Uint8List> encodeBytes(Object? json) => Future.sync(() {
+    _throwIfDisposed();
+    return encodeJsonBytes(json);
+  });
 }

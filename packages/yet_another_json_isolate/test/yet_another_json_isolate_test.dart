@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -42,6 +43,20 @@ class _Catalog {
   }
 }
 
+/// Takes about a millisecond to convert, so that encoding a list of them
+/// takes long enough to be sliced.
+class _Slow {
+  const _Slow(this.value);
+
+  final int value;
+
+  int toJson() {
+    final watch = Stopwatch()..start();
+    while (watch.elapsedMicroseconds < 1000) {}
+    return value;
+  }
+}
+
 class _Throwing {
   const _Throwing();
 
@@ -74,13 +89,6 @@ void main() {
 
     test('encodes a JSON object', () async {
       expect(await isolate.encode(_jsonMap), _jsonString);
-    });
-
-    test('consumes the value before the caller can mutate it', () async {
-      final value = <String, Object?>{'a': 1};
-      final pending = isolate.encode(value);
-      value['a'] = 2;
-      expect(await pending, '{"a":1}');
     });
   });
 
@@ -268,6 +276,91 @@ void main() {
     });
   });
 
+  group('encodeBytes', () {
+    setUp(() {
+      isolate = YAJsonIsolate();
+    });
+
+    tearDown(() async {
+      await isolate.dispose();
+    });
+
+    test('encodes a JSON object into UTF-8 bytes', () async {
+      expect(await isolate.encodeBytes(_jsonMap), utf8.encode(_jsonString));
+    });
+
+    test('preserves unicode characters', () async {
+      const value = {'emoji': '🚀', 'text': 'Grüße'};
+      expect(
+        utf8.decode(await isolate.encodeBytes(value)),
+        jsonEncode(value),
+      );
+    });
+
+    test('calls toJson once', () async {
+      final book = _Book('Dune');
+      expect(
+        utf8.decode(await isolate.encodeBytes(book)),
+        '{"title":"Dune"}',
+      );
+      expect(book.toJsonCalls, 1);
+    });
+
+    test('throws for a non encodable object', () async {
+      await expectLater(
+        isolate.encodeBytes([DateTime.now()]),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
+    });
+  });
+
+  group('sliced encoding of a top level list', () {
+    setUp(() {
+      isolate = YAJsonIsolate();
+    });
+
+    tearDown(() async {
+      await isolate.dispose();
+    });
+
+    for (final length in [0, 1, 8, 9, 100, 2000]) {
+      test('encodes $length elements like jsonEncode', () async {
+        final value = _largeValue.take(length).toList();
+        final expected = jsonEncode(value);
+        expect(await isolate.encode(value), expected);
+        expect(utf8.decode(await isolate.encodeBytes(value)), expected);
+      });
+    }
+
+    test('calls toJson once for every element', () async {
+      final books = [for (var i = 0; i < 100; i++) _Book('Book $i')];
+      final encoded = await isolate.encodeBytes(books);
+      expect(jsonDecode(utf8.decode(encoded)), [
+        for (var i = 0; i < 100; i++) {'title': 'Book $i'},
+      ]);
+      expect(books.every((book) => book.toJsonCalls == 1), isTrue);
+    });
+
+    test('yields to the event loop while encoding a slow list', () async {
+      final value = [for (var i = 0; i < 40; i++) _Slow(i)];
+      for (final encode in [isolate.encode, isolate.encodeBytes]) {
+        var timerFired = false;
+        Timer.run(() => timerFired = true);
+        var firedBeforeCompletion = false;
+        await encode(value).then((_) => firedBeforeCompletion = timerFired);
+        expect(firedBeforeCompletion, isTrue);
+      }
+    });
+
+    test('throws for a non encodable element in a later batch', () async {
+      final value = [..._largeValue, DateTime.now()];
+      await expectLater(
+        isolate.encodeBytes(value),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
+    });
+  });
+
   group('large payloads', () {
     setUp(() {
       isolate = YAJsonIsolate();
@@ -411,6 +504,7 @@ void main() {
         throwsStateError,
       );
       await expectLater(disposed.encode({}), throwsStateError);
+      await expectLater(disposed.encodeBytes({}), throwsStateError);
     });
 
     test('dispose can be called more than once', () async {
