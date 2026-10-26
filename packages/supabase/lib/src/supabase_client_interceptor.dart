@@ -7,10 +7,11 @@ import 'supabase_client.dart';
 /// application calls it.
 ///
 /// An interceptor can wrap the [PostgrestTableExecutor] that runs the
-/// requests of the typed table API, [SupabaseClient.table], and receives the
-/// client once it is fully constructed. The untyped [SupabaseClient.from],
-/// `rpc`, storage, functions and realtime traffic never passes through an
-/// interceptor.
+/// requests of the typed table API, [SupabaseClient.table], and of the typed
+/// function calls, [PostgrestRpc.rows] and [PostgrestRpc.value], and receives
+/// the client once it is fully constructed. The untyped [SupabaseClient.from]
+/// and [PostgrestRpc.call], storage, functions and realtime traffic never
+/// passes through an interceptor.
 ///
 /// Interceptors are given to the [SupabaseClient] constructor, or to
 /// `Supabase.initialize` in Flutter:
@@ -22,7 +23,9 @@ import 'supabase_client.dart';
 abstract class SupabaseClientInterceptor {
   const SupabaseClientInterceptor();
 
-  /// Returns the executor [SupabaseClient.table] runs its requests through.
+  /// Returns the executor [SupabaseClient.table] and the typed function
+  /// calls of [SupabaseClient.rpc] run their requests through. A function
+  /// call arrives as a request with [PostgrestTableOperation.rpc].
   ///
   /// [inner] sends a request to PostgREST with the current access token, so
   /// an executor that holds a request back and runs it through [inner] later

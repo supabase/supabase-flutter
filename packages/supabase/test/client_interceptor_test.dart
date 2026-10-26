@@ -111,7 +111,41 @@ void main() {
     expect(httpClient.requestsTo('/rest/v1/todos'), hasLength(2));
   });
 
-  test('rpc, storage and functions bypass the interceptor', () async {
+  test('typed function calls run through the interceptor', () async {
+    httpClient
+      ..stubRpc('search_todos', body: todoRows)
+      ..stubRpc('count_todos', body: 1);
+
+    final List<Todo> rows = await supabase.rpc
+        .rows('search_todos', rowFromJson: Todo.new)
+        .where(Todos.id.gt(0));
+    final count = await supabase.rpc.value(
+      'count_todos',
+      fromJson: (json) => json! as int,
+    );
+
+    expect(rows.single.task, 'Ship it');
+    expect(count, 1);
+    expect(log, ['a attached', 'a rpc search_todos', 'a rpc count_todos']);
+    final sent = httpClient.requestsTo('/rest/v1/rpc/search_todos').single;
+    expect(sent.url.queryParameters['id'], 'gt.0');
+    expect(sent.headers['apikey'], isNotNull);
+  });
+
+  test('a schema scoped function call carries its schema', () async {
+    httpClient.stubRpc('count_todos', body: 1, schema: 'library');
+
+    await supabase
+        .schema('library')
+        .rpc
+        .value('count_todos', fromJson: (json) => json! as int);
+
+    final sent = httpClient.requestsTo('/rest/v1/rpc/count_todos').single;
+    expect(sent.headers['Content-Profile'], 'library');
+    expect(log, ['a attached', 'a rpc count_todos']);
+  });
+
+  test('untyped rpc, storage and functions bypass the interceptor', () async {
     httpClient
       ..stubRpc('ping', body: 'pong')
       ..stubStorageList('avatars', objects: [])

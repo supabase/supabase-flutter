@@ -194,6 +194,9 @@ the request to a `PostgrestTableExecutor` and converts the `PostgrestTableResult
 `Row` type. The default `PostgrestHttpTableExecutor` renders the request through the untyped
 builders at execution time, so both APIs send the same wire request; another executor (a
 `SupabaseClientInterceptor` can wrap it) may cache, queue or answer from a local store instead.
+The typed function calls on `client.rpc` (`rows`, `value` and the generated methods built on them)
+collect a `PostgrestTableRequest` with `PostgrestTableOperation.rpc` and run through the same
+executor.
 
 ### Realtime Architecture
 

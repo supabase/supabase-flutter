@@ -24,18 +24,32 @@ part of 'postgrest_typed_builder.dart';
 final class PostgrestRpc {
   /// Calls functions through [client], in [schema] or the schema of the
   /// client when `null`. When [schemaIsExplicit] is set, [schema] also wins
-  /// over the schema a generated method passes along.
+  /// over the schema a generated method passes along. [rows] and [value] run
+  /// through [executor], or a [PostgrestHttpTableExecutor] on [client] when
+  /// `null`.
   @internal
   const PostgrestRpc(
     this._client, {
     String? schema,
     bool schemaIsExplicit = false,
+    PostgrestTableExecutor? executor,
   }) : _schema = schema,
-       _schemaIsExplicit = schemaIsExplicit;
+       _schemaIsExplicit = schemaIsExplicit,
+       _executor = executor;
 
   final PostgrestClient _client;
   final String? _schema;
   final bool _schemaIsExplicit;
+  final PostgrestTableExecutor? _executor;
+
+  /// A copy of this that runs [rows] and [value] through [executor].
+  @internal
+  PostgrestRpc withExecutor(PostgrestTableExecutor executor) => PostgrestRpc(
+    _client,
+    schema: _schema,
+    schemaIsExplicit: _schemaIsExplicit,
+    executor: executor,
+  );
 
   /// {@template postgrest_rpc}
   /// Performs a stored procedure call.
@@ -99,7 +113,7 @@ final class PostgrestRpc {
     bool get = false,
   }) => PostgrestTypedFilterBuilder._(
     _request(function, arguments, rowFromJson, schema, get),
-    PostgrestHttpTableExecutor(_client),
+    _executor ?? PostgrestHttpTableExecutor(_client),
     (result) => [
       for (final row in result.data! as List<dynamic>)
         rowFromJson(row as Map<String, dynamic>),
@@ -133,7 +147,7 @@ final class PostgrestRpc {
       schema,
       get,
     ).copyWith(shape: PostgrestResultShape.value),
-    PostgrestHttpTableExecutor(_client),
+    _executor ?? PostgrestHttpTableExecutor(_client),
     (result) => fromJson(result.data),
   );
 

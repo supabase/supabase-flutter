@@ -73,8 +73,10 @@ class SupabaseQuerySchema {
   /// Calls Postgres functions in this schema, see [PostgrestClient.rpc].
   ///
   /// The schema of this object wins over the schema a generated function
-  /// method addresses.
-  PostgrestRpc get rpc => _rest.rpc;
+  /// method addresses. The typed calls run through the interceptors of the
+  /// client.
+  // ignore: invalid_use_of_internal_member
+  PostgrestRpc get rpc => _rest.rpc.withExecutor(_tableExecutor);
 
   /// Returns a copy of this scoped to [schema] instead.
   SupabaseQuerySchema schema(String schema) {
