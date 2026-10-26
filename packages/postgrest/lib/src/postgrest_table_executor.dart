@@ -1,6 +1,7 @@
 part of 'postgrest_typed_builder.dart';
 
-/// Runs the requests of the typed table API.
+/// Runs the requests of the typed table API and of the typed function calls,
+/// [PostgrestRpc.rows] and [PostgrestRpc.value].
 ///
 /// [PostgrestClient.table] uses a [PostgrestHttpTableExecutor] unless another
 /// one is given. An executor that decorates another, to cache, queue or log

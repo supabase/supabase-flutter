@@ -65,8 +65,8 @@ import 'trace_http_client.dart';
 ///
 /// [interceptors] extend the client from the outside, see
 /// [SupabaseClientInterceptor]. They wrap the executor the typed table API
-/// runs through, in the order given, and are disposed together with the
-/// client.
+/// and the typed function calls run through, in the order given, and are
+/// disposed together with the client.
 ///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `asyncStorage` field of [authOptions].
@@ -338,6 +338,10 @@ class SupabaseClient {
   /// ```dart
   /// await supabase.rpc('get_status', params: {'name_param': 'supabot'});
   /// ```
+  ///
+  /// The typed calls, [PostgrestRpc.rows], [PostgrestRpc.value] and the
+  /// methods generated on them, run through the [interceptors]; the untyped
+  /// call above does not.
   PostgrestRpc get rpc => _defaultSchema.rpc;
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.

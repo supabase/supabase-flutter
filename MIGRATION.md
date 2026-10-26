@@ -50,9 +50,10 @@ and writes only accept the generated insert and update types. We recommend gener
 definitions for your project and using `table()` for every table they cover. `from()` keeps working,
 and both can be used on one client, so a codebase can move over one table at a time.
 
-Requests made through `table()` run through the executor that `SupabaseClientInterceptor`s wrap, so
-features built as interceptors, such as offline support, only apply to them. Requests made through
-`from()` bypass every interceptor.
+Requests made through `table()` and the typed function calls generated on `rpc` run through the
+executor that `SupabaseClientInterceptor`s wrap, so features built as interceptors, such as offline
+support, only apply to them. Requests made through `from()` and the untyped `rpc('fn')` bypass every
+interceptor.
 
 The typed API is marked `@experimental` while it settles. Referencing an experimental type such as
 `PostgrestFilter` directly reports `experimental_member_use`, which an

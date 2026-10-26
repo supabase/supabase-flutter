@@ -75,6 +75,29 @@ class LoggingInterceptor extends SupabaseClientInterceptor {
   }
 }
 
+class RecordingInterceptor extends SupabaseClientInterceptor {
+  const RecordingInterceptor(this.requests);
+
+  final List<PostgrestTableRequest> requests;
+
+  @override
+  PostgrestTableExecutor wrapTableExecutor(PostgrestTableExecutor inner) =>
+      RecordingExecutor(inner, requests);
+}
+
+class RecordingExecutor implements PostgrestTableExecutor {
+  const RecordingExecutor(this.inner, this.requests);
+
+  final PostgrestTableExecutor inner;
+  final List<PostgrestTableRequest> requests;
+
+  @override
+  Future<PostgrestTableResult> execute(PostgrestTableRequest request) {
+    requests.add(request);
+    return inner.execute(request);
+  }
+}
+
 class FailingAttachInterceptor extends SupabaseClientInterceptor {
   const FailingAttachInterceptor();
 
@@ -111,7 +134,77 @@ void main() {
     expect(httpClient.requestsTo('/rest/v1/todos'), hasLength(2));
   });
 
-  test('rpc, storage and functions bypass the interceptor', () async {
+  test('typed function calls run through the interceptor', () async {
+    httpClient
+      ..stubRpc('search_todos', body: todoRows)
+      ..stubRpc('count_todos', body: 1);
+
+    final List<Todo> rows = await supabase.rpc
+        .rows('search_todos', rowFromJson: Todo.new)
+        .where(Todos.id.gt(0));
+    final count = await supabase.rpc.value(
+      'count_todos',
+      fromJson: (json) => json! as int,
+    );
+
+    expect(rows.single.task, 'Ship it');
+    expect(count, 1);
+    expect(log, ['a attached', 'a rpc search_todos', 'a rpc count_todos']);
+    final sent = httpClient.requestsTo('/rest/v1/rpc/search_todos').single;
+    expect(sent.url.queryParameters['id'], 'gt.0');
+    expect(sent.headers['apikey'], isNotNull);
+  });
+
+  test('a schema scoped function call carries its schema', () async {
+    httpClient.stubRpc('count_todos', body: 1, schema: 'library');
+
+    await supabase
+        .schema('library')
+        .rpc
+        .value('count_todos', fromJson: (json) => json! as int);
+
+    final sent = httpClient.requestsTo('/rest/v1/rpc/count_todos').single;
+    expect(sent.headers['Content-Profile'], 'library');
+    expect(log, ['a attached', 'a rpc count_todos']);
+  });
+
+  test('a read-only function call reaches the interceptor as a GET', () async {
+    final requests = <PostgrestTableRequest>[];
+    await supabase.dispose();
+    supabase = testSupabaseClient(
+      httpClient: httpClient,
+      interceptors: [RecordingInterceptor(requests)],
+    );
+    httpClient.stubRpc('count_todos', body: 1);
+
+    await supabase.rpc.value(
+      'count_todos',
+      arguments: {'done': true},
+      fromJson: (json) => json! as int,
+      get: true,
+    );
+
+    expect(requests.single.readOnly, isTrue);
+    final sent = httpClient.requestsTo('/rest/v1/rpc/count_todos').single;
+    expect(sent.method, HttpMethod.get.value);
+    expect(sent.url.queryParameters['done'], 'true');
+  });
+
+  test('a header change reaches typed function calls', () async {
+    httpClient.stubRpc('count_todos', body: 1);
+    supabase.headers = {'x-tenant': 'acme'};
+
+    await supabase.rpc.value(
+      'count_todos',
+      fromJson: (json) => json! as int,
+    );
+
+    expect(log, ['a attached', 'a rpc count_todos']);
+    final sent = httpClient.requestsTo('/rest/v1/rpc/count_todos').single;
+    expect(sent.headers['x-tenant'], 'acme');
+  });
+
+  test('untyped rpc, storage and functions bypass the interceptor', () async {
     httpClient
       ..stubRpc('ping', body: 'pong')
       ..stubStorageList('avatars', objects: [])
