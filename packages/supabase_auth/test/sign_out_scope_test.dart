@@ -86,7 +86,7 @@ void main() {
       },
       method: HttpMethod.post,
       path: '/auth/v1/logout',
-      statusCode: 401,
+      statusCode: 403,
     );
   }
 
@@ -291,9 +291,12 @@ void main() {
 
     test('signs out when the session is already gone on the server', () async {
       httpClient.stub(
-        {'code': 401, 'msg': 'invalid JWT'},
+        {
+          'code': 'session_not_found',
+          'msg': 'Session from session_id claim in JWT does not exist',
+        },
         path: '/auth/v1/logout',
-        statusCode: 401,
+        statusCode: 403,
       );
 
       await client.signOut(scope: SignOutScope.global);
@@ -344,7 +347,8 @@ void main() {
       },
     );
 
-    test('throws on a 401 once the access token has expired', () {
+    test('throws on a 401 without an error code once the access token has '
+        'expired', () {
       fakeAsync((async) {
         unawaited(
           signInTestUser(
@@ -359,7 +363,7 @@ void main() {
           (_) => Future.delayed(
             const Duration(seconds: 30),
             () => Response(
-              jsonEncode({'code': 401, 'msg': 'token is expired'}),
+              jsonEncode({'code': 401, 'msg': 'invalid JWT'}),
               401,
             ),
           ),
@@ -395,6 +399,93 @@ void main() {
 
       expect(client.currentSession, session);
     });
+
+    test('throws when the server rejects the token signature', () async {
+      final session = client.currentSession;
+      httpClient.stub(
+        {
+          'code': 'bad_jwt',
+          'msg':
+              'invalid JWT: unable to parse or verify signature, token '
+              'signature is invalid: crypto/rsa: verification error',
+        },
+        method: HttpMethod.post,
+        path: '/auth/v1/logout',
+        statusCode: 403,
+      );
+
+      await expectLater(
+        () => client.signOut(scope: SignOutScope.global),
+        throwsA(isA<AuthApiException>()),
+      );
+
+      expect(client.currentSession, session);
+    });
+
+    test(
+      'keeps a session signed in while the expired session was refreshed',
+      () async {
+        await restoreExpiredSession();
+        final refresh = Completer<Response>();
+        httpClient
+          ..stubSignIn()
+          ..stubSignOut()
+          ..stubHandler(
+            (_) => refresh.future,
+            method: HttpMethod.post,
+            path: '/auth/v1/token',
+            query: {'grant_type': 'refresh_token'},
+          );
+
+        final signOut = client.signOut(scope: SignOutScope.global);
+        await pumpEventQueue();
+        final session = await client.signInWithPassword(
+          email: 'fake2@email.com',
+          password: 'password',
+        );
+        refresh.complete(
+          Response(
+            jsonEncode(
+              testSessionResponseJson(
+                accessToken: unsignedTestJwt({'sub': testUserId}),
+                refreshToken: 'refreshed',
+              ),
+            ),
+            200,
+          ),
+        );
+        await signOut;
+        await pumpEventQueue();
+
+        expect(httpClient.requestsTo('/auth/v1/logout'), hasLength(1));
+        expect(client.currentSession, session);
+        expect(events, isNot(contains(AuthChangeEvent.signedOut)));
+      },
+    );
+
+    test(
+      'throws the refresh error when the PKCE verifiers cannot be removed',
+      () async {
+        final failingClient = AuthClient(
+          url: 'http://localhost:9999/auth/v1',
+          httpClient: httpClient,
+          autoRefreshToken: false,
+          asyncStorage: _FailingRemoveStorage(),
+        );
+        addTearDown(failingClient.dispose);
+        await failingClient.setInitialSession(
+          jsonEncode(
+            testSessionResponseJson(accessToken: expiredAccessToken()),
+          ),
+        );
+        stubRejectedRefresh();
+
+        await expectLater(
+          () => failingClient.signOut(scope: SignOutScope.global),
+          throwsA(isA<AuthApiException>()),
+        );
+      },
+    );
 
     test(
       'throws when the refresh token was rejected, signed out on this device',
@@ -487,4 +578,10 @@ void main() {
       expect(events, isEmpty);
     });
   });
+}
+
+class _FailingRemoveStorage extends MemoryAuthAsyncStorage {
+  @override
+  Future<void> removeItem(String key) =>
+      Future.error(StateError('Storage is unavailable'));
 }

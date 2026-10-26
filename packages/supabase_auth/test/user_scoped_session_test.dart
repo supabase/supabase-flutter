@@ -294,10 +294,15 @@ void main() {
               query: {'grant_type': 'refresh_token'},
             )
             ..stub(
-              {'code': 401, 'msg': 'token is expired'},
+              {
+                'code': 'bad_jwt',
+                'msg':
+                    'invalid JWT: unable to parse or verify signature, token '
+                    'has invalid claims: token is expired',
+              },
               method: HttpMethod.post,
               path: '/logout',
-              statusCode: 401,
+              statusCode: 403,
             );
           await client.setInitialSession(
             _sessionString(

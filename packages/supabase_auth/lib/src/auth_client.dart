@@ -1533,7 +1533,7 @@ class AuthClient {
         // The failed refresh has already signed this device out, but no
         // session was revoked on the server.
         if (scope == SignOutScope.global) {
-          await _pkceVerifierStore?.removeAll();
+          await _removePkceVerifiers();
         }
         rethrow;
       }
@@ -1545,13 +1545,15 @@ class AuthClient {
       }
       session = current;
     }
+    // A sign-in or sign-out that happened while the session was refreshed or
+    // the request was in flight is newer than this sign-out.
+    final isCurrentSession = identical(session, _currentSession);
     final versionBeforeRevoke = _sessionVersion;
     if (session != null) {
       await _revokeSessions(session, scope);
     }
-    // A sign-in or sign-out that happened while the request was in flight is
-    // newer than this sign-out.
     if (scope == SignOutScope.global &&
+        isCurrentSession &&
         _sessionVersion == versionBeforeRevoke) {
       await _signOutLocally(SignOutReason.userInitiated);
     }
@@ -1585,6 +1587,10 @@ class AuthClient {
   Future<void> _signOutLocally(SignOutReason reason) async {
     _removeSession();
     notifyAllSubscribers(AuthChangeEvent.signedOut, signOutReason: reason);
+    await _removePkceVerifiers();
+  }
+
+  Future<void> _removePkceVerifiers() async {
     try {
       await _pkceVerifierStore?.removeAll();
     } catch (error, stackTrace) {
@@ -1596,8 +1602,8 @@ class AuthClient {
     }
   }
 
-  /// Refresh errors that prove the session can no longer be used, so there is
-  /// nothing left to revoke.
+  /// Refresh and logout errors that prove the session can no longer be used,
+  /// so there is nothing left to revoke.
   static final _sessionGoneCodes = {
     ErrorCode.refreshTokenNotFound.code,
     ErrorCode.refreshTokenAlreadyUsed.code,
@@ -1656,14 +1662,16 @@ class AuthClient {
     try {
       await admin.signOut(session.accessToken, scope: scope);
     } on AuthApiException catch (error) {
-      // A 401 for an expired token says nothing about the sessions. For a
-      // valid token it means the session is already gone.
-      // Ignore 403s and 404s since the session or the user might not exist
-      // anymore.
-      final ignored = switch (error.statusCode) {
-        401 =>
+      // A rejected access token, such as an expired one, says nothing about
+      // the sessions. Servers that answer without an error code only say so
+      // in the message.
+      final ignored = switch (error) {
+        AuthApiException(:final errorCode?) => _sessionGoneCodes.contains(
+          errorCode,
+        ),
+        AuthApiException(statusCode: 404) => true,
+        AuthApiException(statusCode: 401 || 403) =>
           !error.message.contains('expired') && !session.isExpiredWithoutMargin,
-        403 || 404 => true,
         _ => false,
       };
       if (!ignored) rethrow;
