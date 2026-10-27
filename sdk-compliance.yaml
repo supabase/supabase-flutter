@@ -1452,7 +1452,7 @@ features:
       - PostgrestFilterBuilder.not
   database.using_filters.contains:
     status: implemented
-    note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. On the column-expression surface the array and range forms exist only on columns of that type, taking a List or a PostgresRange, and the JSON form is `containsJson` on `json`/`jsonb` columns; the string builder takes one list, string or map argument."
+    note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. On the column-expression surface the array and range forms exist only on columns of that type, taking a List or a PostgresRange, and the JSON form is `containsJson` on JSON columns, which Postgres supports for `jsonb` only; the string builder takes one list, string or map argument."
     symbols:
       - PostgrestFilterBuilder.contains
       - PostgrestArrayFilters

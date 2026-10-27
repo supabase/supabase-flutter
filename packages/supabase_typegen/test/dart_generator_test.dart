@@ -535,6 +535,34 @@ void main() {
     expect(compact, contains("Object?getbody=>_json['body']asObject?;"));
   });
 
+  test('a table named like PostgrestJson does not shadow it', () {
+    const schema = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'postgrest_json',
+          columns: [
+            ColumnDescription(
+              name: 'id',
+              postgresFormat: 'int8',
+              typeKind: ColumnTypeKind.integer,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+          ],
+        ),
+      ],
+      enums: [],
+    );
+
+    final code = generateDartCode(schema);
+
+    expect(code, contains(r'class PostgrestJson$ {'));
+    expect(code, isNot(contains('class PostgrestJson {')));
+  });
+
   test('emits a relation member for each side of a foreign key', () {
     final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
 

@@ -210,6 +210,7 @@ class _TypeNameRegistry {
     'PostgrestNullableVectorColumn',
     'PostgrestIntegerVectorColumn',
     'PostgrestNullableIntegerVectorColumn',
+    'PostgrestJson',
     'PostgrestJsonColumn',
     'PostgrestNullableJsonColumn',
     'PostgrestJsonComputedField',
