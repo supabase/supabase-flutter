@@ -536,7 +536,7 @@ void main() {
   });
 
   test('a table named like PostgrestJson does not shadow it', () {
-    const schema = DatabaseDescription(
+    const reservedNameSchema = DatabaseDescription(
       schemaNames: ['public'],
       tables: [
         TableDescription(
@@ -557,7 +557,7 @@ void main() {
       enums: [],
     );
 
-    final code = generateDartCode(schema);
+    final code = generateDartCode(reservedNameSchema);
 
     expect(code, contains(r'class PostgrestJson$ {'));
     expect(code, isNot(contains('class PostgrestJson {')));
