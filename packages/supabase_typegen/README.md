@@ -113,6 +113,20 @@ learns this workflow from the `supabase-typegen-generate`
 [package skill](https://dart.dev/ai/package-skills) this package ships.
 Install it into your project with `dart run skills@ get -p supabase_typegen`.
 
+To check in CI that the committed file matches the database, generate with
+`--dart-set-exit-if-changed`. It writes nothing and exits with an error naming
+the file and the first declaration that differs when the file is out of date
+or missing. Pass `--dart-output` when the file is not at
+`lib/supabase_schema.g.dart`. The comparison uses the same formatting as a
+normal run, so a file formatted with the project's `page_width` counts as up
+to date. The flag needs a Supabase CLI release whose
+`supabase gen types --help` lists it.
+
+```sh
+supabase start
+supabase gen types --lang dart --local --dart-set-exit-if-changed
+```
+
 The code is formatted with the `dart format` of the SDK running the tool, for
 the language version of the project it is written into (the lower bound of
 the `environment.sdk` constraint of the nearest `pubspec.yaml`) and with the

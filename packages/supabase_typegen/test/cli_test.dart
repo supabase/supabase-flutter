@@ -225,4 +225,67 @@ void main() {
 
     expect(await generate([]), contains('on PostgrestRpc'));
   });
+
+  group('--set-exit-if-changed', () {
+    Future<_Run> check() =>
+        run(['--output', output.path, '--set-exit-if-changed']);
+
+    test('exits with 0 for an up to date file', () async {
+      final code = await generate([]);
+
+      final result = await check();
+
+      expect(result.exitCode, 0, reason: result.stderr);
+      expect(result.stdout, isEmpty);
+      expect(result.stderr, contains('is up to date'));
+      expect(output.readAsStringSync(), code);
+    });
+
+    test('compares with the formatter settings of the project', () async {
+      File(
+        '${project.path}/analysis_options.yaml',
+      ).writeAsStringSync('formatter:\n  page_width: 120\n');
+      await generate([]);
+
+      final result = await check();
+
+      expect(result.exitCode, 0, reason: result.stderr);
+    });
+
+    test('exits with 1 and names the first differing declaration', () async {
+      final code = await generate([]);
+      final stale = code.replaceFirst(
+        'class InventoryBooks {',
+        'class InventoryBooks {\n  // A column the database no longer has.',
+      );
+      output.writeAsStringSync(stale);
+
+      final result = await check();
+
+      expect(result.exitCode, 1);
+      expect(result.stdout, isEmpty);
+      expect(result.stderr, contains('is out of date'));
+      expect(result.stderr, contains('in InventoryBooks.'));
+      expect(output.readAsStringSync(), stale);
+    });
+
+    test('exits with 1 when the file does not exist', () async {
+      final result = await check();
+
+      expect(result.exitCode, 1);
+      expect(result.stderr, contains('does not exist'));
+      expect(output.existsSync(), isFalse);
+    });
+
+    test('is rejected for stdout', () async {
+      final result = await run([
+        '--output',
+        '-',
+        '--set-exit-if-changed',
+      ], document: '');
+
+      expect(result.exitCode, 64);
+      expect(result.stdout, isEmpty);
+    });
+  });
 }

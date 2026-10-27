@@ -77,6 +77,21 @@ dart analyze lib/supabase_schema.g.dart
 The file is already formatted for the project's language version, so
 `dart format` leaves it unchanged.
 
+## Checking in CI
+
+Fail a CI job when someone changed a migration without regenerating the file:
+
+```sh
+supabase start
+supabase gen types --lang dart --local --dart-set-exit-if-changed
+```
+
+It writes nothing, and exits with an error naming the file and the first
+declaration that differs when the file is out of date or missing. Add
+`--dart-output <path>` when the file is not at `lib/supabase_schema.g.dart`.
+Do not redirect stdout into the file in this mode. When the check fails,
+regenerate the file and commit it.
+
 ## What the file contains
 
 For a table `books` in `public`:
@@ -137,4 +152,6 @@ followed by the generator's own message.
 | `The document describes no tables, views, enums or functions`                                           | Check the schema names, or that the stack has run the migrations.               |
 | `The document has no "rpcFunctions" collection, so no RPC methods are generated`                        | Upgrade the Supabase CLI to the latest release and regenerate.                  |
 | `--lang dart` is rejected                                                                               | Upgrade the Supabase CLI to 2.122.0 or newer.                                   |
+| `lib/supabase_schema.g.dart is out of date with the database schema`                                    | Regenerate the file and commit it.                                              |
+| `--dart-set-exit-if-changed` is rejected                                                                | Upgrade the Supabase CLI to the latest release.                                 |
 | `--local` cannot reach the database                                                                     | Run `supabase start` first.                                                     |

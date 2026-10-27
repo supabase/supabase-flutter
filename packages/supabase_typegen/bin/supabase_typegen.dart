@@ -32,6 +32,13 @@ final _argParser = ArgParser()
         'pubspec.yaml nearest to the output lists under dependencies, or to '
         'package:postgrest/postgrest.dart when it lists none of them.',
   )
+  ..addFlag(
+    'set-exit-if-changed',
+    negatable: false,
+    help:
+        'Write nothing and exit with code 1 when the --output file differs '
+        'from the code that would be generated.',
+  )
   ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this usage.');
 
 Future<void> main(List<String> arguments) async {
@@ -64,6 +71,13 @@ Future<int> _run(List<String> arguments) async {
     return 0;
   }
 
+  final output = options.option('output')!;
+  final setExitIfChanged = options.flag('set-exit-if-changed');
+  if (setExitIfChanged && output == '-') {
+    stderr.writeln('--set-exit-if-changed needs an --output file to compare.');
+    return 64;
+  }
+
   if (stdin.hasTerminal) {
     stderr.writeln(
       'Expected a GeneratorMetadata document on stdin. Run '
@@ -87,8 +101,7 @@ Future<int> _run(List<String> arguments) async {
   }
 
   final namedSchemas = options.multiOption('schema');
-  final output = options.option('output')!;
-  final summarySink = output == '-' ? stderr : stdout;
+  final summarySink = output == '-' || setExitIfChanged ? stderr : stdout;
 
   final DatabaseDescription database;
   try {
@@ -190,7 +203,17 @@ Future<int> _run(List<String> arguments) async {
     );
   }
 
-  final generatedInto = _write(output, formatted ?? code);
+  final contents = formatted ?? code;
+  if (setExitIfChanged) {
+    final difference = _firstDifference(File(output), contents);
+    if (difference != null) {
+      stderr.writeln(difference);
+      return 1;
+    }
+    stderr.writeln('$output is up to date.');
+    return 0;
+  }
+  final generatedInto = _write(output, contents);
 
   final emittedTables = database.tables
       .where((table) => table.columns.isNotEmpty)
@@ -218,4 +241,44 @@ String _write(String output, String contents) {
   outputFile.parent.createSync(recursive: true);
   outputFile.writeAsStringSync(contents);
   return outputFile.path;
+}
+
+/// Describes where [file] first differs from [contents], or returns null when
+/// they are equal.
+String? _firstDifference(File file, String contents) {
+  if (!file.existsSync()) {
+    return '${file.path} does not exist. Generate it and commit it.';
+  }
+  final existing = file.readAsStringSync();
+  if (existing == contents) {
+    return null;
+  }
+  final existingLines = const LineSplitter().convert(existing);
+  final lines = const LineSplitter().convert(contents);
+  var index = 0;
+  while (index < lines.length &&
+      index < existingLines.length &&
+      lines[index] == existingLines[index]) {
+    index++;
+  }
+  final declaration = _declarationAt(lines, index);
+  return '${file.path} is out of date with the database schema, first '
+      'differing at line ${index + 1}'
+      '${declaration == null ? '' : ' in $declaration'}. Regenerate it with '
+      '`supabase gen types --lang dart` and commit it.';
+}
+
+final _declarationPattern = RegExp(
+  r'^(?:class|enum|extension type(?: const)?|extension) ([\w$]+)',
+);
+
+/// The name of the top-level declaration that line [index] of [lines] is in.
+String? _declarationAt(List<String> lines, int index) {
+  for (var line = index.clamp(0, lines.length - 1); line >= 0; line--) {
+    final match = _declarationPattern.firstMatch(lines[line]);
+    if (match != null) {
+      return match.group(1);
+    }
+  }
+  return null;
 }
