@@ -119,64 +119,6 @@ class AuthMFAChallengeResponse {
   final DateTime expiresAt;
 }
 
-/// The response of `AuthMFAApi.verify` and `AuthMFAApi.challengeAndVerify`.
-class AuthMFAVerifyResponse {
-  const AuthMFAVerifyResponse({
-    required this.accessToken,
-    required this.tokenType,
-    required this.expiresIn,
-    required this.refreshToken,
-    required this.user,
-  });
-
-  factory AuthMFAVerifyResponse.fromJson(Map<String, dynamic> json) {
-    final expiresInValue = json['expires_in'];
-    if (expiresInValue is! num) {
-      throw FormatException(
-        'Expected expires_in to be a number, got ${expiresInValue.runtimeType}',
-        json.toString(),
-      );
-    }
-    final expiresIn = expiresInValue.toInt();
-    final userJson = json['user'];
-    if (userJson is! Map<String, dynamic>) {
-      throw FormatException(
-        'Expected user to be an object, got ${userJson.runtimeType}',
-        json.toString(),
-      );
-    }
-    final user = User.fromJson(userJson);
-    if (user == null) {
-      throw FormatException(
-        'Failed to parse user object: missing required fields',
-        json.toString(),
-      );
-    }
-    return AuthMFAVerifyResponse(
-      accessToken: json['access_token'] as String,
-      tokenType: json['token_type'] as String,
-      expiresIn: Duration(seconds: expiresIn),
-      refreshToken: json['refresh_token'] as String,
-      user: user,
-    );
-  }
-
-  /// New access token (JWT) after successful verification.
-  final String accessToken;
-
-  /// Type of token, typically `Bearer`.
-  final String tokenType;
-
-  /// Duration in which the access token will expire.
-  final Duration expiresIn;
-
-  /// Refresh token you can use to obtain new access tokens when expired.
-  final String refreshToken;
-
-  /// Updated user profile.
-  final User user;
-}
-
 /// The response of `AuthMFAApi.unenroll`.
 class AuthMFAUnenrollResponse {
   const AuthMFAUnenrollResponse({required this.id});

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 
-import 'package:supabase_auth/src/types/types.dart';
+import 'package:supabase_auth/src/broadcast_channel.dart';
 import 'package:supabase_auth/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';

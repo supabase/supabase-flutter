@@ -107,14 +107,16 @@ class AuthMFAApi {
   ///
   /// The verification [code] is provided by the user by entering a code seen in
   /// their authenticator app.
-  Future<AuthMFAVerifyResponse> verify({
+  ///
+  /// Returns the upgraded `aal2` session, which also becomes the current one.
+  Future<Session> verify({
     required String factorId,
     required String challengeId,
     required String code,
   }) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final response = await _fetch.requestWithResponse(
       '${_client._url}/factors/$factorId/verify',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -127,18 +129,10 @@ class AuthMFAApi {
       ),
     );
 
-    final response = AuthMFAVerifyResponse.fromJson(data);
-    _client._saveSession(
-      Session(
-        accessToken: response.accessToken,
-        tokenType: response.tokenType,
-        user: response.user,
-        expiresIn: response.expiresIn.inSeconds,
-        refreshToken: response.refreshToken,
-      ),
-    );
+    final session = _client._sessionFromResponse(response);
+    _client._saveSession(session);
     _client.notifyAllSubscribers(AuthChangeEvent.mfaChallengeVerified);
-    return response;
+    return session;
   }
 
   /// Prepares a challenge used to verify that a user has access to a MFA
@@ -173,7 +167,7 @@ class AuthMFAApi {
   ///
   /// The verification code is provided by the user by entering a code seen in
   /// their authenticator app.
-  Future<AuthMFAVerifyResponse> challengeAndVerify({
+  Future<Session> challengeAndVerify({
     required String factorId,
     required String code,
   }) async {

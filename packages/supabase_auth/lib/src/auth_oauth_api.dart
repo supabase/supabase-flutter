@@ -225,16 +225,23 @@ class OAuthConsentResponse {
 ///     Uri.parse(currentUrl).queryParameters['authorization_id']!;
 ///
 /// // 2. Show the consent screen.
-/// final details = await supabase.auth.oauth.getAuthorizationDetails(
+/// final response = await supabase.auth.oauth.getAuthorizationDetails(
 ///   authorizationId,
 /// );
-/// print('App "${details.client.clientName}" requests: ${details.scope}');
+/// switch (response) {
+///   case OAuthAuthorizationRedirectResponse(:final redirectUrl):
+///     // Consent was already granted, redirect the user to redirectUrl.
+///     print(redirectUrl);
+///   case OAuthAuthorizationDetailsResponse(:final client, :final scope):
+///     print('App "${client.clientName}" requests: $scope');
 ///
-/// // 3. Act on the user's decision.
-/// final consent = await supabase.auth.oauth.approveAuthorization(
-///   authorizationId,
-/// );
-/// // Redirect the user to consent.redirectUrl.
+///     // 3. Act on the user's decision.
+///     final consent = await supabase.auth.oauth.approveAuthorization(
+///       authorizationId,
+///     );
+///     // Redirect the user to consent.redirectUrl.
+///     print(consent.redirectUrl);
+/// }
 /// ```
 ///
 /// These methods require a signed-in user and only work when the OAuth 2.1
