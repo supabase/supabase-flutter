@@ -182,8 +182,8 @@ enum RealtimeSubscribeStatus {
   /// The channel is joined and receiving events.
   subscribed,
 
-  /// The channel could not be joined; see the error passed alongside this
-  /// status.
+  /// The channel could not be joined, or the connection of a joined channel
+  /// dropped; see the error passed alongside this status, if there is one.
   channelError,
 
   /// The channel was closed.
@@ -201,7 +201,8 @@ class RealtimeSubscribeStatusChange {
   final RealtimeSubscribeStatus status;
 
   /// The error that caused a [RealtimeSubscribeStatus.channelError] status,
-  /// `null` for other statuses.
+  /// if one is known, and `null` for other statuses. A connection that drops
+  /// without a close code reports no error.
   final Object? error;
 
   @override
@@ -240,8 +241,8 @@ class RealtimeChannelConfig {
     this.ack = false,
     this.self = false,
     this.replay,
-    this.key = '',
-    this.enabled = false,
+    this.presenceKey = '',
+    this.presenceEnabled = false,
     this.private = false,
     this.replicationReady = false,
   });
@@ -259,11 +260,11 @@ class RealtimeChannelConfig {
   /// are available for replay.
   final ReplayOption? replay;
 
-  /// [key] option is used to track presence payload across clients
-  final String key;
+  /// The key this client's presence is tracked under across clients.
+  final String presenceKey;
 
-  /// Enables presence even without presence bindings
-  final bool enabled;
+  /// Enables presence even without presence bindings.
+  final bool presenceEnabled;
 
   /// Defines if the channel is private or not and if RLS policies will be used
   /// to check data
@@ -296,8 +297,8 @@ class RealtimeChannelConfig {
       'config': {
         'broadcast': broadcastConfig,
         'presence': {
-          'key': key,
-          'enabled': enabled,
+          'key': presenceKey,
+          'enabled': presenceEnabled,
         },
         'private': private,
       },
@@ -434,13 +435,16 @@ class PostgresChangePayload {
 
   @override
   int get hashCode {
-    return schema.hashCode ^
-        table.hashCode ^
-        commitTimestamp.hashCode ^
-        eventType.hashCode ^
-        newRecord.hashCode ^
-        oldRecord.hashCode ^
-        errors.hashCode;
+    const mapEquality = DeepCollectionEquality();
+    return Object.hash(
+      schema,
+      table,
+      commitTimestamp,
+      eventType,
+      mapEquality.hash(newRecord),
+      mapEquality.hash(oldRecord),
+      errors,
+    );
   }
 }
 

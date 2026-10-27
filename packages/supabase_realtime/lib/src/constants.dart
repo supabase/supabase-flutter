@@ -18,8 +18,29 @@ enum SocketState {
   disconnected,
 }
 
-@internal
-enum ChannelState { closed, errored, joined, joining, leaving }
+/// The state of a [RealtimeChannel], read through [RealtimeChannel.state].
+enum ChannelState {
+  /// The channel is not joined, either because it was never subscribed or
+  /// because it left.
+  closed,
+
+  /// The server rejected the join, the join timed out, or the connection
+  /// dropped.
+  errored,
+
+  /// The server accepted the join.
+  ///
+  /// For Postgres Changes this does not mean replication is ready. A failure
+  /// to set it up arrives later as [RealtimeSubscribeStatus.channelError] on
+  /// [RealtimeChannel.onStatusChange].
+  joined,
+
+  /// A join request is in flight.
+  joining,
+
+  /// A leave request is in flight.
+  leaving,
+}
 
 @internal
 enum ChannelEvent {

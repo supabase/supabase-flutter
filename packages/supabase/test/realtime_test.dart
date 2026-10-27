@@ -111,7 +111,7 @@ void main() {
 
       final status = await supabase.removeChannel(anotherChannel);
 
-      expect(status, 'ok');
+      expect(status, ChannelResponse.ok);
 
       expect(
         supabase.channels,
@@ -139,11 +139,11 @@ void main() {
 
       expect(
         status1,
-        'ok',
+        ChannelResponse.ok,
       );
       expect(
         status2,
-        'ok',
+        ChannelResponse.ok,
       );
 
       expect(

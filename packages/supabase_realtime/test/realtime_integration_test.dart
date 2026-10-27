@@ -82,7 +82,7 @@ void main() {
       final channel = client.channel('unsubscribe');
       await _subscribe(channel);
       final result = await channel.unsubscribe();
-      expect(result, 'ok');
+      expect(result, ChannelResponse.ok);
       expect(channel.isJoined, isFalse);
     });
 
@@ -194,7 +194,7 @@ void main() {
     test('tracks and syncs presence', () async {
       final channel = client.channel(
         'presence',
-        const RealtimeChannelConfig(key: 'user-1'),
+        const RealtimeChannelConfig(presenceKey: 'user-1'),
       );
 
       final synced = Completer<void>();
@@ -231,7 +231,7 @@ void main() {
     test('removes presence on untrack', () async {
       final channel = client.channel(
         'presence-untrack',
-        const RealtimeChannelConfig(key: 'user-2'),
+        const RealtimeChannelConfig(presenceKey: 'user-2'),
       );
 
       final left = Completer<RealtimePresenceLeavePayload>();

@@ -2632,7 +2632,10 @@ features:
     symbols:
       - RealtimeChannel.subscribe
     supporting_symbols:
+      - ChannelState
       - RealtimeChannel.onStatusChange
+      - RealtimeChannel.state
+      - RealtimeChannel.topic
       - RealtimeSubscribeStatus
       - RealtimeSubscribeStatusChange
       - RealtimeSubscribeStatusChange.RealtimeSubscribeStatusChange
@@ -2664,7 +2667,6 @@ features:
     symbols:
       - RealtimeChannel.subscribe
       - RealtimeClient.connection
-      - RealtimeClient.onConnectionMessage
     supporting_symbols:
       - RealtimeClient.onMessage
       - RealtimeClient.onStatusChange
@@ -2895,7 +2897,7 @@ features:
   realtime.presence.presence_key:
     status: implemented
     symbols:
-      - RealtimeChannelConfig.key
+      - RealtimeChannelConfig.presenceKey
 
   # realtime — configuration
   realtime.configuration.custom_websocket_transport:
@@ -3476,7 +3478,7 @@ supporting_symbols:
   - RealtimeChannel.RealtimeChannel
   - RealtimeChannelConfig
   - RealtimeChannelConfig.RealtimeChannelConfig
-  - RealtimeChannelConfig.enabled
+  - RealtimeChannelConfig.presenceEnabled
   - RealtimeChannelConfig.toMap
   - RealtimeClient
   - RealtimeClient.RealtimeClient

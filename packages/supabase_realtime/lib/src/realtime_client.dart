@@ -179,8 +179,7 @@ class RealtimeClient {
   /// built-in codec.
   ///
   /// [reconnectAfter] The optional function that returns the reconnect
-  /// interval. Defaults to the stepped backoff of
-  /// [RetryTimer.createRetryFunction].
+  /// interval. Defaults to an exponential backoff from 1 to 10 seconds.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
   RealtimeClient(
@@ -542,13 +541,12 @@ class RealtimeClient {
   }
 
   /// Unsubscribes [channel] and removes it from [channels].
-  Future<String> removeChannel(RealtimeChannel channel) async {
-    final status = await channel.unsubscribe();
-    return status;
+  Future<ChannelResponse> removeChannel(RealtimeChannel channel) {
+    return channel.unsubscribe();
   }
 
   /// Unsubscribes every channel and disconnects the socket.
-  Future<List<String>> removeAllChannels() async {
+  Future<List<ChannelResponse>> removeAllChannels() async {
     final values = await Future.wait(
       _channels.toList().map((channel) => channel.unsubscribe()),
     );
@@ -784,6 +782,7 @@ class RealtimeClient {
   /// awaited first, bounded by [timeout] so it cannot stall the chain
   /// forever, and its dispatch is chained onto [_pendingDispatch] so that a
   /// fast decode never overtakes a slow one that was received before it.
+  @internal
   void onConnectionMessage(Object rawMessage) {
     final originConnection = _connection;
     final decode = this.decode;

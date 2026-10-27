@@ -68,6 +68,21 @@ void main() {
     });
   });
 
+  group('PostgresChangePayload equality', () {
+    test('equal payloads with distinct maps share a hash code', () {
+      final first = PostgresChangePayload.fromPayload(
+        payloadWith('2026-06-15T00:00:00Z'),
+      );
+      final second = PostgresChangePayload.fromPayload(
+        payloadWith('2026-06-15T00:00:00Z'),
+      );
+
+      expect(first, second);
+      expect(first.hashCode, second.hashCode);
+      expect({first, second}, hasLength(1));
+    });
+  });
+
   group('RealtimePresencePayload', () {
     test('decodes an unrecognized event as unknown', () {
       final payload = RealtimePresenceSyncPayload.fromJson({

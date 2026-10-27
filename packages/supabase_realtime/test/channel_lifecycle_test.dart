@@ -34,6 +34,33 @@ void main() {
     return channel;
   }
 
+  group('state', () {
+    test('follows the channel from subscribe to unsubscribe', () async {
+      final channel = client.channel('room');
+      expect(channel.state, ChannelState.closed);
+
+      channel.subscribe();
+      expect(channel.state, ChannelState.joining);
+
+      await channel.onStatusChange.firstWhere(
+        (change) => change.status == RealtimeSubscribeStatus.subscribed,
+      );
+      expect(channel.state, ChannelState.joined);
+
+      expect(await channel.unsubscribe(), ChannelResponse.ok);
+      expect(channel.state, ChannelState.closed);
+    });
+
+    test('finds a channel by its topic', () async {
+      final channel = await subscribedChannel('room');
+
+      expect(
+        client.channels.where((each) => each.topic == 'realtime:room'),
+        [channel],
+      );
+    });
+  });
+
   group('disconnect', () {
     test('rejoins the subscribed channels on the next connect', () async {
       final channel = await subscribedChannel('room');
