@@ -133,7 +133,7 @@ jobs:
       - name: Publish Supabase endpoint
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: supabase-endpoint
+          name: supabase-endpoint-${{ github.run_attempt }}
           path: endpoint/endpoint.json
           retention-days: 1
 
@@ -142,15 +142,17 @@ jobs:
           set -euo pipefail
           deadline=$(( $(date +%s) + 2700 ))
           while [ "$(date +%s)" -lt "$deadline" ]; do
-            names=$(gh api \
-              "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
-              --paginate -q '.artifacts[].name')
+            # Scoped to this attempt: a rerun of the failed jobs must not count
+            # the jobs that finished in an earlier one.
+            completed=$(gh api \
+              "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" \
+              --paginate -q '.jobs[] | select(.status == "completed") | .name')
             missing=""
             for id in $TARGET_IDS; do
-              echo "$names" | grep -qx "done-$id" || missing="$missing $id"
+              echo "$completed" | grep -qx "$id" || missing="$missing $id"
             done
             if [ -z "$missing" ]; then
-              echo "All test jobs reported done."
+              echo "All test jobs finished."
               break
             fi
             echo "Still waiting for:$missing"
@@ -226,7 +228,7 @@ jobs:
         run: |
           set -euo pipefail
           for _ in $(seq 1 90); do
-            if gh run download "${{ github.run_id }}" -n supabase-endpoint -D endpoint; then
+            if gh run download "${{ github.run_id }}" -n "supabase-endpoint-${{ github.run_attempt }}" -D endpoint; then
               break
             fi
             echo "Waiting for the Supabase endpoint..."
@@ -298,18 +300,3 @@ jobs:
         run: |
           xcrun simctl spawn "$IOS_DEVICE" log show --last 20m --style compact \
             --predicate 'processImagePath ENDSWITH "Runner"' | tail -n 300
-
-      - name: Signal completion
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p done
-          echo done > "done/${{ matrix.id }}"
-
-      - name: Upload completion marker
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: done-${{ matrix.id }}
-          path: done/${{ matrix.id }}
-          retention-days: 1
