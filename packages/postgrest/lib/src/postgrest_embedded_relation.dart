@@ -143,8 +143,10 @@ sealed class PostgrestRelation<Row, Target> {
   /// ```
   ///
   /// Unlike [PostgrestTypedTransformBuilder.requiring], it composes with
-  /// `|`. It filters a read only: awaiting an update, delete or count that
-  /// holds it throws an [ArgumentError].
+  /// `|`. In the `where` of an update, delete or count, which PostgREST
+  /// rejects it in, awaiting the request throws an [ArgumentError]. In the
+  /// scope of a nested embed it filters the embedded rows read back, after
+  /// a mutation as well.
   PostgrestFilter<Row> isNull() => PostgrestFilter._embedIsNull(_reference);
 }
 
