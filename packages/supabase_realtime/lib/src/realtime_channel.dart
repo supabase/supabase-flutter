@@ -310,6 +310,7 @@ class RealtimeChannel {
           ),
         )
         .receive('error', (error) {
+          _state = ChannelState.errored;
           final reply = error as Map<String, dynamic>;
           _addStatus(
             RealtimeSubscribeStatus.channelError,

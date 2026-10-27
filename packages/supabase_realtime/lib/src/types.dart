@@ -183,7 +183,7 @@ enum RealtimeSubscribeStatus {
   subscribed,
 
   /// The channel could not be joined, or the connection of a joined channel
-  /// dropped; see the error passed alongside this status.
+  /// dropped; see the error passed alongside this status, if there is one.
   channelError,
 
   /// The channel was closed.
@@ -201,7 +201,8 @@ class RealtimeSubscribeStatusChange {
   final RealtimeSubscribeStatus status;
 
   /// The error that caused a [RealtimeSubscribeStatus.channelError] status,
-  /// `null` for other statuses.
+  /// if one is known, and `null` for other statuses. A connection that drops
+  /// without a close code reports no error.
   final Object? error;
 
   @override

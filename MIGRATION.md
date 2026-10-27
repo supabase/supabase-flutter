@@ -1659,7 +1659,7 @@ await channel.track({'online_at': now}, {'timeout': 5000});
 
 ```dart
 // After
-final channel = supabase.channel('room');
+final channel = supabase.channel('room').subscribe();
 await channel.track(
   {'online_at': DateTime.now().toIso8601String()},
   timeout: const Duration(seconds: 5),

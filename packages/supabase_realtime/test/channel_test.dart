@@ -163,6 +163,15 @@ void main() {
         );
       },
     );
+
+    test('moves out of joining when the server declines the join', () {
+      channel.subscribe();
+      expect(channel.state, ChannelState.joining);
+
+      channel.joinPush.trigger('error', {'reason': 'Unauthorized'});
+
+      expect(channel.state, ChannelState.errored);
+    });
   });
 
   group("joinPush 'ok' setAccessToken error handling", () {

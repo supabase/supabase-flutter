@@ -24,11 +24,15 @@ enum ChannelState {
   /// because it left.
   closed,
 
-  /// The join failed or the connection dropped, and the channel will try to
-  /// rejoin.
+  /// The server rejected the join, the join timed out, or the connection
+  /// dropped.
   errored,
 
-  /// The channel is joined and receiving events.
+  /// The server accepted the join.
+  ///
+  /// For Postgres Changes this does not mean replication is ready. A failure
+  /// to set it up arrives later as [RealtimeSubscribeStatus.channelError] on
+  /// [RealtimeChannel.onStatusChange].
   joined,
 
   /// A join request is in flight.
