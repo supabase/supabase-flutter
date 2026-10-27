@@ -115,6 +115,7 @@ final class _EmbedGroup {
   /// `name(*)`, `name(a,b)` or, when both were asked for, `name(*,a)`,
   /// with `!inner` after [name] when [joins] requires a match.
   String render(String name, _JoinTree? joins) {
+    joins?._select(_members);
     final head = joins?._head(name) ?? name;
     if (!_all) return _embedExpression(head, _members, joins);
     final rest = _members.isEmpty ? '' : ',${_embedList(_members, joins)}';

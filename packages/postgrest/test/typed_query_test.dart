@@ -1122,6 +1122,37 @@ void main() {
       expect(httpClient.requests, isEmpty);
     });
 
+    test(
+      'in a scope is rejected for a relation the embed leaves out',
+      () async {
+        await expectLater(
+          () => client
+              .table(Authors.table)
+              .selectOnly([
+                Authors.books.select([Books.title]),
+              ])
+              .embedded(
+                Authors.books,
+                (books) => books.where(Books.reviews.isNull()),
+              ),
+          throwsArgumentError,
+        );
+        expect(httpClient.requests, isEmpty);
+
+        await client
+            .table(Authors.table)
+            .selectOnly([
+              Authors.books.select([Books.title, Books.reviews.select()]),
+            ])
+            .embedded(
+              Authors.books,
+              (books) => books.where(Books.reviews.isNull()),
+            );
+
+        expect(requestParameters()['books.reviews'], 'is.null');
+      },
+    );
+
     test('is addressed by the alias at top level', () async {
       await client
           .table(Books.table)

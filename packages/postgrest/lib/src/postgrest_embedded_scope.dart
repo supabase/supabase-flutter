@@ -209,6 +209,13 @@ final class _JoinTree {
   /// Whether the `select` list holds the embed, set as it is rendered.
   bool _rendered = false;
 
+  /// The embeds a [PostgrestRelation.isNull] in a scope of this embed
+  /// addresses.
+  final Set<String> _filteredEmbeds = {};
+
+  /// The embeds selected inside this embed, collected as it is rendered.
+  final Set<String> _selectedEmbeds = {};
+
   final Map<String, _JoinTree> _children = {};
 
   void _add(List<PostgrestEmbeddedScope<Object?>> scopes) {
@@ -218,6 +225,7 @@ final class _JoinTree {
         _JoinTree._,
       );
       child._requiresMatch |= scope.requiresMatch;
+      child._filteredEmbeds.addAll(scope.filter?._embedReferences ?? const []);
       child._add(scope.scopes);
     }
   }
@@ -229,9 +237,21 @@ final class _JoinTree {
   /// key hint when it requires a match.
   String _head(String name) => _requiresMatch ? '$name!inner' : name;
 
+  /// Records the embeds among [members], the entries selected inside this
+  /// embed.
+  void _select(List<PostgrestSelectable<Object?>> members) {
+    for (final member in members) {
+      if (member case _Embedded(:final relation)) {
+        _selectedEmbeds.add(relation._reference);
+      }
+    }
+  }
+
   /// Throws an [ArgumentError] for a scope whose embed is not in the
   /// `select` list, which PostgREST rejects, or which for a `requiring`
-  /// scope would leave the parent rows unfiltered.
+  /// scope would leave the parent rows unfiltered, and for a
+  /// [PostgrestRelation.isNull] in a scope on an embed not selected inside
+  /// it.
   void checkRendered([String prefix = '']) {
     for (final MapEntry(key: name, value: child) in _children.entries) {
       final path = '$prefix$name';
@@ -241,6 +261,15 @@ final class _JoinTree {
           'relation',
           'The embed is not in the select list',
         );
+      }
+      for (final reference in child._filteredEmbeds) {
+        if (!child._selectedEmbeds.contains(reference)) {
+          throw ArgumentError.value(
+            '$path.$reference',
+            'filter',
+            'The relation is not in the select list',
+          );
+        }
       }
       child.checkRendered('$path.');
     }
