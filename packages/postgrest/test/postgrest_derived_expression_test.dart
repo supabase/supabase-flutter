@@ -197,10 +197,9 @@ void main() {
     });
 
     test('read json through jsonObject', () {
-      expect(
-        Items.data.jsonObject('meta'),
-        isA<PostgrestColumnExpression<Item, PostgrestJson>>(),
-      );
+      final PostgrestColumnExpression<Item, PostgrestJson> path = Items.cost
+          .jsonObject('meta');
+      expect(path.expression, 'cost->"meta"');
     });
   });
 }

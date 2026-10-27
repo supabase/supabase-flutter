@@ -43,9 +43,10 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// `PostgrestNullableVectorColumn`, `PostgrestIntegerVectorColumn`,
 /// `PostgrestNullableIntegerVectorColumn`, `PostgrestJsonColumn`,
 /// `PostgrestNullableJsonColumn`, `PostgrestComputedField`,
-/// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
-/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, the Postgres value
-/// types such as `PostgresDate` and `PostgresRange`, `postgresBytea` and
+/// `PostgrestJsonComputedField`, `PostgrestToOneRelation`,
+/// `PostgrestToManyRelation`, `PostgrestRpc`, `PostgrestTypedBuilder`,
+/// `PostgrestTypedFilterBuilder`, the Postgres value types such as
+/// `PostgresDate` and `PostgresRange`, `postgresBytea` and
 /// `postgresVector`); pass the library [packageImportUri] finds for the
 /// project the file is written into.
 ///
@@ -211,6 +212,7 @@ class _TypeNameRegistry {
     'PostgrestNullableIntegerVectorColumn',
     'PostgrestJsonColumn',
     'PostgrestNullableJsonColumn',
+    'PostgrestJsonComputedField',
     'PostgrestComputedField',
     'PostgresRange',
     'PostgresMultirange',
@@ -1005,10 +1007,12 @@ void _writeNamespace(
       'leaves it out.',
       indent: '  ',
     );
+    final fieldType = field.typeKind == ColumnTypeKind.json
+        ? 'PostgrestJsonComputedField<$rowType>'
+        : 'PostgrestComputedField<$rowType, ${binding.dartType}>';
     buffer.writeln(
       '  static const ${computedFieldMembers[field.name]} = '
-      'PostgrestComputedField<$rowType, ${binding.dartType}>'
-      '(${_stringLiteral(field.name)}$arguments);',
+      '$fieldType(${_stringLiteral(field.name)}$arguments);',
     );
   }
   for (final (index, relation) in relations.indexed) {
@@ -1067,11 +1071,10 @@ void _writeColumnTokens(
       (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
       (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
     };
-    // A vector or JSON column decodes its value itself.
+    // A vector column decodes its value itself.
     final decoder =
         binding.kind == ColumnTypeKind.vector ||
-            binding.kind == ColumnTypeKind.integerVector ||
-            column.typeKind == ColumnTypeKind.json
+            binding.kind == ColumnTypeKind.integerVector
         ? null
         : decoders.claim(binding);
     final arguments = decoder == null ? '' : ', fromJson: $decoder';

@@ -114,7 +114,7 @@ extension PostgrestArrayFilters<Row, Element>
 }
 
 /// Filters that only apply to `json` and `jsonb` columns and JSON paths, typed
-/// [PostgrestJson].
+/// [PostgrestJson]. Postgres has these operators for `jsonb` only.
 @experimental
 extension PostgrestJsonFilters<Row>
     on PostgrestFilterableExpression<Row, PostgrestJson> {

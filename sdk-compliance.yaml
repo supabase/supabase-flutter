@@ -1065,6 +1065,8 @@ features:
       - PostgrestJsonColumn.PostgrestJsonColumn
       - PostgrestNullableJsonColumn
       - PostgrestNullableJsonColumn.PostgrestNullableJsonColumn
+      - PostgrestJsonComputedField
+      - PostgrestJsonComputedField.PostgrestJsonComputedField
       - PostgresDate
       - PostgresDate.PostgresDate
       - PostgresDate.fromDateTime

@@ -507,6 +507,13 @@ void main() {
               isNullable: true,
             ),
           ],
+          computedFields: [
+            ComputedFieldDescription(
+              name: 'summary',
+              postgresFormat: 'jsonb',
+              typeKind: ColumnTypeKind.json,
+            ),
+          ],
         ),
       ],
       enums: [],
@@ -517,6 +524,10 @@ void main() {
     ).replaceAll(' ', '');
 
     expect(compact, contains("PostgrestJsonColumn<NotesRow>('body');"));
+    expect(
+      compact,
+      contains("PostgrestJsonComputedField<NotesRow>('summary');"),
+    );
     expect(
       compact,
       contains("PostgrestNullableColumn<NotesRow,Object>('shape');"),

@@ -22,6 +22,7 @@ class Posts {
   static const content = PostgrestColumn<Post, String>('content');
   static const metadata = PostgrestJsonColumn<Post>('metadata');
   static const extra = PostgrestNullableJsonColumn<Post>('extra');
+  static const summary = PostgrestJsonComputedField<Post>('summary');
   static const search = PostgrestColumn<Post, Object>('search');
   static const cover = PostgrestColumn<Post, Uint8List>('cover');
   static const samples = PostgrestColumn<Post, List<double>>('samples');
@@ -297,6 +298,17 @@ void main() {
           ]),
         ),
         r'metadata=in.("\"a\"","[1,2]")',
+      );
+    });
+
+    test('a json computed field compares with json', () {
+      expect(
+        rendered(Posts.summary.eq(const PostgrestJson([1, 2]))),
+        'summary=eq.[1,2]',
+      );
+      expect(
+        rendered(Posts.summary.containsJson({'a': 1})),
+        'summary=cs.{"a":1}',
       );
     });
 
