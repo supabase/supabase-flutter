@@ -62,7 +62,7 @@ class StorageFileApi {
     return '$_encodedBucketId/$encodedPath';
   }
 
-  String get _encodedBucketId => encodePathSegment('$bucketId');
+  late final String _encodedBucketId = encodePathSegment('$bucketId');
 
   String _removeEmptyFolders(String path) {
     return _normalizePrefix(path).replaceAll(RegExp(r'/$'), '');
@@ -149,6 +149,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: fileOptions.upsert,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -192,6 +193,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: fileOptions.upsert,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -390,6 +392,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: false,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -438,6 +441,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: false,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -570,6 +574,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: true,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -614,6 +619,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: true,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );

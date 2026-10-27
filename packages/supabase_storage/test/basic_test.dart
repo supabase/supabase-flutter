@@ -252,6 +252,18 @@ void main() {
       }
     });
 
+    test('rejects a bucket id that is not a single path segment', () async {
+      for (final id in ['', '.', '..']) {
+        await expectLater(client.purgeBucketCache(id), throwsArgumentError);
+        await expectLater(client.emptyBucket(id), throwsArgumentError);
+        expect(
+          () => client.from(id).getPublicUrl('a.txt'),
+          throwsArgumentError,
+        );
+      }
+      expect(customHttpClient.requests, isEmpty);
+    });
+
     test('encodes the bucket id of a file operation', () async {
       const encoded = 'my%20bucket%3Fx';
       customHttpClient
@@ -1586,7 +1598,9 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('File content');
 
-      final response = await client.from('public').upload('a.txt', file);
+      final response = await client
+          .from('public')
+          .upload('a.txt', file, fileOptions: const FileOptions(upsert: true));
       expect(response.id, isNull);
       expect(response.path, 'a.txt');
       expect(response.fullPath, 'public/a.txt');
@@ -1614,7 +1628,12 @@ void main() {
 
         final future = retryingClient
             .from('public')
-            .upload('a.txt', file, abortSignal: abortSignal.future);
+            .upload(
+              'a.txt',
+              file,
+              fileOptions: const FileOptions(upsert: true),
+              abortSignal: abortSignal.future,
+            );
 
         await Future.delayed(const Duration(milliseconds: 50));
         abortSignal.complete();
@@ -1630,7 +1649,11 @@ void main() {
 
       final response = await client
           .from('public')
-          .uploadBinary('a.txt', file.readAsBytesSync());
+          .uploadBinary(
+            'a.txt',
+            file.readAsBytesSync(),
+            fileOptions: const FileOptions(upsert: true),
+          );
       expect(response.path, 'a.txt');
       expect(response.fullPath, 'public/a.txt');
     });

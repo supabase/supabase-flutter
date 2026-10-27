@@ -17,15 +17,27 @@ const headers = {'Authorization': 'Bearer token'};
 /// real HTTP client. This exercises body finalization on every retry attempt,
 /// which needs a fresh body stream since the previous attempt consumed it.
 class FinalizingRetryHttpClient extends BaseClient {
-  FinalizingRetryHttpClient({this.failuresBeforeSuccess = 1});
+  FinalizingRetryHttpClient({
+    this.failuresBeforeSuccess = 1,
+    this.failsAfterWholeBody = false,
+  });
 
   final int failuresBeforeSuccess;
+
+  /// Whether a failing attempt reads the whole body before it fails, instead
+  /// of failing after the first chunk.
+  final bool failsAfterWholeBody;
   int attempts = 0;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     attempts++;
-    await request.finalize().drain<void>();
+    final body = request.finalize();
+    if (failsAfterWholeBody || attempts > failuresBeforeSuccess) {
+      await body.drain<void>();
+    } else {
+      await body.first;
+    }
     if (attempts <= failuresBeforeSuccess) {
       throw ClientException('Offline');
     }
@@ -245,6 +257,67 @@ void main() {
 
         expect(result.fullPath, 'public/a.txt');
         expect(retryClient.attempts, 2);
+      },
+    );
+
+    test(
+      'does not retry a new upload that failed after its whole body was sent',
+      () async {
+        final retryClient = FinalizingRetryHttpClient(
+          failsAfterWholeBody: true,
+          failuresBeforeSuccess: 2,
+        );
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: retryClient,
+          retryOptions: const SupabaseRetryOptions(count: 3),
+        );
+
+        await expectLater(
+          client.from('bucket').uploadBinary('a.txt', Uint8List(3)),
+          throwsA(isA<StorageTransportException>()),
+        );
+        await expectLater(
+          client
+              .from('bucket')
+              .uploadBinaryToSignedUrl('a.txt', 'token', Uint8List(3)),
+          throwsA(isA<StorageTransportException>()),
+        );
+        expect(retryClient.attempts, 2);
+      },
+    );
+
+    test(
+      'retries an upload that replaces the object after its whole body was '
+      'sent',
+      () async {
+        final uploads = <Future<void> Function(StorageFileApi api)>[
+          (api) => api.uploadBinary(
+            'a.txt',
+            Uint8List(3),
+            fileOptions: const FileOptions(upsert: true),
+          ),
+          (api) => api.updateBinary('a.txt', Uint8List(3)),
+        ];
+        for (final upload in uploads) {
+          final retryClient = FinalizingRetryHttpClient(
+            failsAfterWholeBody: true,
+          );
+          final client = SupabaseStorageClient(
+            storageUrl,
+            headers,
+            httpClient: retryClient,
+            retryOptions: const SupabaseRetryOptions(
+              count: 3,
+              initialDelay: Duration(milliseconds: 1),
+            ),
+          );
+
+          await upload(client.from('bucket'));
+
+          expect(retryClient.attempts, 2);
+        }
       },
     );
 
@@ -631,6 +704,7 @@ void main() {
           .uploadBinary(
             'a.bin',
             Uint8List(5),
+            fileOptions: const FileOptions(upsert: true),
             onProgress: recordProgress,
           );
 
@@ -888,6 +962,34 @@ void main() {
           throwsTimeout(),
         );
         expect(attempts, 2);
+      },
+    );
+
+    test(
+      'retries an upsert that timed out after its whole body was sent',
+      () async {
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: mockClient,
+          requestTimeout: const Duration(milliseconds: 50),
+          retryOptions: const SupabaseRetryOptions(
+            count: 1,
+            initialDelay: Duration.zero,
+          ),
+        );
+
+        await expectLater(
+          client
+              .from('bucket')
+              .uploadBinary(
+                'a.txt',
+                Uint8List(3),
+                fileOptions: const FileOptions(upsert: true),
+              ),
+          throwsTimeout(),
+        );
+        expect(mockClient.requests, hasLength(2));
       },
     );
 
