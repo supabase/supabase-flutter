@@ -81,11 +81,11 @@ sealed class PostgrestDerivedExpression<Row, Value extends Object>
       _derive('->>$index', fromJson: null);
 
   @override
-  PostgrestDerivedExpression<Row, Value> jsonObject(String key) =>
+  PostgrestDerivedExpression<Row, PostgrestJson> jsonObject(String key) =>
       _derive('->${_quoted(key)}', fromJson: null);
 
   @override
-  PostgrestDerivedExpression<Row, Value> jsonObjectAt(int index) =>
+  PostgrestDerivedExpression<Row, PostgrestJson> jsonObjectAt(int index) =>
       _derive('->$index', fromJson: null);
 
   @override
@@ -178,10 +178,15 @@ final class PostgrestJsonPath<Row, Value extends Object>
         PostgrestOrderableExpression<Row, Value>,
         PostgrestNullableExpression<Row, Value>
     implements PostgrestReadable<Row, Value?> {
-  const PostgrestJsonPath._(this.expression) : super._();
+  const PostgrestJsonPath._(this.expression, {required bool encodesJson})
+    : _encodesJson = encodesJson,
+      super._();
 
   @override
   final String expression;
+
+  @override
+  final bool _encodesJson;
 
   @override
   String get responseKey => _expressionKey(expression);
@@ -194,19 +199,19 @@ final class PostgrestJsonPath<Row, Value extends Object>
 
   @override
   PostgrestJsonPath<Row, String> jsonText(String key) =>
-      PostgrestJsonPath._('$expression->>${_quoted(key)}');
+      PostgrestJsonPath._('$expression->>${_quoted(key)}', encodesJson: false);
 
   @override
   PostgrestJsonPath<Row, String> jsonTextAt(int index) =>
-      PostgrestJsonPath._('$expression->>$index');
+      PostgrestJsonPath._('$expression->>$index', encodesJson: false);
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObject(String key) =>
-      PostgrestJsonPath._('$expression->${_quoted(key)}');
+  PostgrestJsonPath<Row, PostgrestJson> jsonObject(String key) =>
+      PostgrestJsonPath._('$expression->${_quoted(key)}', encodesJson: true);
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObjectAt(int index) =>
-      PostgrestJsonPath._('$expression->$index');
+  PostgrestJsonPath<Row, PostgrestJson> jsonObjectAt(int index) =>
+      PostgrestJsonPath._('$expression->$index', encodesJson: true);
 
   @override
   bool get _selectedByStar => false;

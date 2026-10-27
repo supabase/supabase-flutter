@@ -19,6 +19,7 @@ part 'postgrest_embedded_scope.dart';
 part 'postgrest_filter.dart';
 part 'postgrest_filter_operators.dart';
 part 'postgrest_integer_vector.dart';
+part 'postgrest_json.dart';
 part 'postgrest_ordering.dart';
 part 'postgrest_partial_row.dart';
 part 'postgrest_rpc.dart';

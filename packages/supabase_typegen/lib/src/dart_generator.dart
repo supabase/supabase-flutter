@@ -41,10 +41,12 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
 /// `PostgrestNullableVectorColumn`, `PostgrestIntegerVectorColumn`,
-/// `PostgrestNullableIntegerVectorColumn`, `PostgrestComputedField`,
-/// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
-/// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, the Postgres value
-/// types such as `PostgresDate` and `PostgresRange`, `postgresBytea` and
+/// `PostgrestNullableIntegerVectorColumn`, `PostgrestJsonColumn`,
+/// `PostgrestNullableJsonColumn`, `PostgrestComputedField`,
+/// `PostgrestJsonComputedField`, `PostgrestToOneRelation`,
+/// `PostgrestToManyRelation`, `PostgrestRpc`, `PostgrestTypedBuilder`,
+/// `PostgrestTypedFilterBuilder`, the Postgres value types such as
+/// `PostgresDate` and `PostgresRange`, `postgresBytea` and
 /// `postgresVector`); pass the library [packageImportUri] finds for the
 /// project the file is written into.
 ///
@@ -208,6 +210,10 @@ class _TypeNameRegistry {
     'PostgrestNullableVectorColumn',
     'PostgrestIntegerVectorColumn',
     'PostgrestNullableIntegerVectorColumn',
+    'PostgrestJson',
+    'PostgrestJsonColumn',
+    'PostgrestNullableJsonColumn',
+    'PostgrestJsonComputedField',
     'PostgrestComputedField',
     'PostgresRange',
     'PostgresMultirange',
@@ -1002,10 +1008,12 @@ void _writeNamespace(
       'leaves it out.',
       indent: '  ',
     );
+    final fieldType = field.typeKind == ColumnTypeKind.json
+        ? 'PostgrestJsonComputedField<$rowType>'
+        : 'PostgrestComputedField<$rowType, ${binding.dartType}>';
     buffer.writeln(
       '  static const ${computedFieldMembers[field.name]} = '
-      'PostgrestComputedField<$rowType, ${binding.dartType}>'
-      '(${_stringLiteral(field.name)}$arguments);',
+      '$fieldType(${_stringLiteral(field.name)}$arguments);',
     );
   }
   for (final (index, relation) in relations.indexed) {
@@ -1057,6 +1065,10 @@ void _writeColumnTokens(
         'PostgrestNullableIntegerVectorColumn<$rowType>',
       (ColumnTypeKind.integerVector, false) =>
         'PostgrestIntegerVectorColumn<$rowType>',
+      _ when column.typeKind == ColumnTypeKind.json =>
+        column.isNullable
+            ? 'PostgrestNullableJsonColumn<$rowType>'
+            : 'PostgrestJsonColumn<$rowType>',
       (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
       (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
     };

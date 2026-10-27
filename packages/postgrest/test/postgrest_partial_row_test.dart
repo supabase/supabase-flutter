@@ -47,7 +47,7 @@ class Orders {
     fromJson: _dateTimeFromJson,
   );
   static const note = PostgrestNullableColumn<Order, String>('note');
-  static const metadata = PostgrestColumn<Order, Object>('metadata');
+  static const metadata = PostgrestJsonColumn<Order>('metadata');
   static const customer = PostgrestToOneRelation<Order, Customer>(
     'customers',
     columns: [customerId],
@@ -252,6 +252,18 @@ void main() {
         expect(amount, 12.0);
       },
     );
+
+    test('a NOT NULL JSON column reads the JSON null as null', () async {
+      httpClient.stub({'id': 1, 'metadata': null});
+
+      final row = await client.table(Orders.table).selectOnly([
+        Orders.id,
+        Orders.metadata,
+      ]).single();
+
+      final PostgrestJson? metadata = row.read(Orders.metadata);
+      expect(metadata, isNull);
+    });
 
     test('a JSON path reads under its own expression', () async {
       httpClient.stub({

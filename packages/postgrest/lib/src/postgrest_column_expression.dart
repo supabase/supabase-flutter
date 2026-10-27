@@ -55,6 +55,9 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// when the decoded JSON is the value.
   Value Function(Object json)? get _fromJson;
 
+  /// Whether a filter on this expression sends its operands as JSON.
+  bool get _encodesJson => false;
+
   /// Applies [derivation] where PostgREST expects it: appended, or inside an
   /// embedded projection's parentheses. The result comes back under its own
   /// expression, sent as an alias, and is decoded with [fromJson].
@@ -115,18 +118,19 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
 
   /// Reads a `json`/`jsonb` object key as JSON, with `->`.
   ///
-  /// Comparison is numeric for numbers, so `data->"n"=gt.2` includes a row
-  /// where `n` is `10`.
+  /// Comparison is numeric for numbers, so
+  /// `jsonObject('n').gt(PostgrestJson(2))` includes a row where `n` is `10`.
   ///
   /// {@template postgrest_json_object_value}
-  /// The result keeps this expression's [Value], but `->` returns `jsonb`;
-  /// chain [jsonText] or [cast] to reach a scalar.
+  /// `->` returns JSON, so the result is a [PostgrestJson] whatever this
+  /// expression's [Value], and its operands are sent as JSON; chain
+  /// [jsonText] or [cast] to reach a scalar.
   /// {@endtemplate}
   ///
   /// {@macro postgrest_json_path_key}
   ///
   /// {@macro postgrest_json_path_response_key}
-  PostgrestColumnExpression<Row, Value> jsonObject(String key);
+  PostgrestColumnExpression<Row, PostgrestJson> jsonObject(String key);
 
   /// Reads a `json`/`jsonb` array element as JSON, with `->`.
   ///
@@ -135,7 +139,7 @@ sealed class PostgrestColumnExpression<Row, Value extends Object>
   /// {@macro postgrest_json_path_index}
   ///
   /// {@macro postgrest_json_path_response_key}
-  PostgrestColumnExpression<Row, Value> jsonObjectAt(int index);
+  PostgrestColumnExpression<Row, PostgrestJson> jsonObjectAt(int index);
 
   /// The sum of this expression across the group, typed [double] whatever
   /// the column's type. Past 2^53 the value rounds silently.
@@ -277,25 +281,6 @@ base mixin PostgrestFilterableExpression<Row, Value extends Object>
         this,
         PostgrestFilterOperator.inFilter,
         values,
-      );
-
-  /// Only rows whose `json`/`jsonb` value contains [value].
-  ///
-  /// [value] is the decoded JSON to look for, for example `{'a': 1}` or
-  /// `null`, and is encoded before it is sent.
-  PostgrestFilter<Row> containsJson(Object? value) =>
-      PostgrestFilter._comparison(
-        this,
-        PostgrestFilterOperator.contains,
-        json.encode(value),
-      );
-
-  /// Only rows whose `json`/`jsonb` value is contained by [value].
-  PostgrestFilter<Row> containedByJson(Object? value) =>
-      PostgrestFilter._comparison(
-        this,
-        PostgrestFilterOperator.containedBy,
-        json.encode(value),
       );
 
   /// Only rows whose `text` or `tsvector` value matches the full text search
@@ -455,19 +440,19 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
 
   @override
   PostgrestJsonPath<Row, String> jsonText(String key) =>
-      PostgrestJsonPath._('$name->>${_quoted(key)}');
+      PostgrestJsonPath._('$name->>${_quoted(key)}', encodesJson: false);
 
   @override
   PostgrestJsonPath<Row, String> jsonTextAt(int index) =>
-      PostgrestJsonPath._('$name->>$index');
+      PostgrestJsonPath._('$name->>$index', encodesJson: false);
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObject(String key) =>
-      PostgrestJsonPath._('$name->${_quoted(key)}');
+  PostgrestJsonPath<Row, PostgrestJson> jsonObject(String key) =>
+      PostgrestJsonPath._('$name->${_quoted(key)}', encodesJson: true);
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObjectAt(int index) =>
-      PostgrestJsonPath._('$name->$index');
+  PostgrestJsonPath<Row, PostgrestJson> jsonObjectAt(int index) =>
+      PostgrestJsonPath._('$name->$index', encodesJson: true);
 }
 
 /// A stored `NOT NULL` column, see [PostgrestStoredColumn].
@@ -575,19 +560,19 @@ final class PostgrestComputedField<Row, Value extends Object>
 
   @override
   PostgrestJsonPath<Row, String> jsonText(String key) =>
-      PostgrestJsonPath._('$name->>${_quoted(key)}');
+      PostgrestJsonPath._('$name->>${_quoted(key)}', encodesJson: false);
 
   @override
   PostgrestJsonPath<Row, String> jsonTextAt(int index) =>
-      PostgrestJsonPath._('$name->>$index');
+      PostgrestJsonPath._('$name->>$index', encodesJson: false);
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObject(String key) =>
-      PostgrestJsonPath._('$name->${_quoted(key)}');
+  PostgrestJsonPath<Row, PostgrestJson> jsonObject(String key) =>
+      PostgrestJsonPath._('$name->${_quoted(key)}', encodesJson: true);
 
   @override
-  PostgrestJsonPath<Row, Value> jsonObjectAt(int index) =>
-      PostgrestJsonPath._('$name->$index');
+  PostgrestJsonPath<Row, PostgrestJson> jsonObjectAt(int index) =>
+      PostgrestJsonPath._('$name->$index', encodesJson: true);
 
   @override
   Value? _read(Object? json, _NestedSelection nested) => switch (json) {
