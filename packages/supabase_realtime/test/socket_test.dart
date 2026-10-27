@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:logging/logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
@@ -950,6 +951,24 @@ void main() {
         () => customSink.add(captureAny(that: equals('custom-frame'))),
       ).called(1);
     });
+    test('formats the payload only when finest logging is enabled', () {
+      final counter = _FormatCounter();
+      final message = RealtimeMessage.outgoing(
+        topic: topic,
+        payload: {'value': counter},
+        event: event,
+        ref: ref,
+      );
+
+      mockedSocket.push(message);
+      expect(counter.count, 0);
+
+      final previousLevel = Logger.root.level;
+      addTearDown(() => Logger.root.level = previousLevel);
+      Logger.root.level = Level.FINEST;
+      mockedSocket.push(message);
+      expect(counter.count, 1);
+    });
   });
 
   group('onConnectionMessage', () {
@@ -960,6 +979,32 @@ void main() {
         returnsNormally,
       );
     });
+
+    test(
+      'formats a received payload only when finest logging is enabled',
+      () async {
+        final counter = _FormatCounter();
+        final socket = RealtimeClient(
+          socketEndpoint,
+          decode: (_) async => RealtimeMessage(
+            topic: 'realtime:room',
+            event: 'broadcast',
+            payload: {'value': counter},
+          ),
+        );
+
+        socket.onConnectionMessage('frame');
+        await pumpEventQueue();
+        expect(counter.count, 0);
+
+        final previousLevel = Logger.root.level;
+        addTearDown(() => Logger.root.level = previousLevel);
+        Logger.root.level = Level.FINEST;
+        socket.onConnectionMessage('frame');
+        await pumpEventQueue();
+        expect(counter.count, 1);
+      },
+    );
 
     test('dispatches a received binary broadcast to onBroadcast', () async {
       final socket = RealtimeClient(socketEndpoint);
@@ -1871,4 +1916,14 @@ void main() {
       await streamController2.close();
     });
   });
+}
+
+class _FormatCounter {
+  int count = 0;
+
+  @override
+  String toString() {
+    count++;
+    return 'formatted';
+  }
 }

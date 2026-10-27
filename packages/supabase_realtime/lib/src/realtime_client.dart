@@ -682,8 +682,9 @@ class RealtimeClient {
   @internal
   void push(RealtimeMessage message) {
     realtimeLogger.finest(
-      'Push ${message.topic} ${message.event} (${message.ref}): '
-      '${redactedPayload(message.payload)}',
+      () =>
+          'Push ${message.topic} ${message.event} (${message.ref}): '
+          '${redactedPayload(message.payload)}',
     );
 
     if (isConnected) {
@@ -882,9 +883,10 @@ class RealtimeClient {
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
     realtimeLogger.finest(
-      "Receive $status $topic $event "
-      "${messageRef != null ? '($messageRef)' : ''}: "
-      "${redactedPayload(payload)}",
+      () =>
+          "Receive $status $topic $event "
+          "${messageRef != null ? '($messageRef)' : ''}: "
+          "${redactedPayload(payload)}",
     );
 
     // Snapshot the members before triggering: a close event removes the
