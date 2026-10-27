@@ -1133,13 +1133,13 @@ complete without a session.
 `mfa.verify()`, `mfa.challengeAndVerify()` and `mfa.recoveryCodes.verify()` return the upgraded
 `Session` instead of an `AuthMFAVerifyResponse`, which is removed. Its fields are on the session:
 
-| Before                          | After                         |
-| ------------------------------- | ----------------------------- |
-| `response.accessToken`          | `session.accessToken`         |
-| `response.refreshToken`         | `session.refreshToken`        |
-| `response.tokenType`            | `session.tokenType`           |
-| `response.user`                 | `session.user`                |
-| `response.expiresIn` (Duration) | `session.expiresIn` (seconds) |
+| Before                          | After                                   |
+| ------------------------------- | --------------------------------------- |
+| `response.accessToken`          | `session.accessToken`                   |
+| `response.refreshToken`         | `session.refreshToken` (nullable)       |
+| `response.tokenType`            | `session.tokenType`                     |
+| `response.user`                 | `session.user`                          |
+| `response.expiresIn` (Duration) | `session.expiresIn` (seconds, nullable) |
 
 #### `admin.listUsers()` returns pagination metadata
 

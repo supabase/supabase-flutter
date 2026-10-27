@@ -125,6 +125,11 @@ void main() {
       );
 
       expect(client.currentSession, response);
+      expect(response.accessToken, isNotEmpty);
+      expect(response.refreshToken, isNotEmpty);
+      expect(response.expiresIn, isPositive);
+      expect(response.user.id, userId1);
+      expect(response.user.factors?.single.status, FactorStatus.verified);
     });
 
     test('challenge and verify', () async {

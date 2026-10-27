@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';

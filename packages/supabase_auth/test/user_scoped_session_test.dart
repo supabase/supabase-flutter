@@ -92,6 +92,31 @@ String _sessionString({
   required DateTime expiresAt,
   String userId = testUserId,
   bool withRefreshToken = true,
+}) => jsonEncode(
+  _sessionJson(
+    expiresAt: expiresAt,
+    userId: userId,
+    withRefreshToken: withRefreshToken,
+  ),
+);
+
+/// The [Session] that [_sessionString] persists.
+Session _session({
+  required DateTime expiresAt,
+  String userId = testUserId,
+  bool withRefreshToken = true,
+}) => Session.fromJson(
+  _sessionJson(
+    expiresAt: expiresAt,
+    userId: userId,
+    withRefreshToken: withRefreshToken,
+  ),
+)!;
+
+Map<String, dynamic> _sessionJson({
+  required DateTime expiresAt,
+  required String userId,
+  required bool withRefreshToken,
 }) {
   final json = testSessionResponseJson(
     accessToken: unsignedTestJwt({
@@ -105,7 +130,7 @@ String _sessionString({
   } else {
     json.remove('refresh_token');
   }
-  return jsonEncode(json);
+  return json;
 }
 
 void main() {
@@ -155,13 +180,9 @@ void main() {
       test('$name refreshes an expired session first', () async {
         httpClient.stubSignIn();
         client.signInWithSession(
-          Session.fromJson(
-            jsonDecode(
-              _sessionString(
-                expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
-              ),
-            ),
-          )!,
+          _session(
+            expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+          ),
         );
 
         await call(client);
@@ -208,14 +229,10 @@ void main() {
     test('signs out an expired session without a refresh token', () async {
       client = createClient();
       client.signInWithSession(
-        Session.fromJson(
-          jsonDecode(
-            _sessionString(
-              expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
-              withRefreshToken: false,
-            ),
-          ),
-        )!,
+        _session(
+          expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+          withRefreshToken: false,
+        ),
       );
       await listen(client);
 
@@ -234,14 +251,10 @@ void main() {
         'expiry margin', () async {
       client = createClient();
       client.signInWithSession(
-        Session.fromJson(
-          jsonDecode(
-            _sessionString(
-              expiresAt: DateTime.now().add(const Duration(seconds: 10)),
-              withRefreshToken: false,
-            ),
-          ),
-        )!,
+        _session(
+          expiresAt: DateTime.now().add(const Duration(seconds: 10)),
+          withRefreshToken: false,
+        ),
       );
 
       final session = await client.getSession();
@@ -257,13 +270,9 @@ void main() {
         ..stubSignIn()
         ..stubSignOut();
       client.signInWithSession(
-        Session.fromJson(
-          jsonDecode(
-            _sessionString(
-              expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
-            ),
-          ),
-        )!,
+        _session(
+          expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        ),
       );
 
       final expired = client.currentSession!.accessToken;
@@ -321,15 +330,11 @@ void main() {
               statusCode: 403,
             );
           client.signInWithSession(
-            Session.fromJson(
-              jsonDecode(
-                _sessionString(
-                  expiresAt: DateTime.now().subtract(
-                    const Duration(minutes: 5),
-                  ),
-                ),
+            _session(
+              expiresAt: DateTime.now().subtract(
+                const Duration(minutes: 5),
               ),
-            )!,
+            ),
           );
           await listen(client);
           final session = client.currentSession;
