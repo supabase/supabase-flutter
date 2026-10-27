@@ -8,8 +8,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder<T> _copyWithUrl(Uri url) =>
       PostgrestFilterBuilder(_copyWith(url: url));
 
-  /// Appends [value] as another value of the query parameter [key].
   @internal
+  @override
   PostgrestFilterBuilder<T> appendSearchParameter(String key, String value) =>
       _copyWithUrl(_url.appendSearchParameters(key, value));
 

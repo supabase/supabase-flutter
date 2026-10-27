@@ -125,6 +125,30 @@ sealed class PostgrestRelation<Row, Target> {
   PostgrestEmbed<Row, Target> select([
     List<PostgrestSelectable<Target>>? selections,
   ]);
+
+  /// Only the rows with no embedded row, `authors=is.null`.
+  ///
+  /// The relation has to be in the `select` list, or awaiting the request
+  /// throws an [ArgumentError], and a filter of the embed
+  /// in [PostgrestTypedTransformBuilder.embedded] counts: a parent row whose
+  /// embedded rows all fail it has no embedded row. Negate it for the rows
+  /// with one, which is what [PostgrestTypedTransformBuilder.requiring] does
+  /// as well:
+  ///
+  /// ```dart
+  /// final books = await client
+  ///     .table(Books.table)
+  ///     .selectOnly([Books.title, Books.reviews.select()])
+  ///     .where(Books.reviews.isNull() | Books.title.eq('Dune'));
+  /// // or=(reviews.is.null,title.eq.Dune)
+  /// ```
+  ///
+  /// Unlike [PostgrestTypedTransformBuilder.requiring], it composes with
+  /// `|`. In the `where` of an update, delete or count, which PostgREST
+  /// rejects it in, awaiting the request throws an [ArgumentError]. In the
+  /// scope of a nested embed it filters the embedded rows read back, after
+  /// a mutation as well.
+  PostgrestFilter<Row> isNull() => PostgrestFilter._embedIsNull(_reference);
 }
 
 /// A to-one embedded relation (many-to-one or one-to-one) of the table whose
@@ -206,7 +230,8 @@ final class PostgrestToOneRelation<Row, Target>
 ///
 /// Its projections are select position only: PostgREST answers
 /// `order=children(amount).desc` with PGRST118. The embedded rows themselves
-/// are sorted and limited with [PostgrestTypedTransformBuilder.embedded].
+/// are filtered, sorted and limited with
+/// [PostgrestTypedTransformBuilder.embedded].
 @experimental
 final class PostgrestToManyRelation<Row, Target>
     extends PostgrestRelation<Row, Target>
@@ -417,7 +442,8 @@ sealed class _EmbeddedColumn<Row, Value extends Object>
 
 /// A column of a to-one embedded relation, seen from the parent.
 ///
-/// Selectable and orderable; filtering inside an embed is not supported.
+/// Selectable and orderable. Filter the embedded rows with a scope instead,
+/// see [PostgrestTypedTransformBuilder.embedded].
 @experimental
 final class PostgrestToOneColumn<Row, Value extends Object>
     extends _EmbeddedColumn<Row, Value>
@@ -443,8 +469,9 @@ final class PostgrestToOneColumn<Row, Value extends Object>
 
 /// A column of a to-many embedded relation, seen from the parent.
 ///
-/// Select position only: PostgREST rejects a to-many embed in `order`, and
-/// filtering inside an embed is not supported.
+/// Select position only: PostgREST rejects a to-many embed in `order`. Filter
+/// the embedded rows with a scope instead, see
+/// [PostgrestTypedTransformBuilder.embedded].
 @experimental
 final class PostgrestToManyColumn<Row, Value extends Object>
     extends _EmbeddedColumn<Row, Value> {

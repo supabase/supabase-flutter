@@ -822,6 +822,347 @@ void main() {
     });
   });
 
+  group('embedded filters', () {
+    test('filter the embedded rows under the embed path', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.name,
+            Authors.books.select([Books.title]),
+          ])
+          .embedded(
+            Authors.books,
+            (books) => books
+                .where(Books.title.ilike('%dune%'))
+                .where(Books.id.gt(2))
+                .limit(1),
+          );
+
+      expect(requestParameters(), {
+        'select': 'name,books(title)',
+        'books.title': 'ilike.%dune%',
+        'books.id': 'gt.2',
+        'books.limit': '1',
+      });
+    });
+
+    test('render a group under the embed path', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([Authors.books.select()])
+          .embedded(
+            Authors.books,
+            (books) => books.where(
+              (Books.id.eq(1) | Books.id.eq(2)).not(),
+            ),
+          );
+
+      expect(requestParameters()['books.not.or'], '(id.eq.1,id.eq.2)');
+    });
+
+    test('filter a to-one embed', () async {
+      await client
+          .table(Books.table)
+          .selectOnly([Books.title, Books.author(Authors.name)])
+          .embedded(
+            Books.author,
+            (author) => author.where(Authors.name.eq('Frank Herbert')),
+          );
+
+      expect(requestParameters(), {
+        'select': 'title,author(name)',
+        'author.name': 'eq.Frank Herbert',
+      });
+    });
+
+    test('address an aliased embed by its alias', () async {
+      await client
+          .table(Books.table)
+          .selectOnly([Books.editor.select()])
+          .embedded(Books.editor, (editor) => editor.where(Authors.id.eq(3)));
+
+      expect(requestParameters(), {
+        'select': 'editor:authors!books_editor_id_fkey(*)',
+        'editor.id': 'eq.3',
+      });
+    });
+
+    test('nest into dotted paths', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.books.select([Books.reviews.select()]),
+          ])
+          .embedded(
+            Authors.books,
+            (books) => books.embedded(
+              Books.reviews,
+              (reviews) => reviews.where(Reviews.rating.gte(4)),
+            ),
+          );
+
+      expect(requestParameters()['books.reviews.rating'], 'gte.4');
+    });
+
+    test('order, limit and range reject a to-one embed', () {
+      final scoped = client.table(Books.table).selectOnly([
+        Books.author.select(),
+      ]);
+
+      for (final scope
+          in <
+            PostgrestEmbeddedScope<Author> Function(
+              PostgrestEmbeddedScope<Author>,
+            )
+          >[
+            (author) => author.order(Authors.name),
+            (author) => author.limit(1),
+            (author) => author.range(0, 1),
+          ]) {
+        expect(
+          () => scoped.embedded(Books.author, scope),
+          throwsUnsupportedError,
+        );
+      }
+    });
+  });
+
+  group('requiring', () {
+    test('marks the embed inner and applies its scope', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.name,
+            Authors.books.select([Books.title]),
+          ])
+          .requiring(
+            Authors.books,
+            (books) => books.where(Books.title.eq('Dune')).limit(5),
+          );
+
+      expect(requestParameters(), {
+        'select': 'name,books!inner(title)',
+        'books.title': 'eq.Dune',
+        'books.limit': '5',
+      });
+    });
+
+    test('works without a scope', () async {
+      await client
+          .table(Books.table)
+          .selectOnly([Books.author(Authors.name)])
+          .requiring(Books.author);
+
+      expect(requestParameters(), {'select': 'author!inner(name)'});
+    });
+
+    test('puts inner after the alias and the hint', () async {
+      await client
+          .table(Books.table)
+          .selectOnly([Books.title, Books.editor(Authors.name)])
+          .requiring(Books.editor);
+
+      expect(
+        requestParameters()['select'],
+        'title,editor:authors!books_editor_id_fkey!inner(name)',
+      );
+    });
+
+    test('a nested requiring marks only the nested embed', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.books.select([Books.title, Books.reviews.select()]),
+          ])
+          .embedded(
+            Authors.books,
+            (books) => books.requiring(
+              Books.reviews,
+              (reviews) => reviews.where(Reviews.rating.eq(5)),
+            ),
+          );
+
+      expect(requestParameters(), {
+        'select': 'books(title,reviews!inner(*))',
+        'books.reviews.rating': 'eq.5',
+      });
+    });
+
+    test('marks every entry of the embed once', () async {
+      await client
+          .table(Authors.table)
+          .selectOnly([
+            Authors.books(Books.id),
+            Authors.name,
+            Authors.books(Books.title),
+          ])
+          .embedded(Authors.books, (books) => books.limit(1))
+          .requiring(Authors.books);
+
+      expect(requestParameters()['select'], 'books!inner(id,title),name');
+    });
+
+    test('applies to the rows a mutation returns', () async {
+      await client
+          .table(Books.table)
+          .insert(BookInsert(title: 'a'))
+          .selectOnly([Books.title, Books.author.select()])
+          .requiring(Books.author);
+
+      expect(requestParameters()['select'], 'title,author!inner(*)');
+    });
+
+    test('rejects an embed the select list leaves out', () async {
+      await expectLater(
+        () => client
+            .table(Authors.table)
+            .selectOnly([Authors.name])
+            .requiring(Authors.books),
+        throwsArgumentError,
+      );
+      await expectLater(
+        () => client
+            .table(Authors.table)
+            .selectOnly([Authors.books.select()])
+            .embedded(
+              Authors.books,
+              (books) => books.requiring(Books.reviews),
+            ),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+
+    test('rejects a scope whose embed the select list leaves out', () async {
+      await expectLater(
+        () => client
+            .table(Authors.table)
+            .selectOnly([Authors.name])
+            .embedded(Authors.books, (books) => books.limit(1)),
+        throwsArgumentError,
+      );
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .update(BookUpdate(title: 'a'))
+            .where(Books.id.eq(1))
+            .embedded(
+              Books.reviews,
+              (reviews) => reviews.where(Reviews.rating.eq(5)),
+            ),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+
+    test('rejects a mutation that reads nothing back', () async {
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .insert(BookInsert(title: 'a'))
+            .requiring(Books.author),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+  });
+
+  group('relation isNull', () {
+    test('keeps the rows without an embedded row', () async {
+      await client
+          .table(Books.table)
+          .selectOnly([Books.title, Books.reviews.select()])
+          .where(Books.reviews.isNull());
+
+      expect(requestParameters(), {
+        'select': 'title,reviews(*)',
+        'reviews': 'is.null',
+      });
+    });
+
+    test('negates and composes with or', () async {
+      await client
+          .table(Books.table)
+          .selectOnly([Books.title, Books.editor.select()])
+          .where(Books.editor.isNull().not() | Books.title.eq('Dune'));
+
+      expect(
+        requestParameters()['or'],
+        '(editor.not.is.null,title.eq.Dune)',
+      );
+    });
+
+    test('is rejected on an update, delete and count', () async {
+      final withoutReviews = Books.reviews.isNull() | Books.id.eq(1);
+      final table = client.table(Books.table);
+
+      await expectLater(
+        () => table.update(BookUpdate(title: 'a')).where(withoutReviews),
+        throwsArgumentError,
+      );
+      await expectLater(
+        () => table.delete().where(withoutReviews.not()),
+        throwsArgumentError,
+      );
+      await expectLater(
+        () => table.count().where(withoutReviews),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+
+    test('is rejected for a relation the select list leaves out', () async {
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .selectOnly([Books.title, Books.reviews.count()])
+            .where(Books.title.eq('Dune') | Books.reviews.isNull()),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+
+    test(
+      'in a scope is rejected for a relation the embed leaves out',
+      () async {
+        await expectLater(
+          () => client
+              .table(Authors.table)
+              .selectOnly([
+                Authors.books.select([Books.title]),
+              ])
+              .embedded(
+                Authors.books,
+                (books) => books.where(Books.reviews.isNull()),
+              ),
+          throwsArgumentError,
+        );
+        expect(httpClient.requests, isEmpty);
+
+        await client
+            .table(Authors.table)
+            .selectOnly([
+              Authors.books.select([Books.title, Books.reviews.select()]),
+            ])
+            .embedded(
+              Authors.books,
+              (books) => books.where(Books.reviews.isNull()),
+            );
+
+        expect(requestParameters()['books.reviews'], 'is.null');
+      },
+    );
+
+    test('is addressed by the alias at top level', () async {
+      await client
+          .table(Books.table)
+          .selectOnly([Books.editor.select()])
+          .where(Books.editor.isNull().not());
+
+      expect(requestParameters()['editor'], 'not.is.null');
+    });
+  });
+
   group('result modifiers', () {
     test('csv returns the body as text', () async {
       httpClient.stubText('id,title\n1,a\n', contentType: 'text/csv');

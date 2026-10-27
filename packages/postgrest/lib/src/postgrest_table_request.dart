@@ -223,7 +223,8 @@ final class PostgrestTableRequest {
   /// The number of rows to skip.
   final int? offset;
 
-  /// The sort keys and row windows applied inside to-many embeds.
+  /// The filters, sort keys and row windows applied inside embeds, and
+  /// which embeds drop the parent rows without a match.
   final List<PostgrestEmbeddedScope<Object?>> embeddedScopes;
 
   /// The form the result is asked back in.

@@ -45,9 +45,14 @@ List<Row> _rowsFromJson<Row>(
 /// entry that renders the same as an earlier one is left out. A
 /// [PostgrestEmbeddedCount] goes after every embed, since PostgREST applies
 /// a scope of a relation to the first embed of it in the list.
-String _selectList(List<PostgrestSelectable<Object?>> selections) {
+String _selectList(
+  List<PostgrestSelectable<Object?>> selections, [
+  _JoinTree? joins,
+]) {
   if (selections.isEmpty) return '*';
-  if (selections case [final single]) return single._selectExpression;
+  if (selections case [final single] when joins == null) {
+    return single._selectExpression;
+  }
   final entries = <String>[];
   final counts = <String>[];
   final embeds = <String, _EmbedGroup>{};
@@ -66,9 +71,20 @@ String _selectList(List<PostgrestSelectable<Object?>> selections) {
     }
   }
   for (final MapEntry(key: name, value: group) in embeds.entries) {
-    entries[group.index] = group.render(name);
+    entries[group.index] = group.render(name, joins?._render(name));
   }
   return [...entries, ...counts].join(',');
+}
+
+/// The `select` parameter of [request]: its columns, with `!inner` on the
+/// embeds its scopes require a match in.
+///
+/// Throws an [ArgumentError] when such an embed is not in the list.
+String _requestSelectList(PostgrestTableRequest request) {
+  final joins = _JoinTree.of(request.embeddedScopes);
+  final list = _selectList(request.columns, joins);
+  joins?.checkRendered();
+  return list;
 }
 
 /// The entries of one relation collected from a `select` list.
@@ -96,11 +112,14 @@ final class _EmbedGroup {
     }
   }
 
-  /// `name(*)`, `name(a,b)` or, when both were asked for, `name(*,a)`.
-  String render(String name) {
-    if (!_all) return _embedExpression(name, _members);
-    final rest = _members.isEmpty ? '' : ',${_embedList(_members)}';
-    return '$name(*$rest)';
+  /// `name(*)`, `name(a,b)` or, when both were asked for, `name(*,a)`,
+  /// with `!inner` after [name] when [joins] requires a match.
+  String render(String name, _JoinTree? joins) {
+    joins?._select(_members);
+    final head = joins?._head(name) ?? name;
+    if (!_all) return _embedExpression(head, _members, joins);
+    final rest = _members.isEmpty ? '' : ',${_embedList(_members, joins)}';
+    return '$head(*$rest)';
   }
 }
 
@@ -108,8 +127,9 @@ final class _EmbedGroup {
 /// `name(*)` when there are none.
 String _embedExpression(
   String name,
-  List<PostgrestSelectable<Object?>> members,
-) => '$name(${_embedList(members)})';
+  List<PostgrestSelectable<Object?>> members, [
+  _JoinTree? joins,
+]) => '$name(${_embedList(members, joins)})';
 
 final _trailingJsonIndex = RegExp(r'(->>?)-?[0-9]+$');
 
@@ -117,8 +137,11 @@ final _trailingJsonIndex = RegExp(r'(->>?)-?[0-9]+$');
 ///
 /// PostgREST reads an array index right before `)` as an object key, so a
 /// list ending in one gets a cast to the type the arrow already returns.
-String _embedList(List<PostgrestSelectable<Object?>> members) {
-  final list = _selectList(members);
+String _embedList(
+  List<PostgrestSelectable<Object?>> members, [
+  _JoinTree? joins,
+]) {
+  final list = _selectList(members, joins);
   return switch (_trailingJsonIndex.firstMatch(list)?[1]) {
     null => list,
     '->>' => '$list::text',

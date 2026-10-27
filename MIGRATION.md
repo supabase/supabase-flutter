@@ -435,9 +435,37 @@ final List<String> titles = [
 
 A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
 
-The typed API cannot filter inside an embed yet, and has no `!inner` embed that drops the parent
-rows without a match. Keep a query that needs either on `from()`, for example
-`.select('title, authors!inner(name)').eq('authors.name', 'Frank Herbert')`.
+A filter inside an embed goes into the scope of `embedded()`, typed against the embedded table. It
+narrows the embedded rows only, so a parent row without a match still comes back. `requiring()`
+takes the same scope and also drops those parent rows, the `!inner` embed, and `isNull()` on a
+relation keeps only them:
+
+```dart skip
+// Before
+final books = await supabase
+    .from('books')
+    .select('title, authors!inner(name)')
+    .eq('authors.name', 'Frank Herbert');
+final authorsWithoutBooks = await supabase
+    .from('authors')
+    .select('name, books(id)')
+    .isFilter('books', null);
+```
+
+```dart
+// After
+final books = await supabase
+    .table(Books.table)
+    .selectOnly([Books.title, Books.authors(Authors.name)])
+    .requiring(
+      Books.authors,
+      (authors) => authors.where(Authors.name.eq('Frank Herbert')),
+    );
+final authorsWithoutBooks = await supabase
+    .table(Authors.table)
+    .selectOnly([Authors.name, Authors.books(Books.id)])
+    .where(Authors.books.isNull());
+```
 
 When two foreign keys point at the same table, the generator adds the constraint hint and an alias,
 so each embed comes back under its own key without spelling `authors!books_author_id_fkey` by hand.

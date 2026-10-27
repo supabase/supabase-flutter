@@ -310,6 +310,95 @@ void main() {
       expect(supabot.read(Users.messages), hasLength(1));
     });
 
+    test('an embedded filter keeps every parent row', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .selectOnly([Users.username, Users.messages(Messages.id)])
+          .order(Users.username)
+          .embedded(
+            Users.messages,
+            (messages) => messages.where(Messages.channelId.eq(2)),
+          );
+
+      expect(
+        {
+          for (final user in users)
+            user.read(Users.username): [
+              for (final message in user.read(Users.messages))
+                message.read(Messages.id),
+            ],
+        },
+        {
+          'awailas': <int>[],
+          'dragarcia': <int>[],
+          'kiwicopple': <int>[],
+          'supabot': [2],
+        },
+      );
+    });
+
+    test('requiring drops the parent rows without a match', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .selectOnly([Users.username, Users.messages(Messages.id)])
+          .requiring(
+            Users.messages,
+            (messages) => messages.where(Messages.channelId.eq(2)),
+          );
+
+      expect(users.map((user) => user.read(Users.username)), ['supabot']);
+      expect(
+        users.single.read(Users.messages).map((m) => m.read(Messages.id)),
+        [2],
+      );
+    });
+
+    test('requiring a to-one embed filters by the embedded row', () async {
+      final messages = await postgrest
+          .table(Messages.table)
+          .selectOnly([Messages.id, Messages.user(Users.username)])
+          .order(Messages.id)
+          .requiring(
+            Messages.user,
+            (user) => user.where(Users.username.eq('kiwicopple')),
+          );
+
+      expect(messages, isEmpty);
+    });
+
+    test('isNull keeps the rows without an embedded row', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .selectOnly([Users.username, Users.messages(Messages.id)])
+          .where(Users.messages.isNull())
+          .order(Users.username);
+
+      expect(users.map((user) => user.read(Users.username)), [
+        'awailas',
+        'dragarcia',
+        'kiwicopple',
+      ]);
+    });
+
+    test('a negated isNull composes with an embedded filter in or', () async {
+      final users = await postgrest
+          .table(Users.table)
+          .selectOnly([Users.username, Users.messages(Messages.id)])
+          .where(
+            Users.messages.isNull().not() | Users.username.eq('awailas'),
+          )
+          .order(Users.username)
+          .embedded(
+            Users.messages,
+            (messages) => messages.where(Messages.channelId.eq(2)),
+          );
+
+      expect(users.map((user) => user.read(Users.username)), [
+        'awailas',
+        'supabot',
+      ]);
+    });
+
     test('a to-one embed returns one object', () async {
       final messages = await postgrest
           .table(Messages.table)
