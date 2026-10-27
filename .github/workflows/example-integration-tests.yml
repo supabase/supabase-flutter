@@ -140,24 +140,42 @@ jobs:
       - name: Wait for the test jobs to finish
         run: |
           set -euo pipefail
+          # Only the test jobs this attempt runs: a rerun of the failed jobs
+          # must neither count nor wait for the ones an earlier attempt ran.
+          jobs_url="repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs"
           deadline=$(( $(date +%s) + 2700 ))
-          while [ "$(date +%s)" -lt "$deadline" ]; do
-            # Scoped to this attempt: a rerun of the failed jobs must not count
-            # the jobs that finished in an earlier one.
-            completed=$(gh api \
-              "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" \
-              --paginate -q '.jobs[] | select(.status == "completed") | .name')
-            missing=""
+          while :; do
+            jobs=$(gh api "$jobs_url" --paginate \
+              -q '.jobs[] | select(.run_attempt == ${{ github.run_attempt }}) | "\(.name) \(.status) \(.conclusion)"')
+            pending=""
+            failed=""
             for id in $TARGET_IDS; do
-              echo "$completed" | grep -qx "$id" || missing="$missing $id"
+              line=$(echo "$jobs" | awk -v id="$id" '$1 == id')
+              [ -n "$line" ] || continue
+              read -r _ status conclusion <<< "$line"
+              if [ "$status" != completed ]; then
+                pending="$pending $id"
+              elif [ "$conclusion" != success ]; then
+                failed="$failed $id"
+              fi
             done
-            if [ -z "$missing" ]; then
-              echo "All test jobs finished."
+            if [ -z "$pending" ]; then
               break
             fi
-            echo "Still waiting for:$missing"
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::Timed out waiting for:$pending"
+              exit 1
+            fi
+            echo "Still waiting for:$pending"
             sleep 15
           done
+          # Failing with the tests makes "Re-run failed jobs" start a new
+          # backend for them, which they cannot run without.
+          if [ -n "$failed" ]; then
+            echo "::error::Test jobs failed:$failed"
+            exit 1
+          fi
+          echo "All test jobs passed."
 
       - name: Stop Supabase
         if: always()
