@@ -128,6 +128,9 @@ final class PostgrestFilter<Row> {
   PostgrestFilter._raw(String column, String operand)
     : _node = _Raw(column, operand);
 
+  PostgrestFilter._embedIsNull(String reference)
+    : _node = _EmbedIsNull(reference);
+
   final _FilterNode<Row> _node;
 
   /// A filter written entirely in PostgREST syntax, for an expression no
@@ -176,6 +179,19 @@ final class PostgrestFilter<Row> {
     _Not(inner: _Comparison(:final column, :final operator, :final value)) =>
       PostgrestComparison._(column, operator, value, negated: true),
     _Raw() || _And() || _Or() || _Not() => null,
+  };
+
+  /// Whether the filter holds a [PostgrestRelation.isNull], which only a
+  /// read accepts.
+  bool get _filtersEmbed => _nodeFiltersEmbed(_node);
+
+  static bool _nodeFiltersEmbed<Row>(_FilterNode<Row> node) => switch (node) {
+    _EmbedIsNull() => true,
+    _Comparison() || _Raw() => false,
+    _And(:final children) || _Or(:final children) => children.any(
+      _nodeFiltersEmbed,
+    ),
+    _Not(:final inner) => _nodeFiltersEmbed(inner),
   };
 
   /// Absorbs a child `&` so `a & b & c` renders flat rather than nested.
@@ -309,11 +325,17 @@ final class _TextSearch<Row> extends _Comparison<Row> {
 }
 
 /// Everything after the `=` as one string, sent as written in every position.
-final class _Raw<Row> extends _FilterNode<Row> {
+base class _Raw<Row> extends _FilterNode<Row> {
   const _Raw(this.column, this.operand);
 
   final String column;
   final String operand;
+}
+
+/// The rows without an embedded row, `authors=is.null`, which PostgREST
+/// accepts on a read only.
+final class _EmbedIsNull<Row> extends _Raw<Row> {
+  const _EmbedIsNull(String reference) : super(reference, 'is.null');
 }
 
 final class _And<Row> extends _FilterNode<Row> {

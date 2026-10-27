@@ -143,9 +143,9 @@ sealed class PostgrestRelation<Row, Target> {
   /// ```
   ///
   /// Unlike [PostgrestTypedTransformBuilder.requiring], it composes with
-  /// `|`. It filters a read only: PostgREST rejects it on an update or
-  /// delete.
-  PostgrestFilter<Row> isNull() => PostgrestFilter._raw(_reference, 'is.null');
+  /// `|`. It filters a read only: awaiting an update, delete or count that
+  /// holds it throws an [ArgumentError].
+  PostgrestFilter<Row> isNull() => PostgrestFilter._embedIsNull(_reference);
 }
 
 /// A to-one embedded relation (many-to-one or one-to-one) of the table whose

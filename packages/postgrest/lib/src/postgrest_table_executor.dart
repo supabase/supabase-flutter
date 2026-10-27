@@ -41,6 +41,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   Future<PostgrestTableResult> execute(PostgrestTableRequest request) async {
     if (request.operation == PostgrestTableOperation.count) {
       _rejectCountTransforms(request);
+      _rejectEmbedFilter(request);
       final counted = _applyOptions(
         _applyFilter(
           _query(request).count(request.countOption ?? CountOption.exact),
@@ -105,8 +106,10 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
           request,
         );
       case PostgrestTableOperation.update:
+        _rejectEmbedFilter(request);
         return _applyFilter(_query(request).update(request.payload!), request);
       case PostgrestTableOperation.delete:
+        _rejectEmbedFilter(request);
         return _applyFilter(_query(request).delete(), request);
       case PostgrestTableOperation.insert:
         _rejectFilter(filter, request.operation);
@@ -190,6 +193,19 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     }
   }
 
+  /// Rejects a [PostgrestRelation.isNull] in the filter of an update, delete
+  /// or count, which PostgREST answers with an error.
+  static void _rejectEmbedFilter(PostgrestTableRequest request) {
+    final filter = request.filter;
+    if (filter != null && filter._filtersEmbed) {
+      throw ArgumentError.value(
+        filter,
+        'filter',
+        'A ${request.operation.name} cannot filter by a relation',
+      );
+    }
+  }
+
   static void _rejectFilter(
     PostgrestFilter<Object?>? filter,
     PostgrestTableOperation operation,
@@ -225,8 +241,12 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     PostgrestTableRequest request,
   ) {
     var transformed = operation;
-    if (request.operation.isMutation && request.returning) {
-      transformed = transformed.select(_requestSelectList(request));
+    if (request.operation.isMutation) {
+      if (request.returning) {
+        transformed = transformed.select(_requestSelectList(request));
+      } else {
+        _JoinTree.of(request.embeddedScopes)?.checkRendered();
+      }
     }
     for (final ordering in request.orderings) {
       transformed = transformed.appendOrderKey(ordering.orderKey);

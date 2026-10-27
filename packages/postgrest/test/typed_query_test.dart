@@ -1032,6 +1032,17 @@ void main() {
       );
       expect(httpClient.requests, isEmpty);
     });
+
+    test('rejects a mutation that reads nothing back', () async {
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .insert(BookInsert(title: 'a'))
+            .requiring(Books.author),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
   });
 
   group('relation isNull', () {
@@ -1057,6 +1068,25 @@ void main() {
         requestParameters()['or'],
         '(editor.not.is.null,title.eq.Dune)',
       );
+    });
+
+    test('is rejected on an update, delete and count', () async {
+      final withoutReviews = Books.reviews.isNull() | Books.id.eq(1);
+      final table = client.table(Books.table);
+
+      await expectLater(
+        () => table.update(BookUpdate(title: 'a')).where(withoutReviews),
+        throwsArgumentError,
+      );
+      await expectLater(
+        () => table.delete().where(withoutReviews.not()),
+        throwsArgumentError,
+      );
+      await expectLater(
+        () => table.count().where(withoutReviews),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
     });
 
     test('is addressed by the alias at top level', () async {

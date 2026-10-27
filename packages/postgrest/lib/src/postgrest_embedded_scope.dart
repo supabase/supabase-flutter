@@ -224,9 +224,9 @@ final class _JoinTree {
     }
   }
 
-  bool get _anyRequiresMatch =>
-      _children.values.any((child) => child._requiresMatch) ||
-      _children.values.any((child) => child._anyRequiresMatch);
+  bool get _anyRequiresMatch => _children.values.any(
+    (child) => child._requiresMatch || child._anyRequiresMatch,
+  );
 
   /// The tree of the embed spelled [name], marked as rendered.
   _JoinTree? _render(String name) => _children[name]?.._rendered = true;
