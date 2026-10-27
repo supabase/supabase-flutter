@@ -456,7 +456,7 @@ class ResumableUploadRegistry {
       bucketId: record.bucketId,
       path: record.path,
       source: source,
-      headers: record._token == null ? headers : const {},
+      headers: headers,
       upsert: record._upsert,
       contentType: record._contentType,
       cacheControl: record._cacheControl,
@@ -476,7 +476,7 @@ class ResumableUploadRegistry {
     if (live != null) return live.cancel();
     final record = await _record(id);
     if (record == null) return;
-    await _terminate(record, record._token == null ? headers : const {});
+    await _terminate(record, headers);
     await _remove(id);
   }
 

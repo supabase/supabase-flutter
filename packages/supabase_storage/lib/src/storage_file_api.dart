@@ -54,13 +54,15 @@ class StorageFileApi {
     // Percent-encode each segment (RFC 3986) so object keys containing
     // characters like `?`, `#`, `%` or spaces don't corrupt the request URL
     // (for example a `?` being parsed as the start of the query string). `/`
-    // separators, the bucket id, and characters that are already valid in a
-    // path segment (such as `:` in ISO-8601 timestamps) are preserved, so URLs
-    // for existing valid keys are unchanged.
+    // separators and characters that are already valid in a path segment
+    // (such as `:` in ISO-8601 timestamps) are preserved, so URLs for existing
+    // valid keys are unchanged.
     final cleanPath = _removeEmptyFolders(path);
     final encodedPath = Uri(pathSegments: cleanPath.split('/')).path;
-    return '$bucketId/$encodedPath';
+    return '$_encodedBucketId/$encodedPath';
   }
+
+  late final String _encodedBucketId = encodePathSegment('$bucketId');
 
   String _removeEmptyFolders(String path) {
     return _normalizePrefix(path).replaceAll(RegExp(r'/$'), '');
@@ -147,6 +149,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: fileOptions.upsert,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -190,6 +193,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: fileOptions.upsert,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -337,9 +341,12 @@ class StorageFileApi {
       source: source,
       contentType:
           fileOptions.contentType ??
-          _storageFetch.contentTypeFor(contentTypePath ?? cleanPath),
+          _storageFetch.contentTypeFor(
+            contentTypePath ?? cleanPath,
+            fallbackPath: cleanPath,
+          ),
       fileOptions: fileOptions,
-      headers: token == null ? _headers : const {},
+      headers: _headers,
       token: token,
     );
   }
@@ -383,7 +390,9 @@ class StorageFileApi {
       requestUrl.toString(),
       file,
       fileOptions,
+      options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: false,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -430,7 +439,9 @@ class StorageFileApi {
       requestUrl.toString(),
       data,
       fileOptions,
+      options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: false,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -478,6 +489,7 @@ class StorageFileApi {
       data,
       contentLength,
       fileOptions,
+      options: _fetchOptions,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -562,6 +574,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: true,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -606,6 +619,7 @@ class StorageFileApi {
       fileOptions,
       options: _fetchOptions,
       retryOptions: retryOptions ?? _retryOptions,
+      idempotent: true,
       abortSignal: abortSignal,
       onProgress: onProgress,
     );
@@ -806,7 +820,7 @@ class StorageFileApi {
   }) async {
     final options = _fetchOptions;
     final response = await _storageFetch.post<List<dynamic>>(
-      '$url/object/sign/$bucketId',
+      '$url/object/sign/$_encodedBucketId',
       {
         'expiresIn': expiresIn,
         'paths': paths.map(_removeEmptyFolders).toList(),
@@ -855,7 +869,7 @@ class StorageFileApi {
   /// [range] downloads only those bytes of the file. See [ByteRange]. A
   /// server or cache that ignores the range and answers with the whole file
   /// fails the download with a [StorageException]. A range of a transformed
-  /// image throws an [ArgumentError].
+  /// image fails it with an [ArgumentError].
   /// {@endtemplate}
   Future<Uint8List> download(
     String path, {
@@ -866,20 +880,20 @@ class StorageFileApi {
     String? versionId,
     ByteRange? range,
   }) {
-    final fetchUrl = _downloadUri(
-      path,
-      transform: transform,
-      queryParameters: queryParameters,
-      cacheNonce: cacheNonce,
-      versionId: versionId,
-      range: range,
-    );
-
-    return _storageFetch.get(
-      fetchUrl.toString(),
-      options: _downloadOptions(range),
-      abortSignal: abortSignal,
-      partialContent: range != null,
+    return Future.sync(
+      () => _storageFetch.get(
+        _downloadUri(
+          path,
+          transform: transform,
+          queryParameters: queryParameters,
+          cacheNonce: cacheNonce,
+          versionId: versionId,
+          range: range,
+        ).toString(),
+        options: _downloadOptions(range),
+        abortSignal: abortSignal,
+        partialContent: range != null,
+      ),
     );
   }
 
@@ -964,7 +978,7 @@ class StorageFileApi {
     Future<void>? abortSignal,
     String? versionId,
     ByteRange? range,
-  }) {
+  }) async* {
     final fetchUrl = _downloadUri(
       path,
       transform: transform,
@@ -974,7 +988,7 @@ class StorageFileApi {
       range: range,
     );
 
-    return _storageFetch.getStream(
+    yield* _storageFetch.getStream(
       fetchUrl.toString(),
       options: _downloadOptions(range),
       abortSignal: abortSignal,
@@ -1117,7 +1131,7 @@ class StorageFileApi {
 
   Future<List<FileObject>> _remove(List<Object> prefixes) async {
     final response = await _storageFetch.delete<List<dynamic>>(
-      '$url/object/$bucketId',
+      '$url/object/$_encodedBucketId',
       {'prefixes': prefixes},
       options: _fetchOptions,
     );
@@ -1169,7 +1183,7 @@ class StorageFileApi {
     };
     final options = _fetchOptions;
     final response = await _storageFetch.post<List<dynamic>>(
-      '$url/object/list/$bucketId',
+      '$url/object/list/$_encodedBucketId',
       body,
       options: options,
     );
@@ -1199,7 +1213,7 @@ class StorageFileApi {
       body['prefix'] = _normalizePrefix(prefix);
     }
     final response = await _storageFetch.post<Map<String, dynamic>>(
-      '$url/object/list-v2/$bucketId',
+      '$url/object/list-v2/$_encodedBucketId',
       body,
       options: _fetchOptions,
     );
