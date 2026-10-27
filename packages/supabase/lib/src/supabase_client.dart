@@ -358,12 +358,12 @@ class SupabaseClient {
   /// Unsubscribes and removes Realtime channel from Realtime client.
   ///
   /// [channel] - The Realtime channel to remove.
-  Future<String> removeChannel(RealtimeChannel channel) {
+  Future<ChannelResponse> removeChannel(RealtimeChannel channel) {
     return realtime.removeChannel(channel);
   }
 
   ///  Unsubscribes and removes all Realtime channels from Realtime client.
-  Future<List<String>> removeAllChannels() {
+  Future<List<ChannelResponse>> removeAllChannels() {
     return realtime.removeAllChannels();
   }
 

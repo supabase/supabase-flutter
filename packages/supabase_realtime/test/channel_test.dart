@@ -1064,7 +1064,7 @@ void main() {
     });
   });
 
-  group('track options forwarding', () {
+  group('presence timeout forwarding', () {
     late _OptionsCapturingChannel capturingChannel;
 
     setUp(() {
@@ -1072,39 +1072,32 @@ void main() {
       capturingChannel = _OptionsCapturingChannel('topic', socket);
     });
 
-    test('track forwards a custom non-timeout option to send', () async {
-      await capturingChannel.track({'id': 123}, {'ack': true});
-
-      expect(capturingChannel.capturedOptions, containsPair('ack', true));
-    });
-
-    test('track forwards a custom timeout option to send', () async {
-      await capturingChannel.track({'id': 123}, {'timeout': 2500});
-
-      expect(capturingChannel.capturedOptions, containsPair('timeout', 2500));
-    });
-
-    test(
-      'track falls back to the channel timeout when none provided',
-      () async {
-        await capturingChannel.track({'id': 123});
-
-        expect(
-          capturingChannel.capturedOptions,
-          containsPair('timeout', const Duration(milliseconds: 1234)),
-        );
-      },
-    );
-
-    test('track keeps custom options alongside the default timeout', () async {
-      await capturingChannel.track({'id': 123}, {'ack': true});
+    test('track forwards the timeout to send', () async {
+      await capturingChannel.track(
+        {'id': 123},
+        timeout: const Duration(milliseconds: 2500),
+      );
 
       expect(
         capturingChannel.capturedOptions,
-        allOf(
-          containsPair('ack', true),
-          containsPair('timeout', const Duration(milliseconds: 1234)),
-        ),
+        {'timeout': const Duration(milliseconds: 2500)},
+      );
+    });
+
+    test('track leaves the default timeout to send', () async {
+      await capturingChannel.track({'id': 123});
+
+      expect(capturingChannel.capturedOptions, isEmpty);
+    });
+
+    test('untrack forwards the timeout to send', () async {
+      await capturingChannel.untrack(
+        timeout: const Duration(milliseconds: 2500),
+      );
+
+      expect(
+        capturingChannel.capturedOptions,
+        {'timeout': const Duration(milliseconds: 2500)},
       );
     });
   });
@@ -1121,7 +1114,7 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          config: const RealtimeChannelConfig(enabled: true),
+          config: const RealtimeChannelConfig(presenceEnabled: true),
         );
 
         channel.subscribe();
@@ -1152,7 +1145,7 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          config: const RealtimeChannelConfig(enabled: true),
+          config: const RealtimeChannelConfig(presenceEnabled: true),
         );
 
         channel.onPresenceSync.listen((payload) {});
@@ -1241,7 +1234,7 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          config: const RealtimeChannelConfig(enabled: true),
+          config: const RealtimeChannelConfig(presenceEnabled: true),
         );
 
         channel.subscribe();

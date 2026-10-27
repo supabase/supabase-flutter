@@ -811,7 +811,7 @@ Across every package:
 | ------------------------------------------- | ------------------------------------------- |
 | `RealtimeClient.conn`                       | `RealtimeClient.connection`                 |
 | `RealtimeClient.connState`                  | `RealtimeClient.connectionState`            |
-| `RealtimeClient.onConnMessage`              | `RealtimeClient.onConnectionMessage`        |
+| `RealtimeClient.onConnMessage`              | removed (internal)                          |
 | `RealtimeClient.params`                     | `RealtimeClient.parameters`                 |
 | `RealtimeClient.endPoint`                   | `RealtimeClient.endpoint`                   |
 | `RealtimeClient.endPointURL`                | `RealtimeClient.endpointUrl`                |
@@ -1628,6 +1628,62 @@ was stringified into the socket URL. Pass string values.
 If you read presence state through `channel.presence`, use `channel.presenceState()` and the
 `onPresenceSync`, `onPresenceJoin` and `onPresenceLeave` streams instead. Pass channel configuration
 through `RealtimeChannelConfig` when creating the channel.
+
+#### Channel results are typed
+
+`RealtimeChannel.unsubscribe()`, `RealtimeClient.removeChannel()` and
+`SupabaseClient.removeChannel()` resolve to a `ChannelResponse` instead of the strings `'ok'`,
+`'timed out'` and `'error'`, and `removeAllChannels()` resolves to a `List<ChannelResponse>`.
+Comparing the result with a string still compiles but is never true.
+
+```dart skip
+// Before
+if (await supabase.removeChannel(channel) == 'ok') {}
+```
+
+```dart
+// After
+final channel = supabase.channel('room');
+if (await supabase.removeChannel(channel) == ChannelResponse.ok) {}
+```
+
+#### `track()` and `untrack()` take a `timeout`
+
+The options map of `track()` and `untrack()` is replaced by a named `timeout`, the only option that
+had an effect.
+
+```dart skip
+// Before
+await channel.track({'online_at': now}, {'timeout': 5000});
+```
+
+```dart
+// After
+final channel = supabase.channel('room');
+await channel.track(
+  {'online_at': DateTime.now().toIso8601String()},
+  timeout: const Duration(seconds: 5),
+);
+```
+
+#### `RealtimeChannelConfig` presence options are named for presence
+
+| Before                              | After                                       |
+| ----------------------------------- | ------------------------------------------- |
+| `RealtimeChannelConfig(key: …)`     | `RealtimeChannelConfig(presenceKey: …)`     |
+| `RealtimeChannelConfig(enabled: …)` | `RealtimeChannelConfig(presenceEnabled: …)` |
+
+#### A channel exposes its topic and state
+
+`RealtimeChannel.topic` and the new `RealtimeChannel.state`, a `ChannelState`, are public, so a
+channel can be found in `supabase.channels` and checked without listening to `onStatusChange`:
+
+```dart
+final joined = supabase.channels.where(
+  (channel) =>
+      channel.topic == 'realtime:room' && channel.state == ChannelState.joined,
+);
+```
 
 #### Broadcasts no longer fall back to the REST API
 

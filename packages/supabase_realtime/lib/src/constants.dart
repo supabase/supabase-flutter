@@ -18,8 +18,25 @@ enum SocketState {
   disconnected,
 }
 
-@internal
-enum ChannelState { closed, errored, joined, joining, leaving }
+/// The state of a [RealtimeChannel], read through [RealtimeChannel.state].
+enum ChannelState {
+  /// The channel is not joined, either because it was never subscribed or
+  /// because it left.
+  closed,
+
+  /// The join failed or the connection dropped, and the channel will try to
+  /// rejoin.
+  errored,
+
+  /// The channel is joined and receiving events.
+  joined,
+
+  /// A join request is in flight.
+  joining,
+
+  /// A leave request is in flight.
+  leaving,
+}
 
 @internal
 enum ChannelEvent {

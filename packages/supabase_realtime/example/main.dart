@@ -16,7 +16,7 @@ Future<void> main() async {
     parameters: {'apikey': 'SUPABASE_API_KEY'},
   );
 
-  final channel = socket.channel('realtime:public');
+  final channel = socket.channel('public');
   channel
       .onPostgresChanges(
         event: PostgresChangeEvent.all,
@@ -46,8 +46,7 @@ Future<void> main() async {
 
   socket.onMessage.listen((message) => print('MESSAGE $message'));
 
-  // on connect and subscribe
-  await socket.connect();
+  // subscribing connects the socket
   channel.onStatusChange.listen(
     (change) => print('STATUS ${change.status.name}'),
   );

@@ -132,7 +132,6 @@ class RealtimeChannel {
 
   /// The full topic this channel subscribes to, for example
   /// `realtime:room`.
-  @internal
   final String topic;
   final Map<String, dynamic> _parameters;
 
@@ -434,33 +433,34 @@ class RealtimeChannel {
 
   /// Shares [payload] with every other client tracking presence on this
   /// channel.
+  ///
+  /// [timeout] bounds how long to wait for the server to acknowledge it, and
+  /// defaults to the client's timeout.
   Future<ChannelResponse> track(
-    Map<String, dynamic> payload, [
-    Map<String, dynamic> options = const {},
-  ]) {
+    Map<String, dynamic> payload, {
+    Duration? timeout,
+  }) {
     return send(
       type: RealtimeListenType.presence,
       payload: {
         'event': 'track',
         'payload': payload,
       },
-      options: {
-        'timeout': _timeout,
-        ...options,
-      },
+      options: {'timeout': ?timeout},
     );
   }
 
   /// Stops sharing this client's presence on this channel.
-  Future<ChannelResponse> untrack([
-    Map<String, dynamic> options = const {},
-  ]) {
+  ///
+  /// [timeout] bounds how long to wait for the server to acknowledge it, and
+  /// defaults to the client's timeout.
+  Future<ChannelResponse> untrack({Duration? timeout}) {
     return send(
       type: RealtimeListenType.presence,
       payload: {
         'event': 'untrack',
       },
-      options: options,
+      options: {'timeout': ?timeout},
     );
   }
 
@@ -1046,13 +1046,12 @@ class RealtimeChannel {
   /// Unsubscribes from server events, and instructs channel to terminate on
   /// server. Triggers onClose() hooks.
   ///
-  /// Returns a [Future] that resolves to `'ok'`, `'timed out'`, or `'error'`
-  /// depending on the outcome of the leave request.
+  /// Resolves to the outcome of the leave request.
   /// ```dart
-  /// final status = await channel.unsubscribe();
-  /// print(status); // 'ok'
+  /// final response = await channel.unsubscribe();
+  /// print(response); // ChannelResponse.ok
   /// ```
-  Future<String> unsubscribe([Duration? timeout]) {
+  Future<ChannelResponse> unsubscribe([Duration? timeout]) {
     _state = ChannelState.leaving;
     void onClose() {
       realtimeLogger.fine('Channel leave: $topic');
@@ -1062,7 +1061,7 @@ class RealtimeChannel {
     // Destroy joinPush to avoid connection timeouts during unsubscription phase
     _joinPush.destroy();
 
-    final completer = Completer<String>();
+    final completer = Completer<ChannelResponse>();
 
     final leavePush = Push(this, ChannelEvent.leave, {}, timeout ?? _timeout);
 
@@ -1070,19 +1069,19 @@ class RealtimeChannel {
         .receive('ok', (_) {
           onClose();
           if (!completer.isCompleted) {
-            completer.complete('ok');
+            completer.complete(ChannelResponse.ok);
           }
         })
         .receive('timeout', (_) {
           if (!completer.isCompleted) {
             onClose();
           }
-          completer.complete('timed out');
+          completer.complete(ChannelResponse.timedOut);
         })
         .receive('error', (_) {
           onClose();
           if (!completer.isCompleted) {
-            completer.complete('error');
+            completer.complete(ChannelResponse.error);
           }
         });
 
@@ -1231,6 +1230,11 @@ class RealtimeChannel {
   String replyEventName(String? ref) {
     return 'chan_reply_$ref';
   }
+
+  /// The current state of the channel.
+  ///
+  /// Listen to [onStatusChange] to be told when the subscription changes.
+  ChannelState get state => _state;
 
   /// Whether the channel has been closed.
   @internal
