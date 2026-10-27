@@ -31,6 +31,12 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// bandwidth. With the default backoff the delays are 400 ms, 800 ms,
   /// 1600 ms and so on, each randomized by up to 25%, capped at 30 seconds.
   ///
+  /// An upload that creates an object, without `upsert` or through a signed
+  /// URL, is not retried once the HTTP client has read its whole body, since
+  /// storage may already have stored the file and a retry would fail as a
+  /// duplicate. A browser reads the whole body before it connects, so on the
+  /// web such an upload is never retried.
+  ///
   /// Override it for a single upload with the `retryOptions` parameter of
   /// [StorageFileApi.upload] and its siblings.
   ///

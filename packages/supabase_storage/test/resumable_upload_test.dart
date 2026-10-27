@@ -216,6 +216,31 @@ void main() {
     );
   });
 
+  test(
+    'guesses the content type from the object path for a file without '
+    'an extension',
+    () async {
+      final directory = Directory.systemTemp.createTempSync(
+        'resumable_upload',
+      );
+      addTearDown(() => directory.deleteSync(recursive: true));
+      final file = File('${directory.path}/upload-1234')
+        ..writeAsBytesSync(data);
+
+      await storage.from('docs').resumableUpload('avatar.png', file).done;
+
+      final create = httpClient
+          .requestsTo('/upload/resumable', method: HttpMethod.post)
+          .single;
+      expect(
+        decodeUploadMetadata(
+          create.headers['upload-metadata']!,
+        )['contentType'],
+        'image/png',
+      );
+    },
+  );
+
   test('records the upload before the first chunk is sent', () async {
     httpClient.stubStall(method: HttpMethod.patch, times: 1);
 
@@ -579,7 +604,7 @@ void main() {
     );
   });
 
-  test('uploads with a signed upload token', () async {
+  test('uploads with a signed upload token and the client headers', () async {
     await storage
         .from('videos')
         .resumableUploadBinary(
@@ -595,10 +620,12 @@ void main() {
         .single;
     expect(create.headers['x-signature'], 'signed-token');
     expect(create.headers.containsKey('x-upsert'), isFalse);
-    expect(create.headers.containsKey('authorization'), isFalse);
+    expect(create.headers['apikey'], 'key');
+    expect(create.headers['x-client-info'], startsWith('storage-dart/'));
     for (final patch in patches()) {
       expect(patch.headers['x-signature'], 'signed-token');
       expect(patch.headers.containsKey('x-upsert'), isFalse);
+      expect(patch.headers['apikey'], 'key');
     }
   });
 
