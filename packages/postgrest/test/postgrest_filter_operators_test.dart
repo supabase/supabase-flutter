@@ -20,9 +20,8 @@ class Posts {
     'during',
   );
   static const content = PostgrestColumn<Post, String>('content');
-  static const metadata = PostgrestColumn<Post, Map<String, Object?>>(
-    'metadata',
-  );
+  static const metadata = PostgrestJsonColumn<Post>('metadata');
+  static const extra = PostgrestNullableJsonColumn<Post>('extra');
   static const search = PostgrestColumn<Post, Object>('search');
   static const cover = PostgrestColumn<Post, Uint8List>('cover');
   static const samples = PostgrestColumn<Post, List<double>>('samples');
@@ -271,6 +270,58 @@ void main() {
       expect(
         rendered(Posts.metadata.containsJson({'a': 1}) | Posts.id.eq(1)),
         r'or=(metadata.cs."{\"a\":1}",id.eq.1)',
+      );
+    });
+
+    test('a json column compares with json, not an array literal', () {
+      expect(
+        rendered(Posts.metadata.eq(const PostgrestJson([1, 2]))),
+        'metadata=eq.[1,2]',
+      );
+      expect(
+        rendered(Posts.metadata.neq(const PostgrestJson('a'))),
+        'metadata=neq."a"',
+      );
+      expect(
+        rendered(Posts.metadata.containsJson([1])),
+        'metadata=cs.[1]',
+      );
+    });
+
+    test('in encodes each member as json', () {
+      expect(
+        rendered(
+          Posts.metadata.inFilter(const [
+            PostgrestJson('a'),
+            PostgrestJson([1, 2]),
+          ]),
+        ),
+        r'metadata=in.("\"a\"","[1,2]")',
+      );
+    });
+
+    test('a nullable json column tests for NULL', () {
+      expect(rendered(Posts.extra.isNull()), 'extra=is.null');
+    });
+
+    test('a json path compares with json, a text path with text', () {
+      expect(
+        rendered(
+          Posts.metadata.jsonObject('tags').eq(const PostgrestJson([1])),
+        ),
+        'metadata->"tags"=eq.[1]',
+      );
+      expect(
+        rendered(Posts.metadata.jsonObject('n').gt(const PostgrestJson(2))),
+        'metadata->"n"=gt.2',
+      );
+      expect(
+        rendered(Posts.metadata.jsonText('name').eq('Ada')),
+        'metadata->>"name"=eq.Ada',
+      );
+      expect(
+        rendered(Posts.content.jsonObject('a').containsJson({'b': 1})),
+        'content->"a"=cs.{"b":1}',
       );
     });
   });

@@ -82,9 +82,7 @@ extension PostgrestTextFilters<Row>
 /// Filters that only apply to array columns.
 ///
 /// The range forms of `contains`, `containedBy` and `overlaps` are on
-/// [PostgrestRangeFilters]; the JSON forms are on every
-/// [PostgrestFilterableExpression], as
-/// [PostgrestFilterableExpression.containsJson].
+/// [PostgrestRangeFilters], and the JSON forms on [PostgrestJsonFilters].
 @experimental
 extension PostgrestArrayFilters<Row, Element>
     on PostgrestFilterableExpression<Row, List<Element>> {
@@ -112,6 +110,33 @@ extension PostgrestArrayFilters<Row, Element>
         this,
         PostgrestFilterOperator.overlaps,
         values,
+      );
+}
+
+/// Filters that only apply to `json` and `jsonb` columns and JSON paths, typed
+/// [PostgrestJson].
+@experimental
+extension PostgrestJsonFilters<Row>
+    on PostgrestFilterableExpression<Row, PostgrestJson> {
+  /// Only rows whose `jsonb` value contains [value].
+  ///
+  /// [value] is the decoded JSON to look for, for example `{'a': 1}`, `[1]`
+  /// or `null`, and is encoded before it is sent.
+  PostgrestFilter<Row> containsJson(Object? value) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.contains,
+        value,
+        encodesJson: true,
+      );
+
+  /// Only rows whose `jsonb` value is contained by [value].
+  PostgrestFilter<Row> containedByJson(Object? value) =>
+      PostgrestFilter._comparison(
+        this,
+        PostgrestFilterOperator.containedBy,
+        value,
+        encodesJson: true,
       );
 }
 

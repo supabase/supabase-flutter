@@ -112,11 +112,19 @@ enum PostgrestFilterOperator {
 final class PostgrestFilter<Row> {
   const PostgrestFilter._(this._node);
 
+  /// A comparison of [column] with [value], which is sent as JSON when
+  /// [encodesJson] is set or [column] is a JSON expression.
   PostgrestFilter._comparison(
     PostgrestFilterableExpression<Row, Object> column,
     PostgrestFilterOperator operator,
-    Object? value,
-  ) : _node = _Comparison(column, operator, value);
+    Object? value, {
+    bool encodesJson = false,
+  }) : _node = _Comparison(
+         column,
+         operator,
+         value,
+         encodesJson: encodesJson || column._encodesJson,
+       );
 
   PostgrestFilter._textSearch(
     PostgrestFilterableExpression<Row, Object> column,
@@ -174,10 +182,11 @@ final class PostgrestFilter<Row> {
   /// The one comparison this filter consists of, negated or not, or `null`
   /// for a raw or a composed filter.
   PostgrestComparison<Row>? get comparison => switch (_node) {
-    _Comparison(:final column, :final operator, :final value) =>
-      PostgrestComparison._(column, operator, value, negated: false),
-    _Not(inner: _Comparison(:final column, :final operator, :final value)) =>
-      PostgrestComparison._(column, operator, value, negated: true),
+    final _Comparison<Row> node => PostgrestComparison._(node, negated: false),
+    _Not(:final _Comparison<Row> inner) => PostgrestComparison._(
+      inner,
+      negated: true,
+    ),
     _Raw() || _And() || _Or() || _Not() => null,
   };
 
@@ -217,22 +226,19 @@ final class PostgrestFilter<Row> {
 /// [PostgrestFilter.comparison].
 @experimental
 final class PostgrestComparison<Row> {
-  const PostgrestComparison._(
-    this.column,
-    this.operator,
-    this.value, {
-    required this.negated,
-  });
+  const PostgrestComparison._(this._comparison, {required this.negated});
+
+  final _Comparison<Row> _comparison;
 
   /// The expression on the left of the operator.
-  final PostgrestFilterableExpression<Row, Object> column;
+  PostgrestFilterableExpression<Row, Object> get column => _comparison.column;
 
   /// The operator.
-  final PostgrestFilterOperator operator;
+  PostgrestFilterOperator get operator => _comparison.operator;
 
   /// The operand as it was given: the value for a comparison, a `List` for
   /// `in` and the array operators, and `null`, `true` or `false` for `is`.
-  final Object? value;
+  Object? get value => _comparison.value;
 
   /// Whether the comparison is wrapped in [PostgrestFilter.not], so it
   /// matches the rows the operator does not.
@@ -242,14 +248,13 @@ final class PostgrestComparison<Row> {
   /// members for `in`, the rendered literal otherwise.
   @internal
   Object get renderedValue {
-    final comparison = _Comparison(column, operator, value);
     if (operator == PostgrestFilterOperator.inFilter) {
       return [
         for (final member in value! as List<Object?>)
-          comparison._render(member),
+          _comparison._render(member),
       ];
     }
-    return comparison._render(value);
+    return _comparison._render(value);
   }
 }
 
@@ -259,13 +264,21 @@ sealed class _FilterNode<Row> {
 
 /// One operator applied to one column.
 base class _Comparison<Row> extends _FilterNode<Row> {
-  const _Comparison(this.column, this.operator, this.value);
+  const _Comparison(
+    this.column,
+    this.operator,
+    this.value, {
+    required this.encodesJson,
+  });
 
   final PostgrestFilterableExpression<Row, Object> column;
   final PostgrestFilterOperator operator;
 
   /// The operand as given, rendered when the request is built.
   final Object? value;
+
+  /// Whether the operand is sent as JSON.
+  final bool encodesJson;
 
   String get operatorToken => operator.token;
 
@@ -281,6 +294,8 @@ base class _Comparison<Row> extends _FilterNode<Row> {
   }
 
   String _render(Object? given) => switch (given) {
+    _ when encodesJson && operator != PostgrestFilterOperator.isFilter =>
+      json.encode(given),
     final List<double> vector
         when column is PostgrestVectorColumn<Row> ||
             column is PostgrestNullableVectorColumn<Row> =>
@@ -308,7 +323,12 @@ final class _TextSearch<Row> extends _Comparison<Row> {
     String query, {
     required this.config,
     required this.type,
-  }) : super(column, PostgrestFilterOperator.textSearch, query);
+  }) : super(
+         column,
+         PostgrestFilterOperator.textSearch,
+         query,
+         encodesJson: false,
+       );
 
   final String? config;
   final TextSearchType? type;
@@ -422,7 +442,8 @@ String _group<Row>(_FilterNode<Row> node) => switch (node) {
 /// - A [Uint8List] is sent as a hex `bytea` literal, `\x48656c6c6f`.
 /// - A [List] becomes a Postgres array literal, `{a,b}`, with each element
 ///   escaped as the literal requires.
-/// - A [Map] is encoded as JSON, for `json`/`jsonb` columns.
+/// - A [Map] is encoded as JSON. A JSON expression encodes every operand,
+///   see [PostgrestJsonColumn].
 /// - A [PostgresValue], such as a [PostgresDate] or a [PostgresRange], is its
 ///   literal, `2024-02-29` or `[2,25)`.
 /// - Anything else uses its [Object.toString], which for a Dart enum

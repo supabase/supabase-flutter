@@ -41,7 +41,8 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// export the typed table access API of `package:postgrest` (`PostgrestTable`,
 /// `PostgrestColumn`, `PostgrestNullableColumn`, `PostgrestVectorColumn`,
 /// `PostgrestNullableVectorColumn`, `PostgrestIntegerVectorColumn`,
-/// `PostgrestNullableIntegerVectorColumn`, `PostgrestComputedField`,
+/// `PostgrestNullableIntegerVectorColumn`, `PostgrestJsonColumn`,
+/// `PostgrestNullableJsonColumn`, `PostgrestComputedField`,
 /// `PostgrestToOneRelation`, `PostgrestToManyRelation`, `PostgrestRpc`,
 /// `PostgrestTypedBuilder`, `PostgrestTypedFilterBuilder`, the Postgres value
 /// types such as `PostgresDate` and `PostgresRange`, `postgresBytea` and
@@ -208,6 +209,8 @@ class _TypeNameRegistry {
     'PostgrestNullableVectorColumn',
     'PostgrestIntegerVectorColumn',
     'PostgrestNullableIntegerVectorColumn',
+    'PostgrestJsonColumn',
+    'PostgrestNullableJsonColumn',
     'PostgrestComputedField',
     'PostgresRange',
     'PostgresMultirange',
@@ -1057,13 +1060,18 @@ void _writeColumnTokens(
         'PostgrestNullableIntegerVectorColumn<$rowType>',
       (ColumnTypeKind.integerVector, false) =>
         'PostgrestIntegerVectorColumn<$rowType>',
+      _ when column.typeKind == ColumnTypeKind.json =>
+        column.isNullable
+            ? 'PostgrestNullableJsonColumn<$rowType>'
+            : 'PostgrestJsonColumn<$rowType>',
       (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
       (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
     };
-    // A vector column decodes its value itself.
+    // A vector or JSON column decodes its value itself.
     final decoder =
         binding.kind == ColumnTypeKind.vector ||
-            binding.kind == ColumnTypeKind.integerVector
+            binding.kind == ColumnTypeKind.integerVector ||
+            column.typeKind == ColumnTypeKind.json
         ? null
         : decoders.claim(binding);
     final arguments = decoder == null ? '' : ', fromJson: $decoder';

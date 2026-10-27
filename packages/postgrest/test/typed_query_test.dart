@@ -75,9 +75,7 @@ class Books {
   static const ageRange = PostgrestColumn<Book, PostgresRange<int>>(
     'age_range',
   );
-  static const metadata = PostgrestColumn<Book, Map<String, dynamic>>(
-    'metadata',
-  );
+  static const metadata = PostgrestJsonColumn<Book>('metadata');
   static const publishedOn = PostgrestNullableColumn<Book, DateTime>(
     'published_on',
   );

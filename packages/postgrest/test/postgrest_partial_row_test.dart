@@ -47,7 +47,7 @@ class Orders {
     fromJson: _dateTimeFromJson,
   );
   static const note = PostgrestNullableColumn<Order, String>('note');
-  static const metadata = PostgrestColumn<Order, Object>('metadata');
+  static const metadata = PostgrestJsonColumn<Order>('metadata');
   static const customer = PostgrestToOneRelation<Order, Customer>(
     'customers',
     columns: [customerId],

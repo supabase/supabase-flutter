@@ -753,7 +753,7 @@ class Books {
   );
   static const id = PostgrestColumn<BooksRow, int>('id');
   static const inPrint = PostgrestColumn<BooksRow, bool>('in_print');
-  static const metadata = PostgrestNullableColumn<BooksRow, Object>('metadata');
+  static const metadata = PostgrestNullableJsonColumn<BooksRow>('metadata');
   static const mood = PostgrestNullableColumn<BooksRow, Mood>(
     'mood',
     fromJson: _moodFromJson,

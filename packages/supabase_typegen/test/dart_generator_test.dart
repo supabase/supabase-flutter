@@ -291,7 +291,7 @@ void main() {
     );
     expect(
       compact,
-      contains("PostgrestNullableColumn<BooksRow,Object>('metadata');"),
+      contains("PostgrestNullableJsonColumn<BooksRow>('metadata');"),
     );
     expect(
       compact,
@@ -480,6 +480,48 @@ void main() {
       generateDartCode(textOnlySchema),
       isNot(contains('dart:typed_data')),
     );
+  });
+
+  test('only json and jsonb columns are JSON columns', () {
+    const jsonSchema = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(
+          schema: 'public',
+          name: 'notes',
+          columns: [
+            ColumnDescription(
+              name: 'body',
+              postgresFormat: 'jsonb',
+              typeKind: ColumnTypeKind.json,
+              isRequired: true,
+              hasDefault: false,
+              isNullable: false,
+            ),
+            ColumnDescription(
+              name: 'shape',
+              postgresFormat: 'box',
+              typeKind: ColumnTypeKind.unknown,
+              isRequired: false,
+              hasDefault: false,
+              isNullable: true,
+            ),
+          ],
+        ),
+      ],
+      enums: [],
+    );
+
+    final compact = _normalize(
+      generateDartCode(jsonSchema),
+    ).replaceAll(' ', '');
+
+    expect(compact, contains("PostgrestJsonColumn<NotesRow>('body');"));
+    expect(
+      compact,
+      contains("PostgrestNullableColumn<NotesRow,Object>('shape');"),
+    );
+    expect(compact, contains("Object?getbody=>_json['body']asObject?;"));
   });
 
   test('emits a relation member for each side of a foreign key', () {

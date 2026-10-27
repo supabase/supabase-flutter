@@ -37,7 +37,7 @@ class Messages {
   static const message = PostgrestColumn<Message, String>('message');
   static const channelId = PostgrestColumn<Message, int>('channel_id');
   static const username = PostgrestColumn<Message, String>('username');
-  static const data = PostgrestNullableColumn<Message, Object>('data');
+  static const data = PostgrestNullableJsonColumn<Message>('data');
   static const user = PostgrestToOneRelation<Message, User>(
     'users',
     columns: [username],
@@ -477,7 +477,13 @@ void main() {
           ])
           .where(Messages.username.eq('supabot'))
           .where(digitKey.eq('zero-key'))
-          .where(Messages.data.jsonObject('n').gt(2))
+          .where(Messages.data.jsonObject('n').gt(const PostgrestJson(2)))
+          .where(
+            Messages.data
+                .jsonObject('tags')
+                .eq(const PostgrestJson(['urgent', 'later'])),
+          )
+          .where(Messages.data.containsJson({'a.b': 'dotted'}))
           .order(dottedKey.asc())
           .order(Messages.id);
       final users = await postgrest

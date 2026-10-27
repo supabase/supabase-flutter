@@ -8,7 +8,7 @@ extension type const Item(Map<String, dynamic> _json)
 
 class Items {
   static const cost = PostgrestColumn<Item, double>('cost');
-  static const data = PostgrestColumn<Item, Map<String, Object?>>('data');
+  static const data = PostgrestJsonColumn<Item>('data');
 }
 
 String rendered(PostgrestFilter<Item> filter) => [
@@ -196,10 +196,10 @@ void main() {
       expect(first.responseKey, isNot(second.responseKey));
     });
 
-    test('keep the value type through jsonObject', () {
+    test('read json through jsonObject', () {
       expect(
         Items.data.jsonObject('meta'),
-        isA<PostgrestColumnExpression<Item, Map<String, Object?>>>(),
+        isA<PostgrestColumnExpression<Item, PostgrestJson>>(),
       );
     });
   });

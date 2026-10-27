@@ -459,11 +459,11 @@ final class PostgrestToOneColumn<Row, Value extends Object>
       PostgrestToOneColumn._(relation, _inner.jsonTextAt(index));
 
   @override
-  PostgrestToOneColumn<Row, Value> jsonObject(String key) =>
+  PostgrestToOneColumn<Row, PostgrestJson> jsonObject(String key) =>
       PostgrestToOneColumn._(relation, _inner.jsonObject(key));
 
   @override
-  PostgrestToOneColumn<Row, Value> jsonObjectAt(int index) =>
+  PostgrestToOneColumn<Row, PostgrestJson> jsonObjectAt(int index) =>
       PostgrestToOneColumn._(relation, _inner.jsonObjectAt(index));
 }
 
@@ -486,10 +486,10 @@ final class PostgrestToManyColumn<Row, Value extends Object>
       PostgrestToManyColumn._(relation, _inner.jsonTextAt(index));
 
   @override
-  PostgrestToManyColumn<Row, Value> jsonObject(String key) =>
+  PostgrestToManyColumn<Row, PostgrestJson> jsonObject(String key) =>
       PostgrestToManyColumn._(relation, _inner.jsonObject(key));
 
   @override
-  PostgrestToManyColumn<Row, Value> jsonObjectAt(int index) =>
+  PostgrestToManyColumn<Row, PostgrestJson> jsonObjectAt(int index) =>
       PostgrestToManyColumn._(relation, _inner.jsonObjectAt(index));
 }
