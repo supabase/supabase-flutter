@@ -1047,7 +1047,9 @@ class RealtimeChannel {
   /// Unsubscribes from server events, and instructs channel to terminate on
   /// server. Triggers onClose() hooks.
   ///
-  /// Resolves to the outcome of the leave request.
+  /// Resolves once the leave is sent, without waiting for the server to
+  /// acknowledge it, so the result is normally [ChannelResponse.ok]. The
+  /// channel is closed and removed from [RealtimeClient.channels] by then.
   /// ```dart
   /// final response = await channel.unsubscribe();
   /// print(response); // ChannelResponse.ok
