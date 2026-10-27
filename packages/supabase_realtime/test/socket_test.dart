@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -951,23 +952,28 @@ void main() {
         () => customSink.add(captureAny(that: equals('custom-frame'))),
       ).called(1);
     });
+
     test('formats the payload only when finest logging is enabled', () {
       final counter = _FormatCounter();
-      final message = RealtimeMessage.outgoing(
+      final countingPayload = _IterationCountingMap({
+        'apikey': 'secret',
+        'value': counter,
+      });
+      final message = RealtimeMessage(
         topic: topic,
-        payload: {'value': counter},
-        event: event,
+        payload: countingPayload,
+        event: event.eventName(),
         ref: ref,
       );
 
       mockedSocket.push(message);
       expect(counter.count, 0);
+      expect(countingPayload.iterations, 0);
 
-      final previousLevel = Logger.root.level;
-      addTearDown(() => Logger.root.level = previousLevel);
-      Logger.root.level = Level.FINEST;
+      final records = _recordFinestLogs();
       mockedSocket.push(message);
       expect(counter.count, 1);
+      expect(records.single, _isRedactedRecord('Push $topic'));
     });
   });
 
@@ -984,25 +990,29 @@ void main() {
       'formats a received payload only when finest logging is enabled',
       () async {
         final counter = _FormatCounter();
+        final payload = _IterationCountingMap({
+          'apikey': 'secret',
+          'value': counter,
+        });
         final socket = RealtimeClient(
           socketEndpoint,
           decode: (_) async => RealtimeMessage(
             topic: 'realtime:room',
             event: 'broadcast',
-            payload: {'value': counter},
+            payload: payload,
           ),
         );
 
         socket.onConnectionMessage('frame');
         await pumpEventQueue();
         expect(counter.count, 0);
+        expect(payload.iterations, 0);
 
-        final previousLevel = Logger.root.level;
-        addTearDown(() => Logger.root.level = previousLevel);
-        Logger.root.level = Level.FINEST;
+        final records = _recordFinestLogs();
         socket.onConnectionMessage('frame');
         await pumpEventQueue();
         expect(counter.count, 1);
+        expect(records.single, _isRedactedRecord('Receive  realtime:room'));
       },
     );
 
@@ -1926,4 +1936,55 @@ class _FormatCounter {
     count++;
     return 'formatted';
   }
+}
+
+/// Enables finest logging for the rest of the test and collects the finest
+/// records of the realtime logger.
+List<String> _recordFinestLogs() {
+  final previousLevel = Logger.root.level;
+  addTearDown(() => Logger.root.level = previousLevel);
+  Logger.root.level = Level.FINEST;
+  final records = <String>[];
+  final subscription = Logger.root.onRecord
+      .where(
+        (record) =>
+            record.loggerName == 'supabase.realtime' &&
+            record.level == Level.FINEST,
+      )
+      .map((record) => record.message)
+      .listen(records.add);
+  addTearDown(subscription.cancel);
+  return records;
+}
+
+Matcher _isRedactedRecord(String prefix) => allOf(
+  startsWith(prefix),
+  contains('<redacted>'),
+  contains('formatted'),
+  isNot(contains('secret')),
+);
+
+class _IterationCountingMap extends MapBase<String, Object?> {
+  _IterationCountingMap(this._entries);
+
+  final Map<String, Object?> _entries;
+  int iterations = 0;
+
+  @override
+  Object? operator [](Object? key) => _entries[key];
+
+  @override
+  void operator []=(String key, Object? value) => _entries[key] = value;
+
+  @override
+  void clear() => _entries.clear();
+
+  @override
+  Iterable<String> get keys {
+    iterations++;
+    return _entries.keys;
+  }
+
+  @override
+  Object? remove(Object? key) => _entries.remove(key);
 }
