@@ -181,17 +181,19 @@ final class PostgrestFilter<Row> {
     _Raw() || _And() || _Or() || _Not() => null,
   };
 
-  /// Whether the filter holds a [PostgrestRelation.isNull], which only a
-  /// read accepts.
-  bool get _filtersEmbed => _nodeFiltersEmbed(_node);
+  /// The embeds the [PostgrestRelation.isNull]s of the filter address, which
+  /// only a read that selects them accepts.
+  Iterable<String> get _embedReferences => _nodeEmbedReferences(_node);
 
-  static bool _nodeFiltersEmbed<Row>(_FilterNode<Row> node) => switch (node) {
-    _EmbedIsNull() => true,
-    _Comparison() || _Raw() => false,
-    _And(:final children) || _Or(:final children) => children.any(
-      _nodeFiltersEmbed,
+  static Iterable<String> _nodeEmbedReferences<Row>(
+    _FilterNode<Row> node,
+  ) => switch (node) {
+    _EmbedIsNull(:final column) => [column],
+    _Comparison() || _Raw() => const [],
+    _And(:final children) || _Or(:final children) => children.expand(
+      _nodeEmbedReferences,
     ),
-    _Not(:final inner) => _nodeFiltersEmbed(inner),
+    _Not(:final inner) => _nodeEmbedReferences(inner),
   };
 
   /// Absorbs a child `&` so `a & b & c` renders flat rather than nested.

@@ -128,7 +128,8 @@ sealed class PostgrestRelation<Row, Target> {
 
   /// Only the rows with no embedded row, `authors=is.null`.
   ///
-  /// The relation has to be in the `select` list, and a filter of the embed
+  /// The relation has to be in the `select` list, or awaiting the request
+  /// throws an [ArgumentError], and a filter of the embed
   /// in [PostgrestTypedTransformBuilder.embedded] counts: a parent row whose
   /// embedded rows all fail it has no embedded row. Negate it for the rows
   /// with one, which is what [PostgrestTypedTransformBuilder.requiring] does

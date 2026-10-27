@@ -195,16 +195,14 @@ typedef _ScopedTransforms = ({
 
 /// The embeds the scopes of a request address, keyed by how each is spelled
 /// in the `select` list, for adding `!inner` to the ones that require a
-/// match.
+/// match and rejecting the ones the list leaves out.
 final class _JoinTree {
   _JoinTree._();
 
-  /// The tree of [scopes], or `null` when none of them requires a match, so
-  /// the `select` list renders as it would without scopes.
-  static _JoinTree? of(List<PostgrestEmbeddedScope<Object?>> scopes) {
-    final root = _JoinTree._().._add(scopes);
-    return root._anyRequiresMatch ? root : null;
-  }
+  /// The tree of [scopes], or `null` when there are none, so the `select`
+  /// list renders as it would without scopes.
+  static _JoinTree? of(List<PostgrestEmbeddedScope<Object?>> scopes) =>
+      scopes.isEmpty ? null : (_JoinTree._().._add(scopes));
 
   bool _requiresMatch = false;
 
@@ -224,10 +222,6 @@ final class _JoinTree {
     }
   }
 
-  bool get _anyRequiresMatch => _children.values.any(
-    (child) => child._requiresMatch || child._anyRequiresMatch,
-  );
-
   /// The tree of the embed spelled [name], marked as rendered.
   _JoinTree? _render(String name) => _children[name]?.._rendered = true;
 
@@ -235,15 +229,16 @@ final class _JoinTree {
   /// key hint when it requires a match.
   String _head(String name) => _requiresMatch ? '$name!inner' : name;
 
-  /// Throws an [ArgumentError] for an embed that requires a match but is not
-  /// in the `select` list, since the parent rows would come back unfiltered.
+  /// Throws an [ArgumentError] for a scope whose embed is not in the
+  /// `select` list, which PostgREST rejects, or which for a `requiring`
+  /// scope would leave the parent rows unfiltered.
   void checkRendered([String prefix = '']) {
     for (final MapEntry(key: name, value: child) in _children.entries) {
       final path = '$prefix$name';
-      if (child._requiresMatch && !child._rendered) {
+      if (!child._rendered) {
         throw ArgumentError.value(
           path,
-          'requiring',
+          'relation',
           'The embed is not in the select list',
         );
       }

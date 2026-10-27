@@ -1033,6 +1033,28 @@ void main() {
       expect(httpClient.requests, isEmpty);
     });
 
+    test('rejects a scope whose embed the select list leaves out', () async {
+      await expectLater(
+        () => client
+            .table(Authors.table)
+            .selectOnly([Authors.name])
+            .embedded(Authors.books, (books) => books.limit(1)),
+        throwsArgumentError,
+      );
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .update(BookUpdate(title: 'a'))
+            .where(Books.id.eq(1))
+            .embedded(
+              Books.reviews,
+              (reviews) => reviews.where(Reviews.rating.eq(5)),
+            ),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+
     test('rejects a mutation that reads nothing back', () async {
       await expectLater(
         () => client
@@ -1084,6 +1106,17 @@ void main() {
       );
       await expectLater(
         () => table.count().where(withoutReviews),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
+
+    test('is rejected for a relation the select list leaves out', () async {
+      await expectLater(
+        () => client
+            .table(Books.table)
+            .selectOnly([Books.title, Books.reviews.count()])
+            .where(Books.title.eq('Dune') | Books.reviews.isNull()),
         throwsArgumentError,
       );
       expect(httpClient.requests, isEmpty);

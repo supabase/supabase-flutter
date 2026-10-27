@@ -151,11 +151,12 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// no matching book still comes back, with an empty list. Use [requiring]
   /// to drop such parent rows instead.
   ///
-  /// [relation] has to be in the `select` list. Repeated calls for the same
-  /// embed combine their filters with logical AND and append their sort
-  /// keys, a later limit replaces the limit and a later range replaces both
-  /// the offset and the limit. See [PostgrestEmbeddedScope] for what a scope
-  /// offers.
+  /// [relation] has to be in the `select` list, and a mutation has to read
+  /// rows back, or awaiting the request throws an [ArgumentError]. Repeated
+  /// calls for the same embed combine their filters with logical AND and
+  /// append their sort keys, a later limit replaces the limit and a later
+  /// range replaces both the offset and the limit. See
+  /// [PostgrestEmbeddedScope] for what a scope offers.
   PostgrestTypedTransformBuilder<Row, T> embedded<Target>(
     PostgrestRelation<Row, Target> relation,
     PostgrestEmbeddedScope<Target> Function(

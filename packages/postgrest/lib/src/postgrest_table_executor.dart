@@ -197,12 +197,32 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   /// or count, which PostgREST answers with an error.
   static void _rejectEmbedFilter(PostgrestTableRequest request) {
     final filter = request.filter;
-    if (filter != null && filter._filtersEmbed) {
+    if (filter != null && filter._embedReferences.isNotEmpty) {
       throw ArgumentError.value(
         filter,
         'filter',
         'A ${request.operation.name} cannot filter by a relation',
       );
+    }
+  }
+
+  /// Rejects a [PostgrestRelation.isNull] on a relation the `select` list
+  /// leaves out, which PostgREST reports as a missing column.
+  static void _rejectUnselectedEmbedFilter(PostgrestTableRequest request) {
+    final references = request.filter?._embedReferences ?? const [];
+    if (references.isEmpty) return;
+    final selected = {
+      for (final column in request.columns)
+        if (column case _Embedded(:final relation)) relation._reference,
+    };
+    for (final reference in references) {
+      if (!selected.contains(reference)) {
+        throw ArgumentError.value(
+          reference,
+          'filter',
+          'The relation is not in the select list',
+        );
+      }
     }
   }
 
@@ -225,6 +245,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     PostgrestFilterBuilder<T> builder,
     PostgrestTableRequest request,
   ) {
+    _rejectUnselectedEmbedFilter(request);
     var filtered = builder;
     for (final parameter in request.filter?.queryParameters ?? const []) {
       filtered = filtered.appendSearchParameter(parameter.key, parameter.value);
