@@ -3,6 +3,68 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-10-27
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.14`](#postgrest---v300-dev14)
+ - [`supabase` - `v3.0.0-dev.14`](#supabase---v300-dev14)
+ - [`supabase_auth` - `v3.0.0-dev.12`](#supabase_auth---v300-dev12)
+ - [`supabase_realtime` - `v3.0.0-dev.12`](#supabase_realtime---v300-dev12)
+ - [`supabase_typegen` - `v0.8.0`](#supabase_typegen---v080)
+
+Packages with other changes:
+
+ - [`supabase_flutter` - `v3.0.0-dev.14`](#supabase_flutter---v300-dev14)
+ - [`supabase_storage` - `v3.0.0-dev.11`](#supabase_storage---v300-dev11)
+ - [`supabase_test` - `v0.6.1`](#supabase_test---v061)
+ - [`supabase_flutter_web_auth` - `v0.2.1`](#supabase_flutter_web_auth---v021)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_test` - `v0.6.1`
+ - `supabase_flutter_web_auth` - `v0.2.1`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.14`
+
+ - **FEAT**(postgrest): filter inside an embed, add requiring and relation isNull on the typed surface ([#2061](https://github.com/supabase/supabase-flutter/issues/2061)). ([a9537321](https://github.com/supabase/supabase-flutter/commit/a9537321592a8be6d58b4205e4bc037428776c80))
+ - **BREAKING** **FEAT**(postgrest): a dedicated type for json and jsonb columns ([#2063](https://github.com/supabase/supabase-flutter/issues/2063)). ([fe3cbec3](https://github.com/supabase/supabase-flutter/commit/fe3cbec34cad3909040d4d471cbf79d13baf9fc1))
+
+#### `supabase` - `v3.0.0-dev.14`
+
+ - **FEAT**(postgrest): filter inside an embed, add requiring and relation isNull on the typed surface ([#2061](https://github.com/supabase/supabase-flutter/issues/2061)). ([a9537321](https://github.com/supabase/supabase-flutter/commit/a9537321592a8be6d58b4205e4bc037428776c80))
+ - **BREAKING** **REFACTOR**(realtime): typed channel results, presence config names and an inspectable channel ([#2066](https://github.com/supabase/supabase-flutter/issues/2066)). ([6816686e](https://github.com/supabase/supabase-flutter/commit/6816686e051fe2b93e308a343ac2587198ea40b4))
+
+#### `supabase_auth` - `v3.0.0-dev.12`
+
+ - **BREAKING** **REFACTOR**(auth): remove setInitialSession and align the remaining auth return types ([#2067](https://github.com/supabase/supabase-flutter/issues/2067)). ([bab0646a](https://github.com/supabase/supabase-flutter/commit/bab0646a8fbdbf876ca7cc5f2c659914964af6e9))
+
+#### `supabase_realtime` - `v3.0.0-dev.12`
+
+ - **PERF**(realtime): build the per-message log records only when finest logging is enabled ([#2062](https://github.com/supabase/supabase-flutter/issues/2062)). ([7d8c3665](https://github.com/supabase/supabase-flutter/commit/7d8c366554477ab88f911a6e3ab481b6df59ad86))
+ - **BREAKING** **REFACTOR**(realtime): typed channel results, presence config names and an inspectable channel ([#2066](https://github.com/supabase/supabase-flutter/issues/2066)). ([6816686e](https://github.com/supabase/supabase-flutter/commit/6816686e051fe2b93e308a343ac2587198ea40b4))
+
+#### `supabase_typegen` - `v0.8.0`
+
+ - **BREAKING** **FEAT**(postgrest): a dedicated type for json and jsonb columns ([#2063](https://github.com/supabase/supabase-flutter/issues/2063)). ([fe3cbec3](https://github.com/supabase/supabase-flutter/commit/fe3cbec34cad3909040d4d471cbf79d13baf9fc1))
+
+#### `supabase_flutter` - `v3.0.0-dev.14`
+
+ - **FEAT**(postgrest): filter inside an embed, add requiring and relation isNull on the typed surface ([#2061](https://github.com/supabase/supabase-flutter/issues/2061)). ([a9537321](https://github.com/supabase/supabase-flutter/commit/a9537321592a8be6d58b4205e4bc037428776c80))
+
+#### `supabase_storage` - `v3.0.0-dev.11`
+
+ - **FIX**(storage): no retry after a fully sent upload times out, encode bucket ids, send client headers with signed uploads ([#2065](https://github.com/supabase/supabase-flutter/issues/2065)). ([54e705ec](https://github.com/supabase/supabase-flutter/commit/54e705ecbc7a4641223091fd4feae739af3a7e5e))
+
+
 ## 2026-10-26
 
 ### Changes

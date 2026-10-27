@@ -1,3 +1,7 @@
+## 3.0.0-dev.11
+
+ - **FIX**(storage): no retry after a fully sent upload times out, encode bucket ids, send client headers with signed uploads ([#2065](https://github.com/supabase/supabase-flutter/issues/2065)). ([54e705ec](https://github.com/supabase/supabase-flutter/commit/54e705ecbc7a4641223091fd4feae739af3a7e5e))
+
 ## 3.0.0-dev.10
 
 > Note: This release has breaking changes.

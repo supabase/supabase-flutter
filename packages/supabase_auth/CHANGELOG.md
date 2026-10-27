@@ -1,3 +1,9 @@
+## 3.0.0-dev.12
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **REFACTOR**(auth): remove setInitialSession and align the remaining auth return types ([#2067](https://github.com/supabase/supabase-flutter/issues/2067)). ([bab0646a](https://github.com/supabase/supabase-flutter/commit/bab0646a8fbdbf876ca7cc5f2c659914964af6e9))
+
 ## 3.0.0-dev.11
 
 > Note: This release has breaking changes.
