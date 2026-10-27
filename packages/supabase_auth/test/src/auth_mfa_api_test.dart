@@ -124,10 +124,7 @@ void main() {
         code: getTOTP(),
       );
 
-      expect(client.currentSession?.accessToken, response.accessToken);
-      expect(client.currentUser, response.user);
-      expect(client.currentSession?.refreshToken, response.refreshToken);
-      expect(client.currentSession?.expiresIn, response.expiresIn.inSeconds);
+      expect(client.currentSession, response);
     });
 
     test('challenge and verify', () async {

@@ -94,8 +94,8 @@ class AuthMFARecoveryCodesApi {
   /// [code] can be passed exactly as the user typed it: letter case,
   /// whitespace and `-` separators are ignored by the server.
   ///
-  /// On success the session is replaced with the upgraded one and
-  /// [AuthChangeEvent.mfaChallengeVerified] is emitted. The user's other
+  /// Returns the upgraded session, which replaces the current one, and emits
+  /// [AuthChangeEvent.mfaChallengeVerified]. The user's other
   /// `aal1` sessions are signed out and the new access token includes
   /// [AuthenticationMethodReference.mfaRecoveryCode] in its `amr` claim.
   ///
@@ -105,8 +105,8 @@ class AuthMFARecoveryCodesApi {
   /// [ErrorCode.mfaRecoveryCodesLocked]. When recovery code verification is
   /// disabled on the server the code is
   /// [ErrorCode.mfaRecoveryCodesVerifyDisabled].
-  Future<AuthMFAVerifyResponse> verify(String code) async {
-    final data = await _fetch.request(
+  Future<Session> verify(String code) async {
+    final response = await _fetch.requestWithResponse(
       '${_client._url}/factors/recovery-codes/verify',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -116,18 +116,10 @@ class AuthMFARecoveryCodesApi {
       ),
     );
 
-    final response = AuthMFAVerifyResponse.fromJson(data);
-    _client._saveSession(
-      Session(
-        accessToken: response.accessToken,
-        tokenType: response.tokenType,
-        user: response.user,
-        expiresIn: response.expiresIn.inSeconds,
-        refreshToken: response.refreshToken,
-      ),
-    );
+    final session = _client._sessionFromResponse(response);
+    _client._saveSession(session);
     _client.notifyAllSubscribers(AuthChangeEvent.mfaChallengeVerified);
-    return response;
+    return session;
   }
 
   /// Replaces the user's recovery codes with a brand new set.

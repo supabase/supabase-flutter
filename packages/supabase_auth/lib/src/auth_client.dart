@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
+import 'package:supabase_auth/src/broadcast_channel.dart';
 import 'package:supabase_auth/src/fetch.dart';
 import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/pkce_verifier_store.dart';
@@ -951,7 +952,10 @@ class AuthClient {
   /// captcha on the site.
   ///
   /// [channel] Messaging channel to use (e.g. whatsapp or sms)
-  Future<void> signInWithOtp({
+  ///
+  /// For phone sign-ins the returned [SignInWithOtpResponse.messageId] holds
+  /// the id of the message the SMS provider sent.
+  Future<SignInWithOtpResponse> signInWithOtp({
     String? email,
     String? phone,
     String? emailRedirectTo,
@@ -984,7 +988,7 @@ class AuthClient {
           ),
         ),
       );
-      return;
+      return const SignInWithOtpResponse();
     }
     if (phone != null) {
       final body = {
@@ -996,12 +1000,14 @@ class AuthClient {
       };
       final fetchOptions = AuthRequestOptions(headers: _headers, body: body);
 
-      await _fetch.request(
+      final response = await _fetch.request(
         '$_url/otp',
         HttpMethod.post,
         options: fetchOptions,
       );
-      return;
+      return SignInWithOtpResponse(
+        messageId: response is Map ? response['message_id'] as String? : null,
+      );
     }
     throw AuthException(
       'You must provide either an email, phone number, a third-party provider '
@@ -1809,23 +1815,6 @@ class AuthClient {
         jwt: await _userAccessToken(),
       ),
     );
-  }
-
-  /// Set the initial session to the session obtained from local storage
-  Future<void> setInitialSession(String jsonString) async {
-    final session = Session.fromJson(json.decode(jsonString));
-    if (session == null) {
-      // sign out to delete the local storage from supabase_flutter
-      await _discardSession(SignOutReason.sessionMissing);
-      throw notifyException(
-        AuthSessionMissingException(
-          message: 'Initial session is missing data.',
-        ),
-      );
-    }
-
-    _currentSession = session;
-    notifyAllSubscribers(AuthChangeEvent.initialSession);
   }
 
   /// Stores [session] as the current session and emits

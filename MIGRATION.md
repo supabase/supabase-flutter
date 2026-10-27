@@ -1128,6 +1128,19 @@ When the response carries no session, every method in the list throws an
 a `null` session. `signUp()` and `verifyOTP()` keep returning an `AuthResponse`, since both can
 complete without a session.
 
+#### MFA verification returns the `Session`
+
+`mfa.verify()`, `mfa.challengeAndVerify()` and `mfa.recoveryCodes.verify()` return the upgraded
+`Session` instead of an `AuthMFAVerifyResponse`, which is removed. Its fields are on the session:
+
+| Before                          | After                         |
+| ------------------------------- | ----------------------------- |
+| `response.accessToken`          | `session.accessToken`         |
+| `response.refreshToken`         | `session.refreshToken`        |
+| `response.tokenType`            | `session.tokenType`           |
+| `response.user`                 | `session.user`                |
+| `response.expiresIn` (Duration) | `session.expiresIn` (seconds) |
+
 #### `admin.listUsers()` returns pagination metadata
 
 `listUsers()` returns a `ListUsersResponse` instead of a `List<User>`. The users are under `users`,
@@ -1362,6 +1375,13 @@ session has been restored. `Supabase.initialize` awaits it for you.
 `sb-<project-ref>-auth-token`. It also prefixes the code verifier keys. Verifiers under the old
 `supabase.auth.token-…` prefix are still read, so a sign-in link requested before the upgrade still
 completes after it.
+
+#### `setInitialSession` is removed
+
+`AuthClient.setInitialSession()` loaded a session without persisting it and emitted a second
+`initialSession` event. The client restores the persisted session itself, so pass an
+`asyncStorage` with `persistSession: true` instead. To restore a session you stored yourself, call
+`recoverSession()`, which refreshes it when it has expired.
 
 #### A client without an `asyncStorage` keeps pkce verifiers in memory
 

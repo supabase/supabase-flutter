@@ -5,7 +5,7 @@ library;
 import 'dart:async';
 
 import 'package:supabase_auth/src/broadcast_web.dart';
-import 'package:supabase_auth/src/types/types.dart';
+import 'package:supabase_auth/src/broadcast_channel.dart';
 import 'package:test/test.dart';
 
 void main() {

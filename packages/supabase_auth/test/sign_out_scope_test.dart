@@ -59,8 +59,14 @@ void main() {
   });
 
   Future<void> restoreExpiredSession() async {
-    await client.setInitialSession(
-      jsonEncode(testSessionResponseJson(accessToken: expiredAccessToken())),
+    client.signInWithSession(
+      Session.fromJson(
+        jsonDecode(
+          jsonEncode(
+            testSessionResponseJson(accessToken: expiredAccessToken()),
+          ),
+        ),
+      )!,
     );
     await pumpEventQueue();
     events.clear();
@@ -312,8 +318,10 @@ void main() {
                 .millisecondsSinceEpoch ~/
             1000,
       });
-      await client.setInitialSession(
-        jsonEncode(testSessionResponseJson(accessToken: expired)),
+      client.signInWithSession(
+        Session.fromJson(
+          jsonDecode(jsonEncode(testSessionResponseJson(accessToken: expired))),
+        )!,
       );
       httpClient
         ..stubSignIn()
@@ -473,10 +481,14 @@ void main() {
           asyncStorage: _FailingRemoveStorage(),
         );
         addTearDown(failingClient.dispose);
-        await failingClient.setInitialSession(
-          jsonEncode(
-            testSessionResponseJson(accessToken: expiredAccessToken()),
-          ),
+        failingClient.signInWithSession(
+          Session.fromJson(
+            jsonDecode(
+              jsonEncode(
+                testSessionResponseJson(accessToken: expiredAccessToken()),
+              ),
+            ),
+          )!,
         );
         stubRejectedRefresh();
 

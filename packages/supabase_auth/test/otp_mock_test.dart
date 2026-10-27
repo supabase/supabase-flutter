@@ -40,6 +40,18 @@ void main() {
       ); // No session should be set yet as OTP is not verified
     });
 
+    test('signInWithOtp() returns the message id for a phone', () async {
+      final response = await client.signInWithOtp(phone: testPhone);
+
+      expect(response.messageId, 'mock-message-id-phone');
+    });
+
+    test('signInWithOtp() returns no message id for an email', () async {
+      final response = await client.signInWithOtp(email: testEmail);
+
+      expect(response.messageId, isNull);
+    });
+
     test('signInWithOtp() with email', () async {
       await client.signInWithOtp(email: testEmail);
       // This test passes if no exceptions are thrown

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:http/http.dart';
@@ -30,7 +31,9 @@ void main() {
     );
     addTearDown(subscription.cancel);
 
-    await client.setInitialSession(createExpiredSessionForUser1());
+    client.signInWithSession(
+      Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+    );
 
     await expectLater(client.getSession(), throwsA(isA<AuthException>()));
 
@@ -142,7 +145,9 @@ void main() {
     );
     addTearDown(subscription.cancel);
 
-    await client.setInitialSession(createExpiredSessionForUser1());
+    client.signInWithSession(
+      Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+    );
     await expectLater(client.getSession(), throwsA(isA<AuthException>()));
     await pumpEventQueue();
 

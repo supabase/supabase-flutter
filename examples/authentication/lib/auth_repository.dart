@@ -154,7 +154,7 @@ class AuthRepository {
   /// Confirms a freshly enrolled factor with a code from the authenticator app.
   /// This runs the challenge and verify steps together and promotes the session
   /// to `aal2`.
-  Future<AuthMFAVerifyResponse> confirmTotpFactor({
+  Future<Session> confirmTotpFactor({
     required String factorId,
     required String code,
   }) {

@@ -1,13 +1,5 @@
 import 'package:supabase_common/supabase_common.dart';
 
-/// A cross-tab broadcast channel used to propagate auth state changes between
-/// browser tabs on web.
-typedef BroadcastChannel = ({
-  Stream<Map<String, dynamic>> onMessage,
-  void Function(Map<dynamic, dynamic>) postMessage,
-  void Function() close,
-});
-
 /// The OAuth flow used for sign-in, sign-up, and password recovery.
 enum AuthFlowType {
   /// The legacy flow: tokens are returned directly in the redirect URL

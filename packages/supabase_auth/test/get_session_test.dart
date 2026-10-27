@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:supabase_auth/supabase_auth.dart';
@@ -39,7 +40,9 @@ void main() {
         );
 
         final data = getSessionData(DateTime.now().add(Duration(hours: 1)));
-        await client.setInitialSession(data.sessionString);
+        client.signInWithSession(
+          Session.fromJson(jsonDecode(data.sessionString))!,
+        );
 
         final session = await client.getSession();
         expect(session, isNotNull);
@@ -57,7 +60,9 @@ void main() {
         autoRefreshToken: false,
       );
 
-      await client.setInitialSession(createExpiredSessionForUser1());
+      client.signInWithSession(
+        Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+      );
       expect(client.currentSession?.isExpired, isTrue);
 
       final session = await client.getSession();
@@ -77,7 +82,9 @@ void main() {
         autoRefreshToken: false,
       );
 
-      await client.setInitialSession(createExpiredSessionForUser1());
+      client.signInWithSession(
+        Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+      );
 
       final sessions = await Future.wait([
         client.getSession(),
@@ -105,7 +112,9 @@ void main() {
         onError: (_) {},
       );
 
-      await client.setInitialSession(createExpiredSessionForUser1());
+      client.signInWithSession(
+        Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+      );
 
       await expectLater(
         client.getSession(),
@@ -138,7 +147,9 @@ void main() {
         // Expired by the margin, but the access token is still valid for
         // another 20 seconds.
         final data = getSessionData(DateTime.now().add(Duration(seconds: 20)));
-        await client.setInitialSession(data.sessionString);
+        client.signInWithSession(
+          Session.fromJson(jsonDecode(data.sessionString))!,
+        );
         expect(client.currentSession?.isExpired, isTrue);
 
         final session = await client.getSession();

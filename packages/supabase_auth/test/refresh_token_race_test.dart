@@ -270,7 +270,8 @@ void main() {
     );
 
     test(
-      'FIXED: setInitialSession followed by concurrent refresh attempts',
+      'FIXED: restoring an expired session followed by concurrent refresh '
+      'attempts',
       () async {
         final httpClient = RefreshTokenTrackingHttpClient(
           responseDelay: Duration(milliseconds: 50),
@@ -286,8 +287,8 @@ void main() {
         // Create an expired session for the test user
         final expiredSession = createExpiredSessionForUser1();
 
-        // 1. setInitialSession loads the expired session (but doesn't refresh)
-        await client.setInitialSession(expiredSession);
+        // 1. Load the expired session without refreshing it
+        client.signInWithSession(Session.fromJson(jsonDecode(expiredSession))!);
         expect(client.currentSession?.isExpired, isTrue);
 
         // 2. Start auto-refresh (simulates didChangeAppLifecycleState(resumed))
@@ -326,7 +327,7 @@ void main() {
         final expiredSession = createExpiredSessionForUser1();
 
         // 1. Set initial session (doesn't refresh)
-        await client.setInitialSession(expiredSession);
+        client.signInWithSession(Session.fromJson(jsonDecode(expiredSession))!);
         expect(client.currentSession?.isExpired, isTrue);
         expect(httpClient.requestCount, 0);
 
@@ -422,7 +423,7 @@ void main() {
 
         // Set up expired session for the test user
         final expiredSession = createExpiredSessionForUser1();
-        await client.setInitialSession(expiredSession);
+        client.signInWithSession(Session.fromJson(jsonDecode(expiredSession))!);
 
         // Start auto-refresh (triggers _autoRefreshTokenTick immediately)
         client.startAutoRefresh();

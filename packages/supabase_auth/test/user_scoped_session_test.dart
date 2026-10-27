@@ -154,10 +154,14 @@ void main() {
         in _userScopedCalls.entries) {
       test('$name refreshes an expired session first', () async {
         httpClient.stubSignIn();
-        await client.setInitialSession(
-          _sessionString(
-            expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
-          ),
+        client.signInWithSession(
+          Session.fromJson(
+            jsonDecode(
+              _sessionString(
+                expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+              ),
+            ),
+          )!,
         );
 
         await call(client);
@@ -203,11 +207,15 @@ void main() {
   group('getSession', () {
     test('signs out an expired session without a refresh token', () async {
       client = createClient();
-      await client.setInitialSession(
-        _sessionString(
-          expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
-          withRefreshToken: false,
-        ),
+      client.signInWithSession(
+        Session.fromJson(
+          jsonDecode(
+            _sessionString(
+              expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+              withRefreshToken: false,
+            ),
+          ),
+        )!,
       );
       await listen(client);
 
@@ -225,11 +233,15 @@ void main() {
     test('returns a session without a refresh token that is only within the '
         'expiry margin', () async {
       client = createClient();
-      await client.setInitialSession(
-        _sessionString(
-          expiresAt: DateTime.now().add(const Duration(seconds: 10)),
-          withRefreshToken: false,
-        ),
+      client.signInWithSession(
+        Session.fromJson(
+          jsonDecode(
+            _sessionString(
+              expiresAt: DateTime.now().add(const Duration(seconds: 10)),
+              withRefreshToken: false,
+            ),
+          ),
+        )!,
       );
 
       final session = await client.getSession();
@@ -244,10 +256,14 @@ void main() {
       httpClient
         ..stubSignIn()
         ..stubSignOut();
-      await client.setInitialSession(
-        _sessionString(
-          expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        ),
+      client.signInWithSession(
+        Session.fromJson(
+          jsonDecode(
+            _sessionString(
+              expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+            ),
+          ),
+        )!,
       );
 
       final expired = client.currentSession!.accessToken;
@@ -304,10 +320,16 @@ void main() {
               path: '/logout',
               statusCode: 403,
             );
-          await client.setInitialSession(
-            _sessionString(
-              expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
-            ),
+          client.signInWithSession(
+            Session.fromJson(
+              jsonDecode(
+                _sessionString(
+                  expiresAt: DateTime.now().subtract(
+                    const Duration(minutes: 5),
+                  ),
+                ),
+              ),
+            )!,
           );
           await listen(client);
           final session = client.currentSession;
@@ -331,7 +353,7 @@ void main() {
       final expired = _sessionString(
         expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
       );
-      await client.setInitialSession(expired);
+      client.signInWithSession(Session.fromJson(jsonDecode(expired))!);
 
       final response = await client.getClaims(
         null,

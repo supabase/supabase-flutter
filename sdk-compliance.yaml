@@ -37,6 +37,9 @@ features:
       - AuthClient.signInWithOtp
     supporting_symbols:
       - OtpChannel
+      - SignInWithOtpResponse
+      - SignInWithOtpResponse.SignInWithOtpResponse
+      - SignInWithOtpResponse.messageId
   auth.sign_in.sign_in_with_oauth:
     status: implemented
     note: "getOAuthSignInUrl returns an OAuthResponse whose url is a Uri rather than the string JS returns, and supabase_flutter's signInWithOAuth launches that URL in the browser and returns Future<bool>."
@@ -355,15 +358,6 @@ features:
     status: implemented
     symbols:
       - AuthMFAApi.verify
-    supporting_symbols:
-      - AuthMFAVerifyResponse
-      - AuthMFAVerifyResponse.AuthMFAVerifyResponse
-      - AuthMFAVerifyResponse.accessToken
-      - AuthMFAVerifyResponse.expiresIn
-      - AuthMFAVerifyResponse.fromJson
-      - AuthMFAVerifyResponse.refreshToken
-      - AuthMFAVerifyResponse.tokenType
-      - AuthMFAVerifyResponse.user
   auth.mfa.challenge_and_verify:
     status: implemented
     symbols:
@@ -3091,7 +3085,6 @@ features:
       - AuthClientOptions.persistSession
       - AuthClient.initialized
       - AuthClient.recoverSession
-      - AuthClient.setInitialSession
     supporting_symbols:
       - defaultPersistSessionKey
   client.request_configuration.custom_http_client:
@@ -3236,7 +3229,6 @@ supporting_symbols:
   - AuthWeakPasswordException.exceptionName
   - AuthWeakPasswordException.reasons
   - AuthWeakPasswordException.toString
-  - BroadcastChannel
   - Bucket
   - Bucket.Bucket
   - Bucket.allowedMimeTypes

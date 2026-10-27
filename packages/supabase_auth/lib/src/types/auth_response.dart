@@ -87,6 +87,16 @@ class ListUsersResponse {
   final String? audience;
 }
 
+/// The response of `AuthClient.signInWithOtp`.
+class SignInWithOtpResponse {
+  const SignInWithOtpResponse({
+    this.messageId,
+  });
+
+  /// Only set for phone sign-ins
+  final String? messageId;
+}
+
 /// The response of `AuthClient.resend`.
 class ResendResponse {
   const ResendResponse({
