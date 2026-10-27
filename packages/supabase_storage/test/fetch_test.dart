@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart';
 import 'package:http/testing.dart';
 import 'package:supabase_storage/supabase_storage.dart';
+import 'package:supabase_test/internal.dart' show stallUntilAborted;
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
@@ -166,6 +167,29 @@ void main() {
       expect(mockClient.requests.single.headers['content-type'], 'image/png');
     });
 
+    test(
+      'guesses the content type from the object path for a file without '
+      'an extension',
+      () async {
+        final mockClient = MockSupabaseHttpClient();
+        mockClient.stub({'Key': 'bucket/avatar.png'});
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: mockClient,
+        );
+        final file = File('${temporaryDirectory.path}/upload-1234')
+          ..writeAsBytesSync([1, 2, 3]);
+
+        await client.from('bucket').upload('avatar.png', file);
+
+        expect(
+          mockClient.requests.single.headers['content-type'],
+          'image/png',
+        );
+      },
+    );
+
     test('re-reads the file on every retry attempt', () async {
       final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 2);
       final client = SupabaseStorageClient(
@@ -325,6 +349,33 @@ void main() {
         expect(request.queryParameters['token'], 'signed-token');
       },
     );
+
+    test('sends the client headers with every signed url upload', () async {
+      final mockClient = MockSupabaseHttpClient();
+      mockClient.stub({'Key': 'bucket/a.txt'});
+      final client = SupabaseStorageClient(
+        storageUrl,
+        {'apikey': 'key'},
+        httpClient: mockClient,
+      );
+      final api = client.from('bucket');
+      final file = File('${temporaryDirectory.path}/a.txt')
+        ..writeAsStringSync('a');
+
+      await api.uploadToSignedUrl('a.txt', 'token', file);
+      await api.uploadBinaryToSignedUrl('a.txt', 'token', Uint8List(1));
+      await api.uploadStreamToSignedUrl(
+        'a.txt',
+        'token',
+        Stream.value([1]),
+      );
+
+      expect(mockClient.requests, hasLength(3));
+      for (final request in mockClient.requests) {
+        expect(request.headers['apikey'], 'key');
+        expect(request.headers['x-client-info'], startsWith('storage-dart/'));
+      }
+    });
   });
 
   group('stream uploads', () {
@@ -791,24 +842,54 @@ void main() {
       );
     });
 
-    test('retries a timed-out upload attempt', () async {
-      final client = SupabaseStorageClient(
-        storageUrl,
-        headers,
-        httpClient: mockClient,
-        requestTimeout: const Duration(milliseconds: 50),
-        retryOptions: const SupabaseRetryOptions(
-          count: 1,
-          initialDelay: Duration.zero,
-        ),
-      );
+    test(
+      'does not retry an upload that timed out after its whole body was sent',
+      () async {
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: mockClient,
+          requestTimeout: const Duration(milliseconds: 50),
+          retryOptions: const SupabaseRetryOptions(
+            count: 1,
+            initialDelay: Duration.zero,
+          ),
+        );
 
-      await expectLater(
-        client.from('bucket').uploadBinary('a.txt', Uint8List(3)),
-        throwsTimeout(),
-      );
-      expect(mockClient.requests, hasLength(2));
-    });
+        await expectLater(
+          client.from('bucket').uploadBinary('a.txt', Uint8List(3)),
+          throwsTimeout(),
+        );
+        expect(mockClient.requests, hasLength(1));
+      },
+    );
+
+    test(
+      'retries an upload that timed out before its whole body was sent',
+      () async {
+        var attempts = 0;
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: MockClient.streaming((request, body) async {
+            attempts++;
+            await body.first;
+            return stallUntilAborted(request);
+          }),
+          requestTimeout: const Duration(milliseconds: 50),
+          retryOptions: const SupabaseRetryOptions(
+            count: 1,
+            initialDelay: Duration.zero,
+          ),
+        );
+
+        await expectLater(
+          client.from('bucket').uploadBinary('a.txt', Uint8List(256 * 1024)),
+          throwsTimeout(),
+        );
+        expect(attempts, 2);
+      },
+    );
 
     test('keeps a caller abort apart from the timeout', () async {
       final client = SupabaseStorageClient(
@@ -863,6 +944,25 @@ void main() {
   });
 
   group('error responses', () {
+    test('a success body that is not JSON throws a StorageException', () async {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockSupabaseHttpClient()..stubText('<html>gateway</html>'),
+      );
+
+      await expectLater(
+        client.from('bucket').getMetadata('a.txt'),
+        throwsA(
+          isA<StorageException>().having(
+            (error) => error.message,
+            'message',
+            startsWith('Expected a JSON response'),
+          ),
+        ),
+      );
+    });
+
     test('passes an exception the HTTP client classified through', () async {
       final client = SupabaseStorageClient(
         storageUrl,

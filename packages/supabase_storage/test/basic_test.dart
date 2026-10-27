@@ -219,6 +219,65 @@ void main() {
       expect(request.url.queryParameters['transformations'], 'true');
     });
 
+    test('encodes a bucket id as a single path segment', () async {
+      const id = 'my bucket?x#y/z';
+      const encoded = 'my%20bucket%3Fx%23y%2Fz';
+      customHttpClient
+        ..stub(testBucketJson, method: HttpMethod.get)
+        ..stub({'message': 'ok'}, method: HttpMethod.put)
+        ..stub({'message': 'ok'}, method: HttpMethod.post)
+        ..stub({'message': 'ok'}, method: HttpMethod.delete);
+
+      await client.getBucket(id);
+      await client.updateBucket(id, const BucketOptions(public: true));
+      await client.emptyBucket(id);
+      await client.deleteBucket(id);
+      await client.purgeBucketCache(id);
+      await client.deleteAnalyticsBucket(id);
+
+      expect(
+        customHttpClient.requests.map((request) => request.url.path),
+        [
+          endsWith('/storage/v1/bucket/$encoded'),
+          endsWith('/storage/v1/bucket/$encoded'),
+          endsWith('/storage/v1/bucket/$encoded/empty'),
+          endsWith('/storage/v1/bucket/$encoded'),
+          endsWith('/storage/v1/cdn/$encoded'),
+          endsWith('/storage/v1/iceberg/bucket/$encoded'),
+        ],
+      );
+      for (final request in customHttpClient.requests) {
+        expect(request.url.hasQuery, isFalse);
+        expect(request.url.hasFragment, isFalse);
+      }
+    });
+
+    test('encodes the bucket id of a file operation', () async {
+      const encoded = 'my%20bucket%3Fx';
+      customHttpClient
+        ..stub({'Key': 'my bucket?x/a.txt'}, method: HttpMethod.post)
+        ..stub([], method: HttpMethod.post, times: 1)
+        ..stub([], method: HttpMethod.delete);
+      final api = client.from('my bucket?x');
+
+      await api.list();
+      await api.uploadBinary('a.txt', Uint8List(1));
+      await api.remove(['a.txt']);
+
+      expect(
+        customHttpClient.requests.map((request) => request.url.path),
+        [
+          endsWith('/storage/v1/object/list/$encoded'),
+          endsWith('/storage/v1/object/$encoded/a.txt'),
+          endsWith('/storage/v1/object/$encoded'),
+        ],
+      );
+      expect(
+        api.getPublicUrl('a.txt'),
+        '$supabaseUrl/storage/v1/object/public/$encoded/a.txt',
+      );
+    });
+
     test('should create analytics bucket', () async {
       customHttpClient.stub(testAnalyticsBucketJson);
 
@@ -630,17 +689,37 @@ void main() {
       );
     });
 
-    test('a range of a transformed image is rejected before sending', () {
+    test('a range of a transformed image fails the download', () async {
+      late Future<Uint8List> download;
       expect(
-        () => client
+        () => download = client
             .from('public_bucket')
             .download(
               'b.png',
               transform: const TransformOptions(width: 200),
               range: ByteRange(0, 1023),
             ),
-        throwsArgumentError,
+        returnsNormally,
       );
+
+      await expectLater(download, throwsArgumentError);
+      expect(customHttpClient.requests, isEmpty);
+    });
+
+    test('a range of a transformed image fails the stream', () async {
+      late Stream<Uint8List> stream;
+      expect(
+        () => stream = client
+            .from('public_bucket')
+            .downloadStream(
+              'b.png',
+              transform: const TransformOptions(width: 200),
+              range: ByteRange(0, 1023),
+            ),
+        returnsNormally,
+      );
+
+      await expectLater(stream, emitsError(isArgumentError));
       expect(customHttpClient.requests, isEmpty);
     });
 
@@ -1852,43 +1931,74 @@ void main() {
   group('analyticsCatalog', () {
     late MockSupabaseHttpClient httpClient;
 
-    SupabaseStorageClient createClient({Duration? requestTimeout}) =>
-        SupabaseStorageClient(
-          '$supabaseUrl/storage/v1',
-          {'Authorization': 'Bearer $supabaseKey'},
-          httpClient: httpClient,
-          requestTimeout: requestTimeout,
-        );
-
     setUp(() {
       httpClient = MockSupabaseHttpClient();
     });
 
-    test('addresses the bucket under the iceberg endpoint', () async {
-      httpClient
-        ..stub({'namespaces': []})
-        ..stub({'defaults': <String, String>{}}, path: '/v1/config');
+    test(
+      'sends to the iceberg endpoint with the client headers, token and '
+      'access delegation',
+      () async {
+        httpClient
+          ..stub({
+            'metadata': {
+              'format-version': 2,
+              'table-uuid': 'uuid-1',
+              'location': 's3://bucket/events',
+              'schemas': [
+                {'type': 'struct', 'schema-id': 0, 'fields': []},
+              ],
+              'current-schema-id': 0,
+            },
+          })
+          ..stub({
+            'defaults': {},
+            'overrides': {'prefix': 'warehouse-prefix'},
+          }, path: '/storage/v1/iceberg/v1/config');
+        final storage = SupabaseStorageClient(
+          'http://localhost/storage/v1',
+          {'apikey': 'key'},
+          httpClient: httpClient,
+          accessToken: () async => 'token',
+        );
 
-      await createClient().analyticsCatalog('warehouse').listNamespaces();
+        await storage
+            .analyticsCatalog(
+              'warehouse',
+              accessDelegation: [AccessDelegation.vendedCredentials],
+            )
+            .loadTable(
+              const TableIdentifier(namespace: ['analytics'], name: 'events'),
+            );
 
-      final config = httpClient.requestsTo('/v1/config').single;
-      expect(config.url.path, endsWith('/storage/v1/iceberg/v1/config'));
-      expect(config.queryParameters['warehouse'], 'warehouse');
-      expect(
-        httpClient.requests.last.url.path,
-        endsWith('/storage/v1/iceberg/v1/warehouse/namespaces'),
-      );
-      expect(
-        httpClient.requests.last.headers['Authorization'],
-        'Bearer $supabaseKey',
-      );
-    });
+        final [config, load] = httpClient.requests;
+        expect(config.url.path, '/storage/v1/iceberg/v1/config');
+        expect(config.url.queryParameters['warehouse'], 'warehouse');
+        expect(
+          load.url.path,
+          '/storage/v1/iceberg/v1/warehouse-prefix/namespaces/analytics/'
+          'tables/events',
+        );
+        for (final request in httpClient.requests) {
+          expect(request.headers['apikey'], 'key');
+          expect(request.headers['authorization'], 'Bearer token');
+          expect(request.headers['x-client-info'], startsWith('storage-dart/'));
+        }
+        expect(
+          load.headers['x-iceberg-access-delegation'],
+          'vended-credentials',
+        );
+      },
+    );
 
     test('applies the request timeout of the storage client', () async {
       httpClient.stubStall();
 
       await expectLater(
-        createClient(
+        SupabaseStorageClient(
+          '$supabaseUrl/storage/v1',
+          {'Authorization': 'Bearer $supabaseKey'},
+          httpClient: httpClient,
           requestTimeout: const Duration(milliseconds: 50),
         ).analyticsCatalog('warehouse').listNamespaces(),
         throwsA(

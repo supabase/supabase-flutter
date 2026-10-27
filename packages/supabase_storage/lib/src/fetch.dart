@@ -12,6 +12,11 @@ import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
+/// [segment] percent-encoded as one segment of a URL path, so a `/`, `?` or
+/// `#` in it stays part of the segment.
+@internal
+String encodePathSegment(String segment) => Uri(pathSegments: [segment]).path;
+
 @internal
 class Fetch {
   const Fetch([this.httpClient, this.requestTimeout]);
@@ -20,8 +25,10 @@ class Fetch {
   /// How long a request may go without progress, `null` for no limit.
   final Duration? requestTimeout;
 
-  MediaType _parseMediaType(String path) {
-    final mime = lookupMimeType(path);
+  MediaType _parseMediaType(String path, [String? fallbackPath]) {
+    final mime =
+        lookupMimeType(path) ??
+        (fallbackPath == null ? null : lookupMimeType(fallbackPath));
     return MediaType.parse(mime ?? 'application/octet-stream');
   }
 
@@ -188,12 +195,17 @@ class Fetch {
   ///
   /// [onProgress] is called as the body is handed to the HTTP client. An
   /// exception it throws fails the upload without a retry.
+  ///
+  /// An attempt that timed out after the HTTP client read the whole body is
+  /// not retried, since storage may have stored the file and a retry would
+  /// then fail as a duplicate or send the file again.
   Future<Map<String, dynamic>> _handleUploadRequest(
     HttpMethod method,
     String url,
     Stream<List<int>> Function() createBody,
     int? contentLength,
     String contentTypePath,
+    String? fallbackContentTypePath,
     FileOptions fileOptions,
     FetchOptions? options,
     SupabaseRetryOptions retryOptions,
@@ -202,7 +214,7 @@ class Fetch {
   ) async {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
-        : _parseMediaType(contentTypePath);
+        : _parseMediaType(contentTypePath, fallbackContentTypePath);
     final headers = {
       ...?options?.headers,
       HttpHeader.contentType: contentType.toString(),
@@ -224,11 +236,13 @@ class Fetch {
     }
 
     var attempts = 0;
+    var bodySent = false;
     final http.StreamedResponse streamedResponse;
     try {
       streamedResponse = await retry<http.StreamedResponse>(
         () async {
           attempts++;
+          bodySent = false;
           storageLogger.finest(
             'Request: attempt: $attempts ${method.value} '
             '${Uri.parse(url).redacted} ${headers.redacted}',
@@ -237,7 +251,10 @@ class Fetch {
           final request = _UploadRequest(
             method.value,
             Uri.parse(url),
-            () => idleTimeout.watchRequestBody(createWatchedBody()),
+            () => _onDone(
+              idleTimeout.watchRequestBody(createWatchedBody()),
+              () => bodySent = true,
+            ),
             abortTrigger: idleTimeout.abortTrigger(abortSignal),
           );
           request
@@ -248,7 +265,8 @@ class Fetch {
         options: retryOptions,
         retryIf: (error) =>
             error is StorageTransportException &&
-            progress?.callbackError == null,
+            progress?.callbackError == null &&
+            !(bodySent && error.cause is TimeoutException),
         abortSignal: abortSignal,
       );
     } on Object {
@@ -276,7 +294,14 @@ class Fetch {
       } else if (response.body.isEmpty) {
         body = null;
       } else {
-        body = json.decode(response.body);
+        try {
+          body = json.decode(response.body);
+        } on FormatException catch (error) {
+          throw StorageException(
+            'Expected a JSON response, but got: ${error.message}',
+            requestId: response.headers.requestId,
+          );
+        }
       }
       if (body is! T) {
         throw StorageException(
@@ -445,8 +470,9 @@ class Fetch {
   );
 
   /// The media type a file at [path] is stored with unless the upload names
-  /// one.
-  String contentTypeFor(String path) => _parseMediaType(path).toString();
+  /// one, guessed from [fallbackPath] when [path] tells nothing.
+  String contentTypeFor(String path, {String? fallbackPath}) =>
+      _parseMediaType(path, fallbackPath).toString();
 
   /// Uploads [file] with [method], streaming it from disk.
   Future<Map<String, dynamic>> uploadFile(
@@ -466,6 +492,7 @@ class Fetch {
       () => file.openRead(),
       contentLength,
       file.path,
+      Uri.parse(url).path,
       fileOptions,
       options,
       retryOptions,
@@ -491,6 +518,7 @@ class Fetch {
       () => Stream.value(data),
       data.length,
       Uri.parse(url).path,
+      null,
       fileOptions,
       options,
       retryOptions,
@@ -518,6 +546,7 @@ class Fetch {
       () => data,
       contentLength,
       Uri.parse(url).path,
+      null,
       fileOptions,
       options,
       const SupabaseRetryOptions(enabled: false),
@@ -525,6 +554,15 @@ class Fetch {
       onProgress,
     );
   }
+}
+
+/// Passes [body] through and calls [onDone] once all of it was read.
+Stream<List<int>> _onDone(
+  Stream<List<int>> body,
+  void Function() onDone,
+) async* {
+  yield* body;
+  onDone();
 }
 
 /// A request whose body is created when it is finalized, so each attempt of a
