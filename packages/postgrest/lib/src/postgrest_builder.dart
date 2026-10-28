@@ -482,6 +482,13 @@ class PostgrestBuilder<T> implements Future<T> {
     );
   }
 
+  /// Returns a copy of this request whose `X-Client-Info` header also lists
+  /// [features], see [withClientInfoFeatures].
+  @internal
+  PostgrestBuilder<T> addClientInfoFeatures(Set<String> features) {
+    return _copyWith(headers: withClientInfoFeatures(_headers, features));
+  }
+
   Future<T> _execute() async {
     final HttpMethod? method = _method;
     // Work with a local copy so repeated awaits and shared-map siblings are

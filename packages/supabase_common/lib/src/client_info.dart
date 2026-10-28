@@ -1,3 +1,5 @@
+import 'package:supabase_common/src/http_header.dart';
+
 /// Platform information used to build the richer, platform-aware form of the
 /// `X-Client-Info` header.
 class PlatformInfo {
@@ -35,6 +37,14 @@ const _platformNames = {
 String normalizePlatformName(String operatingSystem) =>
     _platformNames[operatingSystem] ?? operatingSystem;
 
+/// The SDK features a request can list in the `features` parameter of the
+/// `X-Client-Info` header.
+abstract final class ClientInfoFeature {
+  /// The request was built with the typed API, `client.table(...)` or a typed
+  /// function call on `client.rpc`.
+  static const typedApi = 'typed-api';
+}
+
 /// Builds the value of the `X-Client-Info` header.
 ///
 /// When [platformInfo] is `null` the minimal `'$clientName/$version'` form is
@@ -61,4 +71,51 @@ String buildClientInfoHeader(
     if (platformInfo.runtimeVersion != null)
       'runtime-version=${platformInfo.runtimeVersion}',
   ].join('; ');
+}
+
+/// Returns a copy of [headers] whose `X-Client-Info` header also lists
+/// [features] in its `features` parameter.
+///
+/// The header is matched case insensitively. When [headers] holds it under
+/// several casings, the last one, which is the one a request sends, is kept
+/// and the others are dropped. Features it already lists are kept. [headers]
+/// is returned unchanged when it has no `X-Client-Info` header or [features]
+/// is empty.
+Map<String, String> withClientInfoFeatures(
+  Map<String, String> headers,
+  Set<String> features,
+) {
+  if (features.isEmpty) return headers;
+  final lowerCaseName = HttpHeader.clientInfo.toLowerCase();
+  bool isClientInfo(String name) => name.toLowerCase() == lowerCaseName;
+  final key = headers.keys.where(isClientInfo).lastOrNull;
+  if (key == null) return headers;
+  final segments = <String>[];
+  final merged = {...features};
+  for (final segment in headers[key]!.split(';')) {
+    final trimmed = segment.trim();
+    final separator = trimmed.indexOf('=');
+    final isFeatures =
+        separator != -1 &&
+        trimmed.substring(0, separator).trim().toLowerCase() == 'features';
+    if (isFeatures) {
+      merged.addAll(
+        trimmed
+            .substring(separator + 1)
+            .split(',')
+            .map((feature) => feature.trim())
+            .where((feature) => feature.isNotEmpty),
+      );
+    } else if (trimmed.isNotEmpty) {
+      segments.add(trimmed);
+    }
+  }
+  return {
+    for (final MapEntry(key: name, :value) in headers.entries)
+      if (!isClientInfo(name)) name: value,
+    key: [
+      ...segments,
+      'features=${(merged.toList()..sort()).join(',')}',
+    ].join('; '),
+  };
 }

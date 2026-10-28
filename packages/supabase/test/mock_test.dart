@@ -50,7 +50,10 @@ void main() {
   }) async {
     await for (final HttpRequest request in server) {
       final headers = request.headers;
-      if (headers.value('X-Client-Info') != 'supabase-flutter/0.0.0') {
+      if (!const {
+        'supabase-flutter/0.0.0',
+        'supabase-flutter/0.0.0; features=typed-api',
+      }.contains(headers.value('X-Client-Info'))) {
         throw 'Proper header not set';
       }
       final url = request.uri.toString();

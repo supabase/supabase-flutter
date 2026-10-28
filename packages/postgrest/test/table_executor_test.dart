@@ -425,6 +425,30 @@ void main() {
       expect(typed.method, untyped.method);
     });
 
+    test('lists typed-api in X-Client-Info, unlike the untyped API', () async {
+      await client.table(Books.table).select();
+      await client.from('books').select();
+
+      final clientInfo = client.headers['X-Client-Info'];
+      expect(
+        httpClient.requests[0].headers['X-Client-Info'],
+        '$clientInfo; features=typed-api',
+      );
+      expect(httpClient.requests[1].headers['X-Client-Info'], clientInfo);
+    });
+
+    test('lists typed-api in an X-Client-Info set on the request', () async {
+      await client
+          .table(Books.table)
+          .select()
+          .setHeader('x-client-info', 'custom/1.0');
+
+      expect(
+        httpClient.requests.single.headers['X-Client-Info'],
+        'custom/1.0; features=typed-api',
+      );
+    });
+
     test('renders an offset without a limit', () async {
       await PostgrestHttpTableExecutor(client).execute(
         PostgrestTableRequest(

@@ -39,6 +39,75 @@ void main() {
     });
   });
 
+  group('withClientInfoFeatures', () {
+    test('adds a features parameter to the X-Client-Info header', () {
+      expect(
+        withClientInfoFeatures(
+          {
+            'apikey': 'key',
+            'X-Client-Info': 'supabase-dart/2.0.0; runtime=dart',
+          },
+          {ClientInfoFeature.typedApi},
+        ),
+        {
+          'apikey': 'key',
+          'X-Client-Info':
+              'supabase-dart/2.0.0; runtime=dart; features=typed-api',
+        },
+      );
+    });
+
+    test('merges into an existing features parameter once, sorted', () {
+      expect(
+        withClientInfoFeatures(
+          {'x-client-info': 'supabase-dart/2.0.0; features=typed-api,offline'},
+          {ClientInfoFeature.typedApi, 'analytics'},
+        ),
+        {
+          'x-client-info':
+              'supabase-dart/2.0.0; features=analytics,offline,typed-api',
+        },
+      );
+    });
+
+    test('matches a features parameter regardless of case and spaces', () {
+      expect(
+        withClientInfoFeatures(
+          {'X-Client-Info': 'my-app/1.0.0; Features = offline'},
+          {ClientInfoFeature.typedApi},
+        ),
+        {'X-Client-Info': 'my-app/1.0.0; features=offline,typed-api'},
+      );
+    });
+
+    test('merges into the last casing and drops the others', () {
+      expect(
+        withClientInfoFeatures(
+          {
+            'X-Client-Info': 'supabase-dart/2.0.0',
+            'apikey': 'key',
+            'x-client-info': 'my-app/1.0.0',
+          },
+          {ClientInfoFeature.typedApi},
+        ),
+        {'apikey': 'key', 'x-client-info': 'my-app/1.0.0; features=typed-api'},
+      );
+    });
+
+    test('leaves headers without X-Client-Info unchanged', () {
+      final headers = {'apikey': 'key'};
+      expect(
+        withClientInfoFeatures(headers, {ClientInfoFeature.typedApi}),
+        same(headers),
+      );
+    });
+
+    test('leaves headers unchanged without features', () {
+      final headers = {'X-Client-Info': 'supabase-dart/2.0.0'};
+      expect(withClientInfoFeatures(headers, const {}), same(headers));
+    });
+  });
+
   group('normalizePlatformName', () {
     test('aligns casing with the other Supabase SDKs', () {
       expect(normalizePlatformName('android'), 'Android');
