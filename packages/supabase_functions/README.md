@@ -91,6 +91,16 @@ the response body as `details`. A request that gets no response throws a
 error body is a JSON object, its `message` and `code` become the `message` and
 `errorCode` of the exception.
 
+## Supabase Service Compatibility
+
+`supabase_functions` only guarantees compatibility with the [latest Supabase
+Edge Runtime release](https://github.com/supabase/edge-runtime/releases). Older
+Supabase Edge Runtime releases are supported on a best-effort basis, but
+compatibility is not guaranteed.
+
+If you self-host the Supabase Edge Runtime, we recommend upgrading to the latest
+release when upgrading this SDK.
+
 ## Docs
 
 The docs can be found on the official Supabase website.

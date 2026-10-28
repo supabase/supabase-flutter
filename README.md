@@ -54,6 +54,26 @@ not add yourself: [`postgrest`](packages/postgrest),
 [`supabase_functions`](packages/supabase_functions) and
 [`iceberg`](packages/iceberg).
 
+## Supabase Service Compatibility
+
+The Supabase Dart and Flutter SDKs only guarantee compatibility with the latest
+release of each Supabase service, unless a minimum supported version is
+explicitly listed below.
+
+Older service releases are supported on a best-effort basis, but compatibility
+is not guaranteed.
+
+If you self-host Supabase, we recommend upgrading your services to their latest
+releases when upgrading the SDK.
+
+| Service   | SDK package                                         | Server releases                                                            | Lowest supported version |
+| --------- | --------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------ |
+| Auth      | [`supabase_auth`](packages/supabase_auth)           | [supabase/auth](https://github.com/supabase/auth/releases)                 | Latest release           |
+| Storage   | [`supabase_storage`](packages/supabase_storage)     | [supabase/storage](https://github.com/supabase/storage/releases)           | Latest release           |
+| Functions | [`supabase_functions`](packages/supabase_functions) | [supabase/edge-runtime](https://github.com/supabase/edge-runtime/releases) | Latest release           |
+| PostgREST | [`postgrest`](packages/postgrest)                   | [PostgREST/postgrest](https://github.com/PostgREST/postgrest/releases)     | Latest release           |
+| Realtime  | [`supabase_realtime`](packages/supabase_realtime)   | [supabase/realtime](https://github.com/supabase/realtime/releases)         | Latest release           |
+
 ## Quick start
 
 Add the package and the schema generator:

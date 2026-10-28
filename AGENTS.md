@@ -286,6 +286,9 @@ await Supabase.initialize(
   and tables are padded so their columns line up. `melos run check-markdown`
   checks both and `--fix` pads the tables. Changelogs are not checked
 - Use `dart format` for consistent formatting
+- Update the "Supabase Service Compatibility" section of the READMEs if the
+  supported version of a Supabase service changes. Any change that is not
+  "Latest release" requires integration tests for the minimum supported version
 
 ### Adding a new public API
 
