@@ -51,6 +51,12 @@ void main() {
       request.headers['X-Client-Info'],
   ];
 
+  Future<void> untilItemsFetched() async {
+    while (httpClient.requestsTo('/rest/v1/items').isEmpty) {
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
   test('a typed table query lists typed-api', () async {
     await supabase.table(Items.table).select();
 
@@ -78,9 +84,7 @@ void main() {
         .stream(primaryKey: [Items.id])
         .listen(null);
     addTearDown(subscription.cancel);
-    while (httpClient.requestsTo('/rest/v1/items').isEmpty) {
-      await Future<void>.delayed(Duration.zero);
-    }
+    await untilItemsFetched();
 
     expect(sentClientInfo('/rest/v1/items'), [typedClientInfo]);
   });
@@ -91,9 +95,7 @@ void main() {
         .stream(primaryKey: ['id'])
         .listen(null);
     addTearDown(subscription.cancel);
-    while (httpClient.requestsTo('/rest/v1/items').isEmpty) {
-      await Future<void>.delayed(Duration.zero);
-    }
+    await untilItemsFetched();
 
     expect(sentClientInfo('/rest/v1/items'), [clientInfo]);
   });

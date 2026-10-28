@@ -39,6 +39,10 @@ class SupabaseQuerySchema {
   final RealtimeClient _realtime;
   final PostgrestClient _rest;
   final PostgrestTableExecutor _tableExecutor;
+  late final Map<String, String> _typedApiHeaders = withClientInfoFeatures(
+    _rest.headers,
+    const {ClientInfoFeature.typedApi},
+  );
 
   /// Perform a table operation.
   SupabaseQueryBuilder from(String table) => _from(table, _rest.headers);
@@ -67,12 +71,7 @@ class SupabaseQuerySchema {
     PostgrestTable<Row, Insert, Update> table,
   ) {
     return SupabaseTypedQueryBuilder(
-      _from(
-        table.name,
-        withClientInfoFeatures(_rest.headers, const {
-          ClientInfoFeature.typedApi,
-        }),
-      ),
+      _from(table.name, _typedApiHeaders),
       table,
       executor: _tableExecutor,
       schema: _schema,

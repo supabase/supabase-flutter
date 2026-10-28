@@ -51,29 +51,25 @@ abstract final class ClientInfoFeature {
 /// returned. Otherwise a `; `-joined list is returned, always including a
 /// `runtime=dart` segment and appending `platform`, `platform-version` and
 /// `runtime-version` segments for the non-null fields.
-///
-/// [features] are rendered as a final `features` segment, sorted and
-/// comma-separated, and left out when empty.
 String buildClientInfoHeader(
   String clientName,
   String version, {
   PlatformInfo? platformInfo,
-  Set<String> features = const {},
 }) {
-  final rawPlatformVersion = platformInfo?.platformVersion;
+  if (platformInfo == null) {
+    return '$clientName/$version';
+  }
+  final rawPlatformVersion = platformInfo.platformVersion;
   final platformVersion = rawPlatformVersion == null
       ? null
       : Uri.encodeFull(rawPlatformVersion).replaceAll('%20', ' ');
   return [
     '$clientName/$version',
-    if (platformInfo != null) ...[
-      if (platformInfo.platform != null) 'platform=${platformInfo.platform}',
-      if (platformVersion != null) 'platform-version=$platformVersion',
-      'runtime=dart',
-      if (platformInfo.runtimeVersion != null)
-        'runtime-version=${platformInfo.runtimeVersion}',
-    ],
-    if (features.isNotEmpty) _featuresSegment(features),
+    if (platformInfo.platform != null) 'platform=${platformInfo.platform}',
+    if (platformVersion != null) 'platform-version=$platformVersion',
+    'runtime=dart',
+    if (platformInfo.runtimeVersion != null)
+      'runtime-version=${platformInfo.runtimeVersion}',
   ].join('; ');
 }
 
@@ -98,10 +94,14 @@ Map<String, String> withClientInfoFeatures(
   final merged = {...features};
   for (final segment in headers[key]!.split(';')) {
     final trimmed = segment.trim();
-    if (trimmed.startsWith('features=')) {
+    final separator = trimmed.indexOf('=');
+    final isFeatures =
+        separator != -1 &&
+        trimmed.substring(0, separator).trim().toLowerCase() == 'features';
+    if (isFeatures) {
       merged.addAll(
         trimmed
-            .substring('features='.length)
+            .substring(separator + 1)
             .split(',')
             .map((feature) => feature.trim())
             .where((feature) => feature.isNotEmpty),
@@ -113,9 +113,9 @@ Map<String, String> withClientInfoFeatures(
   return {
     for (final MapEntry(key: name, :value) in headers.entries)
       if (!isClientInfo(name)) name: value,
-    key: [...segments, _featuresSegment(merged)].join('; '),
+    key: [
+      ...segments,
+      'features=${(merged.toList()..sort()).join(',')}',
+    ].join('; '),
   };
 }
-
-String _featuresSegment(Set<String> features) =>
-    'features=${(features.toList()..sort()).join(',')}';

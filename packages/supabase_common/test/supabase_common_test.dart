@@ -37,31 +37,6 @@ void main() {
       );
       expect(header, 'supabase-dart/2.0.0; runtime=dart');
     });
-
-    test('appends the features sorted as the last segment', () {
-      final header = buildClientInfoHeader(
-        'supabase-dart',
-        '2.0.0',
-        platformInfo: const PlatformInfo(runtimeVersion: '3.9.0'),
-        features: {'typed-api', 'offline'},
-      );
-      expect(
-        header,
-        'supabase-dart/2.0.0; runtime=dart; runtime-version=3.9.0; '
-        'features=offline,typed-api',
-      );
-    });
-
-    test('appends the features to the minimal form', () {
-      expect(
-        buildClientInfoHeader(
-          'postgrest-dart',
-          '2.0.0',
-          features: {ClientInfoFeature.typedApi},
-        ),
-        'postgrest-dart/2.0.0; features=typed-api',
-      );
-    });
   });
 
   group('withClientInfoFeatures', () {
@@ -92,6 +67,16 @@ void main() {
           'x-client-info':
               'supabase-dart/2.0.0; features=analytics,offline,typed-api',
         },
+      );
+    });
+
+    test('matches a features parameter regardless of case and spaces', () {
+      expect(
+        withClientInfoFeatures(
+          {'X-Client-Info': 'my-app/1.0.0; Features = offline'},
+          {ClientInfoFeature.typedApi},
+        ),
+        {'X-Client-Info': 'my-app/1.0.0; features=offline,typed-api'},
       );
     });
 
