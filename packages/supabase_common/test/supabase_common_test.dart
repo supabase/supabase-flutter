@@ -37,6 +37,76 @@ void main() {
       );
       expect(header, 'supabase-dart/2.0.0; runtime=dart');
     });
+
+    test('appends the features sorted as the last segment', () {
+      final header = buildClientInfoHeader(
+        'supabase-dart',
+        '2.0.0',
+        platformInfo: const PlatformInfo(runtimeVersion: '3.9.0'),
+        features: {'typed-api', 'offline'},
+      );
+      expect(
+        header,
+        'supabase-dart/2.0.0; runtime=dart; runtime-version=3.9.0; '
+        'features=offline,typed-api',
+      );
+    });
+
+    test('appends the features to the minimal form', () {
+      expect(
+        buildClientInfoHeader(
+          'postgrest-dart',
+          '2.0.0',
+          features: {ClientInfoFeature.typedApi},
+        ),
+        'postgrest-dart/2.0.0; features=typed-api',
+      );
+    });
+  });
+
+  group('withClientInfoFeatures', () {
+    test('adds a features parameter to the X-Client-Info header', () {
+      expect(
+        withClientInfoFeatures(
+          {
+            'apikey': 'key',
+            'X-Client-Info': 'supabase-dart/2.0.0; runtime=dart',
+          },
+          {ClientInfoFeature.typedApi},
+        ),
+        {
+          'apikey': 'key',
+          'X-Client-Info':
+              'supabase-dart/2.0.0; runtime=dart; features=typed-api',
+        },
+      );
+    });
+
+    test('merges into an existing features parameter once, sorted', () {
+      expect(
+        withClientInfoFeatures(
+          {'x-client-info': 'supabase-dart/2.0.0; features=typed-api,offline'},
+          {ClientInfoFeature.typedApi, 'analytics'},
+        ),
+        {
+          'x-client-info':
+              'supabase-dart/2.0.0; features=analytics,offline,typed-api',
+        },
+      );
+    });
+
+    test('leaves headers without X-Client-Info unchanged', () {
+      final headers = {'apikey': 'key'};
+      expect(
+        withClientInfoFeatures(headers, {ClientInfoFeature.typedApi}),
+        same(headers),
+      );
+    });
+
+    test('leaves headers unchanged without features', () {
+      final headers = {'X-Client-Info': 'supabase-dart/2.0.0'};
+      expect(withClientInfoFeatures(headers, const {}), same(headers));
+    });
   });
 
   group('normalizePlatformName', () {

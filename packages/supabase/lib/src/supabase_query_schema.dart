@@ -4,6 +4,8 @@
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart'
+    show ClientInfoFeature, withClientInfoFeatures;
 
 import 'counter.dart';
 
@@ -39,12 +41,14 @@ class SupabaseQuerySchema {
   final PostgrestTableExecutor _tableExecutor;
 
   /// Perform a table operation.
-  SupabaseQueryBuilder from(String table) {
+  SupabaseQueryBuilder from(String table) => _from(table, _rest.headers);
+
+  SupabaseQueryBuilder _from(String table, Map<String, String> headers) {
     final url = '$_restUrl/$table';
     return SupabaseQueryBuilder(
       url,
       _realtime,
-      headers: _rest.headers,
+      headers: headers,
       schema: _schema,
       table: table,
       httpClient: _authHttpClient,
@@ -63,7 +67,12 @@ class SupabaseQuerySchema {
     PostgrestTable<Row, Insert, Update> table,
   ) {
     return SupabaseTypedQueryBuilder(
-      from(table.name),
+      _from(
+        table.name,
+        withClientInfoFeatures(_rest.headers, const {
+          ClientInfoFeature.typedApi,
+        }),
+      ),
       table,
       executor: _tableExecutor,
       schema: _schema,

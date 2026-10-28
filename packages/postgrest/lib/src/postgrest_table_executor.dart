@@ -66,7 +66,8 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   }
 
   /// [builder] with the headers, retry policy, timeout and abort signal of
-  /// [options] applied.
+  /// [options] applied, and with [ClientInfoFeature.typedApi] in its
+  /// `X-Client-Info` header.
   PostgrestBuilder<T> _applyOptions<T>(
     PostgrestBuilder<T> builder,
     PostgrestRequestOptions options,
@@ -89,7 +90,8 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
     }
     final abortSignal = options.abortSignal;
     if (abortSignal != null) configured = configured.abortSignal(abortSignal);
-    return configured;
+    // ignore: invalid_use_of_internal_member
+    return configured.addClientInfoFeatures(const {ClientInfoFeature.typedApi});
   }
 
   /// The operation of [request] with its filter applied.
