@@ -80,18 +80,19 @@ String buildClientInfoHeader(
 /// Returns a copy of [headers] whose `X-Client-Info` header also lists
 /// [features] in its `features` parameter.
 ///
-/// The header is matched case insensitively, and features it already lists
-/// are kept. [headers] is returned unchanged when it has no `X-Client-Info`
-/// header or [features] is empty.
+/// The header is matched case insensitively. When [headers] holds it under
+/// several casings, the last one, which is the one a request sends, is kept
+/// and the others are dropped. Features it already lists are kept. [headers]
+/// is returned unchanged when it has no `X-Client-Info` header or [features]
+/// is empty.
 Map<String, String> withClientInfoFeatures(
   Map<String, String> headers,
   Set<String> features,
 ) {
   if (features.isEmpty) return headers;
   final lowerCaseName = HttpHeader.clientInfo.toLowerCase();
-  final key = headers.keys
-      .where((name) => name.toLowerCase() == lowerCaseName)
-      .firstOrNull;
+  bool isClientInfo(String name) => name.toLowerCase() == lowerCaseName;
+  final key = headers.keys.where(isClientInfo).lastOrNull;
   if (key == null) return headers;
   final segments = <String>[];
   final merged = {...features};
@@ -110,7 +111,8 @@ Map<String, String> withClientInfoFeatures(
     }
   }
   return {
-    ...headers,
+    for (final MapEntry(key: name, :value) in headers.entries)
+      if (!isClientInfo(name)) name: value,
     key: [...segments, _featuresSegment(merged)].join('; '),
   };
 }

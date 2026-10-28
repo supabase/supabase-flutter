@@ -120,7 +120,7 @@ void main() {
       'http://localhost:54321',
       'sb_publishable_test',
       httpClient: httpClient,
-      headers: const {'X-Client-Info': 'my-app/1.0.0; features=offline'},
+      headers: const {'x-client-info': 'my-app/1.0.0; features=offline'},
     );
     addTearDown(custom.dispose);
 

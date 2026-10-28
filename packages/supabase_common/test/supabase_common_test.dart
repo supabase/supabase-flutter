@@ -95,6 +95,20 @@ void main() {
       );
     });
 
+    test('merges into the last casing and drops the others', () {
+      expect(
+        withClientInfoFeatures(
+          {
+            'X-Client-Info': 'supabase-dart/2.0.0',
+            'apikey': 'key',
+            'x-client-info': 'my-app/1.0.0',
+          },
+          {ClientInfoFeature.typedApi},
+        ),
+        {'apikey': 'key', 'x-client-info': 'my-app/1.0.0; features=typed-api'},
+      );
+    });
+
     test('leaves headers without X-Client-Info unchanged', () {
       final headers = {'apikey': 'key'};
       expect(
