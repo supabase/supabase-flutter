@@ -1,3 +1,10 @@
+## 3.0.0-dev.14
+
+> Note: This release has breaking changes.
+
+ - **FEAT**(postgrest): filter inside an embed, add requiring and relation isNull on the typed surface ([#2061](https://github.com/supabase/supabase-flutter/issues/2061)). ([a9537321](https://github.com/supabase/supabase-flutter/commit/a9537321592a8be6d58b4205e4bc037428776c80))
+ - **BREAKING** **FEAT**(postgrest): a dedicated type for json and jsonb columns ([#2063](https://github.com/supabase/supabase-flutter/issues/2063)). ([fe3cbec3](https://github.com/supabase/supabase-flutter/commit/fe3cbec34cad3909040d4d471cbf79d13baf9fc1))
+
 ## 3.0.0-dev.13
 
 > Note: This release has breaking changes.

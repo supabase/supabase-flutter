@@ -1,3 +1,9 @@
+## 0.8.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(postgrest): a dedicated type for json and jsonb columns ([#2063](https://github.com/supabase/supabase-flutter/issues/2063)). ([fe3cbec3](https://github.com/supabase/supabase-flutter/commit/fe3cbec34cad3909040d4d471cbf79d13baf9fc1))
+
 ## 0.7.0
 
 > Note: This release has breaking changes.

@@ -1,3 +1,10 @@
+## 3.0.0-dev.12
+
+> Note: This release has breaking changes.
+
+ - **PERF**(realtime): build the per-message log records only when finest logging is enabled ([#2062](https://github.com/supabase/supabase-flutter/issues/2062)). ([7d8c3665](https://github.com/supabase/supabase-flutter/commit/7d8c366554477ab88f911a6e3ab481b6df59ad86))
+ - **BREAKING** **REFACTOR**(realtime): typed channel results, presence config names and an inspectable channel ([#2066](https://github.com/supabase/supabase-flutter/issues/2066)). ([6816686e](https://github.com/supabase/supabase-flutter/commit/6816686e051fe2b93e308a343ac2587198ea40b4))
+
 ## 3.0.0-dev.11
 
 > Note: This release has breaking changes.

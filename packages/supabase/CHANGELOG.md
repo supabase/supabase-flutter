@@ -1,3 +1,10 @@
+## 3.0.0-dev.14
+
+> Note: This release has breaking changes.
+
+ - **FEAT**(postgrest): filter inside an embed, add requiring and relation isNull on the typed surface ([#2061](https://github.com/supabase/supabase-flutter/issues/2061)). ([a9537321](https://github.com/supabase/supabase-flutter/commit/a9537321592a8be6d58b4205e4bc037428776c80))
+ - **BREAKING** **REFACTOR**(realtime): typed channel results, presence config names and an inspectable channel ([#2066](https://github.com/supabase/supabase-flutter/issues/2066)). ([6816686e](https://github.com/supabase/supabase-flutter/commit/6816686e051fe2b93e308a343ac2587198ea40b4))
+
 ## 3.0.0-dev.13
 
 > Note: This release has breaking changes.
