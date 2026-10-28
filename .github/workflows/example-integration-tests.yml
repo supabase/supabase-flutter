@@ -151,7 +151,14 @@ jobs:
             failed=""
             for id in $TARGET_IDS; do
               line=$(echo "$jobs" | awk -v id="$id" '$1 == id')
-              [ -n "$line" ] || continue
+              if [ -z "$line" ]; then
+                # The first attempt runs every test job, so one that is not
+                # listed yet is still to come.
+                if [ "${{ github.run_attempt }}" = 1 ]; then
+                  pending="$pending $id"
+                fi
+                continue
+              fi
               read -r _ status conclusion <<< "$line"
               if [ "$status" != completed ]; then
                 pending="$pending $id"
