@@ -557,7 +557,8 @@ explicitly:
 - [Switching to another user's session emits `signedIn`](#switching-to-another-users-session-emits-signedin),
   so a listener that noticed the new user on `tokenRefreshed` misses it
 - [`signOut()` only throws when the sessions could not be revoked](#signout-only-throws-when-the-sessions-could-not-be-revoked),
-  so a failed global sign-out keeps the user signed in on the device
+  so a failed global sign-out keeps the user signed in on the device, unless the server rejected
+  the refresh token
 - [An expired session is kept when `autoRefreshToken` is off](#an-expired-session-is-kept-when-autorefreshtoken-is-off),
   so a non-null `currentSession` is no longer guaranteed to be valid
 - [A client without an `asyncStorage` keeps pkce verifiers in memory](#a-client-without-an-asyncstorage-keeps-pkce-verifiers-in-memory),
@@ -1268,7 +1269,9 @@ devices stayed signed in, and the token needed to retry was gone.
   logged.
 - With `SignOutScope.global` and `SignOutScope.others` the server is asked first, after refreshing
   an expired access token. When that fails, including when the access token has expired and cannot
-  be refreshed, `signOut()` throws and the session is kept, so you can retry.
+  be refreshed, `signOut()` throws and the session is kept, so you can retry. When the server rejects
+  the refresh token, the session can no longer be used, so it is removed from the device before
+  `signOut()` throws.
   `SignOutScope.global` signs out on the device once the server has revoked the sessions.
 
 Remove any `try`/`catch` around a local `signOut()` that only existed to ignore offline failures.
