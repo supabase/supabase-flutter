@@ -550,8 +550,16 @@ explicitly:
 - [`order()` now sorts ascending by default](#order-now-sorts-ascending-by-default)
 - [`order()` no longer sends a null placement by default](#order-no-longer-sends-a-null-placement-by-default)
 - [`RealtimeClient.connectionState` is now typed](#realtimeclientconnectionstate-is-now-typed)
+- [Channel results are typed](#channel-results-are-typed), so comparing the result of
+  `removeChannel()` or `unsubscribe()` with a string such as `'ok'` is never true
 - [`HttpMethod` is one shared enum](#httpmethod-is-one-shared-enum), where the enum `index` shifted
 - [Confirming an email or phone change emits `userUpdated`](#confirming-an-email-or-phone-change-emits-userupdated)
+- [Switching to another user's session emits `signedIn`](#switching-to-another-users-session-emits-signedin),
+  so a listener that noticed the new user on `tokenRefreshed` misses it
+- [`signOut()` only throws when the sessions could not be revoked](#signout-only-throws-when-the-sessions-could-not-be-revoked),
+  so a failed global sign-out keeps the user signed in on the device
+- [An expired session is kept when `autoRefreshToken` is off](#an-expired-session-is-kept-when-autorefreshtoken-is-off),
+  so a non-null `currentSession` is no longer guaranteed to be valid
 - [A client without an `asyncStorage` keeps pkce verifiers in memory](#a-client-without-an-asyncstorage-keeps-pkce-verifiers-in-memory),
   so a pkce flow that leaves the process needs a persistent storage passed explicitly
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
