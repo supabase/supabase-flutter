@@ -30,6 +30,16 @@
 > This package was published as `storage_client` up to and including v2. That package is
 > discontinued in favour of `supabase_storage`.
 
+## Supabase Service Compatibility
+
+`supabase_storage` only guarantees compatibility with the [latest Supabase
+Storage release](https://github.com/supabase/storage/releases). Older Supabase
+Storage releases are supported on a best-effort basis, but compatibility is not
+guaranteed.
+
+If you self-host Supabase Storage, we recommend upgrading to the latest release
+when upgrading this SDK.
+
 ## Docs
 
 The docs can be found on the official Supabase website.

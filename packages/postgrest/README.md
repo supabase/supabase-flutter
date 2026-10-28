@@ -84,6 +84,16 @@ Future<void> main() async {
 `rpc('fn', params: {…})` remain as the untyped fallback for tables and
 functions that are not in the generated file.
 
+## Supabase Service Compatibility
+
+`postgrest` only guarantees compatibility with the [latest PostgREST
+release](https://github.com/PostgREST/postgrest/releases). Older PostgREST
+releases are supported on a best-effort basis, but compatibility is not
+guaranteed.
+
+If you self-host PostgREST, we recommend upgrading to the latest release when
+upgrading this SDK.
+
 ## Docs
 
 The docs can be found on the official Supabase website.
