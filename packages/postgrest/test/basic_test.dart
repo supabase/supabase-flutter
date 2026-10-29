@@ -15,6 +15,8 @@ extension type const UserInsert._(Map<String, dynamic> _json)
     implements Object {
   UserInsert({required String username, String? status})
     : this._({'username': username, 'status': ?status});
+
+  UserInsert setStatusToNull() => UserInsert._({..._json, 'status': null});
 }
 
 class JsonUserInsert {
@@ -408,12 +410,14 @@ void main() {
       expect(response.last['status'], 'ONLINE');
     });
 
-    test('typed bulk insert with defaultToNull writes NULL', () async {
+    test('typed bulk insert writes an explicit NULL', () async {
       final response = await postgrest.table(Users.table).insertAll([
         UserInsert(username: 'null bot', status: 'OFFLINE'),
-        UserInsert(username: 'null crazy bot'),
-      ], defaultToNull: true).select();
-      expect(response.last['status'], null);
+        UserInsert(username: 'null crazy bot').setStatusToNull(),
+        UserInsert(username: 'default crazy bot'),
+      ]).select();
+      expect(response[1]['status'], null);
+      expect(response[2]['status'], 'ONLINE');
     });
 
     test('typed bulk upsert applies column defaults', () async {

@@ -179,7 +179,6 @@ final class PostgrestTableRequest {
     this.readOnly = false,
     List<PostgrestStoredColumn<Object?, Object>>? onConflict,
     this.ignoreDuplicates = false,
-    this.defaultToNull = true,
     this.returning = false,
     this.maxAffected,
     this.stripNulls = false,
@@ -239,6 +238,9 @@ final class PostgrestTableRequest {
   /// The rows a mutation sends: one JSON object, or a list of them. For
   /// [PostgrestTableOperation.rpc] the arguments of the function call.
   ///
+  /// A column left out of some rows of a list gets its database default, and
+  /// a column set to `null` is written as `NULL`.
+  ///
   /// Kept as the caller passed it, not copied: the builders never modify it
   /// and an executor must not either. An executor that stores a request for
   /// later, an outbox for example, serializes the payload when it takes it.
@@ -258,10 +260,6 @@ final class PostgrestTableRequest {
 
   /// Whether an upsert skips conflicting rows instead of merging them.
   final bool ignoreDuplicates;
-
-  /// Whether columns missing from an insert payload become `null` rather
-  /// than their database default.
-  final bool defaultToNull;
 
   /// Whether a mutation returns the rows it affected, which a trailing
   /// `select` asks for. Without it the response body is empty whatever
@@ -304,7 +302,6 @@ final class PostgrestTableRequest {
     bool? readOnly,
     List<PostgrestStoredColumn<Object?, Object>>? onConflict,
     bool? ignoreDuplicates,
-    bool? defaultToNull,
     bool? returning,
     int? maxAffected,
     bool? stripNulls,
@@ -327,7 +324,6 @@ final class PostgrestTableRequest {
     readOnly: readOnly ?? this.readOnly,
     onConflict: onConflict ?? this.onConflict,
     ignoreDuplicates: ignoreDuplicates ?? this.ignoreDuplicates,
-    defaultToNull: defaultToNull ?? this.defaultToNull,
     returning: returning ?? this.returning,
     maxAffected: maxAffected ?? this.maxAffected,
     stripNulls: stripNulls ?? this.stripNulls,

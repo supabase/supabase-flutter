@@ -17,6 +17,8 @@ extension type const BookInsert._(Map<String, dynamic> _json)
     implements Object {
   BookInsert({required String title, int? id})
     : this._({'title': title, 'id': ?id});
+
+  BookInsert setIdToNull() => BookInsert._({..._json, 'id': null});
 }
 
 extension type const BookUpdate._(Map<String, dynamic> _json)
@@ -1363,6 +1365,8 @@ void main() {
 
       expect(httpClient.requests.last.method, 'POST');
       expect(httpClient.requests.last.body, '{"title":"foo"}');
+      expect(requestParameters()['columns'], isNull);
+      expect(httpClient.requests.last.headers['Prefer'], isNull);
     });
 
     test('insertAll posts every row and applies column defaults', () async {
@@ -1385,16 +1389,23 @@ void main() {
       );
     });
 
-    test('insertAll with defaultToNull writes NULL for missing keys', () async {
+    test('insertAll sends an explicit null next to a left out key', () async {
       httpClient.stub(null);
 
       await client.table(Books.table).insertAll([
         BookInsert(title: 'foo'),
-        BookInsert(id: 2, title: 'bar'),
-      ], defaultToNull: true);
+        BookInsert(title: 'bar').setIdToNull(),
+      ]);
 
+      expect(
+        httpClient.requests.last.body,
+        '[{"title":"foo"},{"title":"bar","id":null}]',
+      );
       expect(requestParameters()['columns'], '"title","id"');
-      expect(httpClient.requests.last.headers['Prefer'], isNull);
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        contains('missing=default'),
+      );
     });
 
     test('upsertAll applies column defaults to missing keys', () async {
@@ -1415,17 +1426,15 @@ void main() {
       );
     });
 
-    test('upsertAll with defaultToNull writes NULL for missing keys', () async {
+    test('upsert of a single row sends no missing=default', () async {
       httpClient.stub(null);
 
-      await client.table(Books.table).upsertAll([
-        BookInsert(title: 'foo'),
-        BookInsert(id: 2, title: 'bar'),
-      ], defaultToNull: true);
+      await client.table(Books.table).upsert(BookInsert(title: 'foo'));
 
+      expect(requestParameters()['columns'], isNull);
       expect(
         httpClient.requests.last.headers['Prefer'],
-        isNot(contains('missing=default')),
+        'resolution=merge-duplicates',
       );
     });
 
