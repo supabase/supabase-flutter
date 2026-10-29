@@ -233,4 +233,56 @@ void main() {
       );
     });
   });
+
+  group('an email PKCE request answered with a body that is not an object', () {
+    Future<void> expectVerifierKept(
+      String path, {
+      HttpMethod method = HttpMethod.post,
+    }) async {
+      final verifier = await store.retrieve();
+      expect(verifier, isNotNull);
+      expect(
+        generatePKCEChallenge(verifier!.split('/').first),
+        httpClient
+            .requestsTo(path, method: method)
+            .single
+            .jsonBody['code_challenge'],
+      );
+    }
+
+    test('keeps the verifier of signUp', () async {
+      httpClient.stub(<dynamic>[], path: '/auth/v1/signup');
+
+      await expectLater(
+        client.signUp(email: 'fake1@email.com', password: 'password'),
+        throwsFormatException,
+      );
+      await expectVerifierKept('/auth/v1/signup');
+    });
+
+    test('keeps the verifier of resend', () async {
+      httpClient.stub(<dynamic>[], path: '/auth/v1/resend');
+
+      await expectLater(
+        client.resend(email: 'fake1@email.com', type: OtpType.signup),
+        throwsFormatException,
+      );
+      await expectVerifierKept('/auth/v1/resend');
+    });
+
+    test('keeps the verifier of updateUser', () async {
+      await signInTestUser(client);
+      httpClient.stub(
+        <dynamic>[],
+        path: '/auth/v1/user',
+        method: HttpMethod.put,
+      );
+
+      await expectLater(
+        client.updateUser(UserAttributes(email: 'fake2@email.com')),
+        throwsFormatException,
+      );
+      await expectVerifierKept('/auth/v1/user', method: HttpMethod.put);
+    });
+  });
 }

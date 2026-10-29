@@ -184,17 +184,18 @@ class AuthAdminApi {
       options: options,
     );
     final body = jsonObject(result.body, 'the user list');
-    final users = body.listOf<Map<String, dynamic>>('users');
-    if (users == null) {
-      throw const FormatException(
-        'Expected "users" to be List<Map<String, dynamic>>, got Null',
-      );
-    }
+    final users = body.requiredListOf<Map<String, dynamic>>('users');
     final headers = result.response.headers;
     final links = _parsePaginationLinks(headers['link']);
 
     return ListUsersResponse(
-      users: users.map((user) => User.fromJson(user)!).toList(),
+      users: [
+        for (final user in users)
+          User.fromJson(user) ??
+              (throw const FormatException(
+                'Expected each of "users" to have an "id"',
+              )),
+      ],
       total: int.tryParse(headers['x-total-count'] ?? ''),
       nextPage: links['next'],
       lastPage: links['last'],
