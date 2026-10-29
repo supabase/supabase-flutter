@@ -17,6 +17,9 @@ enum ErrorCode {
   /// The email address is already in use by another user.
   emailExists('email_exists'),
 
+  /// The email address is not a valid address.
+  emailAddressInvalid('email_address_invalid'),
+
   /// The phone number is already in use by another user.
   phoneExists('phone_exists'),
 

@@ -506,9 +506,13 @@ void main() {
       );
     });
 
-    test('JwtHeader.fromJson throws for a missing alg', () {
+    test('JwtHeader.fromJson leaves a missing alg null', () {
+      expect(JwtHeader.fromJson({'typ': 'JWT'}).algorithm, isNull);
+    });
+
+    test('JwtHeader.fromJson throws for an alg of the wrong type', () {
       expect(
-        () => JwtHeader.fromJson({'typ': 'JWT'}),
+        () => JwtHeader.fromJson({'alg': 1}),
         _throwsFormatExceptionNaming('alg'),
       );
     });
