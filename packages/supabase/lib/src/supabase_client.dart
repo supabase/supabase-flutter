@@ -379,7 +379,7 @@ class SupabaseClient {
       return session?.accessToken;
     } on AuthException catch (error, stackTrace) {
       // Throw the error instead of making an API request with an expired token.
-      clientLogger.warning(
+      clientLogger.fine(
         'Access token is expired and refreshing failed, aborting the request',
         error,
         stackTrace,
