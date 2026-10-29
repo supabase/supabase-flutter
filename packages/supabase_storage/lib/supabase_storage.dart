@@ -12,6 +12,7 @@ export 'package:supabase_common/supabase_common.dart'
         SupabaseTransportException,
         SupabaseRetryOptions;
 
+export 'src/download_stream_helpers.dart' show StorageByteStream;
 export 'src/resumable_upload.dart'
     show
         MemoryResumableUploadStorage,
