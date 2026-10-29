@@ -1,3 +1,22 @@
+## 3.0.0-dev.13
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: name the description argument of jsonObject and jsonObjectList ([#2097](https://github.com/supabase/supabase-flutter/issues/2097)). ([659cf76b](https://github.com/supabase/supabase-flutter/commit/659cf76b59a0ba7c4f3c91d67a1d181864fa9797))
+ - **REFACTOR**: share the JsonFields helper through supabase_common ([#2082](https://github.com/supabase/supabase-flutter/issues/2082)). ([f45bc196](https://github.com/supabase/supabase-flutter/commit/f45bc19652ba4627e6d951d5a3605e2fa7c41eb6))
+ - **FIX**(auth): align getClaims and ErrorCode with the canonical spec ([#2099](https://github.com/supabase/supabase-flutter/issues/2099)). ([54bcd2ff](https://github.com/supabase/supabase-flutter/commit/54bcd2ff3c17320695c4e6c8d503be522c99ebd1))
+ - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
+ - **FIX**: keep query strings, header values, payloads and user objects out of diagnostic logs ([#2095](https://github.com/supabase/supabase-flutter/issues/2095)). ([75d21fdc](https://github.com/supabase/supabase-flutter/commit/75d21fdc70651df26ba461d4b91f678a236c5e54))
+ - **FIX**(auth): honor allowExpired when verifying asymmetric tokens in getClaims ([#2094](https://github.com/supabase/supabase-flutter/issues/2094)). ([68ce0800](https://github.com/supabase/supabase-flutter/commit/68ce08002ab45f143fb0b2a581da68698ac7f251))
+ - **FIX**(auth): keep PKCE verifiers when an email response is malformed ([#2096](https://github.com/supabase/supabase-flutter/issues/2096)). ([33751792](https://github.com/supabase/supabase-flutter/commit/33751792fdf5119254aecad63feb4781c76193c6))
+ - **FIX**(auth): check the token header algorithm against the matched JWK in getClaims ([#2091](https://github.com/supabase/supabase-flutter/issues/2091)). ([4db0e290](https://github.com/supabase/supabase-flutter/commit/4db0e2909743347a9af64f56cafa79d223d8abf8))
+ - **FIX**(auth): read decoded JSON through JsonFields ([#2086](https://github.com/supabase/supabase-flutter/issues/2086)). ([ce697772](https://github.com/supabase/supabase-flutter/commit/ce697772848e6407148ec96b6409c5126afd2491))
+ - **FIX**: check the shape of auth payloads and onError results instead of catching TypeError ([#2081](https://github.com/supabase/supabase-flutter/issues/2081)). ([48cd29f2](https://github.com/supabase/supabase-flutter/commit/48cd29f2a2c36bc4f12a2b1c3bf6ce7013154881))
+ - **FIX**: check input shapes instead of catching TypeError and NoSuchMethodError ([#2080](https://github.com/supabase/supabase-flutter/issues/2080)). ([b4d8fc01](https://github.com/supabase/supabase-flutter/commit/b4d8fc015466c9ba8065cec62963543d6c233108))
+ - **FIX**(auth): drop the error handling for servers without error codes and dead JWT rethrows ([#2077](https://github.com/supabase/supabase-flutter/issues/2077)). ([855b811d](https://github.com/supabase/supabase-flutter/commit/855b811d90d11a0fcad37a0f39177869324454e2))
+ - **DOCS**: document SDK compatibility with Supabase services ([#2074](https://github.com/supabase/supabase-flutter/issues/2074)). ([072eee45](https://github.com/supabase/supabase-flutter/commit/072eee4561eea35ad9dc49886497fbec402ed848))
+ - **BREAKING** **REFACTOR**(auth): rename AuthPKCEGrantCodeExchangeError to AuthPKCEGrantCodeExchangeException ([#2079](https://github.com/supabase/supabase-flutter/issues/2079)). ([ac6f0522](https://github.com/supabase/supabase-flutter/commit/ac6f0522f5bd2837dc640b94c7a04f311641533c))
+
 ## 3.0.0-dev.12
 
 > Note: This release has breaking changes.

@@ -1,3 +1,9 @@
+## 3.0.0-dev.15
+
+ - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
+ - **FIX**: keep query strings, header values, payloads and user objects out of diagnostic logs ([#2095](https://github.com/supabase/supabase-flutter/issues/2095)). ([75d21fdc](https://github.com/supabase/supabase-flutter/commit/75d21fdc70651df26ba461d4b91f678a236c5e54))
+ - **DOCS**: document SDK compatibility with Supabase services ([#2074](https://github.com/supabase/supabase-flutter/issues/2074)). ([072eee45](https://github.com/supabase/supabase-flutter/commit/072eee4561eea35ad9dc49886497fbec402ed848))
+
 ## 3.0.0-dev.14
 
  - **FEAT**(postgrest): filter inside an embed, add requiring and relation isNull on the typed surface ([#2061](https://github.com/supabase/supabase-flutter/issues/2061)). ([a9537321](https://github.com/supabase/supabase-flutter/commit/a9537321592a8be6d58b4205e4bc037428776c80))
