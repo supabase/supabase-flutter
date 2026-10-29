@@ -53,6 +53,10 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   PostgrestTypedTransformBuilder<Row, T> setHeader(String key, String value) =>
       _with(request._header(key, value));
 
+  @override
+  PostgrestTypedTransformBuilder<Row, T> accessToken(String token) =>
+      setHeader('Authorization', 'Bearer $token');
+
   /// Performs horizontal filtering with SELECT, returning the affected rows
   /// typed as [Row].
   ///

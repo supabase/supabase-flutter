@@ -47,6 +47,10 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
   PostgrestTransformBuilder<T> setHeader(String key, String value) =>
       PostgrestTransformBuilder(super.setHeader(key, value));
 
+  @override
+  PostgrestTransformBuilder<T> accessToken(String token) =>
+      PostgrestTransformBuilder(super.accessToken(token));
+
   /// Performs horizontal filtering with SELECT.
   ///
   /// ```dart

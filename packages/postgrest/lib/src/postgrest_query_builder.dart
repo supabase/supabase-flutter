@@ -339,4 +339,9 @@ class PostgrestQueryBuilder {
       ),
     );
   }
+
+  /// Sends [token] as `Authorization: Bearer <token>` on the requests built by
+  /// this builder, instead of the token of the client.
+  PostgrestQueryBuilder accessToken(String token) =>
+      setHeader('Authorization', 'Bearer $token');
 }

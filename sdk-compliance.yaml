@@ -1757,12 +1757,21 @@ features:
       - PostgrestTypedTransformBuilder.requestTimeout
   database.configuration.access_token:
     status: implemented
-    note: "There is no setter. The token is supplied as an accessToken callback on PostgrestClient that is resolved before every request, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single request can override it with an Authorization header via setHeader."
+    note: "There is no setter. The token is supplied as an accessToken callback on PostgrestClient that is resolved before every request, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single request can override it with accessToken, which sends the raw token with the Bearer scheme."
     symbols:
       - PostgrestClient.PostgrestClient
       - PostgrestBuilder.setHeader
+      - PostgrestBuilder.accessToken
       - SupabaseClient.accessToken
     supporting_symbols:
+      - PostgrestFilterBuilder.accessToken
+      - PostgrestQueryBuilder.accessToken
+      - PostgrestTransformBuilder.accessToken
+      - PostgrestTypedBuilder.accessToken
+      - PostgrestTypedCountBuilder.accessToken
+      - PostgrestTypedFilterBuilder.accessToken
+      - PostgrestTypedQueryBuilder.accessToken
+      - PostgrestTypedTransformBuilder.accessToken
       - PostgrestFilterBuilder.setHeader
       - PostgrestQueryBuilder.setHeader
       - PostgrestTransformBuilder.setHeader

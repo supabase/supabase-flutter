@@ -192,6 +192,26 @@ void main() {
       );
     });
 
+    test('accessToken on a builder wins over the client accessToken', () async {
+      final httpClient = CustomHttpClient();
+      final client = PostgrestClient(
+        localStackRestUrl,
+        httpClient: httpClient,
+        accessToken: () async => 'resolved',
+      );
+
+      await client
+          .from('empty-succ')
+          .select()
+          .accessToken('per-request')
+          .head();
+
+      expect(
+        httpClient.lastRequest!.headers['Authorization'],
+        'Bearer per-request',
+      );
+    });
+
     test('accessToken together with an Authorization header asserts', () {
       expect(
         () => PostgrestClient(

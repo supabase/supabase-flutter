@@ -2582,7 +2582,7 @@ the call. Otherwise:
   ```
 
 - For a single call, pass the header to that call, through `headers:` on `invoke()` or
-  `setHeader('Authorization', 'Bearer $jwt')` on a query.
+  `accessToken(jwt)` on a query, which sends `Authorization: Bearer <jwt>`.
 - To pin a token on a client from `SupabaseClient`, call
   `setHeader('Authorization', 'Bearer $jwt')` on `supabase.storage` or `supabase.functions`, and
   for the rest client assign it through `supabase.headers`.

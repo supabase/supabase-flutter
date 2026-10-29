@@ -78,6 +78,11 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     String value,
   ) => _with(_currentOptions._header(key, value));
 
+  /// Sends [token] as `Authorization: Bearer <token>` on the requests built by
+  /// this builder, instead of the token of the client.
+  PostgrestTypedQueryBuilder<Row, Insert, Update> accessToken(String token) =>
+      setHeader('Authorization', 'Bearer $token');
+
   PostgrestTypedUnscopedBuilder<Row> _mutation(
     PostgrestTableRequest request,
   ) => PostgrestTypedUnscopedBuilder._(
@@ -191,7 +196,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ]);
   /// ```
   ///
-  /// [rows] needs at least one row. A column left out of a row gets its
+  /// An empty [rows] writes nothing. A column left out of a row gets its
   /// database default, even when other rows set it. Pass [defaultToNull] as
   /// `true` to write `NULL` for it instead.
   PostgrestTypedTransformBuilder<Row, void> insertAll(
@@ -199,7 +204,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     bool defaultToNull = false,
   }) => _insertion(
     _request(PostgrestTableOperation.insert).copyWith(
-      payload: _nonEmpty(rows),
+      payload: rows,
       defaultToNull: defaultToNull,
     ),
   );
@@ -246,7 +251,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// );
   /// ```
   ///
-  /// [rows] needs at least one row. A column left out of a row that another
+  /// An empty [rows] writes nothing. A column left out of a row that another
   /// row sets is written as its database default, also when the row merges
   /// into an existing one. See [insertAll] for [defaultToNull].
   ///
@@ -258,18 +263,11 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     bool ignoreDuplicates = false,
     bool defaultToNull = false,
   }) => _upsert(
-    _nonEmpty(rows),
+    rows,
     onConflict: onConflict,
     ignoreDuplicates: ignoreDuplicates,
     defaultToNull: defaultToNull,
   );
-
-  List<Insert> _nonEmpty(List<Insert> rows) {
-    if (rows.isEmpty) {
-      throw ArgumentError.value(rows, 'rows', 'rows needs at least one row');
-    }
-    return rows;
-  }
 
   PostgrestTypedTransformBuilder<Row, void> _upsert(
     Object values, {

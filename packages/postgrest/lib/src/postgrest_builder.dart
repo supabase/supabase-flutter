@@ -501,6 +501,11 @@ class PostgrestBuilder<T> implements Future<T> {
     return _copyWith(headers: headers);
   }
 
+  /// Returns a copy of this request that sends [token] as
+  /// `Authorization: Bearer <token>`, instead of the token of the client.
+  PostgrestBuilder<T> accessToken(String token) =>
+      setHeader('Authorization', 'Bearer $token');
+
   /// Returns a copy of this request whose `X-Client-Info` header also lists
   /// [features], see [withClientInfoFeatures].
   @internal
