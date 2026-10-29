@@ -211,32 +211,112 @@ void main() {
     await subscription.cancel();
   });
 
-  test('discards a persisted value that is not a session', () async {
-    await storage.setItem(storageKey, 'not a session');
-    final client = createClient();
+  group('a persisted value that holds no session', () {
+    final values = {
+      'an unparseable value': 'not a session',
+      'a session without user data': '{"access_token":"token"}',
+      'a session without an access token': '{}',
+    };
 
-    await client.initialized;
-    await settle();
-
-    expect(client.currentSession, isNull);
-    expect(await storage.getItem(storageKey), isNull);
-    final state = await client.onAuthStateChange
-        .handleError((_) {})
-        .firstWhere(
-          (candidate) => candidate.event == AuthChangeEvent.initialSession,
+    for (final MapEntry(key: description, value: persisted) in values.entries) {
+      test('is removed and signed out after the initial session for '
+          '$description', () async {
+        await storage.setItem(storageKey, persisted);
+        final client = createClient();
+        final states = <AuthState>[];
+        final errors = <Object>[];
+        final subscription = client.onAuthStateChange.listen(
+          states.add,
+          onError: errors.add,
         );
-    expect(state.session, isNull);
+        addTearDown(subscription.cancel);
+
+        await client.initialized;
+        await pumpEventQueue();
+
+        expect(client.currentSession, isNull);
+        expect(await storage.getItem(storageKey), isNull);
+        expect(states, hasLength(2));
+        expect(
+          states.first,
+          isA<AuthInitialSession>().having(
+            (state) => state.session,
+            'session',
+            isNull,
+          ),
+        );
+        expect(
+          states.last,
+          isA<AuthSignedOut>().having(
+            (state) => state.reason,
+            'reason',
+            SignOutReason.sessionMissing,
+          ),
+        );
+        expect(errors, isEmpty);
+      });
+    }
+
+    test('is signed out for a subscriber that arrives once the client is '
+        'initialized', () async {
+      await storage.setItem(storageKey, 'not a session');
+      final client = createClient();
+
+      await client.initialized;
+      final states = await client.onAuthStateChange.take(2).toList();
+
+      expect(states.first, isA<AuthInitialSession>());
+      expect(
+        states.last,
+        isA<AuthSignedOut>().having(
+          (state) => state.reason,
+          'reason',
+          SignOutReason.sessionMissing,
+        ),
+      );
+    });
+
+    test(
+      'is not signed out after a sign in that followed the restore',
+      () async {
+        await storage.setItem(storageKey, 'not a session');
+        final client = createClient();
+        final events = <AuthChangeEvent>[];
+        final subscription = client.onAuthStateChange.listen(
+          (state) => events.add(state.event),
+        );
+        addTearDown(subscription.cancel);
+
+        await client.initialized;
+        final stored = getSessionData(
+          DateTime.now().add(const Duration(hours: 1)),
+        );
+        client.signInWithSession(
+          Session.fromJson(jsonDecode(stored.sessionString))!,
+        );
+        await pumpEventQueue();
+
+        expect(events, [
+          AuthChangeEvent.initialSession,
+          AuthChangeEvent.signedIn,
+        ]);
+      },
+    );
   });
 
-  test('a session without user data is removed from the storage', () async {
-    await storage.setItem(storageKey, '{"access_token":"token"}');
+  test('only emits an initial session when nothing is persisted', () async {
     final client = createClient();
+    final events = <AuthChangeEvent>[];
+    final subscription = client.onAuthStateChange.listen(
+      (state) => events.add(state.event),
+      onError: (_) {},
+    );
+    addTearDown(subscription.cancel);
 
     await client.initialized;
-    await settle();
+    await pumpEventQueue();
 
-    expect(client.currentSession, isNull);
-    expect(await storage.getItem(storageKey), isNull);
+    expect(events, [AuthChangeEvent.initialSession]);
   });
 
   test('a sign in during the restore is not replaced by the stored '
@@ -290,25 +370,6 @@ void main() {
     final persisted = await storage.getItem(storageKey);
     final session = Session.fromJson(jsonDecode(persisted!));
     expect(session?.user.userMetadata['name'], 'Updated');
-  });
-
-  test('a persisted value without an access token only emits an initial '
-      'session', () async {
-    await storage.setItem(storageKey, '{}');
-    final client = createClient();
-    final events = <AuthChangeEvent>[];
-    final subscription = client.onAuthStateChange.listen(
-      (state) => events.add(state.event),
-      onError: (_) {},
-    );
-    addTearDown(subscription.cancel);
-
-    await client.initialized;
-    await settle();
-
-    expect(client.currentSession, isNull);
-    expect(await storage.getItem(storageKey), isNull);
-    expect(events, [AuthChangeEvent.initialSession]);
   });
 
   test('does not write the restored session back to the storage', () async {

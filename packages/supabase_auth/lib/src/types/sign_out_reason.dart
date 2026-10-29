@@ -13,9 +13,9 @@ enum SignOutReason {
   /// Matches the [ErrorCode.sessionExpired] thrown on the stream.
   sessionExpired,
 
-  /// A stored session could not be recovered because it was missing required
-  /// data, so the session was removed.
-  ///
-  /// Matches the [ErrorCode.sessionMissing] thrown on the stream.
+  /// A stored session could not be recovered because it could not be parsed
+  /// or was missing required data, so the session was removed. Emitted after
+  /// [AuthChangeEvent.initialSession] when the session persisted by an earlier
+  /// run cannot be restored.
   sessionMissing,
 }
