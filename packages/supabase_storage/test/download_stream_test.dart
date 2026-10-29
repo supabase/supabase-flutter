@@ -44,7 +44,7 @@ void main() {
 
       final download = await client.from('bucket').downloadStream('a.mp4');
 
-      expect(body.hasListener, isFalse);
+      expect(body.isPaused, isTrue);
       expect(download.statusCode, 200);
       expect(download.contentLength, 4);
       expect(download.contentType, 'video/mp4');
@@ -74,6 +74,18 @@ void main() {
       expect(download.contentRange, 'bytes 4-5/10');
       expect(download.contentLength, 2);
       expect(await download.expand((chunk) => chunk).toList(), [5, 6]);
+    });
+
+    test('looks headers up by their lower case name', () {
+      final download = StorageDownload(
+        const Stream.empty(),
+        statusCode: 206,
+        headers: {'Content-Range': 'bytes 0-1/2', 'Content-Type': 'text/plain'},
+      );
+
+      expect(download.contentRange, 'bytes 0-1/2');
+      expect(download.contentType, 'text/plain');
+      expect(download.headers.keys, ['content-range', 'content-type']);
     });
 
     test('reports an unknown length for an encoded body', () async {
@@ -231,6 +243,21 @@ void main() {
 
         await expectLater(read, throwsA(isA<RequestAbortedException>()));
         expect(chunks, isNotEmpty);
+      });
+
+      test('releases the connection on an abort before listening', () async {
+        final abort = Completer<void>();
+        final download = await storage
+            .from('bucket')
+            .downloadStream('a.bin', abortSignal: abort.future);
+
+        abort.complete();
+
+        await connectionClosed.future.timeout(const Duration(seconds: 5));
+        await expectLater(
+          download.drain<void>(),
+          throwsA(isA<RequestAbortedException>()),
+        );
       });
 
       test(

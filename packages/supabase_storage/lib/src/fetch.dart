@@ -421,11 +421,29 @@ class Fetch {
       ),
     );
     return StorageDownload(
-      body,
+      _subscribePaused(body),
       statusCode: streamedResponse.statusCode,
       headers: streamedResponse.headers,
       contentLength: _bodyLength(streamedResponse),
     );
+  }
+
+  /// Listens to [body] at once and holds it paused until the returned stream
+  /// is listened to, so that an abort or a cancellation before then still
+  /// reaches the HTTP client and releases the connection.
+  Stream<Uint8List> _subscribePaused(Stream<Uint8List> body) {
+    final controller = StreamController<Uint8List>(sync: true);
+    final subscription = body.listen(
+      controller.add,
+      onError: controller.addError,
+      onDone: () => unawaited(controller.close()),
+    )..pause();
+    controller
+      ..onListen = subscription.resume
+      ..onPause = subscription.pause
+      ..onResume = subscription.resume
+      ..onCancel = subscription.cancel;
+    return controller.stream;
   }
 
   Future<T> post<T>(

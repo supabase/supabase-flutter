@@ -15,7 +15,10 @@ final class StorageDownload extends StreamView<Uint8List> {
     required this.statusCode,
     Map<String, String> headers = const {},
     this.contentLength,
-  }) : headers = Map.unmodifiable(headers);
+  }) : headers = Map.unmodifiable({
+         for (final MapEntry(:key, :value) in headers.entries)
+           key.toLowerCase(): value,
+       });
 
   /// The status of the response, 206 for a satisfied byte range and 200 for
   /// the whole file.
