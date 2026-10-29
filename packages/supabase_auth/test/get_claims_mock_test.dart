@@ -419,6 +419,25 @@ void main() {
       },
     );
 
+    test('keeps the wait at 16 seconds after many failed refetches', () async {
+      for (var i = 0; i < 70; i++) {
+        await getClaimsAfter(const Duration(seconds: 16));
+      }
+      final fetches = mockClient.requestsTo('/.well-known/jwks.json').length;
+
+      await getClaimsAfter(const Duration(seconds: 15));
+      expect(
+        mockClient.requestsTo('/.well-known/jwks.json'),
+        hasLength(fetches),
+      );
+
+      await getClaimsAfter(const Duration(seconds: 1));
+      expect(
+        mockClient.requestsTo('/.well-known/jwks.json'),
+        hasLength(fetches + 1),
+      );
+    });
+
     test('clears the backoff once a refetch resolves the kid', () async {
       await getClaimsAfter(Duration.zero);
       await getClaimsAfter(const Duration(seconds: 1));
