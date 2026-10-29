@@ -28,7 +28,7 @@ void main() {
     late HttpServer mockServer;
 
     setUp(() async {
-      mockServer = await HttpServer.bind('localhost', 0);
+      mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       supabaseUrl = 'http://${mockServer.address.host}:${mockServer.port}';
 
       supabase = SupabaseClient(supabaseUrl, supabaseKey);
@@ -316,7 +316,7 @@ void main() {
         DateTime.now().add(Duration(hours: 1)),
       );
 
-      final mockServer = await HttpServer.bind('localhost', 0);
+      final mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         "supabaseKey",
@@ -354,7 +354,10 @@ void main() {
           DateTime.now().add(Duration(hours: 1)),
         );
 
-        final mockServer = await HttpServer.bind('localhost', 0);
+        final mockServer = await HttpServer.bind(
+          InternetAddress.loopbackIPv4,
+          0,
+        );
         addTearDown(() => mockServer.close(force: true));
         final supabase = SupabaseClient(
           'http://${mockServer.address.host}:${mockServer.port}',
@@ -397,7 +400,7 @@ void main() {
     test('call recoverSession', () async {
       final expiresAt = DateTime.now().add(Duration(seconds: 31));
 
-      final mockServer = await HttpServer.bind('localhost', 0);
+      final mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       final supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         "supabaseKey",
@@ -486,7 +489,7 @@ void main() {
     });
 
     test('X-Client-Info header is set properly on realtime', () async {
-      final mockServer = await HttpServer.bind('localhost', 0);
+      final mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
 
       final client = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',

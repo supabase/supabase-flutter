@@ -93,7 +93,7 @@ void main() {
     const supabaseKey = 'test-supabase-key';
 
     setUp(() async {
-      mockServer = await HttpServer.bind('localhost', 0);
+      mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       mockServer.listen((request) {
         request.response
           ..statusCode = HttpStatus.ok

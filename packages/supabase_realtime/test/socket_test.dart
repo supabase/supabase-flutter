@@ -39,7 +39,7 @@ void main() {
   late HttpServer mockServer;
 
   setUp(() async {
-    mockServer = await HttpServer.bind('localhost', 0);
+    mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     WebSocketChannel? channel;
 
     mockServer

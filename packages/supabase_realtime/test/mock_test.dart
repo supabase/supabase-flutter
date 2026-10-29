@@ -123,7 +123,7 @@ void main() {
 
   group('Multitenant Realtime', () {
     setUp(() async {
-      mockServer = await HttpServer.bind('localhost', 0);
+      mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       client = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         parameters: {'apikey': 'supabaseKey'},
@@ -375,7 +375,7 @@ void main() {
 
   group('Singletenant Realtime', () {
     setUp(() async {
-      mockServer = await HttpServer.bind('localhost', 0);
+      mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       client = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         parameters: {'apikey': 'supabaseKey'},

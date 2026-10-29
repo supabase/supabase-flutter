@@ -13,7 +13,7 @@ void main() {
 
   group('Realtime subscriptions: ', () {
     setUp(() async {
-      mockServer = await HttpServer.bind('localhost', 0);
+      mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
 
       subscription = mockServer.transform(WebSocketTransformer()).listen((
         webSocket,
