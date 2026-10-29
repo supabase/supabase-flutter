@@ -205,6 +205,8 @@ class AuthClient {
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
   Future<JWKSet>? _pendingJwksFetch;
+  int _jwksRefetchFailures = 0;
+  DateTime? _jwksRefetchAllowedAt;
 
   /// When the JWKS used by [getClaims] was last fetched.
   @internal
@@ -2579,8 +2581,10 @@ class AuthClient {
       if (cachedJwk != null && age < AuthConstants.jwksTtl) {
         return cachedJwk;
       }
+      final allowedAt = _jwksRefetchAllowedAt;
       if (cachedJwk == null &&
-          age < AuthConstants.jwksUnknownKeyRefetchInterval) {
+          allowedAt != null &&
+          clock.now().isBefore(allowedAt)) {
         return null;
       }
     }
@@ -2588,7 +2592,30 @@ class AuthClient {
     final jwks = await (_pendingJwksFetch ??= _fetchJwks().whenComplete(
       () => _pendingJwksFetch = null,
     ));
-    return jwks.keys.firstWhereOrNull((key) => key.keyId == kid);
+    final jwk = jwks.keys.firstWhereOrNull((key) => key.keyId == kid);
+    if (jwk != null) {
+      _jwksRefetchFailures = 0;
+      _jwksRefetchAllowedAt = null;
+    } else if (cachedAt != null) {
+      _backOffJwksRefetch();
+    }
+    return jwk;
+  }
+
+  void _backOffJwksRefetch() {
+    final now = clock.now();
+    final allowedAt = _jwksRefetchAllowedAt;
+    if (allowedAt != null && now.isBefore(allowedAt)) {
+      return;
+    }
+    final backoff =
+        AuthConstants.jwksMinRefetchBackoff * (1 << _jwksRefetchFailures);
+    _jwksRefetchFailures++;
+    _jwksRefetchAllowedAt = now.add(
+      backoff < AuthConstants.jwksMaxRefetchBackoff
+          ? backoff
+          : AuthConstants.jwksMaxRefetchBackoff,
+    );
   }
 
   Future<JWKSet> _fetchJwks() async {
@@ -2619,9 +2646,12 @@ class AuthClient {
   /// carry a `kid`, the JWKS is fetched from the server on the first call and
   /// cached for subsequent calls. The cache is refreshed automatically after
   /// 10 minutes. Concurrent calls share a single JWKS request. A token whose
-  /// `kid` is not in the cache triggers a refetch, unless the JWKS was fetched
-  /// less than 30 seconds ago, in which case it is verified through the Auth
-  /// server like [getUser].
+  /// `kid` is not in the cache triggers a refetch. While refetches keep failing
+  /// to resolve the `kid`, the next one waits 1, 2, 4, 8 and then 16 seconds,
+  /// and a token that arrives earlier is verified through the Auth server like
+  /// [getUser]. A refetch that resolves the `kid` clears the wait. A token
+  /// without an `alg`, or with one this client cannot verify, is verified
+  /// through the Auth server as well.
   ///
   /// [jwt] An optional specific JWT you wish to verify, not the one you
   ///       can obtain from [currentSession].
@@ -2654,14 +2684,17 @@ class AuthClient {
       validateExpiration(decoded.payload.expiresAt);
     }
 
+    final algorithm = decoded.header.algorithm;
+    final keyId = decoded.header.keyId;
     final signingKey =
-        (decoded.header.algorithm.startsWith('HS') ||
-            decoded.header.keyId == null)
+        (algorithm == null ||
+            !_asymmetricAlgorithms.contains(algorithm) ||
+            keyId == null)
         ? null
-        : await _fetchJwk(decoded.header.keyId!);
+        : await _fetchJwk(keyId);
 
-    // If symmetric algorithm, fallback to getUser()
-    if (signingKey == null) {
+    // If symmetric, missing or unsupported algorithm, fallback to getUser()
+    if (signingKey == null || algorithm == null) {
       await getUser(token);
       return GetClaimsResponse(
         claims: decoded.payload,
@@ -2670,9 +2703,9 @@ class AuthClient {
       );
     }
 
-    if (!_isAlgorithmCompatible(decoded.header.algorithm, signingKey)) {
+    if (!_isAlgorithmCompatible(algorithm, signingKey)) {
       throw AuthInvalidJwtException(
-        'Invalid JWT: the header algorithm ${decoded.header.algorithm} does '
+        'Invalid JWT: the header algorithm $algorithm does '
         'not match the signing key',
       );
     }
@@ -2693,6 +2726,20 @@ class AuthClient {
     }
   }
 }
+
+const _asymmetricAlgorithms = {
+  'RS256',
+  'RS384',
+  'RS512',
+  'PS256',
+  'PS384',
+  'PS512',
+  'ES256',
+  'ES384',
+  'ES512',
+  'ES256K',
+  'EdDSA',
+};
 
 /// Whether a token signed with [algorithm] may be verified with [key].
 ///

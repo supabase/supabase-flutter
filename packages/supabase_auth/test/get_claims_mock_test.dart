@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
@@ -348,43 +349,99 @@ void main() {
 
   group('a token with an unknown kid', () {
     late String unknownKeyToken;
+    late DateTime now;
 
     setUp(() async {
-      await client.getClaims(_signEs256({'sub': 'user-id'}));
+      now = DateTime.utc(2026, 10, 29, 12);
+      await withClock(Clock(() => now), () async {
+        await client.getClaims(_signEs256({'sub': 'user-id'}));
+      });
       unknownKeyToken = _signEs256({
         'sub': 'user-id',
       }, keyId: 'es256-unknown-key');
       mockClient.stubUser();
     });
 
-    test('is verified through the Auth server right after a fetch', () async {
-      await client.getClaims(unknownKeyToken);
-      await client.getClaims(unknownKeyToken);
+    Future<void> getClaimsAfter(Duration elapsed) {
+      now = now.add(elapsed);
+      return withClock(Clock(() => now), () async {
+        await client.getClaims(unknownKeyToken);
+      });
+    }
 
-      expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
-      expect(mockClient.requestsTo('/user'), hasLength(2));
-    });
-
-    test('refetches the JWKS once the refetch interval has passed', () async {
-      client.jwksCachedAt = client.jwksCachedAt!.subtract(
-        const Duration(seconds: 31),
-      );
+    void stubRotatedKey() {
       mockClient.stub({
         'keys': [
           _publicJwk,
           {..._publicJwk, 'kid': 'es256-unknown-key'},
         ],
       }, path: '/.well-known/jwks.json');
+    }
 
-      await client.getClaims(unknownKeyToken);
-      await client.getClaims(unknownKeyToken);
+    test('refetches the JWKS right after a fetch', () async {
+      stubRotatedKey();
+
+      await getClaimsAfter(const Duration(seconds: 1));
 
       expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
       expect(mockClient.requestsTo('/user'), isEmpty);
     });
+
+    test('is verified through the Auth server while backing off', () async {
+      await getClaimsAfter(Duration.zero);
+      await getClaimsAfter(const Duration(milliseconds: 500));
+
+      expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
+      expect(mockClient.requestsTo('/user'), hasLength(2));
+    });
+
+    test(
+      'doubles the wait with every failed refetch up to 16 seconds',
+      () async {
+        Future<int> fetchCountAfter(Duration elapsed) async {
+          await getClaimsAfter(elapsed);
+          return mockClient.requestsTo('/.well-known/jwks.json').length;
+        }
+
+        expect(await fetchCountAfter(Duration.zero), 2);
+        expect(await fetchCountAfter(const Duration(milliseconds: 999)), 2);
+        expect(await fetchCountAfter(const Duration(milliseconds: 1)), 3);
+        expect(await fetchCountAfter(const Duration(seconds: 1)), 3);
+        expect(await fetchCountAfter(const Duration(seconds: 1)), 4);
+        expect(await fetchCountAfter(const Duration(seconds: 3)), 4);
+        expect(await fetchCountAfter(const Duration(seconds: 1)), 5);
+        expect(await fetchCountAfter(const Duration(seconds: 7)), 5);
+        expect(await fetchCountAfter(const Duration(seconds: 1)), 6);
+        expect(await fetchCountAfter(const Duration(seconds: 15)), 6);
+        expect(await fetchCountAfter(const Duration(seconds: 1)), 7);
+        expect(await fetchCountAfter(const Duration(seconds: 15)), 7);
+        expect(await fetchCountAfter(const Duration(seconds: 1)), 8);
+      },
+    );
+
+    test('clears the backoff once a refetch resolves the kid', () async {
+      await getClaimsAfter(Duration.zero);
+      await getClaimsAfter(const Duration(seconds: 1));
+      stubRotatedKey();
+      await getClaimsAfter(const Duration(seconds: 2));
+      final fetches = mockClient.requestsTo('/.well-known/jwks.json').length;
+
+      final anotherUnknownKeyToken = _signEs256({
+        'sub': 'user-id',
+      }, keyId: 'es256-another-key');
+      mockClient.stubUser();
+      await withClock(Clock(() => now), () async {
+        await client.getClaims(anotherUnknownKeyToken);
+      });
+
+      expect(
+        mockClient.requestsTo('/.well-known/jwks.json'),
+        hasLength(fetches + 1),
+      );
+    });
   });
 
-  test('an empty JWKS starts the unknown kid refetch interval', () async {
+  test('an empty JWKS is fetched again for the next unknown kid', () async {
     final token = _signEs256({'sub': 'user-id'});
     mockClient
       ..stub({'keys': <Object>[]}, path: '/.well-known/jwks.json')
@@ -392,9 +449,10 @@ void main() {
 
     await client.getClaims(token);
     await client.getClaims(token);
+    await client.getClaims(token);
 
-    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(1));
-    expect(mockClient.requestsTo('/user'), hasLength(2));
+    expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
+    expect(mockClient.requestsTo('/user'), hasLength(3));
   });
 
   test('an empty JWKS replaces the cached keys', () async {
@@ -412,5 +470,57 @@ void main() {
 
     expect(mockClient.requestsTo('/.well-known/jwks.json'), hasLength(2));
     expect(mockClient.requestsTo('/user'), hasLength(2));
+  });
+
+  group('a token without a usable algorithm', () {
+    String withHeader(Map<String, dynamic> header) {
+      String encode(Object value) =>
+          base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
+      final expiresAt = clock.now().add(const Duration(hours: 1));
+      final payload = {
+        'sub': 'user-id',
+        'exp': expiresAt.millisecondsSinceEpoch ~/ 1000,
+      };
+      return '${encode(header)}.${encode(payload)}.c2lnbmF0dXJl';
+    }
+
+    setUp(() => mockClient.stubUser());
+
+    test('without an alg is verified through the Auth server', () async {
+      final response = await client.getClaims(
+        withHeader({'kid': _keyId, 'typ': 'JWT'}),
+      );
+
+      expect(response.claims.subject, 'user-id');
+      expect(response.header.algorithm, isNull);
+      expect(mockClient.requestsTo('/user'), hasLength(1));
+      expect(mockClient.requestsTo('/.well-known/jwks.json'), isEmpty);
+    });
+
+    test(
+      'with an unsupported alg is verified through the Auth server',
+      () async {
+        final response = await client.getClaims(
+          withHeader({'alg': 'XS256', 'kid': _keyId}),
+        );
+
+        expect(response.header.algorithm, 'XS256');
+        expect(mockClient.requestsTo('/user'), hasLength(1));
+        expect(mockClient.requestsTo('/.well-known/jwks.json'), isEmpty);
+      },
+    );
+
+    test('with the none alg is not trusted without the Auth server', () async {
+      mockClient.stub(
+        {'code': 'bad_jwt', 'msg': 'invalid JWT'},
+        path: '/user',
+        statusCode: 401,
+      );
+
+      await expectLater(
+        () => client.getClaims(withHeader({'alg': 'none', 'kid': _keyId})),
+        throwsA(isA<AuthApiException>()),
+      );
+    });
   });
 }
