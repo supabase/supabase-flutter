@@ -857,23 +857,12 @@ class PostgrestBuilder<T> implements Future<T> {
   }
 
   @override
-  Future<T> whenComplete(FutureOr<void> Function() action) {
-    return then(
-      (v) {
-        final f2 = action();
-        if (f2 is Future) return f2.then((_) => v);
-        return v;
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        final f2 = action();
-        if (f2 is Future) {
-          return f2.then((_) {
-            Error.throwWithStackTrace(error, stackTrace);
-          });
-        }
-        Error.throwWithStackTrace(error, stackTrace);
-      },
-    );
+  Future<T> whenComplete(FutureOr<void> Function() action) async {
+    try {
+      return await this;
+    } finally {
+      await action();
+    }
   }
 }
 
