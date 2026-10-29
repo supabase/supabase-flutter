@@ -88,6 +88,22 @@ void main() {
       expect(download.headers.keys, ['content-range', 'content-type']);
     });
 
+    test(
+      'reports an unknown length whatever the casing of the encoding',
+      () async {
+        final client = _client(
+          Stream.value([1, 2, 3]),
+          contentLength: 3,
+          headers: {'Content-Encoding': 'gzip'},
+        );
+
+        final download = await client.from('bucket').downloadStream('a.bin');
+
+        expect(download.contentLength, isNull);
+        await download.drain<void>();
+      },
+    );
+
     test('reports an unknown length for an encoded body', () async {
       final client = _client(
         Stream.value([1, 2, 3]),
