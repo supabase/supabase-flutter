@@ -1,3 +1,14 @@
+## 3.0.0-dev.13
+
+ - **REFACTOR**: name the description argument of jsonObject and jsonObjectList ([#2097](https://github.com/supabase/supabase-flutter/issues/2097)). ([659cf76b](https://github.com/supabase/supabase-flutter/commit/659cf76b59a0ba7c4f3c91d67a1d181864fa9797))
+ - **FIX**(postgrest): read the count of an embedded relation through JsonFields ([#2087](https://github.com/supabase/supabase-flutter/issues/2087)). ([b76fd5e9](https://github.com/supabase/supabase-flutter/commit/b76fd5e99c1c55088336e984235c9c59a8e54610))
+ - **FIX**: keep query strings, header values, payloads and user objects out of diagnostic logs ([#2095](https://github.com/supabase/supabase-flutter/issues/2095)). ([75d21fdc](https://github.com/supabase/supabase-flutter/commit/75d21fdc70651df26ba461d4b91f678a236c5e54))
+ - **FIX**(realtime): fail the send when a broadcast payload cannot be encoded ([#2093](https://github.com/supabase/supabase-flutter/issues/2093)). ([5d8b699b](https://github.com/supabase/supabase-flutter/commit/5d8b699b3268f490094091739b08d03662d0395d))
+ - **FIX**(realtime): resolve the access token through the callback in httpSend ([#2092](https://github.com/supabase/supabase-flutter/issues/2092)). ([1d4ff372](https://github.com/supabase/supabase-flutter/commit/1d4ff372bda16134ad62e00f23cb65f1cc4d614a))
+ - **FIX**(realtime): read decoded JSON through JsonFields ([#2085](https://github.com/supabase/supabase-flutter/issues/2085)). ([84e18263](https://github.com/supabase/supabase-flutter/commit/84e182632087c852214dd1c03fd645fbf8af3e29))
+ - **FIX**(realtime): stop a join reply from dropping a fresh access token ([#2076](https://github.com/supabase/supabase-flutter/issues/2076)). ([19c6109f](https://github.com/supabase/supabase-flutter/commit/19c6109faac1b05210533c2b2a8b950179e97cb7))
+ - **DOCS**: document SDK compatibility with Supabase services ([#2074](https://github.com/supabase/supabase-flutter/issues/2074)). ([072eee45](https://github.com/supabase/supabase-flutter/commit/072eee4561eea35ad9dc49886497fbec402ed848))
+
 ## 3.0.0-dev.12
 
 > Note: This release has breaking changes.

@@ -1,3 +1,11 @@
+## 3.0.0-dev.10
+
+ - **REFACTOR**: name the description argument of jsonObject and jsonObjectList ([#2097](https://github.com/supabase/supabase-flutter/issues/2097)). ([659cf76b](https://github.com/supabase/supabase-flutter/commit/659cf76b59a0ba7c4f3c91d67a1d181864fa9797))
+ - **REFACTOR**: share the JsonFields helper through supabase_common ([#2082](https://github.com/supabase/supabase-flutter/issues/2082)). ([f45bc196](https://github.com/supabase/supabase-flutter/commit/f45bc19652ba4627e6d951d5a3605e2fa7c41eb6))
+ - **FIX**: keep query strings, header values, payloads and user objects out of diagnostic logs ([#2095](https://github.com/supabase/supabase-flutter/issues/2095)). ([75d21fdc](https://github.com/supabase/supabase-flutter/commit/75d21fdc70651df26ba461d4b91f678a236c5e54))
+ - **FIX**(realtime): read decoded JSON through JsonFields ([#2085](https://github.com/supabase/supabase-flutter/issues/2085)). ([84e18263](https://github.com/supabase/supabase-flutter/commit/84e182632087c852214dd1c03fd645fbf8af3e29))
+ - **FEAT**(postgrest): send features=typed-api in X-Client-Info for typed API requests ([#2072](https://github.com/supabase/supabase-flutter/issues/2072)). ([a825ebd8](https://github.com/supabase/supabase-flutter/commit/a825ebd8c401da56a59ed6928c99137cf5241158))
+
 ## 3.0.0-dev.9
 
 > Note: This release has breaking changes.

@@ -1,3 +1,10 @@
+## 0.8.1
+
+ - **REFACTOR**: share the JsonFields helper through supabase_common ([#2082](https://github.com/supabase/supabase-flutter/issues/2082)). ([f45bc196](https://github.com/supabase/supabase-flutter/commit/f45bc19652ba4627e6d951d5a3605e2fa7c41eb6))
+ - **FIX**(realtime): read decoded JSON through JsonFields ([#2085](https://github.com/supabase/supabase-flutter/issues/2085)). ([84e18263](https://github.com/supabase/supabase-flutter/commit/84e182632087c852214dd1c03fd645fbf8af3e29))
+ - **FIX**: check the shape of auth payloads and onError results instead of catching TypeError ([#2081](https://github.com/supabase/supabase-flutter/issues/2081)). ([48cd29f2](https://github.com/supabase/supabase-flutter/commit/48cd29f2a2c36bc4f12a2b1c3bf6ce7013154881))
+ - **FIX**: check input shapes instead of catching TypeError and NoSuchMethodError ([#2080](https://github.com/supabase/supabase-flutter/issues/2080)). ([b4d8fc01](https://github.com/supabase/supabase-flutter/commit/b4d8fc015466c9ba8065cec62963543d6c233108))
+
 ## 0.8.0
 
 > Note: This release has breaking changes.

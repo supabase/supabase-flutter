@@ -1,3 +1,10 @@
+## 0.3.1
+
+ - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
+ - **FIX**: keep query strings, header values, payloads and user objects out of diagnostic logs ([#2095](https://github.com/supabase/supabase-flutter/issues/2095)). ([75d21fdc](https://github.com/supabase/supabase-flutter/commit/75d21fdc70651df26ba461d4b91f678a236c5e54))
+ - **FIX**(realtime): read decoded JSON through JsonFields ([#2085](https://github.com/supabase/supabase-flutter/issues/2085)). ([84e18263](https://github.com/supabase/supabase-flutter/commit/84e182632087c852214dd1c03fd645fbf8af3e29))
+ - **FIX**(iceberg): read decoded JSON through JsonFields ([#2084](https://github.com/supabase/supabase-flutter/issues/2084)). ([607d1514](https://github.com/supabase/supabase-flutter/commit/607d15143a5c68b230d23962f77e1d45973cd52c))
+
 ## 0.3.0
 
 > Note: This release has breaking changes.

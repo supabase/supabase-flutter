@@ -14,11 +14,11 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^3.0.0-dev.14
+  supabase_flutter: ^3.0.0-dev.15
 
 dev_dependencies:
   supabase_lints: ^0.1.2
-  supabase_test: ^0.6.1
+  supabase_test: ^0.6.2
   # Used only by the integration test: `http` reads OTP emails from the local
   # mail server and `crypto` computes a TOTP code for the MFA flow.
   crypto: ^3.0.0

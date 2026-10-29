@@ -1,3 +1,16 @@
+## 3.0.0-dev.15
+
+ - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
+ - **FIX**(postgrest): read the count of an embedded relation through JsonFields ([#2087](https://github.com/supabase/supabase-flutter/issues/2087)). ([b76fd5e9](https://github.com/supabase/supabase-flutter/commit/b76fd5e99c1c55088336e984235c9c59a8e54610))
+ - **FIX**: keep query strings, header values, payloads and user objects out of diagnostic logs ([#2095](https://github.com/supabase/supabase-flutter/issues/2095)). ([75d21fdc](https://github.com/supabase/supabase-flutter/commit/75d21fdc70651df26ba461d4b91f678a236c5e54))
+ - **FIX**(postgrest): merge a Prefer header set with setHeader instead of replacing it ([#2090](https://github.com/supabase/supabase-flutter/issues/2090)). ([c2e8faf1](https://github.com/supabase/supabase-flutter/commit/c2e8faf1cbbd200216493a70c08fb2ecd2a8d49d))
+ - **FIX**: check the shape of auth payloads and onError results instead of catching TypeError ([#2081](https://github.com/supabase/supabase-flutter/issues/2081)). ([48cd29f2](https://github.com/supabase/supabase-flutter/commit/48cd29f2a2c36bc4f12a2b1c3bf6ce7013154881))
+ - **FIX**(postgrest): keep the original stack trace when an async whenComplete action rethrows ([#2078](https://github.com/supabase/supabase-flutter/issues/2078)). ([1be5285c](https://github.com/supabase/supabase-flutter/commit/1be5285c7eeee55bb2adb8b457251c6c742aa21f))
+ - **FIX**: check input shapes instead of catching TypeError and NoSuchMethodError ([#2080](https://github.com/supabase/supabase-flutter/issues/2080)). ([b4d8fc01](https://github.com/supabase/supabase-flutter/commit/b4d8fc015466c9ba8065cec62963543d6c233108))
+ - **FEAT**(postgrest): write nothing for empty typed insertAll and upsertAll, accept a raw access token per request ([#2100](https://github.com/supabase/supabase-flutter/issues/2100)). ([3e214140](https://github.com/supabase/supabase-flutter/commit/3e2141403ac92d2892fb16cb8506b06fb1c2b361))
+ - **FEAT**(postgrest): send features=typed-api in X-Client-Info for typed API requests ([#2072](https://github.com/supabase/supabase-flutter/issues/2072)). ([a825ebd8](https://github.com/supabase/supabase-flutter/commit/a825ebd8c401da56a59ed6928c99137cf5241158))
+ - **DOCS**: document SDK compatibility with Supabase services ([#2074](https://github.com/supabase/supabase-flutter/issues/2074)). ([072eee45](https://github.com/supabase/supabase-flutter/commit/072eee4561eea35ad9dc49886497fbec402ed848))
+
 ## 3.0.0-dev.14
 
 > Note: This release has breaking changes.

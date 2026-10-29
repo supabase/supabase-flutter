@@ -1,3 +1,15 @@
+## 3.0.0-dev.12
+
+ - **REFACTOR**: name the description argument of jsonObject and jsonObjectList ([#2097](https://github.com/supabase/supabase-flutter/issues/2097)). ([659cf76b](https://github.com/supabase/supabase-flutter/commit/659cf76b59a0ba7c4f3c91d67a1d181864fa9797))
+ - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
+ - **FIX**(storage): align resumable upload errors, legacy list defaults and compliance entries with the spec ([#2098](https://github.com/supabase/supabase-flutter/issues/2098)). ([39cc36ab](https://github.com/supabase/supabase-flutter/commit/39cc36abcd684e77cb76e83dc029cebaf5398a95))
+ - **FIX**: keep query strings, header values, payloads and user objects out of diagnostic logs ([#2095](https://github.com/supabase/supabase-flutter/issues/2095)). ([75d21fdc](https://github.com/supabase/supabase-flutter/commit/75d21fdc70651df26ba461d4b91f678a236c5e54))
+ - **FIX**(realtime): read decoded JSON through JsonFields ([#2085](https://github.com/supabase/supabase-flutter/issues/2085)). ([84e18263](https://github.com/supabase/supabase-flutter/commit/84e182632087c852214dd1c03fd645fbf8af3e29))
+ - **FIX**(storage): read decoded JSON through JsonFields ([#2083](https://github.com/supabase/supabase-flutter/issues/2083)). ([16884b1a](https://github.com/supabase/supabase-flutter/commit/16884b1addee942aaf4b0bf9cda04bcbd5f948c9))
+ - **FEAT**(storage): add byte-capped collect and atomic write-to-file for streamed downloads ([#2103](https://github.com/supabase/supabase-flutter/issues/2103)). ([b7ec9e6a](https://github.com/supabase/supabase-flutter/commit/b7ec9e6ad7479fdbe4d07f6e63c174436a4debb5))
+ - **FEAT**(storage): report download progress through an optional onProgress callback ([#2102](https://github.com/supabase/supabase-flutter/issues/2102)). ([c489fd47](https://github.com/supabase/supabase-flutter/commit/c489fd4755f6908b3a90c84effb5a2ddc3cce2e0))
+ - **DOCS**: document SDK compatibility with Supabase services ([#2074](https://github.com/supabase/supabase-flutter/issues/2074)). ([072eee45](https://github.com/supabase/supabase-flutter/commit/072eee4561eea35ad9dc49886497fbec402ed848))
+
 ## 3.0.0-dev.11
 
  - **FIX**(storage): no retry after a fully sent upload times out, encode bucket ids, send client headers with signed uploads ([#2065](https://github.com/supabase/supabase-flutter/issues/2065)). ([54e705ec](https://github.com/supabase/supabase-flutter/commit/54e705ecbc7a4641223091fd4feae739af3a7e5e))
