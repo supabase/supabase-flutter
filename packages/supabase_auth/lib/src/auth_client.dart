@@ -2720,7 +2720,8 @@ bool _isAlgorithmCompatible(String algorithm, JWK key) {
       'secp256k1' => algorithm == 'ES256K',
       _ => false,
     },
-    'OKP' => algorithm == 'EdDSA',
+    'OKP' =>
+      algorithm == 'EdDSA' && const {'Ed25519', 'Ed448'}.contains(key['crv']),
     _ => false,
   };
 }

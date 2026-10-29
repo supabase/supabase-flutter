@@ -132,6 +132,23 @@ void main() {
       );
     });
 
+    test('is rejected when an OKP key is not an EdDSA curve', () async {
+      mockClient.stub({
+        'keys': [
+          {'kty': 'OKP', 'crv': 'X25519', 'kid': _keyId, 'x': 'AAAA'},
+        ],
+      }, path: '/.well-known/jwks.json');
+      final token = withHeaderAlgorithm(
+        _signEs256({'sub': 'user-id'}),
+        'EdDSA',
+      );
+
+      await expectLater(
+        () => client.getClaims(token),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
+    });
+
     test('is accepted when only the key type and curve are declared', () async {
       stubKeyWithoutAlgorithm();
 
