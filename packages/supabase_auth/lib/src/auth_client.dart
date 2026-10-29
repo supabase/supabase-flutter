@@ -2679,7 +2679,11 @@ class AuthClient {
     }
 
     try {
-      JWT.verify(token, signingKey.publicKey);
+      JWT.verify(
+        token,
+        signingKey.publicKey,
+        checkExpiresIn: !(options?.allowExpired ?? false),
+      );
       return GetClaimsResponse(
         claims: decoded.payload,
         header: decoded.header,
