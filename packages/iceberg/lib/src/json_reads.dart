@@ -1,7 +1,9 @@
+import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 /// Reads of the collections in a decoded catalog response, throwing a
 /// [FormatException] for a value that does not have the expected shape.
+@internal
 extension IcebergJsonReads on Map<String, dynamic> {
   /// The elements of the list at [key], which must not be missing.
   List<T> requiredListOf<T>(String key) =>
