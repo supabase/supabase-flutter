@@ -2610,12 +2610,12 @@ class AuthClient {
     }
     final backoff =
         AuthConstants.jwksMinRefetchBackoff * (1 << _jwksRefetchFailures);
-    _jwksRefetchFailures++;
-    _jwksRefetchAllowedAt = now.add(
-      backoff < AuthConstants.jwksMaxRefetchBackoff
-          ? backoff
-          : AuthConstants.jwksMaxRefetchBackoff,
-    );
+    if (backoff < AuthConstants.jwksMaxRefetchBackoff) {
+      _jwksRefetchFailures++;
+      _jwksRefetchAllowedAt = now.add(backoff);
+    } else {
+      _jwksRefetchAllowedAt = now.add(AuthConstants.jwksMaxRefetchBackoff);
+    }
   }
 
   Future<JWKSet> _fetchJwks() async {
