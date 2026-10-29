@@ -13,6 +13,7 @@ void main() {
   late MockSupabaseHttpClient httpClient;
   late AuthClient client;
   late List<AuthChangeEvent> events;
+  late List<SignOutReason?> signOutReasons;
 
   setUp(() async {
     httpClient = MockSupabaseHttpClient();
@@ -24,10 +25,11 @@ void main() {
     );
     await signInTestUser(client);
     events = [];
-    client.onAuthStateChange.listen(
-      (state) => events.add(state.event),
-      onError: (_) {},
-    );
+    signOutReasons = [];
+    client.onAuthStateChange.listen((state) {
+      events.add(state.event);
+      if (state is AuthSignedOut) signOutReasons.add(state.reason);
+    }, onError: (_) {});
     await pumpEventQueue();
     events.clear();
   });
@@ -102,6 +104,16 @@ void main() {
       statusCode: 400,
     );
   }
+
+  Matcher throwsSessionsNotRevoked(SignOutScope scope) => throwsA(
+    isA<AuthSessionsNotRevokedException>()
+        .having((error) => error.scope, 'scope', scope)
+        .having(
+          (error) => error.cause.errorCode,
+          'cause.errorCode',
+          'refresh_token_not_found',
+        ),
+  );
 
   void stubLogoutAnswer(int statusCode, String? errorCode) {
     if (errorCode == null) {
@@ -538,7 +550,7 @@ void main() {
     );
 
     test(
-      'throws the refresh error when the PKCE verifiers cannot be removed',
+      'throws when the PKCE verifiers cannot be removed',
       () async {
         final failingClient = AuthClient(
           url: 'http://localhost:9999/auth/v1',
@@ -556,26 +568,50 @@ void main() {
 
         await expectLater(
           () => failingClient.signOut(scope: SignOutScope.global),
-          throwsA(isA<AuthApiException>()),
+          throwsSessionsNotRevoked(SignOutScope.global),
         );
       },
     );
 
     test(
-      'throws when the refresh token was rejected, signed out on this device',
+      'signs out as asked and throws when the refresh token was rejected',
       () async {
         await restoreExpiredSession();
         stubRejectedRefresh();
 
         await expectLater(
           () => client.signOut(scope: SignOutScope.global),
-          throwsA(isA<AuthApiException>()),
+          throwsSessionsNotRevoked(SignOutScope.global),
         );
+        await pumpEventQueue();
 
         expect(client.currentSession, isNull);
+        expect(events, [AuthChangeEvent.signedOut]);
+        expect(signOutReasons, [SignOutReason.userInitiated]);
         expect(httpClient.requestsTo('/auth/v1/logout'), isEmpty);
       },
     );
+
+    test('stores the session it refreshed to revoke', () async {
+      await restoreExpiredSession();
+      final logout = Completer<Response>();
+      httpClient
+        ..stubSignIn()
+        ..stubHandler((_) => logout.future, path: '/auth/v1/logout');
+
+      final signOut = client.signOut(scope: SignOutScope.global);
+      await pumpEventQueue();
+
+      expect(client.currentSession?.isExpired, isFalse);
+      expect(events, [AuthChangeEvent.tokenRefreshed]);
+
+      logout.complete(Response('', 204));
+      await signOut;
+      await pumpEventQueue();
+
+      expect(client.currentSession, isNull);
+      expect(signOutReasons, [SignOutReason.userInitiated]);
+    });
 
     test('keeps a session signed in while the request was sent', () async {
       final logout = Completer<Response>();
@@ -629,16 +665,41 @@ void main() {
       },
     );
 
-    test('throws when the refresh token was rejected', () async {
+    test(
+      'signs out as asked and throws when the refresh token was rejected',
+      () async {
+        await restoreExpiredSession();
+        stubRejectedRefresh();
+
+        await expectLater(
+          () => client.signOut(scope: SignOutScope.others),
+          throwsSessionsNotRevoked(SignOutScope.others),
+        );
+        await pumpEventQueue();
+
+        expect(client.currentSession, isNull);
+        expect(events, [AuthChangeEvent.signedOut]);
+        expect(signOutReasons, [SignOutReason.userInitiated]);
+        expect(httpClient.requestsTo('/auth/v1/logout'), isEmpty);
+      },
+    );
+
+    test('keeps the session it refreshed to revoke', () async {
       await restoreExpiredSession();
-      stubRejectedRefresh();
+      httpClient
+        ..stubSignIn()
+        ..stubSignOut();
 
-      await expectLater(
-        () => client.signOut(scope: SignOutScope.others),
-        throwsA(isA<AuthApiException>()),
+      await client.signOut(scope: SignOutScope.others);
+      await pumpEventQueue();
+
+      final logout = httpClient.requestsTo('/auth/v1/logout').single;
+      expect(
+        logout.headers['authorization'],
+        'Bearer ${client.currentSession?.accessToken}',
       );
-
-      expect(httpClient.requestsTo('/auth/v1/logout'), isEmpty);
+      expect(client.currentSession?.isExpired, isFalse);
+      expect(events, [AuthChangeEvent.tokenRefreshed]);
     });
   });
 }

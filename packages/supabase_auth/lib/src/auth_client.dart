@@ -1515,11 +1515,12 @@ class AuthClient {
   /// retried. A server that no longer knows the current session can still
   /// hold the other sessions of the user, so that also throws, and
   /// [SignOutScope.local] signs out this device instead. When the server
-  /// rejects the refresh token, the session can no longer be used, so the
-  /// failed refresh signs out this device as it does for [getSession], and
-  /// this throws. With [SignOutScope.global] the
-  /// session is removed from this device once the server has revoked it,
-  /// unless another sign-in or sign-out happened in the meantime.
+  /// rejects the refresh token, nothing is left to revoke the other sessions
+  /// with, so this device is signed out with [SignOutReason.userInitiated]
+  /// and this throws an [AuthSessionsNotRevokedException]. Sign in again to
+  /// revoke them. With [SignOutScope.global] the session is removed from this
+  /// device once the server has revoked it, unless another sign-in or
+  /// sign-out happened in the meantime.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
   /// is fired, unless the refresh token was rejected.
@@ -1535,27 +1536,9 @@ class AuthClient {
       return;
     }
 
-    final sessionBeforeRefresh = _currentSession;
-    Session? session;
-    try {
-      session = await getSession();
-    } on AuthException {
-      final current = _currentSession;
-      if (current == null) {
-        // The failed refresh has already signed this device out, but no
-        // session was revoked on the server.
-        if (scope == SignOutScope.global) {
-          await _removePkceVerifiers();
-        }
-        rethrow;
-      }
-      // The server rejects an expired access token with a 401, so the
-      // sessions could not be revoked with it.
-      if (!identical(current, sessionBeforeRefresh) ||
-          current.isExpiredWithoutMargin) {
-        rethrow;
-      }
-      session = current;
+    var session = _currentSession;
+    if (session != null && session.isExpired) {
+      session = await _refreshForSignOut(session, scope);
     }
     // A sign-in or sign-out that happened while the session was refreshed or
     // the request was in flight is newer than this sign-out.
@@ -1569,6 +1552,47 @@ class AuthClient {
         _sessionVersion == versionBeforeRevoke) {
       await _signOutLocally(SignOutReason.userInitiated);
     }
+  }
+
+  /// Refreshes the expired access token of [session] so it can revoke the
+  /// sessions [scope] covers, emitting no event when the refresh fails.
+  ///
+  /// A rejected refresh token leaves nothing to revoke the sessions with, so
+  /// this device is signed out as the user asked, and this throws an
+  /// [AuthSessionsNotRevokedException].
+  Future<Session> _refreshForSignOut(
+    Session session,
+    SignOutScope scope,
+  ) async {
+    final versionBeforeRefresh = _sessionVersion;
+    final refreshToken = session.refreshToken;
+    final Session refreshed;
+    try {
+      if (refreshToken == null) {
+        if (!session.isExpiredWithoutMargin) return session;
+        throw AuthSessionMissingException(
+          message: 'The session has expired and has no refresh token.',
+        );
+      }
+      refreshed = await _refreshAccessToken(refreshToken);
+    } on AuthException catch (error) {
+      if (_isTransientRefreshFailure(error)) {
+        // The server rejects an expired access token, so the sessions could
+        // not be revoked with it.
+        if (session.isExpiredWithoutMargin) rethrow;
+        return session;
+      }
+      if (_sessionVersion != versionBeforeRefresh) rethrow;
+      await _signOutLocally(SignOutReason.userInitiated);
+      throw AuthSessionsNotRevokedException(scope: scope, cause: error);
+    }
+    // The previous refresh token stops working once the reuse interval has
+    // passed, so the refreshed session replaces it.
+    if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
+      _saveSession(refreshed);
+      notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+    }
+    return refreshed;
   }
 
   /// Signs out on this device for [reason], revoking the session on the

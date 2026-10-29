@@ -1,3 +1,4 @@
+import 'package:supabase_auth/src/constants.dart';
 import 'package:supabase_auth/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_common/supabase_common.dart';
@@ -52,6 +53,47 @@ class AuthSessionMissingException extends AuthException {
 
   @override
   String get exceptionName => 'AuthSessionMissingException';
+}
+
+/// Thrown by `AuthClient.signOut` with [SignOutScope.global] or
+/// [SignOutScope.others] when the server rejected the refresh token needed to
+/// revoke the sessions.
+///
+/// This device is signed out, the other sessions were not revoked. Sign in
+/// again to revoke them.
+class AuthSessionsNotRevokedException extends AuthException {
+  AuthSessionsNotRevokedException({required this.scope, required this.cause})
+    : super(
+        'Signed out on this device, but the other sessions were not revoked '
+        'because the refresh token was rejected. Sign in again to revoke '
+        'them.',
+        errorCode: cause.errorCode,
+        requestId: cause.requestId,
+      );
+
+  /// The scope the sign out was asked for.
+  final SignOutScope scope;
+
+  /// The error the server rejected the refresh token with.
+  final AuthException cause;
+
+  @override
+  String get exceptionName => 'AuthSessionsNotRevokedException';
+
+  @override
+  bool operator ==(Object other) =>
+      other is AuthSessionsNotRevokedException &&
+      super == other &&
+      other.scope == scope &&
+      other.cause == cause;
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, scope, cause);
+
+  @override
+  String toString() =>
+      '$exceptionName(message: $message, errorCode: $errorCode, '
+      'requestId: $requestId, scope: ${scope.name}, cause: $cause)';
 }
 
 /// Thrown when an auth request failed in a way that is worth retrying.

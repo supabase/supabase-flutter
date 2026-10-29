@@ -246,6 +246,14 @@ features:
     symbols:
       - AuthClient.signOut
     supporting_symbols:
+      - AuthSessionsNotRevokedException
+      - AuthSessionsNotRevokedException.==
+      - AuthSessionsNotRevokedException.AuthSessionsNotRevokedException
+      - AuthSessionsNotRevokedException.cause
+      - AuthSessionsNotRevokedException.exceptionName
+      - AuthSessionsNotRevokedException.hashCode
+      - AuthSessionsNotRevokedException.scope
+      - AuthSessionsNotRevokedException.toString
       - SignOutScope
   auth.session.auto_refresh:
     status: implemented

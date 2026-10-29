@@ -171,7 +171,9 @@ gone from the device and cannot be retried.
 
 To sign out every device, use `signOut(scope: SignOutScope.global)`. It asks
 the server first and throws an `AuthException` when that fails, keeping the
-session so the call can be retried.
+session so the call can be retried. When the server rejects the refresh token,
+it signs out the device and throws an `AuthSessionsNotRevokedException`
+instead, since only signing in again can revoke the other sessions.
 
 ## When the app does not open, or opens without a session
 

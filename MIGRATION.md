@@ -1297,8 +1297,9 @@ devices stayed signed in, and the token needed to retry was gone.
 - With `SignOutScope.global` and `SignOutScope.others` the server is asked first, after refreshing
   an expired access token. When that fails, including when the access token has expired and cannot
   be refreshed, `signOut()` throws and the session is kept, so you can retry. When the server rejects
-  the refresh token, the session can no longer be used, so it is removed from the device before
-  `signOut()` throws.
+  the refresh token, nothing is left to revoke the other sessions with, so the device is signed out
+  with `SignOutReason.userInitiated` and `signOut()` throws an `AuthSessionsNotRevokedException`.
+  Sign in again to revoke them.
   `SignOutScope.global` signs out on the device once the server has revoked the sessions.
 
 Remove any `try`/`catch` around a local `signOut()` that only existed to ignore offline failures.
