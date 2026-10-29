@@ -147,7 +147,10 @@ void _mergePrefer(Map<String, String> headers, List<String> preferences) {
   }
   headers.removeWhere((name, _) => name.toLowerCase() == 'prefer');
 
-  final replaced = preferences.map(keyOf).toSet();
+  final deduplicated = {
+    for (final preference in preferences) keyOf(preference): preference,
+  };
+  final replaced = deduplicated.keys.toSet();
   final kept = (_emptyPreferAsNull(existing) ?? '')
       .split(',')
       .map((preference) => preference.trim())
@@ -156,7 +159,7 @@ void _mergePrefer(Map<String, String> headers, List<String> preferences) {
             preference.isNotEmpty && !replaced.contains(keyOf(preference)),
       );
 
-  headers[HttpHeader.prefer] = [...kept, ...preferences].join(',');
+  headers[HttpHeader.prefer] = [...kept, ...deduplicated.values].join(',');
 }
 
 extension on Uri {

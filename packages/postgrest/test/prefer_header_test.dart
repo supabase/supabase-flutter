@@ -386,6 +386,21 @@ void main() {
       expect(sentPrefer(), isNot(contains('merge-duplicates')));
     });
 
+    test('is merged across repeated calls', () async {
+      try {
+        await postgrest
+            .from('users')
+            .select()
+            .setHeader('Prefer', 'tx=rollback')
+            .setHeader('Prefer', 'missing=default');
+      } catch (_) {}
+
+      expect(
+        sentPreferences(),
+        containsAll(['tx=rollback', 'missing=default']),
+      );
+    });
+
     test('is the only Prefer when nothing else was set', () async {
       try {
         await postgrest

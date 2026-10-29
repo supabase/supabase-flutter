@@ -190,8 +190,22 @@ extension on PostgrestRequestOptions {
   PostgrestRequestOptions _abortSignal(Future<void> abortSignal) =>
       copyWith(abortSignal: abortSignal);
 
-  PostgrestRequestOptions _header(String key, String value) =>
-      copyWith(headers: {...headers, key: value});
+  PostgrestRequestOptions _header(String key, String value) {
+    if (key.toLowerCase() != 'prefer') {
+      return copyWith(headers: {...headers, key: value});
+    }
+    final merged = {...headers};
+    final preferences = <String>[];
+    for (final MapEntry(key: name, value: existing) in headers.entries) {
+      if (name.toLowerCase() == 'prefer') {
+        preferences.add(existing);
+        merged.remove(name);
+      }
+    }
+    preferences.add(value);
+    merged[key] = preferences.join(',');
+    return copyWith(headers: merged);
+  }
 }
 
 extension on PostgrestTableRequest {

@@ -1591,6 +1591,26 @@ void main() {
       },
     );
 
+    test('two Prefer headers from setHeader are both sent', () async {
+      httpClient.stub(null);
+
+      await client
+          .table(Books.table)
+          .upsert(BookInsert(id: 1, title: 'foo'))
+          .setHeader('Prefer', 'tx=rollback')
+          .setHeader('prefer', 'missing=default');
+
+      final prefer = httpClient.requests.last.headers['Prefer']!.split(',');
+      expect(
+        prefer,
+        containsAll([
+          'resolution=merge-duplicates',
+          'tx=rollback',
+          'missing=default',
+        ]),
+      );
+    });
+
     test('upsert names its conflict target with columns', () async {
       httpClient.stub(null);
 
