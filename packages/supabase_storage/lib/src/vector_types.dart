@@ -48,10 +48,8 @@ enum DistanceMetric {
 }
 
 List<double>? _parseFloat32(Object? data) {
-  if (data is! Map) return null;
-  final float32 = data['float32'];
-  if (float32 is! List) return null;
-  return float32.map((value) => (value as num).toDouble()).toList();
+  if (data is! Map<String, dynamic> || data['float32'] is! List) return null;
+  return [for (final value in data.listOf<num>('float32')!) value.toDouble()];
 }
 
 /// Parses a Unix timestamp in seconds, returning `null` for anything the S3
@@ -68,8 +66,8 @@ class VectorBucketEncryption {
 
   factory VectorBucketEncryption.fromJson(Map<String, dynamic> json) {
     return VectorBucketEncryption(
-      kmsKeyArn: json['kmsKeyArn'] as String?,
-      serverSideEncryptionType: json['sseType'] as String?,
+      kmsKeyArn: json.field<String?>('kmsKeyArn'),
+      serverSideEncryptionType: json.field<String?>('sseType'),
     );
   }
 
@@ -92,7 +90,7 @@ class VectorBucket {
   factory VectorBucket.fromJson(Map<String, dynamic> json) {
     final encryption = json['encryptionConfiguration'];
     return VectorBucket(
-      name: json['vectorBucketName'] as String,
+      name: json.field<String>('vectorBucketName'),
       creationTime: _parseUnixSeconds(json['creationTime']),
       encryption: encryption is Map<String, dynamic>
           ? VectorBucketEncryption.fromJson(encryption)
@@ -127,18 +125,17 @@ class VectorIndex {
   factory VectorIndex.fromJson(Map<String, dynamic> json) {
     final metadataConfiguration = json['metadataConfiguration'];
     final nonFilterableMetadataKeys =
-        metadataConfiguration is Map<String, dynamic>
-        ? metadataConfiguration['nonFilterableMetadataKeys']
+        metadataConfiguration is Map<String, dynamic> &&
+            metadataConfiguration['nonFilterableMetadataKeys'] is List
+        ? metadataConfiguration.listOf<String>('nonFilterableMetadataKeys')
         : null;
     return VectorIndex(
-      name: json['indexName'] as String,
-      bucketName: json['vectorBucketName'] as String?,
+      name: json.field<String>('indexName'),
+      bucketName: json.field<String?>('vectorBucketName'),
       dataType: VectorDataType.fromValue(json['dataType']),
-      dimension: (json['dimension'] as num?)?.toInt(),
+      dimension: json.field<num?>('dimension')?.toInt(),
       distanceMetric: DistanceMetric.fromValue(json['distanceMetric']),
-      nonFilterableMetadataKeys: nonFilterableMetadataKeys is List
-          ? nonFilterableMetadataKeys.cast()
-          : null,
+      nonFilterableMetadataKeys: nonFilterableMetadataKeys,
       creationTime: _parseUnixSeconds(json['creationTime']),
     );
   }
@@ -213,10 +210,10 @@ class VectorMatch {
 
   factory VectorMatch.fromJson(Map<String, dynamic> json) {
     return VectorMatch(
-      key: json['key'] as String,
+      key: json.field<String>('key'),
       data: _parseFloat32(json['data']),
-      metadata: json['metadata'] as Map<String, dynamic>?,
-      distance: (json['distance'] as num?)?.toDouble(),
+      metadata: json.field<Map<String, dynamic>?>('metadata'),
+      distance: json.field<num?>('distance')?.toDouble(),
     );
   }
 
@@ -243,12 +240,11 @@ class VectorBucketList {
   });
 
   factory VectorBucketList.fromJson(Map<String, dynamic> json) {
-    final buckets = json['vectorBuckets'] as List? ?? const [];
+    final buckets =
+        json.listOf<Map<String, dynamic>>('vectorBuckets') ?? const [];
     return VectorBucketList(
-      buckets: buckets
-          .map((value) => VectorBucket.fromJson(value as Map<String, dynamic>))
-          .toList(),
-      nextToken: json['nextToken'] as String?,
+      buckets: buckets.map((value) => VectorBucket.fromJson(value)).toList(),
+      nextToken: json.field<String?>('nextToken'),
     );
   }
 
@@ -268,12 +264,10 @@ class VectorIndexList {
   });
 
   factory VectorIndexList.fromJson(Map<String, dynamic> json) {
-    final indexes = json['indexes'] as List? ?? const [];
+    final indexes = json.listOf<Map<String, dynamic>>('indexes') ?? const [];
     return VectorIndexList(
-      indexes: indexes
-          .map((value) => VectorIndex.fromJson(value as Map<String, dynamic>))
-          .toList(),
-      nextToken: json['nextToken'] as String?,
+      indexes: indexes.map((value) => VectorIndex.fromJson(value)).toList(),
+      nextToken: json.field<String?>('nextToken'),
     );
   }
 
@@ -293,12 +287,10 @@ class VectorList {
   });
 
   factory VectorList.fromJson(Map<String, dynamic> json) {
-    final vectors = json['vectors'] as List? ?? const [];
+    final vectors = json.listOf<Map<String, dynamic>>('vectors') ?? const [];
     return VectorList(
-      vectors: vectors
-          .map((value) => VectorMatch.fromJson(value as Map<String, dynamic>))
-          .toList(),
-      nextToken: json['nextToken'] as String?,
+      vectors: vectors.map((value) => VectorMatch.fromJson(value)).toList(),
+      nextToken: json.field<String?>('nextToken'),
     );
   }
 
@@ -318,11 +310,9 @@ class VectorQueryResult {
   });
 
   factory VectorQueryResult.fromJson(Map<String, dynamic> json) {
-    final matches = json['vectors'] as List? ?? const [];
+    final matches = json.listOf<Map<String, dynamic>>('vectors') ?? const [];
     return VectorQueryResult(
-      matches: matches
-          .map((value) => VectorMatch.fromJson(value as Map<String, dynamic>))
-          .toList(),
+      matches: matches.map((value) => VectorMatch.fromJson(value)).toList(),
       distanceMetric: DistanceMetric.fromValue(json['distanceMetric']),
     );
   }

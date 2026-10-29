@@ -42,17 +42,16 @@ class Bucket {
   });
 
   factory Bucket.fromJson(Map<String, dynamic> json) {
-    final allowedMimeTypes = json['allowed_mime_types'];
     return Bucket(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      owner: json['owner'] as String? ?? '',
+      id: json.field<String>('id'),
+      name: json.field<String>('name'),
+      owner: json.field<String?>('owner') ?? '',
       createdAt: parseIso8601(json, 'created_at'),
       updatedAt: parseIso8601(json, 'updated_at'),
-      public: json['public'] as bool,
-      fileSizeLimit: json['file_size_limit'] as int?,
-      allowedMimeTypes: allowedMimeTypes is List
-          ? allowedMimeTypes.cast()
+      public: json.field<bool>('public'),
+      fileSizeLimit: json.field<int?>('file_size_limit'),
+      allowedMimeTypes: json['allowed_mime_types'] is List
+          ? json.listOf<String>('allowed_mime_types')
           : null,
       versioningStatus: VersioningStatus._fromJson(json['versioning_status']),
     );
@@ -125,8 +124,8 @@ class NoncurrentVersionExpiration {
 
   factory NoncurrentVersionExpiration.fromJson(Map<String, dynamic> json) {
     return NoncurrentVersionExpiration(
-      noncurrentDays: json['noncurrentDays'] as int,
-      newerNoncurrentVersions: json['newerNoncurrentVersions'] as int?,
+      noncurrentDays: json.field<int>('noncurrentDays'),
+      newerNoncurrentVersions: json.field<int?>('newerNoncurrentVersions'),
     );
   }
 
@@ -165,10 +164,10 @@ class LifecycleRule {
 
   factory LifecycleRule.fromJson(Map<String, dynamic> json) {
     return LifecycleRule(
-      id: json['id'] as String?,
-      status: LifecycleRuleStatus._fromJson(json['status'] as String),
+      id: json.field<String?>('id'),
+      status: LifecycleRuleStatus._fromJson(json.field<String>('status')),
       noncurrentVersionExpiration: NoncurrentVersionExpiration.fromJson(
-        json['noncurrentVersionExpiration'] as Map<String, dynamic>,
+        json.field<Map<String, dynamic>>('noncurrentVersionExpiration'),
       ),
     );
   }
@@ -213,8 +212,8 @@ class AnalyticsBucket {
 
   factory AnalyticsBucket.fromJson(Map<String, dynamic> json) {
     return AnalyticsBucket(
-      id: json['id'] as String,
-      name: json['name'] as String,
+      id: json.field<String>('id'),
+      name: json.field<String>('name'),
       createdAt: parseIso8601(json, 'created_at'),
       updatedAt: parseIso8601(json, 'updated_at'),
     );
@@ -258,20 +257,20 @@ class FileObject {
     }
     final bucketsJson = json['buckets'];
     return FileObject(
-      id: json['id'] as String?,
-      name: json['name'] as String,
-      bucketId: json['bucket_id'] as String?,
-      owner: json['owner'] as String?,
+      id: json.field<String?>('id'),
+      name: json.field<String>('name'),
+      bucketId: json.field<String?>('bucket_id'),
+      owner: json.field<String?>('owner'),
       updatedAt: tryParseIso8601(json, 'updated_at'),
       createdAt: tryParseIso8601(json, 'created_at'),
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      metadata: json.field<Map<String, dynamic>?>('metadata'),
       buckets: bucketsJson is Map<String, dynamic>
           ? Bucket.fromJson(bucketsJson)
           : null,
-      version: json['version'] as String?,
+      version: json.field<String?>('version'),
       archivedAt: tryParseIso8601(json, 'archived_at'),
-      isDeleteMarker: json['is_delete_marker'] as bool?,
-      isVersioned: json['is_versioned'] as bool?,
+      isDeleteMarker: json.field<bool?>('is_delete_marker'),
+      isVersioned: json.field<bool?>('is_versioned'),
     );
   }
 
@@ -337,21 +336,21 @@ class FileObjectV2 {
 
   factory FileObjectV2.fromJson(Map<String, dynamic> json) {
     return FileObjectV2(
-      id: json['id'] as String,
-      version: json['version'] as String,
-      name: json['name'] as String,
-      bucketId: json['bucket_id'] as String,
+      id: json.field<String>('id'),
+      version: json.field<String>('version'),
+      name: json.field<String>('name'),
+      bucketId: json.field<String>('bucket_id'),
       updatedAt: tryParseIso8601(json, 'updated_at'),
       createdAt: parseIso8601(json, 'created_at'),
-      size: json['size'] as int?,
-      cacheControl: json['cache_control'] as String?,
-      contentType: json['content_type'] as String?,
-      etag: json['etag'] as String?,
+      size: json.field<int?>('size'),
+      cacheControl: json.field<String?>('cache_control'),
+      contentType: json.field<String?>('content_type'),
+      etag: json.field<String?>('etag'),
       lastModified: tryParseIso8601(json, 'last_modified'),
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      metadata: json.field<Map<String, dynamic>?>('metadata'),
       archivedAt: tryParseIso8601(json, 'archived_at'),
-      isDeleteMarker: json['is_delete_marker'] as bool?,
-      isVersioned: json['is_versioned'] as bool?,
+      isDeleteMarker: json.field<bool?>('is_delete_marker'),
+      isVersioned: json.field<bool?>('is_versioned'),
     );
   }
 
@@ -723,16 +722,16 @@ class PaginatedFile {
 
   factory PaginatedFile.fromJson(Map<String, dynamic> json) {
     return PaginatedFile(
-      name: json['name'] as String,
-      key: json['key'] as String?,
-      id: json['id'] as String?,
+      name: json.field<String>('name'),
+      key: json.field<String?>('key'),
+      id: json.field<String?>('id'),
       updatedAt: tryParseIso8601(json, 'updated_at'),
       createdAt: tryParseIso8601(json, 'created_at'),
-      metadata: json['metadata'] as Map<String, dynamic>?,
-      version: json['version'] as String?,
+      metadata: json.field<Map<String, dynamic>?>('metadata'),
+      version: json.field<String?>('version'),
       archivedAt: tryParseIso8601(json, 'archived_at'),
-      isDeleteMarker: json['is_delete_marker'] as bool?,
-      isVersioned: json['is_versioned'] as bool?,
+      isDeleteMarker: json.field<bool?>('is_delete_marker'),
+      isVersioned: json.field<bool?>('is_versioned'),
     );
   }
 
@@ -791,8 +790,8 @@ class PaginatedFolder {
 
   factory PaginatedFolder.fromJson(Map<String, dynamic> json) {
     return PaginatedFolder(
-      name: json['name'] as String,
-      key: json['key'] as String?,
+      name: json.field<String>('name'),
+      key: json.field<String?>('key'),
     );
   }
 
@@ -813,17 +812,13 @@ class PaginatedListResult {
   });
 
   factory PaginatedListResult.fromJson(Map<String, dynamic> json) {
-    final folders = json['folders'] as List? ?? const [];
-    final objects = json['objects'] as List? ?? const [];
+    final folders = json.listOf<Map<String, dynamic>>('folders') ?? const [];
+    final objects = json.listOf<Map<String, dynamic>>('objects') ?? const [];
     return PaginatedListResult(
-      hasNext: json['hasNext'] as bool? ?? false,
-      folders: folders
-          .map((e) => PaginatedFolder.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      objects: objects
-          .map((e) => PaginatedFile.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      nextCursor: json['nextCursor'] as String?,
+      hasNext: json.field<bool?>('hasNext') ?? false,
+      folders: folders.map(PaginatedFolder.fromJson).toList(),
+      objects: objects.map(PaginatedFile.fromJson).toList(),
+      nextCursor: json.field<String?>('nextCursor'),
     );
   }
 

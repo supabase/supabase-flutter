@@ -61,16 +61,13 @@ class StorageBucketApi {
     final uri = Uri.parse('$url/bucket').replace(
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
-    final response = await storageFetch.get(
+    final response = await storageFetch.get<List<dynamic>>(
       uri.toString(),
       options: fetchOptions,
     );
-    final buckets = List<Bucket>.from(
-      (response as List).map(
-        (value) => Bucket.fromJson(value),
-      ),
-    );
-    return buckets;
+    return [
+      for (final value in response) Bucket.fromJson(_jsonObject(value)),
+    ];
   }
 
   /// Retrieves the details of an existing Storage bucket.
@@ -78,7 +75,7 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you would like to retrieve.
   Future<Bucket> getBucket(String id) async {
     final FetchOptions options = FetchOptions(_headers);
-    final response = await storageFetch.get(
+    final response = await storageFetch.get<Map<String, dynamic>>(
       '$url/bucket/${encodePathSegment(id)}',
       options: options,
     );
@@ -202,10 +199,20 @@ class StorageBucketApi {
   }
 
   List<LifecycleRule> _lifecycleRules(Map<String, dynamic> response) {
-    return (response['rules'] as List)
-        .map((rule) => LifecycleRule.fromJson(rule as Map<String, dynamic>))
-        .toList();
+    final rules =
+        response.listOf<Map<String, dynamic>>('rules') ??
+        (throw const FormatException(
+          'Expected "rules" to be a list, got Null',
+        ));
+    return rules.map(LifecycleRule.fromJson).toList();
   }
+
+  Map<String, dynamic> _jsonObject(Object? value) => switch (value) {
+    final Map<String, dynamic> object => object,
+    _ => throw FormatException(
+      'Expected a bucket to be a JSON object, got ${value.runtimeType}',
+    ),
+  };
 
   /// Purges the CDN cache for an entire bucket.
   ///
@@ -265,12 +272,12 @@ class StorageBucketApi {
   /// [id] is the unique identifier for the bucket you are creating.
   Future<AnalyticsBucket> createAnalyticsBucket(String id) async {
     final FetchOptions options = FetchOptions(_headers);
-    final response = await storageFetch.post(
+    final response = await storageFetch.post<Map<String, dynamic>>(
       '$url/iceberg/bucket',
       {'name': id},
       options: options,
     );
-    return AnalyticsBucket.fromJson(response as Map<String, dynamic>);
+    return AnalyticsBucket.fromJson(response);
   }
 
   /// Retrieves the details of all analytics buckets within an existing project.
@@ -285,13 +292,14 @@ class StorageBucketApi {
     final uri = Uri.parse('$url/iceberg/bucket').replace(
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
-    final response = await storageFetch.get(
+    final response = await storageFetch.get<List<dynamic>>(
       uri.toString(),
       options: fetchOptions,
     );
-    return (response as List)
-        .map((value) => AnalyticsBucket.fromJson(value as Map<String, dynamic>))
-        .toList();
+    return [
+      for (final value in response)
+        AnalyticsBucket.fromJson(_jsonObject(value)),
+    ];
   }
 
   /// Deletes an existing analytics bucket. A bucket can't be deleted while it
