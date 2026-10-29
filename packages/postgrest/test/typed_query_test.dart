@@ -1554,6 +1554,43 @@ void main() {
       );
     });
 
+    test(
+      'a Prefer header from setHeader keeps the upsert resolution',
+      () async {
+        httpClient.stub(null);
+
+        await client
+            .table(Books.table)
+            .upsert(BookInsert(id: 1, title: 'foo'))
+            .setHeader('Prefer', 'tx=rollback');
+
+        final prefer = httpClient.requests.last.headers['Prefer']!.split(',');
+        expect(
+          prefer,
+          containsAll(['resolution=merge-duplicates', 'tx=rollback']),
+        );
+      },
+    );
+
+    test(
+      'a Prefer header from setHeader keeps return=representation',
+      () async {
+        httpClient.stub([
+          {'id': 1, 'title': 'foo'},
+        ]);
+
+        final books = await client
+            .table(Books.table)
+            .insert(BookInsert(title: 'foo'))
+            .select()
+            .setHeader('Prefer', 'tx=rollback');
+
+        expect(books.single.title, 'foo');
+        final prefer = httpClient.requests.last.headers['Prefer']!.split(',');
+        expect(prefer, containsAll(['return=representation', 'tx=rollback']));
+      },
+    );
+
     test('upsert names its conflict target with columns', () async {
       httpClient.stub(null);
 

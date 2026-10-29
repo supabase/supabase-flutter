@@ -341,4 +341,60 @@ void main() {
       expect(sentPrefer(), 'tx=rollback,return=representation');
     },
   );
+
+  group('setHeader Prefer', () {
+    List<String> sentPreferences() => sentPrefer()!.split(',');
+
+    test('is merged with the upsert resolution', () async {
+      try {
+        await postgrest
+            .from('users')
+            .upsert({'username': 'foo'})
+            .setHeader('Prefer', 'tx=rollback');
+      } catch (_) {}
+
+      expect(
+        sentPreferences(),
+        containsAll(['resolution=merge-duplicates', 'tx=rollback']),
+      );
+    });
+
+    test('is merged with return=representation', () async {
+      try {
+        await postgrest
+            .from('users')
+            .insert({'username': 'foo'})
+            .select()
+            .setHeader('Prefer', 'tx=rollback');
+      } catch (_) {}
+
+      expect(
+        sentPreferences(),
+        containsAll(['return=representation', 'tx=rollback']),
+      );
+    });
+
+    test('wins over a preference with the same name', () async {
+      try {
+        await postgrest
+            .from('users')
+            .upsert({'username': 'foo'})
+            .setHeader('Prefer', 'resolution=ignore-duplicates');
+      } catch (_) {}
+
+      expect(sentPreferences(), contains('resolution=ignore-duplicates'));
+      expect(sentPrefer(), isNot(contains('merge-duplicates')));
+    });
+
+    test('is the only Prefer when nothing else was set', () async {
+      try {
+        await postgrest
+            .from('users')
+            .select()
+            .setHeader('prefer', 'tx=rollback');
+      } catch (_) {}
+
+      expect(sentPrefer(), 'tx=rollback');
+    });
+  });
 }

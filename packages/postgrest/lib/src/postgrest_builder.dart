@@ -476,10 +476,26 @@ class PostgrestBuilder<T> implements Future<T> {
   }
 
   /// Returns a copy of this request with [key] set to [value] in its headers.
+  ///
+  /// A `Prefer` header is merged with the one the request already carries
+  /// instead of replacing it, so the preferences the SDK built, such as
+  /// `return=representation` or `resolution=merge-duplicates`, are kept. A
+  /// preference in [value] wins over one with the same name.
   PostgrestBuilder<T> setHeader(String key, String value) {
-    return _copyWith(
-      headers: {..._headers, key: value},
-    );
+    final headers = {..._headers};
+    if (key.toLowerCase() == 'prefer') {
+      _mergePrefer(
+        headers,
+        value
+            .split(',')
+            .map((preference) => preference.trim())
+            .where((preference) => preference.isNotEmpty)
+            .toList(),
+      );
+    } else {
+      headers[key] = value;
+    }
+    return _copyWith(headers: headers);
   }
 
   /// Returns a copy of this request whose `X-Client-Info` header also lists
