@@ -1,5 +1,6 @@
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_auth/src/fetch.dart';
+import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -131,7 +132,7 @@ class AuthAdminApi {
       headers: _headers,
       body: attributes.toJson(),
     );
-    final response = await _fetch.request(
+    final response = await _fetch.requestObject(
       '$_url/admin/users',
       HttpMethod.post,
       options: options,
@@ -183,16 +184,22 @@ class AuthAdminApi {
       HttpMethod.get,
       options: options,
     );
-    final body = result.body;
+    final body = jsonObject(result.body, 'the user list');
+    final users = body.listOf<Map<String, dynamic>>('users');
+    if (users == null) {
+      throw const FormatException(
+        'Expected "users" to be List<Map<String, dynamic>>, got Null',
+      );
+    }
     final headers = result.response.headers;
     final links = _parsePaginationLinks(headers['link']);
 
     return ListUsersResponse(
-      users: (body['users'] as List).map((e) => User.fromJson(e)!).toList(),
+      users: users.map((user) => User.fromJson(user)!).toList(),
       total: int.tryParse(headers['x-total-count'] ?? ''),
       nextPage: links['next'],
       lastPage: links['last'],
-      audience: body['aud'] as String?,
+      audience: body.field('aud'),
     );
   }
 
@@ -247,7 +254,7 @@ class AuthAdminApi {
       redirectTo: redirectTo,
     );
 
-    final response = await _fetch.request(
+    final response = await _fetch.requestObject(
       '$_url/invite',
       HttpMethod.post,
       options: fetchOptions,
@@ -295,7 +302,7 @@ class AuthAdminApi {
 
     final fetchOptions = AuthRequestOptions(headers: _headers, body: body);
 
-    final response = await _fetch.request(
+    final response = await _fetch.requestObject(
       '$_url/admin/generate_link',
       HttpMethod.post,
       options: fetchOptions,
@@ -307,7 +314,7 @@ class AuthAdminApi {
   Future<UserResponse> getUserById(String userId) async {
     validateUuid(userId);
     final options = AuthRequestOptions(headers: _headers);
-    final response = await _fetch.request(
+    final response = await _fetch.requestObject(
       '$_url/admin/users/$userId',
       HttpMethod.get,
       options: options,
@@ -323,7 +330,7 @@ class AuthAdminApi {
     validateUuid(userId);
     final body = attributes.toJson();
     final options = AuthRequestOptions(headers: _headers, body: body);
-    final response = await _fetch.request(
+    final response = await _fetch.requestObject(
       '$_url/admin/users/$userId',
       HttpMethod.put,
       options: options,

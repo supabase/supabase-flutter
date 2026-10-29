@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// Format of the SAML `NameID` a single sign-on identity provider asserts to
 /// identify the user.
@@ -79,10 +80,10 @@ class SAMLAttribute {
 
   factory SAMLAttribute.fromJson(Map<String, dynamic> json) {
     return SAMLAttribute(
-      name: json['name'] as String?,
-      names: (json['names'] as List?)?.cast(),
+      name: json.field('name'),
+      names: json.listOf('names'),
       defaultValue: json['default'],
-      array: json['array'] as bool? ?? false,
+      array: json.field('array') ?? false,
     );
   }
 
@@ -112,10 +113,11 @@ class SAMLAttributeMapping {
   const SAMLAttributeMapping(this.keys);
 
   factory SAMLAttributeMapping.fromJson(Map<String, dynamic> json) {
-    final keys = (json['keys'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final keys =
+        json.field<Map<dynamic, dynamic>?>('keys')?.cast<String, dynamic>() ??
+        const {};
     return SAMLAttributeMapping({
-      for (final MapEntry(:key, :value) in keys.entries)
-        key: SAMLAttribute.fromJson(value as Map<String, dynamic>),
+      for (final key in keys.keys) key: SAMLAttribute.fromJson(keys.field(key)),
     });
   }
 
@@ -140,12 +142,14 @@ class SAMLProvider {
   });
 
   factory SAMLProvider.fromJson(Map<String, dynamic> json) {
-    final metadataUrl = json['metadata_url'] as String?;
-    final attributeMapping = json['attribute_mapping'] as Map?;
-    final nameIdFormat = json['name_id_format'] as String?;
+    final metadataUrl = json.field<String?>('metadata_url');
+    final attributeMapping = json.field<Map<dynamic, dynamic>?>(
+      'attribute_mapping',
+    );
+    final nameIdFormat = json.field<String?>('name_id_format');
     return SAMLProvider(
-      entityId: json['entity_id'] as String,
-      metadataXml: json['metadata_xml'] as String?,
+      entityId: json.field('entity_id'),
+      metadataXml: json.field('metadata_xml'),
       metadataUrl: metadataUrl == null ? null : Uri.parse(metadataUrl),
       attributeMapping: attributeMapping == null
           ? null
@@ -187,19 +191,16 @@ class SSOProvider {
   });
 
   factory SSOProvider.fromJson(Map<String, dynamic> json) {
-    final saml = json['saml'] as Map?;
-    final domains = (json['domains'] as List?) ?? const [];
+    final saml = json.field<Map<dynamic, dynamic>?>('saml');
+    final domains = json.listOf<Map<String, dynamic>>('domains') ?? const [];
     return SSOProvider(
-      id: json['id'] as String,
-      resourceId: json['resource_id'] as String?,
-      disabled: json['disabled'] as bool? ?? false,
+      id: json.field('id'),
+      resourceId: json.field('resource_id'),
+      disabled: json.field('disabled') ?? false,
       saml: saml == null ? null : SAMLProvider.fromJson(saml.cast()),
-      domains: [
-        for (final domain in domains)
-          (domain as Map<String, dynamic>)['domain'] as String,
-      ],
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      domains: [for (final domain in domains) domain.field('domain')],
+      createdAt: DateTime.parse(json.field('created_at')),
+      updatedAt: DateTime.parse(json.field('updated_at')),
     );
   }
 

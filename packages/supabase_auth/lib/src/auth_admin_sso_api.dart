@@ -38,7 +38,7 @@ class AuthAdminSSOApi {
     String? resourceId,
     String? resourceIdPrefix,
   }) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/sso/providers',
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -50,11 +50,8 @@ class AuthAdminSSOApi {
       ),
     );
 
-    final providers = (data['items'] as List?) ?? const [];
-    return [
-      for (final provider in providers)
-        SSOProvider.fromJson(provider as Map<String, dynamic>),
-    ];
+    final providers = data.listOf<Map<String, dynamic>>('items') ?? const [];
+    return providers.map(SSOProvider.fromJson).toList();
   }
 
   /// Registers a new SAML 2.0 identity provider.
@@ -62,7 +59,7 @@ class AuthAdminSSOApi {
   /// This function should only be called on a server. Never expose your
   /// `secret` key on the client.
   Future<SSOProvider> createProvider(CreateSSOProviderOptions options) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/sso/providers',
       HttpMethod.post,
       options: AuthRequestOptions(headers: _headers, body: options.toJson()),
@@ -76,7 +73,7 @@ class AuthAdminSSOApi {
   /// This function should only be called on a server. Never expose your
   /// `secret` key on the client.
   Future<SSOProvider> getProvider(String id) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       _providerUrl(id),
       HttpMethod.get,
       options: AuthRequestOptions(headers: _headers),
@@ -93,7 +90,7 @@ class AuthAdminSSOApi {
     String id,
     UpdateSSOProviderOptions options,
   ) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       _providerUrl(id),
       HttpMethod.put,
       options: AuthRequestOptions(headers: _headers, body: options.toJson()),

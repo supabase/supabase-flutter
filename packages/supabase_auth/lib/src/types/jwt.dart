@@ -1,4 +1,5 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// JWT Header structure
 class JwtHeader {
@@ -10,9 +11,9 @@ class JwtHeader {
 
   factory JwtHeader.fromJson(Map<String, dynamic> json) {
     return JwtHeader(
-      algorithm: json['alg'] as String,
-      keyId: json['kid'] as String?,
-      type: json['typ'] as String?,
+      algorithm: json.field('alg'),
+      keyId: json.field('kid'),
+      type: json.field('typ'),
     );
   }
 
@@ -51,13 +52,13 @@ class JwtPayload {
   /// already exposed as typed fields.
   factory JwtPayload.fromJson(Map<String, dynamic> json) {
     return JwtPayload(
-      issuer: json['iss'] as String?,
-      subject: json['sub'] as String?,
+      issuer: json.field('iss'),
+      subject: json.field('sub'),
       audience: json['aud'],
-      expiresAt: (json['exp'] as num?)?.toInt(),
-      notBefore: (json['nbf'] as num?)?.toInt(),
-      issuedAt: (json['iat'] as num?)?.toInt(),
-      jwtId: json['jti'] as String?,
+      expiresAt: json.field<num?>('exp')?.toInt(),
+      notBefore: json.field<num?>('nbf')?.toInt(),
+      issuedAt: json.field<num?>('iat')?.toInt(),
+      jwtId: json.field('jti'),
       claims: Map<String, dynamic>.of(json),
     );
   }
@@ -169,9 +170,7 @@ class JWKSet {
 
   factory JWKSet.fromJson(Map<String, dynamic> json) {
     final keys =
-        (json['keys'] as List<dynamic>?)
-            ?.map((e) => JWK.fromJson(e as Map<String, dynamic>))
-            .toList() ??
+        json.listOf<Map<String, dynamic>>('keys')?.map(JWK.fromJson).toList() ??
         [];
     return JWKSet(keys: keys);
   }
@@ -201,12 +200,10 @@ class JWK {
 
   /// Creates a [JWK] from a JSON map.
   factory JWK.fromJson(Map<String, dynamic> json) {
-    final keyType = json['kty'] as String;
-    final keyOperations =
-        (json['key_ops'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-        [];
-    final algorithm = json['alg'] as String?;
-    final keyId = json['kid'] as String?;
+    final keyType = json.field<String>('kty');
+    final keyOperations = json.listOf<String>('key_ops') ?? [];
+    final algorithm = json.field<String?>('alg');
+    final keyId = json.field<String?>('kid');
 
     final Map<String, dynamic> additionalProperties = Map.of(json);
     additionalProperties.remove('kty');

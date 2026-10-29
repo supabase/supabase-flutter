@@ -16,10 +16,10 @@ class AuthMFAEnrollResponse {
       orElse: () => FactorType.unknown,
     );
     return AuthMFAEnrollResponse(
-      id: json['id'] as String,
+      id: json.field('id'),
       type: type,
       totp: type == FactorType.totp && json['totp'] != null
-          ? TOTPEnrollment.fromJson(json['totp'] as Map<String, dynamic>)
+          ? TOTPEnrollment.fromJson(json.field('totp'))
           : null,
       phone: type == FactorType.phone && json['phone'] != null
           ? PhoneEnrollment._fromJsonValue(json['phone'])
@@ -51,9 +51,9 @@ class TOTPEnrollment {
 
   factory TOTPEnrollment.fromJson(Map<String, dynamic> json) {
     return TOTPEnrollment(
-      qrCode: json['qr_code'] as String,
-      secret: json['secret'] as String,
-      uri: json['uri'] as String,
+      qrCode: json.field('qr_code'),
+      secret: json.field('secret'),
+      uri: json.field('uri'),
     );
   }
 
@@ -83,7 +83,7 @@ class PhoneEnrollment {
 
   factory PhoneEnrollment.fromJson(Map<String, dynamic> json) {
     return PhoneEnrollment(
-      phone: json['phone'] as String,
+      phone: json.field('phone'),
     );
   }
 
@@ -92,8 +92,9 @@ class PhoneEnrollment {
     String() => PhoneEnrollment(phone: value),
     // Server returns phone data as an object
     Map<String, dynamic>() => PhoneEnrollment.fromJson(value),
-    _ => throw ArgumentError(
-      'Invalid phone enrollment data type: ${value.runtimeType}',
+    _ => throw FormatException(
+      'Expected "phone" to be String or Map<String, dynamic>, got '
+      '${value.runtimeType}',
     ),
   };
 
@@ -107,7 +108,7 @@ class AuthMFAChallengeResponse {
 
   factory AuthMFAChallengeResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAChallengeResponse(
-      id: json['id'] as String,
+      id: json.field('id'),
       expiresAt: parseUnixSeconds(json, 'expires_at'),
     );
   }
@@ -124,7 +125,7 @@ class AuthMFAUnenrollResponse {
   const AuthMFAUnenrollResponse({required this.id});
 
   factory AuthMFAUnenrollResponse.fromJson(Map<String, dynamic> json) {
-    return AuthMFAUnenrollResponse(id: json['id'] as String);
+    return AuthMFAUnenrollResponse(id: json.field('id'));
   }
 
   /// ID of the factor that was successfully unenrolled.
@@ -173,9 +174,9 @@ class AuthMFARecoveryCodesStatusResponse {
     Map<String, dynamic> json,
   ) {
     return AuthMFARecoveryCodesStatusResponse(
-      id: json['id'] as String,
-      total: (json['total'] as num).toInt(),
-      remaining: (json['remaining'] as num).toInt(),
+      id: json.field('id'),
+      total: json.field<num>('total').toInt(),
+      remaining: json.field<num>('remaining').toInt(),
     );
   }
 
@@ -205,18 +206,17 @@ class AuthMFARecoveryCodesGenerateResponse {
   factory AuthMFARecoveryCodesGenerateResponse.fromJson(
     Map<String, dynamic> json,
   ) {
-    final codes = json['codes'];
-    if (codes is! List) {
-      throw FormatException(
-        'Expected codes to be a list, got ${codes.runtimeType}',
-        json.toString(),
+    final codes = json.listOf<String>('codes');
+    if (codes == null) {
+      throw const FormatException(
+        'Expected "codes" to be List<String>, got Null',
       );
     }
     return AuthMFARecoveryCodesGenerateResponse(
-      id: json['id'] as String,
-      friendlyName: json['friendly_name'] as String?,
-      total: (json['total'] as num).toInt(),
-      codes: codes.cast(),
+      id: json.field('id'),
+      friendlyName: json.field('friendly_name'),
+      total: json.field<num>('total').toInt(),
+      codes: codes,
     );
   }
 
@@ -243,17 +243,14 @@ class AuthMFAAdminListFactorsResponse {
   const AuthMFAAdminListFactorsResponse({required this.factors});
 
   factory AuthMFAAdminListFactorsResponse.fromJson(Map<String, dynamic> json) {
-    final factorsList = json['factors'];
-    if (factorsList is! List) {
-      throw FormatException(
-        'Expected factors to be a list, got ${factorsList.runtimeType}',
-        json.toString(),
+    final factors = json.listOf<Map<String, dynamic>>('factors');
+    if (factors == null) {
+      throw const FormatException(
+        'Expected "factors" to be List<Map<String, dynamic>>, got Null',
       );
     }
     return AuthMFAAdminListFactorsResponse(
-      factors: factorsList
-          .map((e) => Factor.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      factors: factors.map(Factor.fromJson).toList(),
     );
   }
 
@@ -266,7 +263,7 @@ class AuthMFAAdminDeleteFactorResponse {
   const AuthMFAAdminDeleteFactorResponse({required this.id});
 
   factory AuthMFAAdminDeleteFactorResponse.fromJson(Map<String, dynamic> json) {
-    return AuthMFAAdminDeleteFactorResponse(id: json['id'] as String);
+    return AuthMFAAdminDeleteFactorResponse(id: json.field('id'));
   }
 
   /// ID of the factor that was successfully deleted.

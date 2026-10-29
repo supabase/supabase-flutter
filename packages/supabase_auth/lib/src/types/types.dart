@@ -232,20 +232,21 @@ class OAuthClient {
 
   factory OAuthClient.fromJson(Map<String, dynamic> json) {
     return OAuthClient(
-      clientId: json['client_id'] as String,
-      clientName: json['client_name'] as String?,
-      clientSecret: json['client_secret'] as String?,
-      clientType: OAuthClientType.fromValue(json['client_type'] as String),
-      tokenEndpointAuthenticationMethod:
-          json['token_endpoint_auth_method'] as String?,
+      clientId: json.field('client_id'),
+      clientName: json.field('client_name'),
+      clientSecret: json.field('client_secret'),
+      clientType: OAuthClientType.fromValue(json.field('client_type')),
+      tokenEndpointAuthenticationMethod: json.field(
+        'token_endpoint_auth_method',
+      ),
       registrationType: switch (json['registration_type']) {
         final String value => OAuthClientRegistrationType.fromValue(value),
         _ => null,
       },
-      clientUri: json['client_uri'] as String?,
-      logoUri: json['logo_uri'] as String?,
-      redirectUris: (json['redirect_uris'] as List?)?.cast() ?? const [],
-      grantTypes: ((json['grant_types'] as List?)?.cast<String>() ?? const [])
+      clientUri: json.field('client_uri'),
+      logoUri: json.field('logo_uri'),
+      redirectUris: json.listOf('redirect_uris') ?? const [],
+      grantTypes: (json.listOf<String>('grant_types') ?? const [])
           .map(
             (value) => OAuthClientGrantType.values.firstWhere(
               (grantType) => grantType.snakeCase == value,
@@ -253,15 +254,14 @@ class OAuthClient {
             ),
           )
           .toList(),
-      responseTypes:
-          ((json['response_types'] as List?)?.cast<String>() ?? const [])
-              .map(
-                (value) => OAuthClientResponseType.values.firstWhere(
-                  (responseType) => responseType.snakeCase == value,
-                  orElse: () => OAuthClientResponseType.unknown,
-                ),
-              )
-              .toList(),
+      responseTypes: (json.listOf<String>('response_types') ?? const [])
+          .map(
+            (value) => OAuthClientResponseType.values.firstWhere(
+              (responseType) => responseType.snakeCase == value,
+              orElse: () => OAuthClientResponseType.unknown,
+            ),
+          )
+          .toList(),
       createdAt: parseIso8601(json, 'created_at'),
       updatedAt: parseIso8601(json, 'updated_at'),
     );

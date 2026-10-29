@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:supabase_auth/src/auth_constants.dart';
+import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/error_code.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
@@ -18,15 +19,24 @@ class AuthFetch {
 
   String _getErrorMessage(dynamic error) {
     if (error is Map) {
-      return error['msg'] ??
-          error['message'] ??
-          error['error_description'] ??
-          error['error']?.toString() ??
-          error.toString();
+      for (final key in const ['msg', 'message', 'error_description']) {
+        if (error[key] case final String message) {
+          return message;
+        }
+      }
+      if (error['error'] case final Object description) {
+        return description.toString();
+      }
     }
 
     return error.toString();
   }
+
+  List<String> _getWeakPasswordReasons(dynamic error) => switch (error) {
+    {'weak_password': {'reasons': final List<dynamic> reasons}} =>
+      reasons.whereType<String>().toList(),
+    _ => [],
+  };
 
   String? _getErrorCode(dynamic error) {
     if (error is Map) {
@@ -121,7 +131,7 @@ class AuthFetch {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
         statusCode: response.statusCode,
-        reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
+        reasons: _getWeakPasswordReasons(data),
         requestId: requestId,
         headers: response.headers,
         body: response.body,
@@ -145,6 +155,18 @@ class AuthFetch {
   }) async {
     final result = await requestWithResponse(url, method, options: options);
     return result.body;
+  }
+
+  /// Performs the request and returns the body, which must be a JSON object.
+  ///
+  /// Throws a [FormatException] for any other body.
+  Future<Map<String, dynamic>> requestObject(
+    String url,
+    HttpMethod method, {
+    AuthRequestOptions? options,
+  }) async {
+    final body = await request(url, method, options: options);
+    return jsonObject(body, 'the response body');
   }
 
   /// Performs the request and returns the resolved [body] alongside the raw
