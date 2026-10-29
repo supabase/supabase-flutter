@@ -1433,7 +1433,7 @@ class AuthClient {
 
     if (_flowType == AuthFlowType.pkce &&
         !parameters.containsKey('access_token')) {
-      throw AuthPKCEGrantCodeExchangeError(
+      throw AuthPKCEGrantCodeExchangeException(
         'No code detected in query parameters.',
       );
     }

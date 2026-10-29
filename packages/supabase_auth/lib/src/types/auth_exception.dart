@@ -33,11 +33,11 @@ class AuthException extends SupabaseException {
 
 /// Thrown when a PKCE flow deep link is missing the `code` query parameter
 /// needed to exchange it for a session.
-class AuthPKCEGrantCodeExchangeError extends AuthException {
-  const AuthPKCEGrantCodeExchangeError(super.message);
+class AuthPKCEGrantCodeExchangeException extends AuthException {
+  const AuthPKCEGrantCodeExchangeException(super.message);
 
   @override
-  String get exceptionName => 'AuthPKCEGrantCodeExchangeError';
+  String get exceptionName => 'AuthPKCEGrantCodeExchangeException';
 }
 
 /// Thrown when required session data is unavailable, such as when no session

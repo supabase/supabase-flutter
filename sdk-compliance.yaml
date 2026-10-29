@@ -3195,9 +3195,9 @@ supporting_symbols:
   - AuthInvalidJwtException
   - AuthInvalidJwtException.AuthInvalidJwtException
   - AuthInvalidJwtException.exceptionName
-  - AuthPKCEGrantCodeExchangeError
-  - AuthPKCEGrantCodeExchangeError.AuthPKCEGrantCodeExchangeError
-  - AuthPKCEGrantCodeExchangeError.exceptionName
+  - AuthPKCEGrantCodeExchangeException
+  - AuthPKCEGrantCodeExchangeException.AuthPKCEGrantCodeExchangeException
+  - AuthPKCEGrantCodeExchangeException.exceptionName
   - AuthResponse
   - AuthResponse.AuthResponse
   - AuthResponse.fromJson

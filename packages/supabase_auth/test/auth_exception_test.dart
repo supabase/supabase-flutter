@@ -5,9 +5,8 @@ void main() {
   test('every auth exception names itself in toString', () {
     final exceptions = {
       'AuthException': const AuthException('boom'),
-      'AuthPKCEGrantCodeExchangeError': const AuthPKCEGrantCodeExchangeError(
-        'boom',
-      ),
+      'AuthPKCEGrantCodeExchangeException':
+          const AuthPKCEGrantCodeExchangeException('boom'),
       'AuthSessionMissingException': AuthSessionMissingException(),
       'AuthRetryableFetchException': AuthRetryableFetchException(),
       'AuthRetryableApiException': AuthRetryableApiException(
