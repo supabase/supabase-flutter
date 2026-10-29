@@ -711,7 +711,7 @@ final class _UploadProgress with _CallbackFailure {
 /// unknown when the response has a `Content-Encoding`, since the HTTP stack
 /// may decode the body so that its length no longer matches.
 int? _bodyLength(http.StreamedResponse response) {
-  final contentEncoding = response.headers['content-encoding']?.trim();
+  final contentEncoding = response.headers.header('content-encoding')?.trim();
   final hasEncoding =
       contentEncoding != null &&
       contentEncoding.isNotEmpty &&
