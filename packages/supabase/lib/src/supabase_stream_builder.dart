@@ -333,7 +333,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
             clientLogger.fine(
               'stream channel for table: $_table rejoins after '
               '${change.status.name}',
-              change.error,
             );
           } else {
             _addException(
@@ -354,7 +353,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     if (errors is List && errors.isNotEmpty) {
       clientLogger.fine(
         'refetching table: $_table after a ${payload.eventType.name} arrived '
-        'without its full record: ${errors.join(', ')}',
+        'without its full record (${errors.length} errors)',
       );
       _requestRefetch();
       return;
@@ -454,9 +453,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       _pendingChanges = null;
       _failedFetches++;
       clientLogger.warning(
-        'fetching the rows of table: $_table failed',
-        error,
-        stackTrace,
+        'fetching the rows of table: $_table failed '
+        '(${error.runtimeType})',
       );
       if (error is PostgrestApiException &&
           error.statusCode >= 400 &&
