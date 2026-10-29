@@ -306,11 +306,13 @@ class RealtimeChannel {
     _joinPush
         .receive(
           'ok',
-          (response) => _handleJoinOk(jsonObject(response, 'the join reply')),
+          (response) => _handleJoinOk(
+            jsonObject(response, description: 'the join reply'),
+          ),
         )
         .receive('error', (error) {
           _state = ChannelState.errored;
-          final reply = jsonObject(error, 'the join error');
+          final reply = jsonObject(error, description: 'the join error');
           _addStatus(
             RealtimeSubscribeStatus.channelError,
             RealtimeException(
@@ -372,7 +374,7 @@ class RealtimeChannel {
             null => null,
             final echoed => jsonObject(
               echoed,
-              'element $i of "postgres_changes"',
+              description: 'element $i of "postgres_changes"',
             ),
           },
         _ => null,
@@ -552,7 +554,7 @@ class RealtimeChannel {
         'postgres_changes',
         channelFilter,
         (payload) => PostgresChangePayload.fromPayload(
-          jsonObject(payload, 'the postgres_changes payload'),
+          jsonObject(payload, description: 'the postgres_changes payload'),
         ),
       ),
     );
@@ -583,7 +585,7 @@ class RealtimeChannel {
         'broadcast',
         ChannelFilter(event: event),
         (payload) => Map<String, dynamic>.of(
-          jsonObject(payload, 'the broadcast payload'),
+          jsonObject(payload, description: 'the broadcast payload'),
         ),
       ),
     );
@@ -646,7 +648,8 @@ class RealtimeChannel {
     final stream = _eventStream(
       'presence',
       ChannelFilter(event: event.name),
-      (payload) => fromJson(jsonObject(payload, 'the presence payload')),
+      (payload) =>
+          fromJson(jsonObject(payload, description: 'the presence payload')),
     );
     _handlePresenceUpdate();
     return stream;
@@ -677,7 +680,7 @@ class RealtimeChannel {
       ChannelFilter(),
       (payload) => payload is Map
           ? RealtimeSystemPayload.fromJson(
-              jsonObject(payload, 'the system payload'),
+              jsonObject(payload, description: 'the system payload'),
             )
           : null,
     );
@@ -1213,7 +1216,7 @@ class RealtimeChannel {
 
       for (final bind in (bindings ?? <Binding>[])) {
         handledPayload = getEnrichedPayload(
-          jsonObject(handledPayload, 'the $typeLower payload'),
+          jsonObject(handledPayload, description: 'the $typeLower payload'),
         );
         bind.callback(handledPayload, ref);
       }
@@ -1224,7 +1227,10 @@ class RealtimeChannel {
           if (bindId != null) {
             final bindEvent = bind.filter['event'];
 
-            final changes = jsonObject(payload, 'the $typeLower payload');
+            final changes = jsonObject(
+              payload,
+              description: 'the $typeLower payload',
+            );
             final ids = changes.field<List<dynamic>?>('ids');
             if (ids?.contains(int.parse(bindId)) != true) {
               return false;
@@ -1244,7 +1250,7 @@ class RealtimeChannel {
               ? null
               : jsonObject(
                   payload,
-                  'the $typeLower payload',
+                  description: 'the $typeLower payload',
                 ).field<String?>('event');
           return bindEvent == event?.toLowerCase();
         }

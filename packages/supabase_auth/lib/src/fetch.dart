@@ -165,7 +165,7 @@ class AuthFetch {
     AuthRequestOptions? options,
   }) async {
     final body = await request(url, method, options: options);
-    return jsonObject(body, 'the response body');
+    return jsonObject(body, description: 'the response body');
   }
 
   /// Performs the request and returns the resolved [body] alongside the raw

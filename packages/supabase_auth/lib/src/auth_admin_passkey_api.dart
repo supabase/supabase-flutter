@@ -37,7 +37,10 @@ class AuthAdminPasskeyApi {
       ),
     );
 
-    return jsonObjectList(data, 'the passkeys').map(Passkey.fromJson).toList();
+    return jsonObjectList(
+      data,
+      description: 'the passkeys',
+    ).map(Passkey.fromJson).toList();
   }
 
   /// Deletes the passkey with [passkeyId] from the user with [userId].

@@ -108,7 +108,7 @@ void main() {
   group('jsonObject', () {
     test('returns a JSON object', () {
       const object = <String, dynamic>{'id': 1};
-      expect(jsonObject(object, 'the body'), same(object));
+      expect(jsonObject(object, description: 'the body'), same(object));
     });
 
     for (final value in <Object?>[
@@ -119,7 +119,7 @@ void main() {
     ]) {
       test('throws a FormatException naming $value', () {
         expect(
-          () => jsonObject(value, 'the body'),
+          () => jsonObject(value, description: 'the body'),
           throwsA(
             isA<FormatException>().having(
               (error) => error.message,
@@ -138,7 +138,7 @@ void main() {
       expect(
         jsonObjectList(<dynamic>[
           <String, dynamic>{'id': 1},
-        ], 'the body'),
+        ], description: 'the body'),
         [
           {'id': 1},
         ],
@@ -147,7 +147,7 @@ void main() {
 
     test('throws a FormatException for a value that is not a list', () {
       expect(
-        () => jsonObjectList(<String, dynamic>{}, 'the body'),
+        () => jsonObjectList(<String, dynamic>{}, description: 'the body'),
         throwsA(
           isA<FormatException>().having(
             (error) => error.message,
@@ -160,7 +160,7 @@ void main() {
 
     test('throws a FormatException for an element that is not an object', () {
       expect(
-        () => jsonObjectList(<dynamic>[1], 'the body'),
+        () => jsonObjectList(<dynamic>[1], description: 'the body'),
         throwsA(
           isA<FormatException>().having(
             (error) => error.message,

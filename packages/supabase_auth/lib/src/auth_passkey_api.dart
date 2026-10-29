@@ -204,7 +204,10 @@ class AuthPasskeyApi {
       ),
     );
 
-    return jsonObjectList(data, 'the passkeys').map(Passkey.fromJson).toList();
+    return jsonObjectList(
+      data,
+      description: 'the passkeys',
+    ).map(Passkey.fromJson).toList();
   }
 
   /// Updates the friendly name of a passkey.

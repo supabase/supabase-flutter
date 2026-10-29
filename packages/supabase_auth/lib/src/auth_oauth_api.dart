@@ -338,7 +338,7 @@ class AuthOAuthApi {
 
     return jsonObjectList(
       data,
-      'the grants',
+      description: 'the grants',
     ).map(OAuthGrant.fromJson).toList();
   }
 

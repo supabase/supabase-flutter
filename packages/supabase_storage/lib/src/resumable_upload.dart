@@ -327,7 +327,10 @@ class ResumableUploadRegistry {
     if (stored == null) return {};
     final Map<String, dynamic> json;
     try {
-      json = jsonObject(jsonDecode(stored), 'the resumable upload records');
+      json = jsonObject(
+        jsonDecode(stored),
+        description: 'the resumable upload records',
+      );
     } on FormatException catch (error, stackTrace) {
       storageLogger.warning(
         'Discarding unreadable resumable upload records',
@@ -340,7 +343,7 @@ class ResumableUploadRegistry {
     for (final MapEntry(:key, :value) in json.entries) {
       try {
         final record = ResumableUploadRecord._fromJson(
-          jsonObject(value, 'a resumable upload record'),
+          jsonObject(value, description: 'a resumable upload record'),
         );
         records[record.id] = record;
       } on FormatException catch (error, stackTrace) {
