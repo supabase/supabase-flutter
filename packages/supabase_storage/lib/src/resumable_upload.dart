@@ -185,17 +185,17 @@ class ResumableUploadRecord {
 
   factory ResumableUploadRecord._fromJson(Map<String, dynamic> json) {
     return ResumableUploadRecord._(
-      id: json['id'] as String,
-      bucketId: json['bucketId'] as String,
-      path: json['path'] as String,
-      totalBytes: json['totalBytes'] as int,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      uploadUrl: Uri.parse(json['uploadUrl'] as String),
-      upsert: json['upsert'] as bool,
-      contentType: json['contentType'] as String,
-      cacheControl: json['cacheControl'] as String,
-      metadata: json['metadata'] as Map<String, dynamic>?,
-      token: json['token'] as String?,
+      id: json.field<String>('id'),
+      bucketId: json.field<String>('bucketId'),
+      path: json.field<String>('path'),
+      totalBytes: json.field<int>('totalBytes'),
+      createdAt: DateTime.parse(json.field<String>('createdAt')),
+      uploadUrl: Uri.parse(json.field<String>('uploadUrl')),
+      upsert: json.field<bool>('upsert'),
+      contentType: json.field<String>('contentType'),
+      cacheControl: json.field<String>('cacheControl'),
+      metadata: json.field<Map<String, dynamic>?>('metadata'),
+      token: json.field<String?>('token'),
     );
   }
 
@@ -327,8 +327,14 @@ class ResumableUploadRegistry {
     if (stored == null) return {};
     final Map<String, dynamic> json;
     try {
-      json = jsonDecode(stored) as Map<String, dynamic>;
-    } on Object catch (error, stackTrace) {
+      json = switch (jsonDecode(stored)) {
+        final Map<String, dynamic> object => object,
+        final value => throw FormatException(
+          'Expected the resumable upload records to be a JSON object, got '
+          '${value.runtimeType}',
+        ),
+      };
+    } on FormatException catch (error, stackTrace) {
       storageLogger.warning(
         'Discarding unreadable resumable upload records',
         error,
@@ -339,11 +345,15 @@ class ResumableUploadRegistry {
     final records = <String, ResumableUploadRecord>{};
     for (final MapEntry(:key, :value) in json.entries) {
       try {
-        final record = ResumableUploadRecord._fromJson(
-          value as Map<String, dynamic>,
-        );
+        if (value is! Map<String, dynamic>) {
+          throw FormatException(
+            'Expected a resumable upload record to be a JSON object, got '
+            '${value.runtimeType}',
+          );
+        }
+        final record = ResumableUploadRecord._fromJson(value);
         records[record.id] = record;
-      } on Object catch (error, stackTrace) {
+      } on FormatException catch (error, stackTrace) {
         storageLogger.warning(
           'Skipping unreadable resumable upload record $key',
           error,

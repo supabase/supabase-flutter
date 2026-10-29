@@ -77,9 +77,9 @@ class StorageFileApi {
 
   UploadResponse _uploadResponse(String cleanPath, Map<String, dynamic> data) {
     return UploadResponse(
-      id: data['Id'] as String?,
+      id: data.field<String?>('Id'),
       path: cleanPath,
-      fullPath: data['Key'] as String,
+      fullPath: data.field<String>('Key'),
     );
   }
 
@@ -779,7 +779,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    final signedUrlPath = response['signedURL'] as String?;
+    final signedUrlPath = response.field<String?>('signedURL');
     if (signedUrlPath == null) {
       throw StorageException('No signed URL returned by API');
     }
@@ -827,9 +827,15 @@ class StorageFileApi {
       },
       options: options,
     );
-    return response.map<SignedUrlResult>((e) {
-      final signedUrlPath = e['signedURL'] as String?;
-      final path = e['path'] as String? ?? '';
+    return response.map<SignedUrlResult>((entry) {
+      if (entry is! Map<String, dynamic>) {
+        throw FormatException(
+          'Expected a signed URL entry to be a JSON object, got '
+          '${entry.runtimeType}',
+        );
+      }
+      final signedUrlPath = entry.field<String?>('signedURL');
+      final path = entry.field<String?>('path') ?? '';
       if (signedUrlPath != null) {
         return SignedUrlSuccess(
           path: path,
@@ -842,7 +848,7 @@ class StorageFileApi {
       }
       return SignedUrlFailure(
         path: path,
-        error: e['error'] as String? ?? 'Unknown error',
+        error: entry.field<String?>('error') ?? 'Unknown error',
       );
     }).toList();
   }

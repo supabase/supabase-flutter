@@ -604,6 +604,17 @@ void main() {
     );
   });
 
+  test('keeps a stored record with a field of the wrong type', () async {
+    const key = 'sb-localhost-resumable-uploads';
+    const unreadable = {
+      'broken-upload': {'id': 'broken-upload', 'totalBytes': 'ten'},
+    };
+    await recordStorage.setItem(key, jsonEncode(unreadable));
+
+    expect(await storage.resumableUploads(), isEmpty);
+    expect(jsonDecode((await recordStorage.getItem(key))!), unreadable);
+  });
+
   test('uploads with a signed upload token and the client headers', () async {
     await storage
         .from('videos')

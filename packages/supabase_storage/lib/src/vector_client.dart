@@ -48,14 +48,13 @@ class SupabaseVectorsClient {
 
   /// Retrieves the metadata of an existing vector bucket.
   Future<VectorBucket> getBucket(String name) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$_url/GetVectorBucket',
       {'vectorBucketName': name},
       options: _options,
     );
     return VectorBucket.fromJson(
-      (response as Map<String, dynamic>)['vectorBucket']
-          as Map<String, dynamic>,
+      response.field<Map<String, dynamic>>('vectorBucket'),
     );
   }
 
@@ -66,7 +65,7 @@ class SupabaseVectorsClient {
     int? maxResults,
     String? nextToken,
   }) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$_url/ListVectorBuckets',
       {
         'prefix': ?prefix,
@@ -75,7 +74,7 @@ class SupabaseVectorsClient {
       },
       options: _options,
     );
-    return VectorBucketList.fromJson(response as Map<String, dynamic>);
+    return VectorBucketList.fromJson(response);
   }
 
   /// Deletes a vector bucket. The bucket must have no indexes.
@@ -146,13 +145,13 @@ class StorageVectorBucketApi {
 
   /// Retrieves the metadata of an index in this bucket.
   Future<VectorIndex> getIndex(String name) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$_url/GetIndex',
       {'vectorBucketName': bucketName, 'indexName': name},
       options: _options,
     );
     return VectorIndex.fromJson(
-      (response as Map<String, dynamic>)['index'] as Map<String, dynamic>,
+      response.field<Map<String, dynamic>>('index'),
     );
   }
 
@@ -163,7 +162,7 @@ class StorageVectorBucketApi {
     int? maxResults,
     String? nextToken,
   }) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$_url/ListIndexes',
       {
         'vectorBucketName': bucketName,
@@ -173,7 +172,7 @@ class StorageVectorBucketApi {
       },
       options: _options,
     );
-    return VectorIndexList.fromJson(response as Map<String, dynamic>);
+    return VectorIndexList.fromJson(response);
   }
 
   /// Deletes an index and all of its vectors from this bucket.
@@ -251,7 +250,7 @@ class StorageVectorIndexApi {
     bool? returnData,
     bool? returnMetadata,
   }) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$_url/GetVectors',
       {
         'vectorBucketName': bucketName,
@@ -263,10 +262,8 @@ class StorageVectorIndexApi {
       options: _options,
     );
     final vectors =
-        (response as Map<String, dynamic>)['vectors'] as List? ?? const [];
-    return vectors
-        .map((value) => VectorMatch.fromJson(value as Map<String, dynamic>))
-        .toList();
+        response.listOf<Map<String, dynamic>>('vectors') ?? const [];
+    return vectors.map(VectorMatch.fromJson).toList();
   }
 
   /// Lists vectors in this index with pagination.
@@ -293,7 +290,7 @@ class StorageVectorIndexApi {
         );
       }
     }
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$_url/ListVectors',
       {
         'vectorBucketName': bucketName,
@@ -307,7 +304,7 @@ class StorageVectorIndexApi {
       },
       options: _options,
     );
-    return VectorList.fromJson(response as Map<String, dynamic>);
+    return VectorList.fromJson(response);
   }
 
   /// Searches this index for the vectors most similar to [queryVector].
@@ -323,7 +320,7 @@ class StorageVectorIndexApi {
     bool? returnDistance,
     bool? returnMetadata,
   }) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$_url/QueryVectors',
       {
         'vectorBucketName': bucketName,
@@ -336,7 +333,7 @@ class StorageVectorIndexApi {
       },
       options: _options,
     );
-    return VectorQueryResult.fromJson(response as Map<String, dynamic>);
+    return VectorQueryResult.fromJson(response);
   }
 
   /// Deletes vectors by their [keys].
