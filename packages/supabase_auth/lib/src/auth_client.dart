@@ -1669,18 +1669,8 @@ class AuthClient {
       await admin.signOut(session.accessToken, scope: scope);
     } on AuthApiException catch (error) {
       // A rejected access token, such as an expired one, says nothing about
-      // the sessions. Servers that answer without an error code only say so
-      // in the message.
-      final ignored = switch (error) {
-        AuthApiException(:final errorCode?) => _sessionGoneCodes.contains(
-          errorCode,
-        ),
-        AuthApiException(statusCode: 404) => true,
-        AuthApiException(statusCode: 401 || 403) =>
-          !error.message.contains('expired') && !session.isExpiredWithoutMargin,
-        _ => false,
-      };
-      if (!ignored) rethrow;
+      // the sessions.
+      if (!_sessionGoneCodes.contains(error.errorCode)) rethrow;
     }
   }
 

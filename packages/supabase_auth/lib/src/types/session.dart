@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/helper.dart';
+import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/user.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -99,7 +100,7 @@ class Session {
       return expiresAtSeconds == null
           ? null
           : dateTimeFromUnixSeconds(expiresAtSeconds);
-    } catch (_) {
+    } on AuthInvalidJwtException {
       return null;
     }
   }
