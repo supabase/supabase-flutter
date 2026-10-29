@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:supabase_auth/src/auth_constants.dart';
-import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/error_code.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';

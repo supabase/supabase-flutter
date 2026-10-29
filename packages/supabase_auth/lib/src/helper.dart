@@ -134,27 +134,3 @@ void validateExpiration(int? expiresAt) {
     throw AuthException('JWT has expired');
   }
 }
-
-/// [body], a decoded JSON response described by [name], which must be an
-/// object.
-@internal
-Map<String, dynamic> jsonObject(Object? body, String name) {
-  return switch (body) {
-    final Map<String, dynamic> object => object,
-    _ => throw FormatException(
-      'Expected $name to be an object, got ${body.runtimeType}',
-    ),
-  };
-}
-
-/// [body], a decoded JSON response described by [name], which must be a list
-/// of objects.
-@internal
-List<Map<String, dynamic>> jsonObjectList(Object? body, String name) {
-  if (body is! List) {
-    throw FormatException(
-      'Expected $name to be a list, got ${body.runtimeType}',
-    );
-  }
-  return [for (final element in body) jsonObject(element, 'each of $name')];
-}

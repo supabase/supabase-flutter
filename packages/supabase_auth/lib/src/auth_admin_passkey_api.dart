@@ -2,7 +2,6 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 import 'fetch.dart';
-import 'helper.dart';
 import 'types/fetch_options.dart';
 import 'types/passkey.dart';
 

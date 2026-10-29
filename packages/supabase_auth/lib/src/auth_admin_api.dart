@@ -1,6 +1,5 @@
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_auth/src/fetch.dart';
-import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:supabase_common/supabase_common.dart';
