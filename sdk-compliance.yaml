@@ -1945,14 +1945,20 @@ features:
       - TransformOptions.resize
       - TransformOptions.width
   storage.file_buckets.download_as_stream:
-    status: partially_implemented
-    note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream. The byte-capped collect and atomic file write are extension methods on the stream."
+    status: implemented
     symbols:
       - StorageFileApi.downloadStream
       - StorageByteStream.collectBytes
       - StorageByteStream.writeToFile
     supporting_symbols:
       - StorageByteStream
+      - StorageDownload
+      - StorageDownload.StorageDownload
+      - StorageDownload.contentLength
+      - StorageDownload.contentRange
+      - StorageDownload.contentType
+      - StorageDownload.headers
+      - StorageDownload.statusCode
       - StorageDownloadTooLargeException
       - StorageDownloadTooLargeException.StorageDownloadTooLargeException
       - StorageDownloadTooLargeException.exceptionName

@@ -56,10 +56,9 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// timer restarts whenever a chunk of an upload is sent or a chunk of a
   /// download arrives, so a large transfer that keeps moving is not cut short.
   /// A timed-out request is cancelled and throws a [StorageTransportException]
-  /// caused by a `TimeoutException`, except on the stream of
-  /// [StorageFileApi.downloadStream] once bytes are flowing, which emits the
-  /// `TimeoutException` itself. A timed-out upload attempt is retried
-  /// according to [retryOptions].
+  /// caused by a `TimeoutException`, which [StorageFileApi.downloadStream]
+  /// emits on its stream once the body is flowing. A timed-out upload attempt
+  /// is retried according to [retryOptions].
   ///
   /// [resumableUploadOptions] configures how
   /// [StorageFileApi.resumableUpload] chunks, retries, and where it records
