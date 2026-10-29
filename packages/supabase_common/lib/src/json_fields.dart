@@ -1,8 +1,5 @@
-import 'package:meta/meta.dart';
-
 /// Typed reads of the fields of a decoded JSON object, throwing a
 /// [FormatException] for a field that does not hold the expected type.
-@internal
 extension JsonFields on Map<String, dynamic> {
   /// The value of [key], which must be a [T].
   T field<T>(String key) => switch (this[key]) {

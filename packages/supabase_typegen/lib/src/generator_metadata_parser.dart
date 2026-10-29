@@ -1,3 +1,5 @@
+import 'package:supabase_common/supabase_common.dart';
+
 import 'schema_description.dart';
 
 const _integerFormats = {'int2', 'int4', 'int8'};
@@ -163,41 +165,19 @@ ColumnTypeKind? _rangeBoundKind(
 String _qualifiedFormat(String format, String typeSchema) =>
     typeSchema == _catalogSchema ? format : '$typeSchema.$format';
 
-/// Typed reads of the fields of a `GeneratorMetadata` record, throwing a
-/// [FormatException] for a field that does not have the expected shape.
+/// Reads of the collections of a `GeneratorMetadata` document.
 extension on Map<String, dynamic> {
-  /// The value of [key], which must be a [T].
-  T field<T>(String key) => switch (this[key]) {
-    final T value => value,
-    final value => throw _shapeException('"$key"', T, value),
-  };
+  /// The elements of the list at [key], none when it is missing.
+  List<T> optionalListOf<T>(String key) => listOf(key) ?? const [];
 
-  /// The elements of the list at [key], each of which must be a [T]. A
-  /// missing list has no elements unless it is [required].
-  List<T> listOf<T>(String key, {bool required = false}) {
-    final list = required
-        ? field<List<dynamic>>(key)
-        : (field<List<dynamic>?>(key) ?? const []);
-    return [
-      for (final element in list)
-        element is T
-            ? element
-            : throw _shapeException('an element of "$key"', T, element),
-    ];
-  }
+  /// The elements of the list at [key], which must not be missing.
+  List<T> requiredListOf<T>(String key) => listOf(key) ?? field(key);
 
   /// The records of the list at [key], none when it is missing.
-  List<Map<String, dynamic>> records(String key) => listOf(key);
+  List<Map<String, dynamic>> records(String key) => optionalListOf(key);
 }
 
-FormatException _shapeException(
-  String subject,
-  Type expected,
-  Object? value,
-) => FormatException(
-  'Not a GeneratorMetadata document: a record does not have the expected '
-  'shape ($subject holds ${value.runtimeType}, expected $expected).',
-);
+const _notGeneratorMetadata = 'Not a GeneratorMetadata document';
 
 const _relationCollections = [
   'tables',
@@ -237,10 +217,25 @@ DatabaseDescription parseGeneratorMetadata(
   Map<String, dynamic> document, {
   List<String>? schemaNames,
 }) {
+  try {
+    return _parseGeneratorMetadata(document, schemaNames);
+  } on FormatException catch (error) {
+    if (error.message.startsWith(_notGeneratorMetadata)) rethrow;
+    throw FormatException(
+      '$_notGeneratorMetadata: a record does not have the expected shape '
+      '(${error.message}).',
+    );
+  }
+}
+
+DatabaseDescription _parseGeneratorMetadata(
+  Map<String, dynamic> document,
+  List<String>? schemaNames,
+) {
   if (document['tables'] is! List<dynamic> ||
       document['columns'] is! List<dynamic>) {
     throw const FormatException(
-      'Not a GeneratorMetadata document: expected the introspection contract '
+      '$_notGeneratorMetadata: expected the introspection contract '
       'of @supabase/postgrest-typegen, with "tables" and "columns" lists.',
     );
   }
@@ -345,7 +340,7 @@ DatabaseDescription parseGeneratorMetadata(
       final name = column.field<String>('name');
       final format = column.field<String>('format');
       final typeSchema = column.field<String>('type_schema');
-      final enumValues = column.listOf<String>('enums');
+      final enumValues = column.optionalListOf<String>('enums');
       final isEnum = enumValues.isNotEmpty;
       final isArray = column['data_type'] == 'ARRAY';
       final elementFormat = isArray ? format.substring(1) : format;
@@ -559,13 +554,10 @@ List<RelationshipDescription> _relationships(
         foreignKeyName: relationship.field('foreign_key_name'),
         sourceSchema: relationship.field('schema'),
         sourceTable: relationship.field('relation'),
-        sourceColumns: relationship.listOf('columns', required: true),
+        sourceColumns: relationship.requiredListOf('columns'),
         targetSchema: relationship.field('referenced_schema'),
         targetTable: relationship.field('referenced_relation'),
-        targetColumns: relationship.listOf(
-          'referenced_columns',
-          required: true,
-        ),
+        targetColumns: relationship.requiredListOf('referenced_columns'),
         isOneToOne: relationship.field('is_one_to_one') ?? false,
       ),
 ];
@@ -623,14 +615,13 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
     final schema = relationship.field<String>('schema');
     if (!schemas.contains(schema)) continue;
     final table = relationship.field<String>('relation');
-    final columns = relationship.listOf<String>('columns', required: true);
-    final referencedColumns = relationship.listOf<String>(
+    final columns = relationship.requiredListOf<String>('columns');
+    final referencedColumns = relationship.requiredListOf<String>(
       'referenced_columns',
-      required: true,
     );
     if (columns.length != referencedColumns.length) {
       throw FormatException(
-        'Not a GeneratorMetadata document: the relationship '
+        '$_notGeneratorMetadata: the relationship '
         '"${relationship['foreign_key_name']}" pairs ${columns.length} '
         'columns with ${referencedColumns.length} referenced columns.',
       );
@@ -654,7 +645,7 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
 Map<(String, String), List<String>> _enumTypes(Map<String, dynamic> document) {
   final enumTypes = <(String, String), List<String>>{};
   for (final type in document.records('types')) {
-    final values = type.listOf<String>('enums');
+    final values = type.optionalListOf<String>('enums');
     if (values.isEmpty) continue;
     enumTypes[(type.field<String>('schema'), type.field<String>('name'))] =
         values;
@@ -766,7 +757,7 @@ ValueTypeDescription _valueType(
   // does.
   final enumValues = isArray
       ? (enumTypes[(typeSchema, elementFormat)] ?? const <String>[])
-      : type.listOf<String>('enums');
+      : type.optionalListOf<String>('enums');
   final isEnum = enumValues.isNotEmpty;
   EnumDescription? enumDescription;
   if (isEnum) {
@@ -877,16 +868,16 @@ List<FunctionDescription> _functions(
           schema: function.field('schema'),
           name: function.field('name'),
           overloads: [
-            for (final overload in function.listOf<Map<String, dynamic>>(
-              'overloads',
-              required: true,
-            ))
+            for (final overload
+                in function.requiredListOf<Map<String, dynamic>>(
+                  'overloads',
+                ))
               FunctionOverloadDescription(
                 arguments: [
-                  for (final argument in overload.listOf<Map<String, dynamic>>(
-                    'args',
-                    required: true,
-                  ))
+                  for (final argument
+                      in overload.requiredListOf<Map<String, dynamic>>(
+                        'args',
+                      ))
                     FunctionArgumentDescription(
                       name: argument.field('name'),
                       type: valueType(argument),

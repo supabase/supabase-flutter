@@ -22,11 +22,11 @@ dependencies:
   dart_style: ^3.1.0
   meta: ^1.16.0
   pub_semver: ^2.2.0
+  supabase_common: 3.0.0-dev.9
   yaml: ^3.1.0
 
 dev_dependencies:
   postgrest: 3.0.0-dev.14
-  supabase_common: 3.0.0-dev.9
   supabase_lints: ^0.1.2
   supabase_test: 0.6.1
   test: ^1.25.0
