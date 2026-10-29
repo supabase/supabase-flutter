@@ -16,7 +16,8 @@ class AuthRepository {
   /// The signed in user, or `null` when there is no session.
   User? get currentUser => _client.auth.currentUser;
 
-  /// Ends the session and clears it from storage.
+  /// Clears the session from storage, then ends it on the server. Throws when
+  /// the server could not end it, although this device is signed out.
   Future<void> signOut() => _client.auth.signOut();
 
   // Email & password ---------------------------------------------------------

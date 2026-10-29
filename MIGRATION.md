@@ -559,6 +559,8 @@ explicitly:
 - [`signOut()` only throws when the sessions could not be revoked](#signout-only-throws-when-the-sessions-could-not-be-revoked),
   so a failed global sign-out keeps the user signed in on the device, unless the server rejected
   the refresh token
+- [`signOut()` without a session emits no event](#signout-without-a-session-emits-no-event), and
+  throws for `SignOutScope.others`
 - [An expired session is kept when `autoRefreshToken` is off](#an-expired-session-is-kept-when-autorefreshtoken-is-off),
   so a non-null `currentSession` is no longer guaranteed to be valid
 - [A client without an `asyncStorage` keeps pkce verifiers in memory](#a-client-without-an-asyncstorage-keeps-pkce-verifiers-in-memory),
@@ -1294,8 +1296,9 @@ devices stayed signed in, and the token needed to retry was gone.
 - With `SignOutScope.local`, the default, the session is removed from the device first, so signing
   out works offline and `AuthSignedOut` is emitted right away. `signOut()` then waits up to 10
   seconds for the server to revoke the session, refreshing an expired access token first, so
-  disposing the client afterwards cannot abort the request. It no longer throws: a failed revoke is
-  logged.
+  disposing the client afterwards cannot abort the request. When the revoke fails, `signOut()`
+  throws, but the device stays signed out. A server that no longer knows the session counts as
+  revoked, and a revoke still running after the 10 seconds is logged instead.
 - With `SignOutScope.global` and `SignOutScope.others` the server is asked first, after refreshing
   an expired access token. When that fails, including when the access token has expired and cannot
   be refreshed, `signOut()` throws and the session is kept, so you can retry. When the server rejects
@@ -1304,10 +1307,25 @@ devices stayed signed in, and the token needed to retry was gone.
   Sign in again to revoke them.
   `SignOutScope.global` signs out on the device once the server has revoked the sessions.
 
-Remove any `try`/`catch` around a local `signOut()` that only existed to ignore offline failures.
 Since the session is gone from the device as soon as `signOut()` is called, you can navigate away
-without awaiting it. Where you sign out globally, handle the exception, for example by offering a
-retry or falling back to a local sign-out.
+without awaiting it. An exception from a local sign-out means the refresh token stays valid on the
+server until it expires, so catch it where an unawaited `signOut()` would otherwise report an
+unhandled error. Where you sign out globally, handle the exception, for example by offering a retry
+or falling back to a local sign-out.
+
+#### `signOut()` without a session emits no event
+
+With no session on the device, `signOut()` used to emit `AuthSignedOut` for every scope but
+`SignOutScope.others`, which returned without doing anything.
+
+- With `SignOutScope.local` and `SignOutScope.global`, `signOut()` clears what is left on the
+  device, such as pending PKCE verifiers, and returns without emitting `AuthSignedOut`, since no
+  session was removed.
+- With `SignOutScope.others`, `signOut()` throws an `AuthSessionMissingException`, since there is
+  no session to revoke the other sessions with.
+
+If a listener on `onAuthStateChange` resets your UI on `AuthSignedOut`, and you call `signOut()`
+when there may be no session, reset the UI where you call `signOut()` as well.
 
 #### `FlutterWebAuth2OAuthLauncher` reports cancel and exchange failures without throwing
 

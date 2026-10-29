@@ -1505,9 +1505,9 @@ class AuthClient {
   /// refreshing an expired access token before. The future waits for the
   /// revoke for up to 10 seconds, so disposing the client after awaiting it
   /// cannot abort a revoke that finished in time. A revoke still running
-  /// after that continues in the background. It never throws: the session is
-  /// already gone from this device, so a failed revoke is logged, and the
-  /// refresh token stays valid on the server until it expires.
+  /// after that continues in the background and is logged. When the revoke
+  /// fails, this throws, but this device stays signed out. The refresh token
+  /// then stays valid on the server until it expires.
   ///
   /// With [SignOutScope.global] and [SignOutScope.others] the sessions are
   /// revoked on the server first, refreshing an expired access token before.
@@ -1524,15 +1524,21 @@ class AuthClient {
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
   /// is fired, unless the refresh token was rejected.
+  ///
+  /// Without a session, [SignOutScope.local] and [SignOutScope.global] clear
+  /// what is left on this device, such as the pending PKCE verifiers, and emit
+  /// no event. [SignOutScope.others] throws an [AuthSessionMissingException].
   Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
     authLogger.fine('Signing out user with scope: ${scope.name}');
 
     if (scope == SignOutScope.local) {
       final session = _currentSession;
-      await _signOutLocally(SignOutReason.userInitiated);
-      if (session != null) {
-        await _revokeRemovedSessionOrLog(session);
+      if (session == null) {
+        await _clearSignedOutState();
+        return;
       }
+      await _signOutLocally(SignOutReason.userInitiated);
+      await _revokeRemovedSession(session);
       return;
     }
 
@@ -1540,13 +1546,16 @@ class AuthClient {
     if (session != null && session.isExpired) {
       session = await _refreshForSignOut(session, scope);
     }
+    if (session == null) {
+      if (scope == SignOutScope.others) throw AuthSessionMissingException();
+      await _clearSignedOutState();
+      return;
+    }
     // A sign-in or sign-out that happened while the session was refreshed or
     // the request was in flight is newer than this sign-out.
     final isCurrentSession = identical(session, _currentSession);
     final versionBeforeRevoke = _sessionVersion;
-    if (session != null) {
-      await _revokeSessions(session, scope);
-    }
+    await _revokeSessions(session, scope);
     if (scope == SignOutScope.global &&
         isCurrentSession &&
         _sessionVersion == versionBeforeRevoke) {
@@ -1626,6 +1635,13 @@ class AuthClient {
     await _removePkceVerifiers();
   }
 
+  /// Clears what a signed out device can still hold, such as a sign-in in
+  /// flight and the pending PKCE verifiers, without emitting an event.
+  Future<void> _clearSignedOutState() async {
+    _removeSession();
+    await _removePkceVerifiers();
+  }
+
   Future<void> _removePkceVerifiers() async {
     try {
       await _pkceVerifierStore?.removeAll();
@@ -1640,9 +1656,11 @@ class AuthClient {
 
   /// Refresh and logout errors that prove the session can no longer be used,
   /// so there is nothing left to revoke.
+  ///
+  /// A reused refresh token is not one of them: with refresh token rotation
+  /// disabled, the server keeps the session.
   static final _sessionGoneCodes = {
     ErrorCode.refreshTokenNotFound.code,
-    ErrorCode.refreshTokenAlreadyUsed.code,
     ErrorCode.sessionNotFound.code,
     ErrorCode.sessionExpired.code,
     ErrorCode.userNotFound.code,
@@ -1650,6 +1668,9 @@ class AuthClient {
 
   /// Revokes [session], which was already removed from this device, on the
   /// server, refreshing it first when its access token is about to expire.
+  ///
+  /// Waits for the revoke for up to [AuthConstants.signOutRevokeTimeout] and
+  /// logs the outcome of a revoke that is still running after that.
   Future<void> _revokeRemovedSession(Session session) async {
     Future<void> revoke() async {
       var current = session;
@@ -1682,12 +1703,23 @@ class AuthClient {
       await _revokeSessions(current, SignOutScope.local);
     }
 
+    final revocation = revoke();
     try {
-      await revoke().timeout(AuthConstants.signOutRevokeTimeout);
-    } on TimeoutException catch (error) {
-      throw AuthRetryableFetchException(
-        message: 'Timed out revoking the session on the server.',
-        cause: error,
+      await revocation.timeout(AuthConstants.signOutRevokeTimeout);
+    } on TimeoutException {
+      authLogger.warning(
+        'Signed out locally, the session is still being revoked on the server',
+      );
+      unawaited(
+        revocation.then(
+          (_) => authLogger.fine('Revoked the session on the server'),
+          onError: (Object error, StackTrace stackTrace) => authLogger.warning(
+            'Signed out locally, but could not revoke the session on the '
+            'server',
+            error,
+            stackTrace,
+          ),
+        ),
       );
     }
   }
