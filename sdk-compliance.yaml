@@ -1829,6 +1829,18 @@ features:
       - UploadResponse.toString
   storage.file_buckets.transfer_progress:
     status: implemented
+    symbols:
+      - StorageFileApi.upload
+      - StorageFileApi.uploadBinary
+      - StorageFileApi.uploadStream
+      - StorageFileApi.uploadToSignedUrl
+      - StorageFileApi.uploadBinaryToSignedUrl
+      - StorageFileApi.uploadStreamToSignedUrl
+      - StorageFileApi.update
+      - StorageFileApi.updateBinary
+      - StorageFileApi.updateStream
+      - StorageFileApi.download
+      - StorageFileApi.downloadStream
     supporting_symbols:
       - DownloadProgressCallback
       - UploadProgressCallback
