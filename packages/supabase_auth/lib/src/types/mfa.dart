@@ -1,4 +1,5 @@
 import 'package:supabase_auth/supabase_auth.dart';
+import 'package:supabase_auth/src/json_fields.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 /// The response of `AuthMFAApi.enroll`.
@@ -331,8 +332,8 @@ class Factor {
 
   factory Factor.fromJson(Map<String, dynamic> json) {
     return Factor(
-      id: json['id'] as String,
-      friendlyName: json['friendly_name'] as String?,
+      id: json.field('id'),
+      friendlyName: json.field('friendly_name'),
       factorType: FactorType.values.firstWhere(
         (e) => e.snakeCase == json['factor_type'],
         orElse: () => FactorType.unknown,

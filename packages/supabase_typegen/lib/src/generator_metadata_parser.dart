@@ -169,7 +169,7 @@ extension on Map<String, dynamic> {
   /// The value of [key], which must be a [T].
   T field<T>(String key) => switch (this[key]) {
     final T value => value,
-    final value => throw _shapeException(key, T, value),
+    final value => throw _shapeException('"$key"', T, value),
   };
 
   /// The elements of the list at [key], each of which must be a [T]. A
@@ -180,7 +180,9 @@ extension on Map<String, dynamic> {
         : (field<List<dynamic>?>(key) ?? const []);
     return [
       for (final element in list)
-        element is T ? element : throw _shapeException(key, T, element),
+        element is T
+            ? element
+            : throw _shapeException('an element of "$key"', T, element),
     ];
   }
 
@@ -188,11 +190,14 @@ extension on Map<String, dynamic> {
   List<Map<String, dynamic>> records(String key) => listOf(key);
 }
 
-FormatException _shapeException(String key, Type expected, Object? value) =>
-    FormatException(
-      'Not a GeneratorMetadata document: a record does not have the expected '
-      'shape ("$key" holds ${value.runtimeType}, expected $expected).',
-    );
+FormatException _shapeException(
+  String subject,
+  Type expected,
+  Object? value,
+) => FormatException(
+  'Not a GeneratorMetadata document: a record does not have the expected '
+  'shape ($subject holds ${value.runtimeType}, expected $expected).',
+);
 
 const _relationCollections = [
   'tables',
@@ -755,7 +760,7 @@ ValueTypeDescription _valueType(
   }
   final format = type.field<String>('name');
   final typeSchema = type.field<String>('schema');
-  final isArray = (type.field<String>('format')).endsWith('[]');
+  final isArray = type.field<String>('format').endsWith('[]');
   final elementFormat = isArray ? format.substring(1) : format;
   // The array type of an enum carries no values itself; its element type
   // does.

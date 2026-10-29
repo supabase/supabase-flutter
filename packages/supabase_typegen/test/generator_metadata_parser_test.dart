@@ -69,6 +69,29 @@ void main() {
     );
   });
 
+  test('names the list holding an element of the wrong type', () {
+    expect(
+      () => parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        ],
+        'columns': [
+          {
+            ..._column(tableId: 1, table: 'books', name: 'genre'),
+            'enums': [1],
+          },
+        ],
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('an element of "enums" holds int, expected String'),
+        ),
+      ),
+    );
+  });
+
   test('rejects relationships with mismatched column counts', () {
     expect(
       () => parseGeneratorMetadata({

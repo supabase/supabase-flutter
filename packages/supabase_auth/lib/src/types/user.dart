@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:supabase_auth/src/json_fields.dart';
 import 'package:supabase_auth/src/types/app_metadata.dart';
 import 'package:supabase_auth/src/types/mfa.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -104,37 +105,37 @@ class User {
     }
 
     return User(
-      id: json['id'] ?? '',
+      id: json.field('id'),
       appMetadata: AppMetadata.fromJson(
-        json['app_metadata'] as Map<String, dynamic>? ?? const {},
+        json.field<Map<String, dynamic>?>('app_metadata') ?? const {},
       ),
       userMetadata: Map.unmodifiable(
-        json['user_metadata'] as Map<String, dynamic>? ?? const {},
+        json.field<Map<String, dynamic>?>('user_metadata') ?? const {},
       ),
-      audience: json['aud'] ?? '',
+      audience: json.field('aud') ?? '',
       confirmationSentAt: tryParseIso8601(json, 'confirmation_sent_at'),
       recoverySentAt: tryParseIso8601(json, 'recovery_sent_at'),
       emailChangeSentAt: tryParseIso8601(json, 'email_change_sent_at'),
-      newEmail: json['new_email'],
+      newEmail: json.field('new_email'),
       invitedAt: tryParseIso8601(json, 'invited_at'),
-      actionLink: json['action_link'],
-      email: json['email'],
-      phone: json['phone'],
+      actionLink: json.field('action_link'),
+      email: json.field('email'),
+      phone: json.field('phone'),
       createdAt: parseIso8601(json, 'created_at'),
       emailConfirmedAt: tryParseIso8601(json, 'email_confirmed_at'),
       phoneConfirmedAt: tryParseIso8601(json, 'phone_confirmed_at'),
       lastSignInAt: tryParseIso8601(json, 'last_sign_in_at'),
-      role: json['role'],
+      role: json.field('role'),
       updatedAt: tryParseIso8601(json, 'updated_at'),
-      identities: json['identities'] != null
-          ? List<UserIdentity>.from(
-              json['identities']?.map((x) => UserIdentity.fromMap(x)),
-            )
-          : null,
-      factors: json['factors'] != null
-          ? List<Factor>.from(json['factors']?.map((x) => Factor.fromJson(x)))
-          : null,
-      isAnonymous: json['is_anonymous'] ?? false,
+      identities: json
+          .listOf<Map<String, dynamic>>('identities')
+          ?.map(UserIdentity.fromMap)
+          .toList(),
+      factors: json
+          .listOf<Map<String, dynamic>>('factors')
+          ?.map(Factor.fromJson)
+          .toList(),
+      isAnonymous: json.field('is_anonymous') ?? false,
     );
   }
 
@@ -250,11 +251,11 @@ class UserIdentity {
 
   factory UserIdentity.fromMap(Map<String, dynamic> map) {
     return UserIdentity(
-      id: map['id'] as String,
-      userId: map['user_id'] as String,
-      identityData: (map['identity_data'] as Map?)?.cast(),
-      identityId: (map['identity_id'] ?? '') as String,
-      provider: map['provider'] as String,
+      id: map.field('id'),
+      userId: map.field('user_id'),
+      identityData: map.field<Map<dynamic, dynamic>?>('identity_data')?.cast(),
+      identityId: map.field('identity_id') ?? '',
+      provider: map.field('provider'),
       createdAt: tryParseIso8601(map, 'created_at'),
       lastSignInAt: tryParseIso8601(map, 'last_sign_in_at'),
       updatedAt: tryParseIso8601(map, 'updated_at'),

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/helper.dart';
+import 'package:supabase_auth/src/json_fields.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/user.dart';
 import 'package:meta/meta.dart';
@@ -61,12 +62,12 @@ class Session {
       );
     }
     return Session(
-      accessToken: json['access_token'] as String,
-      expiresIn: (json['expires_in'] as num?)?.toInt(),
-      refreshToken: json['refresh_token'] as String?,
-      tokenType: json['token_type'] as String,
-      providerToken: json['provider_token'] as String?,
-      providerRefreshToken: json['provider_refresh_token'] as String?,
+      accessToken: json.field('access_token'),
+      expiresIn: json.field<num?>('expires_in')?.toInt(),
+      refreshToken: json.field('refresh_token'),
+      tokenType: json.field('token_type'),
+      providerToken: json.field('provider_token'),
+      providerRefreshToken: json.field('provider_refresh_token'),
       user: user,
     );
   }
