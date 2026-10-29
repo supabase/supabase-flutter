@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:supabase_auth/src/json_fields.dart';
 import 'package:supabase_auth/src/types/app_metadata.dart';
 import 'package:supabase_auth/src/types/mfa.dart';
 import 'package:supabase_common/supabase_common.dart';

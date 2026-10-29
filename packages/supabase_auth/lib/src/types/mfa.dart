@@ -1,5 +1,4 @@
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_auth/src/json_fields.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 /// The response of `AuthMFAApi.enroll`.

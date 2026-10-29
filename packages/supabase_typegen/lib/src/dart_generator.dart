@@ -1,6 +1,7 @@
 import 'package:dart_style/dart_style.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import 'generator_metadata_parser.dart';
 import 'identifiers.dart';
 import 'language_version_io.dart';
 import 'sdk_formatter_io.dart';
@@ -676,8 +677,8 @@ List<String> _columnConstants(
 }) => [
   for (final column in columns)
     columnNames[column] ??
-        (throw FormatException(
-          'Not a GeneratorMetadata document: $keyDescription names the '
+        (throw GeneratorMetadataFormatException(
+          '$keyDescription names the '
           'column "$column", which the document does not list for the '
           'table "$table".',
         )),

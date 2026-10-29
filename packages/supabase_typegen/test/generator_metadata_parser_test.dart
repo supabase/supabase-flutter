@@ -60,10 +60,10 @@ void main() {
         ],
       }),
       throwsA(
-        isA<FormatException>().having(
+        isA<GeneratorMetadataFormatException>().having(
           (error) => error.message,
           'message',
-          contains('"is_nullable" holds String, expected bool'),
+          contains('Expected "is_nullable" to be bool, got String'),
         ),
       ),
     );
@@ -86,7 +86,38 @@ void main() {
         isA<FormatException>().having(
           (error) => error.message,
           'message',
-          contains('an element of "enums" holds int, expected String'),
+          contains('Expected the elements of "enums" to be String, got int'),
+        ),
+      ),
+    );
+  });
+
+  test('names a required list that is missing', () {
+    expect(
+      () => parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        ],
+        'columns': [_column(tableId: 1, table: 'books', name: 'author_id')],
+        'relationships': [
+          {
+            'foreign_key_name': 'books_author_id_fkey',
+            'schema': 'public',
+            'relation': 'books',
+            'referenced_schema': 'public',
+            'referenced_relation': 'authors',
+            'referenced_columns': ['id'],
+          },
+        ],
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          allOf(
+            startsWith('Not a GeneratorMetadata document'),
+            contains('Expected "columns" to be List<String>, got Null'),
+          ),
         ),
       ),
     );

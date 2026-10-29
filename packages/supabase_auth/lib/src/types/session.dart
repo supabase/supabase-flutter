@@ -1,7 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/helper.dart';
-import 'package:supabase_auth/src/json_fields.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/user.dart';
 import 'package:meta/meta.dart';

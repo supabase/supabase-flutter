@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:supabase_auth/src/json_fields.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// Metadata the auth server or an admin controls; the signed-in user cannot
 /// modify it.

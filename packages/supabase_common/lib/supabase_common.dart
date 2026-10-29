@@ -17,6 +17,7 @@ export 'src/http_header.dart';
 export 'src/http_method.dart';
 export 'src/http_status.dart';
 export 'src/idle_timeout.dart';
+export 'src/json_fields.dart';
 export 'src/persist_session_key.dart';
 export 'src/postgres/postgres_values.dart';
 export 'src/pkce.dart';

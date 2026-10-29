@@ -1,30 +1,29 @@
-import 'package:meta/meta.dart';
-
 /// Typed reads of the fields of a decoded JSON object, throwing a
 /// [FormatException] for a field that does not hold the expected type.
-@internal
 extension JsonFields on Map<String, dynamic> {
   /// The value of [key], which must be a [T].
   T field<T>(String key) => switch (this[key]) {
     final T value => value,
     final value => throw FormatException(
-      'Expected $key to be $T, got ${value.runtimeType}',
+      'Expected "$key" to be $T, got ${value.runtimeType}',
     ),
   };
 
   /// The elements of the list at [key], each of which must be a [T], or
   /// `null` when [key] holds `null`.
-  List<T>? listOf<T>(String key) {
-    final list = field<List<dynamic>?>(key);
-    if (list == null) return null;
-    return [
+  List<T>? listOf<T>(String key) => switch (this[key]) {
+    null => null,
+    final List<dynamic> list => [
       for (final element in list)
         element is T
             ? element
             : throw FormatException(
-                'Expected the elements of $key to be $T, got '
+                'Expected the elements of "$key" to be $T, got '
                 '${element.runtimeType}',
               ),
-    ];
-  }
+    ],
+    final value => throw FormatException(
+      'Expected "$key" to be List<$T>, got ${value.runtimeType}',
+    ),
+  };
 }
