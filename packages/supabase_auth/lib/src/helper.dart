@@ -24,11 +24,8 @@ DecodedJwt decodeJwt(String token) {
   final rawSignature = parts[2];
 
   try {
-    final headerJson = Base64Url.decodeToString(rawHeader);
-    final header = JwtHeader.fromJson(json.decode(headerJson));
-
-    final payloadJson = Base64Url.decodeToString(rawPayload);
-    final payload = JwtPayload.fromJson(json.decode(payloadJson));
+    final header = JwtHeader.fromJson(_decodeJwtPart(rawHeader, 'header'));
+    final payload = JwtPayload.fromJson(_decodeJwtPart(rawPayload, 'payload'));
 
     final signature = Base64Url.decodeToBytes(rawSignature);
 
@@ -42,9 +39,18 @@ DecodedJwt decodeJwt(String token) {
         signature: rawSignature,
       ),
     );
-  } catch (error) {
+  } on FormatException catch (error) {
     throw AuthInvalidJwtException('Failed to decode JWT: $error');
   }
+}
+
+Map<String, dynamic> _decodeJwtPart(String raw, String name) {
+  return switch (json.decode(Base64Url.decodeToString(raw))) {
+    final Map<String, dynamic> part => part,
+    final part => throw FormatException(
+      'Expected the JWT $name to be a JSON object, got ${part.runtimeType}',
+    ),
+  };
 }
 
 /// Decodes only the payload of a JWT without validating the header or
@@ -61,9 +67,8 @@ JwtPayload decodeJwtPayload(String token) {
   }
 
   try {
-    final payloadJson = Base64Url.decodeToString(parts[1]);
-    return JwtPayload.fromJson(json.decode(payloadJson));
-  } catch (error) {
+    return JwtPayload.fromJson(_decodeJwtPart(parts[1], 'payload'));
+  } on FormatException catch (error) {
     throw AuthInvalidJwtException('Failed to decode JWT: $error');
   }
 }

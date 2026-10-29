@@ -47,18 +47,18 @@ class OIDCDiscoveryDocument {
 
   factory OIDCDiscoveryDocument.fromJson(Map<String, dynamic> json) {
     return OIDCDiscoveryDocument(
-      issuer: json['issuer'] as String,
-      authorizationEndpoint: json['authorization_endpoint'] as String,
-      tokenEndpoint: json['token_endpoint'] as String,
-      jwksUri: json['jwks_uri'] as String,
-      userInfoEndpoint: json['userinfo_endpoint'] as String?,
-      revocationEndpoint: json['revocation_endpoint'] as String?,
-      supportedScopes: (json['scopes_supported'] as List?)?.cast(),
-      supportedResponseTypes: (json['response_types_supported'] as List?)
-          ?.cast(),
-      supportedSubjectTypes: (json['subject_types_supported'] as List?)?.cast(),
-      supportedIdTokenSigningAlgorithms:
-          (json['id_token_signing_alg_values_supported'] as List?)?.cast(),
+      issuer: json.field('issuer'),
+      authorizationEndpoint: json.field('authorization_endpoint'),
+      tokenEndpoint: json.field('token_endpoint'),
+      jwksUri: json.field('jwks_uri'),
+      userInfoEndpoint: json.field('userinfo_endpoint'),
+      revocationEndpoint: json.field('revocation_endpoint'),
+      supportedScopes: json.listOf('scopes_supported'),
+      supportedResponseTypes: json.listOf('response_types_supported'),
+      supportedSubjectTypes: json.listOf('subject_types_supported'),
+      supportedIdTokenSigningAlgorithms: json.listOf(
+        'id_token_signing_alg_values_supported',
+      ),
     );
   }
 
@@ -122,35 +122,35 @@ class CustomOAuthProvider {
   });
 
   factory CustomOAuthProvider.fromJson(Map<String, dynamic> json) {
-    final discoveryDocument = json['discovery_document'];
+    final discoveryDocument = json.field<Map<String, dynamic>?>(
+      'discovery_document',
+    );
     return CustomOAuthProvider(
-      id: json['id'] as String,
-      providerType: CustomProviderType.fromValue(
-        json['provider_type'] as String,
-      ),
-      identifier: json['identifier'] as String,
-      name: json['name'] as String,
-      clientId: json['client_id'] as String,
-      acceptableClientIds: (json['acceptable_client_ids'] as List?)?.cast(),
-      scopes: (json['scopes'] as List?)?.cast(),
-      customClaimsAllowlist: (json['custom_claims_allowlist'] as List?)?.cast(),
-      pkceEnabled: json['pkce_enabled'] as bool?,
-      attributeMapping: json['attribute_mapping'] as Map<String, dynamic>?,
-      authorizationParameters: (json['authorization_params'] as Map?)?.cast(),
-      enabled: json['enabled'] as bool?,
-      emailOptional: json['email_optional'] as bool?,
-      issuer: json['issuer'] as String?,
-      discoveryUrl: json['discovery_url'] as String?,
-      skipNonceCheck: json['skip_nonce_check'] as bool?,
-      authorizationUrl: json['authorization_url'] as String?,
-      tokenUrl: json['token_url'] as String?,
-      userInfoUrl: json['userinfo_url'] as String?,
-      jwksUri: json['jwks_uri'] as String?,
+      id: json.field('id'),
+      providerType: CustomProviderType.fromValue(json.field('provider_type')),
+      identifier: json.field('identifier'),
+      name: json.field('name'),
+      clientId: json.field('client_id'),
+      acceptableClientIds: json.listOf('acceptable_client_ids'),
+      scopes: json.listOf('scopes'),
+      customClaimsAllowlist: json.listOf('custom_claims_allowlist'),
+      pkceEnabled: json.field('pkce_enabled'),
+      attributeMapping: json.field('attribute_mapping'),
+      authorizationParameters: json
+          .field<Map<dynamic, dynamic>?>('authorization_params')
+          ?.cast(),
+      enabled: json.field('enabled'),
+      emailOptional: json.field('email_optional'),
+      issuer: json.field('issuer'),
+      discoveryUrl: json.field('discovery_url'),
+      skipNonceCheck: json.field('skip_nonce_check'),
+      authorizationUrl: json.field('authorization_url'),
+      tokenUrl: json.field('token_url'),
+      userInfoUrl: json.field('userinfo_url'),
+      jwksUri: json.field('jwks_uri'),
       discoveryDocument: discoveryDocument == null
           ? null
-          : OIDCDiscoveryDocument.fromJson(
-              discoveryDocument as Map<String, dynamic>,
-            ),
+          : OIDCDiscoveryDocument.fromJson(discoveryDocument),
       createdAt: parseIso8601(json, 'created_at'),
       updatedAt: parseIso8601(json, 'updated_at'),
     );

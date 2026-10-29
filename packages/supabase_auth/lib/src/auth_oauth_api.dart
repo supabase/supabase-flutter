@@ -14,10 +14,10 @@ class OAuthAuthorizedClient {
 
   factory OAuthAuthorizedClient.fromJson(Map<String, dynamic> json) {
     return OAuthAuthorizedClient(
-      clientId: json['id'] as String,
-      clientName: json['name'] as String?,
-      clientUri: json['uri'] as String?,
-      logoUri: json['logo_uri'] as String?,
+      clientId: json.field('id'),
+      clientName: json.field('name'),
+      clientUri: json.field('uri'),
+      logoUri: json.field('logo_uri'),
     );
   }
 
@@ -44,15 +44,10 @@ class OAuthAuthorizingUser {
   const OAuthAuthorizingUser({required this.id, this.email});
 
   factory OAuthAuthorizingUser.fromJson(Map<String, dynamic> json) {
-    final id = json['id'];
-    final email = json['email'];
-    if (id is! String || email is! String?) {
-      throw FormatException(
-        'Expected the user id to be a string and the email to be a string or '
-        'null, got ${id.runtimeType} and ${email.runtimeType}',
-      );
-    }
-    return OAuthAuthorizingUser(id: id, email: email);
+    return OAuthAuthorizingUser(
+      id: json.field('id'),
+      email: json.field('email'),
+    );
   }
 
   /// Unique identifier of the user.
@@ -74,8 +69,8 @@ class OAuthGrant {
 
   factory OAuthGrant.fromJson(Map<String, dynamic> json) {
     return OAuthGrant(
-      client: OAuthAuthorizedClient.fromJson(json['client']),
-      scopes: (json['scopes'] as List?)?.cast() ?? const [],
+      client: OAuthAuthorizedClient.fromJson(json.field('client')),
+      scopes: json.listOf('scopes') ?? const [],
       grantedAt: parseIso8601(json, 'granted_at'),
     );
   }
@@ -132,20 +127,12 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
   factory OAuthAuthorizationDetailsResponse.fromJson(
     Map<String, dynamic> json,
   ) {
-    final user = json['user'];
-    if (user is! Map<String, dynamic>) {
-      throw FormatException(
-        'Expected the authorization details to contain a user object, got '
-        '${user.runtimeType}',
-      );
-    }
-
     return OAuthAuthorizationDetailsResponse(
-      authorizationId: json['authorization_id'] as String,
-      client: OAuthAuthorizedClient.fromJson(json['client']),
-      user: OAuthAuthorizingUser.fromJson(user),
-      scope: json['scope'] as String?,
-      redirectUri: json['redirect_uri'] as String,
+      authorizationId: json.field('authorization_id'),
+      client: OAuthAuthorizedClient.fromJson(json.field('client')),
+      user: OAuthAuthorizingUser.fromJson(json.field('user')),
+      scope: json.field('scope'),
+      redirectUri: json.field('redirect_uri'),
     );
   }
 
@@ -179,7 +166,7 @@ class OAuthAuthorizationRedirectResponse extends OAuthAuthorizationResponse {
     Map<String, dynamic> json,
   ) {
     return OAuthAuthorizationRedirectResponse(
-      redirectUrl: json['redirect_url'] as String,
+      redirectUrl: json.field('redirect_url'),
     );
   }
 
@@ -196,7 +183,7 @@ class OAuthConsentResponse {
 
   factory OAuthConsentResponse.fromJson(Map<String, dynamic> json) {
     return OAuthConsentResponse(
-      redirectUrl: json['redirect_url'] as String?,
+      redirectUrl: json.field('redirect_url'),
     );
   }
 
@@ -270,7 +257,7 @@ class AuthOAuthApi {
   ) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/oauth/authorizations/$authorizationId',
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -293,7 +280,7 @@ class AuthOAuthApi {
   ) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -319,7 +306,7 @@ class AuthOAuthApi {
   ) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -349,7 +336,10 @@ class AuthOAuthApi {
       ),
     );
 
-    return (data as List).map((grant) => OAuthGrant.fromJson(grant)).toList();
+    return jsonObjectList(
+      data,
+      'the grants',
+    ).map(OAuthGrant.fromJson).toList();
   }
 
   /// Revokes the authenticated user's OAuth grant for the client identified by

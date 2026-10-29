@@ -66,7 +66,7 @@ class AuthPasskeyApi {
   }) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/passkeys/registration/options',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -120,7 +120,7 @@ class AuthPasskeyApi {
   }) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/passkeys/registration/verify',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -145,7 +145,7 @@ class AuthPasskeyApi {
   Future<PasskeyAuthenticationOptionsResponse> startAuthentication({
     String? captchaToken,
   }) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/passkeys/authentication/options',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -204,13 +204,7 @@ class AuthPasskeyApi {
       ),
     );
 
-    if (data is! List) {
-      throw FormatException(
-        'Expected a list of passkeys, got ${data.runtimeType}',
-        data.toString(),
-      );
-    }
-    return data.map((e) => Passkey.fromJson(Map.from(e as Map))).toList();
+    return jsonObjectList(data, 'the passkeys').map(Passkey.fromJson).toList();
   }
 
   /// Updates the friendly name of a passkey.
@@ -220,7 +214,7 @@ class AuthPasskeyApi {
   }) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/passkeys/$passkeyId',
       HttpMethod.patch,
       options: AuthRequestOptions(

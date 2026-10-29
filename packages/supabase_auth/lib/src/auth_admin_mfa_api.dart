@@ -32,7 +32,10 @@ class AuthAdminMFAApi {
     );
 
     return AuthMFAAdminListFactorsResponse(
-      factors: (data as List).map((e) => Factor.fromJson(e)).toList(),
+      factors: jsonObjectList(
+        data,
+        'the factors',
+      ).map(Factor.fromJson).toList(),
     );
   }
 
@@ -51,7 +54,7 @@ class AuthAdminMFAApi {
     validateUuid(userId);
     validateUuid(factorId);
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/users/$userId/factors/$factorId',
       HttpMethod.put,
       options: AuthRequestOptions(
@@ -75,7 +78,7 @@ class AuthAdminMFAApi {
     validateUuid(userId);
     validateUuid(factorId);
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/users/$userId/factors/$factorId',
       HttpMethod.delete,
       options: AuthRequestOptions(

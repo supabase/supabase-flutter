@@ -37,13 +37,7 @@ class AuthAdminPasskeyApi {
       ),
     );
 
-    if (data is! List) {
-      throw FormatException(
-        'Expected a list of passkeys, got ${data.runtimeType}',
-        data.toString(),
-      );
-    }
-    return data.map((e) => Passkey.fromJson(Map.from(e as Map))).toList();
+    return jsonObjectList(data, 'the passkeys').map(Passkey.fromJson).toList();
   }
 
   /// Deletes the passkey with [passkeyId] from the user with [userId].

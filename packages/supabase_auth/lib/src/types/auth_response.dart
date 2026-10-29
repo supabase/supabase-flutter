@@ -1,4 +1,5 @@
 import 'package:supabase_auth/supabase_auth.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// Response of `AuthClient.signUp` and `AuthClient.verifyOTP`, the two calls
 /// that can complete without issuing a session.
@@ -165,12 +166,12 @@ class GenerateLinkResponse {
 /// [GenerateLinkResponse].
 class GenerateLinkProperties {
   GenerateLinkProperties.fromJson(Map<String, dynamic> json)
-    : actionLink = json['action_link'] ?? '',
-      emailOtp = json['email_otp'] ?? '',
-      hashedToken = json['hashed_token'] ?? '',
-      redirectTo = json['redirect_to'] ?? '',
+    : actionLink = json.field('action_link') ?? '',
+      emailOtp = json.field('email_otp') ?? '',
+      hashedToken = json.field('hashed_token') ?? '',
+      redirectTo = json.field('redirect_to') ?? '',
       verificationType = GenerateLinkType.fromValue(
-        json['verification_type'],
+        json.field('verification_type'),
       );
 
   /// The email link to send to the user. The action_link follows the following

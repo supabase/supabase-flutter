@@ -23,7 +23,7 @@ class AuthMFAApi {
   Future<AuthMFAUnenrollResponse> unenroll(String factorId) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/factors/$factorId',
       HttpMethod.delete,
       options: AuthRequestOptions(
@@ -84,7 +84,7 @@ class AuthMFAApi {
       );
     }
 
-    final data = await _fetch.request(
+    final json = await _fetch.requestObject(
       '${_client._url}/factors',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -94,13 +94,14 @@ class AuthMFAApi {
       ),
     );
 
-    if (factorType == FactorType.totp && data['totp'] != null) {
-      data['totp']['qr_code'] =
-          'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    final totp = factorType == FactorType.totp
+        ? json.field<Map<String, dynamic>?>('totp')
+        : null;
+    if (totp != null) {
+      totp['qr_code'] = 'data:image/svg+xml;utf-8,${totp['qr_code']}';
     }
 
-    final response = AuthMFAEnrollResponse.fromJson(data);
-    return response;
+    return AuthMFAEnrollResponse.fromJson(json);
   }
 
   /// Verifies a code against a [challengeId].
@@ -149,7 +150,7 @@ class AuthMFAApi {
   }) async {
     final accessToken = await _client._userAccessToken();
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/factors/$factorId/challenge',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -258,8 +259,8 @@ class AuthMFAApi {
       nextLevel = AuthenticatorAssuranceLevel.aal2;
     }
 
-    final amr = (payload['amr'] as List? ?? [])
-        .map((e) => AuthenticationMethodReferenceEntry.fromJson(Map.from(e)))
+    final amr = (payload.listOf<Map<String, dynamic>>('amr') ?? [])
+        .map(AuthenticationMethodReferenceEntry.fromJson)
         .toList();
     return AuthMFAGetAuthenticatorAssuranceLevelResponse(
       currentLevel: currentLevel,

@@ -33,13 +33,13 @@ class OAuthClientListResponse {
 
   factory OAuthClientListResponse.fromJson(Map<String, dynamic> json) {
     return OAuthClientListResponse(
-      clients: (json['clients'] as List? ?? const [])
-          .map((e) => OAuthClient.fromJson(e as Map<String, dynamic>))
+      clients: (json.listOf<Map<String, dynamic>>('clients') ?? const [])
+          .map(OAuthClient.fromJson)
           .toList(),
-      audience: json['aud'] as String?,
-      nextPage: (json['nextPage'] as num?)?.toInt(),
-      lastPage: (json['lastPage'] as num?)?.toInt(),
-      total: (json['total'] as num?)?.toInt() ?? 0,
+      audience: json.field('aud'),
+      nextPage: json.field<num?>('nextPage')?.toInt(),
+      lastPage: json.field<num?>('lastPage')?.toInt(),
+      total: json.field<num?>('total')?.toInt() ?? 0,
     );
   }
   final List<OAuthClient> clients;
@@ -72,7 +72,7 @@ class AuthAdminOAuthApi {
     int? page,
     int? perPage,
   }) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/oauth/clients',
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -95,7 +95,7 @@ class AuthAdminOAuthApi {
   Future<OAuthClientResponse> createClient(
     CreateOAuthClientOptions options,
   ) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/oauth/clients',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -115,7 +115,7 @@ class AuthAdminOAuthApi {
   Future<OAuthClientResponse> getClient(String clientId) async {
     validateUuid(clientId);
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/oauth/clients/$clientId',
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -137,7 +137,7 @@ class AuthAdminOAuthApi {
   ) async {
     validateUuid(clientId);
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/oauth/clients/$clientId',
       HttpMethod.put,
       options: AuthRequestOptions(
@@ -157,7 +157,7 @@ class AuthAdminOAuthApi {
   Future<OAuthClientResponse> deleteClient(String clientId) async {
     validateUuid(clientId);
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/oauth/clients/$clientId',
       HttpMethod.delete,
       options: AuthRequestOptions(
@@ -176,7 +176,7 @@ class AuthAdminOAuthApi {
   Future<OAuthClientResponse> regenerateClientSecret(String clientId) async {
     validateUuid(clientId);
 
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/oauth/clients/$clientId/regenerate_secret',
       HttpMethod.post,
       options: AuthRequestOptions(

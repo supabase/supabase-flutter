@@ -552,9 +552,9 @@ class AuthClient {
     if (email != null) {
       final pkceFlow = await _startPKCEFlow();
 
-      response = await _sendPKCEFlowRequest<dynamic>(
+      response = await _sendPKCEFlowRequest(
         pkceFlow?.flowId,
-        () => _fetch.request(
+        () => _fetch.requestObject(
           '$_url/signup',
           HttpMethod.post,
           options: AuthRequestOptions(
@@ -583,13 +583,11 @@ class AuthClient {
         'channel': channel.name,
       };
       final fetchOptions = AuthRequestOptions(headers: _headers, body: body);
-      response =
-          await _fetch.request(
-                '$_url/signup',
-                HttpMethod.post,
-                options: fetchOptions,
-              )
-              as Map<String, dynamic>;
+      response = await _fetch.requestObject(
+        '$_url/signup',
+        HttpMethod.post,
+        options: fetchOptions,
+      );
     } else {
       throw AuthException(
         'You must provide either an email or phone number and a password',
@@ -1006,7 +1004,9 @@ class AuthClient {
         options: fetchOptions,
       );
       return SignInWithOtpResponse(
-        messageId: response is Map ? response['message_id'] as String? : null,
+        messageId: response is Map<String, dynamic>
+            ? response.field('message_id')
+            : null,
       );
     }
     throw AuthException(
@@ -1071,7 +1071,7 @@ class AuthClient {
       'token_hash': ?tokenHash,
     };
     final fetchOptions = AuthRequestOptions(headers: _headers, body: body);
-    final response = await _fetch.request(
+    final response = await _fetch.requestObject(
       '$_url/verify',
       HttpMethod.post,
       options: fetchOptions,
@@ -1247,13 +1247,14 @@ class AuthClient {
 
     final response = await _sendPKCEFlowRequest(
       pkceFlow?.flowId,
-      () => _fetch.request('$_url/resend', HttpMethod.post, options: options),
+      () => _fetch.requestObject(
+        '$_url/resend',
+        HttpMethod.post,
+        options: options,
+      ),
     );
 
-    if ((response as Map).containsKey('message_id')) {
-      return ResendResponse(messageId: response['message_id']);
-    }
-    return ResendResponse();
+    return ResendResponse(messageId: response.field('message_id'));
   }
 
   /// Gets the current user details from current session or custom [jwt]
@@ -1262,7 +1263,7 @@ class AuthClient {
       headers: _headers,
       jwt: jwt ?? await _userAccessToken(),
     );
-    final response = await _fetch.request(
+    final response = await _fetch.requestObject(
       '$_url/user',
       HttpMethod.get,
       options: options,
@@ -1301,7 +1302,11 @@ class AuthClient {
     );
     final response = await _sendPKCEFlowRequest(
       pkceFlow?.flowId,
-      () => _fetch.request('$_url/user', HttpMethod.put, options: options),
+      () => _fetch.requestObject(
+        '$_url/user',
+        HttpMethod.put,
+        options: options,
+      ),
     );
     final userResponse = UserResponse.fromJson(response);
 
@@ -2593,13 +2598,13 @@ class AuthClient {
 
   Future<JWKSet> _fetchJwks() async {
     final fetchedAt = clock.now();
-    final jwksResponse = await _fetch.request(
+    final jwksResponse = await _fetch.requestObject(
       '$_url/.well-known/jwks.json',
       HttpMethod.get,
       options: AuthRequestOptions(headers: _headers),
     );
 
-    final jwks = JWKSet.fromJson(jwksResponse as Map<String, dynamic>);
+    final jwks = JWKSet.fromJson(jwksResponse);
     _jwks = jwks;
     _jwksCachedAt = fetchedAt;
     return jwks;

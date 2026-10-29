@@ -35,7 +35,7 @@ class AuthAdminCustomProvidersApi {
         'Cannot filter by an unknown type',
       );
     }
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/custom-providers',
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -46,10 +46,8 @@ class AuthAdminCustomProvidersApi {
       ),
     );
 
-    final providers = (data['providers'] as List?) ?? [];
-    return providers
-        .map((e) => CustomOAuthProvider.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final providers = data.listOf<Map<String, dynamic>>('providers') ?? [];
+    return providers.map(CustomOAuthProvider.fromJson).toList();
   }
 
   /// Creates a new custom OIDC/OAuth provider.
@@ -66,7 +64,7 @@ class AuthAdminCustomProvidersApi {
   Future<CustomOAuthProvider> createProvider(
     CreateCustomProviderOptions options,
   ) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/custom-providers',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -83,7 +81,7 @@ class AuthAdminCustomProvidersApi {
   /// This function should only be called on a server. Never expose your
   /// `service_role` key in the browser.
   Future<CustomOAuthProvider> getProvider(String identifier) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/custom-providers/$identifier',
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -107,7 +105,7 @@ class AuthAdminCustomProvidersApi {
     String identifier,
     UpdateCustomProviderOptions options,
   ) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '$_url/admin/custom-providers/$identifier',
       HttpMethod.put,
       options: AuthRequestOptions(

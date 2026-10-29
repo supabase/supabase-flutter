@@ -13,8 +13,8 @@ class Passkey {
 
   factory Passkey.fromJson(Map<String, dynamic> json) {
     return Passkey(
-      id: json['id'] as String,
-      friendlyName: json['friendly_name'] as String?,
+      id: json.field('id'),
+      friendlyName: json.field('friendly_name'),
       createdAt: parseIso8601(json, 'created_at'),
       lastUsedAt: tryParseIso8601(json, 'last_used_at'),
     );
@@ -78,8 +78,8 @@ class PasskeyRegistrationOptionsResponse {
     Map<String, dynamic> json,
   ) {
     return PasskeyRegistrationOptionsResponse(
-      challengeId: json['challenge_id'] as String,
-      options: Map.from(json['options'] as Map),
+      challengeId: json.field('challenge_id'),
+      options: Map.from(json.field('options')),
       expiresAt: parseUnixSeconds(json, 'expires_at'),
     );
   }
@@ -113,8 +113,8 @@ class PasskeyAuthenticationOptionsResponse {
     Map<String, dynamic> json,
   ) {
     return PasskeyAuthenticationOptionsResponse(
-      challengeId: json['challenge_id'] as String,
-      options: Map.from(json['options'] as Map),
+      challengeId: json.field('challenge_id'),
+      options: Map.from(json.field('options')),
       expiresAt: parseUnixSeconds(json, 'expires_at'),
     );
   }

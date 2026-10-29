@@ -44,7 +44,7 @@ class AuthMFARecoveryCodesApi {
   /// [AuthMFARecoveryCodesStatusResponse.remaining] reaches `0`, prompt the
   /// user to call [regenerate].
   Future<AuthMFARecoveryCodesStatusResponse> getStatus() async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/factors/recovery-codes',
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -75,7 +75,7 @@ class AuthMFARecoveryCodesApi {
   Future<AuthMFARecoveryCodesGenerateResponse> generate({
     String? friendlyName,
   }) async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/factors/recovery-codes',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -132,7 +132,7 @@ class AuthMFARecoveryCodesApi {
   /// [ErrorCode.mfaFactorNotFound] when the user has no recovery codes to
   /// regenerate; use [generate] instead.
   Future<AuthMFARecoveryCodesGenerateResponse> regenerate() async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/factors/recovery-codes/regenerate',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -149,7 +149,7 @@ class AuthMFARecoveryCodesApi {
   /// The session must be at `aal2`. Throws an [AuthApiException] with
   /// [ErrorCode.mfaFactorNotFound] when the user has no recovery codes.
   Future<AuthMFAUnenrollResponse> unenroll() async {
-    final data = await _fetch.request(
+    final data = await _fetch.requestObject(
       '${_client._url}/factors/recovery-codes',
       HttpMethod.delete,
       options: AuthRequestOptions(
