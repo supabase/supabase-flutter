@@ -174,87 +174,26 @@ void main() {
     });
   });
 
-  group("joinPush 'ok' setAccessToken error handling", () {
-    // Re-authorizing the channel on rejoin can throw `FormatException`
-    // ('InvalidJWTToken: ...') when the cached access token has expired
-    // by the time the server responds with 'ok'. The handler must swallow
-    // that specific message so it does not escape as an unhandled async
-    // error (which Sentry/Crashlytics surface as a fatal). See
-    // https://github.com/supabase/supabase-flutter/issues/1363.
-    test(
-      "swallows FormatException with 'InvalidJWTToken' from setAccessToken and "
-      "still emits 'subscribed' status",
-      () async {
-        final throwingSocket = _SetAuthThrowingSocket(
-          '/socket',
-          thrown: const FormatException(
-            'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
-          ),
-          headers: {'Authorization': 'Bearer expired-token'},
-        );
+  test(
+    'a join reply keeps an access token resolution in flight',
+    () async {
+      final pendingToken = Completer<String?>();
+      final localSocket = RealtimeClient(
+        'wss://example.com/socket',
+        parameters: {'apikey': 'api-key'},
+        customAccessToken: () => pendingToken.future,
+      );
+      final localChannel = localSocket.channel('topic');
+      localChannel.subscribe();
 
-        final localChannel = throwingSocket.channel('topic');
+      final resolution = localSocket.setAccessToken(null);
+      localChannel.joinPush.trigger('ok', {});
+      pendingToken.complete('fresh-token');
+      await resolution;
 
-        RealtimeSubscribeStatus? status;
-        localChannel.onStatusChange.listen((change) => status = change.status);
-        localChannel.subscribe();
-        localChannel.joinPush.trigger('ok', {});
-
-        // Drain the event queue so the async 'ok' handler completes and the
-        // status stream delivers.
-        await Future<void>.delayed(Duration.zero);
-
-        expect(throwingSocket.setAuthCalls, 1);
-        expect(
-          status,
-          RealtimeSubscribeStatus.subscribed,
-          reason:
-              "If the catch is missing the 'ok' callback aborts at "
-              "setAccessToken and the subscribed status is never emitted.",
-        );
-      },
-    );
-
-    test(
-      "non-InvalidJWTToken FormatExceptions from setAccessToken still abort "
-      "the rejoin handler",
-      () async {
-        final throwingSocket = _SetAuthThrowingSocket(
-          '/socket',
-          thrown: const FormatException('some other parsing failure'),
-          headers: {'Authorization': 'Bearer some-token'},
-        );
-
-        final localChannel = throwingSocket.channel('topic');
-
-        RealtimeSubscribeStatus? status;
-        // Use runZonedGuarded so the rethrown async error does not pollute
-        // the test runner zone.
-        await runZonedGuarded(
-          () async {
-            localChannel.onStatusChange.listen(
-              (change) => status = change.status,
-            );
-            localChannel.subscribe();
-            localChannel.joinPush.trigger('ok', {});
-            await Future<void>.delayed(Duration.zero);
-          },
-          (_, _) {
-            /* expected: rethrown FormatException */
-          },
-        );
-
-        expect(throwingSocket.setAuthCalls, 1);
-        expect(
-          status,
-          isNull,
-          reason:
-              'A non-InvalidJWTToken FormatException should propagate out of '
-              'the callback before subscribed is emitted.',
-        );
-      },
-    );
-  });
+      expect(localSocket.accessToken, 'fresh-token');
+    },
+  );
 
   group('join with postgres_changes filter matching', () {
     setUp(() {
@@ -1717,29 +1656,6 @@ void main() {
       );
     });
   });
-}
-
-class _SetAuthThrowingSocket extends RealtimeClient {
-  _SetAuthThrowingSocket(
-    super.endpoint, {
-    required this.thrown,
-    super.headers,
-  });
-
-  final FormatException thrown;
-  int setAuthCalls = 0;
-
-  @override
-  Future<void> connect() async {
-    // No-op: avoid opening a real WebSocket so async transport failures
-    // don't leak into the test runner zone.
-  }
-
-  @override
-  Future<void> setAccessToken(String? token) async {
-    setAuthCalls++;
-    throw thrown;
-  }
 }
 
 class _OptionsCapturingChannel extends RealtimeChannel {
