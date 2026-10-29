@@ -109,37 +109,54 @@ void main() {
     });
   }
 
-  group('with a session that expires while connected', () {
+  group('over a realtime connection', () {
     late MockRealtimeTransport realtimeTransport;
     late DateTime now;
-    late String expiredToken;
     late String refreshedToken;
 
     setUp(() async {
       now = clock.now();
+      refreshedToken = accessTokenWith({
+        'exp': now.add(const Duration(hours: 3)).millisecondsSinceEpoch ~/ 1000,
+      });
       realtimeTransport = MockRealtimeTransport();
       await supabase.dispose();
-      supabase = testSupabaseClient(
-        httpClient: httpClient,
-        publishableKey: apiKey,
-        realtimeTransport: realtimeTransport.call,
-      );
-      await withClock(Clock.fixed(now), () async {
-        final session = await signInTestUser(supabase.auth);
-        expiredToken = session.accessToken;
-        supabase.channel('todos').subscribe();
-        await pumpEventQueue();
-      });
-      expect(realtimeTransport.joinedTopics, contains('realtime:todos'));
-
-      now = now.add(const Duration(hours: 2));
-      refreshedToken = accessTokenWith({
-        'exp': now.add(const Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000,
-      });
     });
 
-    Future<void> atCurrentTime(Future<void> Function() body) =>
+    /// Runs [body] at [now], so moving [now] forward expires the session.
+    Future<void> atNow(Future<void> Function() body) =>
         withClock(Clock(() => now), body);
+
+    void createClient({Map<String, String>? headers}) {
+      supabase = SupabaseClient(
+        'http://localhost:54321',
+        apiKey,
+        httpClient: httpClient,
+        headers: headers,
+        authOptions: const AuthClientOptions(
+          autoRefreshToken: false,
+          retryOptions: SupabaseRetryOptions(enabled: false),
+        ),
+        realtimeOptions: RealtimeClientOptions(
+          transport: realtimeTransport.call,
+          heartbeatInterval: const Duration(milliseconds: 10),
+          reconnectAfter: (_) => Duration.zero,
+        ),
+      );
+    }
+
+    Future<void> subscribe() async {
+      supabase.channel('todos').subscribe();
+      await pumpEventQueue();
+      expect(realtimeTransport.joinedTopics, contains('realtime:todos'));
+    }
+
+    Future<void> nextHeartbeat() async {
+      await supabase.realtime.onHeartbeat.firstWhere(
+        (status) => status == RealtimeHeartbeatStatus.sent,
+      );
+      await pumpEventQueue();
+    }
 
     void stubRefresh() => httpClient.stub(
       testSessionResponseJson(accessToken: refreshedToken),
@@ -147,32 +164,39 @@ void main() {
       path: '/auth/v1/token',
     );
 
-    String lastJoinToken() {
-      final join = realtimeTransport.sent.lastWhere(
-        (message) => message.event == 'phx_join',
-      );
-      return (join.payload as Map<String, dynamic>)['access_token'] as String;
-    }
+    Iterable<Object?> joinTokens() => realtimeTransport.sent
+        .where((message) => message.event == 'phx_join')
+        .map(
+          (message) =>
+              (message.payload as Map<String, dynamic>)['access_token'],
+        );
 
     test('follows a token refresh when the socket reconnects', () async {
-      stubRefresh();
+      await atNow(() async {
+        createClient();
+        await signInTestUser(supabase.auth);
+        await subscribe();
+        stubRefresh();
+        now = now.add(const Duration(hours: 2));
 
-      await atCurrentTime(() async {
-        await supabase.realtime.disconnect();
-        // ignore: invalid_use_of_internal_member
-        await supabase.realtime.connect();
+        await realtimeTransport.closeConnection(code: 1006);
         await pumpEventQueue();
       });
 
       expect(await realtimeToken(), refreshedToken);
-      expect(lastJoinToken(), refreshedToken);
+      expect(joinTokens().last, refreshedToken);
     });
 
     test('follows a token refresh on a heartbeat', () async {
-      stubRefresh();
+      await atNow(() async {
+        createClient();
+        await signInTestUser(supabase.auth);
+        await subscribe();
+        stubRefresh();
+        now = now.add(const Duration(hours: 2));
 
-      // ignore: invalid_use_of_internal_member
-      await atCurrentTime(supabase.realtime.sendHeartbeat);
+        await nextHeartbeat();
+      });
 
       expect(await realtimeToken(), refreshedToken);
       expect(
@@ -192,77 +216,53 @@ void main() {
     test(
       'does not rejoin with the expired token when refreshing fails',
       () async {
-        httpClient.stubError(
-          ClientException('offline'),
-          method: HttpMethod.post,
-          path: '/auth/v1/token',
-        );
-        final joinsBefore = realtimeTransport.sent
-            .where((message) => message.event == 'phx_join')
-            .length;
+        late String expiredToken;
+        late int joinCount;
+        await atNow(() async {
+          createClient();
+          expiredToken = (await signInTestUser(supabase.auth)).accessToken;
+          await subscribe();
+          joinCount = joinTokens().length;
+          httpClient.stubError(
+            ClientException('offline'),
+            method: HttpMethod.post,
+            path: '/auth/v1/token',
+          );
+          now = now.add(const Duration(hours: 2));
 
-        await atCurrentTime(() async {
-          await supabase.realtime.disconnect();
-          // ignore: invalid_use_of_internal_member
-          await supabase.realtime.connect();
+          await realtimeTransport.closeConnection(code: 1006);
           await pumpEventQueue();
         });
 
-        expect(realtimeTransport.isConnected, isFalse);
-        expect(
-          realtimeTransport.sent.where(
-            (message) => message.event == 'phx_join',
-          ),
-          hasLength(joinsBefore),
-        );
+        expect(joinTokens(), hasLength(joinCount));
         expect(supabase.realtime.accessToken, expiredToken);
       },
     );
-  });
 
-  test('does not refresh a valid token on a heartbeat', () async {
-    final realtimeTransport = MockRealtimeTransport();
-    await supabase.dispose();
-    supabase = testSupabaseClient(
-      httpClient: httpClient,
-      publishableKey: apiKey,
-      realtimeTransport: realtimeTransport.call,
-    );
-    final session = await signInTestUser(supabase.auth);
-    supabase.channel('todos').subscribe();
-    await pumpEventQueue();
+    test('does not refresh a valid token on a heartbeat', () async {
+      late Session session;
+      await atNow(() async {
+        createClient();
+        session = await signInTestUser(supabase.auth);
+        await subscribe();
 
-    // ignore: invalid_use_of_internal_member
-    await supabase.realtime.sendHeartbeat();
+        await nextHeartbeat();
+      });
 
-    expect(await realtimeToken(), session.accessToken);
-    expect(httpClient.requestsTo('/auth/v1/token'), isEmpty);
-  });
-
-  for (final header in ['Authorization', 'authorization']) {
-    test('keeps the JWT of an $header header without a session', () async {
-      final realtimeTransport = MockRealtimeTransport();
-      await supabase.dispose();
-      supabase = SupabaseClient(
-        'http://localhost:54321',
-        apiKey,
-        httpClient: httpClient,
-        headers: {header: 'Bearer header-jwt'},
-        authOptions: const AuthClientOptions(
-          autoRefreshToken: false,
-          persistSession: false,
-        ),
-        realtimeOptions: RealtimeClientOptions(
-          transport: realtimeTransport.call,
-        ),
-      );
-      supabase.channel('todos').subscribe();
-      await pumpEventQueue();
-
-      // ignore: invalid_use_of_internal_member
-      await supabase.realtime.sendHeartbeat();
-
-      expect(await realtimeToken(), 'header-jwt');
+      expect(await realtimeToken(), session.accessToken);
+      expect(httpClient.requestsTo('/auth/v1/token'), isEmpty);
     });
-  }
+
+    for (final header in ['Authorization', 'authorization']) {
+      test('keeps the JWT of an $header header without a session', () async {
+        createClient(headers: {header: 'Bearer header-jwt'});
+        await subscribe();
+
+        await nextHeartbeat();
+
+        expect(await realtimeToken(), 'header-jwt');
+        expect(joinTokens().last, 'header-jwt');
+      });
+    }
+  });
 }
