@@ -504,7 +504,7 @@ class SupabaseClient {
           options.heartbeatInterval ??
           RealtimeConstants.defaultHeartbeatInterval,
       reconnectAfter: options.reconnectAfter,
-      customAccessToken: accessToken,
+      customAccessToken: _getAccessToken,
       transport: options.transport,
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
       encode: options.encode,

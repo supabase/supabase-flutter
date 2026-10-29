@@ -1,3 +1,6 @@
+// ignore_for_file: depend_on_referenced_packages
+
+import 'package:clock/clock.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -106,4 +109,94 @@ void main() {
       expect(events, contains(event));
     });
   }
+
+  test('refreshes expired access token on socket reconnect', () async {
+    var currentTime = DateTime(2026, 1, 1, 12);
+    await withClock(Clock(() => currentTime), () async {
+      final realtimeTransport = MockRealtimeTransport();
+      await supabase.dispose();
+      supabase = SupabaseClient(
+        'http://localhost:54321',
+        apiKey,
+        httpClient: httpClient,
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+        realtimeOptions: RealtimeClientOptions(
+          transport: realtimeTransport.call,
+          reconnectAfter: (_) => const Duration(milliseconds: 10),
+        ),
+      );
+
+      final initialSession = await signInTestUser(
+        supabase.auth,
+        expiresAt: currentTime.add(const Duration(hours: 1)),
+      );
+      expect(await realtimeToken(), initialSession.accessToken);
+
+      final channel = supabase.channel('todos');
+      channel.subscribe();
+      await pumpEventQueue();
+      expect(realtimeTransport.joinedTopics, contains('realtime:todos'));
+
+      // Move clock forward past expiry
+      currentTime = currentTime.add(const Duration(hours: 2));
+      final newExp =
+          currentTime.add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+          1000;
+      final refreshedToken = accessTokenWith({'exp': newExp});
+
+      httpClient.stub(
+        testSessionResponseJson(accessToken: refreshedToken),
+        method: HttpMethod.post,
+        path: '/auth/v1/token',
+      );
+
+      await realtimeTransport.closeConnection(code: 1006);
+      while (supabase.realtime.accessToken != refreshedToken) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+
+      expect(supabase.realtime.accessToken, refreshedToken);
+    });
+  });
+
+  test('refreshes expired access token on heartbeat', () async {
+    var currentTime = DateTime(2026, 1, 1, 12);
+    await withClock(Clock(() => currentTime), () async {
+      final realtimeTransport = MockRealtimeTransport();
+      await supabase.dispose();
+      supabase = testSupabaseClient(
+        httpClient: httpClient,
+        publishableKey: apiKey,
+        realtimeTransport: realtimeTransport.call,
+      );
+
+      final initialSession = await signInTestUser(
+        supabase.auth,
+        expiresAt: currentTime.add(const Duration(hours: 1)),
+      );
+      expect(await realtimeToken(), initialSession.accessToken);
+
+      final channel = supabase.channel('todos');
+      channel.subscribe();
+      await pumpEventQueue();
+
+      currentTime = currentTime.add(const Duration(hours: 2));
+      final newExp =
+          currentTime.add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+          1000;
+      final refreshedToken = accessTokenWith({'exp': newExp});
+
+      httpClient.stub(
+        testSessionResponseJson(accessToken: refreshedToken),
+        method: HttpMethod.post,
+        path: '/auth/v1/token',
+      );
+
+      // ignore: invalid_use_of_internal_member
+      await supabase.realtime.sendHeartbeat();
+      await pumpEventQueue();
+
+      expect(await realtimeToken(), refreshedToken);
+    });
+  });
 }
