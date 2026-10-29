@@ -1,3 +1,4 @@
+import 'package:iceberg/src/json_reads.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 /// Identifies a table by its namespace and name.
@@ -6,8 +7,8 @@ class TableIdentifier {
 
   factory TableIdentifier.fromJson(Map<String, dynamic> json) {
     return TableIdentifier(
-      namespace: List<String>.from(json['namespace'] as List),
-      name: json['name'] as String,
+      namespace: json.requiredListOf<String>('namespace'),
+      name: json.field<String>('name'),
     );
   }
 
@@ -87,18 +88,19 @@ sealed class IcebergType {
 
   Object toJson();
 
-  static IcebergType fromJson(Object json) {
-    if (json is String) {
-      return PrimitiveType(json);
-    }
-    final map = json as Map<String, dynamic>;
-    return switch (map['type']) {
+  static IcebergType fromJson(Object json) => switch (json) {
+    final String name => PrimitiveType(name),
+    final Map<String, dynamic> map => switch (map['type']) {
       'struct' => StructType.fromJson(map),
       'list' => ListType.fromJson(map),
       'map' => MapType.fromJson(map),
       _ => UnknownType(map),
-    };
-  }
+    },
+    _ => throw FormatException(
+      'Expected an Iceberg type to be a String or a JSON object, got '
+      '${json.runtimeType}',
+    ),
+  };
 }
 
 /// A nested type this version of the client does not recognize, kept as the
@@ -135,11 +137,11 @@ class TableField {
 
   factory TableField.fromJson(Map<String, dynamic> json) {
     return TableField(
-      id: json['id'] as int,
-      name: json['name'] as String,
-      type: IcebergType.fromJson(json['type'] as Object),
-      required: json['required'] as bool,
-      documentation: json['doc'] as String?,
+      id: json.field<int>('id'),
+      name: json.field<String>('name'),
+      type: IcebergType.fromJson(json.field<Object>('type')),
+      required: json.field<bool>('required'),
+      documentation: json.field<String?>('doc'),
       initialDefault: json['initial-default'],
       writeDefault: json['write-default'],
     );
@@ -169,8 +171,9 @@ class StructType extends IcebergType {
 
   factory StructType.fromJson(Map<String, dynamic> json) {
     return StructType(
-      fields: (json['fields'] as List)
-          .map((field) => TableField.fromJson(field as Map<String, dynamic>))
+      fields: json
+          .requiredListOf<Map<String, dynamic>>('fields')
+          .map(TableField.fromJson)
           .toList(),
     );
   }
@@ -193,9 +196,9 @@ class ListType extends IcebergType {
 
   factory ListType.fromJson(Map<String, dynamic> json) {
     return ListType(
-      elementId: json['element-id'] as int,
-      element: IcebergType.fromJson(json['element'] as Object),
-      elementRequired: json['element-required'] as bool,
+      elementId: json.field<int>('element-id'),
+      element: IcebergType.fromJson(json.field<Object>('element')),
+      elementRequired: json.field<bool>('element-required'),
     );
   }
   final int elementId;
@@ -223,11 +226,11 @@ class MapType extends IcebergType {
 
   factory MapType.fromJson(Map<String, dynamic> json) {
     return MapType(
-      keyId: json['key-id'] as int,
-      key: IcebergType.fromJson(json['key'] as Object),
-      valueId: json['value-id'] as int,
-      value: IcebergType.fromJson(json['value'] as Object),
-      valueRequired: json['value-required'] as bool,
+      keyId: json.field<int>('key-id'),
+      key: IcebergType.fromJson(json.field<Object>('key')),
+      valueId: json.field<int>('value-id'),
+      value: IcebergType.fromJson(json.field<Object>('value')),
+      valueRequired: json.field<bool>('value-required'),
     );
   }
   final int keyId;
@@ -257,13 +260,12 @@ class TableSchema {
 
   factory TableSchema.fromJson(Map<String, dynamic> json) {
     return TableSchema(
-      fields: (json['fields'] as List)
-          .map((field) => TableField.fromJson(field as Map<String, dynamic>))
+      fields: json
+          .requiredListOf<Map<String, dynamic>>('fields')
+          .map(TableField.fromJson)
           .toList(),
-      schemaId: json['schema-id'] as int?,
-      identifierFieldIds: json['identifier-field-ids'] == null
-          ? null
-          : List<int>.from(json['identifier-field-ids'] as List),
+      schemaId: json.field<int?>('schema-id'),
+      identifierFieldIds: json.listOf<int>('identifier-field-ids'),
     );
   }
   final List<TableField> fields;
@@ -289,10 +291,10 @@ class PartitionField {
 
   factory PartitionField.fromJson(Map<String, dynamic> json) {
     return PartitionField(
-      sourceId: json['source-id'] as int,
-      fieldId: json['field-id'] as int?,
-      name: json['name'] as String,
-      transform: json['transform'] as String,
+      sourceId: json.field<int>('source-id'),
+      fieldId: json.field<int?>('field-id'),
+      name: json.field<String>('name'),
+      transform: json.field<String>('transform'),
     );
   }
   final int sourceId;
@@ -314,11 +316,10 @@ class PartitionSpecification {
 
   factory PartitionSpecification.fromJson(Map<String, dynamic> json) {
     return PartitionSpecification(
-      specificationId: json['spec-id'] as int?,
-      fields: (json['fields'] as List)
-          .map(
-            (field) => PartitionField.fromJson(field as Map<String, dynamic>),
-          )
+      specificationId: json.field<int?>('spec-id'),
+      fields: json
+          .requiredListOf<Map<String, dynamic>>('fields')
+          .map(PartitionField.fromJson)
           .toList(),
     );
   }
@@ -342,10 +343,10 @@ class SortField {
 
   factory SortField.fromJson(Map<String, dynamic> json) {
     return SortField(
-      sourceId: json['source-id'] as int,
-      transform: json['transform'] as String,
+      sourceId: json.field<int>('source-id'),
+      transform: json.field<String>('transform'),
       direction: SortDirection.fromValue(json['direction']),
-      nullOrder: NullOrder.fromValue(json['null-order'] as String),
+      nullOrder: NullOrder.fromValue(json.field<String>('null-order')),
     );
   }
   final int sourceId;
@@ -387,9 +388,10 @@ class SortOrder {
 
   factory SortOrder.fromJson(Map<String, dynamic> json) {
     return SortOrder(
-      orderId: json['order-id'] as int,
-      fields: (json['fields'] as List)
-          .map((field) => SortField.fromJson(field as Map<String, dynamic>))
+      orderId: json.field<int>('order-id'),
+      fields: json
+          .requiredListOf<Map<String, dynamic>>('fields')
+          .map(SortField.fromJson)
           .toList(),
     );
   }
@@ -414,14 +416,14 @@ class SnapshotReference {
 
   factory SnapshotReference.fromJson(Map<String, dynamic> json) {
     return SnapshotReference(
-      type: SnapshotReferenceType.fromValue(json['type'] as String),
-      snapshotId: json['snapshot-id'] as int,
+      type: SnapshotReferenceType.fromValue(json.field<String>('type')),
+      snapshotId: json.field<int>('snapshot-id'),
       maxReferenceAge: tryParseMillisecondsDuration(json, 'max-ref-age-ms'),
       maxSnapshotAge: tryParseMillisecondsDuration(
         json,
         'max-snapshot-age-ms',
       ),
-      minSnapshotsToKeep: json['min-snapshots-to-keep'] as int?,
+      minSnapshotsToKeep: json.field<int?>('min-snapshots-to-keep'),
     );
   }
   final SnapshotReferenceType type;
@@ -462,13 +464,13 @@ class Snapshot {
 
   factory Snapshot.fromJson(Map<String, dynamic> json) {
     return Snapshot(
-      snapshotId: json['snapshot-id'] as int,
-      parentSnapshotId: json['parent-snapshot-id'] as int?,
-      sequenceNumber: json['sequence-number'] as int?,
+      snapshotId: json.field<int>('snapshot-id'),
+      parentSnapshotId: json.field<int?>('parent-snapshot-id'),
+      sequenceNumber: json.field<int?>('sequence-number'),
       timestamp: parseUnixMilliseconds(json, 'timestamp-ms'),
-      manifestList: json['manifest-list'] as String,
-      summary: Map.from(json['summary'] as Map? ?? const {}),
-      schemaId: json['schema-id'] as int?,
+      manifestList: json.field<String>('manifest-list'),
+      summary: json.mapOf<String>('summary') ?? {},
+      schemaId: json.field<int?>('schema-id'),
     );
   }
   final int snapshotId;
@@ -513,45 +515,36 @@ class TableMetadata {
   });
 
   factory TableMetadata.fromJson(Map<String, dynamic> json) {
-    final references = json['refs'] as Map<String, dynamic>?;
     return TableMetadata(
-      formatVersion: json['format-version'] as int,
-      tableUuid: json['table-uuid'] as String,
-      location: json['location'] as String?,
+      formatVersion: json.field<int>('format-version'),
+      tableUuid: json.field<String>('table-uuid'),
+      location: json.field<String?>('location'),
       lastUpdated: tryParseUnixMilliseconds(json, 'last-updated-ms'),
-      lastColumnId: json['last-column-id'] as int?,
-      schemas: (json['schemas'] as List? ?? [])
-          .map((schema) => TableSchema.fromJson(schema as Map<String, dynamic>))
+      lastColumnId: json.field<int?>('last-column-id'),
+      schemas: (json.listOf<Map<String, dynamic>>('schemas') ?? [])
+          .map(TableSchema.fromJson)
           .toList(),
-      currentSchemaId: json['current-schema-id'] as int,
-      partitionSpecifications: (json['partition-specs'] as List? ?? [])
-          .map(
-            (specification) => PartitionSpecification.fromJson(
-              specification as Map<String, dynamic>,
-            ),
-          )
+      currentSchemaId: json.field<int>('current-schema-id'),
+      partitionSpecifications:
+          (json.listOf<Map<String, dynamic>>('partition-specs') ?? [])
+              .map(PartitionSpecification.fromJson)
+              .toList(),
+      defaultSpecificationId: json.field<int?>('default-spec-id'),
+      sortOrders: (json.listOf<Map<String, dynamic>>('sort-orders') ?? [])
+          .map(SortOrder.fromJson)
           .toList(),
-      defaultSpecificationId: json['default-spec-id'] as int?,
-      sortOrders: (json['sort-orders'] as List? ?? [])
-          .map((order) => SortOrder.fromJson(order as Map<String, dynamic>))
+      defaultSortOrderId: json.field<int?>('default-sort-order-id'),
+      properties: json.mapOf<String>('properties') ?? {},
+      metadataLocation: json.field<String?>('metadata-location'),
+      currentSnapshotId: json.field<int?>('current-snapshot-id'),
+      snapshots: (json.listOf<Map<String, dynamic>>('snapshots') ?? [])
+          .map(Snapshot.fromJson)
           .toList(),
-      defaultSortOrderId: json['default-sort-order-id'] as int?,
-      properties: Map.from(
-        json['properties'] as Map? ?? const {},
-      ),
-      metadataLocation: json['metadata-location'] as String?,
-      currentSnapshotId: json['current-snapshot-id'] as int?,
-      snapshots: (json['snapshots'] as List? ?? [])
-          .map(
-            (snapshot) => Snapshot.fromJson(snapshot as Map<String, dynamic>),
-          )
-          .toList(),
-      references: references?.map(
-        (key, value) => MapEntry(
-          key,
-          SnapshotReference.fromJson(value as Map<String, dynamic>),
-        ),
-      ),
+      references: json
+          .mapOf<Map<String, dynamic>>('refs')
+          ?.map(
+            (key, value) => MapEntry(key, SnapshotReference.fromJson(value)),
+          ),
     );
   }
   final int formatVersion;
@@ -588,8 +581,8 @@ class StorageCredential {
 
   factory StorageCredential.fromJson(Map<String, dynamic> json) {
     return StorageCredential(
-      prefix: json['prefix'] as String,
-      config: Map.from(json['config'] as Map? ?? const {}),
+      prefix: json.field<String>('prefix'),
+      config: json.mapOf<String>('config') ?? {},
     );
   }
   final String prefix;
@@ -614,15 +607,13 @@ class LoadTableResult {
   }) {
     return LoadTableResult(
       metadata: TableMetadata.fromJson(
-        json['metadata'] as Map<String, dynamic>,
+        json.field<Map<String, dynamic>>('metadata'),
       ),
-      metadataLocation: json['metadata-location'] as String?,
-      config: json['config'] == null ? null : Map.from(json['config'] as Map),
-      storageCredentials: (json['storage-credentials'] as List?)
-          ?.map(
-            (credential) =>
-                StorageCredential.fromJson(credential as Map<String, dynamic>),
-          )
+      metadataLocation: json.field<String?>('metadata-location'),
+      config: json.mapOf<String>('config'),
+      storageCredentials: json
+          .listOf<Map<String, dynamic>>('storage-credentials')
+          ?.map(StorageCredential.fromJson)
           .toList(),
       etag: etag,
     );
@@ -692,11 +683,9 @@ class UpdateNamespacePropertiesResult {
 
   factory UpdateNamespacePropertiesResult.fromJson(Map<String, dynamic> json) {
     return UpdateNamespacePropertiesResult(
-      updated: List<String>.from(json['updated'] as List? ?? const []),
-      removed: List<String>.from(json['removed'] as List? ?? const []),
-      missing: json['missing'] == null
-          ? null
-          : List<String>.from(json['missing'] as List),
+      updated: json.listOf<String>('updated') ?? [],
+      removed: json.listOf<String>('removed') ?? [],
+      missing: json.listOf<String>('missing'),
     );
   }
   final List<String> updated;
