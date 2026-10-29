@@ -5,11 +5,6 @@ import 'package:supabase_common/supabase_common.dart';
 /// [FormatException] for a value that does not have the expected shape.
 @internal
 extension IcebergJsonReads on Map<String, dynamic> {
-  /// The elements of the list at [key], which must not be missing.
-  List<T> requiredListOf<T>(String key) =>
-      listOf(key) ??
-      (throw FormatException('Expected "$key" to be List<$T>, got Null'));
-
   /// The elements of the lists in the list at [key], each of which must be a
   /// [T], or `null` when [key] holds `null`.
   List<List<T>>? listsOf<T>(String key) => listOf<List<dynamic>>(key)
