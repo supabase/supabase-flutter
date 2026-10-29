@@ -944,6 +944,12 @@ class RealtimeClient {
     _applyAccessToken(tokenToSend);
   }
 
+  /// The token for a request that bypasses the socket, such as
+  /// `RealtimeChannel.httpSend`: a fresh one from [customAccessToken] when set,
+  /// otherwise the current [accessToken].
+  @internal
+  Future<String?> resolveAccessToken() => _provideAccessToken();
+
   /// Asks [customAccessToken] for a token, falling back to the API key when it
   /// has none, or returns the current token when there is no provider.
   Future<String?> _provideAccessToken() async {

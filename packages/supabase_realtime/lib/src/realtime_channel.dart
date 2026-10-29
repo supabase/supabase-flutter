@@ -810,9 +810,10 @@ class RealtimeChannel {
   /// Requires a Realtime server running v2.97.0 or newer.
   ///
   /// Returns a [Future] that resolves when the message is sent successfully.
-  /// It throws a [RealtimeApiException] when the endpoint rejects the message
-  /// and a [RealtimeTransportException] when the request gets no response
-  /// within [timeout].
+  /// It throws a [RealtimeApiException] when the endpoint rejects the message,
+  /// a [RealtimeTransportException] when the request gets no response within
+  /// [timeout], and an [AccessTokenException] when
+  /// [RealtimeClient.customAccessToken] throws.
   ///
   /// ```dart
   /// try {
@@ -831,8 +832,10 @@ class RealtimeChannel {
   }) async {
     final isBinary = _isBinaryBroadcastPayload(payload);
 
+    final accessToken = await resolveAccessToken(socket.resolveAccessToken);
     final headers = {
       ..._broadcastHeaders,
+      if (accessToken != null) HttpHeader.authorization: 'Bearer $accessToken',
       HttpHeader.contentType: isBinary
           ? 'application/octet-stream'
           : 'application/json',
