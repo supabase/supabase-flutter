@@ -66,7 +66,8 @@ class StorageBucketApi {
       options: fetchOptions,
     );
     return [
-      for (final value in response) Bucket.fromJson(_jsonObject(value)),
+      for (final bucket in jsonObjectList(response, 'the buckets'))
+        Bucket.fromJson(bucket),
     ];
   }
 
@@ -207,13 +208,6 @@ class StorageBucketApi {
     return rules.map(LifecycleRule.fromJson).toList();
   }
 
-  Map<String, dynamic> _jsonObject(Object? value) => switch (value) {
-    final Map<String, dynamic> object => object,
-    _ => throw FormatException(
-      'Expected a bucket to be a JSON object, got ${value.runtimeType}',
-    ),
-  };
-
   /// Purges the CDN cache for an entire bucket.
   ///
   /// Invalidates the CDN cache for every object in the bucket [id]. Maps to
@@ -297,8 +291,8 @@ class StorageBucketApi {
       options: fetchOptions,
     );
     return [
-      for (final value in response)
-        AnalyticsBucket.fromJson(_jsonObject(value)),
+      for (final bucket in jsonObjectList(response, 'the analytics buckets'))
+        AnalyticsBucket.fromJson(bucket),
     ];
   }
 
