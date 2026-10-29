@@ -184,5 +184,43 @@ void main() {
         );
       },
     );
+
+    test(
+      'keeps the original stack trace when the whenComplete action is async',
+      () async {
+        final client = _buildClient(_errorStatus(400));
+
+        StackTrace? capturedTrace;
+
+        Future<void> asyncWhenCompleteFunction() async {
+          try {
+            await client
+                .from('users')
+                .select()
+                .whenComplete(() => Future<void>.delayed(Duration.zero));
+          } catch (_, trace) {
+            capturedTrace = trace;
+            rethrow;
+          }
+        }
+
+        await expectLater(
+          asyncWhenCompleteFunction(),
+          throwsA(isA<PostgrestApiException>()),
+        );
+
+        expect(
+          capturedTrace?.toString(),
+          allOf(
+            contains('_parseResponse'),
+            contains('<async call site>'),
+            contains('asyncWhenCompleteFunction'),
+          ),
+          reason:
+              'Stack trace should keep where the error was thrown and the '
+              'caller frame after an async whenComplete action',
+        );
+      },
+    );
   });
 }

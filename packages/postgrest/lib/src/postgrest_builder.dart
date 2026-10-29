@@ -864,14 +864,14 @@ class PostgrestBuilder<T> implements Future<T> {
         if (f2 is Future) return f2.then((_) => v);
         return v;
       },
-      onError: (Object e) {
+      onError: (Object error, StackTrace stackTrace) {
         final f2 = action();
         if (f2 is Future) {
           return f2.then((_) {
-            throw e;
+            Error.throwWithStackTrace(error, stackTrace);
           });
         }
-        throw e;
+        Error.throwWithStackTrace(error, stackTrace);
       },
     );
   }
