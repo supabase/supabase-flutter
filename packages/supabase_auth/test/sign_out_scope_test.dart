@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
@@ -349,46 +348,24 @@ void main() {
       },
     );
 
-    test('throws on a 401 without an error code once the access token has '
-        'expired', () {
-      fakeAsync((async) {
-        unawaited(
-          signInTestUser(
-            client,
-            expiresAt: clock.now().add(const Duration(seconds: 20)),
-          ),
-        );
-        async.flushMicrotasks();
+    for (final statusCode in [401, 403, 404]) {
+      test('throws on a $statusCode without an error code', () async {
         final session = client.currentSession;
-        stubRateLimitedRefresh();
-        httpClient.stubHandler(
-          (_) => Future.delayed(
-            const Duration(seconds: 30),
-            () => Response(
-              jsonEncode({'code': 401, 'msg': 'invalid JWT'}),
-              401,
-            ),
-          ),
+        httpClient.stub(
+          {'code': statusCode, 'msg': 'invalid JWT'},
+          method: HttpMethod.post,
           path: '/auth/v1/logout',
-        );
-        Object? error;
-        unawaited(
-          client
-              .signOut(scope: SignOutScope.global)
-              .then(
-                (_) {},
-                onError: (Object signOutError) {
-                  error = signOutError;
-                },
-              ),
+          statusCode: statusCode,
         );
 
-        async.elapse(const Duration(seconds: 30));
+        await expectLater(
+          () => client.signOut(scope: SignOutScope.global),
+          throwsA(isA<AuthApiException>()),
+        );
 
-        expect(error, isA<AuthApiException>());
         expect(client.currentSession, session);
       });
-    });
+    }
 
     test('throws when the server says the token has expired', () async {
       final session = client.currentSession;

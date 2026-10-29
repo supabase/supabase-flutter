@@ -43,9 +43,6 @@ DecodedJwt decodeJwt(String token) {
       ),
     );
   } catch (error) {
-    if (error is AuthInvalidJwtException) {
-      rethrow;
-    }
     throw AuthInvalidJwtException('Failed to decode JWT: $error');
   }
 }
@@ -67,9 +64,6 @@ JwtPayload decodeJwtPayload(String token) {
     final payloadJson = Base64Url.decodeToString(parts[1]);
     return JwtPayload.fromJson(json.decode(payloadJson));
   } catch (error) {
-    if (error is AuthInvalidJwtException) {
-      rethrow;
-    }
     throw AuthInvalidJwtException('Failed to decode JWT: $error');
   }
 }
