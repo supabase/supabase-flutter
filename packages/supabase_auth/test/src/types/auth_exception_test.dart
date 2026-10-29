@@ -274,7 +274,7 @@ void main() {
 
       final List<SupabaseException> clientOnly = [
         const AuthException('base error'),
-        AuthPKCEGrantCodeExchangeError('pkce error'),
+        AuthPKCEGrantCodeExchangeException('pkce error'),
         AuthSessionMissingException(),
         AuthInvalidJwtException('invalid jwt'),
         AuthRetryableFetchException(),

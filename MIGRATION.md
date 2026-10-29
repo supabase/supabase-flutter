@@ -2290,6 +2290,7 @@ The renames:
 | ---------------------------------------------- | -------------------------------------------------------------------------- |
 | `AuthException.statusCode` (`String?`)         | `AuthApiException.statusCode` (`int`)                                      |
 | `AuthException.code`                           | `AuthException.errorCode`                                                  |
+| `AuthPKCEGrantCodeExchangeError`               | `AuthPKCEGrantCodeExchangeException`                                       |
 | `StorageException.statusCode` (`String?`)      | `StorageApiException.statusCode` (`int`)                                   |
 | `StorageException.error`                       | `errorCode`                                                                |
 | `StorageException.fromJson(json, '404')`       | `StorageApiException.fromJson(json, 404)`                                  |
