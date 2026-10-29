@@ -272,12 +272,14 @@ class PostgrestQueryBuilder {
   Map<String, dynamic> _jsonRow(Object? row) {
     Object? json = row;
     if (row is! Map) {
+      Object? toJson;
       try {
         // ignore: avoid_dynamic_calls
-        json = (row as dynamic).toJson();
+        toJson = (row as dynamic).toJson;
       } on NoSuchMethodError {
-        json = null;
+        toJson = null;
       }
+      json = toJson is Object? Function() ? toJson() : null;
     }
     if (json is Map<String, dynamic>) {
       return json;

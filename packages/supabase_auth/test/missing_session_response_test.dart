@@ -206,4 +206,82 @@ void main() {
     );
     expect(client.currentSession, isNull);
   });
+
+  group('a token response', () {
+    late MockSupabaseHttpClient httpClient;
+    late AuthClient client;
+
+    setUp(() {
+      httpClient = MockSupabaseHttpClient();
+      client = AuthClient(
+        url: 'http://localhost:9999',
+        httpClient: httpClient,
+        autoRefreshToken: false,
+        asyncStorage: TestAsyncStorage(),
+      );
+    });
+
+    tearDown(() {
+      client.dispose();
+    });
+
+    Future<Session> signIn() => client.signInWithPassword(
+      email: 'fake1@email.com',
+      password: 'password',
+    );
+
+    test(
+      'with a field of the wrong type throws a retryable exception',
+      () async {
+        httpClient.stub({
+          ...testSessionResponseJson(
+            accessToken: unsignedTestJwt({'sub': testUserId}),
+          ),
+          'token_type': 1,
+        });
+
+        await expectLater(
+          signIn(),
+          throwsA(
+            isA<AuthRetryableFetchException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<FormatException>(),
+            ),
+          ),
+        );
+        expect(client.currentSession, isNull);
+      },
+    );
+
+    test('that is not an object throws a retryable exception', () async {
+      httpClient.stub(['not', 'a', 'session']);
+
+      await expectLater(
+        signIn(),
+        throwsA(
+          isA<AuthRetryableFetchException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<FormatException>(),
+          ),
+        ),
+      );
+    });
+
+    test('keeps an error thrown while decoding the user', () async {
+      httpClient.stub(
+        testSessionResponseJson(
+          accessToken: unsignedTestJwt({'sub': testUserId}),
+          user: {
+            ...testUserJson(),
+            'factors': [1],
+          },
+        ),
+      );
+
+      await expectLater(signIn(), throwsA(isA<TypeError>()));
+      expect(client.currentSession, isNull);
+    });
+  });
 }

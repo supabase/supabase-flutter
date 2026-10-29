@@ -46,6 +46,29 @@ void main() {
     );
   });
 
+  test('names the field that does not have the expected shape', () {
+    expect(
+      () => parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        ],
+        'columns': [
+          {
+            ..._column(tableId: 1, table: 'books', name: 'title'),
+            'is_nullable': 'NO',
+          },
+        ],
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('"is_nullable" holds String, expected bool'),
+        ),
+      ),
+    );
+  });
+
   test('rejects relationships with mismatched column counts', () {
     expect(
       () => parseGeneratorMetadata({
