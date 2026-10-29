@@ -876,6 +876,9 @@ class StorageFileApi {
   /// fails the download with a [StorageException]. A range of a transformed
   /// image fails it with an [ArgumentError].
   /// {@endtemplate}
+  ///
+  /// [onProgress] is called as the body arrives with the bytes received so far
+  /// and the total. See [DownloadProgressCallback].
   Future<Uint8List> download(
     String path, {
     TransformOptions? transform,
@@ -884,6 +887,7 @@ class StorageFileApi {
     Future<void>? abortSignal,
     String? versionId,
     ByteRange? range,
+    DownloadProgressCallback? onProgress,
   }) {
     return Future.sync(
       () => _storageFetch.get(
@@ -898,6 +902,7 @@ class StorageFileApi {
         options: _downloadOptions(range),
         abortSignal: abortSignal,
         partialContent: range != null,
+        onProgress: onProgress,
       ),
     );
   }
@@ -975,6 +980,9 @@ class StorageFileApi {
   /// one.
   ///
   /// {@macro storage_download_range}
+  ///
+  /// [onProgress] is called as the body arrives with the bytes received so far
+  /// and the total. See [DownloadProgressCallback].
   Stream<Uint8List> downloadStream(
     String path, {
     TransformOptions? transform,
@@ -983,6 +991,7 @@ class StorageFileApi {
     Future<void>? abortSignal,
     String? versionId,
     ByteRange? range,
+    DownloadProgressCallback? onProgress,
   }) async* {
     final fetchUrl = _downloadUri(
       path,
@@ -998,6 +1007,7 @@ class StorageFileApi {
       options: _downloadOptions(range),
       abortSignal: abortSignal,
       partialContent: range != null,
+      onProgress: onProgress,
     );
   }
 
