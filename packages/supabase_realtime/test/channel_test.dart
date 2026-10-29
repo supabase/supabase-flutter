@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' show ClientException;
 import 'package:http/testing.dart';
+import 'package:supabase_common/supabase_common.dart' show AccessTokenException;
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/types.dart';
@@ -1619,6 +1620,72 @@ void main() {
               'session expired',
             ),
             isNot(isA<RealtimeTransportException>()),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'resolves the access token through the callback on every send',
+      () async {
+        var calls = 0;
+        socket = RealtimeClient(
+          'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+          headers: {'apikey': 'supabaseKey'},
+          parameters: {'apikey': 'supabaseKey'},
+          customAccessToken: () async => 'token-${++calls}',
+        );
+        channel = socket.channel('myTopic');
+
+        final requests = StreamIterator(mockServer);
+        addTearDown(requests.cancel);
+        for (final expected in ['token-1', 'token-2']) {
+          final requestFuture = requests.moveNext().then(
+            (_) => requests.current,
+          );
+          final sendFuture = channel.httpSend(event: 'test', payload: {'a': 1});
+          final request = await requestFuture;
+          expect(request.headers.value('authorization'), 'Bearer $expected');
+          request.response.statusCode = 202;
+          await request.response.close();
+          await sendFuture;
+        }
+        expect(socket.accessToken, 'supabaseKey');
+      },
+    );
+
+    test('falls back to the API key when the callback returns null', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        parameters: {'apikey': 'supabaseKey'},
+        customAccessToken: () async => null,
+      );
+      channel = socket.channel('myTopic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture = channel.httpSend(event: 'test', payload: {'a': 1});
+      final request = await requestFuture;
+      expect(request.headers.value('authorization'), 'Bearer supabaseKey');
+      request.response.statusCode = 202;
+      await request.response.close();
+      await sendFuture;
+    });
+
+    test('wraps a failing access token callback', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        parameters: {'apikey': 'supabaseKey'},
+        customAccessToken: () async => throw StateError('no session'),
+      );
+      channel = socket.channel('myTopic');
+
+      await expectLater(
+        channel.httpSend(event: 'test', payload: {'a': 1}),
+        throwsA(
+          isA<AccessTokenException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<StateError>(),
           ),
         ),
       );
