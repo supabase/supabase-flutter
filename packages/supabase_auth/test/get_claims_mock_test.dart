@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
@@ -66,6 +68,77 @@ void main() {
       () => client.getClaims('${parts[0]}.$forgedPayload.${parts[2]}'),
       throwsA(isA<AuthInvalidJwtException>()),
     );
+  });
+
+  group('a token whose header algorithm does not match the matched key', () {
+    String withHeaderAlgorithm(String token, String algorithm) {
+      final parts = token.split('.');
+      final header =
+          jsonDecode(
+                utf8.decode(base64Url.decode(base64Url.normalize(parts[0]))),
+              )
+              as Map<String, dynamic>;
+      final forged = base64Url
+          .encode(utf8.encode(jsonEncode({...header, 'alg': algorithm})))
+          .replaceAll('=', '');
+      return '$forged.${parts[1]}.${parts[2]}';
+    }
+
+    void stubKeyWithoutAlgorithm() {
+      mockClient.stub({
+        'keys': [
+          {..._publicJwk}..remove('alg'),
+        ],
+      }, path: '/.well-known/jwks.json');
+    }
+
+    test('is rejected when the key declares another algorithm', () async {
+      final token = withHeaderAlgorithm(
+        _signEs256({'sub': 'user-id'}),
+        'ES384',
+      );
+
+      await expectLater(
+        () => client.getClaims(token),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
+      expect(mockClient.requestsTo('/user'), isEmpty);
+    });
+
+    test('is rejected when the key type cannot produce it', () async {
+      stubKeyWithoutAlgorithm();
+      final token = withHeaderAlgorithm(
+        _signEs256({'sub': 'user-id'}),
+        'RS256',
+      );
+
+      await expectLater(
+        () => client.getClaims(token),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
+      expect(mockClient.requestsTo('/user'), isEmpty);
+    });
+
+    test('is rejected when the curve does not fit the algorithm', () async {
+      stubKeyWithoutAlgorithm();
+      final token = withHeaderAlgorithm(
+        _signEs256({'sub': 'user-id'}),
+        'ES384',
+      );
+
+      await expectLater(
+        () => client.getClaims(token),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
+    });
+
+    test('is accepted when only the key type and curve are declared', () async {
+      stubKeyWithoutAlgorithm();
+
+      final response = await client.getClaims(_signEs256({'sub': 'user-id'}));
+
+      expect(response.claims.subject, 'user-id');
+    });
   });
 
   test('getClaims() reuses the cached JWKS within its TTL', () async {

@@ -2675,6 +2675,13 @@ class AuthClient {
       );
     }
 
+    if (!_isAlgorithmCompatible(decoded.header.algorithm, signingKey)) {
+      throw AuthInvalidJwtException(
+        'Invalid JWT: the header algorithm ${decoded.header.algorithm} does '
+        'not match the signing key',
+      );
+    }
+
     try {
       JWT.verify(token, signingKey.publicKey);
       return GetClaimsResponse(
@@ -2686,4 +2693,34 @@ class AuthClient {
       throw AuthInvalidJwtException('Invalid JWT signature: $error');
     }
   }
+}
+
+/// Whether a token signed with [algorithm] may be verified with [key].
+///
+/// The algorithm of the key decides when it declares one, otherwise its key
+/// type and curve do.
+bool _isAlgorithmCompatible(String algorithm, JWK key) {
+  final keyAlgorithm = key.algorithm;
+  if (keyAlgorithm != null) {
+    return keyAlgorithm == algorithm;
+  }
+  return switch (key.keyType) {
+    'RSA' => const {
+      'RS256',
+      'RS384',
+      'RS512',
+      'PS256',
+      'PS384',
+      'PS512',
+    }.contains(algorithm),
+    'EC' => switch (key['crv']) {
+      'P-256' => algorithm == 'ES256',
+      'P-384' => algorithm == 'ES384',
+      'P-521' => algorithm == 'ES512',
+      'secp256k1' => algorithm == 'ES256K',
+      _ => false,
+    },
+    'OKP' => algorithm == 'EdDSA',
+    _ => false,
+  };
 }
