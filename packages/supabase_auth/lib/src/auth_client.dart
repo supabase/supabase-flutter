@@ -2190,10 +2190,15 @@ class AuthClient {
       return;
     }
     String? expired;
+    var discarded = false;
     try {
-      expired = await _readPersistedSession(storage);
+      (:expired, :discarded) = await _readPersistedSession(storage);
     } finally {
       _initialized.complete();
+    }
+    if (discarded) {
+      _signOutDiscardedSession();
+      return;
     }
     if (expired == null || !_autoRefreshToken) {
       return;
@@ -2209,15 +2214,39 @@ class AuthClient {
     );
   }
 
+  /// Emits [AuthChangeEvent.signedOut] with [SignOutReason.sessionMissing] for
+  /// a persisted value that held no session, after the initial session event.
+  ///
+  /// The event is sent in a later event loop turn, so that a listener
+  /// subscribing right after [initialized] completes still receives it.
+  void _signOutDiscardedSession() {
+    final versionAfterRead = _sessionVersion;
+    Timer.run(() {
+      // A sign-in or sign-out since then is newer than the discarded value.
+      if (_sessionVersion != versionAfterRead) {
+        return;
+      }
+      // No other tab can hold the discarded value as its session.
+      _emit(
+        const AuthSignedOut(reason: SignOutReason.sessionMissing),
+        broadcast: false,
+      );
+    });
+  }
+
   /// Makes the session persisted in [storage] the current one.
   ///
-  /// A value that does not hold a session is removed from the storage. A
-  /// sign-in or sign-out that happened while the storage was being read is
-  /// newer than what was read, so the current session is kept in that case.
+  /// A value that does not hold a session is removed from the storage and
+  /// reported as `discarded`. A sign-in or sign-out that happened while the
+  /// storage was being read is newer than what was read, so the current
+  /// session is kept in that case.
   ///
-  /// Returns the persisted value when the session it holds has expired, so
-  /// that the caller can refresh it.
-  Future<String?> _readPersistedSession(AuthAsyncStorage storage) async {
+  /// Returns the persisted value as `expired` when the session it holds has
+  /// expired, so that the caller can refresh it.
+  Future<({String? expired, bool discarded})> _readPersistedSession(
+    AuthAsyncStorage storage,
+  ) async {
+    const nothing = (expired: null, discarded: false);
     final versionBeforeRead = _sessionVersion;
     String? persisted;
     try {
@@ -2230,11 +2259,11 @@ class AuthClient {
       );
     }
     if (_isDisposed) {
-      return null;
+      return nothing;
     }
     if (_sessionVersion != versionBeforeRead) {
       authLogger.fine('Session changed during restore, keeping it');
-      return null;
+      return nothing;
     }
     Session? session;
     if (persisted != null) {
@@ -2249,11 +2278,14 @@ class AuthClient {
       }
       if (session == null) {
         _removeSession();
-      } else {
-        _currentSession = session;
+        return (expired: null, discarded: true);
       }
+      _currentSession = session;
     }
-    return session != null && session.isExpired ? persisted : null;
+    return (
+      expired: session != null && session.isExpired ? persisted : null,
+      discarded: false,
+    );
   }
 
   void _mayStartBroadcastChannel() {
