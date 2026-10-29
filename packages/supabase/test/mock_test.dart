@@ -333,7 +333,7 @@ void main() {
 
   setUp(() async {
     apiKey = 'supabaseKey';
-    mockServer = await HttpServer.bind('localhost', 0);
+    mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     supabase = SupabaseClient(
       'http://${mockServer.address.host}:${mockServer.port}',
       apiKey,
@@ -809,7 +809,10 @@ void main() {
 
     group('Stream Error Handling', () {
       test('should handle postgrest errors gracefully', () async {
-        final errorServer = await HttpServer.bind('localhost', 0);
+        final errorServer = await HttpServer.bind(
+          InternetAddress.loopbackIPv4,
+          0,
+        );
 
         // Setup server to return error for rest requests
         errorServer.listen((request) {

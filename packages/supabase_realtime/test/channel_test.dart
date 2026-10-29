@@ -848,7 +848,7 @@ void main() {
     late HttpServer mockServer;
 
     setUp(() async {
-      mockServer = await HttpServer.bind('localhost', 0);
+      mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         headers: {'apikey': 'supabaseKey'},
@@ -1302,7 +1302,7 @@ void main() {
     late HttpServer mockServer;
 
     setUp(() async {
-      mockServer = await HttpServer.bind('localhost', 0);
+      mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     });
 
     tearDown(() async {
