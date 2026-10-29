@@ -342,6 +342,11 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   PostgrestTypedBuilder<T> setHeader(String key, String value) =>
       _with(request._header(key, value));
 
+  /// Sends [token] as `Authorization: Bearer <token>`, instead of the token of
+  /// the client.
+  PostgrestTypedBuilder<T> accessToken(String token) =>
+      setHeader('Authorization', 'Bearer $token');
+
   /// A broadcast stream of the one result. The request is sent when
   /// [asStream] is called. The result is delivered to the first listener and
   /// to every other listener subscribed at that moment; a listener added

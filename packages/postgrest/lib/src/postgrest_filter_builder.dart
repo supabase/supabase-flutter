@@ -673,4 +673,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   @override
   PostgrestFilterBuilder<T> setHeader(String key, String value) =>
       PostgrestFilterBuilder(super.setHeader(key, value));
+
+  @override
+  PostgrestFilterBuilder<T> accessToken(String token) =>
+      PostgrestFilterBuilder(super.accessToken(token));
 }

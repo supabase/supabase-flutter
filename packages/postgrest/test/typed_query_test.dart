@@ -1487,15 +1487,18 @@ void main() {
       );
     });
 
-    test('insertAll and upsertAll without rows throw', () {
-      expect(
-        () => client.table(Books.table).insertAll([]),
-        throwsArgumentError,
-      );
-      expect(
-        () => client.table(Books.table).upsertAll([]),
-        throwsArgumentError,
-      );
+    test('insertAll and upsertAll without rows write nothing', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).insertAll([]);
+      expect(httpClient.requests.last.method, 'POST');
+      expect(httpClient.requests.last.body, '[]');
+      expect(requestParameters().containsKey('columns'), isFalse);
+
+      await client.table(Books.table).upsertAll([]);
+      expect(httpClient.requests.last.method, 'POST');
+      expect(httpClient.requests.last.body, '[]');
+      expect(requestParameters().containsKey('columns'), isFalse);
     });
 
     test('insert with a trailing select returns the typed row', () async {
@@ -1861,6 +1864,39 @@ void main() {
       expect(headers['X-Filter'], 'filter');
       expect(headers['X-Transform'], 'transform');
       expect(headers['X-Terminal'], 'terminal');
+    });
+
+    test('accessToken sends the raw token with the Bearer scheme', () async {
+      httpClient.stub(bookRows);
+
+      await client.table(Books.table).select().accessToken('jwt');
+      expect(httpClient.requests.last.headers['Authorization'], 'Bearer jwt');
+
+      await client
+          .table(Books.table)
+          .accessToken('query')
+          .insert(BookInsert(title: 'a'));
+      expect(
+        httpClient.requests.last.headers['Authorization'],
+        'Bearer query',
+      );
+
+      await client
+          .table(Books.table)
+          .select()
+          .accessToken('filter')
+          .where(Books.id.eq(1));
+      expect(
+        httpClient.requests.last.headers['Authorization'],
+        'Bearer filter',
+      );
+
+      httpClient.stub(null, headers: {'content-range': '*/3'});
+      await client.table(Books.table).count().accessToken('count');
+      expect(
+        httpClient.requests.last.headers['Authorization'],
+        'Bearer count',
+      );
     });
 
     test('setHeader keeps the filter builder, so where follows it', () async {

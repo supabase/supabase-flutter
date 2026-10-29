@@ -40,6 +40,10 @@ final class PostgrestTypedCountBuilder<Row> extends PostgrestTypedBuilder<int> {
   PostgrestTypedCountBuilder<Row> setHeader(String key, String value) =>
       _with(request._header(key, value));
 
+  @override
+  PostgrestTypedCountBuilder<Row> accessToken(String token) =>
+      setHeader('Authorization', 'Bearer $token');
+
   /// Only counts rows satisfying [filter].
   ///
   /// See [PostgrestTypedFilterBuilder.where] for composing filters. Repeated

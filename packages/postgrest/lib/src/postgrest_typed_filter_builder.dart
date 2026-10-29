@@ -41,6 +41,10 @@ class PostgrestTypedFilterBuilder<Row, T>
   PostgrestTypedFilterBuilder<Row, T> setHeader(String key, String value) =>
       _filtered(request._header(key, value));
 
+  @override
+  PostgrestTypedFilterBuilder<Row, T> accessToken(String token) =>
+      setHeader('Authorization', 'Bearer $token');
+
   /// Only rows satisfying [filter].
   ///
   /// Operators are methods on a column, composed with `&`, `|` and
