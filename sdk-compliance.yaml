@@ -1934,9 +1934,17 @@ features:
       - TransformOptions.width
   storage.file_buckets.download_as_stream:
     status: partially_implemented
-    note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream. There is no helper that collects the stream under a byte cap or one that writes it atomically to a file."
+    note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream. The byte-capped collect and atomic file write are extension methods on the stream."
     symbols:
       - StorageFileApi.downloadStream
+      - StorageByteStream.collectBytes
+      - StorageByteStream.writeToFile
+    supporting_symbols:
+      - StorageByteStream
+      - StorageDownloadTooLargeException
+      - StorageDownloadTooLargeException.StorageDownloadTooLargeException
+      - StorageDownloadTooLargeException.exceptionName
+      - StorageDownloadTooLargeException.maxBytes
   storage.file_buckets.list_files:
     status: implemented
     note: "Cursor-based pagination is exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name."

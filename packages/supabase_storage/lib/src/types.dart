@@ -978,6 +978,19 @@ class StorageTransportException extends StorageException
   String get exceptionName => 'StorageTransportException';
 }
 
+/// Thrown by `collectBytes` when the stream carries more than the byte cap the
+/// caller allowed.
+class StorageDownloadTooLargeException extends StorageException {
+  const StorageDownloadTooLargeException(this.maxBytes)
+    : super('Download exceeded the limit of $maxBytes bytes');
+
+  /// The byte cap that was exceeded.
+  final int maxBytes;
+
+  @override
+  String get exceptionName => 'StorageDownloadTooLargeException';
+}
+
 /// Thrown by a resumable upload that was cancelled with
 /// `ResumableUpload.cancel`.
 class ResumableUploadCancelledException extends StorageException {
