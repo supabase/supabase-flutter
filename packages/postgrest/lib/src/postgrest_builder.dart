@@ -817,7 +817,7 @@ class PostgrestBuilder<T> implements Future<T> {
       onValue,
       onError: (Object error, StackTrace stackTrace) async {
         final enrichedStack = enrichStack(stackTrace);
-        final FutureOr<U> result;
+        final Object? result;
         if (onError is Function(Object, StackTrace)) {
           result = onError(error, enrichedStack);
         } else if (onError is Function(Object)) {
@@ -838,15 +838,14 @@ class PostgrestBuilder<T> implements Future<T> {
                 "future's type",
           );
         }
-        try {
-          return await result;
-        } on TypeError {
+        if (result is! FutureOr<U>) {
           throw ArgumentError(
             "The error handler of Future.then must return a value of the "
                 "returned future's type",
             "onError",
           );
         }
+        return result;
       },
     );
   }

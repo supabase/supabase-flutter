@@ -269,7 +269,7 @@ void main() {
       );
     });
 
-    test('keeps an error thrown while decoding the user', () async {
+    test('with a malformed user throws a retryable exception', () async {
       httpClient.stub(
         testSessionResponseJson(
           accessToken: unsignedTestJwt({'sub': testUserId}),
@@ -280,7 +280,16 @@ void main() {
         ),
       );
 
-      await expectLater(signIn(), throwsA(isA<TypeError>()));
+      await expectLater(
+        signIn(),
+        throwsA(
+          isA<AuthRetryableFetchException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<FormatException>(),
+          ),
+        ),
+      );
       expect(client.currentSession, isNull);
     });
   });

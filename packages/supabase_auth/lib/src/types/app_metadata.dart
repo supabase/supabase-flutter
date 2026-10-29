@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:supabase_auth/src/json_fields.dart';
 
 /// Metadata the auth server or an admin controls; the signed-in user cannot
 /// modify it.
@@ -20,9 +21,9 @@ class AppMetadata {
       ..remove('provider')
       ..remove('providers');
     return AppMetadata(
-      provider: json['provider'] as String?,
+      provider: json.field('provider'),
       providers: List<String>.unmodifiable(
-        (json['providers'] as List<dynamic>?)?.cast<String>() ?? const [],
+        json.listOf<String>('providers') ?? const [],
       ),
       additionalProperties: Map.unmodifiable(additionalProperties),
     );

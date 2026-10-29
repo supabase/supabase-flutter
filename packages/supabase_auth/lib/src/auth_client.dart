@@ -2101,14 +2101,6 @@ class AuthClient {
         ),
       );
     }
-    if (body['access_token'] != null) {
-      if (_malformedSessionField(body) case final field?) {
-        throw _undecodableSession(
-          result.response,
-          FormatException('Unexpected value for "$field" in the session'),
-        );
-      }
-    }
     final Session? session;
     try {
       session = Session.fromJson(body);
@@ -2122,23 +2114,6 @@ class AuthClient {
       );
     }
     return session;
-  }
-
-  /// The first field of a session [json] that does not hold the type a
-  /// [Session] needs, or `null` when they all do.
-  String? _malformedSessionField(Map<String, dynamic> json) {
-    if (json['access_token'] is! String) return 'access_token';
-    if (json['token_type'] is! String) return 'token_type';
-    if (json['expires_in'] is! num?) return 'expires_in';
-    for (final field in const [
-      'refresh_token',
-      'provider_token',
-      'provider_refresh_token',
-    ]) {
-      if (json[field] is! String?) return field;
-    }
-    if (json['user'] case {'id': String()}) return null;
-    return 'user';
   }
 
   AuthRetryableFetchException _undecodableSession(
