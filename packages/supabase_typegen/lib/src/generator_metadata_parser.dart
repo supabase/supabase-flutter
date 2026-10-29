@@ -219,11 +219,14 @@ DatabaseDescription parseGeneratorMetadata(
 }) {
   try {
     return _parseGeneratorMetadata(document, schemaNames);
-  } on FormatException catch (error) {
+  } on FormatException catch (error, stackTrace) {
     if (error.message.startsWith(_notGeneratorMetadata)) rethrow;
-    throw FormatException(
-      '$_notGeneratorMetadata: a record does not have the expected shape '
-      '(${error.message}).',
+    Error.throwWithStackTrace(
+      FormatException(
+        '$_notGeneratorMetadata: a record does not have the expected shape '
+        '(${error.message}).',
+      ),
+      stackTrace,
     );
   }
 }
