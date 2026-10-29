@@ -827,13 +827,9 @@ class StorageFileApi {
       },
       options: options,
     );
-    return response.map<SignedUrlResult>((entry) {
-      if (entry is! Map<String, dynamic>) {
-        throw FormatException(
-          'Expected a signed URL entry to be a JSON object, got '
-          '${entry.runtimeType}',
-        );
-      }
+    return jsonObjectList(response, 'the signed URLs').map<SignedUrlResult>((
+      entry,
+    ) {
       final signedUrlPath = entry.field<String?>('signedURL');
       final path = entry.field<String?>('path') ?? '';
       if (signedUrlPath != null) {
