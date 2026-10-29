@@ -282,14 +282,12 @@ void main() {
             BookInsert(title: 'a'),
             onConflict: [Books.title],
             ignoreDuplicates: true,
-            defaultToNull: false,
           );
 
       final request = executor.onlyRequest;
       expect(request.operation, PostgrestTableOperation.upsert);
       expect(request.onConflict!.single.name, 'title');
       expect(request.ignoreDuplicates, isTrue);
-      expect(request.defaultToNull, isFalse);
     });
 
     test('count reads the count of the result', () async {

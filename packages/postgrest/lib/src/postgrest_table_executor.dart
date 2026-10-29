@@ -117,7 +117,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
         _rejectFilter(filter, request.operation);
         return _query(request).insert(
           request.payload!,
-          defaultToNull: request.defaultToNull,
+          defaultToNull: request.payload is! List,
         );
       case PostgrestTableOperation.upsert:
         _rejectFilter(filter, request.operation);
@@ -127,7 +127,7 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
               ?.map((column) => column.name)
               .join(','),
           ignoreDuplicates: request.ignoreDuplicates,
-          defaultToNull: request.defaultToNull,
+          defaultToNull: request.payload is! List,
         );
       case PostgrestTableOperation.rpc:
         return _applyFilter(_call(request), request);

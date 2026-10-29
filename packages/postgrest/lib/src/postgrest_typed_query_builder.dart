@@ -175,16 +175,9 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///     .single();
   /// ```
   ///
-  /// See [insertAll] to insert several rows in one request and
-  /// [PostgrestQueryBuilder.insert] for [defaultToNull].
-  PostgrestTypedTransformBuilder<Row, void> insert(
-    Insert row, {
-    bool defaultToNull = true,
-  }) => _insertion(
-    _request(PostgrestTableOperation.insert).copyWith(
-      payload: row as Object,
-      defaultToNull: defaultToNull,
-    ),
+  /// See [insertAll] to insert several rows in one request.
+  PostgrestTypedTransformBuilder<Row, void> insert(Insert row) => _insertion(
+    _request(PostgrestTableOperation.insert).copyWith(payload: row as Object),
   );
 
   /// Perform an INSERT of every row in [rows] into the table or view.
@@ -197,17 +190,12 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ```
   ///
   /// An empty [rows] writes nothing. A column left out of a row gets its
-  /// database default, even when other rows set it. Pass [defaultToNull] as
-  /// `true` to write `NULL` for it instead.
-  PostgrestTypedTransformBuilder<Row, void> insertAll(
-    List<Insert> rows, {
-    bool defaultToNull = false,
-  }) => _insertion(
-    _request(PostgrestTableOperation.insert).copyWith(
-      payload: rows,
-      defaultToNull: defaultToNull,
-    ),
-  );
+  /// database default, even when other rows set it. Use the generated
+  /// `set…ToNull` methods of [Insert] to write `NULL` instead.
+  PostgrestTypedTransformBuilder<Row, void> insertAll(List<Insert> rows) =>
+      _insertion(
+        _request(PostgrestTableOperation.insert).copyWith(payload: rows),
+      );
 
   /// Perform an UPSERT of a single [row] on the table or view.
   ///
@@ -225,18 +213,15 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ```
   ///
   /// See [upsertAll] to upsert several rows in one request and
-  /// [PostgrestQueryBuilder.upsert] for [ignoreDuplicates] and
-  /// [defaultToNull].
+  /// [PostgrestQueryBuilder.upsert] for [ignoreDuplicates].
   PostgrestTypedTransformBuilder<Row, void> upsert(
     Insert row, {
     List<PostgrestStoredColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
-    bool defaultToNull = true,
   }) => _upsert(
     row as Object,
     onConflict: onConflict,
     ignoreDuplicates: ignoreDuplicates,
-    defaultToNull: defaultToNull,
   );
 
   /// Perform an UPSERT of every row in [rows] on the table or view.
@@ -253,7 +238,8 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///
   /// An empty [rows] writes nothing. A column left out of a row that another
   /// row sets is written as its database default, also when the row merges
-  /// into an existing one. See [insertAll] for [defaultToNull].
+  /// into an existing one. Use the generated `set…ToNull` methods of [Insert]
+  /// to write `NULL` instead.
   ///
   /// See [upsert] for [onConflict] and [PostgrestQueryBuilder.upsert] for
   /// [ignoreDuplicates].
@@ -261,19 +247,16 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
     List<Insert> rows, {
     List<PostgrestStoredColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
-    bool defaultToNull = false,
   }) => _upsert(
     rows,
     onConflict: onConflict,
     ignoreDuplicates: ignoreDuplicates,
-    defaultToNull: defaultToNull,
   );
 
   PostgrestTypedTransformBuilder<Row, void> _upsert(
     Object values, {
     required List<PostgrestStoredColumn<Row, Object>>? onConflict,
     required bool ignoreDuplicates,
-    required bool defaultToNull,
   }) {
     if (onConflict != null && onConflict.isEmpty) {
       throw ArgumentError.value(
@@ -287,7 +270,6 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
         payload: values,
         onConflict: onConflict,
         ignoreDuplicates: ignoreDuplicates,
-        defaultToNull: defaultToNull,
       ),
     );
   }

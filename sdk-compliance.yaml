@@ -931,7 +931,6 @@ features:
       - PostgrestTableRequest.readOnly
       - PostgrestTableRequest.onConflict
       - PostgrestTableRequest.ignoreDuplicates
-      - PostgrestTableRequest.defaultToNull
       - PostgrestTableRequest.maxAffected
       - PostgrestTableRequest.stripNulls
       - PostgrestTableRequest.dryRun
@@ -1289,6 +1288,7 @@ features:
   # database — mutate
   database.mutate.insert:
     status: implemented
+    note: "The typed insertAll and upsertAll always send Prefer: missing=default and take no defaultToNull, since their Insert types tell an absent field from an explicit null; the untyped insert and upsert keep defaultToNull with its default of true. The spec change is proposed in https://github.com/supabase/sdk/pull/306."
     symbols:
       - PostgrestQueryBuilder.insert
       - PostgrestTypedQueryBuilder.insert
@@ -1304,6 +1304,7 @@ features:
       - PostgrestTypedUnscopedBuilder.where
   database.mutate.upsert:
     status: implemented
+    note: "The typed insertAll and upsertAll always send Prefer: missing=default and take no defaultToNull, since their Insert types tell an absent field from an explicit null; the untyped insert and upsert keep defaultToNull with its default of true. The spec change is proposed in https://github.com/supabase/sdk/pull/306."
     symbols:
       - PostgrestQueryBuilder.upsert
       - PostgrestTypedQueryBuilder.upsert
@@ -1335,6 +1336,7 @@ features:
       - PostgrestTypedQueryBuilder.upsertAll
   database.mutate.missing_defaults:
     status: implemented
+    note: "The typed insertAll and upsertAll always send Prefer: missing=default and take no defaultToNull, since their Insert types tell an absent field from an explicit null; the untyped insert and upsert keep defaultToNull with its default of true. The spec change is proposed in https://github.com/supabase/sdk/pull/306."
     symbols:
       - PostgrestQueryBuilder.insert
       - PostgrestQueryBuilder.upsert
