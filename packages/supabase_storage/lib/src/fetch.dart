@@ -152,6 +152,7 @@ class Fetch {
     FetchOptions? options, {
     Future<void>? abortSignal,
     bool partialContent = false,
+    DownloadProgressCallback? onProgress,
   }) async {
     final idleTimeout = IdleTimeout(requestTimeout);
     final request = _createRequest(
@@ -176,7 +177,17 @@ class Fetch {
     );
     final streamedResponse = await _send(request, idleTimeout);
     if (partialContent) await _requirePartialContent(streamedResponse);
-    return _handleResponse(streamedResponse, options);
+    if (onProgress == null ||
+        !isSuccessStatusCode(streamedResponse.statusCode)) {
+      return _handleResponse(streamedResponse, options);
+    }
+    final progress = _DownloadProgress(onProgress, streamedResponse);
+    try {
+      return await _handleResponse(progress.response, options);
+    } on Object {
+      progress.rethrowCallbackError();
+      rethrow;
+    }
   }
 
   /// Sends an upload whose body is produced by [createBody] on every attempt,
@@ -320,6 +331,7 @@ class Fetch {
     FetchOptions? options,
     Future<void>? abortSignal,
     bool partialContent = false,
+    DownloadProgressCallback? onProgress,
   }) {
     return _handleRequest(
       HttpMethod.get,
@@ -328,6 +340,7 @@ class Fetch {
       options,
       abortSignal: abortSignal,
       partialContent: partialContent,
+      onProgress: onProgress,
     );
   }
 
@@ -354,12 +367,16 @@ class Fetch {
   /// are emitted.
   ///
   /// {@macro storage_fetch_partial_content}
+  ///
+  /// [onProgress] reports the body as it is yielded. See
+  /// [DownloadProgressCallback].
   @internal
   Stream<Uint8List> getStream(
     String url, {
     FetchOptions? options,
     Future<void>? abortSignal,
     bool partialContent = false,
+    DownloadProgressCallback? onProgress,
   }) async* {
     final idleTimeout = IdleTimeout(requestTimeout);
     final request = _createRequest(
@@ -385,7 +402,10 @@ class Fetch {
     }
 
     if (partialContent) await _requirePartialContent(streamedResponse);
-    yield* streamedResponse.stream.map(
+    final body = onProgress == null
+        ? streamedResponse.stream
+        : _DownloadProgress(onProgress, streamedResponse).response.stream;
+    yield* body.map(
       (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
     );
   }
@@ -637,6 +657,72 @@ final class _UploadProgress {
   }
 
   void finish() => _finished = true;
+
+  void rethrowCallbackError() {
+    final callbackError = this.callbackError;
+    if (callbackError == null) return;
+    Error.throwWithStackTrace(callbackError.$1, callbackError.$2);
+  }
+}
+
+/// Reports the body of a successful download as it reaches the caller.
+///
+/// The total is the `Content-Length` of the response, unknown when the
+/// response has a `Content-Encoding`, since the HTTP stack may decode the body
+/// so that its length no longer matches. A body that yields no bytes reports
+/// `0` once, and nothing is reported after the body fails.
+final class _DownloadProgress {
+  _DownloadProgress(this._onProgress, http.StreamedResponse source) {
+    final contentEncoding = source.headers['content-encoding']?.trim();
+    final hasEncoding =
+        contentEncoding != null &&
+        contentEncoding.isNotEmpty &&
+        contentEncoding.toLowerCase() != 'identity';
+    final contentLength = source.contentLength;
+    _totalBytes = hasEncoding || contentLength == null || contentLength < 0
+        ? null
+        : contentLength;
+    response = http.StreamedResponse(
+      _watch(source.stream),
+      source.statusCode,
+      contentLength: source.contentLength,
+      request: source.request,
+      headers: source.headers,
+      isRedirect: source.isRedirect,
+      persistentConnection: source.persistentConnection,
+      reasonPhrase: source.reasonPhrase,
+    );
+  }
+
+  final DownloadProgressCallback _onProgress;
+  late final int? _totalBytes;
+  late final http.StreamedResponse response;
+
+  /// What the callback threw, which fails the download instead of an error of
+  /// the HTTP client.
+  (Object, StackTrace)? callbackError;
+
+  Stream<List<int>> _watch(Stream<List<int>> body) async* {
+    var receivedBytes = 0;
+    var reported = false;
+    await for (final chunk in body) {
+      yield chunk;
+      if (chunk.isEmpty) continue;
+      receivedBytes += chunk.length;
+      _report(receivedBytes);
+      reported = true;
+    }
+    if (!reported) _report(0);
+  }
+
+  void _report(int receivedBytes) {
+    try {
+      _onProgress(receivedBytes, _totalBytes);
+    } catch (error, stackTrace) {
+      callbackError ??= (error, stackTrace);
+      rethrow;
+    }
+  }
 
   void rethrowCallbackError() {
     final callbackError = this.callbackError;
