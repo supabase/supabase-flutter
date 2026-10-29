@@ -305,9 +305,7 @@ class RealtimeChannel {
     _joinPush
         .receive(
           'ok',
-          (response) => unawaited(
-            _handleJoinOk(response as Map<String, dynamic>),
-          ),
+          (response) => _handleJoinOk(response as Map<String, dynamic>),
         )
         .receive('error', (error) {
           _state = ChannelState.errored;
@@ -350,24 +348,8 @@ class RealtimeChannel {
     }
   }
 
-  Future<void> _handleJoinOk(Map<String, dynamic> response) async {
+  void _handleJoinOk(Map<String, dynamic> response) {
     final serverPostgresFilters = response['postgres_changes'];
-    final accessToken = socket.accessToken;
-    if (accessToken != null) {
-      try {
-        await socket.setAccessToken(accessToken);
-      } on FormatException catch (error) {
-        // The cached access token may have expired by the time the
-        // channel rejoins (e.g. after the device wakes from a long
-        // sleep). Auth state listeners will re-call setAccessToken with a
-        // fresh token shortly after, so swallow this specific error
-        // to avoid surfacing it as an uncaught exception.
-        if (!error.message.contains('InvalidJWTToken')) {
-          rethrow;
-        }
-      }
-    }
-
     if (serverPostgresFilters == null) {
       _addStatus(RealtimeSubscribeStatus.subscribed);
       return;
