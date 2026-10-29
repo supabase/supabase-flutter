@@ -9,7 +9,7 @@ import 'package:crypto/crypto.dart' show sha256;
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart'
-    show ClientInfoFeature, SortDirection, postgresTimestampLiteral;
+    show ClientInfoFeature, JsonFields, SortDirection, postgresTimestampLiteral;
 
 part 'postgrest_column_expression.dart';
 part 'postgrest_typed_count_builder.dart';

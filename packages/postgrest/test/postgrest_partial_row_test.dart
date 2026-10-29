@@ -455,6 +455,36 @@ void main() {
       expect(order.read(Orders.items).single.read(Items.sku), 'a');
     });
 
+    for (final (description, counted) in [
+      (
+        'a count of the wrong type',
+        <Object?>[
+          {'count': '3'},
+        ],
+      ),
+      ('a count that is not a single row', <Object?>[]),
+    ]) {
+      test('$description throws a FormatException', () async {
+        httpClient.stub({'id': 1, 'items(count)': counted});
+
+        final order = await client.table(Orders.table).selectOnly([
+          Orders.id,
+          Orders.items.count(),
+        ]).single();
+
+        expect(
+          () => order.read(Orders.items.count()),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              anyOf(contains('"count"'), contains('"items(count)"')),
+            ),
+          ),
+        );
+      });
+    }
+
     test('a count of a relation not in the select list throws', () async {
       httpClient.stub({'id': 1});
 

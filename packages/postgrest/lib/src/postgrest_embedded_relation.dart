@@ -327,10 +327,12 @@ final class PostgrestEmbeddedCount<Row> extends PostgrestSelectable<Row>
   String get _selectExpression => '${_quoted(responseKey)}:$expression';
 
   @override
-  int _read(Object? json, _NestedSelection nested) {
-    final row = (json! as List<Object?>).single! as Map<String, dynamic>;
-    return row['count'] as int;
-  }
+  int _read(Object? json, _NestedSelection nested) => switch (json) {
+    [final Map<String, dynamic> row] => row.field('count'),
+    _ => throw FormatException(
+      'Expected "$responseKey" to hold a single row, got ${json.runtimeType}',
+    ),
+  };
 
   @override
   bool get _selectedByStar => false;
