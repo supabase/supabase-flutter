@@ -163,6 +163,44 @@ ColumnTypeKind? _rangeBoundKind(
 String _qualifiedFormat(String format, String typeSchema) =>
     typeSchema == _catalogSchema ? format : '$typeSchema.$format';
 
+/// Typed reads of the fields of a `GeneratorMetadata` record, throwing a
+/// [FormatException] for a field that does not have the expected shape.
+extension on Map<String, dynamic> {
+  /// The value of [key], which must be a [T].
+  T field<T>(String key) => switch (this[key]) {
+    final T value => value,
+    final value => throw _shapeException(key, T, value),
+  };
+
+  /// The elements of the list at [key], each of which must be a [T]. A
+  /// missing list has no elements unless it is [required].
+  List<T> listOf<T>(String key, {bool required = false}) {
+    final list = required
+        ? field<List<dynamic>>(key)
+        : (field<List<dynamic>?>(key) ?? const []);
+    return [
+      for (final element in list)
+        element is T ? element : throw _shapeException(key, T, element),
+    ];
+  }
+
+  /// The records of the list at [key], none when it is missing.
+  List<Map<String, dynamic>> records(String key) => listOf(key);
+}
+
+FormatException _shapeException(String key, Type expected, Object? value) =>
+    FormatException(
+      'Not a GeneratorMetadata document: a record does not have the expected '
+      'shape ("$key" holds ${value.runtimeType}, expected $expected).',
+    );
+
+const _relationCollections = [
+  'tables',
+  'foreignTables',
+  'views',
+  'materializedViews',
+];
+
 /// Parses a `GeneratorMetadata` document, the introspection contract of
 /// `@supabase/postgrest-typegen`, into a [DatabaseDescription] of the
 /// schemas named in [schemaNames], or of every schema the document lists when
@@ -194,27 +232,6 @@ DatabaseDescription parseGeneratorMetadata(
   Map<String, dynamic> document, {
   List<String>? schemaNames,
 }) {
-  try {
-    return _parseGeneratorMetadata(document, schemaNames: schemaNames);
-  } on TypeError catch (error) {
-    throw FormatException(
-      'Not a GeneratorMetadata document: a record does not have the '
-      'expected shape ($error).',
-    );
-  }
-}
-
-const _relationCollections = [
-  'tables',
-  'foreignTables',
-  'views',
-  'materializedViews',
-];
-
-DatabaseDescription _parseGeneratorMetadata(
-  Map<String, dynamic> document, {
-  required List<String>? schemaNames,
-}) {
   if (document['tables'] is! List<dynamic> ||
       document['columns'] is! List<dynamic>) {
     throw const FormatException(
@@ -233,20 +250,20 @@ DatabaseDescription _parseGeneratorMetadata(
   // within a table, the canonical order every postgrest-typegen generator
   // emits.
   final columnsByRelationId = <int, List<Map<String, dynamic>>>{};
-  for (final column
-      in (document['columns'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()) {
+  for (final column in document.records('columns')) {
     columnsByRelationId
-        .putIfAbsent(column['table_id'] as int, () => [])
+        .putIfAbsent(column.field('table_id'), () => [])
         .add(column);
   }
 
   // A foreign data wrapper that cannot write reports every column of its
   // tables as not updatable.
   bool isWritableForeignTable(Map<String, dynamic> foreignTable) =>
-      (columnsByRelationId[foreignTable['id'] as int] ?? const []).any(
-        (column) => column['is_updatable'] as bool,
-      );
+      (columnsByRelationId[foreignTable.field<int>('id')] ??
+              const <Map<String, dynamic>>[])
+          .any(
+            (column) => column.field<bool>('is_updatable'),
+          );
 
   final relations = [
     for (final table in _relationsOf(document, 'tables', schemas))
@@ -267,9 +284,11 @@ DatabaseDescription _parseGeneratorMetadata(
       (
         relation: view,
         isInsertable:
-            (view['is_insert_enabled'] ?? view['is_updatable']) as bool,
+            view.field<bool?>('is_insert_enabled') ??
+            view.field<bool>('is_updatable'),
         isUpdatable:
-            (view['is_update_enabled'] ?? view['is_updatable']) as bool,
+            view.field<bool?>('is_update_enabled') ??
+            view.field<bool>('is_updatable'),
         isView: true,
       ),
     for (final materializedView in _relationsOf(
@@ -290,25 +309,20 @@ DatabaseDescription _parseGeneratorMetadata(
   final enumTypes = _enumTypes(document);
   final compositeTypes = _compositeTypes(document);
   final typesById = {
-    for (final type
-        in (document['types'] as List<dynamic>? ?? const [])
-            .cast<Map<String, dynamic>>())
-      type['id'] as int: type,
+    for (final type in document.records('types')) type.field<int>('id'): type,
   };
   final relationsById = {
     for (final collection in _relationCollections)
-      for (final relation
-          in (document[collection] as List<dynamic>? ?? const [])
-              .cast<Map<String, dynamic>>())
-        relation['id'] as int: (
-          relation['schema'] as String,
-          relation['name'] as String,
+      for (final relation in document.records(collection))
+        relation.field<int>('id'): (
+          relation.field<String>('schema'),
+          relation.field<String>('name'),
         ),
   };
   final generatedRelations = {
     for (final (:relation, isInsertable: _, isUpdatable: _, isView: _)
         in relations)
-      (relation['schema'] as String, relation['name'] as String),
+      (relation.field<String>('schema'), relation.field<String>('name')),
   };
   final functionsByRelationId = _functionsByRelationId(document, typesById);
 
@@ -316,17 +330,17 @@ DatabaseDescription _parseGeneratorMetadata(
   final enumsByType = <(String, String), EnumDescription>{};
 
   for (final (:relation, :isInsertable, :isUpdatable, :isView) in relations) {
-    final relationSchema = relation['schema'] as String;
-    final relationName = relation['name'] as String;
+    final relationSchema = relation.field<String>('schema');
+    final relationName = relation.field<String>('name');
 
     final columns = <ColumnDescription>[];
     for (final column
-        in columnsByRelationId[relation['id'] as int] ?? const []) {
-      final name = column['name'] as String;
-      final format = column['format'] as String;
-      final typeSchema = column['type_schema'] as String;
-      final enumValues = (column['enums'] as List<dynamic>? ?? const [])
-          .cast<String>();
+        in columnsByRelationId[relation.field<int>('id')] ??
+            const <Map<String, dynamic>>[]) {
+      final name = column.field<String>('name');
+      final format = column.field<String>('format');
+      final typeSchema = column.field<String>('type_schema');
+      final enumValues = column.listOf<String>('enums');
       final isEnum = enumValues.isNotEmpty;
       final isArray = column['data_type'] == 'ARRAY';
       final elementFormat = isArray ? format.substring(1) : format;
@@ -370,9 +384,9 @@ DatabaseDescription _parseGeneratorMetadata(
 
       final hasDefault =
           column['default_value'] != null ||
-          column['is_identity'] as bool ||
-          column['is_generated'] as bool;
-      final isNullable = column['is_nullable'] as bool;
+          column.field<bool>('is_identity') ||
+          column.field<bool>('is_generated');
+      final isNullable = column.field<bool>('is_nullable');
 
       columns.add(
         ColumnDescription(
@@ -394,9 +408,9 @@ DatabaseDescription _parseGeneratorMetadata(
           isNullable: isNullable,
           isReadOnly:
               column['identity_generation'] == 'ALWAYS' ||
-              column['is_generated'] as bool ||
-              !(column['is_updatable'] as bool),
-          comment: column['comment'] as String?,
+              column.field<bool>('is_generated') ||
+              !column.field<bool>('is_updatable'),
+          comment: column.field('comment'),
           foreignKey: foreignKeysByColumn[(relationSchema, relationName, name)],
         ),
       );
@@ -407,8 +421,9 @@ DatabaseDescription _parseGeneratorMetadata(
     final columnNames = {for (final column in columns) column.name};
     final memberNames = <String>{};
     for (final function
-        in functionsByRelationId[relation['id'] as int] ?? const []) {
-      final name = function['name'] as String;
+        in functionsByRelationId[relation.field<int>('id')] ??
+            const <Map<String, dynamic>>[]) {
+      final name = function.field<String>('name');
       // PostgREST resolves a name to the column first, and an overload of a
       // computed field is addressed by the same name as the first.
       if (function['schema'] != relationSchema ||
@@ -416,11 +431,11 @@ DatabaseDescription _parseGeneratorMetadata(
           !memberNames.add(name)) {
         continue;
       }
-      final returnRelationId = function['return_type_relation_id'] as int?;
+      final returnRelationId = function.field<int?>('return_type_relation_id');
       if (returnRelationId != null) {
         final target = relationsById[returnRelationId];
         if (target == null || !generatedRelations.contains(target)) continue;
-        final prorows = function['prorows'] as int?;
+        final prorows = function.field<int?>('prorows');
         computedRelationships.add(
           ComputedRelationshipDescription(
             name: name,
@@ -432,11 +447,11 @@ DatabaseDescription _parseGeneratorMetadata(
         continue;
       }
       // A set of scalars has no PostgREST shape to select it by.
-      if (function['is_set_returning_function'] as bool) continue;
+      if (function.field<bool>('is_set_returning_function')) continue;
       computedFields.add(
         _computedField(
           name,
-          typesById[function['return_type_id'] as int],
+          typesById[function.field<int>('return_type_id')],
           enumTypes,
           compositeTypes,
           enumsByType,
@@ -448,7 +463,7 @@ DatabaseDescription _parseGeneratorMetadata(
       TableDescription(
         schema: relationSchema,
         name: relationName,
-        comment: relation['comment'] as String?,
+        comment: relation.field('comment'),
         columns: columns,
         primaryKey:
             primaryKeysByTable[(relationSchema, relationName)] ?? const [],
@@ -484,7 +499,7 @@ DatabaseDescription _parseGeneratorMetadata(
     );
 
   return DatabaseDescription(
-    metadataVersion: document['version'] as int? ?? 1,
+    metadataVersion: document.field('version') ?? 1,
     schemaNames: schemas.toList()..sort(),
     tables: tables,
     enums: enums,
@@ -498,16 +513,14 @@ DatabaseDescription _parseGeneratorMetadata(
 /// The schemas the document describes: its `schemas` collection, or the
 /// schemas of its relations for documents that carry none.
 Set<String> _documentSchemas(Map<String, dynamic> document) {
-  final listed = (document['schemas'] as List<dynamic>? ?? const [])
-      .cast<Map<String, dynamic>>()
-      .map((schema) => schema['name'] as String);
+  final listed = document
+      .records('schemas')
+      .map((schema) => schema.field<String>('name'));
   if (listed.isNotEmpty) return listed.toSet();
   return {
     for (final collection in _relationCollections)
-      for (final relation
-          in (document[collection] as List<dynamic>? ?? const [])
-              .cast<Map<String, dynamic>>())
-        relation['schema'] as String,
+      for (final relation in document.records(collection))
+        relation.field<String>('schema'),
   };
 }
 
@@ -517,8 +530,8 @@ Iterable<Map<String, dynamic>> _relationsOf(
   Map<String, dynamic> document,
   String collection,
   Set<String> schemas,
-) => (document[collection] as List<dynamic>? ?? const [])
-    .cast<Map<String, dynamic>>()
+) => document
+    .records(collection)
     .where((relation) => schemas.contains(relation['schema']));
 
 /// The foreign keys whose both ends are among the generated [relations],
@@ -528,27 +541,27 @@ List<RelationshipDescription> _relationships(
   Map<String, dynamic> document,
   Set<(String, String)> relations,
 ) => [
-  for (final relationship
-      in (document['relationships'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>())
+  for (final relationship in document.records('relationships'))
     if (relations.contains((
-          relationship['schema'] as String,
-          relationship['relation'] as String,
+          relationship.field<String>('schema'),
+          relationship.field<String>('relation'),
         )) &&
         relations.contains((
-          relationship['referenced_schema'] as String,
-          relationship['referenced_relation'] as String,
+          relationship.field<String>('referenced_schema'),
+          relationship.field<String>('referenced_relation'),
         )))
       RelationshipDescription(
-        foreignKeyName: relationship['foreign_key_name'] as String,
-        sourceSchema: relationship['schema'] as String,
-        sourceTable: relationship['relation'] as String,
-        sourceColumns: (relationship['columns'] as List<dynamic>).cast(),
-        targetSchema: relationship['referenced_schema'] as String,
-        targetTable: relationship['referenced_relation'] as String,
-        targetColumns: (relationship['referenced_columns'] as List<dynamic>)
-            .cast(),
-        isOneToOne: relationship['is_one_to_one'] as bool? ?? false,
+        foreignKeyName: relationship.field('foreign_key_name'),
+        sourceSchema: relationship.field('schema'),
+        sourceTable: relationship.field('relation'),
+        sourceColumns: relationship.listOf('columns', required: true),
+        targetSchema: relationship.field('referenced_schema'),
+        targetTable: relationship.field('referenced_relation'),
+        targetColumns: relationship.listOf(
+          'referenced_columns',
+          required: true,
+        ),
+        isOneToOne: relationship.field('is_one_to_one') ?? false,
       ),
 ];
 
@@ -559,14 +572,12 @@ Map<(String, String), List<String>> _primaryKeysByTable(
   Set<String> schemas,
 ) {
   final primaryKeys = <(String, String), List<String>>{};
-  for (final primaryKey
-      in (document['primaryKeys'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()) {
-    final schema = primaryKey['schema'] as String;
+  for (final primaryKey in document.records('primaryKeys')) {
+    final schema = primaryKey.field<String>('schema');
     if (!schemas.contains(schema)) continue;
     primaryKeys
-        .putIfAbsent((schema, primaryKey['table_name'] as String), () => [])
-        .add(primaryKey['name'] as String);
+        .putIfAbsent((schema, primaryKey.field<String>('table_name')), () => [])
+        .add(primaryKey.field('name'));
   }
   return primaryKeys;
 }
@@ -586,19 +597,15 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
 ) {
   final tables = {
     for (final collection in const ['tables', 'foreignTables'])
-      for (final table
-          in (document[collection] as List<dynamic>? ?? const [])
-              .cast<Map<String, dynamic>>())
-        (table['schema'] as String, table['name'] as String),
+      for (final table in document.records(collection))
+        (table.field<String>('schema'), table.field<String>('name')),
   };
   final tableRelationships = <Map<String, dynamic>>[];
   final viewRelationships = <Map<String, dynamic>>[];
-  for (final relationship
-      in (document['relationships'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()) {
+  for (final relationship in document.records('relationships')) {
     final referencesTable = tables.contains((
-      relationship['referenced_schema'] as String,
-      relationship['referenced_relation'] as String,
+      relationship.field<String>('referenced_schema'),
+      relationship.field<String>('referenced_relation'),
     ));
     (referencesTable ? tableRelationships : viewRelationships).add(
       relationship,
@@ -608,12 +615,14 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
 
   final foreignKeys = <(String, String, String), ForeignKeyDescription>{};
   for (final relationship in relationships) {
-    final schema = relationship['schema'] as String;
+    final schema = relationship.field<String>('schema');
     if (!schemas.contains(schema)) continue;
-    final table = relationship['relation'] as String;
-    final columns = (relationship['columns'] as List<dynamic>).cast<String>();
-    final referencedColumns =
-        (relationship['referenced_columns'] as List<dynamic>).cast<String>();
+    final table = relationship.field<String>('relation');
+    final columns = relationship.listOf<String>('columns', required: true);
+    final referencedColumns = relationship.listOf<String>(
+      'referenced_columns',
+      required: true,
+    );
     if (columns.length != referencedColumns.length) {
       throw FormatException(
         'Not a GeneratorMetadata document: the relationship '
@@ -625,8 +634,8 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
       foreignKeys.putIfAbsent(
         (schema, table, columns[i]),
         () => ForeignKeyDescription(
-          schema: relationship['referenced_schema'] as String,
-          table: relationship['referenced_relation'] as String,
+          schema: relationship.field('referenced_schema'),
+          table: relationship.field('referenced_relation'),
           column: referencedColumns[i],
         ),
       );
@@ -639,12 +648,11 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
 /// order.
 Map<(String, String), List<String>> _enumTypes(Map<String, dynamic> document) {
   final enumTypes = <(String, String), List<String>>{};
-  for (final type
-      in (document['types'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()) {
-    final values = (type['enums'] as List<dynamic>? ?? const []).cast<String>();
+  for (final type in document.records('types')) {
+    final values = type.listOf<String>('enums');
     if (values.isEmpty) continue;
-    enumTypes[(type['schema'] as String, type['name'] as String)] = values;
+    enumTypes[(type.field<String>('schema'), type.field<String>('name'))] =
+        values;
   }
   return enumTypes;
 }
@@ -652,11 +660,9 @@ Map<(String, String), List<String>> _enumTypes(Map<String, dynamic> document) {
 /// The `(schema, name)` pairs of composite types, among them the row types of
 /// tables and views.
 Set<(String, String)> _compositeTypes(Map<String, dynamic> document) => {
-  for (final type
-      in (document['types'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>())
+  for (final type in document.records('types'))
     if (type['type_relation_id'] != null)
-      (type['schema'] as String, type['name'] as String),
+      (type.field<String>('schema'), type.field<String>('name')),
 };
 
 /// Resolves the enum type of a column exactly, by the column's `type_schema`
@@ -689,18 +695,15 @@ Map<int, List<Map<String, dynamic>>> _functionsByRelationId(
   Map<int, Map<String, dynamic>> typesById,
 ) {
   final functions = <int, List<Map<String, dynamic>>>{};
-  for (final function
-      in (document['functions'] as List<dynamic>? ?? const [])
-          .cast<Map<String, dynamic>>()) {
+  for (final function in document.records('functions')) {
     final inputArguments = [
-      for (final argument
-          in (function['args'] as List<dynamic>? ?? const [])
-              .cast<Map<String, dynamic>>())
+      for (final argument in function.records('args'))
         if (_inputArgumentModes.contains(argument['mode'])) argument,
     ];
     if (inputArguments case [final argument]) {
-      final relationId =
-          typesById[argument['type_id'] as int]?['type_relation_id'] as int?;
+      final relationId = typesById[argument.field<int>('type_id')]?.field<int?>(
+        'type_relation_id',
+      );
       if (relationId != null) {
         functions.putIfAbsent(relationId, () => []).add(function);
       }
@@ -750,15 +753,15 @@ ValueTypeDescription _valueType(
       typeKind: ColumnTypeKind.unknown,
     );
   }
-  final format = type['name'] as String;
-  final typeSchema = type['schema'] as String;
-  final isArray = (type['format'] as String).endsWith('[]');
+  final format = type.field<String>('name');
+  final typeSchema = type.field<String>('schema');
+  final isArray = (type.field<String>('format')).endsWith('[]');
   final elementFormat = isArray ? format.substring(1) : format;
   // The array type of an enum carries no values itself; its element type
   // does.
   final enumValues = isArray
       ? (enumTypes[(typeSchema, elementFormat)] ?? const <String>[])
-      : (type['enums'] as List<dynamic>? ?? const []).cast<String>();
+      : type.listOf<String>('enums');
   final isEnum = enumValues.isNotEmpty;
   EnumDescription? enumDescription;
   if (isEnum) {
@@ -812,17 +815,14 @@ List<FunctionDescription> _functions(
   required Map<int, (String, String)> relationsById,
   required Set<(String, String)> generatedRelations,
 }) {
-  final rpcFunctions = (document['rpcFunctions'] as List<dynamic>? ?? const [])
-      .cast<Map<String, dynamic>>();
+  final rpcFunctions = document.records('rpcFunctions');
   final behaviorsById = {
-    for (final function
-        in (document['functions'] as List<dynamic>? ?? const [])
-            .cast<Map<String, dynamic>>())
-      function['id'] as int: function['behavior'] as String?,
+    for (final function in document.records('functions'))
+      function.field<int>('id'): function.field<String?>('behavior'),
   };
 
   ValueTypeDescription valueType(Map<String, dynamic> reference) => _valueType(
-    typesById[reference['type_id'] as int],
+    typesById[reference.field<int>('type_id')],
     enumTypes,
     compositeTypes,
     enumsByType,
@@ -835,16 +835,15 @@ List<FunctionDescription> _functions(
       };
 
   FunctionResultDescription result(Map<String, dynamic> overload) {
-    final returns = overload['returns'] as Map<String, dynamic>;
-    final isSetReturning = overload['is_set_returning'] as bool;
-    final columns = (returns['columns'] as List<dynamic>?)
-        ?.cast<Map<String, dynamic>>();
-    if (columns != null) {
+    final returns = overload.field<Map<String, dynamic>>('returns');
+    final isSetReturning = overload.field<bool>('is_set_returning');
+    if (returns['columns'] != null) {
       return FunctionColumnsResult([
-        for (final column in columns) _resultColumn(column, valueType(column)),
+        for (final column in returns.records('columns'))
+          _resultColumn(column, valueType(column)),
       ]);
     }
-    if (generatedRelation(returns['relation_id'] as int?) case (
+    if (generatedRelation(returns.field('relation_id')) case (
       final schema,
       final table,
     )) {
@@ -870,28 +869,30 @@ List<FunctionDescription> _functions(
     for (final function in rpcFunctions)
       if (schemas.contains(function['schema']))
         FunctionDescription(
-          schema: function['schema'] as String,
-          name: function['name'] as String,
+          schema: function.field('schema'),
+          name: function.field('name'),
           overloads: [
-            for (final overload
-                in (function['overloads'] as List<dynamic>)
-                    .cast<Map<String, dynamic>>())
+            for (final overload in function.listOf<Map<String, dynamic>>(
+              'overloads',
+              required: true,
+            ))
               FunctionOverloadDescription(
                 arguments: [
-                  for (final argument
-                      in (overload['args'] as List<dynamic>)
-                          .cast<Map<String, dynamic>>())
+                  for (final argument in overload.listOf<Map<String, dynamic>>(
+                    'args',
+                    required: true,
+                  ))
                     FunctionArgumentDescription(
-                      name: argument['name'] as String,
+                      name: argument.field('name'),
                       type: valueType(argument),
-                      hasDefault: argument['has_default'] as bool,
+                      hasDefault: argument.field('has_default'),
                       rowOf: generatedRelation(
-                        argument['relation_id'] as int?,
+                        argument.field('relation_id'),
                       ),
                     ),
                 ],
                 result: result(overload),
-                error: overload['error'] as String?,
+                error: overload.field('error'),
                 isComputedField: overload['computed_field_of'] != null,
                 isVolatile: switch (overload['function_id']) {
                   final int id => switch (behaviorsById[id]) {
@@ -911,7 +912,7 @@ ColumnDescription _resultColumn(
   Map<String, dynamic> column,
   ValueTypeDescription type,
 ) => ColumnDescription(
-  name: column['name'] as String,
+  name: column.field('name'),
   postgresFormat: type.postgresFormat,
   typeKind: type.typeKind,
   elementTypeKind: type.elementTypeKind,

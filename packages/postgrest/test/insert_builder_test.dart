@@ -99,5 +99,34 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('$name of a row without toJson() throws', () {
+      expect(
+        () => write(postgrest.from('users'), [Object()]),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.message,
+            'message',
+            'Every row must be an object',
+          ),
+        ),
+      );
+    });
+
+    test('$name keeps an error thrown inside toJson()', () {
+      expect(
+        () => write(postgrest.from('users'), [const _BrokenRow()]),
+        throwsA(isA<NoSuchMethodError>()),
+      );
+    });
   }
+}
+
+class _BrokenRow {
+  const _BrokenRow();
+
+  Map<String, dynamic> toJson() => throw NoSuchMethodError.withInvocation(
+    this,
+    Invocation.method(#username, const []),
+  );
 }

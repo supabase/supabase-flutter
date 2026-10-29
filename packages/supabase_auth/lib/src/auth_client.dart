@@ -2102,12 +2102,27 @@ class AuthClient {
   /// A body that does not hold a well formed session, such as a proxy's answer
   /// in the service's place, throws an [AuthRetryableFetchException].
   Session _sessionFromResponse(({dynamic body, Response response}) result) {
+    final body = result.body;
+    if (body is! Map<String, dynamic>) {
+      throw _undecodableSession(
+        result.response,
+        FormatException(
+          'Expected the session to be an object, got ${body.runtimeType}',
+        ),
+      );
+    }
+    if (body['access_token'] != null) {
+      if (_malformedSessionField(body) case final field?) {
+        throw _undecodableSession(
+          result.response,
+          FormatException('Unexpected value for "$field" in the session'),
+        );
+      }
+    }
     final Session? session;
     try {
-      session = Session.fromJson(result.body);
+      session = Session.fromJson(body);
     } on FormatException catch (error) {
-      throw _undecodableSession(result.response, error);
-    } on TypeError catch (error) {
       throw _undecodableSession(result.response, error);
     }
     if (session == null) {
@@ -2117,6 +2132,23 @@ class AuthClient {
       );
     }
     return session;
+  }
+
+  /// The first field of a session [json] that does not hold the type a
+  /// [Session] needs, or `null` when they all do.
+  String? _malformedSessionField(Map<String, dynamic> json) {
+    if (json['access_token'] is! String) return 'access_token';
+    if (json['token_type'] is! String) return 'token_type';
+    if (json['expires_in'] is! num?) return 'expires_in';
+    for (final field in const [
+      'refresh_token',
+      'provider_token',
+      'provider_refresh_token',
+    ]) {
+      if (json[field] is! String?) return field;
+    }
+    if (json['user'] case {'id': String()}) return null;
+    return 'user';
   }
 
   AuthRetryableFetchException _undecodableSession(
