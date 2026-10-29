@@ -2,8 +2,11 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
+
 export 'dart:io' show File;
 
+@internal
 Future<void> writeStreamAtomically(
   Stream<Uint8List> bytes,
   String destination,
