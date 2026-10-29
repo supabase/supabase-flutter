@@ -1226,3 +1226,24 @@ class ByteRange {
 /// On the web the browser takes the whole body before it sends any of it, so
 /// the count reaches the total right away.
 typedef UploadProgressCallback = void Function(int sentBytes, int? totalBytes);
+
+/// Reports the progress of a download body.
+///
+/// [receivedBytes] is the number of body bytes delivered to the caller so far:
+/// yielded on a stream, or collected into memory. [totalBytes] is the
+/// `Content-Length` of the response, the length of the range for a ranged
+/// download. It is `null` when the response has no `Content-Length`, such as a
+/// transformed image, or has a `Content-Encoding`, since the HTTP stack may
+/// decode the body so that its length no longer matches.
+///
+/// Nothing is reported before the response head arrives, for an error
+/// response, or after the body ends or fails. [receivedBytes] never
+/// decreases, the last report has the whole body, and an empty body gets one
+/// report of `0`.
+///
+/// An exception the callback throws fails the download with that exception.
+typedef DownloadProgressCallback =
+    void Function(
+      int receivedBytes,
+      int? totalBytes,
+    );

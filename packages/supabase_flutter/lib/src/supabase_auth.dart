@@ -290,8 +290,8 @@ class SupabaseAuth with WidgetsBindingObserver {
       return;
     }
 
-    flutterLogger.finest('handle deeplink uri: ${uri.loggable}');
-    flutterLogger.info('handle deeplink uri');
+    flutterLogger.finest(() => 'handle deeplink uri: ${uri.loggable}');
+    flutterLogger.fine('handle deeplink uri');
 
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);

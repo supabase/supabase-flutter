@@ -14,6 +14,7 @@ void main() {
   final records = <LogRecord>[];
   late StreamSubscription<LogRecord> subscription;
   late DebugPrintCallback previousDebugPrint;
+  late Level previousLevel;
 
   setUp(() {
     printed.clear();
@@ -23,12 +24,15 @@ void main() {
     debugPrint = (String? message, {int? wrapWidth}) {
       if (message != null) printed.add(message);
     };
+    previousLevel = Logger.root.level;
+    Logger.root.level = Level.FINE;
     subscription = Logger.root.onRecord.listen(records.add);
   });
 
   tearDown(() async {
     debugPrint = previousDebugPrint;
     await subscription.cancel();
+    Logger.root.level = previousLevel;
     try {
       await Supabase.instance.dispose();
     } catch (_) {
@@ -64,7 +68,7 @@ void main() {
         (record) => record.message == 'Supabase initialization completed',
       );
       expect(completionRecord.loggerName, 'supabase.flutter');
-      expect(completionRecord.level, Level.INFO);
+      expect(completionRecord.level, Level.FINE);
     },
   );
 }

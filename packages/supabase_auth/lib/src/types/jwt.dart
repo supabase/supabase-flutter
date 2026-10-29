@@ -4,7 +4,7 @@ import 'package:supabase_common/supabase_common.dart';
 /// JWT Header structure
 class JwtHeader {
   const JwtHeader({
-    required this.algorithm,
+    this.algorithm,
     this.keyId,
     this.type,
   });
@@ -17,8 +17,9 @@ class JwtHeader {
     );
   }
 
-  /// Algorithm used to sign the JWT (e.g., 'RS256', 'ES256', 'HS256')
-  final String algorithm;
+  /// Algorithm used to sign the JWT (e.g., 'RS256', 'ES256', 'HS256'), or null
+  /// when the header does not declare one.
+  final String? algorithm;
 
   /// Key ID - identifies which key was used to sign the JWT
   final String? keyId;
@@ -28,7 +29,7 @@ class JwtHeader {
 
   Map<String, dynamic> toJson() {
     return {
-      'alg': algorithm,
+      'alg': ?algorithm,
       'kid': ?keyId,
       'typ': ?type,
     };

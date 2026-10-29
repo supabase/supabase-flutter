@@ -50,7 +50,7 @@ class Fetch {
 
     if (data == null) {
       storageLogger.fine(
-        'StorageException (${response.statusCode}) for ${url?.loggable}',
+        () => 'StorageException (${response.statusCode}) for ${url?.loggable}',
       );
       return StorageApiException(
         response.body.isEmpty ? (response.reasonPhrase ?? '') : response.body,
@@ -69,14 +69,16 @@ class Fetch {
       body: response.body,
     );
     storageLogger.fine(
-      'StorageException (${response.statusCode}) for ${url?.loggable}',
+      () => 'StorageException (${response.statusCode}) for ${url?.loggable}',
     );
     return exception;
   }
 
   StorageTransportException _transportException(Uri? url, Exception error) {
     storageLogger.fine(
-      'StorageTransportException (${error.runtimeType}) for ${url?.loggable}',
+      () =>
+          'StorageTransportException (${error.runtimeType}) for '
+          '${url?.loggable}',
     );
     return StorageTransportException('Request failed: $error', cause: error);
   }
@@ -124,8 +126,9 @@ class Fetch {
         headers: streamedResponse.headers,
       );
       storageLogger.fine(
-        'StorageException (${streamedResponse.statusCode}) for '
-        '${url?.loggable}',
+        () =>
+            'StorageException (${streamedResponse.statusCode}) for '
+            '${url?.loggable}',
       );
       throw exception;
     }
@@ -152,6 +155,7 @@ class Fetch {
     FetchOptions? options, {
     Future<void>? abortSignal,
     bool partialContent = false,
+    DownloadProgressCallback? onProgress,
   }) async {
     final idleTimeout = IdleTimeout(requestTimeout);
     final request = _createRequest(
@@ -172,11 +176,21 @@ class Fetch {
     }
 
     storageLogger.finest(
-      'Request: ${method.value} ${Uri.parse(url).loggable}',
+      () => 'Request: ${method.value} ${Uri.parse(url).loggable}',
     );
     final streamedResponse = await _send(request, idleTimeout);
     if (partialContent) await _requirePartialContent(streamedResponse);
-    return _handleResponse(streamedResponse, options);
+    if (onProgress == null ||
+        !isSuccessStatusCode(streamedResponse.statusCode)) {
+      return _handleResponse(streamedResponse, options);
+    }
+    final progress = _DownloadProgress(onProgress, streamedResponse);
+    try {
+      return await _handleResponse(progress.response, options);
+    } on Object {
+      progress.rethrowCallbackError();
+      rethrow;
+    }
   }
 
   /// Sends an upload whose body is produced by [createBody] on every attempt,
@@ -236,8 +250,9 @@ class Fetch {
           final attempt = ++attempts;
           bodySent = false;
           storageLogger.finest(
-            'Request: attempt: $attempts ${method.value} '
-            '${Uri.parse(url).loggable}',
+            () =>
+                'Request: attempt: $attempts ${method.value} '
+                '${Uri.parse(url).loggable}',
           );
           final idleTimeout = IdleTimeout(requestTimeout);
           final request = _UploadRequest(
@@ -320,6 +335,7 @@ class Fetch {
     FetchOptions? options,
     Future<void>? abortSignal,
     bool partialContent = false,
+    DownloadProgressCallback? onProgress,
   }) {
     return _handleRequest(
       HttpMethod.get,
@@ -328,6 +344,7 @@ class Fetch {
       options,
       abortSignal: abortSignal,
       partialContent: partialContent,
+      onProgress: onProgress,
     );
   }
 
@@ -354,12 +371,16 @@ class Fetch {
   /// are emitted.
   ///
   /// {@macro storage_fetch_partial_content}
+  ///
+  /// [onProgress] reports the body as it is yielded. See
+  /// [DownloadProgressCallback].
   @internal
   Stream<Uint8List> getStream(
     String url, {
     FetchOptions? options,
     Future<void>? abortSignal,
     bool partialContent = false,
+    DownloadProgressCallback? onProgress,
   }) async* {
     final idleTimeout = IdleTimeout(requestTimeout);
     final request = _createRequest(
@@ -371,7 +392,7 @@ class Fetch {
     );
 
     storageLogger.finest(
-      'Request: GET (stream) ${Uri.parse(url).loggable}',
+      () => 'Request: GET (stream) ${Uri.parse(url).loggable}',
     );
     final streamedResponse = await _send(request, idleTimeout);
 
@@ -385,7 +406,10 @@ class Fetch {
     }
 
     if (partialContent) await _requirePartialContent(streamedResponse);
-    yield* streamedResponse.stream.map(
+    final body = onProgress == null
+        ? streamedResponse.stream
+        : _DownloadProgress(onProgress, streamedResponse).response.stream;
+    yield* body.map(
       (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
     );
   }
@@ -442,7 +466,7 @@ class Fetch {
       ..headers.addAll(headers)
       ..contentLength = contentLength ?? (createBody == null ? 0 : null);
     storageLogger.finest(
-      'Request: ${method.value} ${url.loggable}',
+      () => 'Request: ${method.value} ${url.loggable}',
     );
     return _read(await _send(request, idleTimeout));
   }
@@ -588,12 +612,33 @@ final class _UploadRequest extends http.BaseRequest with http.Abortable {
   }
 }
 
+/// Remembers what a progress callback threw, which fails the transfer instead
+/// of an error of the HTTP client.
+mixin _CallbackFailure {
+  (Object, StackTrace)? callbackError;
+
+  void guardCallback(void Function() callback) {
+    try {
+      callback();
+    } catch (error, stackTrace) {
+      callbackError ??= (error, stackTrace);
+      rethrow;
+    }
+  }
+
+  void rethrowCallbackError() {
+    final callbackError = this.callbackError;
+    if (callbackError == null) return;
+    Error.throwWithStackTrace(callbackError.$1, callbackError.$2);
+  }
+}
+
 /// Reports the progress of the bodies an upload sends, one per attempt.
 ///
 /// Only the body of the latest attempt reports, and nothing reports once the
 /// upload is [finish]ed. A body sent after an earlier one has reported starts
 /// with a report of `0`, and a body that yields no bytes reports `0` once.
-final class _UploadProgress {
+final class _UploadProgress with _CallbackFailure {
   _UploadProgress(this._onProgress, this._totalBytes);
 
   final UploadProgressCallback _onProgress;
@@ -601,10 +646,6 @@ final class _UploadProgress {
   var _attempt = 0;
   var _reported = false;
   var _finished = false;
-
-  /// What the callback threw, which fails the upload instead of an error of
-  /// the HTTP client.
-  (Object, StackTrace)? callbackError;
 
   Stream<List<int>> watch(Stream<List<int>> body) =>
       _watch(++_attempt, sliceRequestBody(body));
@@ -627,20 +668,59 @@ final class _UploadProgress {
   bool _report(int attempt, int sentBytes) {
     if (_finished || attempt != _attempt) return false;
     _reported = true;
-    try {
-      _onProgress(sentBytes, _totalBytes);
-    } catch (error, stackTrace) {
-      callbackError ??= (error, stackTrace);
-      rethrow;
-    }
+    guardCallback(() => _onProgress(sentBytes, _totalBytes));
     return true;
   }
 
   void finish() => _finished = true;
+}
 
-  void rethrowCallbackError() {
-    final callbackError = this.callbackError;
-    if (callbackError == null) return;
-    Error.throwWithStackTrace(callbackError.$1, callbackError.$2);
+/// Reports the body of a successful download as it reaches the caller.
+///
+/// The total is the `Content-Length` of the response, unknown when the
+/// response has a `Content-Encoding`, since the HTTP stack may decode the body
+/// so that its length no longer matches. A body that yields no bytes reports
+/// `0` once, and nothing is reported after the body fails.
+final class _DownloadProgress with _CallbackFailure {
+  _DownloadProgress(this._onProgress, http.StreamedResponse source) {
+    final contentEncoding = source.headers['content-encoding']?.trim();
+    final hasEncoding =
+        contentEncoding != null &&
+        contentEncoding.isNotEmpty &&
+        contentEncoding.toLowerCase() != 'identity';
+    final contentLength = source.contentLength;
+    _totalBytes = hasEncoding || contentLength == null || contentLength < 0
+        ? null
+        : contentLength;
+    response = http.StreamedResponse(
+      _watch(source.stream),
+      source.statusCode,
+      contentLength: source.contentLength,
+      request: source.request,
+      headers: source.headers,
+      isRedirect: source.isRedirect,
+      persistentConnection: source.persistentConnection,
+      reasonPhrase: source.reasonPhrase,
+    );
   }
+
+  final DownloadProgressCallback _onProgress;
+  late final int? _totalBytes;
+  late final http.StreamedResponse response;
+
+  Stream<List<int>> _watch(Stream<List<int>> body) async* {
+    var receivedBytes = 0;
+    var reported = false;
+    await for (final chunk in body) {
+      yield chunk;
+      if (chunk.isEmpty) continue;
+      receivedBytes += chunk.length;
+      _report(receivedBytes);
+      reported = true;
+    }
+    if (!reported) _report(0);
+  }
+
+  void _report(int receivedBytes) =>
+      guardCallback(() => _onProgress(receivedBytes, _totalBytes));
 }

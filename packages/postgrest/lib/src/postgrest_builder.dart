@@ -554,7 +554,7 @@ class PostgrestBuilder<T> implements Future<T> {
       HttpMethod.patch => await _encodeBody(),
       HttpMethod.get || HttpMethod.head || HttpMethod.delete => null,
     };
-    postgrestLogger.finest("Request: ${method.value} ${_url.loggable}");
+    postgrestLogger.finest(() => "Request: ${method.value} ${_url.loggable}");
 
     final requestTimeout = _requestTimeout;
 
@@ -723,7 +723,9 @@ class PostgrestBuilder<T> implements Future<T> {
           );
 
           postgrestLogger.finest(
-            'PGRST116 (${exception.statusCode}) for request ${_url.loggable}',
+            () =>
+                'PGRST116 (${exception.statusCode}) for request '
+                '${_url.loggable}',
           );
           throw exception;
         } else if (body.length == 1) {
@@ -788,8 +790,9 @@ class PostgrestBuilder<T> implements Future<T> {
     }
 
     postgrestLogger.fine(
-      '${error.runtimeType} (${error.statusCode}, ${error.errorCode}) from '
-      'request: ${method.value} ${_url.loggable}',
+      () =>
+          '${error.runtimeType} (${error.statusCode}, ${error.errorCode}) from '
+          'request: ${method.value} ${_url.loggable}',
     );
 
     throw error;

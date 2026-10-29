@@ -158,7 +158,7 @@ class Supabase {
           ),
         );
       }
-      flutterLogger.info(
+      flutterLogger.fine(
         'Supabase is already initialized or initializing. Returning the same '
         'instance.',
       );
@@ -263,7 +263,7 @@ class Supabase {
       }
     }
 
-    flutterLogger.info('Supabase initialization completed');
+    flutterLogger.fine('Supabase initialization completed');
 
     return _instance;
   }
