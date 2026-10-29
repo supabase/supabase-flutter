@@ -1,9 +1,9 @@
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
-import 'package:supabase_common/supabase_common.dart' show JsonFields;
+import 'package:supabase_common/supabase_common.dart'
+    show JsonFields, jsonObject;
 import 'package:supabase_realtime/supabase_realtime.dart';
-import 'package:supabase_realtime/src/transformers.dart';
 import 'package:supabase_realtime/src/types.dart';
 
 /// A single shared state between users with Realtime Presence.
@@ -99,7 +99,7 @@ class RealtimePresence {
 
       _state = RealtimePresence.syncState(
         _state,
-        asJsonObject(newState, 'the presence state'),
+        jsonObject(newState, 'the presence state'),
         onJoin,
         onLeave,
       );
@@ -123,7 +123,7 @@ class RealtimePresence {
       final onLeave = _caller['onLeave'];
       final onSync = _caller['onSync'];
 
-      final presenceDiff = asJsonObject(diff, 'the presence diff');
+      final presenceDiff = jsonObject(diff, 'the presence diff');
       if (inPendingSyncState()) {
         _pendingDiffs.add(presenceDiff);
       } else {
@@ -254,8 +254,8 @@ class RealtimePresence {
     PresenceOnJoinCallback? onJoin,
     PresenceOnLeaveCallback? onLeave,
   ]) {
-    final joins = _transformState(asJsonObject(diff['joins'], '"joins"'));
-    final leaves = _transformState(asJsonObject(diff['leaves'], '"leaves"'));
+    final joins = _transformState(diff.field<Map<String, dynamic>>('joins'));
+    final leaves = _transformState(diff.field<Map<String, dynamic>>('leaves'));
 
     onJoin ??= (_, _, _) => {};
 
@@ -358,17 +358,20 @@ class RealtimePresence {
 
       newStateMap[key] = switch (presences) {
         final List<Presence> internalPresences => internalPresences,
-        _ => asJsonObject(
-          presences,
-          'the presences of "$key"',
-        ).field<List<dynamic>>('metas').map(_presenceFromMeta).toList(),
+        _ =>
+          jsonObject(
+                presences,
+                'the presences of "$key"',
+              )
+              .requiredListOf<Map<String, dynamic>>('metas')
+              .map(_presenceFromMeta)
+              .toList(),
       };
     }
     return newStateMap;
   }
 
-  static Presence _presenceFromMeta(dynamic element) {
-    final meta = asJsonObject(element, 'an element of "metas"');
+  static Presence _presenceFromMeta(Map<String, dynamic> meta) {
     meta['presence_ref'] = meta.field<String>('phx_ref');
 
     meta.remove('phx_ref');

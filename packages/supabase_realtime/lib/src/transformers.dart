@@ -529,25 +529,10 @@ String? toTimestampString(String? value) {
   return null;
 }
 
-/// [value] as a JSON object, or a [FormatException] naming [description] when
-/// it is not a map with string keys.
-@internal
-Map<String, dynamic> asJsonObject(Object? value, String description) =>
-    switch (value) {
-      final Map<String, dynamic> json => json,
-      final Map<dynamic, dynamic> json
-          when json.keys.every((key) => key is String) =>
-        json.cast(),
-      _ => throw FormatException(
-        'Expected $description to be Map<String, dynamic>, got '
-        '${value.runtimeType}',
-      ),
-    };
-
 @internal
 Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
-  final data = payload['data'];
-  final postgresChanges = data == null ? payload : asJsonObject(data, '"data"');
+  final postgresChanges =
+      payload.field<Map<String, dynamic>?>('data') ?? payload;
   final schema = postgresChanges['schema'];
   final table = postgresChanges['table'];
   final commitTimestamp = postgresChanges['commit_timestamp'];
@@ -582,24 +567,22 @@ Map<String, Map<String, dynamic>> getPayloadRecords(
   if (payload['type'] == 'INSERT' || payload['type'] == 'UPDATE') {
     records['new'] = convertChangeData(
       _columns(payload),
-      asJsonObject(payload['record'], '"record"'),
+      payload.field<Map<String, dynamic>>('record'),
     );
   }
 
   if (payload['type'] == 'UPDATE' || payload['type'] == 'DELETE') {
     records['old'] = convertChangeData(
       _columns(payload),
-      asJsonObject(payload['old_record'], '"old_record"'),
+      payload.field<Map<String, dynamic>>('old_record'),
     );
   }
 
   return records;
 }
 
-List<Map<String, dynamic>> _columns(Map<String, dynamic> payload) => [
-  for (final (index, column) in payload.field<List<dynamic>>('columns').indexed)
-    asJsonObject(column, 'element $index of "columns"'),
-];
+List<Map<String, dynamic>> _columns(Map<String, dynamic> payload) =>
+    payload.requiredListOf('columns');
 
 /// Converts a WebSocket URL to an HTTP URL.
 @internal

@@ -230,7 +230,7 @@ void main() {
 
       final sentFilter =
           (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
-              as Map;
+              as Map<String, dynamic>;
       expect(sentFilter['filter'], r'name=in.("a\"b\\c")');
 
       channel.joinPush.trigger('ok', {
@@ -266,7 +266,7 @@ void main() {
 
       final sentFilter =
           (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
-              as Map;
+              as Map<String, dynamic>;
 
       channel.joinPush.trigger('ok', {
         'postgres_changes': [
@@ -322,7 +322,7 @@ void main() {
 
       final sentFilter =
           (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
-              as Map;
+              as Map<String, dynamic>;
       expect(sentFilter['select'], ['id', 'first_name']);
     });
 
@@ -349,7 +349,7 @@ void main() {
 
       final sentFilter =
           (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
-              as Map;
+              as Map<String, dynamic>;
       expect(sentFilter['filter'], 'amount=gt.100,status=in.(open,pending)');
     });
   });
@@ -798,7 +798,7 @@ void main() {
         ChannelFilter(),
         (dynamic payload, [dynamic ref]) => broadcastCalled++,
       );
-      channel.trigger('broadcast', {}, defaultRef);
+      channel.trigger('broadcast', <String, dynamic>{}, defaultRef);
       expect(broadcastCalled, 1);
     });
   });

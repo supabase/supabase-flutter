@@ -305,11 +305,11 @@ class RealtimeChannel {
     _joinPush
         .receive(
           'ok',
-          (response) => _handleJoinOk(asJsonObject(response, 'the join reply')),
+          (response) => _handleJoinOk(jsonObject(response, 'the join reply')),
         )
         .receive('error', (error) {
           _state = ChannelState.errored;
-          final reply = asJsonObject(error, 'the join error');
+          final reply = jsonObject(error, 'the join error');
           _addStatus(
             RealtimeSubscribeStatus.channelError,
             RealtimeException(
@@ -365,21 +365,24 @@ class RealtimeChannel {
       final schema = clientPostgresBinding.filter['schema'];
       final table = clientPostgresBinding.filter['table'];
       final filter = clientPostgresBinding.filter['filter'];
-      final serverPostgresFilter =
-          serverPostgresFilters is List && i < serverPostgresFilters.length
-          ? serverPostgresFilters[i]
-          : null;
+      final serverPostgresFilter = switch (serverPostgresFilters) {
+        final List<dynamic> filters when i < filters.length =>
+          switch (filters[i]) {
+            null => null,
+            final echoed => jsonObject(
+              echoed,
+              'element $i of "postgres_changes"',
+            ),
+          },
+        _ => null,
+      };
 
       // NOTE: `select` is intentionally not part of this equality check
       // (mirroring supabase-js), so a server that echoes `select` back in a
       // slightly different shape does not force a spurious unsubscribe. The
       // client binding keeps its own `select` regardless.
       if (serverPostgresFilter != null &&
-          asJsonObject(
-                serverPostgresFilter,
-                'element $i of "postgres_changes"',
-              )['event'] ==
-              event &&
+          serverPostgresFilter['event'] == event &&
           serverPostgresFilter['schema'] == schema &&
           serverPostgresFilter['table'] == table &&
           serverPostgresFilter['filter'] == filter) {
@@ -548,7 +551,7 @@ class RealtimeChannel {
         'postgres_changes',
         channelFilter,
         (payload) => PostgresChangePayload.fromPayload(
-          asJsonObject(payload, 'the postgres_changes payload'),
+          jsonObject(payload, 'the postgres_changes payload'),
         ),
       ),
     );
@@ -579,7 +582,7 @@ class RealtimeChannel {
         'broadcast',
         ChannelFilter(event: event),
         (payload) => Map<String, dynamic>.of(
-          asJsonObject(payload, 'the broadcast payload'),
+          jsonObject(payload, 'the broadcast payload'),
         ),
       ),
     );
@@ -642,7 +645,7 @@ class RealtimeChannel {
     final stream = _eventStream(
       'presence',
       ChannelFilter(event: event.name),
-      (payload) => fromJson(asJsonObject(payload, 'the presence payload')),
+      (payload) => fromJson(jsonObject(payload, 'the presence payload')),
     );
     _handlePresenceUpdate();
     return stream;
@@ -673,7 +676,7 @@ class RealtimeChannel {
       ChannelFilter(),
       (payload) => payload is Map
           ? RealtimeSystemPayload.fromJson(
-              asJsonObject(payload, 'the system payload'),
+              jsonObject(payload, 'the system payload'),
             )
           : null,
     );
@@ -1188,7 +1191,7 @@ class RealtimeChannel {
 
       for (final bind in (bindings ?? <Binding>[])) {
         handledPayload = getEnrichedPayload(
-          asJsonObject(handledPayload, 'the $typeLower payload'),
+          jsonObject(handledPayload, 'the $typeLower payload'),
         );
         bind.callback(handledPayload, ref);
       }
@@ -1199,7 +1202,7 @@ class RealtimeChannel {
           if (bindId != null) {
             final bindEvent = bind.filter['event'];
 
-            final changes = asJsonObject(payload, 'the $typeLower payload');
+            final changes = jsonObject(payload, 'the $typeLower payload');
             final ids = changes.field<List<dynamic>?>('ids');
             if (ids?.contains(int.parse(bindId)) != true) {
               return false;
@@ -1217,7 +1220,7 @@ class RealtimeChannel {
           }
           final event = payload == null
               ? null
-              : asJsonObject(
+              : jsonObject(
                   payload,
                   'the $typeLower payload',
                 ).field<String?>('event');
