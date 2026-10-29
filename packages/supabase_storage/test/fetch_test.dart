@@ -856,10 +856,7 @@ void main() {
       );
 
       await expectLater(
-        client
-            .from('bucket')
-            .downloadStream('a.txt', abortSignal: abortSignal)
-            .toList(),
+        client.from('bucket').downloadStream('a.txt', abortSignal: abortSignal),
         throwsA(isA<RequestAbortedException>()),
       );
     });

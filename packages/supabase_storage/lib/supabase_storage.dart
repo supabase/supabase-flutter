@@ -23,6 +23,7 @@ export 'src/resumable_upload.dart'
         ResumableUploadStatus,
         ResumableUploadStorage;
 export 'src/storage_client.dart';
+export 'src/storage_download.dart';
 export 'src/storage_file_api.dart';
 export 'src/types.dart';
 export 'src/vector_client.dart';

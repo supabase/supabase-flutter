@@ -80,16 +80,13 @@ void main() {
         addTearDown(httpClient.close);
 
         await expectLater(
-          storage
-              .from('bucket')
-              .downloadStream('a.bin')
-              .collectBytes(maxBytes: 1000),
+          (await storage.from('bucket').downloadStream('a.bin')).collectBytes(
+            maxBytes: 1000,
+          ),
           throwsA(isA<StorageDownloadTooLargeException>()),
         );
-        final whole = await storage
-            .from('bucket')
-            .downloadStream('a.bin')
-            .collectBytes(maxBytes: 10000);
+        final download = await storage.from('bucket').downloadStream('a.bin');
+        final whole = await download.collectBytes(maxBytes: 10000);
         expect(whole.length, 10000);
       },
     );

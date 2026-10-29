@@ -2078,6 +2078,46 @@ for (final result in results) {
 }
 ```
 
+#### `downloadStream` returns a `Future<StorageDownload>`
+
+`downloadStream` used to return a `Stream<Uint8List>` that sent the request only once it was
+listened to, so a missing object or an invalid token arrived as an error on the stream. It now
+returns a `Future<StorageDownload>` that completes once the response head arrives. A
+`StorageDownload` is itself the `Stream<Uint8List>` of the body, and also carries `statusCode`,
+`headers`, `contentLength`, `contentRange` and `contentType`. Await the call before reading the
+body:
+
+```dart skip
+// Before
+final stream = supabase.storage.from('videos').downloadStream('intro.mp4');
+await for (final chunk in stream) {
+  print(chunk.length);
+}
+```
+
+```dart
+final download = await supabase.storage
+    .from('videos')
+    .downloadStream('intro.mp4');
+await for (final chunk in download) {
+  print(chunk.length);
+}
+```
+
+A non-success status throws a `StorageApiException` from the awaited call, and a failure while the
+body streams, a timeout included, is a `StorageTransportException` on the stream. A ranged request
+answered with the whole file and status 200 is returned as it is instead of failing, so check
+`statusCode` before appending the bytes to a partial file:
+
+```dart
+final download = await supabase.storage
+    .from('videos')
+    .downloadStream('intro.mp4', range: ByteRange(1024));
+if (download.statusCode != 206) {
+  print('got the whole file instead of the range');
+}
+```
+
 #### Storage uploads and downloads take an `abortSignal`
 
 `StorageRetryController` is gone. Every upload method and both download methods on
@@ -2106,7 +2146,8 @@ Future<void> uploadAvatar(SupabaseClient supabase, File file) async {
 }
 ```
 
-On `downloadStream` the abort surfaces as a `RequestAbortedException` error on the stream.
+On `downloadStream` an abort after the response head arrived surfaces as a
+`RequestAbortedException` on the stream.
 
 #### Signed URL uploads take named options
 

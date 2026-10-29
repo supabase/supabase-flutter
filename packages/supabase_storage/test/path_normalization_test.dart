@@ -47,7 +47,8 @@ void main() {
       test('by downloadStream', () async {
         mockClient.stub(Uint8List.fromList([1, 2, 3]));
 
-        await client.from('bucket').downloadStream(path).drain<void>();
+        final download = await client.from('bucket').downloadStream(path);
+        await download.drain<void>();
 
         expect(
           requestUrl().path,

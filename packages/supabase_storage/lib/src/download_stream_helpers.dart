@@ -4,8 +4,8 @@ import 'types.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
-/// Helpers that consume a stream of downloaded bytes, such as the one
-/// returned by `StorageFileApi.downloadStream`.
+/// Helpers that consume a stream of downloaded bytes, such as the
+/// `StorageDownload` returned by `StorageFileApi.downloadStream`.
 extension StorageByteStream on Stream<Uint8List> {
   /// Collects the stream into one [Uint8List].
   ///

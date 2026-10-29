@@ -489,6 +489,46 @@ void main() {
     );
   });
 
+  group('downloadStream', () {
+    const streamBucket = '${_bucketNamespace}stream-bucket';
+
+    setUp(() async {
+      await findOrCreateBucket(streamBucket, false);
+      await storage
+          .from(streamBucket)
+          .upload(
+            uploadPath,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
+    });
+
+    test('returns a satisfied range with its status and headers', () async {
+      final bytes = file.readAsBytesSync();
+
+      final download = await storage
+          .from(streamBucket)
+          .downloadStream(uploadPath, range: ByteRange(10, 19));
+
+      expect(download.statusCode, 206);
+      expect(download.contentRange, 'bytes 10-19/${bytes.length}');
+      expect(download.contentLength, 10);
+      expect(download.contentType, 'image/jpeg');
+      expect(await download.collectBytes(), bytes.sublist(10, 20));
+    });
+
+    test('throws a missing object from the future', () async {
+      await expectLater(
+        storage.from(streamBucket).downloadStream('missing.jpg'),
+        throwsA(
+          isA<StorageApiException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having((error) => error.errorCode, 'errorCode', 'NoSuchKey'),
+        ),
+      );
+    });
+  });
+
   group('bucket limits', () {
     test('can upload a file within the file size limit', () async {
       final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
@@ -1189,11 +1229,10 @@ void main() {
           .from(bucketName)
           .download(path, versionId: firstVersion);
       final current = await storage.from(bucketName).download(path);
-      final streamed = await storage
+      final download = await storage
           .from(bucketName)
-          .downloadStream(path, versionId: firstVersion)
-          .expand((chunk) => chunk)
-          .toList();
+          .downloadStream(path, versionId: firstVersion);
+      final streamed = await download.expand((chunk) => chunk).toList();
 
       expect(previous, firstBytes);
       expect(current, secondBytes);

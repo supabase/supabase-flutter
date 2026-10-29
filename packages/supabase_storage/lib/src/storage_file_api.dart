@@ -4,6 +4,7 @@ import 'package:http/http.dart' show RequestAbortedException;
 import 'package:meta/meta.dart';
 import 'package:supabase_storage/src/fetch.dart';
 import 'package:supabase_storage/src/resumable_upload.dart';
+import 'package:supabase_storage/src/storage_download.dart';
 import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
@@ -872,10 +873,14 @@ class StorageFileApi {
   ///
   /// {@template storage_download_range}
   /// [range] downloads only those bytes of the file. See [ByteRange]. A
-  /// server or cache that ignores the range and answers with the whole file
-  /// fails the download with a [StorageException]. A range of a transformed
-  /// image fails it with an [ArgumentError].
+  /// range of a transformed image fails the download with an
+  /// [ArgumentError].
   /// {@endtemplate}
+  /// The bytes come without a status, so a server or cache that ignores the
+  /// range and answers with the whole file and status 200 fails the download
+  /// with a [StorageException] naming the range and the status. To handle
+  /// that answer yourself, for example when resuming a download, use
+  /// [downloadStream], which returns it with its status.
   ///
   /// [onProgress] is called as the body arrives with the bytes received so far
   /// and the total. See [DownloadProgressCallback].
@@ -901,7 +906,7 @@ class StorageFileApi {
         ).toString(),
         options: _downloadOptions(range),
         abortSignal: abortSignal,
-        partialContent: range != null,
+        range: range,
         onProgress: onProgress,
       ),
     );
@@ -951,13 +956,28 @@ class StorageFileApi {
     ).replace(queryParameters: query);
   }
 
-  /// Downloads a file as a byte stream for memory-efficient handling of large
-  /// files.
+  /// Downloads a file as a stream of bytes, without holding the whole file in
+  /// memory.
   ///
-  /// Unlike [download], the response body is not buffered into a [Uint8List];
-  /// the stream yields the bytes as they arrive. The request is sent when the
-  /// stream is listened to, and a non-success response surfaces as a
-  /// [StorageException] on the stream before any bytes are emitted.
+  /// The future completes once the response head arrives, before any byte of
+  /// the body is read, with a [StorageDownload] that carries the status and
+  /// the headers and is itself the stream of the body:
+  ///
+  /// ```dart
+  /// final download = await supabase.storage
+  ///     .from('videos')
+  ///     .downloadStream('intro.mp4');
+  /// print('${download.contentLength} bytes of ${download.contentType}');
+  /// await for (final chunk in download) {
+  ///   print('received ${chunk.length} bytes');
+  /// }
+  /// ```
+  ///
+  /// A non-success status throws a [StorageApiException] from the future. A
+  /// failure while the body streams, such as a dropped connection or a
+  /// timeout, surfaces on the stream as a [StorageTransportException]. The
+  /// connection stays open until the body is read to the end or its
+  /// subscription is cancelled, which closes it.
   ///
   /// [path] is the file path to be downloaded, including the path and file
   /// name. For example `downloadStream('folder/image.png')`.
@@ -972,18 +992,22 @@ class StorageFileApi {
   ///
   /// {@macro storage_abort_signal}
   ///
-  /// On the stream the abort surfaces as a [RequestAbortedException] error
-  /// event, whether it happens before the response headers arrive or while
-  /// bytes are flowing, and the stream closes.
+  /// Once the future has completed, the abort surfaces as a
+  /// [RequestAbortedException] on the stream, and the stream closes.
   ///
   /// [versionId] downloads that version of the file instead of the current
   /// one.
   ///
   /// {@macro storage_download_range}
+  /// A satisfied range is answered with status 206 and a `Content-Range`. A
+  /// server or cache that ignores the range answers with the whole file and
+  /// status 200, which is returned as it is, so check
+  /// [StorageDownload.statusCode] before appending the bytes to a partial
+  /// file.
   ///
   /// [onProgress] is called as the body arrives with the bytes received so far
   /// and the total. See [DownloadProgressCallback].
-  Stream<Uint8List> downloadStream(
+  Future<StorageDownload> downloadStream(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
@@ -992,22 +1016,21 @@ class StorageFileApi {
     String? versionId,
     ByteRange? range,
     DownloadProgressCallback? onProgress,
-  }) async* {
-    final fetchUrl = _downloadUri(
-      path,
-      transform: transform,
-      queryParameters: queryParameters,
-      cacheNonce: cacheNonce,
-      versionId: versionId,
-      range: range,
-    );
-
-    yield* _storageFetch.getStream(
-      fetchUrl.toString(),
-      options: _downloadOptions(range),
-      abortSignal: abortSignal,
-      partialContent: range != null,
-      onProgress: onProgress,
+  }) {
+    return Future.sync(
+      () => _storageFetch.getStream(
+        _downloadUri(
+          path,
+          transform: transform,
+          queryParameters: queryParameters,
+          cacheNonce: cacheNonce,
+          versionId: versionId,
+          range: range,
+        ).toString(),
+        options: _downloadOptions(range),
+        abortSignal: abortSignal,
+        onProgress: onProgress,
+      ),
     );
   }
 

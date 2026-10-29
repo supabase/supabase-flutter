@@ -43,9 +43,12 @@ void main() {
       }) async {
         final files = client.from('bucket');
         if (stream) {
-          await files
-              .downloadStream('a.bin', onProgress: onProgress, range: range)
-              .drain<void>();
+          final download = await files.downloadStream(
+            'a.bin',
+            onProgress: onProgress,
+            range: range,
+          );
+          await download.drain<void>();
         } else {
           await files.download('a.bin', onProgress: onProgress, range: range);
         }

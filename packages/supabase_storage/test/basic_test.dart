@@ -626,9 +626,11 @@ void main() {
       file.writeAsStringSync('Streamed content');
       customHttpClient.stub(file.readAsBytesSync());
 
-      final stream = client.from('public_bucket').downloadStream('b.txt');
-      expect(stream, isA<Stream<Uint8List>>());
-      final bytes = await stream.expand((chunk) => chunk).toList();
+      final download = await client
+          .from('public_bucket')
+          .downloadStream('b.txt');
+      expect(download, isA<Stream<Uint8List>>());
+      final bytes = await download.expand((chunk) => chunk).toList();
 
       expect(String.fromCharCodes(bytes), 'Streamed content');
 
@@ -639,14 +641,14 @@ void main() {
     test('downloadStream appends transform and cacheNonce', () async {
       customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
 
-      await client
+      final download = await client
           .from('public_bucket')
           .downloadStream(
             'b.txt',
             transform: const TransformOptions(width: 200),
             cacheNonce: 'v2',
-          )
-          .drain<void>();
+          );
+      await download.drain<void>();
 
       final request = customHttpClient.requests.single;
       expect(
@@ -670,12 +672,12 @@ void main() {
     test('downloadStream sends a range that runs to the end', () async {
       customHttpClient.stub(Uint8List.fromList([1, 2]), statusCode: 206);
 
-      final bytes = await client
+      final download = await client
           .from('public_bucket')
-          .downloadStream('b.txt', range: ByteRange(10))
-          .expand((chunk) => chunk)
-          .toList();
+          .downloadStream('b.txt', range: ByteRange(10));
+      final bytes = await download.expand((chunk) => chunk).toList();
 
+      expect(download.statusCode, 206);
       expect(bytes, [1, 2]);
       expect(customHttpClient.requests.single.headers['range'], 'bytes=10-');
     });
@@ -685,20 +687,26 @@ void main() {
 
       await expectLater(
         client.from('public_bucket').download('b.txt', range: ByteRange(1, 2)),
-        throwsA(isA<StorageException>()),
+        throwsA(
+          isA<StorageException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('bytes=1-2'), contains('status 200')),
+          ),
+        ),
       );
     });
 
-    test('a range answered with the whole file fails the stream', () async {
+    test('a range answered with the whole file is streamed as it is', () async {
       customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
 
-      await expectLater(
-        client
-            .from('public_bucket')
-            .downloadStream('b.txt', range: ByteRange(1))
-            .drain<void>(),
-        throwsA(isA<StorageException>()),
-      );
+      final download = await client
+          .from('public_bucket')
+          .downloadStream('b.txt', range: ByteRange(1));
+
+      expect(download.statusCode, 200);
+      expect(download.contentRange, isNull);
+      expect(await download.expand((chunk) => chunk).toList(), [1, 2, 3]);
     });
 
     test('a range of a transformed image fails the download', () async {
@@ -719,9 +727,9 @@ void main() {
     });
 
     test('a range of a transformed image fails the stream', () async {
-      late Stream<Uint8List> stream;
+      late Future<StorageDownload> download;
       expect(
-        () => stream = client
+        () => download = client
             .from('public_bucket')
             .downloadStream(
               'b.png',
@@ -731,7 +739,7 @@ void main() {
         returnsNormally,
       );
 
-      await expectLater(stream, emitsError(isArgumentError));
+      await expectLater(download, throwsArgumentError);
       expect(customHttpClient.requests, isEmpty);
     });
 
@@ -749,14 +757,11 @@ void main() {
       expect(ByteRange(10, 10).end, 10);
     });
 
-    test('downloadStream surfaces an error status on the stream', () async {
+    test('downloadStream throws an error status from the future', () async {
       customHttpClient.stub({'message': 'Object not found'}, statusCode: 404);
 
       await expectLater(
-        client
-            .from('public_bucket')
-            .downloadStream('missing.txt')
-            .drain<void>(),
+        client.from('public_bucket').downloadStream('missing.txt'),
         throwsA(
           isA<StorageApiException>().having(
             (e) => e.statusCode,
@@ -1392,10 +1397,10 @@ void main() {
       test('downloadStream requests a specific version', () async {
         customHttpClient.stub(Uint8List.fromList([1, 2, 3]));
 
-        await client
+        final download = await client
             .from('public')
-            .downloadStream('a.txt', versionId: 'version-1')
-            .drain<void>();
+            .downloadStream('a.txt', versionId: 'version-1');
+        await download.drain<void>();
 
         final request = customHttpClient.requests.single;
         expect(request.url.queryParameters, {'versionId': 'version-1'});
