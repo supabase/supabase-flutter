@@ -608,12 +608,33 @@ final class _UploadRequest extends http.BaseRequest with http.Abortable {
   }
 }
 
+/// Remembers what a progress callback threw, which fails the transfer instead
+/// of an error of the HTTP client.
+mixin _CallbackFailure {
+  (Object, StackTrace)? callbackError;
+
+  void guardCallback(void Function() callback) {
+    try {
+      callback();
+    } catch (error, stackTrace) {
+      callbackError ??= (error, stackTrace);
+      rethrow;
+    }
+  }
+
+  void rethrowCallbackError() {
+    final callbackError = this.callbackError;
+    if (callbackError == null) return;
+    Error.throwWithStackTrace(callbackError.$1, callbackError.$2);
+  }
+}
+
 /// Reports the progress of the bodies an upload sends, one per attempt.
 ///
 /// Only the body of the latest attempt reports, and nothing reports once the
 /// upload is [finish]ed. A body sent after an earlier one has reported starts
 /// with a report of `0`, and a body that yields no bytes reports `0` once.
-final class _UploadProgress {
+final class _UploadProgress with _CallbackFailure {
   _UploadProgress(this._onProgress, this._totalBytes);
 
   final UploadProgressCallback _onProgress;
@@ -621,10 +642,6 @@ final class _UploadProgress {
   var _attempt = 0;
   var _reported = false;
   var _finished = false;
-
-  /// What the callback threw, which fails the upload instead of an error of
-  /// the HTTP client.
-  (Object, StackTrace)? callbackError;
 
   Stream<List<int>> watch(Stream<List<int>> body) =>
       _watch(++_attempt, sliceRequestBody(body));
@@ -647,22 +664,11 @@ final class _UploadProgress {
   bool _report(int attempt, int sentBytes) {
     if (_finished || attempt != _attempt) return false;
     _reported = true;
-    try {
-      _onProgress(sentBytes, _totalBytes);
-    } catch (error, stackTrace) {
-      callbackError ??= (error, stackTrace);
-      rethrow;
-    }
+    guardCallback(() => _onProgress(sentBytes, _totalBytes));
     return true;
   }
 
   void finish() => _finished = true;
-
-  void rethrowCallbackError() {
-    final callbackError = this.callbackError;
-    if (callbackError == null) return;
-    Error.throwWithStackTrace(callbackError.$1, callbackError.$2);
-  }
 }
 
 /// Reports the body of a successful download as it reaches the caller.
@@ -671,7 +677,7 @@ final class _UploadProgress {
 /// response has a `Content-Encoding`, since the HTTP stack may decode the body
 /// so that its length no longer matches. A body that yields no bytes reports
 /// `0` once, and nothing is reported after the body fails.
-final class _DownloadProgress {
+final class _DownloadProgress with _CallbackFailure {
   _DownloadProgress(this._onProgress, http.StreamedResponse source) {
     final contentEncoding = source.headers['content-encoding']?.trim();
     final hasEncoding =
@@ -698,10 +704,6 @@ final class _DownloadProgress {
   late final int? _totalBytes;
   late final http.StreamedResponse response;
 
-  /// What the callback threw, which fails the download instead of an error of
-  /// the HTTP client.
-  (Object, StackTrace)? callbackError;
-
   Stream<List<int>> _watch(Stream<List<int>> body) async* {
     var receivedBytes = 0;
     var reported = false;
@@ -715,18 +717,6 @@ final class _DownloadProgress {
     if (!reported) _report(0);
   }
 
-  void _report(int receivedBytes) {
-    try {
-      _onProgress(receivedBytes, _totalBytes);
-    } catch (error, stackTrace) {
-      callbackError ??= (error, stackTrace);
-      rethrow;
-    }
-  }
-
-  void rethrowCallbackError() {
-    final callbackError = this.callbackError;
-    if (callbackError == null) return;
-    Error.throwWithStackTrace(callbackError.$1, callbackError.$2);
-  }
+  void _report(int receivedBytes) =>
+      guardCallback(() => _onProgress(receivedBytes, _totalBytes));
 }
