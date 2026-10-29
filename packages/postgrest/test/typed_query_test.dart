@@ -1426,6 +1426,28 @@ void main() {
       );
     });
 
+    test('upsertAll sends an explicit null next to a left out key', () async {
+      httpClient.stub(null);
+
+      await client.table(Books.table).upsertAll([
+        BookInsert(title: 'foo'),
+        BookInsert(title: 'bar').setIdToNull(),
+      ]);
+
+      expect(
+        httpClient.requests.last.body,
+        '[{"title":"foo"},{"title":"bar","id":null}]',
+      );
+      expect(requestParameters()['columns'], '"title","id"');
+      expect(
+        httpClient.requests.last.headers['Prefer'],
+        allOf(
+          contains('resolution=merge-duplicates'),
+          contains('missing=default'),
+        ),
+      );
+    });
+
     test('upsert of a single row sends no missing=default', () async {
       httpClient.stub(null);
 

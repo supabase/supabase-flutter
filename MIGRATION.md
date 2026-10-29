@@ -1063,8 +1063,10 @@ Anything chained directly after `update()` or `delete()` has to move after the `
 #### Typed inserts and upserts have no `defaultToNull`
 
 The typed `insert()`, `insertAll()`, `upsert()` and `upsertAll()` no longer take `defaultToNull`.
-A column left out of a row always gets its database default, and SQL `NULL` is written with the
-generated `set…ToNull()` methods. On `insert()` and `upsert()` the parameter had no effect.
+A column left out of an inserted row always gets its database default, and SQL `NULL` is written
+with the generated `set…ToNull()` methods. An upsert that merges into an existing row only updates
+the columns the request sends, so a column left out of every row keeps its value. On `insert()` and
+`upsert()` the parameter had no effect.
 
 ```dart skip
 // Before
