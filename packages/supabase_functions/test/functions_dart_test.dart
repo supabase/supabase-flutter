@@ -313,7 +313,7 @@ void main() {
       },
     );
 
-    test('the logs redact credential headers', () async {
+    test('the logs carry header names but no header values', () async {
       final messages = <String>[];
       final previousLevel = Logger.root.level;
       Logger.root.level = Level.ALL;
@@ -342,21 +342,19 @@ void main() {
       for (final message in messages) {
         expect(message, isNot(contains('super-secret-token')));
         expect(message, isNot(contains('the-anon-key')));
+        expect(message, isNot(contains('eu-west-2')));
       }
 
       final initializeLog = messages.singleWhere(
         (message) => message.startsWith('Initialize with headers:'),
       );
-      expect(initializeLog, contains('<redacted>'));
+      expect(initializeLog, contains('Authorization'));
 
       final requestLog = messages.singleWhere(
         (message) => message.startsWith('Request:'),
       );
-      expect(requestLog, contains('<redacted>'));
-      // Every name, and any header that is not a credential, stays readable.
-      expect(requestLog, contains('Authorization'));
-      expect(requestLog, contains('apikey'));
-      expect(requestLog, contains('eu-west-2'));
+      expect(requestLog, isNot(contains('eu-west-2')));
+      expect(requestLog, isNot(contains('Authorization')));
     });
 
     test('function call', () async {

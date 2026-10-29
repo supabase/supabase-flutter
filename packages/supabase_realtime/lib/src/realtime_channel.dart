@@ -77,7 +77,7 @@ class RealtimeChannel {
       if (isLeaving || isClosed) {
         return;
       }
-      realtimeLogger.warning('Channel error: $topic', reason);
+      realtimeLogger.warning('Channel error: $topic (${reason.runtimeType})');
       _state = ChannelState.errored;
       _rejoinTimer.scheduleTimeout();
     });

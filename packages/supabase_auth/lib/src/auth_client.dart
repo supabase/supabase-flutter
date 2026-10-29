@@ -130,13 +130,13 @@ class AuthClient {
     final authUrl = url ?? AuthConstants.defaultAuthUrl;
     authLogger.config(
       'Initialize AuthClient v$version with url: '
-      '${Uri.parse(_url).redacted}, autoRefreshToken: '
+      '${Uri.parse(_url).loggable}, autoRefreshToken: '
       '$_autoRefreshToken, persistSession: $_persistSession, flowType: '
       '${_flowType.name}, tickDuration: '
       '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
       '${AuthConstants.autoRefreshTickThreshold}',
     );
-    authLogger.finest('Initialize with headers: ${_headers.redacted}');
+    authLogger.finest('Initialize with headers: ${_headers.loggableNames}');
     admin = AuthAdminApi(
       authUrl,
       headers: _headers,
@@ -2129,7 +2129,6 @@ class AuthClient {
   /// Sets the current session and persists it.
   void _saveSession(Session session) {
     authLogger.fine('Saving session');
-    authLogger.finest('Saving session: $session');
     _currentSession = session;
     _autoRefreshPausedUntil = null;
     _queueStorageWrite(
@@ -2270,9 +2269,6 @@ class AuthClient {
           messageEvent,
         ) {
           final rawEvent = messageEvent['event'];
-          authLogger.finest(
-            'Received broadcast message: ${redactedPayload(messageEvent)}',
-          );
           authLogger.info('Received broadcast event: $rawEvent');
           final event = AuthChangeEvent.fromValue(rawEvent);
 
@@ -2513,7 +2509,10 @@ class AuthClient {
         'session': state.session?.toJson(),
       });
     }
-    authLogger.finest('onAuthStateChange: $state');
+    authLogger.finest(
+      'onAuthStateChange: ${state.event.name} '
+      '(user: ${state.session?.user.id})',
+    );
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }

@@ -66,11 +66,11 @@ class PostgrestClient {
        _ownsJsonCodec = jsonCodec == null {
     postgrestLogger.config(
       () =>
-          'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
+          'Initialize PostgrestClient with url: ${Uri.parse(url).loggable}, '
           'schema: $_schema',
     );
     postgrestLogger.finest(
-      () => 'Initialize with headers: ${this.headers.redacted}',
+      () => 'Initialize with headers: ${this.headers.loggableNames}',
     );
   }
 

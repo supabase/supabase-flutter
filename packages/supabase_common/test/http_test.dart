@@ -79,6 +79,23 @@ void main() {
     });
   });
 
+  group('loggable', () {
+    test('keeps the scheme, host, port and path only', () {
+      final uri = Uri.parse(
+        'https://user:pass@example.com:8443/rest/v1/users?email=eq.x#frag',
+      );
+      expect(uri.loggable, 'https://example.com:8443/rest/v1/users');
+    });
+
+    test('keeps a URI without a host free of an authority', () {
+      expect(Uri.parse('/rest/v1/users?email=eq.x').loggable, '/rest/v1/users');
+    });
+
+    test('lists header names without values', () {
+      expect({'b': 'secret', 'a': 'secret'}.loggableNames, ['a', 'b']);
+    });
+  });
+
   group('redacted', () {
     test('replaces credential values but keeps the names', () {
       const headers = {

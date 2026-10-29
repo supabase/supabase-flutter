@@ -271,7 +271,7 @@ class IcebergRestCatalog {
       () {
         attempt++;
         icebergLogger.finest(
-          'Request: attempt: $attempt ${method.value} ${uri.redacted}',
+          'Request: attempt: $attempt ${method.value} ${uri.loggable}',
         );
         return _send(method, uri, requestHeaders, encodedBody, abortSignal);
       },

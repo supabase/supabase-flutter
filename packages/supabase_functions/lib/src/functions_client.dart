@@ -56,10 +56,10 @@ class FunctionsClient {
        _requestTimeout = requestTimeout {
     functionsLogger.config(
       "Initialize FunctionsClient v$version with url "
-      "'${Uri.parse(url).redacted}' and region "
+      "'${Uri.parse(url).loggable}' and region "
       "'$region'",
     );
-    functionsLogger.finest("Initialize with headers: ${headers.redacted}");
+    functionsLogger.finest("Initialize with headers: ${headers.loggableNames}");
   }
   final String _url;
   final Map<String, String> _headers;
@@ -294,8 +294,7 @@ class FunctionsClient {
     }
 
     functionsLogger.finest(
-      'Request: ${request.method} ${request.url.redacted} '
-      '${request.headers.redacted}',
+      'Request: ${request.method} ${request.url.loggable}',
     );
 
     final response = await _guardTransport(

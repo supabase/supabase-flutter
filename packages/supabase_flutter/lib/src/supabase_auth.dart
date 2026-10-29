@@ -290,7 +290,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       return;
     }
 
-    flutterLogger.finest('handle deeplink uri: ${uri.redacted}');
+    flutterLogger.finest('handle deeplink uri: ${uri.loggable}');
     flutterLogger.info('handle deeplink uri');
 
     try {

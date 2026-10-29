@@ -764,7 +764,8 @@ class ResumableUpload {
           }
           final delay = delays[retries++];
           storageLogger.fine(
-            'Retrying resumable upload $id in $delay after: $error',
+            'Retrying resumable upload $id in $delay after: '
+            '${error.runtimeType}',
           );
           await Future.any([Future<void>.delayed(delay), abort.future]);
           if (step != _Step.create) step = _Step.resync;
@@ -784,7 +785,7 @@ class ResumableUpload {
               ),
             );
       }
-      storageLogger.fine('Resumable upload $id failed', error, stackTrace);
+      storageLogger.fine('Resumable upload $id failed: ${error.runtimeType}');
       if (_record == null && _registry._live[id] == this) {
         _registry._live.remove(id);
       }

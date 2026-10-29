@@ -549,7 +549,7 @@ class PostgrestBuilder<T> implements Future<T> {
       HttpMethod.patch => await _encodeBody(),
       HttpMethod.get || HttpMethod.head || HttpMethod.delete => null,
     };
-    postgrestLogger.finest("Request: ${method.value} ${_url.redacted}");
+    postgrestLogger.finest("Request: ${method.value} ${_url.loggable}");
 
     final requestTimeout = _requestTimeout;
 
@@ -717,7 +717,9 @@ class PostgrestBuilder<T> implements Future<T> {
             message: 'JSON object requested, multiple (or no) rows returned',
           );
 
-          postgrestLogger.finest('$exception for request ${_url.redacted}');
+          postgrestLogger.finest(
+            'PGRST116 (${exception.statusCode}) for request ${_url.loggable}',
+          );
           throw exception;
         } else if (body.length == 1) {
           body = body.first;
@@ -780,8 +782,10 @@ class PostgrestBuilder<T> implements Future<T> {
       return _decode(null, 0);
     }
 
-    postgrestLogger.finest('$error from request: ${_url.redacted}');
-    postgrestLogger.fine('$error from request');
+    postgrestLogger.fine(
+      '${error.runtimeType} (${error.statusCode}, ${error.errorCode}) from '
+      'request: ${method.value} ${_url.loggable}',
+    );
 
     throw error;
   }
