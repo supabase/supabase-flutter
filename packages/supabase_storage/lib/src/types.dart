@@ -576,10 +576,10 @@ class SearchOptions {
   @internal
   Map<String, dynamic> toMap() {
     return {
-      'limit': limit,
-      'offset': offset,
-      'sortBy': sortBy?.toMap(),
-      'search': search,
+      'limit': limit ?? 100,
+      'offset': offset ?? 0,
+      'sortBy': (sortBy ?? const SortBy()).toMap(),
+      'search': ?search,
       'noncurrentVersions': ?noncurrentVersions?.snakeCase,
       'deleteMarkers': ?deleteMarkers?.snakeCase,
       'exactMatch': ?exactMatch,

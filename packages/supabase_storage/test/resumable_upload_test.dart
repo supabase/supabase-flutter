@@ -487,6 +487,80 @@ void main() {
     expect(await storage.resumableUploads(), isEmpty);
   });
 
+  test('carries the single request error codes on the creation', () async {
+    for (final (statusCode, message, errorCode) in [
+      (409, 'The resource already exists', 'Duplicate'),
+      (413, 'Maximum size exceeded', 'EntityTooLarge'),
+    ]) {
+      httpClient.stubText(
+        message,
+        statusCode: statusCode,
+        method: HttpMethod.post,
+        times: 1,
+      );
+      final upload = storage
+          .from('videos')
+          .resumableUploadBinary('clip$statusCode.mp4', data);
+
+      await expectLater(
+        upload.done,
+        throwsA(
+          isA<StorageApiException>()
+              .having((error) => error.statusCode, 'statusCode', statusCode)
+              .having((error) => error.errorCode, 'errorCode', errorCode),
+        ),
+      );
+    }
+  });
+
+  test(
+    'fails with a duplicate when the final chunk finds the object',
+    () async {
+      httpClient.stubText(
+        'The resource already exists',
+        statusCode: 409,
+        method: HttpMethod.patch,
+      );
+      final upload = storage
+          .from('videos')
+          .resumableUploadBinary('clip.mp4', data);
+
+      await expectLater(
+        upload.done,
+        throwsA(
+          isA<StorageApiException>()
+              .having((error) => error.statusCode, 'statusCode', 409)
+              .having((error) => error.errorCode, 'errorCode', 'Duplicate'),
+        ),
+      );
+      expect(
+        httpClient.requestsTo(uploadUrlPath, method: HttpMethod.patch),
+        hasLength(1),
+      );
+      expect(await storage.resumableUploads(), isEmpty);
+    },
+  );
+
+  test('requires Tus-Complete to complete the upload', () async {
+    httpClient.stubHandler(
+      (request) => Response(
+        '',
+        204,
+        headers: {
+          'upload-offset': '10',
+          'supabase-object-id': 'object-1',
+        },
+      ),
+      method: HttpMethod.patch,
+    );
+    final upload = storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', data);
+
+    await expectLater(upload.done, throwsA(isA<StorageException>()));
+    expect(upload.status, ResumableUploadStatus.failed);
+  });
+
   test('sends upsert on the creation and every chunk', () async {
     await storage
         .from('videos')
