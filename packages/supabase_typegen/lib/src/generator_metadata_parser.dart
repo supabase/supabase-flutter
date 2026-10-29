@@ -170,11 +170,6 @@ extension on Map<String, dynamic> {
   /// The elements of the list at [key], none when it is missing.
   List<T> optionalListOf<T>(String key) => listOf(key) ?? const [];
 
-  /// The elements of the list at [key], which must not be missing.
-  List<T> requiredListOf<T>(String key) =>
-      listOf(key) ??
-      (throw FormatException('Expected "$key" to be List<$T>, got Null'));
-
   /// The records of the list at [key], none when it is missing.
   List<Map<String, dynamic>> records(String key) => optionalListOf(key);
 }

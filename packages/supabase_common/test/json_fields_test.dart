@@ -81,4 +81,94 @@ void main() {
       );
     });
   });
+
+  group('requiredListOf', () {
+    const json = <String, dynamic>{
+      'names': ['a', 'b'],
+    };
+
+    test('returns the elements of the list', () {
+      expect(json.requiredListOf<String>('names'), ['a', 'b']);
+    });
+
+    test('throws a FormatException naming a missing list', () {
+      expect(
+        () => json.requiredListOf<String>('titles'),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Expected "titles" to be List<String>, got Null',
+          ),
+        ),
+      );
+    });
+  });
+
+  group('jsonObject', () {
+    test('returns a JSON object', () {
+      const object = <String, dynamic>{'id': 1};
+      expect(jsonObject(object, 'the body'), same(object));
+    });
+
+    for (final value in <Object?>[
+      null,
+      'a',
+      <dynamic>[],
+      <dynamic, dynamic>{'id': 1},
+    ]) {
+      test('throws a FormatException naming $value', () {
+        expect(
+          () => jsonObject(value, 'the body'),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              'Expected the body to be a JSON object, got '
+                  '${value.runtimeType}',
+            ),
+          ),
+        );
+      });
+    }
+  });
+
+  group('jsonObjectList', () {
+    test('returns a list of JSON objects', () {
+      expect(
+        jsonObjectList(<dynamic>[
+          <String, dynamic>{'id': 1},
+        ], 'the body'),
+        [
+          {'id': 1},
+        ],
+      );
+    });
+
+    test('throws a FormatException for a value that is not a list', () {
+      expect(
+        () => jsonObjectList(<String, dynamic>{}, 'the body'),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            startsWith('Expected the body to be a list'),
+          ),
+        ),
+      );
+    });
+
+    test('throws a FormatException for an element that is not an object', () {
+      expect(
+        () => jsonObjectList(<dynamic>[1], 'the body'),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            'Expected each of the body to be a JSON object, got int',
+          ),
+        ),
+      );
+    });
+  });
 }
