@@ -831,8 +831,10 @@ class RealtimeChannel {
   }) async {
     final isBinary = _isBinaryBroadcastPayload(payload);
 
+    final accessToken = await socket.resolveAccessToken();
     final headers = {
       ..._broadcastHeaders,
+      if (accessToken != null) HttpHeader.authorization: 'Bearer $accessToken',
       HttpHeader.contentType: isBinary
           ? 'application/octet-stream'
           : 'application/json',
