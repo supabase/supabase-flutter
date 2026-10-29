@@ -103,6 +103,115 @@ void main() {
     );
   }
 
+  void stubLogoutAnswer(int statusCode, String? errorCode) {
+    if (errorCode == null) {
+      httpClient.stubSignOut();
+      return;
+    }
+    httpClient.stub(
+      {'code': errorCode, 'msg': 'Not found'},
+      method: HttpMethod.post,
+      path: '/auth/v1/logout',
+      statusCode: statusCode,
+    );
+  }
+
+  group('signOut answered by the server', () {
+    const succeeds = [(204, null), (403, 'user_not_found')];
+
+    for (final (statusCode, errorCode) in [
+      ...succeeds,
+      (403, 'session_not_found'),
+    ]) {
+      final answer = '$statusCode ${errorCode ?? ''}'.trim();
+
+      test('local signs out on this device on $answer', () async {
+        stubLogoutAnswer(statusCode, errorCode);
+
+        await client.signOut();
+        await pumpEventQueue();
+
+        expect(client.currentSession, isNull);
+        expect(events, [AuthChangeEvent.signedOut]);
+        expect(
+          httpClient.requestsTo('/auth/v1/logout').single.url.queryParameters,
+          {'scope': 'local'},
+        );
+      });
+    }
+
+    for (final (statusCode, errorCode) in succeeds) {
+      final answer = '$statusCode ${errorCode ?? ''}'.trim();
+
+      test('global signs out on this device on $answer', () async {
+        stubLogoutAnswer(statusCode, errorCode);
+
+        await client.signOut(scope: SignOutScope.global);
+        await pumpEventQueue();
+
+        expect(client.currentSession, isNull);
+        expect(events, [AuthChangeEvent.signedOut]);
+      });
+
+      test('others keeps the session on $answer', () async {
+        stubLogoutAnswer(statusCode, errorCode);
+        final session = client.currentSession;
+
+        await client.signOut(scope: SignOutScope.others);
+        await pumpEventQueue();
+
+        expect(client.currentSession, session);
+        expect(events, isEmpty);
+      });
+    }
+
+    test(
+      'global throws and keeps the session on 403 session_not_found',
+      () async {
+        stubLogoutAnswer(403, 'session_not_found');
+        final session = client.currentSession;
+
+        await expectLater(
+          () => client.signOut(scope: SignOutScope.global),
+          throwsA(
+            isA<AuthApiException>().having(
+              (error) => error.errorCode,
+              'errorCode',
+              'session_not_found',
+            ),
+          ),
+        );
+        await pumpEventQueue();
+
+        expect(client.currentSession, session);
+        expect(events, isEmpty);
+      },
+    );
+
+    test(
+      'others throws and keeps the session on 403 session_not_found',
+      () async {
+        stubLogoutAnswer(403, 'session_not_found');
+        final session = client.currentSession;
+
+        await expectLater(
+          () => client.signOut(scope: SignOutScope.others),
+          throwsA(
+            isA<AuthApiException>().having(
+              (error) => error.errorCode,
+              'errorCode',
+              'session_not_found',
+            ),
+          ),
+        );
+        await pumpEventQueue();
+
+        expect(client.currentSession, session);
+        expect(events, isEmpty);
+      },
+    );
+  });
+
   group('signOut with the local scope', () {
     late List<LogRecord> warnings;
 
@@ -290,20 +399,6 @@ void main() {
       );
     });
 
-    test('signs out when the session is already gone on the server', () async {
-      httpClient.stub(
-        {
-          'code': 'session_not_found',
-          'msg': 'Session from session_id claim in JWT does not exist',
-        },
-        path: '/auth/v1/logout',
-        statusCode: 403,
-      );
-
-      await client.signOut(scope: SignOutScope.global);
-
-      expect(client.currentSession, isNull);
-    });
     test('refreshes an expired access token before revoking', () async {
       final expired = unsignedTestJwt({
         'sub': testUserId,
@@ -544,17 +639,6 @@ void main() {
       );
 
       expect(httpClient.requestsTo('/auth/v1/logout'), isEmpty);
-    });
-
-    test('keeps the session once the server revoked the others', () async {
-      httpClient.stubSignOut();
-      final session = client.currentSession;
-
-      await client.signOut(scope: SignOutScope.others);
-      await pumpEventQueue();
-
-      expect(client.currentSession, session);
-      expect(events, isEmpty);
     });
   });
 }

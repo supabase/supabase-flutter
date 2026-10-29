@@ -1512,9 +1512,12 @@ class AuthClient {
   /// With [SignOutScope.global] and [SignOutScope.others] the sessions are
   /// revoked on the server first, refreshing an expired access token before.
   /// When that fails, this throws and the session is kept, so the call can be
-  /// retried. When the server rejects the refresh token, the session can no
-  /// longer be used, so the failed refresh signs out this device as it does
-  /// for [getSession], and this throws. With [SignOutScope.global] the
+  /// retried. A server that no longer knows the current session can still
+  /// hold the other sessions of the user, so that also throws, and
+  /// [SignOutScope.local] signs out this device instead. When the server
+  /// rejects the refresh token, the session can no longer be used, so the
+  /// failed refresh signs out this device as it does for [getSession], and
+  /// this throws. With [SignOutScope.global] the
   /// session is removed from this device once the server has revoked it,
   /// unless another sign-in or sign-out happened in the meantime.
   ///
@@ -1672,8 +1675,12 @@ class AuthClient {
       await admin.signOut(session.accessToken, scope: scope);
     } on AuthApiException catch (error) {
       // A rejected access token, such as an expired one, says nothing about
-      // the sessions.
-      if (!_sessionGoneCodes.contains(error.errorCode)) rethrow;
+      // the sessions. A missing current session leaves the other sessions of
+      // the user alive, so only the local scope has nothing left to revoke.
+      final isAlreadyRevoked = scope == SignOutScope.local
+          ? _sessionGoneCodes.contains(error.errorCode)
+          : error.errorCode == ErrorCode.userNotFound.code;
+      if (!isAlreadyRevoked) rethrow;
     }
   }
 
