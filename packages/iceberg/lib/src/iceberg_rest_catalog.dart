@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:iceberg/src/iceberg_error.dart';
 import 'package:iceberg/src/iceberg_types.dart';
+import 'package:iceberg/src/json_reads.dart';
 import 'package:iceberg/src/table_requirement.dart';
 import 'package:iceberg/src/table_update.dart';
 import 'package:iceberg/src/logger.dart';
@@ -438,10 +439,8 @@ class IcebergRestCatalog {
     );
     final body = response.object;
     return ListNamespacesResult(
-      namespaces: (body['namespaces'] as List? ?? [])
-          .map((namespace) => List<String>.from(namespace as List))
-          .toList(),
-      nextPageToken: body['next-page-token'] as String?,
+      namespaces: body.listsOf<String>('namespaces') ?? [],
+      nextPageToken: body.field<String?>('next-page-token'),
     );
   }
 
@@ -463,7 +462,7 @@ class IcebergRestCatalog {
       },
       abortSignal: abortSignal,
     );
-    return List<String>.from(response.object['namespace'] as List);
+    return response.object.requiredListOf<String>('namespace');
   }
 
   /// Loads the properties of a namespace.
@@ -479,7 +478,7 @@ class IcebergRestCatalog {
       '$prefix/namespaces/${_namespaceToPath(namespace)}',
       abortSignal: abortSignal,
     );
-    return Map.from(response.object['properties'] as Map? ?? const {});
+    return response.object.mapOf<String>('properties') ?? {};
   }
 
   /// Sets and removes properties on a namespace.
@@ -579,13 +578,10 @@ class IcebergRestCatalog {
     );
     final body = response.object;
     return ListTablesResult(
-      identifiers: (body['identifiers'] as List? ?? [])
-          .map(
-            (identifier) =>
-                TableIdentifier.fromJson(identifier as Map<String, dynamic>),
-          )
+      identifiers: (body.listOf<Map<String, dynamic>>('identifiers') ?? [])
+          .map(TableIdentifier.fromJson)
           .toList(),
-      nextPageToken: body['next-page-token'] as String?,
+      nextPageToken: body.field<String?>('next-page-token'),
     );
   }
 
@@ -767,7 +763,7 @@ class IcebergRestCatalog {
       abortSignal: abortSignal,
     );
     final body = response.object;
-    final metadataLocation = body['metadata-location'] as String?;
+    final metadataLocation = body.field<String?>('metadata-location');
     if (metadataLocation == null) {
       throw IcebergUnknownException(
         'Server returned a commit response without the required '
@@ -779,7 +775,7 @@ class IcebergRestCatalog {
     return CommitTableResult(
       metadataLocation: metadataLocation,
       metadata: TableMetadata.fromJson(
-        body['metadata'] as Map<String, dynamic>,
+        body.field<Map<String, dynamic>>('metadata'),
       ),
     );
   }

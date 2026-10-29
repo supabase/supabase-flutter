@@ -813,6 +813,222 @@ void main() {
     });
   });
 
+  group('fields of the wrong type', () {
+    Matcher throwsFormatExceptionNaming(String key) => throwsA(
+      isA<FormatException>()
+          .having((error) => error.message, 'message', contains('"$key"'))
+          .having((error) => error, 'error', isNot(isA<IcebergException>())),
+    );
+
+    const tableMetadata = {
+      'format-version': 2,
+      'table-uuid': 'uuid',
+      'current-schema-id': 0,
+    };
+
+    test('listNamespaces names a namespace that is not strings', () async {
+      stubOperation({
+        'namespaces': [
+          ['analytics'],
+          [1],
+        ],
+      });
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsFormatExceptionNaming('namespaces'),
+      );
+    });
+
+    test('listNamespaces names a page token that is not a string', () async {
+      stubOperation({'namespaces': <Object>[], 'next-page-token': 1});
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsFormatExceptionNaming('next-page-token'),
+      );
+    });
+
+    test('createNamespace names a missing namespace', () async {
+      stubOperation(<String, dynamic>{});
+
+      await expectLater(
+        catalog.createNamespace(['analytics']),
+        throwsFormatExceptionNaming('namespace'),
+      );
+    });
+
+    test('loadNamespaceMetadata names a property that is not a string', () {
+      stubOperation({
+        'properties': {'owner': 1},
+      });
+
+      return expectLater(
+        catalog.loadNamespaceMetadata(['analytics']),
+        throwsFormatExceptionNaming('properties'),
+      );
+    });
+
+    test('updateNamespaceProperties names a list that is not a list', () {
+      stubOperation({'updated': 'owner', 'removed': <String>[]});
+
+      return expectLater(
+        catalog.updateNamespaceProperties(['analytics']),
+        throwsFormatExceptionNaming('updated'),
+      );
+    });
+
+    test('listTables names an identifier name that is not a string', () {
+      stubOperation({
+        'identifiers': [
+          {
+            'namespace': ['analytics'],
+            'name': 1,
+          },
+        ],
+      });
+
+      return expectLater(
+        catalog.listTables(['analytics']),
+        throwsFormatExceptionNaming('name'),
+      );
+    });
+
+    test('listTables names identifiers that are not objects', () {
+      stubOperation({
+        'identifiers': ['analytics.events'],
+      });
+
+      return expectLater(
+        catalog.listTables(['analytics']),
+        throwsFormatExceptionNaming('identifiers'),
+      );
+    });
+
+    test('loadTable names a metadata field of the wrong type', () {
+      stubOperation({
+        'metadata': {...tableMetadata, 'format-version': '2'},
+      });
+
+      return expectLater(
+        catalog.loadTable(
+          const TableIdentifier(namespace: ['analytics'], name: 'events'),
+        ),
+        throwsFormatExceptionNaming('format-version'),
+      );
+    });
+
+    test('loadTableResult names a storage credential of the wrong type', () {
+      stubOperation({
+        'metadata': tableMetadata,
+        'storage-credentials': [
+          {'prefix': 1},
+        ],
+      });
+
+      return expectLater(
+        catalog.loadTableResult(
+          const TableIdentifier(namespace: ['analytics'], name: 'events'),
+        ),
+        throwsFormatExceptionNaming('prefix'),
+      );
+    });
+
+    test('createTable names metadata that is not an object', () {
+      stubOperation({'metadata': 'metadata.json'});
+
+      return expectLater(
+        catalog.createTable(
+          ['analytics'],
+          const CreateTableRequest(
+            name: 'events',
+            schema: TableSchema(fields: []),
+          ),
+        ),
+        throwsFormatExceptionNaming('metadata'),
+      );
+    });
+
+    test('updateTable names a metadata location that is not a string', () {
+      stubOperation({'metadata-location': 1, 'metadata': tableMetadata});
+
+      return expectLater(
+        catalog.updateTable(
+          const TableIdentifier(namespace: ['analytics'], name: 'events'),
+          updates: [],
+        ),
+        throwsFormatExceptionNaming('metadata-location'),
+      );
+    });
+
+    test('TableMetadata names a reference that is not an object', () {
+      expect(
+        () => TableMetadata.fromJson({
+          ...tableMetadata,
+          'refs': {'main': 1},
+        }),
+        throwsFormatExceptionNaming('refs'),
+      );
+    });
+
+    test('TableField names a field of the wrong type', () {
+      expect(
+        () => TableField.fromJson({
+          'id': '1',
+          'name': 'id',
+          'required': true,
+          'type': 'long',
+        }),
+        throwsFormatExceptionNaming('id'),
+      );
+    });
+
+    test(
+      'TableField rejects a type that is neither a string nor an object',
+      () {
+        expect(
+          () => TableField.fromJson({
+            'id': 1,
+            'name': 'id',
+            'required': true,
+            'type': 1,
+          }),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              'Expected an Iceberg type to be a String or a JSON object, '
+                  'got int',
+            ),
+          ),
+        );
+      },
+    );
+
+    test('an error status is still the matching IcebergApiException', () {
+      stubOperation({
+        'error': {'message': 'missing', 'type': 'NoSuchTableException'},
+      }, statusCode: 404);
+
+      return expectLater(
+        catalog.loadTable(
+          const TableIdentifier(namespace: ['analytics'], name: 'events'),
+        ),
+        throwsA(isA<IcebergNotFoundException>()),
+      );
+    });
+
+    test('a success body that is not an object is still an '
+        'IcebergUnknownException', () {
+      stubOperation(['analytics']);
+
+      return expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergUnknownException>()),
+      );
+    });
+  });
+
   group('timeout and abort', () {
     test('a stalled request times out as a network failure', () async {
       catalog = createCatalog(
