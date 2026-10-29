@@ -147,7 +147,10 @@ void _mergePrefer(Map<String, String> headers, List<String> preferences) {
   }
   headers.removeWhere((name, _) => name.toLowerCase() == 'prefer');
 
-  final replaced = preferences.map(keyOf).toSet();
+  final deduplicated = {
+    for (final preference in preferences) keyOf(preference): preference,
+  };
+  final replaced = deduplicated.keys.toSet();
   final kept = (_emptyPreferAsNull(existing) ?? '')
       .split(',')
       .map((preference) => preference.trim())
@@ -156,7 +159,7 @@ void _mergePrefer(Map<String, String> headers, List<String> preferences) {
             preference.isNotEmpty && !replaced.contains(keyOf(preference)),
       );
 
-  headers[HttpHeader.prefer] = [...kept, ...preferences].join(',');
+  headers[HttpHeader.prefer] = [...kept, ...deduplicated.values].join(',');
 }
 
 extension on Uri {
@@ -476,10 +479,26 @@ class PostgrestBuilder<T> implements Future<T> {
   }
 
   /// Returns a copy of this request with [key] set to [value] in its headers.
+  ///
+  /// A `Prefer` header is merged with the one the request already carries
+  /// instead of replacing it, so the preferences the SDK built, such as
+  /// `return=representation` or `resolution=merge-duplicates`, are kept. A
+  /// preference in [value] wins over one with the same name.
   PostgrestBuilder<T> setHeader(String key, String value) {
-    return _copyWith(
-      headers: {..._headers, key: value},
-    );
+    final headers = {..._headers};
+    if (key.toLowerCase() == 'prefer') {
+      _mergePrefer(
+        headers,
+        value
+            .split(',')
+            .map((preference) => preference.trim())
+            .where((preference) => preference.isNotEmpty)
+            .toList(),
+      );
+    } else {
+      headers[key] = value;
+    }
+    return _copyWith(headers: headers);
   }
 
   /// Returns a copy of this request whose `X-Client-Info` header also lists

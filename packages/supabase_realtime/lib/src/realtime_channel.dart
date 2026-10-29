@@ -12,6 +12,7 @@ import 'package:supabase_realtime/src/logger.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/realtime_presence.dart';
 import 'package:supabase_realtime/src/retry_timer.dart';
+import 'package:supabase_realtime/src/serializer.dart';
 import 'package:supabase_realtime/src/transformers.dart';
 import 'package:supabase_realtime/src/types.dart';
 
@@ -810,9 +811,10 @@ class RealtimeChannel {
   /// Requires a Realtime server running v2.97.0 or newer.
   ///
   /// Returns a [Future] that resolves when the message is sent successfully.
-  /// It throws a [RealtimeApiException] when the endpoint rejects the message
-  /// and a [RealtimeTransportException] when the request gets no response
-  /// within [timeout].
+  /// It throws a [RealtimeApiException] when the endpoint rejects the message,
+  /// a [RealtimeTransportException] when the request gets no response within
+  /// [timeout], and an [AccessTokenException] when
+  /// [RealtimeClient.customAccessToken] throws.
   ///
   /// ```dart
   /// try {
@@ -831,8 +833,10 @@ class RealtimeChannel {
   }) async {
     final isBinary = _isBinaryBroadcastPayload(payload);
 
+    final accessToken = await resolveAccessToken(socket.resolveAccessToken);
     final headers = {
       ..._broadcastHeaders,
+      if (accessToken != null) HttpHeader.authorization: 'Bearer $accessToken',
       HttpHeader.contentType: isBinary
           ? 'application/octet-stream'
           : 'application/json',
@@ -951,6 +955,10 @@ class RealtimeChannel {
   /// longer than the timeout. A message on a channel that is leaving or has
   /// closed resolves with [ChannelResponse.error] without being sent, as does
   /// a buffered one when the channel closes.
+  ///
+  /// With the built-in codec, a payload that cannot be encoded, for example
+  /// one holding a [DateTime], completes the future with the encode error
+  /// instead of being dropped.
   @internal
   Future<ChannelResponse> send({
     required RealtimeListenType type,
@@ -969,6 +977,20 @@ class RealtimeChannel {
       'type': type.toType(),
       'event': ?event,
     };
+
+    if (socket.encode == null) {
+      try {
+        const Serializer().encode(
+          RealtimeMessage.outgoing(
+            topic: topic,
+            event: ChannelEvent.fromValue(message['type']),
+            payload: message,
+          ),
+        );
+      } catch (error, stackTrace) {
+        return Future.error(error, stackTrace);
+      }
+    }
 
     final isUnacknowledgedBroadcast =
         message['type'] == 'broadcast' &&
