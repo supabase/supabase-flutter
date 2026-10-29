@@ -42,7 +42,6 @@ class Fetch {
 
   StorageApiException _handleError(
     http.Response response,
-    StackTrace stackTrace,
     Uri? url,
     FetchOptions? options,
   ) {
@@ -75,11 +74,7 @@ class Fetch {
     return exception;
   }
 
-  StorageTransportException _transportException(
-    Uri? url,
-    Exception error,
-    StackTrace stackTrace,
-  ) {
+  StorageTransportException _transportException(Uri? url, Exception error) {
     storageLogger.fine(
       'StorageTransportException (${error.runtimeType}) for ${url?.loggable}',
     );
@@ -99,8 +94,8 @@ class Fetch {
       rethrow;
     } on SupabaseException {
       rethrow;
-    } on Exception catch (error, stackTrace) {
-      throw _transportException(request.url, error, stackTrace);
+    } on Exception catch (error) {
+      throw _transportException(request.url, error);
     }
   }
 
@@ -116,11 +111,11 @@ class Fetch {
       return await http.Response.fromStream(streamedResponse);
     } on http.RequestAbortedException {
       rethrow;
-    } on Exception catch (error, stackTrace) {
+    } on Exception catch (error) {
       final url = streamedResponse.request?.url;
       if (isSuccessStatusCode(streamedResponse.statusCode) ||
           error is TimeoutException) {
-        throw _transportException(url, error, stackTrace);
+        throw _transportException(url, error);
       }
       final exception = StorageApiException(
         'Failed to read the response: $error',
@@ -310,12 +305,7 @@ class Fetch {
       }
       return body;
     }
-    throw _handleError(
-      response,
-      StackTrace.current,
-      response.request?.url,
-      options,
-    );
+    throw _handleError(response, response.request?.url, options);
   }
 
   /// Performs a GET request.
@@ -389,7 +379,6 @@ class Fetch {
       final response = await _read(streamedResponse);
       throw _handleError(
         response,
-        StackTrace.current,
         response.request?.url,
         FetchOptions(options?.headers, noResolveJson: true),
       );
@@ -460,12 +449,8 @@ class Fetch {
 
   /// The [StorageApiException] for an error [response], whose body is the
   /// JSON error envelope of storage or, as the tus routes answer, plain text.
-  StorageApiException apiException(http.Response response) => _handleError(
-    response,
-    StackTrace.current,
-    response.request?.url,
-    null,
-  );
+  StorageApiException apiException(http.Response response) =>
+      _handleError(response, response.request?.url, null);
 
   /// The media type a file at [path] is stored with unless the upload names
   /// one, guessed from [fallbackPath] when [path] tells nothing.

@@ -72,7 +72,7 @@ extension LoggableUri on Uri {
   /// credentials, so none of them are kept.
   String get loggable => Uri(
     scheme: scheme,
-    host: host,
+    host: host.isEmpty ? null : host,
     port: hasPort ? port : null,
     path: path,
   ).toString();
