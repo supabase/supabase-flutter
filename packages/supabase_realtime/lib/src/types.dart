@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart'
-    show postgresTimestampLiteral;
+    show JsonFields, postgresTimestampLiteral;
 import 'package:supabase_realtime/supabase_realtime.dart';
 
 @internal
@@ -378,11 +378,11 @@ class PostgresChangePayload {
     final oldData = payload['old'];
 
     return PostgresChangePayload(
-      schema: payload['schema'] as String,
-      table: payload['table'] as String,
+      schema: payload.field('schema'),
+      table: payload.field('table'),
       commitTimestamp: commitTimestamp,
       eventType: PostgresChangeEvent.fromValue(
-        payload['eventType'] as String,
+        payload.field('eventType'),
       ),
       newRecord: newData is Map ? Map.from(newData) : {},
       oldRecord: oldData is Map ? Map.from(oldData) : {},
@@ -596,7 +596,7 @@ abstract class RealtimePresencePayload {
   });
 
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
-    : event = PresenceEvent.fromValue(json['event']);
+    : event = PresenceEvent.fromValue(json.field('event'));
 
   /// Name of the presence event.
   final PresenceEvent event;
@@ -613,7 +613,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
 
   factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceSyncPayload(
-      event: PresenceEvent.fromValue(json['event']),
+      event: PresenceEvent.fromValue(json.field('event')),
     );
   }
 
@@ -632,10 +632,10 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
 
   factory RealtimePresenceJoinPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceJoinPayload(
-      event: PresenceEvent.fromValue(json['event']),
-      key: json['key'] as String,
-      newPresences: (json['newPresences'] as List).cast(),
-      currentPresences: (json['currentPresences'] as List).cast(),
+      event: PresenceEvent.fromValue(json.field('event')),
+      key: json.field('key'),
+      newPresences: json.field<List<dynamic>>('newPresences').cast(),
+      currentPresences: json.field<List<dynamic>>('currentPresences').cast(),
     );
   }
 
@@ -667,10 +667,10 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
 
   factory RealtimePresenceLeavePayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceLeavePayload(
-      event: PresenceEvent.fromValue(json['event']),
-      key: json['key'] as String,
-      leftPresences: (json['leftPresences'] as List).cast(),
-      currentPresences: (json['currentPresences'] as List).cast(),
+      event: PresenceEvent.fromValue(json.field('event')),
+      key: json.field('key'),
+      leftPresences: json.field<List<dynamic>>('leftPresences').cast(),
+      currentPresences: json.field<List<dynamic>>('currentPresences').cast(),
     );
   }
 

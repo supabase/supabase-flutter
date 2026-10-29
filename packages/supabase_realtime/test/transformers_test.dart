@@ -60,6 +60,24 @@ void main() {
   });
 
   group('transformers convertChangeData', () {
+    test('throws a FormatException naming a column name of the wrong type', () {
+      expect(
+        () => convertChangeData(
+          [
+            {'name': 1, 'type': 'int4'},
+          ],
+          {'id': '1'},
+        ),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('"name"'),
+          ),
+        ),
+      );
+    });
+
     test('with basic usecase', () {
       final columns = [
         {
@@ -352,6 +370,55 @@ void main() {
         'errors': null,
       };
       expect(enrichedPayload, expectedMap);
+    });
+  });
+
+  group('getPayloadRecords with a malformed payload', () {
+    Matcher throwsFormatExceptionNaming(String key) => throwsA(
+      isA<FormatException>().having(
+        (error) => error.message,
+        'message',
+        contains('"$key"'),
+      ),
+    );
+
+    test('throws when the columns are missing', () {
+      expect(
+        () => getPayloadRecords({
+          'type': 'INSERT',
+          'record': {'id': '1'},
+        }),
+        throwsFormatExceptionNaming('columns'),
+      );
+    });
+
+    test('throws when a column is not a map', () {
+      expect(
+        () => getPayloadRecords({
+          'type': 'INSERT',
+          'columns': ['id'],
+          'record': {'id': '1'},
+        }),
+        throwsFormatExceptionNaming('columns'),
+      );
+    });
+
+    test('throws when the old record is not a map', () {
+      expect(
+        () => getPayloadRecords({
+          'type': 'DELETE',
+          'columns': <Object?>[],
+          'old_record': 'gone',
+        }),
+        throwsFormatExceptionNaming('old_record'),
+      );
+    });
+
+    test('throws when the data is not a map', () {
+      expect(
+        () => getEnrichedPayload({'data': 'INSERT'}),
+        throwsFormatExceptionNaming('data'),
+      );
     });
   });
 

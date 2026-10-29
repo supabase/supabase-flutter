@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:supabase_common/supabase_common.dart' show JsonFields;
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/types.dart';
@@ -106,8 +107,14 @@ class Push {
     _channel.onEvents(_refEvent!, ChannelFilter(), (dynamic response, [_]) {
       _cancelRefEvent();
       _cancelTimeout();
+      if (response is! Map<String, dynamic>) {
+        throw FormatException(
+          'Expected a reply to be Map<String, dynamic>, got '
+          '${response.runtimeType}',
+        );
+      }
       _receivedResponse = response;
-      _matchReceive(response['status'] as String, response['response']);
+      _matchReceive(response.field('status'), response['response']);
     });
 
     _timeoutTimer = Timer(timeout, () {

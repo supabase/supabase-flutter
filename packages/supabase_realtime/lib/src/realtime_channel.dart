@@ -305,11 +305,11 @@ class RealtimeChannel {
     _joinPush
         .receive(
           'ok',
-          (response) => _handleJoinOk(response as Map<String, dynamic>),
+          (response) => _handleJoinOk(asJsonObject(response, 'the join reply')),
         )
         .receive('error', (error) {
           _state = ChannelState.errored;
-          final reply = error as Map<String, dynamic>;
+          final reply = asJsonObject(error, 'the join error');
           _addStatus(
             RealtimeSubscribeStatus.channelError,
             RealtimeException(
@@ -375,7 +375,11 @@ class RealtimeChannel {
       // slightly different shape does not force a spurious unsubscribe. The
       // client binding keeps its own `select` regardless.
       if (serverPostgresFilter != null &&
-          serverPostgresFilter['event'] == event &&
+          asJsonObject(
+                serverPostgresFilter,
+                'element $i of "postgres_changes"',
+              )['event'] ==
+              event &&
           serverPostgresFilter['schema'] == schema &&
           serverPostgresFilter['table'] == table &&
           serverPostgresFilter['filter'] == filter) {
@@ -543,7 +547,9 @@ class RealtimeChannel {
       () => _eventStream(
         'postgres_changes',
         channelFilter,
-        (payload) => PostgresChangePayload.fromPayload(payload),
+        (payload) => PostgresChangePayload.fromPayload(
+          asJsonObject(payload, 'the postgres_changes payload'),
+        ),
       ),
     );
   }
@@ -572,7 +578,9 @@ class RealtimeChannel {
       () => _eventStream(
         'broadcast',
         ChannelFilter(event: event),
-        (payload) => Map<String, dynamic>.from(payload),
+        (payload) => Map<String, dynamic>.of(
+          asJsonObject(payload, 'the broadcast payload'),
+        ),
       ),
     );
   }
@@ -634,7 +642,7 @@ class RealtimeChannel {
     final stream = _eventStream(
       'presence',
       ChannelFilter(event: event.name),
-      (payload) => fromJson(Map<String, dynamic>.from(payload)),
+      (payload) => fromJson(asJsonObject(payload, 'the presence payload')),
     );
     _handlePresenceUpdate();
     return stream;
@@ -664,7 +672,9 @@ class RealtimeChannel {
       'system',
       ChannelFilter(),
       (payload) => payload is Map
-          ? RealtimeSystemPayload.fromJson(Map.from(payload))
+          ? RealtimeSystemPayload.fromJson(
+              asJsonObject(payload, 'the system payload'),
+            )
           : null,
     );
   }
@@ -1177,7 +1187,9 @@ class RealtimeChannel {
       });
 
       for (final bind in (bindings ?? <Binding>[])) {
-        handledPayload = getEnrichedPayload(handledPayload);
+        handledPayload = getEnrichedPayload(
+          asJsonObject(handledPayload, 'the $typeLower payload'),
+        );
         bind.callback(handledPayload, ref);
       }
     } else {
@@ -1187,15 +1199,29 @@ class RealtimeChannel {
           if (bindId != null) {
             final bindEvent = bind.filter['event'];
 
-            return ((payload['ids'] as List?)?.contains(int.parse(bindId)) ==
-                    true &&
-                (bindEvent == '*' ||
-                    bindEvent?.toLowerCase() ==
-                        (payload['data']?['type'] as String?)?.toLowerCase()));
+            final changes = asJsonObject(payload, 'the $typeLower payload');
+            final ids = changes.field<List<dynamic>?>('ids');
+            if (ids?.contains(int.parse(bindId)) != true) {
+              return false;
+            }
+            if (bindEvent == '*') {
+              return true;
+            }
+            final data = changes.field<Map<String, dynamic>?>('data');
+            return bindEvent?.toLowerCase() ==
+                data?.field<String?>('type')?.toLowerCase();
           }
           final bindEvent = bind.filter['event']?.toLowerCase();
-          return (bindEvent == '*' ||
-              bindEvent == (payload?['event'] as String?)?.toLowerCase());
+          if (bindEvent == '*') {
+            return true;
+          }
+          final event = payload == null
+              ? null
+              : asJsonObject(
+                  payload,
+                  'the $typeLower payload',
+                ).field<String?>('event');
+          return bindEvent == event?.toLowerCase();
         }
         return bind.type.toLowerCase() == typeLower;
       });

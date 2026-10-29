@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart' show JsonFields;
 
 import 'package:collection/collection.dart' show IterableExtension;
 
@@ -124,8 +125,8 @@ Map<String, dynamic> convertChangeData(
   final parsedColumns = <PostgresColumn>[];
 
   for (final element in columns) {
-    final name = element['name'] as String?;
-    final type = element['type'] as String?;
+    final name = element.field<String?>('name');
+    final type = element.field<String?>('type');
     if (name != null && type != null) {
       parsedColumns.add(PostgresColumn(name, type));
     }
@@ -528,9 +529,25 @@ String? toTimestampString(String? value) {
   return null;
 }
 
+/// [value] as a JSON object, or a [FormatException] naming [description] when
+/// it is not a map with string keys.
+@internal
+Map<String, dynamic> asJsonObject(Object? value, String description) =>
+    switch (value) {
+      final Map<String, dynamic> json => json,
+      final Map<dynamic, dynamic> json
+          when json.keys.every((key) => key is String) =>
+        json.cast(),
+      _ => throw FormatException(
+        'Expected $description to be Map<String, dynamic>, got '
+        '${value.runtimeType}',
+      ),
+    };
+
 @internal
 Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
-  final postgresChanges = payload['data'] ?? payload;
+  final data = payload['data'];
+  final postgresChanges = data == null ? payload : asJsonObject(data, '"data"');
   final schema = postgresChanges['schema'];
   final table = postgresChanges['table'];
   final commitTimestamp = postgresChanges['commit_timestamp'];
@@ -564,20 +581,25 @@ Map<String, Map<String, dynamic>> getPayloadRecords(
 
   if (payload['type'] == 'INSERT' || payload['type'] == 'UPDATE') {
     records['new'] = convertChangeData(
-      List<Map<String, dynamic>>.from(payload['columns']),
-      Map<String, dynamic>.from(payload['record']),
+      _columns(payload),
+      asJsonObject(payload['record'], '"record"'),
     );
   }
 
   if (payload['type'] == 'UPDATE' || payload['type'] == 'DELETE') {
     records['old'] = convertChangeData(
-      List<Map<String, dynamic>>.from(payload['columns']),
-      Map<String, dynamic>.from(payload['old_record']),
+      _columns(payload),
+      asJsonObject(payload['old_record'], '"old_record"'),
     );
   }
 
   return records;
 }
+
+List<Map<String, dynamic>> _columns(Map<String, dynamic> payload) => [
+  for (final (index, column) in payload.field<List<dynamic>>('columns').indexed)
+    asJsonObject(column, 'element $index of "columns"'),
+];
 
 /// Converts a WebSocket URL to an HTTP URL.
 @internal
