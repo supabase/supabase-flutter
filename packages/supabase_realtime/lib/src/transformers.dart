@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart' show JsonFields;
 
 import 'package:collection/collection.dart' show IterableExtension;
 
@@ -124,8 +125,8 @@ Map<String, dynamic> convertChangeData(
   final parsedColumns = <PostgresColumn>[];
 
   for (final element in columns) {
-    final name = element['name'] as String?;
-    final type = element['type'] as String?;
+    final name = element.field<String?>('name');
+    final type = element.field<String?>('type');
     if (name != null && type != null) {
       parsedColumns.add(PostgresColumn(name, type));
     }
@@ -530,7 +531,8 @@ String? toTimestampString(String? value) {
 
 @internal
 Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
-  final postgresChanges = payload['data'] ?? payload;
+  final postgresChanges =
+      payload.field<Map<String, dynamic>?>('data') ?? payload;
   final schema = postgresChanges['schema'];
   final table = postgresChanges['table'];
   final commitTimestamp = postgresChanges['commit_timestamp'];
@@ -564,20 +566,23 @@ Map<String, Map<String, dynamic>> getPayloadRecords(
 
   if (payload['type'] == 'INSERT' || payload['type'] == 'UPDATE') {
     records['new'] = convertChangeData(
-      List<Map<String, dynamic>>.from(payload['columns']),
-      Map<String, dynamic>.from(payload['record']),
+      _columns(payload),
+      payload.field<Map<String, dynamic>>('record'),
     );
   }
 
   if (payload['type'] == 'UPDATE' || payload['type'] == 'DELETE') {
     records['old'] = convertChangeData(
-      List<Map<String, dynamic>>.from(payload['columns']),
-      Map<String, dynamic>.from(payload['old_record']),
+      _columns(payload),
+      payload.field<Map<String, dynamic>>('old_record'),
     );
   }
 
   return records;
 }
+
+List<Map<String, dynamic>> _columns(Map<String, dynamic> payload) =>
+    payload.requiredListOf('columns');
 
 /// Converts a WebSocket URL to an HTTP URL.
 @internal

@@ -68,6 +68,73 @@ void main() {
     });
   });
 
+  group('malformed payloads', () {
+    Matcher throwsFormatExceptionNaming(String key) => throwsA(
+      isA<FormatException>().having(
+        (error) => error.message,
+        'message',
+        contains('"$key"'),
+      ),
+    );
+
+    test('a postgres change with a non-string table throws', () {
+      expect(
+        () => PostgresChangePayload.fromPayload({
+          ...payloadWith('2022-09-21T04:59:30Z'),
+          'table': 42,
+        }),
+        throwsFormatExceptionNaming('table'),
+      );
+    });
+
+    test('a postgres change without an event type throws', () {
+      expect(
+        () => PostgresChangePayload.fromPayload({
+          ...payloadWith('2022-09-21T04:59:30Z'),
+          'eventType': null,
+        }),
+        throwsFormatExceptionNaming('eventType'),
+      );
+    });
+
+    test('a presence join with a non-string key throws', () {
+      expect(
+        () => RealtimePresenceJoinPayload.fromJson({
+          'event': 'join',
+          'key': 1,
+          'newPresences': <Presence>[],
+          'currentPresences': <Presence>[],
+        }),
+        throwsFormatExceptionNaming('key'),
+      );
+    });
+
+    test('a presence leave without left presences throws', () {
+      expect(
+        () => RealtimePresenceLeavePayload.fromJson({
+          'event': 'leave',
+          'key': 'user',
+          'currentPresences': <Presence>[],
+        }),
+        throwsFormatExceptionNaming('leftPresences'),
+      );
+    });
+
+    test('a presence payload without an event throws', () {
+      expect(
+        () => RealtimePresenceSyncPayload.fromJson({}),
+        throwsFormatExceptionNaming('event'),
+      );
+    });
+
+    test('a presence with a non-string reference throws', () {
+      expect(
+        () => Presence.fromJson({'presence_ref': 1}),
+        throwsFormatExceptionNaming('presence_ref'),
+      );
+    });
+  });
+
   group('PostgresChangePayload equality', () {
     test('equal payloads with distinct maps share a hash code', () {
       final first = PostgresChangePayload.fromPayload(

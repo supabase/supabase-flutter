@@ -1,6 +1,8 @@
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart'
+    show JsonFields, jsonObject;
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/types.dart';
 
@@ -12,11 +14,11 @@ class Presence {
   });
 
   factory Presence.fromJson(Map<String, dynamic> map) {
-    final ref = map['presence_ref'];
+    final ref = map.field<String?>('presence_ref');
     // Create a new map without presence_ref to avoid mutating the input
     final payload = Map<String, dynamic>.of(map)..remove('presence_ref');
     return Presence(
-      presenceReference: ref as String? ?? '',
+      presenceReference: ref ?? '',
       payload: payload,
     );
   }
@@ -97,7 +99,7 @@ class RealtimePresence {
 
       _state = RealtimePresence.syncState(
         _state,
-        newState,
+        jsonObject(newState, 'the presence state'),
         onJoin,
         onLeave,
       );
@@ -121,12 +123,13 @@ class RealtimePresence {
       final onLeave = _caller['onLeave'];
       final onSync = _caller['onSync'];
 
+      final presenceDiff = jsonObject(diff, 'the presence diff');
       if (inPendingSyncState()) {
-        _pendingDiffs.add(diff);
+        _pendingDiffs.add(presenceDiff);
       } else {
         _state = RealtimePresence.syncDiff(
           _state,
-          diff,
+          presenceDiff,
           onJoin,
           onLeave,
         );
@@ -251,8 +254,8 @@ class RealtimePresence {
     PresenceOnJoinCallback? onJoin,
     PresenceOnLeaveCallback? onLeave,
   ]) {
-    final joins = _transformState(diff['joins']);
-    final leaves = _transformState(diff['leaves']);
+    final joins = _transformState(diff.field<Map<String, dynamic>>('joins'));
+    final leaves = _transformState(diff.field<Map<String, dynamic>>('leaves'));
 
     onJoin ??= (_, _, _) => {};
 
@@ -351,25 +354,30 @@ class RealtimePresence {
     final Map<String, List<Presence>> newStateMap = {};
 
     for (final key in state.keys) {
-      final presences = state[key]!;
+      final presences = state[key];
 
-      if (presences is Map) {
-        newStateMap[key] = (presences['metas'] as List).map<Presence>((
-          presence,
-        ) {
-          presence['presence_ref'] = presence['phx_ref'] as String;
-
-          presence.remove('phx_ref');
-          presence.remove('phx_ref_prev');
-
-          return Presence.fromJson(presence);
-        }).toList();
-      } else {
-        // presences is List<Presence>
-        newStateMap[key] = presences;
-      }
+      newStateMap[key] = switch (presences) {
+        final List<Presence> internalPresences => internalPresences,
+        _ =>
+          jsonObject(
+                presences,
+                'the presences of "$key"',
+              )
+              .requiredListOf<Map<String, dynamic>>('metas')
+              .map(_presenceFromMeta)
+              .toList(),
+      };
     }
     return newStateMap;
+  }
+
+  static Presence _presenceFromMeta(Map<String, dynamic> meta) {
+    meta['presence_ref'] = meta.field<String>('phx_ref');
+
+    meta.remove('phx_ref');
+    meta.remove('phx_ref_prev');
+
+    return Presence.fromJson(meta);
   }
 
   static Map<String, List<Presence>> _cloneDeep(
