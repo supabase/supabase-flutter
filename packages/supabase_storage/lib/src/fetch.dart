@@ -51,9 +51,7 @@ class Fetch {
 
     if (data == null) {
       storageLogger.fine(
-        'StorageException for ${url?.redacted}',
-        response.body,
-        stackTrace,
+        'StorageException (${response.statusCode}) for ${url?.loggable}',
       );
       return StorageApiException(
         response.body.isEmpty ? (response.reasonPhrase ?? '') : response.body,
@@ -72,9 +70,7 @@ class Fetch {
       body: response.body,
     );
     storageLogger.fine(
-      'StorageException for ${url?.redacted}',
-      exception,
-      stackTrace,
+      'StorageException (${response.statusCode}) for ${url?.loggable}',
     );
     return exception;
   }
@@ -85,9 +81,7 @@ class Fetch {
     StackTrace stackTrace,
   ) {
     storageLogger.fine(
-      'StorageTransportException for ${url?.redacted}',
-      error,
-      stackTrace,
+      'StorageTransportException (${error.runtimeType}) for ${url?.loggable}',
     );
     return StorageTransportException('Request failed: $error', cause: error);
   }
@@ -135,9 +129,8 @@ class Fetch {
         headers: streamedResponse.headers,
       );
       storageLogger.fine(
-        'StorageException for ${url?.redacted}',
-        exception,
-        stackTrace,
+        'StorageException (${streamedResponse.statusCode}) for '
+        '${url?.loggable}',
       );
       throw exception;
     }
@@ -184,8 +177,7 @@ class Fetch {
     }
 
     storageLogger.finest(
-      'Request: ${method.value} ${Uri.parse(url).redacted} '
-      '${request.headers.redacted}',
+      'Request: ${method.value} ${Uri.parse(url).loggable}',
     );
     final streamedResponse = await _send(request, idleTimeout);
     if (partialContent) await _requirePartialContent(streamedResponse);
@@ -250,7 +242,7 @@ class Fetch {
           bodySent = false;
           storageLogger.finest(
             'Request: attempt: $attempts ${method.value} '
-            '${Uri.parse(url).redacted} ${headers.redacted}',
+            '${Uri.parse(url).loggable}',
           );
           final idleTimeout = IdleTimeout(requestTimeout);
           final request = _UploadRequest(
@@ -389,8 +381,7 @@ class Fetch {
     );
 
     storageLogger.finest(
-      'Request: GET (stream) ${Uri.parse(url).redacted} '
-      '${request.headers.redacted}',
+      'Request: GET (stream) ${Uri.parse(url).loggable}',
     );
     final streamedResponse = await _send(request, idleTimeout);
 
@@ -462,7 +453,7 @@ class Fetch {
       ..headers.addAll(headers)
       ..contentLength = contentLength ?? (createBody == null ? 0 : null);
     storageLogger.finest(
-      'Request: ${method.value} ${url.redacted} ${headers.redacted}',
+      'Request: ${method.value} ${url.loggable}',
     );
     return _read(await _send(request, idleTimeout));
   }

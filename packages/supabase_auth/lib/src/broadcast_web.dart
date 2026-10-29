@@ -5,7 +5,6 @@ import 'dart:js_interop';
 import 'package:supabase_auth/src/broadcast_channel.dart';
 import 'package:supabase_auth/src/logger.dart';
 import 'package:meta/meta.dart';
-import 'package:supabase_common/supabase_common.dart';
 import 'package:web/web.dart' as web;
 
 @internal
@@ -23,7 +22,6 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
   return (
     onMessage: controller.stream,
     postMessage: (message) {
-      authLogger.finest('Broadcasting message: ${redactedPayload(message)}');
       authLogger.fine('Broadcasting event: ${message['event']}');
       broadcast.postMessage(message.jsify()!);
     },

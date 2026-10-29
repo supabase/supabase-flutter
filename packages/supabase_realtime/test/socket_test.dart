@@ -953,7 +953,7 @@ void main() {
       ).called(1);
     });
 
-    test('formats the payload only when finest logging is enabled', () {
+    test('never formats the payload into a log record', () {
       final counter = _FormatCounter();
       final countingPayload = _IterationCountingMap({
         'apikey': 'secret',
@@ -972,8 +972,9 @@ void main() {
 
       final records = _recordFinestLogs();
       mockedSocket.push(message);
-      expect(counter.count, 1);
-      expect(records.single, _isRedactedRecord('Push $topic'));
+      expect(counter.count, 0);
+      expect(countingPayload.iterations, 0);
+      expect(records.single, _isPayloadFreeRecord('Push $topic'));
     });
   });
 
@@ -987,7 +988,7 @@ void main() {
     });
 
     test(
-      'formats a received payload only when finest logging is enabled',
+      'never formats a received payload into a log record',
       () async {
         final counter = _FormatCounter();
         final payload = _IterationCountingMap({
@@ -1011,8 +1012,9 @@ void main() {
         final records = _recordFinestLogs();
         socket.onConnectionMessage('frame');
         await pumpEventQueue();
-        expect(counter.count, 1);
-        expect(records.single, _isRedactedRecord('Receive  realtime:room'));
+        expect(counter.count, 0);
+        expect(payload.iterations, 0);
+        expect(records.single, _isPayloadFreeRecord('Receive  realtime:room'));
       },
     );
 
@@ -1957,10 +1959,10 @@ List<String> _recordFinestLogs() {
   return records;
 }
 
-Matcher _isRedactedRecord(String prefix) => allOf(
+Matcher _isPayloadFreeRecord(String prefix) => allOf(
   startsWith(prefix),
-  contains('<redacted>'),
-  contains('formatted'),
+  isNot(contains('<redacted>')),
+  isNot(contains('formatted')),
   isNot(contains('secret')),
 );
 

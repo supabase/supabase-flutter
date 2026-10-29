@@ -89,10 +89,10 @@ class SupabaseStorageClient extends StorageBucketApi {
        ) {
     storageLogger.config(
       'Initialize SupabaseStorageClient v$version with url: '
-      '${Uri.parse(url).redacted}, '
+      '${Uri.parse(url).loggable}, '
       'retryOptions: $retryOptions',
     );
-    storageLogger.finest('Initialize with headers: ${headers.redacted}');
+    storageLogger.finest('Initialize with headers: ${headers.loggableNames}');
     _resumableUploadRegistry = ResumableUploadRegistry(
       url: this.url,
       options: resumableUploadOptions,

@@ -54,6 +54,30 @@ extension RedactedHeaderMap on Map<String, String> {
       _redactedParameters(this, _credentialKeys);
 }
 
+/// Logging the names of HTTP headers.
+extension LoggableHeaderMap on Map<String, String> {
+  /// The sorted header names, without any value.
+  ///
+  /// Values such as custom headers can hold anything, so a log record names
+  /// the headers that were sent and leaves their values out.
+  List<String> get loggableNames => (keys.toList()..sort());
+}
+
+/// Logging the destination of a request.
+extension LoggableUri on Uri {
+  /// This URI as scheme, host, port and path only, safe to include in log
+  /// records.
+  ///
+  /// The query holds filter values and the fragment and user info can hold
+  /// credentials, so none of them are kept.
+  String get loggable => Uri(
+    scheme: scheme,
+    host: host,
+    port: hasPort ? port : null,
+    path: path,
+  ).toString();
+}
+
 /// Logging a URI.
 extension RedactedUri on Uri {
   /// This URI with every credential-bearing query and fragment parameter

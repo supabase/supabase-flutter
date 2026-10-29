@@ -213,13 +213,13 @@ class RealtimeClient {
        transport = transport ?? createWebSocketClient {
     realtimeLogger.config(
       'Initialize RealtimeClient with endpoint: '
-      '${Uri.parse(this.endpoint).redacted}, timeout: $timeout, '
+      '${Uri.parse(this.endpoint).loggable}, timeout: $timeout, '
       'heartbeatInterval: $heartbeatInterval, '
       'logLevel: ${logLevel?.name}',
     );
     realtimeLogger.finest(
-      'Initialize with headers: ${_headers.redacted}, '
-      'parameters: ${redactedPayload(parameters)}',
+      'Initialize with headers: ${_headers.loggableNames}, '
+      'parameters: ${parameters.keys.toList()}',
     );
     final customJWT = _headers[HttpHeader.authorization]?.split(' ').last;
     _accessToken = customJWT ?? parameters['apikey'];
@@ -400,7 +400,7 @@ class RealtimeClient {
 
     try {
       realtimeLogger.fine('Connecting');
-      realtimeLogger.finest('Connecting to $_redactedEndpointUrl');
+      realtimeLogger.finest('Connecting to $_loggableEndpointUrl');
       _connectionState = SocketState.connecting;
       final WebSocketChannel localConnection = transport(
         endpointUrl,
@@ -680,9 +680,7 @@ class RealtimeClient {
   @internal
   void push(RealtimeMessage message) {
     realtimeLogger.finest(
-      () =>
-          'Push ${message.topic} ${message.event} (${message.ref}): '
-          '${redactedPayload(message.payload)}',
+      () => 'Push ${message.topic} ${message.event} (${message.ref})',
     );
 
     if (isConnected) {
@@ -884,8 +882,7 @@ class RealtimeClient {
     realtimeLogger.finest(
       () =>
           "Receive $status $topic $event "
-          "${messageRef != null ? '($messageRef)' : ''}: "
-          "${redactedPayload(payload)}",
+          "${messageRef != null ? '($messageRef)' : ''}",
     );
 
     // Snapshot the members before triggering: a close event removes the
@@ -913,9 +910,8 @@ class RealtimeClient {
     });
   }
 
-  /// [endpointUrl] with credential-bearing query parameters replaced by
-  /// `<redacted>`, safe to include in log records.
-  String get _redactedEndpointUrl => Uri.parse(endpointUrl).redacted.toString();
+  /// [endpointUrl] without its query, safe to include in log records.
+  String get _loggableEndpointUrl => Uri.parse(endpointUrl).loggable;
 
   /// Return the next message ref, accounting for overflows
   @internal
@@ -991,7 +987,7 @@ class RealtimeClient {
 
   void _onConnectionOpen() {
     realtimeLogger.fine('Connected');
-    realtimeLogger.finest('Connected to $_redactedEndpointUrl');
+    realtimeLogger.finest('Connected to $_loggableEndpointUrl');
     unawaited(_resolveAccessTokenAndFlush());
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
