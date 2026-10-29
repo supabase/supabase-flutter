@@ -367,21 +367,6 @@ class SupabaseClient {
     return realtime.removeAllChannels();
   }
 
-  /// The token realtime authorizes with: the one [_getAccessToken] resolves,
-  /// or the JWT of a user `Authorization` header when there is none.
-  Future<String?> _realtimeAccessToken() async {
-    final token = await _getAccessToken();
-    if (token != null) {
-      return token;
-    }
-    for (final MapEntry(:key, :value) in _headers.entries) {
-      if (_canonicalHeaderName(key) == HttpHeader.authorization) {
-        return value.split(' ').last;
-      }
-    }
-    return null;
-  }
-
   /// Get either the custom access token from [accessToken] or the supabase one
   /// from [_authInstance]
   Future<String?> _getAccessToken() async {
@@ -519,7 +504,9 @@ class SupabaseClient {
           options.heartbeatInterval ??
           RealtimeConstants.defaultHeartbeatInterval,
       reconnectAfter: options.reconnectAfter,
-      customAccessToken: _realtimeAccessToken,
+      customAccessToken: () async =>
+          await _getAccessToken() ??
+          _headers[HttpHeader.authorization]?.split(' ').last,
       transport: options.transport,
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
       encode: options.encode,

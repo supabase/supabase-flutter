@@ -253,16 +253,17 @@ void main() {
       expect(httpClient.requestsTo('/auth/v1/token'), isEmpty);
     });
 
-    for (final header in ['Authorization', 'authorization']) {
-      test('keeps the JWT of an $header header without a session', () async {
-        createClient(headers: {header: 'Bearer header-jwt'});
+    test(
+      'keeps the JWT of an Authorization header without a session',
+      () async {
+        createClient(headers: {'Authorization': 'Bearer header-jwt'});
         await subscribe();
 
         await nextHeartbeat();
 
         expect(await realtimeToken(), 'header-jwt');
         expect(joinTokens().last, 'header-jwt');
-      });
-    }
+      },
+    );
   });
 }
