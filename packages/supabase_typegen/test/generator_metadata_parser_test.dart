@@ -60,10 +60,10 @@ void main() {
         ],
       }),
       throwsA(
-        isA<FormatException>().having(
+        isA<GeneratorMetadataFormatException>().having(
           (error) => error.message,
           'message',
-          contains('Expected is_nullable to be bool, got String'),
+          contains('Expected "is_nullable" to be bool, got String'),
         ),
       ),
     );
@@ -86,7 +86,7 @@ void main() {
         isA<FormatException>().having(
           (error) => error.message,
           'message',
-          contains('Expected the elements of enums to be String, got int'),
+          contains('Expected the elements of "enums" to be String, got int'),
         ),
       ),
     );
@@ -116,7 +116,7 @@ void main() {
           'message',
           allOf(
             startsWith('Not a GeneratorMetadata document'),
-            contains('Expected columns to be List<String>, got Null'),
+            contains('Expected "columns" to be List<String>, got Null'),
           ),
         ),
       ),

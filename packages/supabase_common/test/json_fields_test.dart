@@ -20,7 +20,7 @@ void main() {
           isA<FormatException>().having(
             (error) => error.message,
             'message',
-            'Expected count to be String, got int',
+            'Expected "count" to be String, got int',
           ),
         ),
       );
@@ -33,7 +33,7 @@ void main() {
           isA<FormatException>().having(
             (error) => error.message,
             'message',
-            'Expected title to be String, got Null',
+            'Expected "title" to be String, got Null',
           ),
         ),
       );
@@ -62,7 +62,7 @@ void main() {
           isA<FormatException>().having(
             (error) => error.message,
             'message',
-            'Expected name to be List<dynamic>?, got String',
+            'Expected "name" to be List<String>, got String',
           ),
         ),
       );
@@ -75,7 +75,7 @@ void main() {
           isA<FormatException>().having(
             (error) => error.message,
             'message',
-            'Expected the elements of mixed to be String, got int',
+            'Expected the elements of "mixed" to be String, got int',
           ),
         ),
       );

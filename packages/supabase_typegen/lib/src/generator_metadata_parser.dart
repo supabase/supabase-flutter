@@ -171,13 +171,21 @@ extension on Map<String, dynamic> {
   List<T> optionalListOf<T>(String key) => listOf(key) ?? const [];
 
   /// The elements of the list at [key], which must not be missing.
-  List<T> requiredListOf<T>(String key) => listOf(key) ?? field(key);
+  List<T> requiredListOf<T>(String key) =>
+      listOf(key) ??
+      (throw FormatException('Expected "$key" to be List<$T>, got Null'));
 
   /// The records of the list at [key], none when it is missing.
   List<Map<String, dynamic>> records(String key) => optionalListOf(key);
 }
 
-const _notGeneratorMetadata = 'Not a GeneratorMetadata document';
+/// Thrown when a document does not have the `GeneratorMetadata` shape.
+class GeneratorMetadataFormatException extends FormatException {
+  /// An exception explaining in [message] why the document is not a
+  /// `GeneratorMetadata` document.
+  const GeneratorMetadataFormatException(String message)
+    : super('Not a GeneratorMetadata document: $message');
+}
 
 const _relationCollections = [
   'tables',
@@ -211,20 +219,20 @@ const _relationCollections = [
 /// `is_updatable` for documents that predate the flags. Materialized views
 /// are never writable.
 ///
-/// Throws a [FormatException] when the document does not have the
-/// `GeneratorMetadata` shape.
+/// Throws a [GeneratorMetadataFormatException] when the document does not
+/// have the `GeneratorMetadata` shape.
 DatabaseDescription parseGeneratorMetadata(
   Map<String, dynamic> document, {
   List<String>? schemaNames,
 }) {
   try {
     return _parseGeneratorMetadata(document, schemaNames);
+  } on GeneratorMetadataFormatException {
+    rethrow;
   } on FormatException catch (error, stackTrace) {
-    if (error.message.startsWith(_notGeneratorMetadata)) rethrow;
     Error.throwWithStackTrace(
-      FormatException(
-        '$_notGeneratorMetadata: a record does not have the expected shape '
-        '(${error.message}).',
+      GeneratorMetadataFormatException(
+        'a record does not have the expected shape (${error.message}).',
       ),
       stackTrace,
     );
@@ -237,8 +245,8 @@ DatabaseDescription _parseGeneratorMetadata(
 ) {
   if (document['tables'] is! List<dynamic> ||
       document['columns'] is! List<dynamic>) {
-    throw const FormatException(
-      '$_notGeneratorMetadata: expected the introspection contract '
+    throw const GeneratorMetadataFormatException(
+      'expected the introspection contract '
       'of @supabase/postgrest-typegen, with "tables" and "columns" lists.',
     );
   }
@@ -623,8 +631,8 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
       'referenced_columns',
     );
     if (columns.length != referencedColumns.length) {
-      throw FormatException(
-        '$_notGeneratorMetadata: the relationship '
+      throw GeneratorMetadataFormatException(
+        'the relationship '
         '"${relationship['foreign_key_name']}" pairs ${columns.length} '
         'columns with ${referencedColumns.length} referenced columns.',
       );
