@@ -170,8 +170,20 @@ void main() {
         'limit': 100,
         'offset': 0,
         'sortBy': {'column': 'name', 'order': 'asc'},
-        'search': null,
       });
+    });
+
+    test('falls back to the defaults for explicit nulls', () {
+      const options = SearchOptions(limit: null, offset: null, sortBy: null);
+      expect(options.toMap(), {
+        'limit': 100,
+        'offset': 0,
+        'sortBy': {'column': 'name', 'order': 'asc'},
+      });
+    });
+
+    test('sends the search string when set', () {
+      expect(const SearchOptions(search: 'cat').toMap()['search'], 'cat');
     });
   });
 
@@ -494,7 +506,6 @@ void main() {
         'limit': 100,
         'offset': 0,
         'sortBy': {'column': 'name', 'order': 'asc'},
-        'search': null,
         'noncurrentVersions': 'include',
         'deleteMarkers': 'only',
         'exactMatch': true,

@@ -1818,6 +1818,10 @@ features:
       - UploadResponse.path
       - UploadResponse.fullPath
       - UploadResponse.toString
+  storage.file_buckets.transfer_progress:
+    status: partially_implemented
+    note: "Only uploads report progress, through the onProgress callback; downloads do not."
+    supporting_symbols:
       - UploadProgressCallback
   storage.file_buckets.upload_with_metadata:
     status: implemented
@@ -1920,8 +1924,8 @@ features:
       - TransformOptions.resize
       - TransformOptions.width
   storage.file_buckets.download_as_stream:
-    status: implemented
-    note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream."
+    status: partially_implemented
+    note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream. There is no helper that collects the stream under a byte cap or one that writes it atomically to a file."
     symbols:
       - StorageFileApi.downloadStream
   storage.file_buckets.list_files:

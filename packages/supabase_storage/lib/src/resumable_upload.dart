@@ -808,7 +808,8 @@ class ResumableUpload {
   /// again.
   static bool _isRetryable(Exception error, _Step step) => switch (error) {
     StorageTransportException() => true,
-    StorageApiException(statusCode: 409) => step == _Step.append,
+    StorageApiException(statusCode: 409) =>
+      step == _Step.append && error.errorCode != _duplicateCode,
     StorageApiException() => _isTransient(error),
     _ => false,
   };
@@ -817,9 +818,37 @@ class ResumableUpload {
   /// [exception], so its record is worth keeping.
   static bool _isTransient(StorageApiException exception) =>
       switch (exception.statusCode) {
+        409 when exception.errorCode == _duplicateCode => false,
         408 || 409 || 429 => true,
         final statusCode => statusCode >= 500,
       };
+
+  static const _duplicateCode = 'Duplicate';
+  static const _entityTooLargeCode = 'EntityTooLarge';
+
+  /// The exception for an error [response] of a tus request. The tus routes
+  /// answer in plain text, so the codes a single request upload carries are
+  /// derived from the status, and a 409 is only a duplicate when its message
+  /// says the object exists, since an offset conflict is a 409 too.
+  StorageApiException _apiException(http.Response response) {
+    final exception = _registry.fetch.apiException(response);
+    if (exception.errorCode != null) return exception;
+    final errorCode = switch (exception.statusCode) {
+      409 when exception.message.toLowerCase().contains('already exists') =>
+        _duplicateCode,
+      413 => _entityTooLargeCode,
+      _ => null,
+    };
+    if (errorCode == null) return exception;
+    return StorageApiException(
+      exception.message,
+      statusCode: exception.statusCode,
+      errorCode: errorCode,
+      requestId: exception.requestId,
+      headers: exception.headers,
+      body: exception.body,
+    );
+  }
 
   Map<String, String> get _requestHeaders => _tusHeaders(_headers, _token);
 
@@ -854,7 +883,7 @@ class ResumableUpload {
       abortSignal: abortSignal,
     );
     if (response.statusCode != 201) {
-      throw _registry.fetch.apiException(response);
+      throw _apiException(response);
     }
     if (response.headers['tus-complete'] == '1') {
       await _complete(response);
@@ -943,16 +972,23 @@ class ResumableUpload {
     _throwUnlessSuccessful(response);
     final offset = _offset(response);
     _setBytesUploaded(offset);
-    if (response.headers['tus-complete'] == '1' || offset >= totalBytes) {
+    if (response.headers['tus-complete'] == '1') {
       await _complete(response);
       return true;
+    }
+    if (offset >= totalBytes) {
+      throw StorageException(
+        'Storage received every byte of resumable upload $id but did not '
+        'confirm it as complete',
+        requestId: response.headers.requestId,
+      );
     }
     return false;
   }
 
   void _throwUnlessSuccessful(http.Response response) {
     if (!isSuccessStatusCode(response.statusCode)) {
-      throw _registry.fetch.apiException(response);
+      throw _apiException(response);
     }
   }
 
