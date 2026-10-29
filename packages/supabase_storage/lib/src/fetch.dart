@@ -50,7 +50,7 @@ class Fetch {
 
     if (data == null) {
       storageLogger.fine(
-        'StorageException (${response.statusCode}) for ${url?.loggable}',
+        () => 'StorageException (${response.statusCode}) for ${url?.loggable}',
       );
       return StorageApiException(
         response.body.isEmpty ? (response.reasonPhrase ?? '') : response.body,
@@ -69,14 +69,16 @@ class Fetch {
       body: response.body,
     );
     storageLogger.fine(
-      'StorageException (${response.statusCode}) for ${url?.loggable}',
+      () => 'StorageException (${response.statusCode}) for ${url?.loggable}',
     );
     return exception;
   }
 
   StorageTransportException _transportException(Uri? url, Exception error) {
     storageLogger.fine(
-      'StorageTransportException (${error.runtimeType}) for ${url?.loggable}',
+      () =>
+          'StorageTransportException (${error.runtimeType}) for '
+          '${url?.loggable}',
     );
     return StorageTransportException('Request failed: $error', cause: error);
   }
@@ -124,8 +126,9 @@ class Fetch {
         headers: streamedResponse.headers,
       );
       storageLogger.fine(
-        'StorageException (${streamedResponse.statusCode}) for '
-        '${url?.loggable}',
+        () =>
+            'StorageException (${streamedResponse.statusCode}) for '
+            '${url?.loggable}',
       );
       throw exception;
     }
@@ -172,7 +175,7 @@ class Fetch {
     }
 
     storageLogger.finest(
-      'Request: ${method.value} ${Uri.parse(url).loggable}',
+      () => 'Request: ${method.value} ${Uri.parse(url).loggable}',
     );
     final streamedResponse = await _send(request, idleTimeout);
     if (partialContent) await _requirePartialContent(streamedResponse);
@@ -236,8 +239,9 @@ class Fetch {
           final attempt = ++attempts;
           bodySent = false;
           storageLogger.finest(
-            'Request: attempt: $attempts ${method.value} '
-            '${Uri.parse(url).loggable}',
+            () =>
+                'Request: attempt: $attempts ${method.value} '
+                '${Uri.parse(url).loggable}',
           );
           final idleTimeout = IdleTimeout(requestTimeout);
           final request = _UploadRequest(
@@ -371,7 +375,7 @@ class Fetch {
     );
 
     storageLogger.finest(
-      'Request: GET (stream) ${Uri.parse(url).loggable}',
+      () => 'Request: GET (stream) ${Uri.parse(url).loggable}',
     );
     final streamedResponse = await _send(request, idleTimeout);
 
@@ -442,7 +446,7 @@ class Fetch {
       ..headers.addAll(headers)
       ..contentLength = contentLength ?? (createBody == null ? 0 : null);
     storageLogger.finest(
-      'Request: ${method.value} ${url.loggable}',
+      () => 'Request: ${method.value} ${url.loggable}',
     );
     return _read(await _send(request, idleTimeout));
   }

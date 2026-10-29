@@ -39,8 +39,8 @@ class AuthMFAApi {
   /// factor. This method creates a new `unverified` factor.
   ///
   /// For TOTP: To verify a factor, present the QR code or secret to the user
-  /// and ask them to add it to their authenticator app. For Phone: The user
-  /// will receive an SMS with a verification code.
+  /// and ask them to add it to their authenticator app. For Phone: Enrolling
+  /// does not send an SMS. Call [challenge] to send the verification code.
   ///
   /// The user has to enter the code from their authenticator app or SMS to
   /// verify it.

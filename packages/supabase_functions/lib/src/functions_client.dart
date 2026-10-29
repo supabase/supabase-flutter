@@ -59,7 +59,9 @@ class FunctionsClient {
       "'${Uri.parse(url).loggable}' and region "
       "'$region'",
     );
-    functionsLogger.finest("Initialize with headers: ${headers.loggableNames}");
+    functionsLogger.finest(
+      () => "Initialize with headers: ${headers.loggableNames}",
+    );
   }
   final String _url;
   final Map<String, String> _headers;
@@ -188,16 +190,8 @@ class FunctionsClient {
   ///       print(value);
   ///     });
   /// ```
-  /// To stream SSE on the web, you can use a custom HTTP client that is able to
-  /// handle SSE such as [fetch_client](https://pub.dev/packages/fetch_client).
-  /// ```dart
-  /// final fetchClient = FetchClient(mode: RequestMode.cors);
-  /// await Supabase.initialize(
-  ///   url: supabaseUrl,
-  ///   publishableKey: supabaseKey,
-  ///   httpClient: fetchClient,
-  /// );
-  /// ```
+  /// Streaming also works on the web, where the default HTTP client is
+  /// fetch based.
   Future<FunctionsResponse> invoke(
     String functionName, {
     // ignore: avoid-shadowing
@@ -294,7 +288,7 @@ class FunctionsClient {
     }
 
     functionsLogger.finest(
-      'Request: ${request.method} ${request.url.loggable}',
+      () => 'Request: ${request.method} ${request.url.loggable}',
     );
 
     final response = await _guardTransport(

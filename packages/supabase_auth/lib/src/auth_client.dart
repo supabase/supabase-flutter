@@ -1159,13 +1159,13 @@ class AuthClient {
   /// retrieve it from the current session. If no refresh token is available
   /// (neither provided nor in current session), an error will be thrown.
   Future<Session> refreshSession([String? refreshToken]) async {
-    authLogger.info('Refresh session');
+    authLogger.fine('Refresh session');
 
     final currentSessionRefreshToken =
         refreshToken ?? _currentSession?.refreshToken;
 
     if (currentSessionRefreshToken == null) {
-      authLogger.warning("Can't refresh session, no refresh token found.");
+      authLogger.fine("Can't refresh session, no refresh token found.");
       throw AuthSessionMissingException();
     }
 
@@ -1519,7 +1519,7 @@ class AuthClient {
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
   /// is fired, unless the refresh token was rejected.
   Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
-    authLogger.info('Signing out user with scope: ${scope.name}');
+    authLogger.fine('Signing out user with scope: ${scope.name}');
 
     if (scope == SignOutScope.local) {
       final session = _currentSession;
@@ -2269,7 +2269,7 @@ class AuthClient {
           messageEvent,
         ) {
           final rawEvent = messageEvent['event'];
-          authLogger.info('Received broadcast event: $rawEvent');
+          authLogger.fine('Received broadcast event: $rawEvent');
           final event = AuthChangeEvent.fromValue(rawEvent);
 
           if (event != null) {
