@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:supabase_storage/src/logger.dart';
+import 'package:supabase_storage/src/storage_download.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:supabase_storage/src/types.dart';
@@ -154,7 +155,7 @@ class Fetch {
     Map<String, dynamic>? body,
     FetchOptions? options, {
     Future<void>? abortSignal,
-    bool partialContent = false,
+    ByteRange? range,
     DownloadProgressCallback? onProgress,
   }) async {
     final idleTimeout = IdleTimeout(requestTimeout);
@@ -179,7 +180,7 @@ class Fetch {
       () => 'Request: ${method.value} ${Uri.parse(url).loggable}',
     );
     final streamedResponse = await _send(request, idleTimeout);
-    if (partialContent) await _requirePartialContent(streamedResponse);
+    if (range != null) await _requirePartialContent(streamedResponse, range);
     if (onProgress == null ||
         !isSuccessStatusCode(streamedResponse.statusCode)) {
       return _handleResponse(streamedResponse, options);
@@ -325,16 +326,14 @@ class Fetch {
 
   /// Performs a GET request.
   ///
-  /// {@template storage_fetch_partial_content}
-  /// With [partialContent], the request asks for a byte range, and a success
-  /// response other than 206 Partial Content throws a [StorageException],
-  /// since its body is the whole file instead of the range.
-  /// {@endtemplate}
+  /// With [range], the request asks for a byte range, and a success response
+  /// other than 206 Partial Content throws a [StorageException], since its
+  /// body is the whole file instead of the range.
   Future<T> get<T>(
     String url, {
     FetchOptions? options,
     Future<void>? abortSignal,
-    bool partialContent = false,
+    ByteRange? range,
     DownloadProgressCallback? onProgress,
   }) {
     return _handleRequest(
@@ -343,45 +342,45 @@ class Fetch {
       null,
       options,
       abortSignal: abortSignal,
-      partialContent: partialContent,
+      range: range,
       onProgress: onProgress,
     );
   }
 
-  /// Throws when [streamedResponse] is a success other than 206 Partial
-  /// Content, after releasing its body.
+  /// Throws when [streamedResponse] to a request for [range] is a success
+  /// other than 206 Partial Content, after releasing its body.
   Future<void> _requirePartialContent(
     http.StreamedResponse streamedResponse,
+    ByteRange range,
   ) async {
     final statusCode = streamedResponse.statusCode;
     if (!isSuccessStatusCode(statusCode) || statusCode == 206) return;
     await streamedResponse.stream.listen(null).cancel();
     throw StorageException(
-      'Expected the requested byte range with status 206, but got the whole '
-      'file with status $statusCode',
+      'Expected status 206 for the range ${range.headerValue}, but got the '
+      'whole file with status $statusCode',
       requestId: streamedResponse.headers.requestId,
     );
   }
 
-  /// Performs a GET request and yields the response body as a byte stream
-  /// without buffering it in memory.
+  /// Performs a GET request and returns the response once its head arrives,
+  /// without reading the body.
   ///
-  /// The status code is inspected before the body is yielded, so a non-success
-  /// response surfaces as a [StorageException] on the stream before any bytes
-  /// are emitted.
-  ///
-  /// {@macro storage_fetch_partial_content}
+  /// A non-success response throws a [StorageApiException]. Any success,
+  /// including a 200 to a ranged request, is returned as it is. A failure
+  /// while the body streams surfaces on the stream as a
+  /// [StorageTransportException], except an abort and an exception
+  /// [onProgress] throws.
   ///
   /// [onProgress] reports the body as it is yielded. See
   /// [DownloadProgressCallback].
   @internal
-  Stream<Uint8List> getStream(
+  Future<StorageDownload> getStream(
     String url, {
     FetchOptions? options,
     Future<void>? abortSignal,
-    bool partialContent = false,
     DownloadProgressCallback? onProgress,
-  }) async* {
+  }) async {
     final idleTimeout = IdleTimeout(requestTimeout);
     final request = _createRequest(
       HttpMethod.get,
@@ -398,20 +397,53 @@ class Fetch {
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {
       final response = await _read(streamedResponse);
-      throw _handleError(
-        response,
-        response.request?.url,
-        FetchOptions(options?.headers, noResolveJson: true),
-      );
+      throw _handleError(response, response.request?.url, options);
     }
 
-    if (partialContent) await _requirePartialContent(streamedResponse);
-    final body = onProgress == null
-        ? streamedResponse.stream
-        : _DownloadProgress(onProgress, streamedResponse).response.stream;
-    yield* body.map(
-      (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
+    final progress = onProgress == null
+        ? null
+        : _DownloadProgress(onProgress, streamedResponse);
+    final body = (progress?.response ?? streamedResponse).stream.transform(
+      StreamTransformer<List<int>, Uint8List>.fromHandlers(
+        handleData: (chunk, sink) =>
+            sink.add(chunk is Uint8List ? chunk : Uint8List.fromList(chunk)),
+        handleError: (error, stackTrace, sink) {
+          final isPassedThrough =
+              error is! Exception ||
+              error is http.RequestAbortedException ||
+              error is SupabaseException ||
+              identical(error, progress?.callbackError?.$1);
+          sink.addError(
+            isPassedThrough ? error : _transportException(request.url, error),
+            stackTrace,
+          );
+        },
+      ),
     );
+    return StorageDownload(
+      _subscribePaused(body),
+      statusCode: streamedResponse.statusCode,
+      headers: streamedResponse.headers,
+      contentLength: _bodyLength(streamedResponse),
+    );
+  }
+
+  /// Listens to [body] at once and holds it paused until the returned stream
+  /// is listened to, so that an abort or a cancellation before then still
+  /// reaches the HTTP client and releases the connection.
+  Stream<Uint8List> _subscribePaused(Stream<Uint8List> body) {
+    final controller = StreamController<Uint8List>(sync: true);
+    final subscription = body.listen(
+      controller.add,
+      onError: controller.addError,
+      onDone: () => unawaited(controller.close()),
+    )..pause();
+    controller
+      ..onListen = subscription.resume
+      ..onPause = subscription.pause
+      ..onResume = subscription.resume
+      ..onCancel = subscription.cancel;
+    return controller.stream;
   }
 
   Future<T> post<T>(
@@ -675,23 +707,28 @@ final class _UploadProgress with _CallbackFailure {
   void finish() => _finished = true;
 }
 
+/// The number of bytes the body of [response] yields: its `Content-Length`,
+/// unknown when the response has a `Content-Encoding`, since the HTTP stack
+/// may decode the body so that its length no longer matches.
+int? _bodyLength(http.StreamedResponse response) {
+  final contentEncoding = response.headers['content-encoding']?.trim();
+  final hasEncoding =
+      contentEncoding != null &&
+      contentEncoding.isNotEmpty &&
+      contentEncoding.toLowerCase() != 'identity';
+  final contentLength = response.contentLength;
+  return hasEncoding || contentLength == null || contentLength < 0
+      ? null
+      : contentLength;
+}
+
 /// Reports the body of a successful download as it reaches the caller.
 ///
-/// The total is the `Content-Length` of the response, unknown when the
-/// response has a `Content-Encoding`, since the HTTP stack may decode the body
-/// so that its length no longer matches. A body that yields no bytes reports
-/// `0` once, and nothing is reported after the body fails.
+/// The total is the [_bodyLength] of the response. A body that yields no
+/// bytes reports `0` once, and nothing is reported after the body fails.
 final class _DownloadProgress with _CallbackFailure {
-  _DownloadProgress(this._onProgress, http.StreamedResponse source) {
-    final contentEncoding = source.headers['content-encoding']?.trim();
-    final hasEncoding =
-        contentEncoding != null &&
-        contentEncoding.isNotEmpty &&
-        contentEncoding.toLowerCase() != 'identity';
-    final contentLength = source.contentLength;
-    _totalBytes = hasEncoding || contentLength == null || contentLength < 0
-        ? null
-        : contentLength;
+  _DownloadProgress(this._onProgress, http.StreamedResponse source)
+    : _totalBytes = _bodyLength(source) {
     response = http.StreamedResponse(
       _watch(source.stream),
       source.statusCode,
@@ -705,7 +742,7 @@ final class _DownloadProgress with _CallbackFailure {
   }
 
   final DownloadProgressCallback _onProgress;
-  late final int? _totalBytes;
+  final int? _totalBytes;
   late final http.StreamedResponse response;
 
   Stream<List<int>> _watch(Stream<List<int>> body) async* {
