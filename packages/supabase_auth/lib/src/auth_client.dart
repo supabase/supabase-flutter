@@ -552,9 +552,9 @@ class AuthClient {
     if (email != null) {
       final pkceFlow = await _startPKCEFlow();
 
-      response = await _sendPKCEFlowRequest(
+      final body = await _sendPKCEFlowRequest(
         pkceFlow?.flowId,
-        () => _fetch.requestObject(
+        () => _fetch.request(
           '$_url/signup',
           HttpMethod.post,
           options: AuthRequestOptions(
@@ -574,6 +574,7 @@ class AuthClient {
           ),
         ),
       );
+      response = jsonObject(body, 'the response body');
     } else if (phone != null) {
       final body = {
         'phone': phone,
@@ -1245,14 +1246,11 @@ class AuthClient {
       ),
     );
 
-    final response = await _sendPKCEFlowRequest(
+    final responseBody = await _sendPKCEFlowRequest(
       pkceFlow?.flowId,
-      () => _fetch.requestObject(
-        '$_url/resend',
-        HttpMethod.post,
-        options: options,
-      ),
+      () => _fetch.request('$_url/resend', HttpMethod.post, options: options),
     );
+    final response = jsonObject(responseBody, 'the response body');
 
     return ResendResponse(messageId: response.field('message_id'));
   }
@@ -1300,15 +1298,13 @@ class AuthClient {
         pkceFlow?.flowId,
       ),
     );
-    final response = await _sendPKCEFlowRequest(
+    final responseBody = await _sendPKCEFlowRequest(
       pkceFlow?.flowId,
-      () => _fetch.requestObject(
-        '$_url/user',
-        HttpMethod.put,
-        options: options,
-      ),
+      () => _fetch.request('$_url/user', HttpMethod.put, options: options),
     );
-    final userResponse = UserResponse.fromJson(response);
+    final userResponse = UserResponse.fromJson(
+      jsonObject(responseBody, 'the response body'),
+    );
 
     final session = currentSession;
     final user = userResponse.user;
