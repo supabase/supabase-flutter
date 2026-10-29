@@ -191,6 +191,16 @@ void main() {
       );
     });
 
+    test('listUsers throws a FormatException for a user without an id', () {
+      httpClient.stub({
+        'users': [
+          {...testUserJson()}..remove('id'),
+        ],
+      }, path: '/admin/users');
+
+      expect(client.admin.listUsers(), _throwsFormatExceptionNaming('"id"'));
+    });
+
     test('listUsers throws a FormatException for a non-string aud', () {
       httpClient.stub({
         'users': [testUserJson()],
