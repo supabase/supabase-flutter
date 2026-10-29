@@ -46,31 +46,42 @@ class FakeTusServer {
   int? length;
   final received = BytesBuilder();
 
+  /// Answers with header names like `Upload-Offset`, the way a client written
+  /// against `BaseClient` may hand them back.
+  bool titleCaseHeaders = false;
+
+  Response _response(int statusCode, Map<String, String> headers) => Response(
+    '',
+    statusCode,
+    headers: titleCaseHeaders
+        ? {
+            for (final MapEntry(:key, :value) in headers.entries)
+              key
+                      .split('-')
+                      .map((part) => part[0].toUpperCase() + part.substring(1))
+                      .join('-'):
+                  value,
+          }
+        : headers,
+  );
+
   Response _create(RecordedRequest request) {
     length = int.parse(request.headers['upload-length']!);
     received.clear();
     if (length == 0) {
-      return Response(
-        '',
-        201,
-        headers: {'tus-complete': '1', ..._completeHeaders},
-      );
+      return _response(201, {'tus-complete': '1', ..._completeHeaders});
     }
-    return Response('', 201, headers: {'location': uploadUrl});
+    return _response(201, {'location': uploadUrl});
   }
 
   Response _head(RecordedRequest request) {
     final length = this.length;
     if (length == null) return Response('Not Found', 404);
-    return Response(
-      '',
-      200,
-      headers: {
-        'upload-offset': '${received.length}',
-        'upload-length': '$length',
-        if (received.length == length) ..._completeHeaders,
-      },
-    );
+    return _response(200, {
+      'upload-offset': '${received.length}',
+      'upload-length': '$length',
+      if (received.length == length) ..._completeHeaders,
+    });
   }
 
   Response _append(RecordedRequest request) {
@@ -80,17 +91,13 @@ class FakeTusServer {
       return Response('Upload-Offset conflict', 409);
     }
     received.add(request.bodyBytes);
-    return Response(
-      '',
-      204,
-      headers: {
-        'upload-offset': '${received.length}',
-        if (received.length == length) ...{
-          'tus-complete': '1',
-          ..._completeHeaders,
-        },
+    return _response(204, {
+      'upload-offset': '${received.length}',
+      if (received.length == length) ...{
+        'tus-complete': '1',
+        ..._completeHeaders,
       },
-    );
+    });
   }
 
   static const _completeHeaders = {
@@ -196,6 +203,26 @@ void main() {
       ),
     );
     expect(await storage.resumableUploads(), isEmpty);
+  });
+
+  test('reads the tus response headers in any casing', () async {
+    server.titleCaseHeaders = true;
+
+    final response = await storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', data)
+        .done;
+
+    expect(response.id, 'object-1');
+    expect(response.versionId, 'version-1');
+    expect(server.received.toBytes(), data);
+
+    final empty = await storage
+        .from('videos')
+        .resumableUploadBinary('empty.mp4', Uint8List(0))
+        .done;
+
+    expect(empty.id, 'object-1');
   });
 
   test('streams a file from disk', () async {

@@ -885,11 +885,11 @@ class ResumableUpload {
     if (response.statusCode != 201) {
       throw _apiException(response);
     }
-    if (response.headers['tus-complete'] == '1') {
+    if (response.headers.header('tus-complete') == '1') {
       await _complete(response);
       return true;
     }
-    final location = response.headers['location'];
+    final location = response.headers.header('location');
     if (location == null) {
       throw StorageException(
         'Storage created the resumable upload without a Location header',
@@ -929,7 +929,7 @@ class ResumableUpload {
       _setBytesUploaded(offset);
       return false;
     }
-    if (response.headers['supabase-object-id'] == null) {
+    if (response.headers.header('supabase-object-id') == null) {
       await _registry._remove(id);
       _record = null;
       throw StorageException(
@@ -972,7 +972,7 @@ class ResumableUpload {
     _throwUnlessSuccessful(response);
     final offset = _offset(response);
     _setBytesUploaded(offset);
-    if (response.headers['tus-complete'] == '1') {
+    if (response.headers.header('tus-complete') == '1') {
       await _complete(response);
       return true;
     }
@@ -993,7 +993,7 @@ class ResumableUpload {
   }
 
   int _offset(http.Response response) {
-    final offset = int.tryParse(response.headers['upload-offset'] ?? '');
+    final offset = int.tryParse(response.headers.header('upload-offset') ?? '');
     if (offset == null) {
       throw StorageException(
         'Storage answered resumable upload $id without an Upload-Offset',
@@ -1011,10 +1011,10 @@ class ResumableUpload {
     _finish();
     _done.complete(
       UploadResponse(
-        id: response.headers['supabase-object-id'],
+        id: response.headers.header('supabase-object-id'),
         path: path,
         fullPath: '$bucketId/$path',
-        versionId: response.headers['supabase-object-version-id'],
+        versionId: response.headers.header('supabase-object-version-id'),
       ),
     );
   }
