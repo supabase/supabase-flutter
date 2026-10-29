@@ -6,9 +6,7 @@ void main() {
     final exceptions = {
       'AuthException': const AuthException('boom'),
       'AuthPKCEGrantCodeExchangeException':
-          const AuthPKCEGrantCodeExchangeException(
-            'boom',
-          ),
+          const AuthPKCEGrantCodeExchangeException('boom'),
       'AuthSessionMissingException': AuthSessionMissingException(),
       'AuthRetryableFetchException': AuthRetryableFetchException(),
       'AuthRetryableApiException': AuthRetryableApiException(
