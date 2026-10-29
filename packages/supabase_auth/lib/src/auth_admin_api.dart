@@ -183,7 +183,7 @@ class AuthAdminApi {
       HttpMethod.get,
       options: options,
     );
-    final body = jsonObject(result.body, 'the user list');
+    final body = jsonObject(result.body, description: 'the user list');
     final users = body.requiredListOf<Map<String, dynamic>>('users');
     final headers = result.response.headers;
     final links = _parsePaginationLinks(headers['link']);

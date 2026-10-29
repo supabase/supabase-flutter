@@ -1,23 +1,33 @@
-/// [value], a decoded JSON value described by [name], which must be a JSON
-/// object.
-Map<String, dynamic> jsonObject(Object? value, String name) => switch (value) {
+/// [value], a decoded JSON value, which must be a JSON object.
+///
+/// [description] names the value in the [FormatException] thrown otherwise,
+/// for example `the response body`.
+Map<String, dynamic> jsonObject(
+  Object? value, {
+  required String description,
+}) => switch (value) {
   final Map<String, dynamic> object => object,
   _ => throw FormatException(
-    'Expected $name to be a JSON object, got ${value.runtimeType}',
+    'Expected $description to be a JSON object, got ${value.runtimeType}',
   ),
 };
 
-/// [value], a decoded JSON value described by [name], which must be a list of
-/// JSON objects.
-List<Map<String, dynamic>> jsonObjectList(Object? value, String name) =>
-    switch (value) {
-      final List<dynamic> list => [
-        for (final element in list) jsonObject(element, 'each of $name'),
-      ],
-      _ => throw FormatException(
-        'Expected $name to be a list, got ${value.runtimeType}',
-      ),
-    };
+/// [value], a decoded JSON value, which must be a list of JSON objects.
+///
+/// [description] names the value in the [FormatException] thrown otherwise,
+/// for example `the passkeys`.
+List<Map<String, dynamic>> jsonObjectList(
+  Object? value, {
+  required String description,
+}) => switch (value) {
+  final List<dynamic> list => [
+    for (final element in list)
+      jsonObject(element, description: 'each of $description'),
+  ],
+  _ => throw FormatException(
+    'Expected $description to be a list, got ${value.runtimeType}',
+  ),
+};
 
 /// Typed reads of the fields of a decoded JSON object, throwing a
 /// [FormatException] for a field that does not hold the expected type.

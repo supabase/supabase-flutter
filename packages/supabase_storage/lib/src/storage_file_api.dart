@@ -827,7 +827,10 @@ class StorageFileApi {
       },
       options: options,
     );
-    return jsonObjectList(response, 'the signed URLs').map<SignedUrlResult>((
+    return jsonObjectList(
+      response,
+      description: 'the signed URLs',
+    ).map<SignedUrlResult>((
       entry,
     ) {
       final signedUrlPath = entry.field<String?>('signedURL');

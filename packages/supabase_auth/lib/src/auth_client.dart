@@ -574,7 +574,7 @@ class AuthClient {
           ),
         ),
       );
-      response = jsonObject(body, 'the response body');
+      response = jsonObject(body, description: 'the response body');
     } else if (phone != null) {
       final body = {
         'phone': phone,
@@ -1250,7 +1250,7 @@ class AuthClient {
       pkceFlow?.flowId,
       () => _fetch.request('$_url/resend', HttpMethod.post, options: options),
     );
-    final response = jsonObject(responseBody, 'the response body');
+    final response = jsonObject(responseBody, description: 'the response body');
 
     return ResendResponse(messageId: response.field('message_id'));
   }
@@ -1303,7 +1303,7 @@ class AuthClient {
       () => _fetch.request('$_url/user', HttpMethod.put, options: options),
     );
     final userResponse = UserResponse.fromJson(
-      jsonObject(responseBody, 'the response body'),
+      jsonObject(responseBody, description: 'the response body'),
     );
 
     final session = currentSession;

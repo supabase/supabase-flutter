@@ -99,7 +99,7 @@ class RealtimePresence {
 
       _state = RealtimePresence.syncState(
         _state,
-        jsonObject(newState, 'the presence state'),
+        jsonObject(newState, description: 'the presence state'),
         onJoin,
         onLeave,
       );
@@ -123,7 +123,7 @@ class RealtimePresence {
       final onLeave = _caller['onLeave'];
       final onSync = _caller['onSync'];
 
-      final presenceDiff = jsonObject(diff, 'the presence diff');
+      final presenceDiff = jsonObject(diff, description: 'the presence diff');
       if (inPendingSyncState()) {
         _pendingDiffs.add(presenceDiff);
       } else {
@@ -361,7 +361,7 @@ class RealtimePresence {
         _ =>
           jsonObject(
                 presences,
-                'the presences of "$key"',
+                description: 'the presences of "$key"',
               )
               .requiredListOf<Map<String, dynamic>>('metas')
               .map(_presenceFromMeta)

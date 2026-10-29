@@ -34,7 +34,7 @@ class AuthAdminMFAApi {
     return AuthMFAAdminListFactorsResponse(
       factors: jsonObjectList(
         data,
-        'the factors',
+        description: 'the factors',
       ).map(Factor.fromJson).toList(),
     );
   }

@@ -66,7 +66,7 @@ class StorageBucketApi {
       options: fetchOptions,
     );
     return [
-      for (final bucket in jsonObjectList(response, 'the buckets'))
+      for (final bucket in jsonObjectList(response, description: 'the buckets'))
         Bucket.fromJson(bucket),
     ];
   }
@@ -291,7 +291,10 @@ class StorageBucketApi {
       options: fetchOptions,
     );
     return [
-      for (final bucket in jsonObjectList(response, 'the analytics buckets'))
+      for (final bucket in jsonObjectList(
+        response,
+        description: 'the analytics buckets',
+      ))
         AnalyticsBucket.fromJson(bucket),
     ];
   }
