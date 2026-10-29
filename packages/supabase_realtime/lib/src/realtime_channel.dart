@@ -12,6 +12,7 @@ import 'package:supabase_realtime/src/logger.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/realtime_presence.dart';
 import 'package:supabase_realtime/src/retry_timer.dart';
+import 'package:supabase_realtime/src/serializer.dart';
 import 'package:supabase_realtime/src/transformers.dart';
 import 'package:supabase_realtime/src/types.dart';
 
@@ -951,6 +952,10 @@ class RealtimeChannel {
   /// longer than the timeout. A message on a channel that is leaving or has
   /// closed resolves with [ChannelResponse.error] without being sent, as does
   /// a buffered one when the channel closes.
+  ///
+  /// With the built-in codec, a payload that cannot be encoded, for example
+  /// one holding a [DateTime], completes the future with the encode error
+  /// instead of being dropped.
   @internal
   Future<ChannelResponse> send({
     required RealtimeListenType type,
@@ -969,6 +974,20 @@ class RealtimeChannel {
       'type': type.toType(),
       'event': ?event,
     };
+
+    if (socket.encode == null) {
+      try {
+        const Serializer().encode(
+          RealtimeMessage.outgoing(
+            topic: topic,
+            event: ChannelEvent.fromValue(message['type']),
+            payload: message,
+          ),
+        );
+      } catch (error, stackTrace) {
+        return Future.error(error, stackTrace);
+      }
+    }
 
     final isUnacknowledgedBroadcast =
         message['type'] == 'broadcast' &&
