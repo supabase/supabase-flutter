@@ -88,4 +88,76 @@ void main() {
       ),
     );
   });
+
+  test('maybeSingle() counts the rows of a function call', () async {
+    httpClient.stub(
+      [
+        {'name': 'a'},
+        {'name': 'b'},
+      ],
+      path: '/rpc/find_users',
+      method: HttpMethod.post,
+      headers: {'content-range': '0-1/*'},
+    );
+
+    await expectLater(
+      () => postgrest.rpc('find_users').maybeSingle(),
+      throwsA(
+        isA<PostgrestApiException>()
+            .having((e) => e.errorCode, 'errorCode', 'PGRST116')
+            .having((e) => e.details, 'details', contains('2 rows')),
+      ),
+    );
+  });
+
+  test(
+    'maybeSingle() counts the rows of a read from the Content-Range',
+    () async {
+      httpClient.stub(
+        [
+          {'name': 'a'},
+        ],
+        path: '/users',
+        headers: {'content-range': '5-6/*'},
+      );
+
+      await expectLater(
+        () => postgrest.from('users').select().maybeSingle(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having((e) => e.errorCode, 'errorCode', 'PGRST116')
+              .having((e) => e.details, 'details', contains('2 rows')),
+        ),
+      );
+    },
+  );
+
+  test('maybeSingle() resolves a read with a range of * to null', () async {
+    httpClient.stub(
+      [
+        {'name': 'a'},
+      ],
+      path: '/users',
+      headers: {'content-range': '*/1'},
+    );
+
+    expect(await postgrest.from('users').select().maybeSingle(), isNull);
+  });
+
+  test(
+    'maybeSingle() resolves an offset range of one row to the row',
+    () async {
+      httpClient.stub(
+        [
+          {'name': 'a'},
+        ],
+        path: '/users',
+        headers: {'content-range': '5-5/10'},
+      );
+
+      expect(await postgrest.from('users').select().maybeSingle(), {
+        'name': 'a',
+      });
+    },
+  );
 }
