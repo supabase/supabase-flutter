@@ -178,8 +178,10 @@ class RealtimeClient {
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// built-in codec.
   ///
-  /// [reconnectAfter] The optional function that returns the reconnect
-  /// interval. Defaults to an exponential backoff from 1 to 10 seconds.
+  /// [reconnectAfter] The optional function that returns the delay before
+  /// each reconnect attempt, starting at attempt 1. The attempt count resets
+  /// when a socket opens. Defaults to a random delay between zero and
+  /// `min(30 s, 1 s × 2^(attempt − 1))`.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
   RealtimeClient(
@@ -227,7 +229,7 @@ class RealtimeClient {
     this.disconnectOnEmptyChannelsAfter =
         disconnectOnEmptyChannelsAfter ?? (heartbeatInterval * 2);
 
-    this.reconnectAfter = reconnectAfter ?? RetryTimer.createRetryFunction();
+    this.reconnectAfter = reconnectAfter ?? RetryTimer.reconnectBackoff;
     _reconnectTimer = RetryTimer(
       () => unawaited(_reconnect()),
       this.reconnectAfter,
@@ -994,6 +996,10 @@ class RealtimeClient {
   void _onConnectionOpen() {
     realtimeLogger.fine('Connected');
     realtimeLogger.finest('Connected to $_loggableEndpointUrl');
+    _reconnectTimer.reset();
+    for (final channel in _channels) {
+      channel.resetRejoinAttempts();
+    }
     unawaited(_resolveAccessTokenAndFlush());
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
@@ -1007,10 +1013,10 @@ class RealtimeClient {
   }
 
   /// communication has been closed
-  void _onConnectionClose() {
+  void _onConnectionClose([RealtimeCloseEvent? closeEvent]) {
     final statusCode = _connection?.closeCode;
-    RealtimeCloseEvent? event;
-    if (statusCode != null) {
+    RealtimeCloseEvent? event = closeEvent;
+    if (event == null && statusCode != null) {
       event = RealtimeCloseEvent(
         code: statusCode,
         reason: _connection?.closeReason,
@@ -1145,10 +1151,6 @@ class RealtimeClient {
         }
       }
     }
-    // The backoff is only reset here, once the connection is usable: a
-    // connect whose provider threw above counts as a failed attempt, so
-    // repeated provider failures keep growing the reconnect delay.
-    _reconnectTimer.reset();
     _rejoinErroredChannels();
     _flushSendBuffer();
   }
@@ -1179,8 +1181,10 @@ class RealtimeClient {
     }
   }
 
-  /// Sends a heartbeat, or closes the connection to trigger reconnection if
-  /// the previous one never received a reply.
+  /// Sends a heartbeat, or treats the connection as dead if the previous one
+  /// never received a reply: every joined channel is marked as errored, the
+  /// socket is closed without waiting for more messages, and a reconnect is
+  /// scheduled.
   @internal
   Future<void> sendHeartbeat() async {
     if (!isConnected) {
@@ -1195,16 +1199,19 @@ class RealtimeClient {
       );
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       final timedOutConnection = _connection;
+      _connectionState = SocketState.closed;
+      unawaited(_connectionSubscription?.cancel());
+      _connectionSubscription = null;
+      _onConnectionClose(
+        const RealtimeCloseEvent(
+          code: RealtimeConstants.webSocketCloseNormal,
+          reason: 'heartbeat timeout',
+        ),
+      );
       unawaited(
         timedOutConnection?.sink.close(
           RealtimeConstants.webSocketCloseNormal,
           'heartbeat timeout',
-        ),
-      );
-      unawaited(
-        Future<void>.delayed(
-          connectionCloseTimeout,
-          () => _closeAfterHeartbeatTimeout(timedOutConnection),
         ),
       );
       return;
@@ -1234,20 +1241,5 @@ class RealtimeClient {
     } finally {
       _refreshingAccessTokenOnHeartbeat = false;
     }
-  }
-
-  /// Handles [timedOutConnection] as closed when it is still open
-  /// [connectionCloseTimeout] after a heartbeat timeout closed its sink.
-  void _closeAfterHeartbeatTimeout(WebSocketChannel? timedOutConnection) {
-    if (!_isCurrentOpenConnection(timedOutConnection)) {
-      return;
-    }
-    realtimeLogger.warning(
-      'Connection did not close after the heartbeat timeout, reconnecting',
-    );
-    _connectionState = SocketState.closed;
-    unawaited(_connectionSubscription?.cancel());
-    _connectionSubscription = null;
-    _onConnectionClose();
   }
 }

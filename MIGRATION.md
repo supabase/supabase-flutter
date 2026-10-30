@@ -607,6 +607,8 @@ explicitly:
   second channel with the same name shares the first one instead of replacing it
 - [`stream()` keeps running through reconnects](#stream-keeps-running-through-reconnects), so
   `onDone` no longer fires after a failed fetch that a retry can fix
+- [Realtime reconnects with full jitter up to 30 seconds](#realtime-reconnects-with-full-jitter-up-to-30-seconds),
+  and `reconnectAfter` no longer sets the channel rejoin delays
 
 ### Packages and setup
 
@@ -2038,6 +2040,20 @@ the stream in `onDone` or `onError` to recover is no longer needed.
 
 The rows are fetched once the server streams the changes, rather than alongside the join, so the
 first snapshot holds every change made in the meantime and arrives slightly later.
+
+#### Realtime reconnects with full jitter up to 30 seconds
+
+The default reconnect delay is a random duration between zero and
+`min(30 s, 1 s × 2^(attempt − 1))`, instead of a delay doubling from 1 to 10 seconds. The attempt
+count resets when a socket opens, and there is no attempt limit.
+
+`reconnectAfter` only sets the socket reconnect delay. A channel whose join fails or times out
+rejoins after 1, 2, 5 and then every 10 seconds, or after 30 seconds when the server rejected the
+join with a rate limit error, and an errored channel rejoins at once when the socket opens. A join
+answered with an error is now retried like a join that timed out.
+
+A heartbeat without a reply by the next one closes the socket at once, instead of waiting up to
+`connectionCloseTimeout` for it to close.
 
 ### Storage
 

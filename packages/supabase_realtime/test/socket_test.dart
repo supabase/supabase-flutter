@@ -1692,8 +1692,8 @@ void main() {
     );
 
     test(
-      'grows the reconnect backoff while the access token provider keeps '
-      'failing',
+      'restarts the reconnect backoff at every open while the access token '
+      'provider keeps failing',
       () async {
         final triesSeen = <int>[];
 
@@ -1730,15 +1730,15 @@ void main() {
 
         unawaited(socket.connect());
 
-        // Each failed resolution closes the socket and schedules a reconnect
-        // with a growing attempt count instead of restarting the backoff.
+        // Each socket opens before its resolution fails, and the attempt
+        // count resets on open, so every reconnect is attempt 1.
         final deadline = DateTime.now().add(const Duration(seconds: 5));
         while (triesSeen.length < 3 && DateTime.now().isBefore(deadline)) {
           await Future<void>.delayed(const Duration(milliseconds: 10));
         }
 
         expect(triesSeen.length, greaterThanOrEqualTo(3));
-        expect(triesSeen.sublist(0, 3), [1, 2, 3]);
+        expect(triesSeen.sublist(0, 3), [1, 1, 1]);
 
         await socket.disconnect();
       },

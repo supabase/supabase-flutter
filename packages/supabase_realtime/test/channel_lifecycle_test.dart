@@ -298,22 +298,23 @@ void main() {
             connections++;
             return connection;
           },
-          connectionCloseTimeout: const Duration(milliseconds: 10),
           reconnectAfter: (_) => Duration.zero,
         );
         await client.connect();
-        final statuses = client.onStatusChange.map((change) => change.status);
-
-        await client.sendHeartbeat();
-        await client.sendHeartbeat();
-
-        await expectLater(
-          statuses,
-          emitsInOrder([
-            RealtimeConnectionStatus.closed,
-            RealtimeConnectionStatus.open,
-          ]),
+        final statuses = <RealtimeConnectionStatus>[];
+        final subscription = client.onStatusChange.listen(
+          (change) => statuses.add(change.status),
         );
+        addTearDown(subscription.cancel);
+
+        await client.sendHeartbeat();
+        await client.sendHeartbeat();
+        await pumpEventQueue();
+
+        expect(statuses, [
+          RealtimeConnectionStatus.closed,
+          RealtimeConnectionStatus.open,
+        ]);
         expect(connections, 2);
       });
     }
