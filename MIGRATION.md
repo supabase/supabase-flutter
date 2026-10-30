@@ -2043,9 +2043,9 @@ first snapshot holds every change made in the meantime and arrives slightly late
 
 #### Realtime reconnects with full jitter up to 30 seconds
 
-The default reconnect delay is a random duration between zero and `min(30 s, 1 s × 2^(attempt − 1))`,
-instead of a delay doubling from 1 to 10 seconds. The attempt count resets when a socket opens, and
-there is no attempt limit.
+The default reconnect delay is a random duration between zero and
+`min(30 s, 1 s × 2^(attempt − 1))`, instead of a delay doubling from 1 to 10 seconds. The attempt
+count resets when a socket opens, and there is no attempt limit.
 
 `reconnectAfter` only sets the socket reconnect delay. A channel whose join fails or times out
 rejoins after 1, 2, 5 and then every 10 seconds, or after 30 seconds when the server rejected the
