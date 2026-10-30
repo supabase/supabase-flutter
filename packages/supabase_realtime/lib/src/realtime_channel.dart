@@ -46,7 +46,7 @@ class RealtimeChannel {
     );
     _rejoinTimer = RetryTimer(
       () => rejoinUntilConnected(),
-      socket.reconnectAfter,
+      RetryTimer.rejoinBackoff,
     );
     _joinPush.receive('ok', (_) {
       _state = ChannelState.joined;
@@ -79,7 +79,21 @@ class RealtimeChannel {
       }
       realtimeLogger.warning('Channel error: $topic (${reason.runtimeType})');
       _state = ChannelState.errored;
-      _rejoinTimer.scheduleTimeout();
+      if (socket.isConnected) {
+        _rejoinTimer.scheduleTimeout();
+      }
+    });
+
+    _joinPush.receive('error', (error) {
+      if (!isJoining || !socket.isConnected) {
+        return;
+      }
+      _state = ChannelState.errored;
+      _rejoinTimer.scheduleTimeout(
+        delay: _isRateLimitError(error)
+            ? RetryTimer.rateLimitedRejoinDelay
+            : null,
+      );
     });
 
     _joinPush.receive('timeout', (_) {
@@ -90,7 +104,9 @@ class RealtimeChannel {
         'Channel join timeout: $topic after ${_joinPush.timeout}',
       );
       _state = ChannelState.errored;
-      _rejoinTimer.scheduleTimeout();
+      if (socket.isConnected) {
+        _rejoinTimer.scheduleTimeout();
+      }
     });
 
     onEvents(ChannelEvent.reply.eventName(), ChannelFilter(), (
@@ -191,6 +207,26 @@ class RealtimeChannel {
   /// Streams handed out by [onBroadcast], keyed by the event name, so that
   /// repeated calls with the same event reuse one binding.
   final Map<String, Stream<Map<String, dynamic>>> _broadcastStreams = {};
+
+  static const _rateLimitErrorCodes = {
+    'ChannelRateLimitReached',
+    'ConnectionRateLimitReached',
+    'ClientJoinRateLimitReached',
+    'DatabaseConnectionRateLimitReached',
+  };
+
+  /// Whether a join was rejected with a rate limit error, which the server
+  /// reports as a `reason` of the form `<code>: <message>`.
+  static bool _isRateLimitError(Object? error) {
+    final reason = error is Map ? error['reason'] : null;
+    return reason is String &&
+        _rateLimitErrorCodes.contains(reason.split(':').first.trim());
+  }
+
+  /// Resets the rejoin attempt count and cancels a waiting rejoin, for when
+  /// the socket opens and errored channels rejoin at once.
+  @internal
+  void resetRejoinAttempts() => _rejoinTimer.reset();
 
   /// Schedules a [rejoin] once the socket reconnects, retrying with backoff
   /// until it succeeds.

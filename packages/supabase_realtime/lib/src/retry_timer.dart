@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:meta/meta.dart';
-import 'package:supabase_common/supabase_common.dart';
 
 @internal
 typedef TimerCallback = void Function();
@@ -55,26 +55,39 @@ class RetryTimer {
     _timer?.cancel();
   }
 
-  /// Cancels any previous scheduleTimeout and schedules callback
-  void scheduleTimeout() {
+  /// Cancels any previous scheduleTimeout and schedules callback, after
+  /// [delay] when given instead of the delay for the next attempt.
+  void scheduleTimeout({Duration? delay}) {
     if (_timer != null) _timer!.cancel();
 
-    _timer = Timer(timerCalculation(_tries + 1), () {
+    _timer = Timer(delay ?? timerCalculation(_tries + 1), () {
       _tries = _tries + 1;
       callback();
     });
   }
 
-  /// Generates an exponential backoff function with first and max delays.
-  static TimerCalculation createRetryFunction({
-    Duration firstDelay = const Duration(seconds: 1),
-    Duration maxDelay = const Duration(seconds: 10),
-  }) {
-    return (int tries) => exponentialBackoff(
-      // `tries` counts the attempt this delay precedes, so the first one is 1.
-      tries - 1,
-      initialDelay: firstDelay,
-      maxDelay: maxDelay,
+  /// The default reconnect delay: a uniformly random duration between zero
+  /// and `min(30 s, 1 s × 2^(attempt − 1))`.
+  static Duration reconnectBackoff(int attempt, {Random? random}) {
+    const baseMilliseconds = 1000;
+    const capMilliseconds = 30000;
+    final upperBound = min(
+      capMilliseconds,
+      baseMilliseconds * pow(2, min(attempt - 1, 15)).toInt(),
+    );
+    return Duration(
+      milliseconds: (random ?? Random()).nextInt(upperBound + 1),
     );
   }
+
+  /// The channel rejoin delay: 1, 2, 5 and 10 seconds for the first four
+  /// attempts, then 10 seconds.
+  static Duration rejoinBackoff(int attempt) {
+    const delays = [1, 2, 5, 10];
+    return Duration(seconds: delays[min(attempt, delays.length) - 1]);
+  }
+
+  /// The rejoin delay after the server rejected a join with a rate limit
+  /// error.
+  static const rateLimitedRejoinDelay = Duration(seconds: 30);
 }

@@ -30,9 +30,10 @@ class RealtimeClientOptions {
   /// The interval at which to send a heartbeat message.
   final Duration? heartbeatInterval;
 
-  /// Returns the reconnect interval per attempt.
+  /// Returns the socket reconnect delay per attempt, starting at attempt 1.
   ///
-  /// Defaults to the stepped backoff of the RealtimeClient.
+  /// Defaults to a random delay between zero and
+  /// `min(30 s, 1 s × 2^(attempt − 1))`.
   final TimerCalculation? reconnectAfter;
 
   /// Custom WebSocket transport factory for the RealtimeClient.
