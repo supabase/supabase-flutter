@@ -44,6 +44,8 @@ again from this directory. `--workdir ..` points the CLI at the shared
 supabase gen types --lang dart --schema public --workdir .. > lib/supabase_schema.g.dart
 ```
 
+The command needs Supabase CLI 3.0.0 or newer.
+
 ## Running
 
 From the `examples` directory, run the launcher and pick `realtime_room`:

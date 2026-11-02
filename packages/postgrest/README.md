@@ -45,6 +45,8 @@ dart pub add dev:supabase_typegen
 supabase gen types --lang dart > lib/supabase_schema.g.dart
 ```
 
+The command needs Supabase CLI 3.0.0 or newer.
+
 Import the generated `supabase_schema.g.dart` and pass the table definition
 to `table()`. Filters are methods on the column constants, so the compiler
 checks every column name and value:

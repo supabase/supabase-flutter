@@ -75,6 +75,8 @@ it again from your project:
 supabase gen types --lang dart --schema public --remote=YOUR_PROJECT_REF > lib/supabase_schema.g.dart
 ```
 
+The command needs Supabase CLI 3.0.0 or newer.
+
 Run the command again after every schema change, so the types keep matching the
 database.
 
