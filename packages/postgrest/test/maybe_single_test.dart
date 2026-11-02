@@ -191,4 +191,38 @@ void main() {
 
     expect(httpClient.requests.single.method, HttpMethod.head.value);
   });
+
+  test('maybeSingle() rejects a function returning an array value', () async {
+    httpClient.stub(
+      [1, 2, 3],
+      path: '/rpc/numbers',
+      method: HttpMethod.post,
+      headers: {'content-range': '0-0/*'},
+    );
+
+    await expectLater(
+      () => postgrest.rpc('numbers').maybeSingle(),
+      throwsA(
+        isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          allOf(contains('List<dynamic>'), contains('client.rpc.value')),
+        ),
+      ),
+    );
+  });
+
+  test('maybeSingle() rejects a function returning a scalar', () async {
+    httpClient.stub(
+      5,
+      path: '/rpc/count_users',
+      method: HttpMethod.post,
+      headers: {'content-range': '0-0/*'},
+    );
+
+    await expectLater(
+      () => postgrest.rpc('count_users').maybeSingle(),
+      throwsA(isA<StateError>()),
+    );
+  });
 }
