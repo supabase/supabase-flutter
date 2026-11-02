@@ -24,12 +24,15 @@ it against this file. To upgrade an existing v2 project, use the
 - Generate the schema with the Supabase CLI (2.122.0 or newer) and never edit
   it by hand. Regenerate it after every change to the database schema, whether
   it came from a migration or the dashboard, and after upgrading
-  `supabase_typegen`. For a project that keeps its schema in
-  `supabase/migrations`, apply the migrations to the local stack with
+  `supabase_typegen` or the Supabase CLI. For a project that keeps its schema
+  in `supabase/migrations`, apply new migrations to the local stack with
   `supabase migration up` first, then run
-  `supabase gen types --lang dart --local > lib/supabase_schema.g.dart`. Use
-  `--linked` or `--project-id <ref>` instead of `--local` to read a hosted
-  project. The `supabase-typegen-generate` skill, installed with the
+  `supabase gen types --lang dart --local > lib/supabase_schema.g.dart`.
+  `migration up` skips migrations that are already applied, so after editing
+  one, rebuild the stack with `supabase db reset`, which drops local data, so
+  ask the user first. Use `--linked` or `--project-id <ref>` instead of
+  `--local` to read a hosted project, such as after a change in the
+  dashboard. The `supabase-typegen-generate` skill, installed with the
   `supabase_typegen` dev dependency, covers the setup and the options.
 - Pass `publishableKey`. `anonKey` does not exist in v3.
 - Listen to realtime with streams. v3 has no `callback:` parameters.

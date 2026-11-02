@@ -269,4 +269,4 @@ Rules for the conversion:
    - every remaining `from()` or untyped `rpc()` call and its reason,
    - that the schema must be regenerated with the same command after every
      change to the database schema, whether from a migration or the
-     dashboard, and after upgrading `supabase_typegen`.
+     dashboard, and after upgrading `supabase_typegen` or the Supabase CLI.
