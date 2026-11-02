@@ -31,8 +31,7 @@ schema on stdin, and the generated code arrives on stdout.
   the exposed schemas all change the generated file.
 - Generate from the database that has the change. A change made on a hosted
   project is not in the local stack, so generate it with `--linked` or
-  `--project-id`, or pull it into a migration with `supabase db pull` and
-  apply that locally first.
+  `--project-id` pointing at that project.
 - With `--local`, apply new migrations to the stack first with
   `supabase migration up`. The command reads the running database, not the
   files in `supabase/migrations`, so a stack that has not run a migration
