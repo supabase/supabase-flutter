@@ -43,10 +43,10 @@ again from this directory. `--workdir ..` points the CLI at the shared
 `examples/supabase` config:
 
 ```bash
-supabase gen types --lang dart --local --schema public --workdir .. > lib/supabase_schema.g.dart
+supabase gen types --lang dart --schema public --workdir .. > lib/supabase_schema.g.dart
 ```
 
-Typed database function calls need Supabase CLI 2.122.0 or newer.
+The command needs Supabase CLI 3.0.0 or newer.
 
 ## Running
 

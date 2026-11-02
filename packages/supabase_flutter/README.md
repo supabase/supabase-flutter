@@ -104,16 +104,16 @@ holds a row type per table, `BooksRow` for a `books` table, the
 `BooksInsert` and `BooksUpdate` values that writes accept, and a `Books`
 class with the table definition and one constant per column. Generate it with
 the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started),
-version 2.122.0 or newer, from the directory of your `pubspec.yaml`:
+version 3.0.0 or newer, from the directory of your `pubspec.yaml`:
 
 ```sh
 flutter pub add dev:supabase_typegen
-supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+supabase gen types --lang dart > lib/supabase_schema.g.dart
 ```
 
-`--local` reads the schema of the stack started with `supabase start`.
-Use `--linked` for the project linked with `supabase link`, or
-`--project-id <ref>` for any hosted project. Never edit the generated file:
+By default the CLI reads the schema of the stack started with
+`supabase start`. Use `--remote` for the project linked with `supabase link`,
+or `--remote=<ref>` for any hosted project. Never edit the generated file:
 regenerate it after every change to the database schema, whether from a
 migration or the dashboard, and after upgrading `supabase_typegen` or the
 Supabase CLI, and commit it. The

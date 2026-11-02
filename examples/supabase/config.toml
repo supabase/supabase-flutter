@@ -18,7 +18,7 @@ additional_redirect_urls = [
 enable_anonymous_sign_ins = true
 
 [auth.email]
-enable_signup = true
+enabled = true
 # Skip email confirmation so the examples can sign in right away.
 enable_confirmations = false
 
@@ -35,7 +35,7 @@ content_path = "./supabase/templates/recovery.html"
 
 # Phone sign in for the authentication example.
 [auth.sms]
-enable_signup = true
+enabled = true
 enable_confirmations = true
 
 # A provider has to be enabled for phone login to turn on, but the test OTP

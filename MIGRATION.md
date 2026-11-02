@@ -81,16 +81,16 @@ create table books (
 #### Generate the table definitions
 
 Generating Dart requires [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)
-2.122.0 or newer; check yours with `supabase --version`. Add `supabase_typegen` as a dev dependency
-of your project and generate the types into it. With `--local` the CLI reads the database of the
+3.0.0 or newer; check yours with `supabase --version`. Add `supabase_typegen` as a dev dependency
+of your project and generate the types into it. By default the CLI reads the database of the
 running local stack, which it builds from the migrations in your `supabase/` directory:
 
 ```sh
 dart pub add dev:supabase_typegen
-supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+supabase gen types --lang dart > lib/supabase_schema.g.dart
 ```
 
-`--linked` and `--project-id` generate from a hosted project instead; see the
+`--remote` generates from the linked project and `--remote=<ref>` from any hosted project; see the
 [`supabase_typegen` README](https://github.com/supabase/supabase-flutter/blob/main/packages/supabase_typegen/README.md)
 for details.
 

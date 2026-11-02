@@ -44,9 +44,9 @@ checks that make the migration complete.
 4. Check for a `supabase/` folder with `config.toml` and `migrations/`. It
    decides the source of the generated types in step 4.
 
-## 2. Supabase CLI 2.122.0 or newer
+## 2. Supabase CLI 3.0.0 or newer
 
-Dart generation requires Supabase CLI 2.122.0 or newer.
+Dart generation requires Supabase CLI 3.0.0 or newer.
 
 ```sh
 supabase --version
@@ -55,7 +55,7 @@ supabase --version
 If the project runs the CLI through npm (a `supabase` entry in
 `package.json`), check `npx supabase --version` instead.
 
-If the command is missing or prints a version below `2.122.0`, stop and give
+If the command is missing or prints a version below `3.0.0`, stop and give
 the user the command for their platform, then wait until the version check
 passes:
 
@@ -111,17 +111,17 @@ the details of the generator, its options and its errors.
 3. Run `dart pub get`.
 4. Generate the schema. Pick the source:
    - A `supabase/` folder with migrations: run `supabase start` (needs Docker),
-     then `supabase gen types --lang dart --local`.
-   - A project linked with `supabase link`: `--linked`.
+     then `supabase gen types --lang dart`.
+   - A project linked with `supabase link`: `--remote`.
    - Otherwise ask the user for the project ref and use
-     `--project-id <ref>`.
+     `--remote=<ref>`.
 
    Ask which schemas the app queries. Pass `--schema` for each schema other
    than `public` that the app uses. Write to `lib/supabase_schema.g.dart`
    unless the project already has a generated-code convention:
 
    ```sh
-   supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+   supabase gen types --lang dart > lib/supabase_schema.g.dart
    ```
 5. Run `dart analyze lib/supabase_schema.g.dart`. It must be clean. If it is
    not, report the error to the user rather than editing the file.

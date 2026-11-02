@@ -41,7 +41,7 @@ again from this directory. `--workdir ..` points the CLI at the shared
 `examples/supabase` config:
 
 ```bash
-supabase gen types --lang dart --local --schema public --workdir .. > lib/supabase_schema.g.dart
+supabase gen types --lang dart --schema public --workdir .. > lib/supabase_schema.g.dart
 ```
 
 ## Running

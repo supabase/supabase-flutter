@@ -20,7 +20,7 @@ schema on stdin, and the generated code arrives on stdout.
 
 ## Rules
 
-- Generate with the Supabase CLI, version 2.122.0 or newer. Check with
+- Generate with the Supabase CLI, version 3.0.0 or newer. Check with
   `supabase --version`, or `npx supabase --version` when the project pins the
   CLI in `package.json`.
 - Never edit the generated file. Change the database and regenerate instead.
@@ -30,9 +30,9 @@ schema on stdin, and the generated code arrives on stdout.
   a hosted project. Changes to tables, views, columns, enums, functions and
   the exposed schemas all change the generated file.
 - Generate from the database that has the change. A change made on a hosted
-  project is not in the local stack, so generate it with `--linked` or
-  `--project-id` pointing at that project.
-- With `--local`, apply new migrations to the stack first with
+  project is not in the local stack, so generate it with `--remote` pointing
+  at that project.
+- When generating from the local stack, apply new migrations to it first with
   `supabase migration up`. The command reads the running database, not the
   files in `supabase/migrations`, so a stack that has not run a migration
   generates the old schema without an error.
@@ -61,22 +61,22 @@ of the package the file is written into, since the CLI runs it with
 
 Pick the database to read from:
 
-| Source                                                               | Command                                                                          |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Local stack from the `supabase/` migrations (after `supabase start`) | `supabase gen types --lang dart --local > lib/supabase_schema.g.dart`            |
-| The project linked with `supabase link`                              | `supabase gen types --lang dart --linked > lib/supabase_schema.g.dart`           |
-| Any hosted project                                                   | `supabase gen types --lang dart --project-id <ref> > lib/supabase_schema.g.dart` |
+| Source                                                               | Command                                                                      |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Local stack from the `supabase/` migrations (after `supabase start`) | `supabase gen types --lang dart > lib/supabase_schema.g.dart`                |
+| The project linked with `supabase link`                              | `supabase gen types --lang dart --remote > lib/supabase_schema.g.dart`       |
+| Any hosted project                                                   | `supabase gen types --lang dart --remote=<ref> > lib/supabase_schema.g.dart` |
 
-Prefer `--local` when the project keeps its schema as migrations, so the SQL
-in `supabase/migrations` stays the source of truth. `--local` needs Docker and
-a running stack.
+Prefer the local stack when the project keeps its schema as migrations, so the
+SQL in `supabase/migrations` stays the source of truth. It needs Docker and a
+running stack.
 
 Without `--schema`, the CLI generates `public` plus the schemas listed in
 `api.schemas` of `supabase/config.toml`. Pass `--schema` once per schema to
 choose them yourself:
 
 ```sh
-supabase gen types --lang dart --local --schema public --schema inventory > lib/supabase_schema.g.dart
+supabase gen types --lang dart --schema public --schema inventory > lib/supabase_schema.g.dart
 ```
 
 Only schemas exposed through the Data API can be queried at runtime. A table
@@ -153,5 +153,5 @@ followed by the generator's own message.
 | `The project resolves supabase_flutter 2.x, but the generated code needs version 3 of supabase_flutter` | Upgrade the package to version 3 following `MIGRATION.md`, then run `pub get`.  |
 | `The document describes no tables, views, enums or functions`                                           | Check the schema names, or that the stack has run the migrations.               |
 | `The document has no "rpcFunctions" collection, so no RPC methods are generated`                        | Upgrade the Supabase CLI to the latest release and regenerate.                  |
-| `--lang dart` is rejected                                                                               | Upgrade the Supabase CLI to 2.122.0 or newer.                                   |
-| `--local` cannot reach the database                                                                     | Run `supabase start` first.                                                     |
+| `--lang dart` is rejected                                                                               | Upgrade the Supabase CLI to 3.0.0 or newer.                                     |
+| The CLI cannot reach the local database                                                                 | Run `supabase start` first.                                                     |
