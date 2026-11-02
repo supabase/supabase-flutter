@@ -113,6 +113,17 @@ class _SignedInView extends StatelessWidget {
 
   final User user;
 
+  Future<void> _signOut(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } on AuthException catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Signed out, but not on the server: $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -122,9 +133,7 @@ class _SignedInView extends StatelessWidget {
         children: [
           Text('Signed in as ${user.email}'),
           TextButton(
-            onPressed: () => unawaited(
-              Supabase.instance.client.auth.signOut(),
-            ),
+            onPressed: () => unawaited(_signOut(context)),
             child: const Text('Sign out'),
           ),
         ],

@@ -559,7 +559,9 @@ class _SignedInView extends StatelessWidget {
         const _MfaSection(),
         const SizedBox(height: 24),
         OutlinedButton(
-          onPressed: () => AuthRepository(supabase).signOut(),
+          onPressed: () => unawaited(
+            AuthRepository(supabase).signOut().catchError(_showError),
+          ),
           child: const Text('Sign out'),
         ),
       ],

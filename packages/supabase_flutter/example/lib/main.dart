@@ -228,6 +228,20 @@ class _ProfileFormState extends State<_ProfileForm> {
     }
   }
 
+  Future<void> _signOut() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } on AuthException {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Signed out, but the session was not revoked'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _saveProfile() async {
     setState(() {
       _loading = true;
@@ -292,9 +306,7 @@ class _ProfileFormState extends State<_ProfileForm> {
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () => unawaited(
-                  Supabase.instance.client.auth.signOut(),
-                ),
+                onPressed: () => unawaited(_signOut()),
                 child: const Text('Sign Out'),
               ),
             ],
