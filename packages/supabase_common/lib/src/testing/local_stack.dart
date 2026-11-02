@@ -30,7 +30,7 @@ const localStackRealtimeUrl =
     'ws://$localStackHost:$localStackPort/realtime/v1';
 
 /// Web interface of the mail server of the local stack, which collects the
-/// mails the auth service would have sent. The `[inbucket]` section of
+/// mails the auth service would have sent. The `[local_smtp]` section of
 /// `supabase/config.toml` exposes it.
 @visibleForTesting
 const localStackMailPort = 14424;
