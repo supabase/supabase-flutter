@@ -249,13 +249,9 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     // A read, or a function call, enforces the single-row constraint
     // client-side, so that matching zero rows resolves to `null` without
     // PostgREST answering 406 and polluting the API logs.
-    final isRead =
-        _method == HttpMethod.get ||
-        _method == HttpMethod.head ||
-        _config.functionCall;
     return PostgrestTransformBuilder(
       _copyWithType(
-        headers: isRead
+        headers: _countsMaybeSingleOnClient
             ? null
             : {..._headers, HttpHeader.accept: _objectMediaType},
         maybeSingle: true,

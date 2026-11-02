@@ -305,6 +305,13 @@ class PostgrestBuilder<T> implements Future<T> {
   Object? get _body => _config.body;
   Headers get _headers => _config.headers;
   bool get _maybeSingle => _config.maybeSingle;
+
+  /// Whether [_maybeSingle] counts the rows on the client, as it does for a
+  /// read and for a function call, instead of leaving it to PostgREST.
+  bool get _countsMaybeSingleOnClient =>
+      _method == HttpMethod.get ||
+      _method == HttpMethod.head ||
+      _config.functionCall;
   bool get _stripNulls => _config.stripNulls;
   HttpMethod? get _method => _config.method;
   String? get _schema => _config.schema;
@@ -705,11 +712,14 @@ class PostgrestBuilder<T> implements Future<T> {
         }
       }
 
-      // maybeSingle() on a read fetches the result as a list and enforces
-      // the at-most-one-row constraint here, so that zero rows never produce
-      // a PostgREST 406. A write asks for one object instead.
-      if (_maybeSingle && body is List) {
-        if (body.length > 1) {
+      final contentRange = response.headers['content-range'];
+
+      // maybeSingle() on a read fetches the result unchanged and enforces the
+      // at-most-one-row constraint here, so that zero rows never produce a
+      // PostgREST 406. A write asks for one object instead.
+      if (_maybeSingle && _countsMaybeSingleOnClient) {
+        final rowCount = _rowCount(contentRange, body);
+        if (rowCount > 1) {
           final exception = PostgrestApiException(
             statusCode: 406,
             errorCode: 'PGRST116',
@@ -717,7 +727,7 @@ class PostgrestBuilder<T> implements Future<T> {
             headers: response.headers,
             body: response.body,
             details:
-                'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
+                'Results contain $rowCount rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
             message: 'JSON object requested, multiple (or no) rows returned',
           );
@@ -728,14 +738,13 @@ class PostgrestBuilder<T> implements Future<T> {
                 '${_url.loggable}',
           );
           throw exception;
-        } else if (body.length == 1) {
-          body = body.first;
-        } else {
+        } else if (rowCount == 0) {
           body = null;
+        } else if (body is List && body.length == 1) {
+          body = body.first;
         }
       }
 
-      final contentRange = response.headers['content-range'];
       if (contentRange != null && contentRange.length > 1) {
         count = contentRange.split('/').last == '*'
             ? null
@@ -899,6 +908,21 @@ class PostgrestBuilder<T> implements Future<T> {
 final _whitespace = RegExp(r'\s');
 
 final _zeroRows = RegExp(r'\b0 rows\b');
+
+/// The number of rows in a response, from the range before the `/` in its
+/// [contentRange], or from [body] when there is no such range. A function
+/// returning an array is one row whose body is a JSON array.
+int _rowCount(String? contentRange, Object? body) {
+  final range = contentRange?.split('/').first;
+  if (range == '*') return 0;
+  final bounds = range?.split('-');
+  if (bounds != null && bounds.length == 2) {
+    final first = int.tryParse(bounds.first);
+    final last = int.tryParse(bounds.last);
+    if (first != null && last != null) return last - first + 1;
+  }
+  return body is List ? body.length : 1;
+}
 
 /// [columns] without the whitespace outside double quotes. Inside quotes a
 /// backslash escapes the next character, as PostgREST reads it.
