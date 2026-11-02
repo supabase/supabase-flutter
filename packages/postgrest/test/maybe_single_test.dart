@@ -160,4 +160,35 @@ void main() {
       });
     },
   );
+
+  test('maybeSingle() throws when a HEAD request counts two rows', () async {
+    httpClient.stub(
+      null,
+      path: '/users',
+      method: HttpMethod.head,
+      headers: {'content-range': '0-1/*'},
+    );
+
+    await expectLater(
+      () => postgrest.from('users').select().maybeSingle().head(),
+      throwsA(
+        isA<PostgrestApiException>()
+            .having((e) => e.errorCode, 'errorCode', 'PGRST116')
+            .having((e) => e.details, 'details', contains('2 rows')),
+      ),
+    );
+  });
+
+  test('maybeSingle() completes a HEAD request that counts one row', () async {
+    httpClient.stub(
+      null,
+      path: '/users',
+      method: HttpMethod.head,
+      headers: {'content-range': '0-0/*'},
+    );
+
+    await postgrest.from('users').select().maybeSingle().head();
+
+    expect(httpClient.requests.single.method, HttpMethod.head.value);
+  });
 }
