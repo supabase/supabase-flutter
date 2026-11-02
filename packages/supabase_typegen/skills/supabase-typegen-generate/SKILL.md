@@ -4,9 +4,10 @@ description: >-
   Generates the typed Dart schema (row, insert and update types, column
   constants, enums and typed rpc methods) for a Supabase database with
   `supabase gen types --lang dart`, and keeps it in sync with the database.
-  Use when setting up typed queries with table(), after changing a database
-  migration, when a table, column or function is missing from the generated
-  file, or when the generated file fails to analyze.
+  Use when setting up typed queries with table(), after any change to the
+  database schema, after upgrading supabase_typegen or the Supabase CLI, when
+  a table, column or function is missing from the generated file, or when the
+  generated file fails to analyze.
 ---
 
 # Generating the typed Supabase schema
@@ -23,8 +24,17 @@ schema on stdin, and the generated code arrives on stdout.
   `supabase --version`, or `npx supabase --version` when the project pins the
   CLI in `package.json`.
 - Never edit the generated file. Change the database and regenerate instead.
-- Regenerate after every database migration, before writing code against the
-  new schema.
+- Regenerate after every change to the database schema, before writing code
+  against it. That includes a new or edited migration, a migration pulled
+  from another branch, and a change made in the dashboard or with SQL against
+  a hosted project. Changes to tables, views, columns, enums, functions and
+  the exposed schemas all change the generated file.
+- With `--local`, apply new migrations to the stack first, with
+  `supabase migration up` or `supabase db reset`. The command reads the
+  running database, not the files in `supabase/migrations`, so a stack that
+  has not run a migration generates the old schema without an error.
+- Regenerate after upgrading `supabase_typegen` or the Supabase CLI, since
+  the generated code can change between versions.
 - Commit the generated file, so the app builds without a database.
 - Run the command from the directory of the app's `pubspec.yaml`. The CLI
   finds the `supabase/` folder in that directory or any parent, and runs the

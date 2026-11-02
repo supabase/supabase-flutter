@@ -268,4 +268,5 @@ Rules for the conversion:
    - every site from step 7 that needs a human decision,
    - every remaining `from()` or untyped `rpc()` call and its reason,
    - that the schema must be regenerated with the same command after every
-     database migration.
+     change to the database schema, whether from a migration or the
+     dashboard, and after upgrading `supabase_typegen`.
