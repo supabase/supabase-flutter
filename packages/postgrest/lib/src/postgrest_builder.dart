@@ -743,6 +743,13 @@ class PostgrestBuilder<T> implements Future<T> {
         } else if (body is List && body.length == 1) {
           body = body.first;
         }
+        if (body != null && body is! Map) {
+          throw StateError(
+            'maybeSingle() resolves to a row object, but ${_url.loggable} '
+            'returned a ${body.runtimeType}. Call the function without '
+            'maybeSingle(), or through client.rpc.value, to read the value.',
+          );
+        }
       }
 
       if (contentRange != null && contentRange.length > 1) {
