@@ -4,9 +4,10 @@ description: >-
   Generates the typed Dart schema (row, insert and update types, column
   constants, enums and typed rpc methods) for a Supabase database with
   `supabase gen types --lang dart`, and keeps it in sync with the database.
-  Use when setting up typed queries with table(), after changing a database
-  migration, when a table, column or function is missing from the generated
-  file, or when the generated file fails to analyze.
+  Use when setting up typed queries with table(), after any change to the
+  database schema, after upgrading supabase_typegen or the Supabase CLI, when
+  a table, column or function is missing from the generated file, or when the
+  generated file fails to analyze.
 ---
 
 # Generating the typed Supabase schema
@@ -23,8 +24,24 @@ schema on stdin, and the generated code arrives on stdout.
   `supabase --version`, or `npx supabase --version` when the project pins the
   CLI in `package.json`.
 - Never edit the generated file. Change the database and regenerate instead.
-- Regenerate after every database migration, before writing code against the
-  new schema.
+- Regenerate after every change to the database schema, before writing code
+  against it. That includes a new or edited migration, a migration pulled
+  from another branch, and a change made in the dashboard or with SQL against
+  a hosted project. Changes to tables, views, columns, enums, functions and
+  the exposed schemas all change the generated file.
+- Generate from the database that has the change. A change made on a hosted
+  project is not in the local stack, so generate it with `--linked` or
+  `--project-id` pointing at that project.
+- With `--local`, apply new migrations to the stack first with
+  `supabase migration up`. The command reads the running database, not the
+  files in `supabase/migrations`, so a stack that has not run a migration
+  generates the old schema without an error.
+- `supabase migration up` skips migrations the stack has already applied, so
+  it does not pick up an edit to one of them. Rebuild the stack with
+  `supabase db reset` instead. A reset drops every row that the migrations
+  and `seed.sql` do not recreate, so ask the user before running it.
+- Regenerate after upgrading `supabase_typegen` or the Supabase CLI, since
+  the generated code can change between versions.
 - Commit the generated file, so the app builds without a database.
 - Run the command from the directory of the app's `pubspec.yaml`. The CLI
   finds the `supabase/` folder in that directory or any parent, and runs the

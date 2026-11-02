@@ -104,12 +104,16 @@ code from it. Without `--schema`, the CLI generates `public` plus the schemas
 listed in `api.schemas` of `supabase/config.toml`; pass `--schema` once per
 schema to choose them yourself. Only schemas exposed through the Data API can
 be queried at runtime. With `--local` the SQL in your `supabase/` directory
-stays the single source of truth, since the CLI applies your migrations to the
-local database and generates from the result.
+stays the single source of truth, since the CLI generates from the local
+database those migrations built.
 
-Never edit the generated file. Regenerate it after every database migration
-and commit it, so the project builds without a database. A coding agent
-learns this workflow from the `supabase-typegen-generate`
+Never edit the generated file. Regenerate it after every change to the
+database schema, whether it came from a migration or the dashboard, and after
+upgrading `supabase_typegen` or the Supabase CLI. Commit it, so the project
+builds without a database. With `--local`, apply new migrations to the stack
+with `supabase migration up` first, since the CLI reads the running database
+and a stack that has not run a migration generates the old schema. A coding
+agent learns this workflow from the `supabase-typegen-generate`
 [package skill](https://dart.dev/ai/package-skills) this package ships.
 Install it into your project with `dart run skills@ get -p supabase_typegen`.
 

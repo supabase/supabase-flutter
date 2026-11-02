@@ -114,7 +114,9 @@ supabase gen types --lang dart --local > lib/supabase_schema.g.dart
 `--local` reads the schema of the stack started with `supabase start`. Use
 `--linked` for the project linked with `supabase link`, or
 `--project-id <ref>` for any hosted project. Never edit the generated file:
-regenerate it after every database migration and commit it. The
+regenerate it after every change to the database schema, whether from a
+migration or the dashboard, and after upgrading `supabase_typegen` or the
+Supabase CLI, and commit it. The
 [`supabase_typegen` README](https://pub.dev/packages/supabase_typegen) lists
 everything it generates.
 
