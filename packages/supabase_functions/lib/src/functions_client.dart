@@ -220,11 +220,17 @@ class FunctionsClient {
       'forceFunctionRegion': ?forcedRegion,
     };
 
-    final uri = Uri.parse('$_url/$functionName').replace(
-      queryParameters: effectiveQueryParameters.isNotEmpty
-          ? effectiveQueryParameters
-          : null,
-    );
+    // A query string written into [functionName] is kept, with a parameter of
+    // the same name in [queryParameters] or the region taking its place.
+    final functionUri = Uri.parse('$_url/$functionName');
+    final uri = effectiveQueryParameters.isEmpty
+        ? functionUri
+        : functionUri.replace(
+            queryParameters: {
+              ...functionUri.queryParametersAll,
+              ...effectiveQueryParameters,
+            },
+          );
 
     final finalHeaders = <String, String>{
       ..._headers,
