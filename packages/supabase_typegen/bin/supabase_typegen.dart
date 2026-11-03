@@ -59,7 +59,7 @@ Future<int> _run(List<String> arguments) async {
         'pipes in on stdin.',
       )
       ..writeln()
-      ..writeln('Usage: supabase gen types --lang dart --local')
+      ..writeln('Usage: supabase gen types --lang dart')
       ..writeln(_argParser.usage);
     return 0;
   }

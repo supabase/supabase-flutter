@@ -80,7 +80,7 @@ lowercase keeps it and the others get `$` and their own spelling, `name` and
 Add `supabase_typegen` as a dev dependency of your project and generate the
 types with the
 [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started),
-version 2.122.0 or newer, from the directory of the project's
+version 3.0.0 or newer, from the directory of the project's
 `pubspec.yaml`. The CLI runs this package with `dart run` in that directory,
 so it must be a dev dependency there. In a Flutter project, use
 `flutter pub add dev:supabase_typegen`.
@@ -89,11 +89,11 @@ so it must be a dev dependency there. In a Flutter project, use
 dart pub add dev:supabase_typegen
 
 # The database of the running local Supabase stack (`supabase start`).
-supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+supabase gen types --lang dart > lib/supabase_schema.g.dart
 
 # The project linked with `supabase link`, or any project by ref.
-supabase gen types --lang dart --linked > lib/supabase_schema.g.dart
-supabase gen types --lang dart --project-id abcdefghijklmnopqrst > lib/supabase_schema.g.dart
+supabase gen types --lang dart --remote > lib/supabase_schema.g.dart
+supabase gen types --lang dart --remote=abcdefghijklmnopqrst > lib/supabase_schema.g.dart
 ```
 
 The CLI introspects the database into the `GeneratorMetadata` document of
@@ -103,17 +103,17 @@ generators consume, and pipes it into this package, which generates the Dart
 code from it. Without `--schema`, the CLI generates `public` plus the schemas
 listed in `api.schemas` of `supabase/config.toml`; pass `--schema` once per
 schema to choose them yourself. Only schemas exposed through the Data API can
-be queried at runtime. With `--local` the SQL in your `supabase/` directory
-stays the single source of truth, since the CLI generates from the local
-database those migrations built.
+be queried at runtime. Generating from the local stack keeps the SQL in your
+`supabase/` directory the single source of truth, since the CLI generates from
+the local database those migrations built.
 
 Never edit the generated file. Regenerate it after every change to the
 database schema, whether it came from a migration or the dashboard, and after
 upgrading `supabase_typegen` or the Supabase CLI. Commit it, so the project
-builds without a database. With `--local`, apply new migrations to the stack
-with `supabase migration up` first, since the CLI reads the running database
-and a stack that has not run a migration generates the old schema. A coding
-agent learns this workflow from the `supabase-typegen-generate`
+builds without a database. When generating from the local stack, apply new
+migrations to it with `supabase migration up` first, since the CLI reads the
+running database and a stack that has not run a migration generates the old
+schema. A coding agent learns this workflow from the `supabase-typegen-generate`
 [package skill](https://dart.dev/ai/package-skills) this package ships.
 Install it into your project with `dart run skills@ get -p supabase_typegen`.
 

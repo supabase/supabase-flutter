@@ -31,8 +31,10 @@ That file is generated from the database schema with the
 every schema change:
 
 ```sh
-supabase gen types --lang dart --schema public --project-id YOUR_PROJECT_REF > lib/supabase_schema.g.dart
+supabase gen types --lang dart --schema public --remote=YOUR_PROJECT_REF > lib/supabase_schema.g.dart
 ```
+
+The command needs Supabase CLI 3.0.0 or newer.
 
 #### Examples
 

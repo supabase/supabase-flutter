@@ -85,10 +85,10 @@ flutter pub add dev:supabase_typegen
 
 Generate the typed schema of your database with the
 [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started),
-version 2.122.0 or newer:
+version 3.0.0 or newer:
 
 ```sh
-supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+supabase gen types --lang dart > lib/supabase_schema.g.dart
 ```
 
 Initialize Supabase once, then query through the generated types, imported
