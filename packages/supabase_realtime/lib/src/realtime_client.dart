@@ -155,7 +155,9 @@ class RealtimeClient {
   /// [timeout] The default timeout to trigger push timeouts. Also bounds a
   /// custom [encode] or [decode] call, so one that never completes fails
   /// after [timeout] instead of stalling every write or dispatch chained
-  /// after it.
+  /// after it. A [customAccessToken] call whose future does not complete
+  /// within [timeout] fails with a [TimeoutException]. Synchronous work in the
+  /// callback is not interrupted.
   ///
   /// [connectionCloseTimeout] The timeout to wait for the connection to close
   /// before dismissing the result. Defaults to 6 seconds.
@@ -388,6 +390,10 @@ class RealtimeClient {
 
   /// Resolves the access token used for a connection, a reconnection and
   /// every heartbeat, instead of the token passed to [setAccessToken].
+  ///
+  /// A call whose future does not complete within [timeout] fails with a
+  /// [TimeoutException] and its late result is dropped. Synchronous work in
+  /// the callback is not interrupted.
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
@@ -948,7 +954,8 @@ class RealtimeClient {
   ///
   /// A null [token] asks [customAccessToken] for a fresh one, and keeps the
   /// current token when there is no provider. A provider that returns null
-  /// reports no session, which falls back to the API key.
+  /// reports no session, which falls back to the API key. A provider that
+  /// does not complete within [timeout] fails with a [TimeoutException].
   Future<void> setAccessToken(String? token) async {
     final resolution = ++_accessTokenResolution;
     final tokenToSend = token ?? await _provideAccessToken();
@@ -995,8 +1002,23 @@ class RealtimeClient {
     if (customAccessToken == null) {
       return _accessToken;
     }
-    final providedToken = await customAccessToken();
+    final providedToken = await _callAccessTokenProvider(customAccessToken);
     return providedToken ?? parameters['apikey'];
+  }
+
+  /// Calls [provider], failing with a [TimeoutException] when it does not
+  /// complete within [timeout], so a hung provider cannot block a rejoin, the
+  /// send buffer or the heartbeat refresh.
+  Future<String?> _callAccessTokenProvider(
+    Future<String?> Function() provider,
+  ) {
+    return provider().timeout(
+      timeout,
+      onTimeout: () => throw TimeoutException(
+        'The access token callback did not complete within $timeout',
+        timeout,
+      ),
+    );
   }
 
   /// Applies an already resolved access token to the socket and its channels,
@@ -1144,37 +1166,45 @@ class RealtimeClient {
   ///
   /// On success the join payloads are patched with the token, the stale
   /// buffered joins are dropped, and the join is re-sent for any channel still
-  /// joining. A throwing [customAccessToken] instead fails the connect: the
-  /// error surfaces as a `channelError` status and on [onStatusChange], the
-  /// buffer stays unsent, and the connection is closed so the reconnect
-  /// backoff retries the provider. A resolution that outlives its connection
-  /// is dropped entirely, success and error alike, and one superseded by a
-  /// later [setAccessToken] flushes with the current token instead.
+  /// joining. A [customAccessToken] that throws, or does not complete within
+  /// [timeout], instead fails the connect: the error surfaces as a
+  /// `channelError` status and on [onStatusChange], the buffer stays unsent,
+  /// and the connection is closed so the reconnect backoff retries the
+  /// provider. A resolution that outlives its connection is dropped entirely,
+  /// success and error alike, and one superseded by a later [setAccessToken]
+  /// flushes with the current token instead, success and error alike.
   Future<void> _resolveAccessTokenAndFlush() async {
     final customAccessToken = this.customAccessToken;
     if (customAccessToken != null) {
       final resolution = ++_accessTokenResolution;
       final originConnection = _connection;
-      final String? providedToken;
+      String? providedToken;
       try {
-        providedToken = await customAccessToken();
+        providedToken = await _callAccessTokenProvider(customAccessToken);
       } catch (error) {
         if (!_isCurrentOpenConnection(originConnection)) {
           return;
         }
-        realtimeLogger.warning(
-          'Error resolving access token on connect, closing connection',
+        if (resolution == _accessTokenResolution) {
+          realtimeLogger.warning(
+            'Error resolving access token on connect, closing connection',
+            error,
+          );
+          _triggerChanError(error);
+          _statusController.addError(error);
+          unawaited(
+            _connection?.sink.close(
+              RealtimeConstants.webSocketCloseNormal,
+              'access token resolution failed',
+            ),
+          );
+          return;
+        }
+        realtimeLogger.fine(
+          'Error resolving access token on connect after a newer token was '
+          'set, continuing with the newer token',
           error,
         );
-        _triggerChanError(error);
-        _statusController.addError(error);
-        unawaited(
-          _connection?.sink.close(
-            RealtimeConstants.webSocketCloseNormal,
-            'access token resolution failed',
-          ),
-        );
-        return;
       }
       if (!_isCurrentOpenConnection(originConnection)) {
         return;

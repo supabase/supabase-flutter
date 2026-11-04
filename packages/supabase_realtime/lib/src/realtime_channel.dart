@@ -927,7 +927,8 @@ class RealtimeChannel {
   /// It throws a [RealtimeApiException] when the endpoint rejects the message,
   /// a [RealtimeTransportException] when the request gets no response within
   /// [timeout], and an [AccessTokenException] when
-  /// [RealtimeClient.customAccessToken] throws.
+  /// [RealtimeClient.customAccessToken] throws or does not complete within
+  /// [RealtimeClient.timeout].
   ///
   /// ```dart
   /// try {
