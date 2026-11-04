@@ -143,6 +143,44 @@ void main() {
 
       expect(httpClient.requests.single.queryParameters, {'page': '3'});
     });
+
+    test('a query string in the function name is kept', () async {
+      httpClient.stubEdgeFunction('search');
+
+      await functions.invoke(
+        'search?q=dart&tag=a&tag=b',
+        queryParameters: {'page': 2, 'q': 'flutter'},
+        region: FunctionsRegion.euWest1,
+      );
+
+      expect(httpClient.requests.single.url.queryParametersAll, {
+        'q': ['flutter'],
+        'tag': ['a', 'b'],
+        'page': ['2'],
+        'forceFunctionRegion': ['eu-west-1'],
+      });
+    });
+
+    test(
+      'a query string in the function name is kept with a client region',
+      () async {
+        httpClient.stubEdgeFunction('search');
+        final client = FunctionsClient(
+          'http://localhost/functions/v1',
+          {},
+          httpClient: httpClient,
+          region: FunctionsRegion.usEast1,
+        );
+        addTearDown(client.dispose);
+
+        await client.invoke('search?q=dart');
+
+        expect(httpClient.requests.single.queryParameters, {
+          'q': 'dart',
+          'forceFunctionRegion': 'us-east-1',
+        });
+      },
+    );
   });
 
   group('JSON responses', () {
