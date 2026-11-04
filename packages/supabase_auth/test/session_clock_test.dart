@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:supabase_auth/supabase_auth.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
@@ -43,7 +44,7 @@ void main() {
     Session session({required DateTime expiresAt, DateTime? receivedAt}) =>
         Session(
           accessToken: unsignedTestJwt({
-            'exp': expiresAt.millisecondsSinceEpoch ~/ 1000,
+            'exp': unixSecondsFromDateTime(expiresAt),
           }),
           expiresIn: 3600,
           tokenType: 'bearer',
@@ -90,9 +91,9 @@ void main() {
     test('follows the exp claim without a lifetime', () {
       final received = Session(
         accessToken: unsignedTestJwt({
-          'exp':
-              serverNow.add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
-              1000,
+          'exp': unixSecondsFromDateTime(
+            serverNow.add(const Duration(hours: 1)),
+          ),
         }),
         tokenType: 'bearer',
         user: user,
@@ -109,7 +110,11 @@ void main() {
       );
 
       at(
-        deviceNow.subtract(const Duration(minutes: 1)),
+        deviceNow.subtract(const Duration(seconds: 1)),
+        () => expect(received.isExpired, isFalse),
+      );
+      at(
+        deviceNow.subtract(const Duration(minutes: 2)),
         () => expect(received.isExpiredWithoutMargin, isTrue),
       );
     });
@@ -126,6 +131,11 @@ void main() {
       )!;
 
       expect(restored.receivedAt, deviceNow);
+      expect(restored, received);
+      expect(
+        received.copyWith(expiresIn: 3600).receivedAt,
+        isNull,
+      );
     });
   });
 }

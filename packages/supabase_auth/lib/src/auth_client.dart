@@ -1478,7 +1478,6 @@ class AuthClient {
       refreshToken: refreshToken,
       tokenType: tokenType,
       user: user,
-      receivedAt: clock.now(),
     );
 
     final redirectType = switch (parameters['type']) {
@@ -1998,11 +1997,11 @@ class AuthClient {
       // expiresAt must come from the same snapshot.
       final session = _currentSession;
       final refreshToken = session?.refreshToken;
-      if (refreshToken == null) {
+      if (session == null || refreshToken == null) {
         return;
       }
 
-      final expiresAt = session?.expiresAtOnDevice;
+      final expiresAt = session.expiresAtOnDevice;
       if (expiresAt == null) {
         return;
       }
@@ -2021,7 +2020,8 @@ class AuthClient {
       }
 
       // Only tick if the next tick comes after the retry threshold
-      if (expiresInTicks <= AuthConstants.autoRefreshTickThreshold) {
+      if (expiresInTicks <= AuthConstants.autoRefreshTickThreshold ||
+          session.isExpired) {
         await _callRefreshToken(refreshToken);
       }
     } catch (error) {

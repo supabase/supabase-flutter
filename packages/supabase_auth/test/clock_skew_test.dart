@@ -147,7 +147,7 @@ void main() {
       expect(tokenRequests(), 1);
 
       final stored = jsonDecode((await storage.getItem(storageKey))!);
-      expect(stored['received_at'], unixSecondsFromDateTime(deviceNow));
+      expect(stored['received_at'], deviceNow.millisecondsSinceEpoch);
       await client.getSession();
       await autoRefreshTick(client);
     });

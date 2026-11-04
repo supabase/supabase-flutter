@@ -83,7 +83,7 @@ class Session {
       providerToken: json.field('provider_token'),
       providerRefreshToken: json.field('provider_refresh_token'),
       user: user,
-      receivedAt: tryParseUnixSeconds(json, 'received_at') ?? receivedAt,
+      receivedAt: tryParseUnixMilliseconds(json, 'received_at') ?? receivedAt,
     );
   }
 
@@ -101,9 +101,7 @@ class Session {
       'provider_token': providerToken,
       'provider_refresh_token': providerRefreshToken,
       'user': user.toJson(),
-      'received_at': receivedAt == null
-          ? null
-          : unixSecondsFromDateTime(receivedAt),
+      'received_at': receivedAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -173,10 +171,17 @@ class Session {
     // A device clock set back after the session was received would stretch
     // the deadline by as much.
     final receivedAt = this.receivedAt;
-    if (receivedAt != null && now.isBefore(receivedAt)) return true;
+    if (receivedAt != null &&
+        now.isBefore(receivedAt.subtract(AuthConstants.clockSkewTolerance))) {
+      return true;
+    }
     return now.add(margin).isAfter(deadline);
   }
 
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// A new [accessToken] or [expiresIn] drops [receivedAt] unless one is
+  /// given, since the old receipt time does not apply to the new token.
   Session copyWith({
     String? accessToken,
     int? expiresIn,
@@ -195,7 +200,9 @@ class Session {
       providerToken: providerToken ?? this.providerToken,
       providerRefreshToken: providerRefreshToken ?? this.providerRefreshToken,
       user: user ?? this.user,
-      receivedAt: receivedAt ?? this.receivedAt,
+      receivedAt:
+          receivedAt ??
+          (accessToken == null && expiresIn == null ? this.receivedAt : null),
     );
   }
 
@@ -207,7 +214,8 @@ class Session {
         'providerRefreshToken: ${_redactToken(providerRefreshToken)}, '
         'expiresIn: $expiresIn, tokenType: $tokenType, user: $user, '
         'accessToken: ${_redactToken(accessToken)}, '
-        'refreshToken: ${_redactToken(refreshToken)})';
+        'refreshToken: ${_redactToken(refreshToken)}, '
+        'receivedAt: $receivedAt)';
   }
 
   static String _redactToken(String? token) =>
@@ -224,7 +232,9 @@ class Session {
         other.expiresIn == expiresIn &&
         other.refreshToken == refreshToken &&
         other.tokenType == tokenType &&
-        other.user == user;
+        other.user == user &&
+        other.receivedAt?.millisecondsSinceEpoch ==
+            receivedAt?.millisecondsSinceEpoch;
   }
 
   @override
@@ -235,6 +245,7 @@ class Session {
         expiresIn.hashCode ^
         refreshToken.hashCode ^
         tokenType.hashCode ^
-        user.hashCode;
+        user.hashCode ^
+        (receivedAt?.millisecondsSinceEpoch).hashCode;
   }
 }

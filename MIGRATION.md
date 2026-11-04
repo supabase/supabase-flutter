@@ -1380,9 +1380,9 @@ the session, so a device clock that runs ahead of the server no longer refreshes
 every request. `expiresAt` still holds the `exp` claim, on the server's clock, so compare it with
 the device's time only when you trust that clock, and use `isExpired` otherwise.
 
-The session is persisted with a new `received_at` field. A session persisted before it, or one you
-construct without a `receivedAt`, falls back to the `exp` claim, so a device with a skewed clock
-refreshes it once.
+The session is persisted with a new `received_at` field. A session persisted before it, one read
+from a callback URL or passed to `setSession()`, and one you construct without a `receivedAt` have no
+known receipt time. They follow the `exp` claim as before, until their first refresh.
 
 #### Cross-tab session sync is opt-in for standalone clients
 
