@@ -160,7 +160,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Uses the custom predicate supplied via
   /// [FlutterAuthClientOptions.detectSessionInUriPredicate] when available,
   /// otherwise falls back to [_defaultIsAuthCallbackDeeplink].
-  bool _isAuthCallbackDeeplink(Uri uri) {
+  Future<bool> _isAuthCallbackDeeplink(Uri uri) async {
     final predicate = _detectSessionInUriPredicate;
     if (predicate != null) {
       return predicate(uri);
@@ -168,19 +168,39 @@ class SupabaseAuth with WidgetsBindingObserver {
     return _defaultIsAuthCallbackDeeplink(uri);
   }
 
-  /// Default heuristic: treat a deep link as an auth callback when it carries
-  /// any of the auth-related parameters, in the query or the fragment.
-  bool _defaultIsAuthCallbackDeeplink(Uri uri) {
-    final fragmentParameters = Uri.splitQueryString(uri.fragment);
-    bool hasParameter(String key) =>
-        uri.queryParameters.containsKey(key) ||
-        fragmentParameters.containsKey(key);
+  /// Claims only the links the auth server redirects to, read from the query
+  /// and the fragment:
+  ///
+  /// - an `access_token`, from the implicit flow
+  /// - a `code`, when it carries the flow id this client appends to its
+  ///   redirects or a PKCE flow of this client is waiting for its code
+  /// - at least two of `error`, `error_code` and `error_description`, which
+  ///   every error redirect of the auth server carries
+  Future<bool> _defaultIsAuthCallbackDeeplink(Uri uri) async {
+    final parameters = {
+      ...uri.queryParameters,
+      ...Uri.splitQueryString(uri.fragment),
+    };
 
-    return hasParameter('access_token') ||
-        hasParameter('code') ||
-        hasParameter('error') ||
-        hasParameter('error_code') ||
-        hasParameter('error_description');
+    if (parameters.containsKey('access_token')) {
+      return true;
+    }
+    final errorParameters = [
+      'error',
+      'error_code',
+      'error_description',
+    ].where(parameters.containsKey);
+    if (errorParameters.length >= 2) {
+      return true;
+    }
+    if (!parameters.containsKey('code')) {
+      return false;
+    }
+    if (parameters.containsKey(pkceFlowIdParam)) {
+      return true;
+    }
+    // ignore: invalid_use_of_internal_member
+    return Supabase.instance.client.auth.hasPendingPkceFlow();
   }
 
   /// Stop deep link observer
@@ -273,7 +293,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<void> _handleDeeplink(Uri uri) async {
     if (_isDisposed) return;
     try {
-      if (!_isAuthCallbackDeeplink(uri)) return;
+      if (!await _isAuthCallbackDeeplink(uri)) return;
     } on FormatException catch (error, stackTrace) {
       flutterLogger.warning(
         'Ignoring deeplink that is not valid percent-encoded UTF-8',
@@ -289,6 +309,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       );
       return;
     }
+    if (_isDisposed) return;
 
     flutterLogger.finest(() => 'handle deeplink uri: ${uri.loggable}');
     flutterLogger.fine('handle deeplink uri');

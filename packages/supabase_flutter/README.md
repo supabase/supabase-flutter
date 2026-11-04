@@ -793,11 +793,13 @@ Set them up when you use any of these:
 and Linux. It completes the sign in itself when the app is opened through a
 link carrying a `code` (the PKCE flow, the default) or an `access_token`.
 
-By default, every link with a `code`, `access_token`, `error`, `error_code` or
-`error_description` parameter, in the query or the fragment, is treated as an
-auth callback. If your app receives other links with one of those parameters,
-pass `detectSessionInUriPredicate` to tell the auth callbacks apart, for
-example by the redirect URL they arrive on. On the web the predicate receives
+By default, only auth redirects are treated as auth callbacks, by their
+parameters in the query or the fragment: an `access_token`, at least two of
+`error`, `error_code` and `error_description`, or a `code` while a sign in
+started on this device waits for it. Other links, such as
+`myapp://invite?code=X` with no sign in pending, are left to your app. To
+decide yourself, pass `detectSessionInUriPredicate`, for example to tell the
+auth callbacks apart by the redirect URL they arrive on. On the web the predicate receives
 the URL of the page, so check only the parameters there:
 
 ```dart file

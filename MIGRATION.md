@@ -1345,6 +1345,29 @@ if (!launched) {
 }
 ```
 
+#### Deep links are only exchanged when they are auth redirects
+
+`supabase_flutter` used to treat every deep link with a `code`, `error`, `error_code` or
+`error_description` parameter as an auth callback, so an app link such as `myapp://invite?code=X`
+started a code exchange and put an error on `onAuthStateChange`. By default it now takes a link
+only when it has an `access_token`, at least two of the three error parameters, or a `code` while a
+PKCE flow started on this device waits for it. A `code` link with the `sb_flow_id` parameter that
+`appendPkceFlowIdToRedirects` adds is always taken.
+
+A link with a `code` but no pending flow, such as a magic link opened on another device, is now
+left to your app instead of surfacing an `AuthException`. To take a link the default skips, pass a
+`detectSessionInUriPredicate`:
+
+```dart
+await Supabase.initialize(
+  url: 'https://xyzcompany.supabase.co',
+  publishableKey: 'publishable-key',
+  authOptions: FlutterAuthClientOptions(
+    detectSessionInUriPredicate: (uri) => uri.path == '/login-callback',
+  ),
+);
+```
+
 #### Switching to another user's session emits `signedIn`
 
 `setSession()`, `refreshSession()` and `recoverSession()` now emit `AuthChangeEvent.signedIn`
