@@ -78,6 +78,41 @@ void main() {
       expect(channel.isJoined, isTrue);
     });
 
+    test('stops after a private channel join is denied', () async {
+      final channel = client.channel(
+        'private-without-policy',
+        const RealtimeChannelConfig(private: true),
+      );
+      final changes = <RealtimeSubscribeStatusChange>[];
+      channel.onStatusChange.listen(changes.add);
+      final replies = <RealtimeMessage>[];
+      client.onMessage
+          .where(
+            (message) =>
+                message.topic == channel.topic && message.event == 'phx_reply',
+          )
+          .listen(replies.add);
+
+      final denied = channel.onStatusChange.firstWhere(
+        (change) => change.status == RealtimeSubscribeStatus.channelError,
+      );
+      channel.subscribe();
+      await denied.timeout(const Duration(seconds: 15));
+      await Future<void>.delayed(const Duration(seconds: 4));
+
+      expect(replies, hasLength(1));
+      expect(changes, hasLength(1));
+      expect(
+        changes.single.error,
+        isA<RealtimeException>().having(
+          (error) => error.errorCode,
+          'errorCode',
+          'Unauthorized',
+        ),
+      );
+      expect(channel.isErrored, isTrue);
+    });
+
     test('unsubscribes from a channel', () async {
       final channel = client.channel('unsubscribe');
       await _subscribe(channel);

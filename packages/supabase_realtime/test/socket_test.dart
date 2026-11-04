@@ -1230,6 +1230,7 @@ void main() {
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
       when(() => erroredChannel.isErrored).thenReturn(true);
       when(() => healthyChannel.isErrored).thenReturn(false);
+      when(() => erroredChannel.isJoinRejected).thenReturn(false);
       when(() => erroredChannel.rejoin()).thenReturn(null);
 
       socket.addChannelForTesting(erroredChannel);

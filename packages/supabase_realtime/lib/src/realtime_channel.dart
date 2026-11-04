@@ -8,6 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/join_error.dart';
 import 'package:supabase_realtime/src/logger.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/realtime_presence.dart';
@@ -51,6 +52,7 @@ class RealtimeChannel {
     _joinPush.receive('ok', (_) {
       _state = ChannelState.joined;
       _rejoinTimer.reset();
+      _refreshedTokenForRejoin = false;
       for (final pushEvent in _pushBuffer) {
         pushEvent.send();
       }
@@ -74,7 +76,7 @@ class RealtimeChannel {
     });
 
     _onError((reason) {
-      if (isLeaving || isClosed) {
+      if (isLeaving || isClosed || _isJoinRejected) {
         return;
       }
       realtimeLogger.warning('Channel error: $topic (${reason.runtimeType})');
@@ -85,12 +87,29 @@ class RealtimeChannel {
     });
 
     _joinPush.receive('error', (error) {
-      if (!isJoining || !socket.isConnected) {
+      if (!isJoining) {
         return;
       }
       _state = ChannelState.errored;
+      final reason = _joinErrorReason(error);
+      final recovery = JoinRecovery.classify(reason);
+      final refreshedToken = _refreshedTokenForRejoin;
+      _refreshedTokenForRejoin = false;
+      if (recovery == JoinRecovery.fail ||
+          (recovery == JoinRecovery.refreshToken && refreshedToken)) {
+        _rejectJoin(reason);
+        return;
+      }
+      if (!socket.isConnected) {
+        return;
+      }
+      if (recovery == JoinRecovery.refreshToken) {
+        _refreshedTokenForRejoin = true;
+        unawaited(_refreshTokenAndRejoin(reason));
+        return;
+      }
       _rejoinTimer.scheduleTimeout(
-        delay: _isRateLimitError(error)
+        delay: recovery == JoinRecovery.backOff
             ? RetryTimer.rateLimitedRejoinDelay
             : null,
       );
@@ -104,6 +123,7 @@ class RealtimeChannel {
         'Channel join timeout: $topic after ${_joinPush.timeout}',
       );
       _state = ChannelState.errored;
+      _refreshedTokenForRejoin = false;
       if (socket.isConnected) {
         _rejoinTimer.scheduleTimeout();
       }
@@ -208,19 +228,57 @@ class RealtimeChannel {
   /// repeated calls with the same event reuse one binding.
   final Map<String, Stream<Map<String, dynamic>>> _broadcastStreams = {};
 
-  static const _rateLimitErrorCodes = {
-    'ChannelRateLimitReached',
-    'ConnectionRateLimitReached',
-    'ClientJoinRateLimitReached',
-    'DatabaseConnectionRateLimitReached',
-  };
+  /// Whether the server rejected the last join with an error that a retry
+  /// cannot fix, so the channel waits for [subscribe] or a new access token
+  /// instead of rejoining.
+  bool _isJoinRejected = false;
 
-  /// Whether a join was rejected with a rate limit error, which the server
-  /// reports as a `reason` of the form `<code>: <message>`.
-  static bool _isRateLimitError(Object? error) {
+  /// Whether the access token was already refreshed for a join rejected with
+  /// an expired token, so a second expired token rejection is final.
+  bool _refreshedTokenForRejoin = false;
+
+  /// Whether the server rejected the last join with an error that a retry
+  /// cannot fix, such as a row level security policy denying the topic.
+  @internal
+  bool get isJoinRejected => _isJoinRejected;
+
+  /// The `reason` of a join error reply, which the server sends as
+  /// `<code>: <message>` or as a bare message.
+  static String _joinErrorReason(Object? error) {
     final reason = error is Map ? error['reason'] : null;
-    return reason is String &&
-        _rateLimitErrorCodes.contains(reason.split(':').first.trim());
+    return reason is String ? reason : '';
+  }
+
+  void _rejectJoin(String reason) {
+    realtimeLogger.warning('Channel join rejected: $topic ($reason)');
+    _isJoinRejected = true;
+    _rejoinTimer.reset();
+  }
+
+  /// Rejoins with a fresh access token after a join rejected for an expired
+  /// one, or gives up when the refresh did not produce a new token.
+  Future<void> _refreshTokenAndRejoin(String reason) async {
+    realtimeLogger.fine('Channel join token expired: $topic, refreshing it');
+    final expiredToken = socket.accessToken;
+    await socket.refreshAccessToken();
+    if (!isErrored || _isJoinRejected || !socket.isConnected) {
+      return;
+    }
+    if (socket.accessToken == expiredToken) {
+      _refreshedTokenForRejoin = false;
+      _rejectJoin(reason);
+      return;
+    }
+    rejoin();
+  }
+
+  /// Clears a rejected join so the channel rejoins like any errored channel,
+  /// and returns whether the join was rejected.
+  @internal
+  bool clearJoinRejection() {
+    final wasRejected = _isJoinRejected;
+    _isJoinRejected = false;
+    return wasRejected;
   }
 
   /// Resets the rejoin attempt count and cancels a waiting rejoin, for when
@@ -234,6 +292,9 @@ class RealtimeChannel {
   /// A join that is still waiting for its reply is not sent again.
   @internal
   void rejoinUntilConnected() {
+    if (_isJoinRejected) {
+      return;
+    }
     _rejoinTimer.scheduleTimeout();
     if (socket.isConnected && !(isJoining && _joinPush.isAwaitingReply)) {
       rejoin();
@@ -272,9 +333,19 @@ class RealtimeChannel {
   /// Calling it again on a channel that has not closed does nothing, so a
   /// channel returned by [RealtimeClient.channel] for a name already in use
   /// can be subscribed without checking its state first.
+  ///
+  /// A join that fails or times out is retried with backoff. A join the
+  /// server rejects for good, for example because a row level security
+  /// policy denies the topic, reports
+  /// [RealtimeSubscribeStatus.channelError] and stops. Call [subscribe] again
+  /// to retry it once the cause is fixed; a new access token retries it as
+  /// well.
   RealtimeChannel subscribe([Duration? timeout]) {
     if (!socket.isConnected) {
       unawaited(socket.connect());
+    }
+    if (clearJoinRejection() && socket.isConnected) {
+      rejoin(timeout ?? _timeout);
     }
     if (_joinedOnce && !isClosed) {
       return this;
@@ -290,7 +361,9 @@ class RealtimeChannel {
     final isPrivate = _parameters['config']['private'];
 
     _onError((e) {
-      _addStatus(RealtimeSubscribeStatus.channelError, e);
+      if (!_isJoinRejected) {
+        _addStatus(RealtimeSubscribeStatus.channelError, e);
+      }
     });
     _onClose(() {
       _addStatus(RealtimeSubscribeStatus.closed);
@@ -353,6 +426,7 @@ class RealtimeChannel {
             RealtimeSubscribeStatus.channelError,
             RealtimeException(
               reply.isNotEmpty ? reply.values.join(', ') : 'error',
+              errorCode: joinErrorCode(_joinErrorReason(error)),
             ),
           );
         })

@@ -613,6 +613,8 @@ explicitly:
   `onDone` no longer fires after a failed fetch that a retry can fix
 - [Realtime reconnects with full jitter up to 30 seconds](#realtime-reconnects-with-full-jitter-up-to-30-seconds),
   and `reconnectAfter` no longer sets the channel rejoin delays
+- [A denied channel join is not retried](#a-denied-channel-join-is-not-retried), so a channel that
+  a row level security policy denies stays errored until you subscribe it again
 
 ### Packages and setup
 
@@ -2094,10 +2096,38 @@ count resets when a socket opens, and there is no attempt limit.
 `reconnectAfter` only sets the socket reconnect delay. A channel whose join fails or times out
 rejoins after 1, 2, 5 and then every 10 seconds, or after 30 seconds when the server rejected the
 join with a rate limit error, and an errored channel rejoins at once when the socket opens. A join
-answered with an error is now retried like a join that timed out.
+answered with an error that a retry can fix is retried like a join that timed out.
 
 A heartbeat without a reply by the next one closes the socket at once, instead of waiting up to
 `connectionCloseTimeout` for it to close.
+
+#### A denied channel join is not retried
+
+A join the server rejects with an error a retry cannot fix, such as `Unauthorized` from a row level
+security policy, `PrivateOnly` or `TenantNotFound`, reports `channelError` once and stops. The
+channel used to rejoin forever. The `RealtimeException` carries the server's code as `errorCode`.
+Call `subscribe()` on the channel again once the cause is fixed. Setting a new access token, for
+example after a sign in, retries it as well.
+
+```dart
+final channel = supabase.channel(
+  'room',
+  options: const RealtimeChannelConfig(private: true),
+);
+channel.onStatusChange.listen((change) {
+  final error = change.error;
+  if (error is RealtimeException && error.errorCode == 'Unauthorized') {
+    print('Not allowed to join ${channel.topic}');
+  }
+});
+channel.subscribe();
+```
+
+A join rejected because the access token expired refreshes the token and rejoins once. It stops
+when the refresh brings no new token or the new one is rejected as well.
+
+A socket upgrade the server refuses with HTTP status 401, 403 or 404 is reported on
+`RealtimeClient.onStatusChange` and is not retried until a channel subscribes again.
 
 ### Storage
 

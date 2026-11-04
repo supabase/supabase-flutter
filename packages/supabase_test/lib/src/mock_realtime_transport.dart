@@ -66,6 +66,10 @@ class MockRealtimeTransport {
 
   final _joinedTopics = <String>{};
 
+  /// The reasons the next joins of each topic are rejected with, oldest
+  /// first.
+  final _joinRejections = <String, List<String>>{};
+
   var _nextBindingId = 1;
 
   var _nextPresenceRef = 1;
@@ -96,6 +100,17 @@ class MockRealtimeTransport {
     );
     _connections.add(connection);
     return connection;
+  }
+
+  /// Answers the next join of the channel [topic], given with or without its
+  /// `realtime:` prefix, with an error carrying [reason], the way the server
+  /// rejects a join, for example
+  /// `Unauthorized: You do not have permissions to read from this Channel`.
+  ///
+  /// Each call rejects one more join, so a channel that rejoins after the
+  /// rejections is joined again.
+  void rejectNextJoin(String topic, {required String reason}) {
+    _joinRejections.putIfAbsent(_prefixed(topic), () => []).add(reason);
   }
 
   /// Sends [message] to the client as if the server had sent it.
@@ -320,6 +335,17 @@ class MockRealtimeTransport {
     sent.add(message);
     final payload = message.payload;
     Map<String, dynamic> response = const {};
+    final rejections = _joinRejections[message.topic];
+    if (message.event == 'phx_join' &&
+        rejections != null &&
+        rejections.isNotEmpty) {
+      _postgresBindings.remove(message.topic);
+      _joinedTopics.remove(message.topic);
+      _replyTo(connection, message, 'error', {
+        'reason': rejections.removeAt(0),
+      });
+      return;
+    }
     switch (message.event) {
       case 'phx_join':
         final config = payload is Map ? payload['config'] : null;
@@ -342,17 +368,7 @@ class MockRealtimeTransport {
     if (message.ref == null) {
       return;
     }
-    connection.deliver(
-      jsonEncode(
-        RealtimeMessage(
-          topic: message.topic,
-          event: 'phx_reply',
-          payload: {'status': 'ok', 'response': response},
-          ref: message.ref,
-          joinRef: message.joinRef,
-        ).toJson(),
-      ),
-    );
+    _replyTo(connection, message, 'ok', response);
     if (message.event == 'phx_join' &&
         (_postgresBindings[message.topic]?.isNotEmpty ?? false)) {
       connection.deliver(
@@ -371,6 +387,25 @@ class MockRealtimeTransport {
       );
     }
   }
+}
+
+void _replyTo(
+  _MockWebSocketChannel connection,
+  RealtimeMessage message,
+  String status,
+  Map<String, dynamic> response,
+) {
+  connection.deliver(
+    jsonEncode(
+      RealtimeMessage(
+        topic: message.topic,
+        event: 'phx_reply',
+        payload: {'status': status, 'response': response},
+        ref: message.ref,
+        joinRef: message.joinRef,
+      ).toJson(),
+    ),
+  );
 }
 
 const _kindUserBroadcastPush = 3;

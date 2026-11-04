@@ -62,6 +62,35 @@ void main() {
       expect(realtime.joinedTopics, isEmpty);
     });
 
+    test('rejectNextJoin answers one join with an error', () async {
+      realtime.rejectNextJoin(
+        'todos',
+        reason: 'Unauthorized: You do not have permissions',
+      );
+      final channel = supabase.channel('todos');
+      final rejected = channel.onStatusChange.firstWhere(
+        (change) => change.status == RealtimeSubscribeStatus.channelError,
+      );
+
+      channel.subscribe();
+      final change = await rejected;
+
+      expect(
+        change.error,
+        isA<RealtimeException>()
+            .having((error) => error.errorCode, 'errorCode', 'Unauthorized')
+            .having(
+              (error) => error.message,
+              'message',
+              'Unauthorized: You do not have permissions',
+            ),
+      );
+      expect(realtime.joinedTopics, isEmpty);
+
+      await subscribed(channel);
+      expect(realtime.joinedTopics, ['realtime:todos']);
+    });
+
     test('a heartbeat is answered with an ok reply', () async {
       final connection = realtime('ws://localhost:54321/realtime/v1', {});
       final reply = connection.stream.first;
