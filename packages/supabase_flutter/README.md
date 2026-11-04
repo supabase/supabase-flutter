@@ -806,13 +806,7 @@ the URL of the page, so check only the parameters there:
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _authParameters = {
-  'access_token',
-  'code',
-  'error',
-  'error_code',
-  'error_description',
-};
+const _authParameters = {'access_token', 'code', 'error_description'};
 
 bool _isAuthCallback(Uri uri) {
   if (!kIsWeb && uri.host != 'login-callback') return false;
