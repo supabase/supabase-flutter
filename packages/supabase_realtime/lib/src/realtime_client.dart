@@ -1170,32 +1170,39 @@ class RealtimeClient {
   /// and the connection is closed so the reconnect backoff retries the
   /// provider. A resolution that outlives its connection is dropped entirely,
   /// success and error alike, and one superseded by a later [setAccessToken]
-  /// flushes with the current token instead.
+  /// flushes with the current token instead, success and error alike.
   Future<void> _resolveAccessTokenAndFlush() async {
     final customAccessToken = this.customAccessToken;
     if (customAccessToken != null) {
       final resolution = ++_accessTokenResolution;
       final originConnection = _connection;
-      final String? providedToken;
+      String? providedToken;
       try {
         providedToken = await _callAccessTokenProvider(customAccessToken);
       } catch (error) {
         if (!_isCurrentOpenConnection(originConnection)) {
           return;
         }
-        realtimeLogger.warning(
-          'Error resolving access token on connect, closing connection',
+        if (resolution == _accessTokenResolution) {
+          realtimeLogger.warning(
+            'Error resolving access token on connect, closing connection',
+            error,
+          );
+          _triggerChanError(error);
+          _statusController.addError(error);
+          unawaited(
+            _connection?.sink.close(
+              RealtimeConstants.webSocketCloseNormal,
+              'access token resolution failed',
+            ),
+          );
+          return;
+        }
+        realtimeLogger.fine(
+          'Error resolving access token on connect after a newer token was '
+          'set, continuing with the newer token',
           error,
         );
-        _triggerChanError(error);
-        _statusController.addError(error);
-        unawaited(
-          _connection?.sink.close(
-            RealtimeConstants.webSocketCloseNormal,
-            'access token resolution failed',
-          ),
-        );
-        return;
       }
       if (!_isCurrentOpenConnection(originConnection)) {
         return;

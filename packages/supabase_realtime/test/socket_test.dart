@@ -1566,6 +1566,72 @@ void main() {
     );
 
     test(
+      'keeps the connection and joins with a newer token when the connect '
+      'resolution times out after it was set',
+      () async {
+        final explicitToken = generateJwt();
+        final joinSent = Completer<Map<dynamic, dynamic>>();
+        final streamController = StreamController<dynamic>.broadcast();
+
+        final mockedChannel = MockIOWebSocketChannel();
+        final mockedSink = MockWebSocketSink();
+        when(() => mockedChannel.sink).thenReturn(mockedSink);
+        when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+        when(
+          () => mockedChannel.stream,
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockedSink.close(any(), any()),
+        ).thenAnswer((_) => Future.value());
+        when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+        when(() => mockedSink.add(any())).thenAnswer((invocation) {
+          final frame =
+              json.decode(invocation.positionalArguments.first as String)
+                  as List;
+          if (frame[3] == ChannelEvent.join.eventName() &&
+              !joinSent.isCompleted) {
+            joinSent.complete(frame[4] as Map);
+          }
+        });
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => mockedChannel,
+          timeout: const Duration(milliseconds: 50),
+          reconnectAfter: (tries) => const Duration(minutes: 5),
+          customAccessToken: () => Completer<String?>().future,
+        );
+
+        final socketErrors = <Object>[];
+        socket.onStatusChange.listen((_) {}, onError: socketErrors.add);
+
+        socket.channel('realtime:test').subscribe();
+        await Future<void>.delayed(Duration.zero);
+        expect(socket.connectionState, SocketState.open);
+
+        await socket.setAccessToken(explicitToken);
+
+        final joinPayload = await joinSent.future.timeout(
+          const Duration(seconds: 5),
+        );
+
+        expect(joinPayload['access_token'], explicitToken);
+        expect(socket.accessToken, explicitToken);
+        expect(socketErrors, isEmpty);
+        expect(socket.connectionState, SocketState.open);
+        verifyNever(
+          () => mockedSink.close(
+            RealtimeConstants.webSocketCloseNormal,
+            'access token resolution failed',
+          ),
+        );
+
+        await socket.disconnect();
+        await streamController.close();
+      },
+    );
+
+    test(
       'ignores a token resolution that completes after a disconnect',
       () async {
         final tokenCompleter = Completer<String?>();
