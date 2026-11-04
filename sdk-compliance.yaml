@@ -3572,6 +3572,7 @@ supporting_symbols:
   - Session.isExpired
   - Session.providerRefreshToken
   - Session.providerToken
+  - Session.receivedAt
   - Session.refreshToken
   - Session.toJson
   - Session.toString

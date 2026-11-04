@@ -21,6 +21,12 @@ class AuthConstants {
   /// The margin to use when checking if a token is expired.
   static const expiryMargin = Duration(seconds: 30);
 
+  /// How far the `exp` claim of an access token may lie before the expiry
+  /// computed from the time the session was received, and still be taken as
+  /// the expiry. A larger difference is the device clock differing from the
+  /// server's.
+  static const clockSkewTolerance = Duration(seconds: 60);
+
   /// Current session will be checked for refresh at this interval.
   static const autoRefreshTickDuration = Duration(seconds: 10);
 

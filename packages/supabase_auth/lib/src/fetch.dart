@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
+
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/error_code.dart';
@@ -169,11 +171,13 @@ class AuthFetch {
   }
 
   /// Performs the request and returns the resolved [body] alongside the raw
-  /// [response], for callers that need to read response headers.
+  /// [response], for callers that need to read response headers, and the
+  /// time the request was sent as `sentAt`.
   ///
   /// Use [request] unless you need the headers.
   @internal
-  Future<({dynamic body, Response response})> requestWithResponse(
+  Future<({dynamic body, Response response, DateTime sentAt})>
+  requestWithResponse(
     String url,
     HttpMethod method, {
     AuthRequestOptions? options,
@@ -202,6 +206,7 @@ class AuthFetch {
       queryParameters: {...uri.queryParameters, ...queryParameters},
     );
 
+    final sentAt = clock.now();
     final response = await _handleRequest(
       method: method,
       uri: uri,
@@ -209,7 +214,11 @@ class AuthFetch {
       headers: headers,
     );
 
-    return (body: _resolveBody(response, options), response: response);
+    return (
+      body: _resolveBody(response, options),
+      response: response,
+      sentAt: sentAt,
+    );
   }
 
   dynamic _resolveBody(Response response, AuthRequestOptions? options) {

@@ -16,6 +16,7 @@ class Session {
     this.providerToken,
     this.providerRefreshToken,
     required this.user,
+    this.receivedAt,
   });
 
   /// The third-party provider's OAuth access token, `null` unless the user
@@ -42,9 +43,25 @@ class Session {
   /// The signed-in user.
   final User user;
 
+  /// When this device received the session, on the device's clock.
+  ///
+  /// The auth client takes it when it sends the request that returns the
+  /// session, so the time the response takes to arrive counts against the
+  /// lifetime. Together with [expiresIn] it sets when [isExpired] considers
+  /// the session expired, so a device clock that differs from the server's
+  /// does not change it. When `null`, [isExpired] compares the device's clock
+  /// with [expiresAt] instead.
+  final DateTime? receivedAt;
+
   /// Returns a `Session` object from a map of json
   /// returns `null` if there is no `access_token` present
-  static Session? fromJson(Map<String, dynamic> json) {
+  ///
+  /// [receivedAt] is used when [json] does not hold a `received_at` value,
+  /// as in a response from the server.
+  static Session? fromJson(
+    Map<String, dynamic> json, {
+    DateTime? receivedAt,
+  }) {
     if (json['access_token'] == null) {
       return null;
     }
@@ -68,11 +85,13 @@ class Session {
       providerToken: json.field('provider_token'),
       providerRefreshToken: json.field('provider_refresh_token'),
       user: user,
+      receivedAt: tryParseUnixMilliseconds(json, 'received_at') ?? receivedAt,
     );
   }
 
   Map<String, dynamic> toJson() {
     final expiresAt = this.expiresAt;
+    final receivedAt = this.receivedAt;
     return {
       'access_token': accessToken,
       'expires_in': expiresIn,
@@ -84,14 +103,18 @@ class Session {
       'provider_token': providerToken,
       'provider_refresh_token': providerRefreshToken,
       'user': user.toJson(),
+      'received_at': receivedAt?.millisecondsSinceEpoch,
     };
   }
 
-  /// The point in time, in UTC, when [accessToken] expires.
+  /// The point in time, in UTC, when [accessToken] expires on the server's
+  /// clock.
   ///
   /// Derived from the `exp` claim of [accessToken], not read from the login
   /// response's JSON body. `null` when [accessToken] carries no expiry or
-  /// cannot be decoded.
+  /// cannot be decoded. A device clock that differs from the server's makes
+  /// it unsuitable for a comparison with the device's time, use [isExpired]
+  /// for that.
   late final DateTime? expiresAt = _expiresAt;
 
   DateTime? get _expiresAt {
@@ -105,25 +128,62 @@ class Session {
     }
   }
 
+  /// When [accessToken] expires on the device's clock.
+  ///
+  /// This is [receivedAt] plus [expiresIn]. [expiresAt] moves it earlier when
+  /// the two lie at most [AuthConstants.clockSkewTolerance] apart, which
+  /// covers the time the response took to arrive. A larger difference comes
+  /// from a device clock that differs from the server's, and is ignored.
+  /// Without [receivedAt] or [expiresIn], this is [expiresAt].
+  @internal
+  late final DateTime? expiresAtOnDevice = _expiresAtOnDevice;
+
+  DateTime? get _expiresAtOnDevice {
+    final receivedAt = this.receivedAt;
+    final expiresIn = this.expiresIn;
+    final expiresAt = this.expiresAt;
+    if (receivedAt == null || expiresIn == null) return expiresAt;
+    final local = receivedAt.add(Duration(seconds: expiresIn));
+    if (expiresAt != null &&
+        expiresAt.isBefore(local) &&
+        local.difference(expiresAt) <= AuthConstants.clockSkewTolerance) {
+      return expiresAt;
+    }
+    return local;
+  }
+
   /// Returns `true` if the token is expired or will expire in the next 30
   /// seconds.
   ///
-  /// The 30 second buffer is to account for latency issues.
-  bool get isExpired {
-    final expiresAt = this.expiresAt;
-    if (expiresAt == null) return false;
-    return clock.now().add(AuthConstants.expiryMargin).isAfter(expiresAt);
-  }
+  /// The 30 second buffer is to account for latency issues. The expiry is
+  /// judged from [receivedAt] and [expiresIn] on the device's clock, so a
+  /// device clock that differs from the server's does not make a new session
+  /// look expired.
+  bool get isExpired => _isExpiredWithin(AuthConstants.expiryMargin);
 
   /// Returns `true` if the token is expired right now, without applying the
   /// [AuthConstants.expiryMargin] buffer used by [isExpired].
   @internal
-  bool get isExpiredWithoutMargin {
-    final expiresAt = this.expiresAt;
-    if (expiresAt == null) return false;
-    return clock.now().isAfter(expiresAt);
+  bool get isExpiredWithoutMargin => _isExpiredWithin(Duration.zero);
+
+  bool _isExpiredWithin(Duration margin) {
+    final deadline = expiresAtOnDevice;
+    if (deadline == null) return false;
+    final now = clock.now();
+    // A device clock set back after the session was received would stretch
+    // the deadline by as much.
+    final receivedAt = this.receivedAt;
+    if (receivedAt != null &&
+        now.isBefore(receivedAt.subtract(AuthConstants.clockSkewTolerance))) {
+      return true;
+    }
+    return now.add(margin).isAfter(deadline);
   }
 
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// A new [accessToken] or [expiresIn] drops [receivedAt] unless one is
+  /// given, since the old receipt time does not apply to the new token.
   Session copyWith({
     String? accessToken,
     int? expiresIn,
@@ -132,6 +192,7 @@ class Session {
     String? providerToken,
     String? providerRefreshToken,
     User? user,
+    DateTime? receivedAt,
   }) {
     return Session(
       accessToken: accessToken ?? this.accessToken,
@@ -141,6 +202,9 @@ class Session {
       providerToken: providerToken ?? this.providerToken,
       providerRefreshToken: providerRefreshToken ?? this.providerRefreshToken,
       user: user ?? this.user,
+      receivedAt:
+          receivedAt ??
+          (accessToken == null && expiresIn == null ? this.receivedAt : null),
     );
   }
 
@@ -152,7 +216,8 @@ class Session {
         'providerRefreshToken: ${_redactToken(providerRefreshToken)}, '
         'expiresIn: $expiresIn, tokenType: $tokenType, user: $user, '
         'accessToken: ${_redactToken(accessToken)}, '
-        'refreshToken: ${_redactToken(refreshToken)})';
+        'refreshToken: ${_redactToken(refreshToken)}, '
+        'receivedAt: $receivedAt)';
   }
 
   static String _redactToken(String? token) =>
@@ -169,7 +234,9 @@ class Session {
         other.expiresIn == expiresIn &&
         other.refreshToken == refreshToken &&
         other.tokenType == tokenType &&
-        other.user == user;
+        other.user == user &&
+        other.receivedAt?.millisecondsSinceEpoch ==
+            receivedAt?.millisecondsSinceEpoch;
   }
 
   @override
@@ -180,6 +247,7 @@ class Session {
         expiresIn.hashCode ^
         refreshToken.hashCode ^
         tokenType.hashCode ^
-        user.hashCode;
+        user.hashCode ^
+        (receivedAt?.millisecondsSinceEpoch).hashCode;
   }
 }
