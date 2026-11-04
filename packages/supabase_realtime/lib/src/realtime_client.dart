@@ -391,6 +391,11 @@ class RealtimeClient {
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
+  ///
+  /// A failed connection is retried with [reconnectAfter], unless the server
+  /// refused the upgrade with HTTP status 401, 403 or 404. Then the error is
+  /// reported and the client waits for the next connect, such as from a
+  /// channel subscribing.
   @internal
   Future<void> connect() async {
     if (_connection != null) {
@@ -424,9 +429,16 @@ class RealtimeClient {
             _connectionState != SocketState.disconnecting) {
           _connectionState = SocketState.closed;
 
-          /// General error handling
           _onConnectionError(error);
-          _reconnectTimer.scheduleTimeout();
+          final statusCode = refusedUpgradeStatusCode(error);
+          if (_fatalUpgradeStatusCodes.contains(statusCode)) {
+            realtimeLogger.warning(
+              'Connection refused with HTTP status $statusCode, not '
+              'reconnecting',
+            );
+          } else {
+            _reconnectTimer.scheduleTimeout();
+          }
         }
         return;
       }
@@ -457,6 +469,10 @@ class RealtimeClient {
       _onConnectionError(error);
     }
   }
+
+  /// The HTTP statuses of a refused upgrade that a reconnect with the same
+  /// credentials cannot fix.
+  static const _fatalUpgradeStatusCodes = {401, 403, 404};
 
   Future<void> _reconnect() async {
     await _disconnect();
@@ -979,6 +995,7 @@ class RealtimeClient {
       if (channel.joinedOnce && channel.isJoined) {
         channel.push(ChannelEvent.accessToken, {'access_token': tokenToSend});
       }
+      channel.retryRejectedJoin();
     }
   }
 
@@ -1172,7 +1189,7 @@ class RealtimeClient {
   void _rejoinErroredChannels() {
     try {
       for (final channel in _channels) {
-        if (channel.isErrored) {
+        if (channel.isErrored && !channel.isJoinRejected) {
           channel.rejoin();
         }
       }

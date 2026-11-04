@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:meta/meta.dart';
@@ -22,4 +24,12 @@ WebSocketChannel createWebSocketClient(
     headers: headers,
     pingInterval: pingInterval,
   );
+}
+
+/// The HTTP status the server answered a refused WebSocket upgrade with, or
+/// `null` when [error] is not a refused upgrade.
+@internal
+int? refusedUpgradeStatusCode(Object error) {
+  final inner = error is WebSocketChannelException ? error.inner : error;
+  return inner is WebSocketException ? inner.httpStatusCode : null;
 }

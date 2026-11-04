@@ -72,7 +72,10 @@ void main() {
         for (var join = 1; join <= 5; join++) {
           final joins = server.sentEvents('phx_join').toList();
           expect(joins, hasLength(join));
-          server.reply(joins.last, 'error', {'reason': 'Unauthorized'});
+          server.reply(joins.last, 'error', {
+            'reason':
+                'UnableToConnectToProject: Realtime was unable to connect',
+          });
           async.flushMicrotasks();
           final start = async.elapsed.inSeconds;
           while (server.sentEvents('phx_join').length == join) {

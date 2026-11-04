@@ -11,3 +11,8 @@ WebSocketChannel createWebSocketClient(
   // binary frames can be decoded synchronously.
   return HtmlWebSocketChannel.connect(url, binaryType: BinaryType.list);
 }
+
+/// Always `null`: the platform does not expose the HTTP status of a refused
+/// WebSocket upgrade.
+@internal
+int? refusedUpgradeStatusCode(Object error) => null;
