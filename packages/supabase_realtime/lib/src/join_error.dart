@@ -63,7 +63,6 @@ enum JoinRecovery {
     'RealtimeDisabledForTenant',
     'RealtimeDisabledForConfiguration',
     'UnableToReplayMessages',
-    'PostgresChangesSubscribeTimeout',
   };
 
   static const _rateLimitCodes = {
@@ -74,15 +73,17 @@ enum JoinRecovery {
   };
 }
 
-/// The code in front of the first `": "` of a join error [reason], or `null`
-/// for the reasons the server sends without one. A prefix with whitespace is
+/// The code in front of the first `:` of a join error [reason], or `null` for
+/// the reasons the server sends without one. A prefix with whitespace is
 /// prose, not a code.
 @internal
 String? joinErrorCode(String reason) {
-  final separator = reason.indexOf(': ');
+  final separator = reason.indexOf(':');
   if (separator <= 0) {
     return null;
   }
-  final prefix = reason.substring(0, separator);
-  return prefix.contains(RegExp(r'\s')) ? null : prefix;
+  final prefix = reason.substring(0, separator).trim();
+  return prefix.isEmpty || prefix.contains(_whitespace) ? null : prefix;
 }
+
+final _whitespace = RegExp(r'\s');

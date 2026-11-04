@@ -93,30 +93,26 @@ class RealtimeChannel {
       _state = ChannelState.errored;
       final reason = _joinErrorReason(error);
       final recovery = JoinRecovery.classify(reason);
+      final refreshedToken = _refreshedTokenForRejoin;
+      _refreshedTokenForRejoin = false;
       if (recovery == JoinRecovery.fail ||
-          (recovery == JoinRecovery.refreshToken && _refreshedTokenForRejoin)) {
-        realtimeLogger.warning('Channel join rejected: $topic ($reason)');
-        _isJoinRejected = true;
-        _refreshedTokenForRejoin = false;
-        _rejoinTimer.reset();
+          (recovery == JoinRecovery.refreshToken && refreshedToken)) {
+        _rejectJoin(reason);
         return;
       }
       if (!socket.isConnected) {
         return;
       }
-      switch (recovery) {
-        case JoinRecovery.refreshToken:
-          _refreshedTokenForRejoin = true;
-          unawaited(_refreshTokenAndRejoin());
-        case JoinRecovery.backOff:
-          _refreshedTokenForRejoin = false;
-          _rejoinTimer.scheduleTimeout(
-            delay: RetryTimer.rateLimitedRejoinDelay,
-          );
-        case JoinRecovery.retry || JoinRecovery.fail:
-          _refreshedTokenForRejoin = false;
-          _rejoinTimer.scheduleTimeout();
+      if (recovery == JoinRecovery.refreshToken) {
+        _refreshedTokenForRejoin = true;
+        unawaited(_refreshTokenAndRejoin(reason));
+        return;
       }
+      _rejoinTimer.scheduleTimeout(
+        delay: recovery == JoinRecovery.backOff
+            ? RetryTimer.rateLimitedRejoinDelay
+            : null,
+      );
     });
 
     _joinPush.receive('timeout', (_) {
@@ -253,29 +249,36 @@ class RealtimeChannel {
     return reason is String ? reason : '';
   }
 
-  Future<void> _refreshTokenAndRejoin() async {
-    realtimeLogger.fine('Channel join token expired: $topic, refreshing it');
-    try {
-      await socket.setAccessToken(null);
-    } catch (error) {
-      realtimeLogger.warning('Error refreshing the access token', error);
-    }
-    if (isErrored && !_isJoinRejected && socket.isConnected) {
-      rejoin();
-    }
+  void _rejectJoin(String reason) {
+    realtimeLogger.warning('Channel join rejected: $topic ($reason)');
+    _isJoinRejected = true;
+    _rejoinTimer.reset();
   }
 
-  /// Joins a channel whose last join was rejected again, at once when the
-  /// socket is open and otherwise once it connects.
-  @internal
-  void retryRejectedJoin([Duration? timeout]) {
-    if (!_isJoinRejected) {
+  /// Rejoins with a fresh access token after a join rejected for an expired
+  /// one, or gives up when the refresh did not produce a new token.
+  Future<void> _refreshTokenAndRejoin(String reason) async {
+    realtimeLogger.fine('Channel join token expired: $topic, refreshing it');
+    final expiredToken = socket.accessToken;
+    await socket.refreshAccessToken();
+    if (!isErrored || _isJoinRejected || !socket.isConnected) {
       return;
     }
-    _isJoinRejected = false;
-    if (socket.isConnected) {
-      rejoin(timeout ?? _timeout);
+    if (socket.accessToken == expiredToken) {
+      _refreshedTokenForRejoin = false;
+      _rejectJoin(reason);
+      return;
     }
+    rejoin();
+  }
+
+  /// Clears a rejected join so the channel rejoins like any errored channel,
+  /// and returns whether the join was rejected.
+  @internal
+  bool clearJoinRejection() {
+    final wasRejected = _isJoinRejected;
+    _isJoinRejected = false;
+    return wasRejected;
   }
 
   /// Resets the rejoin attempt count and cancels a waiting rejoin, for when
@@ -341,9 +344,8 @@ class RealtimeChannel {
     if (!socket.isConnected) {
       unawaited(socket.connect());
     }
-    if (_isJoinRejected) {
-      retryRejectedJoin(timeout);
-      return this;
+    if (clearJoinRejection() && socket.isConnected) {
+      rejoin(timeout ?? _timeout);
     }
     if (_joinedOnce && !isClosed) {
       return this;

@@ -339,6 +339,8 @@ class MockRealtimeTransport {
     if (message.event == 'phx_join' &&
         rejections != null &&
         rejections.isNotEmpty) {
+      _postgresBindings.remove(message.topic);
+      _joinedTopics.remove(message.topic);
       _replyTo(connection, message, 'error', {
         'reason': rejections.removeAt(0),
       });
@@ -362,6 +364,9 @@ class MockRealtimeTransport {
       case 'phx_leave':
         _postgresBindings.remove(message.topic);
         _joinedTopics.remove(message.topic);
+    }
+    if (message.ref == null) {
+      return;
     }
     _replyTo(connection, message, 'ok', response);
     if (message.event == 'phx_join' &&
@@ -390,9 +395,6 @@ void _replyTo(
   String status,
   Map<String, dynamic> response,
 ) {
-  if (message.ref == null) {
-    return;
-  }
   connection.deliver(
     jsonEncode(
       RealtimeMessage(

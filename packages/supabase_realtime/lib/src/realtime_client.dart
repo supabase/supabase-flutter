@@ -955,7 +955,31 @@ class RealtimeClient {
     if (resolution != _accessTokenResolution) {
       return;
     }
-    _applyAccessToken(tokenToSend);
+    for (final channel in _applyAccessToken(tokenToSend)) {
+      if (isConnected) {
+        channel.rejoin();
+      }
+    }
+  }
+
+  Future<void>? _accessTokenRefresh;
+
+  /// Asks [customAccessToken] for a fresh token, for a channel whose join was
+  /// rejected for an expired one, sharing one request between the channels
+  /// that ask at the same time.
+  @internal
+  Future<void> refreshAccessToken() {
+    return _accessTokenRefresh ??= _refreshAccessToken().whenComplete(
+      () => _accessTokenRefresh = null,
+    );
+  }
+
+  Future<void> _refreshAccessToken() async {
+    try {
+      await setAccessToken(null).timeout(timeout);
+    } catch (error) {
+      realtimeLogger.warning('Error refreshing the access token', error);
+    }
   }
 
   /// The token for a request that bypasses the socket, such as
@@ -975,14 +999,17 @@ class RealtimeClient {
     return providedToken ?? parameters['apikey'];
   }
 
-  /// Applies an already resolved access token to the socket and its channels.
-  void _applyAccessToken(String? tokenToSend) {
+  /// Applies an already resolved access token to the socket and its channels,
+  /// and returns the channels whose rejected join it cleared, which rejoin
+  /// with the new token.
+  List<RealtimeChannel> _applyAccessToken(String? tokenToSend) {
     if (_accessToken == tokenToSend) {
-      return;
+      return const [];
     }
 
     _accessToken = tokenToSend;
 
+    final rejoining = <RealtimeChannel>[];
     // Snapshot before pushing, in case a push synchronously removes a channel
     // from [_channels].
     for (final channel in _channels.toList()) {
@@ -995,8 +1022,11 @@ class RealtimeClient {
       if (channel.joinedOnce && channel.isJoined) {
         channel.push(ChannelEvent.accessToken, {'access_token': tokenToSend});
       }
-      channel.retryRejectedJoin();
+      if (channel.clearJoinRejection()) {
+        rejoining.add(channel);
+      }
     }
+    return rejoining;
   }
 
   /// Replaces the connection headers with [newHeaders].

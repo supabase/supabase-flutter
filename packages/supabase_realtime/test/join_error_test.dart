@@ -30,6 +30,8 @@ void main() {
       'Token has expired 5 seconds ago': JoinRecovery.refreshToken,
       'ClientJoinRateLimitReached: Too many joins per second':
           JoinRecovery.backOff,
+      'ClientJoinRateLimitReached:Too many joins': JoinRecovery.backOff,
+      'PostgresChangesSubscribeTimeout: Timed out': JoinRecovery.retry,
       'Too many joins per second': JoinRecovery.backOff,
       'UnableToConnectToProject: Realtime was unable to connect':
           JoinRecovery.retry,
@@ -185,10 +187,8 @@ void main() {
           'ws://localhost:0',
           transport: transport.call,
           heartbeatInterval: const Duration(hours: 1),
-          customAccessToken: () async {
-            refreshes++;
-            return unsignedTestJwt({'sub': 'user'});
-          },
+          customAccessToken: () async =>
+              unsignedTestJwt({'sub': 'user', 'refresh': ++refreshes}),
         );
         for (var rejection = 0; rejection < 2; rejection++) {
           transport.rejectNextJoin('room', reason: _expiredToken);
@@ -211,6 +211,90 @@ void main() {
         unawaited(client.disconnect());
         async.flushMicrotasks();
       });
+    });
+
+    test('with an expired token stops when the refresh keeps the token', () {
+      fakeAsync((async) {
+        final client = RealtimeClient(
+          'ws://localhost:0',
+          transport: transport.call,
+          parameters: {
+            'apikey': unsignedTestJwt({'sub': 'user'}),
+          },
+        );
+        transport.rejectNextJoin('room', reason: _expiredToken);
+        final channel = client.channel('room');
+        final statuses = <RealtimeSubscribeStatus>[];
+        channel.onStatusChange.listen((change) => statuses.add(change.status));
+
+        channel.subscribe();
+        async.elapse(const Duration(minutes: 1));
+
+        expect(joins(), hasLength(1));
+        expect(statuses, [RealtimeSubscribeStatus.channelError]);
+        expect(channel.isJoinRejected, isTrue);
+
+        unawaited(client.setAccessToken(unsignedTestJwt({'sub': 'other'})));
+        async.flushMicrotasks();
+        expect(joins(), hasLength(2));
+        expect(channel.isJoined, isTrue);
+
+        unawaited(client.disconnect());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('with an expired token on several channels refreshes once', () {
+      fakeAsync((async) {
+        var refreshes = 0;
+        final client = RealtimeClient(
+          'ws://localhost:0',
+          transport: transport.call,
+          heartbeatInterval: const Duration(hours: 1),
+          customAccessToken: () async {
+            refreshes++;
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            return unsignedTestJwt({'sub': 'user', 'refresh': refreshes});
+          },
+        );
+        for (final topic in ['first', 'second']) {
+          transport.rejectNextJoin(topic, reason: _expiredToken);
+        }
+        final first = client.channel('first').subscribe();
+        final second = client.channel('second').subscribe();
+        async.elapse(const Duration(milliseconds: 100));
+
+        expect(refreshes, 2);
+        expect(first.isJoined, isTrue);
+        expect(second.isJoined, isTrue);
+        expect(joins(), hasLength(4));
+
+        unawaited(client.disconnect());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('is joined once when the socket opens with a new token', () async {
+      var token = unsignedTestJwt({'sub': 'user'});
+      final client = RealtimeClient(
+        'ws://localhost:0',
+        transport: transport.call,
+        reconnectAfter: (_) => Duration.zero,
+        customAccessToken: () async => token,
+      );
+      addTearDown(client.disconnect);
+      transport.rejectNextJoin('room', reason: _unauthorized);
+      final channel = client.channel('room').subscribe();
+      await pumpEventQueue();
+      expect(channel.isJoinRejected, isTrue);
+
+      token = unsignedTestJwt({'sub': 'other'});
+      await transport.closeConnection(code: 1006);
+      await pumpEventQueue();
+
+      expect(joins(), hasLength(2));
+      expect((joins().last.payload as Map)['access_token'], token);
+      expect(channel.isJoined, isTrue);
     });
 
     test('with a transient error rejoins after the backoff', () {

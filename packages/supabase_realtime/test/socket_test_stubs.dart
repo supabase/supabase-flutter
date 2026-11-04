@@ -8,7 +8,10 @@ class MockIOWebSocketChannel extends Mock implements IOWebSocketChannel {}
 
 class MockWebSocketSink extends Mock implements WebSocketSink {}
 
-class MockChannel extends Mock implements RealtimeChannel {}
+class MockChannel extends Mock implements RealtimeChannel {
+  @override
+  bool clearJoinRejection() => false;
+}
 
 class MockPush extends Mock implements Push {}
 

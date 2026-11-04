@@ -2098,9 +2098,11 @@ channel.onStatusChange.listen((change) {
 channel.subscribe();
 ```
 
-A join rejected because the access token expired refreshes the token and rejoins once, and stops
-if the token is still expired. A socket upgrade the server refuses with HTTP status 401, 403 or 404
-is reported on `RealtimeClient.onStatusChange` and is not retried until a channel subscribes again.
+A join rejected because the access token expired refreshes the token and rejoins once. It stops
+when the refresh brings no new token or the new one is rejected as well.
+
+A socket upgrade the server refuses with HTTP status 401, 403 or 404 is reported on
+`RealtimeClient.onStatusChange` and is not retried until a channel subscribes again.
 
 ### Storage
 
