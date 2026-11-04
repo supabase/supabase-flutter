@@ -26,16 +26,30 @@ part 'auth_mfa_api.dart';
 part 'auth_mfa_recovery_codes_api.dart';
 part 'auth_passkey_api.dart';
 
+/// Holds the current session and a [version] that changes whenever the
+/// stored session stops being the one a pending request started from.
+///
+/// A write that keeps the access and refresh token, such as a user update,
+/// keeps the version: the session it stores is still redeemed with the same
+/// refresh token.
 class _SessionState {
   Session? _session;
   int version = 0;
 
   Session? get session => _session;
   set session(Session? value) {
-    version++;
+    if (!_holdSameTokens(_session, value)) version++;
     _session = value;
   }
 }
+
+/// Whether [a] and [b] are both sessions with the same access and refresh
+/// token.
+bool _holdSameTokens(Session? a, Session? b) =>
+    a != null &&
+    b != null &&
+    a.accessToken == b.accessToken &&
+    a.refreshToken == b.refreshToken;
 
 /// {@template auth_client}
 /// API client to interact with the Supabase Auth server.
@@ -1561,7 +1575,7 @@ class AuthClient {
     }
     // A sign-in or sign-out that happened while the session was refreshed or
     // the request was in flight is newer than this sign-out.
-    final isCurrentSession = identical(session, _currentSession);
+    final isCurrentSession = _holdSameTokens(session, _currentSession);
     final versionBeforeRevoke = _sessionVersion;
     await _revokeSessions(session, scope);
     if (scope == SignOutScope.global &&
@@ -1605,11 +1619,37 @@ class AuthClient {
     }
     // The previous refresh token stops working once the reuse interval has
     // passed, so the refreshed session replaces it.
-    if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
-      _saveSession(refreshed);
-      notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+    if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
+      return refreshed;
     }
-    return refreshed;
+    final stored = _withUpdatedUser(refreshed, session);
+    _saveSession(stored);
+    notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+    return stored;
+  }
+
+  /// Returns [refreshed] with the user of the stored session when that user
+  /// is the refreshed one, was updated since [before] was stored, and is not
+  /// older than the refreshed user.
+  ///
+  /// The refresh response may have been produced before the update, so its
+  /// user can be older than the stored one.
+  Session _withUpdatedUser(Session refreshed, Session? before) {
+    final stored = _currentSession;
+    if (stored == null ||
+        before == null ||
+        stored.user.id != refreshed.user.id ||
+        stored.user == before.user) {
+      return refreshed;
+    }
+    final storedUpdatedAt = stored.user.updatedAt;
+    final refreshedUpdatedAt = refreshed.user.updatedAt;
+    if (storedUpdatedAt != null &&
+        refreshedUpdatedAt != null &&
+        refreshedUpdatedAt.isAfter(storedUpdatedAt)) {
+      return refreshed;
+    }
+    return refreshed.copyWith(user: stored.user);
   }
 
   /// Signs out on this device for [reason], revoking the session on the
@@ -2440,8 +2480,8 @@ class AuthClient {
   /// After the network round-trip, the result is only applied (session
   /// saved, [AuthChangeEvent.tokenRefreshed] or [AuthChangeEvent.signedIn]
   /// emitted) when
-  /// [_sessionVersion] has not changed — meaning no sign-in, sign-out,
-  /// or other session mutation occurred while the request was in-flight.
+  /// [_sessionVersion] has not changed, meaning no sign-in, sign-out or other
+  /// change of the stored tokens happened while the request was in flight.
   Future<Session> _callRefreshToken(String refreshToken) {
     // De-duplicate: return existing future if this token is already
     // in-flight.
@@ -2496,6 +2536,10 @@ class AuthClient {
   /// caller nor signed out. A refresh that started with no stored session,
   /// such as the recovery of an expired persisted session, signs out only
   /// while nothing has been stored since.
+  ///
+  /// A user update while the request is in flight keeps the stored tokens, so
+  /// the refreshed session is still stored, with the updated user: the server
+  /// has already rotated the refresh token.
   Future<Session> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
     final sessionBeforeRefresh = _currentSession;
@@ -2505,8 +2549,8 @@ class AuthClient {
       final session = await _refreshAccessToken(refreshToken);
 
       // Discard the result if the client was disposed or the session was
-      // mutated (e.g. a concurrent signIn or signOut) while we were awaiting
-      // the network request, so we don't overwrite the newer session.
+      // replaced, for example by a concurrent signIn or signOut, while we were
+      // awaiting the network request, so we don't overwrite the newer session.
       if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
         authLogger.fine(
           'Session changed during refresh, discarding stale result.',
@@ -2514,13 +2558,14 @@ class AuthClient {
         return session;
       }
 
-      _saveSession(session);
+      final refreshed = _withUpdatedUser(session, sessionBeforeRefresh);
+      _saveSession(refreshed);
       notifyAllSubscribers(
         sessionBeforeRefresh?.user.id == session.user.id
             ? AuthChangeEvent.tokenRefreshed
             : AuthChangeEvent.signedIn,
       );
-      return session;
+      return refreshed;
     } on AuthException catch (error, stack) {
       final existingSession = _currentSession;
       final ownsStoredSession =
