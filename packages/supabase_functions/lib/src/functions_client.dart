@@ -137,7 +137,8 @@ class FunctionsClient {
   ///
   /// [queryParameters] are added to the URL. A value is sent as its
   /// `toString()`, an [Iterable] value as one parameter per element, and a
-  /// `null` value is left out.
+  /// `null` value is left out. A query string in [functionName] is kept, and
+  /// a parameter here with the same name replaces it.
   ///
   /// [region] optionally specify the region to invoke the function in. When
   /// specified and not [FunctionsRegion.any], adds both the `x-region` header
@@ -220,8 +221,6 @@ class FunctionsClient {
       'forceFunctionRegion': ?forcedRegion,
     };
 
-    // A query string written into [functionName] is kept, with a parameter of
-    // the same name in [queryParameters] or the region taking its place.
     final functionUri = Uri.parse('$_url/$functionName');
     final uri = effectiveQueryParameters.isEmpty
         ? functionUri
