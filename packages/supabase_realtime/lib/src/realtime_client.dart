@@ -155,8 +155,9 @@ class RealtimeClient {
   /// [timeout] The default timeout to trigger push timeouts. Also bounds a
   /// custom [encode] or [decode] call, so one that never completes fails
   /// after [timeout] instead of stalling every write or dispatch chained
-  /// after it. A [customAccessToken] call that does not complete within
-  /// [timeout] fails with a [TimeoutException].
+  /// after it. A [customAccessToken] call whose future does not complete
+  /// within [timeout] fails with a [TimeoutException]. Synchronous work in the
+  /// callback is not interrupted.
   ///
   /// [connectionCloseTimeout] The timeout to wait for the connection to close
   /// before dismissing the result. Defaults to 6 seconds.
@@ -390,8 +391,9 @@ class RealtimeClient {
   /// Resolves the access token used for a connection, a reconnection and
   /// every heartbeat, instead of the token passed to [setAccessToken].
   ///
-  /// A call that does not complete within [timeout] fails with a
-  /// [TimeoutException] and its late result is dropped.
+  /// A call whose future does not complete within [timeout] fails with a
+  /// [TimeoutException] and its late result is dropped. Synchronous work in
+  /// the callback is not interrupted.
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
