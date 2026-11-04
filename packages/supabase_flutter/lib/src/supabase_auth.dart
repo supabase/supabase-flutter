@@ -303,7 +303,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       return;
     } catch (error, stackTrace) {
       flutterLogger.warning(
-        'Ignoring deeplink the session detection predicate threw for',
+        'Ignoring deeplink that could not be checked for an auth redirect',
         error,
         stackTrace,
       );

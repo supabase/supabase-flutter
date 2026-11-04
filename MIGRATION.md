@@ -569,6 +569,8 @@ explicitly:
 - [`Supabase.initialize` rejects another url or key](#supabaseinitialize-rejects-another-url-or-key),
   and `initializeTestSupabase` throws when an earlier test did not dispose
 - [A web callback URL is exchanged after `Supabase.initialize` completes](#a-web-callback-url-is-exchanged-after-supabaseinitialize-completes)
+- [Deep links are only exchanged when they are auth redirects](#deep-links-are-only-exchanged-when-they-are-auth-redirects),
+  so a `code` link with no pending PKCE flow no longer surfaces an `AuthException`
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
 - [`DateTime` filter values carry their offset from UTC](#datetime-filter-values-carry-their-offset-from-utc)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),

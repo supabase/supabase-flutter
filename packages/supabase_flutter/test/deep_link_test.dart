@@ -342,6 +342,21 @@ void main() {
   });
 
   group('Deep Link that is not an auth redirect', () {
+    Future<AuthException> nextAuthException() {
+      final exception = Completer<AuthException>();
+      final subscription = Supabase.instance.client.auth.onAuthStateChange
+          .listen(
+            (_) {},
+            onError: (Object error) {
+              if (error is AuthException && !exception.isCompleted) {
+                exception.complete(error);
+              }
+            },
+          );
+      addTearDown(subscription.cancel);
+      return exception.future.timeout(const Duration(seconds: 5));
+    }
+
     Future<void> expectIgnored(
       String link, {
       MockAsyncStorage? asyncStorage,
@@ -435,7 +450,6 @@ void main() {
       'a code with the flow id of this client is claimed even when its '
       'verifier is gone',
       () async {
-        final exception = Completer<AuthException>();
         final httpClient = createPkceHttpClient();
         mockNativeAppLinks(
           launchLink:
@@ -450,17 +464,8 @@ void main() {
             asyncStorage: MockAsyncStorage(),
           ),
         );
-        Supabase.instance.client.auth.onAuthStateChange.listen(
-          (_) {},
-          onError: (Object error) {
-            if (error is AuthException && !exception.isCompleted) {
-              exception.complete(error);
-            }
-          },
-        );
-
         expect(
-          (await exception.future.timeout(const Duration(seconds: 5))).message,
+          (await nextAuthException()).message,
           'Code verifier could not be found in local storage.',
         );
         expect(httpClient.requests, isEmpty);
@@ -469,7 +474,6 @@ void main() {
 
     test('the custom predicate still claims a code with no pending PKCE '
         'flow', () async {
-      final exception = Completer<AuthException>();
       mockNativeAppLinks(launchLink: 'com.supabase://invite?code=X');
       await Supabase.initialize(
         url: supabaseUrl,
@@ -480,17 +484,8 @@ void main() {
           detectSessionInUriPredicate: (uri) => true,
         ),
       );
-      Supabase.instance.client.auth.onAuthStateChange.listen(
-        (_) {},
-        onError: (Object error) {
-          if (error is AuthException && !exception.isCompleted) {
-            exception.complete(error);
-          }
-        },
-      );
-
       expect(
-        (await exception.future.timeout(const Duration(seconds: 5))).message,
+        (await nextAuthException()).message,
         'Code verifier could not be found in local storage.',
       );
     });
