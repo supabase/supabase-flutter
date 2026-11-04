@@ -1621,7 +1621,8 @@ class AuthClient {
   }
 
   /// Returns [refreshed] with the user of the stored session when that user
-  /// is the refreshed one and was updated since [before] was stored.
+  /// is the refreshed one, was updated since [before] was stored, and is not
+  /// older than the refreshed user.
   ///
   /// The refresh response may have been produced before the update, so its
   /// user can be older than the stored one.
@@ -1631,6 +1632,13 @@ class AuthClient {
         before == null ||
         stored.user.id != refreshed.user.id ||
         stored.user == before.user) {
+      return refreshed;
+    }
+    final storedUpdatedAt = stored.user.updatedAt;
+    final refreshedUpdatedAt = refreshed.user.updatedAt;
+    if (storedUpdatedAt != null &&
+        refreshedUpdatedAt != null &&
+        refreshedUpdatedAt.isAfter(storedUpdatedAt)) {
       return refreshed;
     }
     return refreshed.copyWith(user: stored.user);
