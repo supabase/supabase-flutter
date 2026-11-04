@@ -1,5 +1,4 @@
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
