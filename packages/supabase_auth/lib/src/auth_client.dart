@@ -1478,6 +1478,7 @@ class AuthClient {
       refreshToken: refreshToken,
       tokenType: tokenType,
       user: user,
+      receivedAt: clock.now(),
     );
 
     final redirectType = switch (parameters['type']) {
@@ -2001,7 +2002,7 @@ class AuthClient {
         return;
       }
 
-      final expiresAt = session?.expiresAt;
+      final expiresAt = session?.expiresAtOnDevice;
       if (expiresAt == null) {
         return;
       }
@@ -2169,7 +2170,7 @@ class AuthClient {
     }
     final Session? session;
     try {
-      session = Session.fromJson(body);
+      session = Session.fromJson(body, receivedAt: clock.now());
     } on FormatException catch (error) {
       throw _undecodableSession(result.response, error);
     }

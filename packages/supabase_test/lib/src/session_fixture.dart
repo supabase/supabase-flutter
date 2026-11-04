@@ -57,15 +57,19 @@ Map<String, dynamic> testUserJson({
 
 /// The JSON form of a token endpoint response carrying [accessToken] and
 /// [user], which defaults to [testUserJson].
+///
+/// [expiresIn] is the lifetime of [accessToken] in seconds, and should match
+/// its `exp` claim, since the auth client judges expiry from it.
 @visibleForTesting
 Map<String, dynamic> testSessionResponseJson({
   required String accessToken,
   String refreshToken = 'tDoDnvj5MKLuZOQ65KyVfQ',
   Map<String, dynamic>? user,
+  int expiresIn = 3600,
 }) => {
   'access_token': accessToken,
   'token_type': 'bearer',
-  'expires_in': 3600,
+  'expires_in': expiresIn,
   'refresh_token': refreshToken,
   'user': user ?? testUserJson(),
 };

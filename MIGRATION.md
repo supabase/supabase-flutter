@@ -563,6 +563,8 @@ explicitly:
   throws for `SignOutScope.others`
 - [An expired session is kept when `autoRefreshToken` is off](#an-expired-session-is-kept-when-autorefreshtoken-is-off),
   so a non-null `currentSession` is no longer guaranteed to be valid
+- [Session expiry follows the time the device received the session](#session-expiry-follows-the-time-the-device-received-the-session),
+  so `Session.isExpired` can disagree with a comparison of `expiresAt` and the device's time
 - [A client without an `asyncStorage` keeps pkce verifiers in memory](#a-client-without-an-asyncstorage-keeps-pkce-verifiers-in-memory),
   so a pkce flow that leaves the process needs a persistent storage passed explicitly
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
@@ -1369,6 +1371,18 @@ valid. `recoverSession()` now refreshes an expired session whatever `autoRefresh
 
 `getSession()` signs out an expired session that has no refresh token and throws an
 `AuthSessionMissingException`, instead of returning the expired session.
+
+#### Session expiry follows the time the device received the session
+
+`Session.isExpired` and the auto refresh no longer compare the device's clock with the `exp` claim
+of the access token. They count `expiresIn` from `Session.receivedAt`, the time the device received
+the session, so a device clock that runs ahead of the server no longer refreshes the session before
+every request. `expiresAt` still holds the `exp` claim, on the server's clock, so compare it with
+the device's time only when you trust that clock, and use `isExpired` otherwise.
+
+The session is persisted with a new `received_at` field. A session persisted before it, or one you
+construct without a `receivedAt`, falls back to the `exp` claim, so a device with a skewed clock
+refreshes it once.
 
 #### Cross-tab session sync is opt-in for standalone clients
 

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_common/supabase_common.dart';
 
@@ -11,7 +12,7 @@ class AuthResponse {
 
   /// Instantiates an `AuthResponse` object from json response.
   AuthResponse.fromJson(Map<String, dynamic> json)
-    : session = Session.fromJson(json),
+    : session = Session.fromJson(json, receivedAt: clock.now()),
       user = User.fromJson(json) ?? Session.fromJson(json)?.user;
 
   /// The new session, `null` when the call did not create one, for example

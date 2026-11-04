@@ -817,13 +817,18 @@ class MockSupabaseHttpClient extends BaseClient {
     DateTime? expiresAt,
   }) {
     final userJson = user ?? testUserJson();
-    final expiry = expiresAt ?? clock.now().add(const Duration(hours: 1));
+    final now = clock.now();
+    final expiry = expiresAt ?? now.add(const Duration(hours: 1));
     final accessToken = unsignedTestJwt({
       'exp': expiry.millisecondsSinceEpoch ~/ 1000,
       'sub': userJson['id'],
       'role': userJson['role'] ?? 'authenticated',
     });
-    return testSessionResponseJson(accessToken: accessToken, user: userJson);
+    return testSessionResponseJson(
+      accessToken: accessToken,
+      user: userJson,
+      expiresIn: expiry.difference(now).inSeconds,
+    );
   }
 
   void _stubPostgrest(

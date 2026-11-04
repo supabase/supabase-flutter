@@ -113,7 +113,9 @@ Future<Session> signInTestUser(
     testSessionResponseJson(
       accessToken: accessToken,
       user: testUserJson(id: userId, email: email, role: role),
+      expiresIn: expiry.difference(now).inSeconds,
     ),
+    receivedAt: now,
   )!;
   // ignore: invalid_use_of_internal_member
   auth.signInWithSession(session);
