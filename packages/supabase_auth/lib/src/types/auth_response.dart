@@ -11,8 +11,11 @@ class AuthResponse {
   }) : user = user ?? session?.user;
 
   /// Instantiates an `AuthResponse` object from json response.
-  AuthResponse.fromJson(Map<String, dynamic> json)
-    : session = Session.fromJson(json, receivedAt: clock.now()),
+  ///
+  /// [receivedAt] is the [Session.receivedAt] of the session, and defaults to
+  /// now.
+  AuthResponse.fromJson(Map<String, dynamic> json, {DateTime? receivedAt})
+    : session = Session.fromJson(json, receivedAt: receivedAt ?? clock.now()),
       user = User.fromJson(json) ?? Session.fromJson(json)?.user;
 
   /// The new session, `null` when the call did not create one, for example

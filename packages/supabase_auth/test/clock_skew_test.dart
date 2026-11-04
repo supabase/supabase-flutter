@@ -134,6 +134,31 @@ void main() {
     });
   }
 
+  test('a slow response counts against the lifetime', () async {
+    deviceNow = serverNow;
+    httpClient.stubHandler(
+      (_) {
+        deviceNow = deviceNow.add(const Duration(minutes: 2));
+        return jsonResponse(
+          sessionResponse(),
+          headers: {'x-sb-api-version': '2024-01-01'},
+        );
+      },
+      method: HttpMethod.post,
+      path: '/token',
+    );
+
+    await onDevice((client) async {
+      final session = await client.signInWithPassword(
+        email: 'fake1@email.com',
+        password: 'password',
+      );
+
+      expect(session.receivedAt, serverNow);
+      expect(session.expiresAtOnDevice, serverNow.add(lifetime));
+    });
+  });
+
   test('a session stored without its receipt time refreshes once', () async {
     deviceNow = serverNow.add(const Duration(hours: 2));
     stubToken();

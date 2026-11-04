@@ -550,6 +550,7 @@ class AuthClient {
     );
 
     final Map<String, dynamic> response;
+    final sentAt = clock.now();
 
     if (email != null) {
       final pkceFlow = await _startPKCEFlow();
@@ -597,7 +598,7 @@ class AuthClient {
       );
     }
 
-    final authResponse = AuthResponse.fromJson(response);
+    final authResponse = AuthResponse.fromJson(response, receivedAt: sentAt);
 
     final session = authResponse.session;
     if (session != null) {
@@ -617,7 +618,7 @@ class AuthClient {
     required String password,
     String? captchaToken,
   }) async {
-    final ({dynamic body, Response response}) response;
+    final ({dynamic body, Response response, DateTime sentAt}) response;
 
     if (email != null) {
       response = await _fetch.requestWithResponse(
@@ -1074,13 +1075,14 @@ class AuthClient {
       'token_hash': ?tokenHash,
     };
     final fetchOptions = AuthRequestOptions(headers: _headers, body: body);
+    final sentAt = clock.now();
     final response = await _fetch.requestObject(
       '$_url/verify',
       HttpMethod.post,
       options: fetchOptions,
     );
 
-    final authResponse = AuthResponse.fromJson(response);
+    final authResponse = AuthResponse.fromJson(response, receivedAt: sentAt);
 
     // A secure email or phone change verifies in two steps: the server accepts
     // the first OTP without returning a session and only issues one once the
@@ -2156,9 +2158,14 @@ class AuthClient {
   /// Parses the session out of a token response, failing when the server
   /// answered without one.
   ///
+  /// The session counts as received when the request was sent, so the time
+  /// the response took to arrive counts against its lifetime.
+  ///
   /// A body that does not hold a well formed session, such as a proxy's answer
   /// in the service's place, throws an [AuthRetryableFetchException].
-  Session _sessionFromResponse(({dynamic body, Response response}) result) {
+  Session _sessionFromResponse(
+    ({dynamic body, Response response, DateTime sentAt}) result,
+  ) {
     final body = result.body;
     if (body is! Map<String, dynamic>) {
       throw _undecodableSession(
@@ -2170,7 +2177,7 @@ class AuthClient {
     }
     final Session? session;
     try {
-      session = Session.fromJson(body, receivedAt: clock.now());
+      session = Session.fromJson(body, receivedAt: result.sentAt);
     } on FormatException catch (error) {
       throw _undecodableSession(result.response, error);
     }

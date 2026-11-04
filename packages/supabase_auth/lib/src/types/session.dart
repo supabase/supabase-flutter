@@ -45,10 +45,12 @@ class Session {
 
   /// When this device received the session, on the device's clock.
   ///
-  /// Together with [expiresIn] it sets when [isExpired] considers the session
-  /// expired, so a device clock that differs from the server's does not change
-  /// it. When `null`, [isExpired] compares the device's clock with
-  /// [expiresAt] instead.
+  /// The auth client takes it when it sends the request that returns the
+  /// session, so the time the response takes to arrive counts against the
+  /// lifetime. Together with [expiresIn] it sets when [isExpired] considers
+  /// the session expired, so a device clock that differs from the server's
+  /// does not change it. When `null`, [isExpired] compares the device's clock
+  /// with [expiresAt] instead.
   final DateTime? receivedAt;
 
   /// Returns a `Session` object from a map of json
