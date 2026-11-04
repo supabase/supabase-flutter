@@ -3032,9 +3032,9 @@ features:
       - FunctionsResponse
       - FunctionsResponse.FunctionsResponse
       - FunctionsResponse.headers
-  functions.invocation.set_auth_token:
+  functions.invocation.auth_token:
     status: implemented
-    note: "There is no setter. The token is supplied as an accessToken callback that is resolved before every invocation, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single invocation can override it with an Authorization header."
+    note: "The token is supplied as an accessToken callback that is resolved before every invocation, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single invocation can override it with an Authorization header."
     symbols:
       - FunctionsClient.FunctionsClient
       - FunctionsClient.invoke

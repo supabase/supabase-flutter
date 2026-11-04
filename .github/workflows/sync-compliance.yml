@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: supabase/sdk/.github/workflows/sync-sdk-compliance.yml@982f77c3c993fb8ca4b7d2b0fa74e4278316ebf0 # capability-matrix/v1.19.0
+    uses: supabase/sdk/.github/workflows/sync-sdk-compliance.yml@969c8268cf65c89590b9296ca8352a9a70d8a0dc # capability-matrix/v2.0.0
     secrets:
       client-id: ${{ vars.GH_APP_CLIENT_ID }}
       private-key: ${{ secrets.PRIVATE_KEY }}
