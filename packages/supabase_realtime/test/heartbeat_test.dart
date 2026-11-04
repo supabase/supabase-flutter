@@ -129,11 +129,15 @@ void main() {
   );
 
   group('with a custom access token provider', () {
-    RealtimeClient providerClient(Future<String?> Function() provider) {
+    RealtimeClient providerClient(
+      Future<String?> Function() provider, {
+      Duration timeout = const Duration(seconds: 10),
+    }) {
       final providerClient = RealtimeClient(
         'wss://localhost:0/',
         transport: (url, headers) => mockedChannel,
         parameters: const {'apikey': 'api-key'},
+        timeout: timeout,
         customAccessToken: provider,
       );
       addTearDown(providerClient.disconnect);
@@ -263,5 +267,59 @@ void main() {
       expect(socket.accessToken, 'token');
       expect(socket.isConnected, isTrue);
     });
+
+    test(
+      'keeps the current token and asks again on the next heartbeat when '
+      'the provider never completes',
+      () async {
+        final hungToken = Completer<String?>();
+        var calls = 0;
+        final socket = providerClient(
+          () => switch (++calls) {
+            1 => Future.value('token'),
+            2 => hungToken.future,
+            _ => Future.value('fresh'),
+          },
+          timeout: const Duration(milliseconds: 50),
+        );
+        await socket.connect();
+        await pumpEventQueue();
+
+        await acknowledgedHeartbeat(socket);
+        expect(calls, 2);
+        expect(socket.accessToken, 'token');
+        expect(socket.isConnected, isTrue);
+
+        await acknowledgedHeartbeat(socket);
+        expect(calls, 3);
+        expect(socket.accessToken, 'fresh');
+
+        hungToken.complete('stale');
+        await pumpEventQueue();
+        expect(socket.accessToken, 'fresh');
+      },
+    );
+
+    test(
+      'setAccessToken throws a TimeoutException when the provider never '
+      'completes',
+      () async {
+        var calls = 0;
+        final socket = providerClient(
+          () => ++calls == 1
+              ? Future.value('token')
+              : Completer<String?>().future,
+          timeout: const Duration(milliseconds: 50),
+        );
+        await socket.connect();
+        await pumpEventQueue();
+
+        await expectLater(
+          socket.setAccessToken(null),
+          throwsA(isA<TimeoutException>()),
+        );
+        expect(socket.accessToken, 'token');
+      },
+    );
   });
 }

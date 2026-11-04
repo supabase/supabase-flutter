@@ -1489,6 +1489,83 @@ void main() {
     );
 
     test(
+      'times out a provider that never completes on connect, then rejoins '
+      'with the token resolved on reconnect',
+      () async {
+        final token = generateJwt();
+        final hungToken = Completer<String?>();
+        var tokenCallbackCalls = 0;
+
+        final capturedMessages = <String>[];
+        final joinSent = Completer<Map<dynamic, dynamic>>();
+
+        WebSocketChannel makeConnection() {
+          final mockedChannel = MockIOWebSocketChannel();
+          final mockedSink = MockWebSocketSink();
+          final controller = StreamController<dynamic>.broadcast();
+          when(() => mockedChannel.sink).thenReturn(mockedSink);
+          when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+          when(
+            () => mockedChannel.stream,
+          ).thenAnswer((_) => controller.stream);
+          when(() => mockedSink.close()).thenAnswer((_) async {
+            await controller.close();
+          });
+          when(() => mockedSink.close(any(), any())).thenAnswer((_) async {
+            await controller.close();
+          });
+          when(() => mockedSink.add(any())).thenAnswer((invocation) {
+            final raw = invocation.positionalArguments.first as String;
+            capturedMessages.add(raw);
+            final frame = json.decode(raw) as List;
+            if (frame[3] == ChannelEvent.join.eventName() &&
+                !joinSent.isCompleted) {
+              joinSent.complete(frame[4] as Map);
+            }
+          });
+          return mockedChannel;
+        }
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => makeConnection(),
+          timeout: const Duration(milliseconds: 50),
+          reconnectAfter: (tries) => const Duration(milliseconds: 10),
+          customAccessToken: () => ++tokenCallbackCalls == 1
+              ? hungToken.future
+              : Future.value(token),
+        );
+
+        final socketErrors = <Object>[];
+        socket.onStatusChange.listen((_) {}, onError: socketErrors.add);
+
+        final channel = socket.channel('realtime:test');
+        channel.subscribe();
+
+        final joinPayload = await joinSent.future.timeout(
+          const Duration(seconds: 5),
+        );
+
+        expect(socketErrors, [isA<TimeoutException>()]);
+        expect(tokenCallbackCalls, 2);
+        expect(joinPayload['access_token'], token);
+
+        hungToken.complete(generateJwt(4102444800));
+        await Future<void>.delayed(Duration.zero);
+        expect(socket.accessToken, token);
+
+        for (final raw in capturedMessages) {
+          final frame = json.decode(raw) as List;
+          if (frame[3] == ChannelEvent.join.eventName()) {
+            expect((frame[4] as Map)['access_token'], token);
+          }
+        }
+
+        await socket.disconnect();
+      },
+    );
+
+    test(
       'ignores a token resolution that completes after a disconnect',
       () async {
         final tokenCompleter = Completer<String?>();
