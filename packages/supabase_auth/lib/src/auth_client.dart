@@ -38,16 +38,18 @@ class _SessionState {
 
   Session? get session => _session;
   set session(Session? value) {
-    final current = _session;
-    final keepsTokens =
-        current != null &&
-        value != null &&
-        current.accessToken == value.accessToken &&
-        current.refreshToken == value.refreshToken;
-    if (!keepsTokens) version++;
+    if (!_holdSameTokens(_session, value)) version++;
     _session = value;
   }
 }
+
+/// Whether [a] and [b] are both sessions with the same access and refresh
+/// token.
+bool _holdSameTokens(Session? a, Session? b) =>
+    a != null &&
+    b != null &&
+    a.accessToken == b.accessToken &&
+    a.refreshToken == b.refreshToken;
 
 /// {@template auth_client}
 /// API client to interact with the Supabase Auth server.
@@ -1565,7 +1567,7 @@ class AuthClient {
     }
     // A sign-in or sign-out that happened while the session was refreshed or
     // the request was in flight is newer than this sign-out.
-    final isCurrentSession = identical(session, _currentSession);
+    final isCurrentSession = _holdSameTokens(session, _currentSession);
     final versionBeforeRevoke = _sessionVersion;
     await _revokeSessions(session, scope);
     if (scope == SignOutScope.global &&
@@ -1609,11 +1611,29 @@ class AuthClient {
     }
     // The previous refresh token stops working once the reuse interval has
     // passed, so the refreshed session replaces it.
-    if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
-      _saveSession(refreshed);
-      notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+    if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
+      return refreshed;
     }
-    return refreshed;
+    final stored = _withUpdatedUser(refreshed, session);
+    _saveSession(stored);
+    notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+    return stored;
+  }
+
+  /// Returns [refreshed] with the user of the stored session when that user
+  /// is the refreshed one and was updated since [before] was stored.
+  ///
+  /// The refresh response may have been produced before the update, so its
+  /// user can be older than the stored one.
+  Session _withUpdatedUser(Session refreshed, Session? before) {
+    final stored = _currentSession;
+    if (stored == null ||
+        before == null ||
+        stored.user.id != refreshed.user.id ||
+        stored.user == before.user) {
+      return refreshed;
+    }
+    return refreshed.copyWith(user: stored.user);
   }
 
   /// Signs out on this device for [reason], revoking the session on the
@@ -2507,8 +2527,8 @@ class AuthClient {
       final session = await _refreshAccessToken(refreshToken);
 
       // Discard the result if the client was disposed or the session was
-      // replaced (e.g. a concurrent signIn or signOut) while we were awaiting
-      // the network request, so we don't overwrite the newer session.
+      // replaced, for example by a concurrent signIn or signOut, while we were
+      // awaiting the network request, so we don't overwrite the newer session.
       if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
         authLogger.fine(
           'Session changed during refresh, discarding stale result.',
@@ -2516,12 +2536,7 @@ class AuthClient {
         return session;
       }
 
-      final storedUser = _currentSession?.user;
-      final refreshed =
-          storedUser != null &&
-              !identical(storedUser, sessionBeforeRefresh?.user)
-          ? session.copyWith(user: storedUser)
-          : session;
+      final refreshed = _withUpdatedUser(session, sessionBeforeRefresh);
       _saveSession(refreshed);
       notifyAllSubscribers(
         sessionBeforeRefresh?.user.id == session.user.id

@@ -15,11 +15,15 @@ void main() {
   late Completer<void> releaseRefresh;
   late Completer<void> releaseUpdate;
   late String rotatedAccessToken;
+  late Map<String, dynamic> refreshedUser;
+  late bool refreshFails;
   late List<AuthChangeEvent> events;
 
   setUp(() {
     releaseRefresh = Completer<void>();
     releaseUpdate = Completer<void>()..complete();
+    refreshedUser = testUserJson();
+    refreshFails = false;
     rotatedAccessToken = unsignedTestJwt({
       'sub': testUserId,
       'role': 'authenticated',
@@ -32,10 +36,18 @@ void main() {
       ..stubHandler(
         (request) async {
           await releaseRefresh.future;
+          if (refreshFails) {
+            return jsonResponse(
+              {'code': 'unexpected_failure', 'msg': 'Try again'},
+              statusCode: 400,
+              headers: {'x-sb-api-version': '2024-01-01'},
+            );
+          }
           return jsonResponse(
             testSessionResponseJson(
               accessToken: rotatedAccessToken,
               refreshToken: rotatedRefreshToken,
+              user: refreshedUser,
             ),
           );
         },
@@ -171,5 +183,92 @@ void main() {
 
     expect(client.currentSession?.accessToken, newerSession.accessToken);
     expect(events, isEmpty);
+  });
+
+  test('a refresh of another user\'s token that overlaps updateUser keeps '
+      'that user', () async {
+    refreshedUser = testUserJson(id: otherUserId, email: 'other@email.com');
+    await signInTestUser(client);
+    final refresh = client.refreshSession('other-refresh-token');
+    await pumpEventQueue();
+
+    await client.updateUser(UserAttributes(email: 'updated@email.com'));
+    releaseRefresh.complete();
+    await refresh;
+
+    expect(client.currentSession?.refreshToken, rotatedRefreshToken);
+    expect(client.currentUser?.id, otherUserId);
+    expect(client.currentUser?.email, 'other@email.com');
+  });
+
+  group('signing out an expired session', () {
+    late DateTime now;
+
+    Future<void> overlapUpdateUser(
+      Future<void> Function() signOut, {
+      Duration expiresIn = Duration.zero,
+    }) async {
+      await signInTestUser(client);
+      releaseUpdate = Completer<void>();
+      final update = client.updateUser(
+        UserAttributes(email: 'updated@email.com'),
+      );
+      await pumpEventQueue();
+
+      now = now.add(const Duration(hours: 1)).subtract(expiresIn);
+      final signingOut = signOut();
+      await pumpEventQueue();
+
+      releaseUpdate.complete();
+      await update;
+      releaseRefresh.complete();
+      await signingOut;
+      await pumpEventQueue();
+    }
+
+    setUp(() {
+      now = DateTime.now();
+    });
+
+    test('others keeps the refreshed session after an overlapping '
+        'updateUser', () async {
+      await withClock(
+        Clock(() => now),
+        () => overlapUpdateUser(
+          () => client.signOut(scope: SignOutScope.others),
+        ),
+      );
+
+      expect(client.currentSession?.refreshToken, rotatedRefreshToken);
+      expect(client.currentUser?.email, 'updated@email.com');
+    });
+
+    test('global still signs out on this device after an overlapping '
+        'updateUser', () async {
+      await withClock(
+        Clock(() => now),
+        () => overlapUpdateUser(
+          () => client.signOut(scope: SignOutScope.global),
+        ),
+      );
+
+      expect(client.currentSession, isNull);
+      expect(events.last, AuthChangeEvent.signedOut);
+    });
+
+    test('global still signs out on this device when the refresh fails '
+        'after an overlapping updateUser', () async {
+      refreshFails = true;
+      await withClock(
+        Clock(() => now),
+        () => overlapUpdateUser(
+          () => client.signOut(scope: SignOutScope.global),
+          expiresIn: const Duration(seconds: 10),
+        ),
+      );
+
+      expect(client.currentSession, isNull);
+      expect(events.last, AuthChangeEvent.signedOut);
+    });
   });
 }
