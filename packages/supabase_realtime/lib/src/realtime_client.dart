@@ -155,8 +155,8 @@ class RealtimeClient {
   /// [timeout] The default timeout to trigger push timeouts. Also bounds a
   /// custom [encode] or [decode] call, so one that never completes fails
   /// after [timeout] instead of stalling every write or dispatch chained
-  /// after it, and a [customAccessToken] call, which fails with a
-  /// [TimeoutException] after [timeout].
+  /// after it. A [customAccessToken] call that does not complete within
+  /// [timeout] fails with a [TimeoutException].
   ///
   /// [connectionCloseTimeout] The timeout to wait for the connection to close
   /// before dismissing the result. Defaults to 6 seconds.
@@ -1168,9 +1168,9 @@ class RealtimeClient {
   /// [timeout], instead fails the connect: the error surfaces as a
   /// `channelError` status and on [onStatusChange], the buffer stays unsent,
   /// and the connection is closed so the reconnect backoff retries the
-  /// provider. A resolution that outlives its connection
-  /// is dropped entirely, success and error alike, and one superseded by a
-  /// later [setAccessToken] flushes with the current token instead.
+  /// provider. A resolution that outlives its connection is dropped entirely,
+  /// success and error alike, and one superseded by a later [setAccessToken]
+  /// flushes with the current token instead.
   Future<void> _resolveAccessTokenAndFlush() async {
     final customAccessToken = this.customAccessToken;
     if (customAccessToken != null) {
