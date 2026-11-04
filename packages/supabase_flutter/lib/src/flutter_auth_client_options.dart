@@ -36,10 +36,14 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   /// An optional predicate that decides whether an incoming deep link should be
   /// treated as an auth callback and exchanged for a session.
   ///
-  /// When null, the default heuristic is used, which treats a link as an auth
-  /// callback if it carries any of the `access_token`, `code`, `error`,
-  /// `error_code`, or `error_description` parameters (in the query or the
-  /// fragment).
+  /// When null, only links the auth server redirects to are treated as auth
+  /// callbacks, by their parameters in the query or the fragment: an
+  /// `access_token`, at least two of `error`, `error_code` and
+  /// `error_description`, or a `code` while a PKCE flow started by this client
+  /// is waiting for it. A `code` link that carries the `sb_flow_id` parameter
+  /// the client appends to its redirects is always treated as one. Other
+  /// links, such as `myapp://invite?code=X` when no sign-in is pending, are
+  /// left to the app.
   ///
   /// Provide a custom predicate to disambiguate links when your app uses those
   /// same parameters for other purposes, or to restrict detection to specific

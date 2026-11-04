@@ -760,6 +760,12 @@ class AuthClient {
     return AuthSessionUrlResponse(session: session, redirectType: redirectType);
   }
 
+  /// Whether a PKCE flow started by this client is waiting for its code, so
+  /// that [exchangeCodeForSession] without a flow id finds a code verifier.
+  @internal
+  Future<bool> hasPendingPkceFlow() async =>
+      await _pkceVerifierStore?.retrieve() != null;
+
   /// Starts a PKCE flow by generating a code verifier and persisting it in a
   /// slot of its own, and returns the derived code challenge together with the
   /// id of the flow it belongs to.

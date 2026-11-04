@@ -291,7 +291,7 @@ void main() {
       expect(exception.statusCode, 403);
     });
   });
-  group('Deep Link with only an error description or code', () {
+  group('Deep Link with an error redirect from the auth server', () {
     Future<AuthException> surfacedException(String link) async {
       final exception = Completer<AuthException>();
       mockAppLink(
@@ -318,26 +318,177 @@ void main() {
     }
 
     test(
-      'an error_code in the fragment is treated as an auth callback',
+      'an error_code and error_description in the fragment are surfaced',
       () async {
         final exception = await surfacedException(
-          'com.supabase://callback/#error_code=otp_expired',
+          'com.supabase://callback/#error_code=otp_expired'
+          '&error_description=Link+expired&sb=',
         );
 
         expect(exception.errorCode, 'otp_expired');
-      },
-    );
-
-    test(
-      'an error_description in the query is treated as an auth callback',
-      () async {
-        final exception = await surfacedException(
-          'com.supabase://callback/?error_description=Link+expired',
-        );
-
         expect(exception.message, 'Link expired');
       },
     );
+
+    test('an error and error_description in the query are surfaced', () async {
+      final exception = await surfacedException(
+        'com.supabase://callback/?error=access_denied'
+        '&error_description=Signups+not+allowed',
+      );
+
+      expect(exception.errorCode, 'access_denied');
+      expect(exception.message, 'Signups not allowed');
+    });
+  });
+
+  group('Deep Link that is not an auth redirect', () {
+    Future<AuthException> nextAuthException() {
+      final exception = Completer<AuthException>();
+      final subscription = Supabase.instance.client.auth.onAuthStateChange
+          .listen(
+            (_) {},
+            onError: (Object error) {
+              if (error is AuthException && !exception.isCompleted) {
+                exception.complete(error);
+              }
+            },
+          );
+      addTearDown(subscription.cancel);
+      return exception.future.timeout(const Duration(seconds: 5));
+    }
+
+    Future<void> expectIgnored(
+      String link, {
+      MockAsyncStorage? asyncStorage,
+    }) async {
+      final httpClient = createPkceHttpClient();
+      final errors = <Object>[];
+      mockNativeAppLinks(launchLink: link);
+
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: asyncStorage ?? MockAsyncStorage(),
+        ),
+      );
+      final subscription = Supabase.instance.client.auth.onAuthStateChange
+          .listen((_) {}, onError: errors.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+
+      expect(httpClient.requests, isEmpty);
+      expect(errors, isEmpty);
+      expect(Supabase.instance.client.auth.currentSession, isNull);
+    }
+
+    for (final link in [
+      'com.supabase://invite?code=X',
+      'com.supabase://invite#code=X',
+      'com.supabase://form?error=1',
+      'com.supabase://form?error_description=Invalid+input',
+      'com.supabase://form#error_code=E42',
+    ]) {
+      test('$link is ignored when no PKCE flow is pending', () async {
+        await expectIgnored(link);
+      });
+    }
+
+    test('a link with a code received later is ignored when no PKCE flow is '
+        'pending', () async {
+      final httpClient = createPkceHttpClient();
+      final errors = <Object>[];
+      mockNativeAppLinks();
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: MockAsyncStorage(),
+        ),
+      );
+      final subscription = Supabase.instance.client.auth.onAuthStateChange
+          .listen((_) {}, onError: errors.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+
+      await sendAppLink('com.supabase://invite?code=X');
+      await pumpEventQueue();
+
+      expect(httpClient.requests, isEmpty);
+      expect(errors, isEmpty);
+    });
+
+    test('a code is exchanged once a PKCE flow is pending', () async {
+      final httpClient = createPkceHttpClient();
+      final asyncStorage = MockAsyncStorage();
+      mockNativeAppLinks();
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(asyncStorage: asyncStorage),
+      );
+      await pumpEventQueue();
+
+      await sendAppLink('com.supabase://invite?code=X');
+      await pumpEventQueue();
+      expect(httpClient.requests, isEmpty);
+
+      await asyncStorage.setItem(
+        '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
+        'raw-code-verifier',
+      );
+      await sendAppLink('com.supabase://callback?code=my-code');
+      await pumpEventQueue();
+
+      expect(httpClient.requests.single.jsonBody['auth_code'], 'my-code');
+    });
+
+    test(
+      'a code with the flow id of this client is claimed even when its '
+      'verifier is gone',
+      () async {
+        final httpClient = createPkceHttpClient();
+        mockNativeAppLinks(
+          launchLink:
+              'com.supabase://callback?code=my-code'
+              '&sb_flow_id=0123456789abcdef',
+        );
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          httpClient: httpClient,
+          authOptions: FlutterAuthClientOptions(
+            asyncStorage: MockAsyncStorage(),
+          ),
+        );
+        expect(
+          (await nextAuthException()).message,
+          'Code verifier could not be found in local storage.',
+        );
+        expect(httpClient.requests, isEmpty);
+      },
+    );
+
+    test('the custom predicate still claims a code with no pending PKCE '
+        'flow', () async {
+      mockNativeAppLinks(launchLink: 'com.supabase://invite?code=X');
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: createPkceHttpClient(),
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: MockAsyncStorage(),
+          detectSessionInUriPredicate: (uri) => true,
+        ),
+      );
+      expect(
+        (await nextAuthException()).message,
+        'Code verifier could not be found in local storage.',
+      );
+    });
   });
 
   group('Deep Link errors from the platform', () {
