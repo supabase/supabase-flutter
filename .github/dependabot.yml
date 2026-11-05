@@ -36,7 +36,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
-    versioning-strategy: "increase"
+    # The packages are libraries, so a constraint only moves when the new
+    # version falls outside it. Anything else only updates pubspec.lock.
+    versioning-strategy: "increase-if-necessary"
     # Each bump arrives on its own, so the minimum SDK workflow can close one
     # that raises the SDK floor without taking unrelated bumps down with it.
     ignore:
