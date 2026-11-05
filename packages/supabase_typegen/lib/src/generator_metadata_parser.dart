@@ -182,12 +182,11 @@ class GeneratorMetadataFormatException extends FormatException {
     : super('Not a GeneratorMetadata document: $message');
 }
 
-const _relationCollections = [
-  'tables',
-  'foreignTables',
-  'views',
-  'materializedViews',
-];
+const _tableCollections = ['tables', 'foreignTables'];
+
+const _viewCollections = ['views', 'materializedViews'];
+
+const _relationCollections = [..._tableCollections, ..._viewCollections];
 
 /// Parses a `GeneratorMetadata` document, the introspection contract of
 /// `@supabase/postgrest-typegen`, into a [DatabaseDescription] of the
@@ -605,8 +604,8 @@ Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
       for (final relation in document.records(collection))
         (relation.field<String>('schema'), relation.field<String>('name')),
   };
-  final tables = relationsIn(const ['tables', 'foreignTables']);
-  final views = relationsIn(const ['views', 'materializedViews']);
+  final tables = relationsIn(_tableCollections);
+  final views = relationsIn(_viewCollections);
   final tableRelationships = <Map<String, dynamic>>[];
   final unlistedRelationships = <Map<String, dynamic>>[];
   final viewRelationships = <Map<String, dynamic>>[];
