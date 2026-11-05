@@ -83,6 +83,15 @@ values (
     (select id from public.badge where name = 'Founder')
 );
 
+-- Tables of supabase/migrations/20240101000006_hidden_schema_views.sql.
+insert into restricted.note (body, team_id)
+values ('Launch', (select id from public.team where name = 'Rockets'));
+insert into restricted.note (body, team_id)
+values ('Orbit', (select id from public.team where name = 'Comets'));
+
+insert into restricted.note_reply (body, note_id)
+values ('Go', (select id from restricted.note where body = 'Launch'));
+
 -- ---------------------------------------------------------------------------
 -- supabase_storage dummy data (ported from infra/storage_client/postgres/dummy-data.sql)
 -- The storage tests authenticate with the service_role key, which bypasses RLS,

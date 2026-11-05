@@ -94,6 +94,33 @@
       "is_insert_enabled": true,
       "is_update_enabled": false,
       "comment": null
+    },
+    {
+      "id": 16537,
+      "schema": "public",
+      "name": "loans",
+      "is_updatable": true,
+      "is_insert_enabled": true,
+      "is_update_enabled": true,
+      "comment": null
+    },
+    {
+      "id": 16517,
+      "schema": "public",
+      "name": "review_replies",
+      "is_updatable": true,
+      "is_insert_enabled": true,
+      "is_update_enabled": true,
+      "comment": null
+    },
+    {
+      "id": 16513,
+      "schema": "public",
+      "name": "reviews",
+      "is_updatable": true,
+      "is_insert_enabled": true,
+      "is_update_enabled": true,
+      "comment": null
     }
   ],
   "materializedViews": [
@@ -847,6 +874,195 @@
       "check": null,
       "enums": [],
       "comment": null
+    },
+    {
+      "table_id": 16537,
+      "schema": "public",
+      "table": "loans",
+      "id": "16537.2",
+      "ordinal_position": 2,
+      "name": "book_id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16537,
+      "schema": "public",
+      "table": "loans",
+      "id": "16537.3",
+      "ordinal_position": 3,
+      "name": "due_on",
+      "default_value": null,
+      "data_type": "date",
+      "format": "date",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16537,
+      "schema": "public",
+      "table": "loans",
+      "id": "16537.1",
+      "ordinal_position": 1,
+      "name": "id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16517,
+      "schema": "public",
+      "table": "review_replies",
+      "id": "16517.3",
+      "ordinal_position": 3,
+      "name": "body",
+      "default_value": null,
+      "data_type": "text",
+      "format": "text",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16517,
+      "schema": "public",
+      "table": "review_replies",
+      "id": "16517.1",
+      "ordinal_position": 1,
+      "name": "id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16517,
+      "schema": "public",
+      "table": "review_replies",
+      "id": "16517.2",
+      "ordinal_position": 2,
+      "name": "review_id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16513,
+      "schema": "public",
+      "table": "reviews",
+      "id": "16513.3",
+      "ordinal_position": 3,
+      "name": "body",
+      "default_value": null,
+      "data_type": "text",
+      "format": "text",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16513,
+      "schema": "public",
+      "table": "reviews",
+      "id": "16513.2",
+      "ordinal_position": 2,
+      "name": "book_id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16513,
+      "schema": "public",
+      "table": "reviews",
+      "id": "16513.1",
+      "ordinal_position": 1,
+      "name": "id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
     }
   ],
   "primaryKeys": [
@@ -903,6 +1119,118 @@
         "id"
       ],
       "is_one_to_one": false
+    },
+    {
+      "foreign_key_name": "loans_book_id_fkey",
+      "schema": "public",
+      "relation": "loans",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "book_prices",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "loans_book_id_fkey",
+      "schema": "public",
+      "relation": "loans",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "book_summaries",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "loans_book_id_fkey",
+      "schema": "public",
+      "relation": "loans",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "books",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "review_replies_review_id_fkey",
+      "schema": "public",
+      "relation": "review_replies",
+      "columns": [
+        "review_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "reviews",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "review_replies_review_id_fkey",
+      "schema": "public",
+      "relation": "review_replies",
+      "columns": [
+        "review_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "restricted",
+      "referenced_relation": "reviews",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "reviews_book_id_fkey",
+      "schema": "public",
+      "relation": "reviews",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "book_prices",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "reviews_book_id_fkey",
+      "schema": "public",
+      "relation": "reviews",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "book_summaries",
+      "referenced_columns": [
+        "id"
+      ]
+    },
+    {
+      "foreign_key_name": "reviews_book_id_fkey",
+      "schema": "public",
+      "relation": "reviews",
+      "columns": [
+        "book_id"
+      ],
+      "is_one_to_one": false,
+      "referenced_schema": "public",
+      "referenced_relation": "books",
+      "referenced_columns": [
+        "id"
+      ]
     },
     {
       "foreign_key_name": "stock_book_id_fkey",
@@ -1493,6 +1821,26 @@
     }
   ],
   "types": [
+    {
+      "id": 16534,
+      "name": "_loans",
+      "schema": "extra",
+      "format": "extra.loans[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16535,
+      "name": "loans",
+      "schema": "extra",
+      "format": "extra.loans",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16533
+    },
     {
       "id": 13574,
       "name": "__pg_foreign_data_wrappers",
@@ -7727,10 +8075,40 @@
       "type_relation_id": null
     },
     {
+      "id": 16538,
+      "name": "_loans",
+      "schema": "public",
+      "format": "loans[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
       "id": 16384,
       "name": "_mood",
       "schema": "public",
       "format": "mood[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16518,
+      "name": "_review_replies",
+      "schema": "public",
+      "format": "review_replies[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16514,
+      "name": "_reviews",
+      "schema": "public",
+      "format": "reviews[]",
       "enums": [],
       "attributes": [],
       "comment": null,
@@ -7797,6 +8175,16 @@
       "type_relation_id": 16400
     },
     {
+      "id": 16539,
+      "name": "loans",
+      "schema": "public",
+      "format": "loans",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16537
+    },
+    {
       "id": 16385,
       "name": "mood",
       "schema": "public",
@@ -7809,6 +8197,86 @@
       "attributes": [],
       "comment": null,
       "type_relation_id": null
+    },
+    {
+      "id": 16519,
+      "name": "review_replies",
+      "schema": "public",
+      "format": "review_replies",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16517
+    },
+    {
+      "id": 16515,
+      "name": "reviews",
+      "schema": "public",
+      "format": "reviews",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16513
+    },
+    {
+      "id": 16524,
+      "name": "_loans",
+      "schema": "restricted",
+      "format": "restricted.loans[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16502,
+      "name": "_review_replies",
+      "schema": "restricted",
+      "format": "restricted.review_replies[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16489,
+      "name": "_reviews",
+      "schema": "restricted",
+      "format": "restricted.reviews[]",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": null
+    },
+    {
+      "id": 16525,
+      "name": "loans",
+      "schema": "restricted",
+      "format": "restricted.loans",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16523
+    },
+    {
+      "id": 16503,
+      "name": "review_replies",
+      "schema": "restricted",
+      "format": "restricted.review_replies",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16501
+    },
+    {
+      "id": 16490,
+      "name": "reviews",
+      "schema": "restricted",
+      "format": "restricted.reviews",
+      "enums": [],
+      "attributes": [],
+      "comment": null,
+      "type_relation_id": 16488
     }
   ],
   "rpcFunctions": [

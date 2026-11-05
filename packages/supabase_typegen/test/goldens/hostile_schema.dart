@@ -1514,7 +1514,13 @@ class Team {
     TeamRow.new,
     schema: 'public',
     primaryKey: [id],
-    relations: [profileViaTeam, profileByOwnerId, badgeViaTeam, teamBadge],
+    relations: [
+      profileViaTeam,
+      profileByOwnerId,
+      badgeViaTeam,
+      teamBadge,
+      note,
+    ],
   );
 
   static const id = PostgrestColumn<TeamRow, int>('id');
@@ -1554,6 +1560,14 @@ class Team {
     columns: [id],
     referencedTable: 'team_badge',
     referencedColumns: [TeamBadge.teamId],
+  );
+
+  /// The `note` rows referencing this row through `team_id`.
+  static const note = PostgrestToManyRelation<TeamRow, NoteRow>(
+    'note',
+    columns: [id],
+    referencedTable: 'note',
+    referencedColumns: [Note.teamId],
   );
 }
 
@@ -1784,6 +1798,128 @@ class TeamBadge {
     columns: [badgeId],
     referencedTable: 'badge',
     referencedColumns: [Badge.id],
+  );
+}
+
+/// A row of the `note` table, as `select()` reads it with every column.
+extension type const NoteRow(Map<String, dynamic> _json) implements Object {
+  String get body => _json['body'] as String;
+  int get id => _json['id'] as int;
+  int get teamId => _json['team_id'] as int;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `note`. Columns that are nullable, identity,
+/// or covered by a database default are optional; passing `null` omits the
+/// column so the database default applies. Columns the database always
+/// generates itself are left out entirely. Use the `set…ToNull` methods to
+/// insert SQL NULL explicitly.
+extension type const NoteInsert._(Map<String, dynamic> _json)
+    implements Object {
+  NoteInsert({String? body, int? id, int? teamId})
+    : this._({'body': ?body, 'id': ?id, 'team_id': ?teamId});
+}
+
+/// Values for updating rows of `note`. All columns are optional; passing `null`
+/// omits the column, leaving it unchanged. Use the `set…ToNull` methods to
+/// write SQL NULL explicitly.
+extension type const NoteUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  NoteUpdate({String? body, int? id, int? teamId})
+    : this._({'body': ?body, 'id': ?id, 'team_id': ?teamId});
+}
+
+/// Typed access to the `note` table.
+class Note {
+  const Note._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable<NoteRow, NoteInsert, NoteUpdate>(
+    'note',
+    NoteRow.new,
+    schema: 'public',
+    primaryKey: [],
+    relations: [team, noteReply],
+  );
+
+  static const body = PostgrestColumn<NoteRow, String>('body');
+  static const id = PostgrestColumn<NoteRow, int>('id');
+  static const teamId = PostgrestColumn<NoteRow, int>('team_id');
+
+  /// The `team` row referenced by `team_id`.
+  static const team = PostgrestToOneRelation<NoteRow, TeamRow>(
+    'team',
+    columns: [teamId],
+    referencedTable: 'team',
+    referencedColumns: [Team.id],
+  );
+
+  /// The `note_reply` rows referencing this row through `note_id`.
+  static const noteReply = PostgrestToManyRelation<NoteRow, NoteReplyRow>(
+    'note_reply',
+    columns: [id],
+    referencedTable: 'note_reply',
+    referencedColumns: [NoteReply.noteId],
+  );
+}
+
+/// A row of the `note_reply` table, as `select()` reads it with every column.
+extension type const NoteReplyRow(Map<String, dynamic> _json)
+    implements Object {
+  String get body => _json['body'] as String;
+  int get id => _json['id'] as int;
+  int get noteId => _json['note_id'] as int;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `note_reply`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const NoteReplyInsert._(Map<String, dynamic> _json)
+    implements Object {
+  NoteReplyInsert({String? body, int? id, int? noteId})
+    : this._({'body': ?body, 'id': ?id, 'note_id': ?noteId});
+}
+
+/// Values for updating rows of `note_reply`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const NoteReplyUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  NoteReplyUpdate({String? body, int? id, int? noteId})
+    : this._({'body': ?body, 'id': ?id, 'note_id': ?noteId});
+}
+
+/// Typed access to the `note_reply` table.
+class NoteReply {
+  const NoteReply._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table =
+      PostgrestTable<NoteReplyRow, NoteReplyInsert, NoteReplyUpdate>(
+        'note_reply',
+        NoteReplyRow.new,
+        schema: 'public',
+        primaryKey: [],
+        relations: [note],
+      );
+
+  static const body = PostgrestColumn<NoteReplyRow, String>('body');
+  static const id = PostgrestColumn<NoteReplyRow, int>('id');
+  static const noteId = PostgrestColumn<NoteReplyRow, int>('note_id');
+
+  /// The `note` row referenced by `note_id`.
+  static const note = PostgrestToOneRelation<NoteReplyRow, NoteRow>(
+    'note',
+    columns: [noteId],
+    referencedTable: 'note',
+    referencedColumns: [Note.id],
   );
 }
 

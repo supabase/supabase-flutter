@@ -730,6 +730,68 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
       ],
     ),
+    // Views over the tables of a schema the Data API does not expose, which
+    // relate through the keys of those tables.
+    TableDescription(
+      schema: 'public',
+      name: 'note',
+      columns: [
+        ColumnDescription(
+          name: 'body',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'team_id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
+    TableDescription(
+      schema: 'public',
+      name: 'note_reply',
+      columns: [
+        ColumnDescription(
+          name: 'body',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'note_id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: false,
+        ),
+      ],
+    ),
   ],
   relationships: [
     // A self reference: PostgREST cannot embed it, so no member is generated.
@@ -830,6 +892,25 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       sourceColumns: ['badge_id'],
       targetSchema: 'public',
       targetTable: 'badge',
+      targetColumns: ['id'],
+    ),
+    RelationshipDescription(
+      foreignKeyName: 'note_team_id_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'note',
+      sourceColumns: ['team_id'],
+      targetSchema: 'public',
+      targetTable: 'team',
+      targetColumns: ['id'],
+    ),
+    // Between two views, from the key of the tables behind them.
+    RelationshipDescription(
+      foreignKeyName: 'note_reply_note_id_fkey',
+      sourceSchema: 'public',
+      sourceTable: 'note_reply',
+      sourceColumns: ['note_id'],
+      targetSchema: 'public',
+      targetTable: 'note',
       targetColumns: ['id'],
     ),
   ],

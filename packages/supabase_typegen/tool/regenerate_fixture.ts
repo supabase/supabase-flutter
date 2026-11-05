@@ -1,7 +1,8 @@
 // Regenerates test/fixtures/generator_metadata.json by introspecting a fresh
 // Postgres database seeded with test/fixtures/seed.sql, using the
 // @supabase/postgrest-typegen sources of a supabase/sdk checkout at the
-// revision the Supabase CLI bundles.
+// revision the Supabase CLI bundles. Like the CLI, it generates the listed
+// schemas only and follows views through the extra search path.
 //
 // Run from the package root (Bun resolves the checkout's own dependencies):
 //
@@ -40,7 +41,12 @@ const pool = new pg.Pool({
     process.env.DATABASE_URL ??
     "postgresql://postgres:postgres@localhost:14432/postgres",
 });
-const metadata = sortGeneratorMetadata(await introspect(pool));
+const metadata = sortGeneratorMetadata(
+  await introspect(pool, {
+    includedSchemas: ["public", "inventory"],
+    extraSearchPath: ["extra"],
+  }),
+);
 await pool.end();
 
 await Bun.write(

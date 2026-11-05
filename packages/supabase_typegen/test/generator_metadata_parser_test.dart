@@ -241,6 +241,9 @@ void main() {
       'public.book_submissions',
       'public.book_summaries',
       'public.books',
+      'public.loans',
+      'public.review_replies',
+      'public.reviews',
     ]);
   });
 
@@ -461,6 +464,33 @@ void main() {
     expect(bookId.foreignKey?.table, 'books');
     expect(copyId.foreignKey?.schema, 'inventory');
     expect(copyId.foreignKey?.table, 'books');
+  });
+
+  test('a view over a table of a schema that is not generated keys into '
+      'that table, while its relationships stay between generated '
+      'relations', () {
+    final reviewReplies = publicTable(schema, 'review_replies');
+    final reviewId = reviewReplies.columns.singleWhere(
+      (column) => column.name == 'review_id',
+    );
+    final loans = publicTable(schema, 'loans');
+    final bookId = loans.columns.singleWhere(
+      (column) => column.name == 'book_id',
+    );
+
+    expect(reviewId.foreignKey?.schema, 'restricted');
+    expect(reviewId.foreignKey?.table, 'reviews');
+    expect(bookId.foreignKey?.schema, 'public');
+    expect(bookId.foreignKey?.table, 'books');
+    expect(schema.schemaNames, ['inventory', 'public']);
+    expect(
+      [
+        for (final relationship in schema.relationships)
+          if (relationship.sourceTable == 'review_replies')
+            '${relationship.targetSchema}.${relationship.targetTable}',
+      ],
+      ['public.reviews'],
+    );
   });
 
   test('collects the relationships between tables of the schema', () {

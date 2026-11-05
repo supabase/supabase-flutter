@@ -406,6 +406,7 @@ class BookPrices {
         BookPricesRow.new,
         schema: 'public',
         primaryKey: [],
+        relations: [loans, reviews],
         computedFields: [discount],
       );
 
@@ -419,6 +420,22 @@ class BookPrices {
   /// The `discount` computed field, selected by name; `select()` leaves it out.
   static const discount = PostgrestComputedField<BookPricesRow, num>(
     'discount',
+  );
+
+  /// The `loans` rows referencing this row through `book_id`.
+  static const loans = PostgrestToManyRelation<BookPricesRow, LoansRow>(
+    'loans',
+    columns: [id],
+    referencedTable: 'loans',
+    referencedColumns: [Loans.bookId],
+  );
+
+  /// The `reviews` rows referencing this row through `book_id`.
+  static const reviews = PostgrestToManyRelation<BookPricesRow, ReviewsRow>(
+    'reviews',
+    columns: [id],
+    referencedTable: 'reviews',
+    referencedColumns: [Reviews.bookId],
   );
 }
 
@@ -486,6 +503,7 @@ class BookSummaries {
     BookSummariesRow.new,
     schema: 'public',
     primaryKey: [],
+    relations: [loans, reviews],
   );
 
   static const authorName = PostgrestColumn<BookSummariesRow, String>(
@@ -493,6 +511,22 @@ class BookSummaries {
   );
   static const id = PostgrestColumn<BookSummariesRow, int>('id');
   static const title = PostgrestColumn<BookSummariesRow, String>('title');
+
+  /// The `loans` rows referencing this row through `book_id`.
+  static const loans = PostgrestToManyRelation<BookSummariesRow, LoansRow>(
+    'loans',
+    columns: [id],
+    referencedTable: 'loans',
+    referencedColumns: [Loans.bookId],
+  );
+
+  /// The `reviews` rows referencing this row through `book_id`.
+  static const reviews = PostgrestToManyRelation<BookSummariesRow, ReviewsRow>(
+    'reviews',
+    columns: [id],
+    referencedTable: 'reviews',
+    referencedColumns: [Reviews.bookId],
+  );
 }
 
 /// A row of the `books` table, as `select()` reads it with every column.
@@ -735,7 +769,7 @@ class Books {
     BooksRow.new,
     schema: 'public',
     primaryKey: [id],
-    relations: [authors],
+    relations: [authors, loans, reviews],
     computedFields: [moodOrDefault, titleUpper],
   );
 
@@ -800,6 +834,243 @@ class Books {
     columns: [authorId],
     referencedTable: 'authors',
     referencedColumns: [Authors.id],
+  );
+
+  /// The `loans` rows referencing this row through `book_id`.
+  static const loans = PostgrestToManyRelation<BooksRow, LoansRow>(
+    'loans',
+    columns: [id],
+    referencedTable: 'loans',
+    referencedColumns: [Loans.bookId],
+  );
+
+  /// The `reviews` rows referencing this row through `book_id`.
+  static const reviews = PostgrestToManyRelation<BooksRow, ReviewsRow>(
+    'reviews',
+    columns: [id],
+    referencedTable: 'reviews',
+    referencedColumns: [Reviews.bookId],
+  );
+}
+
+/// A row of the `loans` table, as `select()` reads it with every column.
+extension type const LoansRow(Map<String, dynamic> _json) implements Object {
+  int get bookId => _json['book_id'] as int;
+  PostgresDate get dueOn => PostgresDate.parse(_json['due_on'] as String);
+  int get id => _json['id'] as int;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `loans`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const LoansInsert._(Map<String, dynamic> _json)
+    implements Object {
+  LoansInsert({int? bookId, PostgresDate? dueOn, int? id})
+    : this._({'book_id': ?bookId, 'due_on': ?dueOn?.literal, 'id': ?id});
+}
+
+/// Values for updating rows of `loans`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const LoansUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  LoansUpdate({int? bookId, PostgresDate? dueOn, int? id})
+    : this._({'book_id': ?bookId, 'due_on': ?dueOn?.literal, 'id': ?id});
+}
+
+/// Typed access to the `loans` table.
+class Loans {
+  const Loans._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable<LoansRow, LoansInsert, LoansUpdate>(
+    'loans',
+    LoansRow.new,
+    schema: 'public',
+    primaryKey: [],
+    relations: [bookPrices, bookSummaries, books],
+  );
+
+  static const bookId = PostgrestColumn<LoansRow, int>('book_id');
+  static const dueOn = PostgrestColumn<LoansRow, PostgresDate>(
+    'due_on',
+    fromJson: _postgresDateFromJson,
+  );
+  static const id = PostgrestColumn<LoansRow, int>('id');
+
+  /// The `book_prices` row referenced by `book_id`.
+  static const bookPrices = PostgrestToOneRelation<LoansRow, BookPricesRow>(
+    'book_prices',
+    columns: [bookId],
+    referencedTable: 'book_prices',
+    referencedColumns: [BookPrices.id],
+  );
+
+  /// The `book_summaries` row referenced by `book_id`.
+  static const bookSummaries =
+      PostgrestToOneRelation<LoansRow, BookSummariesRow>(
+        'book_summaries',
+        columns: [bookId],
+        referencedTable: 'book_summaries',
+        referencedColumns: [BookSummaries.id],
+      );
+
+  /// The `books` row referenced by `book_id`.
+  static const books = PostgrestToOneRelation<LoansRow, BooksRow>(
+    'books',
+    columns: [bookId],
+    referencedTable: 'books',
+    referencedColumns: [Books.id],
+  );
+}
+
+/// A row of the `review_replies` table, as `select()` reads it with every
+/// column.
+extension type const ReviewRepliesRow(Map<String, dynamic> _json)
+    implements Object {
+  String get body => _json['body'] as String;
+  int get id => _json['id'] as int;
+  int get reviewId => _json['review_id'] as int;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `review_replies`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const ReviewRepliesInsert._(Map<String, dynamic> _json)
+    implements Object {
+  ReviewRepliesInsert({String? body, int? id, int? reviewId})
+    : this._({'body': ?body, 'id': ?id, 'review_id': ?reviewId});
+}
+
+/// Values for updating rows of `review_replies`. All columns are optional;
+/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
+/// methods to write SQL NULL explicitly.
+extension type const ReviewRepliesUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  ReviewRepliesUpdate({String? body, int? id, int? reviewId})
+    : this._({'body': ?body, 'id': ?id, 'review_id': ?reviewId});
+}
+
+/// Typed access to the `review_replies` table.
+class ReviewReplies {
+  const ReviewReplies._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table =
+      PostgrestTable<
+        ReviewRepliesRow,
+        ReviewRepliesInsert,
+        ReviewRepliesUpdate
+      >(
+        'review_replies',
+        ReviewRepliesRow.new,
+        schema: 'public',
+        primaryKey: [],
+        relations: [reviews],
+      );
+
+  static const body = PostgrestColumn<ReviewRepliesRow, String>('body');
+  static const id = PostgrestColumn<ReviewRepliesRow, int>('id');
+  static const reviewId = PostgrestColumn<ReviewRepliesRow, int>('review_id');
+
+  /// The `reviews` row referenced by `review_id`.
+  static const reviews = PostgrestToOneRelation<ReviewRepliesRow, ReviewsRow>(
+    'reviews',
+    columns: [reviewId],
+    referencedTable: 'reviews',
+    referencedColumns: [Reviews.id],
+  );
+}
+
+/// A row of the `reviews` table, as `select()` reads it with every column.
+extension type const ReviewsRow(Map<String, dynamic> _json) implements Object {
+  String get body => _json['body'] as String;
+  int get bookId => _json['book_id'] as int;
+  int get id => _json['id'] as int;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `reviews`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const ReviewsInsert._(Map<String, dynamic> _json)
+    implements Object {
+  ReviewsInsert({String? body, int? bookId, int? id})
+    : this._({'body': ?body, 'book_id': ?bookId, 'id': ?id});
+}
+
+/// Values for updating rows of `reviews`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const ReviewsUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  ReviewsUpdate({String? body, int? bookId, int? id})
+    : this._({'body': ?body, 'book_id': ?bookId, 'id': ?id});
+}
+
+/// Typed access to the `reviews` table.
+class Reviews {
+  const Reviews._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable<ReviewsRow, ReviewsInsert, ReviewsUpdate>(
+    'reviews',
+    ReviewsRow.new,
+    schema: 'public',
+    primaryKey: [],
+    relations: [reviewReplies, bookPrices, bookSummaries, books],
+  );
+
+  static const body = PostgrestColumn<ReviewsRow, String>('body');
+  static const bookId = PostgrestColumn<ReviewsRow, int>('book_id');
+  static const id = PostgrestColumn<ReviewsRow, int>('id');
+
+  /// The `review_replies` rows referencing this row through `review_id`.
+  static const reviewReplies =
+      PostgrestToManyRelation<ReviewsRow, ReviewRepliesRow>(
+        'review_replies',
+        columns: [id],
+        referencedTable: 'review_replies',
+        referencedColumns: [ReviewReplies.reviewId],
+      );
+
+  /// The `book_prices` row referenced by `book_id`.
+  static const bookPrices = PostgrestToOneRelation<ReviewsRow, BookPricesRow>(
+    'book_prices',
+    columns: [bookId],
+    referencedTable: 'book_prices',
+    referencedColumns: [BookPrices.id],
+  );
+
+  /// The `book_summaries` row referenced by `book_id`.
+  static const bookSummaries =
+      PostgrestToOneRelation<ReviewsRow, BookSummariesRow>(
+        'book_summaries',
+        columns: [bookId],
+        referencedTable: 'book_summaries',
+        referencedColumns: [BookSummaries.id],
+      );
+
+  /// The `books` row referenced by `book_id`.
+  static const books = PostgrestToOneRelation<ReviewsRow, BooksRow>(
+    'books',
+    columns: [bookId],
+    referencedTable: 'books',
+    referencedColumns: [Books.id],
   );
 }
 
