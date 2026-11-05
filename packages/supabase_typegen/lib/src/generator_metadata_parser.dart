@@ -182,12 +182,11 @@ class GeneratorMetadataFormatException extends FormatException {
     : super('Not a GeneratorMetadata document: $message');
 }
 
-const _relationCollections = [
-  'tables',
-  'foreignTables',
-  'views',
-  'materializedViews',
-];
+const _tableCollections = ['tables', 'foreignTables'];
+
+const _viewCollections = ['views', 'materializedViews'];
+
+const _relationCollections = [..._tableCollections, ..._viewCollections];
 
 /// Parses a `GeneratorMetadata` document, the introspection contract of
 /// `@supabase/postgrest-typegen`, into a [DatabaseDescription] of the
@@ -591,30 +590,42 @@ Map<(String, String), List<String>> _primaryKeysByTable(
 ///
 /// The document also lists a relationship for every view that exposes the
 /// referenced key column, so the target of a column is the referenced table
-/// itself, and one of those views only when the table is not in the document.
-/// A column with several foreign keys takes the first one in document order,
-/// with those into tables ahead of those into views.
+/// itself, and one of those views only when no relationship of the column
+/// references a table. A target the document does not list, such as a table
+/// of a schema that is not generated, ranks after the tables of the document
+/// and ahead of its views. A column with several foreign keys takes the first
+/// one in document order within that ranking.
 Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
   Map<String, dynamic> document,
   Set<String> schemas,
 ) {
-  final tables = {
-    for (final collection in const ['tables', 'foreignTables'])
-      for (final table in document.records(collection))
-        (table.field<String>('schema'), table.field<String>('name')),
+  Set<(String, String)> relationsIn(List<String> collections) => {
+    for (final collection in collections)
+      for (final relation in document.records(collection))
+        (relation.field<String>('schema'), relation.field<String>('name')),
   };
+  final tables = relationsIn(_tableCollections);
+  final views = relationsIn(_viewCollections);
   final tableRelationships = <Map<String, dynamic>>[];
+  final unlistedRelationships = <Map<String, dynamic>>[];
   final viewRelationships = <Map<String, dynamic>>[];
   for (final relationship in document.records('relationships')) {
-    final referencesTable = tables.contains((
+    final target = (
       relationship.field<String>('referenced_schema'),
       relationship.field<String>('referenced_relation'),
-    ));
-    (referencesTable ? tableRelationships : viewRelationships).add(
-      relationship,
     );
+    (tables.contains(target)
+            ? tableRelationships
+            : views.contains(target)
+            ? viewRelationships
+            : unlistedRelationships)
+        .add(relationship);
   }
-  final relationships = [...tableRelationships, ...viewRelationships];
+  final relationships = [
+    ...tableRelationships,
+    ...unlistedRelationships,
+    ...viewRelationships,
+  ];
 
   final foreignKeys = <(String, String, String), ForeignKeyDescription>{};
   for (final relationship in relationships) {

@@ -9,7 +9,8 @@ import 'goldens/hostile_schema.dart';
 
 /// Embeds the relations generated in the hostile golden against the tables
 /// of the same shape the local stack defines in
-/// `supabase/migrations/20240101000005_embed_disambiguation.sql`.
+/// `supabase/migrations/20240101000005_embed_disambiguation.sql` and
+/// `supabase/migrations/20240101000006_hidden_schema_views.sql`.
 void main() {
   late PostgrestClient client;
 
@@ -161,6 +162,56 @@ void main() {
       [
         ['Founder'],
         <String>[],
+      ],
+    );
+  });
+
+  test('views over tables of a schema that is not exposed embed each other '
+      'and the tables their keys reference', () async {
+    final replies = await client.table(NoteReply.table).selectOnly([
+      NoteReply.body,
+      NoteReply.note.select([
+        Note.body,
+        Note.team.select([Team.name]),
+      ]),
+    ]);
+
+    expect(
+      [
+        for (final reply in replies)
+          (
+            reply.read(NoteReply.body),
+            reply.read(NoteReply.note)?.read(Note.body),
+            reply.read(NoteReply.note)?.read(Note.team)?.read(Team.name),
+          ),
+      ],
+      [('Go', 'Launch', 'Rockets')],
+    );
+
+    final teams = await client
+        .table(Team.table)
+        .selectOnly([
+          Team.note.select([
+            Note.body,
+            Note.noteReply.select([NoteReply.body]),
+          ]),
+        ])
+        .order(Team.id);
+
+    expect(
+      [
+        for (final team in teams)
+          [
+            for (final note in team.read(Team.note)) ...[
+              note.read(Note.body),
+              for (final reply in note.read(Note.noteReply))
+                reply.read(NoteReply.body),
+            ],
+          ],
+      ],
+      [
+        ['Launch', 'Go'],
+        ['Orbit'],
       ],
     );
   });

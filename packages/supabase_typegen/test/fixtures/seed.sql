@@ -236,3 +236,41 @@ LANGUAGE sql AS $$
   WHERE id = stock_id
   RETURNING quantity;
 $$;
+
+-- Tables of a schema that is not generated, exposed through views. PostgREST
+-- derives the relationships of the views from the foreign keys of the tables
+-- behind them, so the views relate to each other and to public.books, and
+-- nothing of the restricted schema is generated. The schema sorts after
+-- public, so the document lists the keys into its tables after those into
+-- the views.
+CREATE SCHEMA restricted;
+
+CREATE TABLE restricted.reviews (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  book_id bigint NOT NULL REFERENCES public.books (id),
+  body text NOT NULL
+);
+
+CREATE TABLE restricted.review_replies (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  review_id bigint NOT NULL REFERENCES restricted.reviews (id),
+  body text NOT NULL
+);
+
+CREATE VIEW public.reviews AS SELECT * FROM restricted.reviews;
+
+CREATE VIEW public.review_replies AS SELECT * FROM restricted.review_replies;
+
+-- A view that reaches its table through a view of a schema on PostgREST's
+-- extra search path, which is followed but not generated.
+CREATE SCHEMA extra;
+
+CREATE TABLE restricted.loans (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  book_id bigint NOT NULL REFERENCES public.books (id),
+  due_on date NOT NULL
+);
+
+CREATE VIEW extra.loans AS SELECT * FROM restricted.loans;
+
+CREATE VIEW public.loans AS SELECT * FROM extra.loans;

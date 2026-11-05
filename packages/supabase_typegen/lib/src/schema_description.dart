@@ -290,6 +290,10 @@ class ColumnDescription {
   final String? comment;
 
   /// The referenced table and column for foreign key columns.
+  ///
+  /// The table can be in a schema that is not generated, so it is not always
+  /// one of the [DatabaseDescription.tables], while the
+  /// [DatabaseDescription.relationships] only relate generated relations.
   final ForeignKeyDescription? foreignKey;
 
   /// Whether the column can be `null` in query results.

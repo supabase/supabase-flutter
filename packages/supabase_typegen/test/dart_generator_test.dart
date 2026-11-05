@@ -592,7 +592,8 @@ void main() {
       contains(
         "staticconsttable=PostgrestTable<BooksRow,BooksInsert,BooksUpdate>("
         "'books',BooksRow.new,schema:'public',primaryKey:[id],"
-        "relations:[authors],computedFields:[moodOrDefault,titleUpper],);",
+        "relations:[authors,loans,reviews],"
+        "computedFields:[moodOrDefault,titleUpper],);",
       ),
     );
   });
