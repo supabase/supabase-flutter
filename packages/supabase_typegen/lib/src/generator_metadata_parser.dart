@@ -591,31 +591,42 @@ Map<(String, String), List<String>> _primaryKeysByTable(
 ///
 /// The document also lists a relationship for every view that exposes the
 /// referenced key column, so the target of a column is the referenced table
-/// itself, also in a schema that is not generated, and one of those views
-/// only when no relationship of the column references a table. A column with
-/// several foreign keys takes the first one in document order, with those
-/// into tables ahead of those into views.
+/// itself, and one of those views only when no relationship of the column
+/// references a table. A target the document does not list, such as a table
+/// of a schema that is not generated, ranks after the tables of the document
+/// and ahead of its views. A column with several foreign keys takes the first
+/// one in document order within that ranking.
 Map<(String, String, String), ForeignKeyDescription> _foreignKeysByColumn(
   Map<String, dynamic> document,
   Set<String> schemas,
 ) {
-  final views = {
-    for (final collection in const ['views', 'materializedViews'])
-      for (final view in document.records(collection))
-        (view.field<String>('schema'), view.field<String>('name')),
+  Set<(String, String)> relationsIn(List<String> collections) => {
+    for (final collection in collections)
+      for (final relation in document.records(collection))
+        (relation.field<String>('schema'), relation.field<String>('name')),
   };
+  final tables = relationsIn(const ['tables', 'foreignTables']);
+  final views = relationsIn(const ['views', 'materializedViews']);
   final tableRelationships = <Map<String, dynamic>>[];
+  final unlistedRelationships = <Map<String, dynamic>>[];
   final viewRelationships = <Map<String, dynamic>>[];
   for (final relationship in document.records('relationships')) {
-    final referencesView = views.contains((
+    final target = (
       relationship.field<String>('referenced_schema'),
       relationship.field<String>('referenced_relation'),
-    ));
-    (referencesView ? viewRelationships : tableRelationships).add(
-      relationship,
     );
+    (tables.contains(target)
+            ? tableRelationships
+            : views.contains(target)
+            ? viewRelationships
+            : unlistedRelationships)
+        .add(relationship);
   }
-  final relationships = [...tableRelationships, ...viewRelationships];
+  final relationships = [
+    ...tableRelationships,
+    ...unlistedRelationships,
+    ...viewRelationships,
+  ];
 
   final foreignKeys = <(String, String, String), ForeignKeyDescription>{};
   for (final relationship in relationships) {

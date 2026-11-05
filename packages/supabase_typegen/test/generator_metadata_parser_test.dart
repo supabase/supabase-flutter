@@ -466,6 +466,37 @@ void main() {
     expect(copyId.foreignKey?.table, 'books');
   });
 
+  test('a key into a table of the document wins over one into a relation the '
+      'document does not list', () {
+    Map<String, dynamic> relationship(
+      String referencedSchema,
+      String referencedRelation,
+    ) => {
+      'foreign_key_name': 'books_author_id_fkey',
+      'schema': 'public',
+      'relation': 'books',
+      'columns': ['author_id'],
+      'referenced_schema': referencedSchema,
+      'referenced_relation': referencedRelation,
+      'referenced_columns': ['id'],
+    };
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        {'id': 2, 'schema': 'public', 'name': 'authors', 'comment': null},
+      ],
+      'columns': [_column(tableId: 1, table: 'books', name: 'author_id')],
+      'relationships': [
+        relationship('hidden', 'authors_view'),
+        relationship('public', 'authors'),
+      ],
+    });
+
+    final authorId = publicTable(parsed, 'books').columns.single;
+    expect(authorId.foreignKey?.schema, 'public');
+    expect(authorId.foreignKey?.table, 'authors');
+  });
+
   test('a view over a table of a schema that is not generated keys into '
       'that table, while its relationships stay between generated '
       'relations', () {
