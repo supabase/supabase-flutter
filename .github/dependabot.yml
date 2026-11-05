@@ -30,3 +30,29 @@ updates:
         update-types:
           - "minor"
           - "patch"
+
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    versioning-strategy: "increase"
+    # Each bump arrives on its own, so the minimum SDK workflow can close one
+    # that raises the SDK floor without taking unrelated bumps down with it.
+    ignore:
+      # The workspace packages depend on each other through path resolution
+      # and are versioned by melos.
+      - dependency-name: "iceberg"
+      - dependency-name: "postgrest"
+      - dependency-name: "supabase"
+      - dependency-name: "supabase_auth"
+      - dependency-name: "supabase_common"
+      - dependency-name: "supabase_flutter"
+      - dependency-name: "supabase_flutter_web_auth"
+      - dependency-name: "supabase_functions"
+      - dependency-name: "supabase_lints"
+      - dependency-name: "supabase_realtime"
+      - dependency-name: "supabase_storage"
+      - dependency-name: "supabase_test"
+      - dependency-name: "supabase_typegen"
+      - dependency-name: "yet_another_json_isolate"
