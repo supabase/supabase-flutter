@@ -1,3 +1,8 @@
+## 0.8.2
+
+ - **FIX**(typegen): key view columns into hidden-schema tables deterministically ([#2130](https://github.com/supabase/supabase-flutter/issues/2130)). ([c5953f73](https://github.com/supabase/supabase-flutter/commit/c5953f73f3fd5be62e00eb3b8be5b259b3aa6a8a))
+ - **DOCS**(supabase_typegen): say when to regenerate the schema in the package skills ([#2115](https://github.com/supabase/supabase-flutter/issues/2115)). ([8bf5f102](https://github.com/supabase/supabase-flutter/commit/8bf5f10226f2f8305ff474660b55722080abf239))
+
 ## 0.8.1
 
  - **REFACTOR**: share the JsonFields helper through supabase_common ([#2082](https://github.com/supabase/supabase-flutter/issues/2082)). ([f45bc196](https://github.com/supabase/supabase-flutter/commit/f45bc19652ba4627e6d951d5a3605e2fa7c41eb6))

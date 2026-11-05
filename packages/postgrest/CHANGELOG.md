@@ -1,3 +1,11 @@
+## 3.0.0-dev.16
+
+> Note: This release has breaking changes.
+
+ - **FIX**(postgrest): explain a maybeSingle() function call that returns no row object ([#2116](https://github.com/supabase/supabase-flutter/issues/2116)). ([d7eb4936](https://github.com/supabase/supabase-flutter/commit/d7eb4936613840b661f1b97c2a892f40c19c9c1d))
+ - **FIX**(postgrest): count the rows of a maybeSingle() read from Content-Range ([#2113](https://github.com/supabase/supabase-flutter/issues/2113)). ([e19c2626](https://github.com/supabase/supabase-flutter/commit/e19c2626ed665aa5565f1c58cc1cc09bccc1897d))
+ - **BREAKING** **FIX**(postgrest): remove defaultToNull from the typed insert and upsert methods ([#2106](https://github.com/supabase/supabase-flutter/issues/2106)). ([886f3d05](https://github.com/supabase/supabase-flutter/commit/886f3d05f43615aef6881a81cd264c1b4f1467f8))
+
 ## 3.0.0-dev.15
 
  - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))

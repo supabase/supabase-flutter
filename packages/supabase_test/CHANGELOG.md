@@ -1,3 +1,10 @@
+## 0.7.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FIX**(auth): judge session expiry from the time the device received it ([#2123](https://github.com/supabase/supabase-flutter/issues/2123)). ([f075820d](https://github.com/supabase/supabase-flutter/commit/f075820d3ea97a958f627e18cb322cbd91253b24))
+ - **BREAKING** **FIX**(realtime): classify channel join errors and stop retrying fatal ones ([#2125](https://github.com/supabase/supabase-flutter/issues/2125)). ([72c3db96](https://github.com/supabase/supabase-flutter/commit/72c3db96b0471a99095c35d006abde2220fe3987))
+
 ## 0.6.2
 
  - Update a dependency to the latest release.

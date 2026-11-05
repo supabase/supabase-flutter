@@ -3,6 +3,91 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-11-05
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.16`](#postgrest---v300-dev16)
+ - [`supabase` - `v3.0.0-dev.16`](#supabase---v300-dev16)
+ - [`supabase_auth` - `v3.0.0-dev.14`](#supabase_auth---v300-dev14)
+ - [`supabase_flutter` - `v3.0.0-dev.16`](#supabase_flutter---v300-dev16)
+ - [`supabase_flutter_web_auth` - `v0.3.0`](#supabase_flutter_web_auth---v030)
+ - [`supabase_realtime` - `v3.0.0-dev.14`](#supabase_realtime---v300-dev14)
+ - [`supabase_storage` - `v3.0.0-dev.13`](#supabase_storage---v300-dev13)
+ - [`supabase_test` - `v0.7.0`](#supabase_test---v070)
+
+Packages with other changes:
+
+ - [`supabase_functions` - `v3.0.0-dev.12`](#supabase_functions---v300-dev12)
+ - [`supabase_typegen` - `v0.8.2`](#supabase_typegen---v082)
+
+---
+
+#### `postgrest` - `v3.0.0-dev.16`
+
+ - **FIX**(postgrest): explain a maybeSingle() function call that returns no row object ([#2116](https://github.com/supabase/supabase-flutter/issues/2116)). ([d7eb4936](https://github.com/supabase/supabase-flutter/commit/d7eb4936613840b661f1b97c2a892f40c19c9c1d))
+ - **FIX**(postgrest): count the rows of a maybeSingle() read from Content-Range ([#2113](https://github.com/supabase/supabase-flutter/issues/2113)). ([e19c2626](https://github.com/supabase/supabase-flutter/commit/e19c2626ed665aa5565f1c58cc1cc09bccc1897d))
+ - **BREAKING** **FIX**(postgrest): remove defaultToNull from the typed insert and upsert methods ([#2106](https://github.com/supabase/supabase-flutter/issues/2106)). ([886f3d05](https://github.com/supabase/supabase-flutter/commit/886f3d05f43615aef6881a81cd264c1b4f1467f8))
+
+#### `supabase` - `v3.0.0-dev.16`
+
+ - **DOCS**(supabase_typegen): say when to regenerate the schema in the package skills ([#2115](https://github.com/supabase/supabase-flutter/issues/2115)). ([8bf5f102](https://github.com/supabase/supabase-flutter/commit/8bf5f10226f2f8305ff474660b55722080abf239))
+ - **BREAKING** **FIX**(realtime): align reconnect, rejoin and heartbeat recovery with the SDK spec ([#2114](https://github.com/supabase/supabase-flutter/issues/2114)). ([5e69683b](https://github.com/supabase/supabase-flutter/commit/5e69683bf62d5bde666f528f5c986cad00e3fb67))
+ - **BREAKING** **FIX**(postgrest): remove defaultToNull from the typed insert and upsert methods ([#2106](https://github.com/supabase/supabase-flutter/issues/2106)). ([886f3d05](https://github.com/supabase/supabase-flutter/commit/886f3d05f43615aef6881a81cd264c1b4f1467f8))
+ - **BREAKING** **FEAT**(storage): return the response head from downloadStream before the body ([#2105](https://github.com/supabase/supabase-flutter/issues/2105)). ([cdfd66cb](https://github.com/supabase/supabase-flutter/commit/cdfd66cb225d2a8a9fc8b334eaba3375b506da0d))
+
+#### `supabase_auth` - `v3.0.0-dev.14`
+
+ - **FIX**(supabase_auth): keep a refresh that overlaps updateUser ([#2122](https://github.com/supabase/supabase-flutter/issues/2122)). ([81cff845](https://github.com/supabase/supabase-flutter/commit/81cff84551109db2913432d121aa058028f49065))
+ - **FIX**(auth): sign out as asked when a global or others sign out finds the refresh token rejected ([#2110](https://github.com/supabase/supabase-flutter/issues/2110)). ([f0844018](https://github.com/supabase/supabase-flutter/commit/f08440186cd89a58953da70b89de70d630454447))
+ - **FIX**(auth): fail a global or others sign out answered with session_not_found ([#2108](https://github.com/supabase/supabase-flutter/issues/2108)). ([95a2fc52](https://github.com/supabase/supabase-flutter/commit/95a2fc52af4ddad8a992a6c106861c10bc3f1f69))
+ - **FIX**(auth): emit a sessionMissing sign out for an unreadable stored session at startup ([#2107](https://github.com/supabase/supabase-flutter/issues/2107)). ([79cd3568](https://github.com/supabase/supabase-flutter/commit/79cd356887f5caf1e8be1207f4ffaf645bb77b61))
+ - **BREAKING** **FIX**(auth): judge session expiry from the time the device received it ([#2123](https://github.com/supabase/supabase-flutter/issues/2123)). ([f075820d](https://github.com/supabase/supabase-flutter/commit/f075820d3ea97a958f627e18cb322cbd91253b24))
+ - **BREAKING** **FIX**(supabase_flutter): only take auth redirects from deep links by default ([#2126](https://github.com/supabase/supabase-flutter/issues/2126)). ([1e1448ef](https://github.com/supabase/supabase-flutter/commit/1e1448efbec1b15c0ba7337eaf09393044a90993))
+ - **BREAKING** **FIX**(auth): align signOut with the sign-out spec ([#2111](https://github.com/supabase/supabase-flutter/issues/2111)). ([de2ed636](https://github.com/supabase/supabase-flutter/commit/de2ed636aa977ed083cc6829ea85846832a8b621))
+
+#### `supabase_flutter` - `v3.0.0-dev.16`
+
+ - **FIX**(auth): sign out as asked when a global or others sign out finds the refresh token rejected ([#2110](https://github.com/supabase/supabase-flutter/issues/2110)). ([f0844018](https://github.com/supabase/supabase-flutter/commit/f08440186cd89a58953da70b89de70d630454447))
+ - **DOCS**(supabase_typegen): say when to regenerate the schema in the package skills ([#2115](https://github.com/supabase/supabase-flutter/issues/2115)). ([8bf5f102](https://github.com/supabase/supabase-flutter/commit/8bf5f10226f2f8305ff474660b55722080abf239))
+ - **BREAKING** **FIX**(supabase_flutter): only take auth redirects from deep links by default ([#2126](https://github.com/supabase/supabase-flutter/issues/2126)). ([1e1448ef](https://github.com/supabase/supabase-flutter/commit/1e1448efbec1b15c0ba7337eaf09393044a90993))
+ - **BREAKING** **FIX**(auth): align signOut with the sign-out spec ([#2111](https://github.com/supabase/supabase-flutter/issues/2111)). ([de2ed636](https://github.com/supabase/supabase-flutter/commit/de2ed636aa977ed083cc6829ea85846832a8b621))
+ - **BREAKING** **FIX**(postgrest): remove defaultToNull from the typed insert and upsert methods ([#2106](https://github.com/supabase/supabase-flutter/issues/2106)). ([886f3d05](https://github.com/supabase/supabase-flutter/commit/886f3d05f43615aef6881a81cd264c1b4f1467f8))
+
+#### `supabase_flutter_web_auth` - `v0.3.0`
+
+ - **BREAKING** **FIX**(auth): align signOut with the sign-out spec ([#2111](https://github.com/supabase/supabase-flutter/issues/2111)). ([de2ed636](https://github.com/supabase/supabase-flutter/commit/de2ed636aa977ed083cc6829ea85846832a8b621))
+
+#### `supabase_realtime` - `v3.0.0-dev.14`
+
+ - **FIX**(realtime): time out a hung accessToken callback ([#2124](https://github.com/supabase/supabase-flutter/issues/2124)). ([290fdb0e](https://github.com/supabase/supabase-flutter/commit/290fdb0e2fadb6d0af7ecdac43d40f003d3e9690))
+ - **BREAKING** **FIX**(realtime): classify channel join errors and stop retrying fatal ones ([#2125](https://github.com/supabase/supabase-flutter/issues/2125)). ([72c3db96](https://github.com/supabase/supabase-flutter/commit/72c3db96b0471a99095c35d006abde2220fe3987))
+ - **BREAKING** **FIX**(realtime): align reconnect, rejoin and heartbeat recovery with the SDK spec ([#2114](https://github.com/supabase/supabase-flutter/issues/2114)). ([5e69683b](https://github.com/supabase/supabase-flutter/commit/5e69683bf62d5bde666f528f5c986cad00e3fb67))
+
+#### `supabase_storage` - `v3.0.0-dev.13`
+
+ - **FIX**(storage): find Content-Encoding in any casing when sizing a download ([#2109](https://github.com/supabase/supabase-flutter/issues/2109)). ([ed2c8748](https://github.com/supabase/supabase-flutter/commit/ed2c8748601788c47d21e91ba2174683cee88721))
+ - **BREAKING** **FEAT**(storage): return the response head from downloadStream before the body ([#2105](https://github.com/supabase/supabase-flutter/issues/2105)). ([cdfd66cb](https://github.com/supabase/supabase-flutter/commit/cdfd66cb225d2a8a9fc8b334eaba3375b506da0d))
+
+#### `supabase_test` - `v0.7.0`
+
+ - **BREAKING** **FIX**(auth): judge session expiry from the time the device received it ([#2123](https://github.com/supabase/supabase-flutter/issues/2123)). ([f075820d](https://github.com/supabase/supabase-flutter/commit/f075820d3ea97a958f627e18cb322cbd91253b24))
+ - **BREAKING** **FIX**(realtime): classify channel join errors and stop retrying fatal ones ([#2125](https://github.com/supabase/supabase-flutter/issues/2125)). ([72c3db96](https://github.com/supabase/supabase-flutter/commit/72c3db96b0471a99095c35d006abde2220fe3987))
+
+#### `supabase_functions` - `v3.0.0-dev.12`
+
+ - **FIX**(functions): keep a query string in the function name when adding query parameters ([#2120](https://github.com/supabase/supabase-flutter/issues/2120)). ([e5daacd1](https://github.com/supabase/supabase-flutter/commit/e5daacd1992a35613b1c15d9899612f88eadbd9b))
+
+#### `supabase_typegen` - `v0.8.2`
+
+ - **FIX**(typegen): key view columns into hidden-schema tables deterministically ([#2130](https://github.com/supabase/supabase-flutter/issues/2130)). ([c5953f73](https://github.com/supabase/supabase-flutter/commit/c5953f73f3fd5be62e00eb3b8be5b259b3aa6a8a))
+ - **DOCS**(supabase_typegen): say when to regenerate the schema in the package skills ([#2115](https://github.com/supabase/supabase-flutter/issues/2115)). ([8bf5f102](https://github.com/supabase/supabase-flutter/commit/8bf5f10226f2f8305ff474660b55722080abf239))
+
+
 ## 2026-10-29
 
 ### Changes

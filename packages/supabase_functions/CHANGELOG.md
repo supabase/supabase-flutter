@@ -1,3 +1,7 @@
+## 3.0.0-dev.12
+
+ - **FIX**(functions): keep a query string in the function name when adding query parameters ([#2120](https://github.com/supabase/supabase-flutter/issues/2120)). ([e5daacd1](https://github.com/supabase/supabase-flutter/commit/e5daacd1992a35613b1c15d9899612f88eadbd9b))
+
 ## 3.0.0-dev.11
 
  - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
