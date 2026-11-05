@@ -39,8 +39,6 @@ updates:
     # The packages are libraries, so a constraint only moves when the new
     # version falls outside it. Anything else only updates pubspec.lock.
     versioning-strategy: "increase-if-necessary"
-    # Each bump arrives on its own, so the minimum SDK workflow can close one
-    # that raises the SDK floor without taking unrelated bumps down with it.
     ignore:
       # The workspace packages depend on each other through path resolution
       # and are versioned by melos.
@@ -58,3 +56,13 @@ updates:
       - dependency-name: "supabase_test"
       - dependency-name: "supabase_typegen"
       - dependency-name: "yet_another_json_isolate"
+    groups:
+      # Minor and patch releases mostly fit the existing constraints and only
+      # update pubspec.lock, so they are batched into a single pull request.
+      # Major bumps move a constraint and still arrive on their own.
+      pub-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
