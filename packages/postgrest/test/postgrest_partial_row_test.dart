@@ -754,4 +754,220 @@ void main() {
       expect(order.toString(), 'PostgrestPartialRow({id: 1, note: null})');
     });
   });
+
+  group('fromJson', () {
+    Matcher throwsInvalid(String path) => throwsA(
+      isA<ArgumentError>()
+          .having((error) => error.name, 'name', 'json')
+          .having(
+            (error) => error.message,
+            'message',
+            contains('`$path`'),
+          ),
+    );
+
+    test('reads like the row of a selectOnly with the same entries', () async {
+      const List<PostgrestStoredColumn<Order, Object>> selections = [
+        Orders.id,
+        Orders.note,
+      ];
+      final json = {'id': 1, 'note': null};
+      httpClient.stub(json);
+
+      final queried = await client
+          .table(Orders.table)
+          .selectOnly(selections)
+          .single();
+      final built = PostgrestPartialRow<Order>.fromJson(json, selections);
+
+      String summary(PostgrestPartialRow<Order> order) =>
+          '${order.read(Orders.id)}: ${order.read(Orders.note)}';
+      expect(summary(built), summary(queried));
+      expect(built.toJson(), json);
+      expect(() => built.read(Orders.status), throwsNotSelected('status'));
+    });
+
+    test('reads embedded rows and derived expressions', () {
+      final order = PostgrestPartialRow<Order>.fromJson(
+        {
+          'id': 1,
+          'customers': {'name': 'Ada'},
+          'items': [
+            {'sku': 'a', 'id.count()': 2},
+          ],
+          'items(count)': [
+            {'count': 1},
+          ],
+        },
+        [
+          Orders.id,
+          Orders.customer(Customers.name),
+          Orders.items(Items.sku),
+          Orders.items(Items.id).count(),
+          Orders.items.count(),
+        ],
+      );
+
+      expect(order.read(Orders.customer)?.read(Customers.name), 'Ada');
+      final item = order.read(Orders.items).single;
+      expect(item.read(Items.sku), 'a');
+      expect(item.read(Items.id.count()), 2);
+      expect(order.read(Orders.items.count()), 1);
+    });
+
+    test('accepts null values and a null to-one embed', () {
+      final order = PostgrestPartialRow<Order>.fromJson(
+        {'note': null, 'customers': null, 'items': <Object?>[]},
+        [
+          Orders.note,
+          Orders.customer(Customers.name),
+          Orders.items(Items.sku),
+        ],
+      );
+
+      expect(order.read(Orders.note), isNull);
+      expect(order.read(Orders.customer), isNull);
+      expect(order.read(Orders.items), isEmpty);
+    });
+
+    test('throws when a selected column is missing', () {
+      expect(
+        () => PostgrestPartialRow<Order>.fromJson(
+          {'id': 1},
+          [Orders.id, Orders.note],
+        ),
+        throwsInvalid('note'),
+      );
+    });
+
+    test('throws when a derived expression is missing', () {
+      expect(
+        () => PostgrestPartialRow<Order>.fromJson(
+          {'id': 1},
+          [Orders.id, Orders.amount.sum()],
+        ),
+        throwsInvalid(Orders.amount.sum().responseKey),
+      );
+    });
+
+    test('throws when an embed is missing', () {
+      expect(
+        () => PostgrestPartialRow<Order>.fromJson(
+          {'id': 1},
+          [Orders.id, Orders.customer.select()],
+        ),
+        throwsInvalid('customers'),
+      );
+    });
+
+    test('throws when a column of an embedded row is missing', () {
+      expect(
+        () => PostgrestPartialRow<Order>.fromJson(
+          {
+            'customers': {'id': 5},
+          },
+          [
+            Orders.customer.select([Customers.id, Customers.email]),
+          ],
+        ),
+        throwsInvalid('customers.email'),
+      );
+      expect(
+        () => PostgrestPartialRow<Order>.fromJson(
+          {
+            'items': [
+              {'sku': 'a'},
+              <String, dynamic>{},
+            ],
+          },
+          [Orders.items(Items.sku)],
+        ),
+        throwsInvalid('items[1].sku'),
+      );
+    });
+
+    test('a whole embed checks no column of the embedded row', () {
+      final order = PostgrestPartialRow<Order>.fromJson(
+        {
+          'customers': {'name': 'Ada'},
+        },
+        [Orders.customer.select()],
+      );
+
+      expect(order.read(Orders.customer)?.read(Customers.name), 'Ada');
+    });
+
+    test('every column checks no column and converts into the row', () {
+      final order = PostgrestPartialRow<Order>.fromJson(
+        {'id': 4},
+        [Orders.table.allColumns],
+      );
+
+      expect(order.read(Orders.id), 4);
+      expect(order.toRow(Orders.table).id, 4);
+    });
+
+    for (final (description, json, selection, path) in [
+      (
+        'a to-one embed holding a list',
+        <String, dynamic>{
+          'customers': [
+            {'name': 'Ada'},
+          ],
+        },
+        Orders.customer(Customers.name),
+        'customers',
+      ),
+      (
+        'a to-one embed holding a value',
+        <String, dynamic>{'customers': 'Ada'},
+        Orders.customer(Customers.name),
+        'customers',
+      ),
+      (
+        'a to-many embed holding a row',
+        <String, dynamic>{
+          'items': {'sku': 'a'},
+        },
+        Orders.items(Items.sku),
+        'items',
+      ),
+      (
+        'a to-many embed holding null',
+        <String, dynamic>{'items': null},
+        Orders.items.select(),
+        'items',
+      ),
+      (
+        'a to-many embed holding a value in the list',
+        <String, dynamic>{
+          'items': ['a'],
+        },
+        Orders.items(Items.sku),
+        'items[0]',
+      ),
+    ]) {
+      test('throws for $description', () {
+        expect(
+          () => PostgrestPartialRow<Order>.fromJson(json, [selection]),
+          throwsInvalid(path),
+        );
+      });
+    }
+
+    test('throws when there are no entries', () {
+      expect(
+        () => PostgrestPartialRow<Order>.fromJson({'id': 1}, const []),
+        throwsA(
+          isA<ArgumentError>()
+              .having((error) => error.name, 'name', 'selections')
+              .having(
+                (error) => error.message,
+                'message',
+                contains('partial row'),
+              ),
+        ),
+      );
+    });
+  });
 }

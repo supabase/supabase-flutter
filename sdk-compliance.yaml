@@ -1003,6 +1003,7 @@ features:
       - PostgrestReadable
       - PostgrestReadable.responseKey
       - PostgrestPartialRow
+      - PostgrestPartialRow.fromJson
       - PostgrestPartialRow.read
       - PostgrestPartialRow.toRow
       - PostgrestPartialRow.toJson

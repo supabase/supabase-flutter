@@ -215,6 +215,28 @@ changes it wants applied. `emitBroadcast` delivers a broadcast message,
 `closeConnection` drops the socket, and `sent` and `joinedTopics` record what
 the client sent.
 
+## Partial rows
+
+A function that maps the `PostgrestPartialRow` of a `selectOnly` is tested
+without a client. Build the row with `PostgrestPartialRow.fromJson` from the
+same entries the query selects:
+
+```dart test
+const List<PostgrestSelectable<BooksRow>> bookTitle = [Books.id, Books.title];
+String label(PostgrestPartialRow<BooksRow> book) =>
+    '#${book.read(Books.id)} ${book.read(Books.title)}';
+
+final book = PostgrestPartialRow<BooksRow>.fromJson(
+  {'id': 1, 'title': 'Dune'},
+  bookTitle,
+);
+expect(label(book), '#1 Dune');
+```
+
+`fromJson` throws an `ArgumentError` when the JSON lacks a key an entry asks
+for, embedded rows included, so a fixture cannot leave out a column the
+query would return.
+
 ## Flutter widget tests
 
 `initializeTestSupabase` from `package:supabase_flutter/testing.dart`

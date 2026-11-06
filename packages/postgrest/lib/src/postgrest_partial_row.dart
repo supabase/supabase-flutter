@@ -57,6 +57,46 @@ final class PostgrestPartialRow<Row> {
   }) : _allColumns = allColumns,
        _presentColumns = presentColumns;
 
+  /// A row of [selections] decoded from [json], such as a test fixture or a
+  /// row of a `selectOnly` with the same [selections] that was stored.
+  ///
+  /// It reads exactly like the row the query returns, so a mapping from a
+  /// partial row can be shared between them and unit tested on its own:
+  ///
+  /// ```dart
+  /// const List<PostgrestStoredColumn<Book, Object>> summary = [
+  ///   Books.id,
+  ///   Books.title,
+  /// ];
+  /// final book = PostgrestPartialRow<Book>.fromJson(
+  ///   {'id': 1, 'title': 'Dune'},
+  ///   summary,
+  /// );
+  /// final String title = book.read(Books.title);
+  /// ```
+  ///
+  /// Throws an [ArgumentError] when [selections] is empty, when [json], or a
+  /// row embedded in it, has no key for one of the entries, or when an embed
+  /// holds something else than a row or `null` for a to-one relation and a
+  /// list of rows for a to-many one. A response to the `select` list always
+  /// holds every key, even when its value is `null`, while a missing key
+  /// would otherwise read as `null` too. [PostgrestTable.allColumns] does not
+  /// check which columns are present.
+  factory PostgrestPartialRow.fromJson(
+    Map<String, dynamic> json,
+    List<PostgrestSelectable<Row>> selections,
+  ) {
+    if (selections.isEmpty) {
+      throw ArgumentError.value(
+        selections,
+        'selections',
+        'A partial row needs at least one entry',
+      );
+    }
+    _checkKeys(json, selections, '');
+    return fromSelections(json, selections);
+  }
+
   final Map<String, dynamic> _json;
 
   /// The entries of the `select` list this row answers.
@@ -177,6 +217,51 @@ final class PostgrestPartialRow<Row> {
 
   @override
   String toString() => 'PostgrestPartialRow($_json)';
+}
+
+void _checkKeys(
+  Map<String, dynamic> json,
+  List<PostgrestSelectable<Object?>> selections,
+  String path,
+) {
+  for (final selection in selections) {
+    if (selection is PostgrestAllColumns) continue;
+    final key = selection.responseKey;
+    if (!json.containsKey(key)) {
+      throw ArgumentError(
+        'Has no `$path$key`, which the selections ask for',
+        'json',
+      );
+    }
+    if (selection case _Embedded(:final relation, _selections: final members)) {
+      switch ((relation, json[key])) {
+        case (PostgrestToOneRelation(), null):
+          break;
+        case (PostgrestToOneRelation(), final Map<String, dynamic> row):
+          _checkKeys(row, members, '$path$key.');
+        case (PostgrestToManyRelation(), final List<Object?> rows):
+          for (final (index, row) in rows.indexed) {
+            if (row is! Map<String, dynamic>) {
+              throw ArgumentError(
+                'Holds ${row.runtimeType} at `$path$key[$index]`, not a row',
+                'json',
+              );
+            }
+            _checkKeys(row, members, '$path$key[$index].');
+          }
+        case (PostgrestToOneRelation(), final value):
+          throw ArgumentError(
+            'Holds ${value.runtimeType} at `$path$key`, not a row or null',
+            'json',
+          );
+        case (PostgrestToManyRelation(), final value):
+          throw ArgumentError(
+            'Holds ${value.runtimeType} at `$path$key`, not a list of rows',
+            'json',
+          );
+      }
+    }
+  }
 }
 
 /// Whether [selections] ask for every column with [PostgrestAllColumns].
