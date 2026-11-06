@@ -92,7 +92,10 @@ dart pub add dev:supabase_typegen
 supabase gen types --lang dart > lib/supabase_schema.g.dart
 ```
 
-`--remote` generates from the linked project and `--remote=<ref>` from any hosted project; see the
+`--remote` generates from the linked project, `--remote=<ref>` from any hosted project and
+`--remote=<db-url>` from any Postgres database. The CLI finds the `supabase/` directory in the
+current directory or its parents; pass `--workdir` with the directory that contains it when it is
+elsewhere. See the
 [`supabase_typegen` README](https://github.com/supabase/supabase-flutter/blob/main/packages/supabase_typegen/README.md)
 for details.
 
