@@ -76,9 +76,14 @@ SQL in `supabase/migrations` stays the source of truth. It needs Docker and a
 running stack.
 
 `<dir>` is the directory that contains `supabase/`, not the `supabase/` folder
-itself. `<db-url>` is a `postgresql://` URL with the password in it, such as
-`postgresql://postgres:postgres@127.0.0.1:54322/postgres` for a local stack on
-the default ports. The `--local` and `--db-url` flags of older CLI versions are
+itself. Pass the same `--workdir` to `supabase migration up` and
+`supabase db reset`, or they act on a different stack than the one the types
+are generated from. `<db-url>` is a `postgresql://` URL with the password in
+it, such as `postgresql://postgres:postgres@127.0.0.1:54322/postgres` for a
+local stack on the default ports. Quote it, since an `&` in its query string
+splits the command. For any other database, ask the user to put the URL in an
+environment variable and pass `--remote="$DATABASE_URL"`, so the password
+never appears in a command or its output. The `--local` and `--db-url` flags of older CLI versions are
 deprecated: the local stack is the default, and `--remote=<db-url>` replaces
 `--db-url`.
 
