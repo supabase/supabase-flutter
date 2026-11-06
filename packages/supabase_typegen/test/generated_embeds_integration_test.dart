@@ -1,6 +1,9 @@
 // The typed table access API under test is annotated @experimental.
 // ignore_for_file: experimental_member_use
 
+@Tags(['integration'])
+library;
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/testing.dart';
 import 'package:test/test.dart';

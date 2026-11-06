@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
@@ -31,7 +32,13 @@ void main() {
       mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       supabaseUrl = 'http://${mockServer.address.host}:${mockServer.port}';
 
-      supabase = SupabaseClient(supabaseUrl, supabaseKey);
+      supabase = SupabaseClient(
+        supabaseUrl,
+        supabaseKey,
+        realtimeOptions: const RealtimeClientOptions(
+          connectionCloseTimeout: Duration(milliseconds: 100),
+        ),
+      );
     });
 
     tearDown(() async {
@@ -149,8 +156,9 @@ void main() {
       supabase = SupabaseClient(
         supabaseUrl,
         supabaseKey,
-        realtimeOptions: RealtimeClientOptions(
+        realtimeOptions: const RealtimeClientOptions(
           logLevel: RealtimeLogLevel.info,
+          connectionCloseTimeout: Duration(milliseconds: 100),
         ),
       );
 
@@ -409,46 +417,49 @@ void main() {
       final sessionData = getSessionData(expiresAt);
       await supabase.auth.recoverSession(sessionData.sessionString);
 
-      await Future.delayed(Duration(seconds: 11));
+      final later = Clock(
+        () => DateTime.now().add(const Duration(seconds: 11)),
+      );
+      await withClock(later, () async {
+        // Make some requests
+        unawaited(supabase.from("test").select().then((value) => null));
+        unawaited(supabase.rpc("test").select().then((value) => null));
+        unawaited(supabase.functions.invoke("test").then((value) => null));
+        unawaited(supabase.storage.from("test").list().then((value) => null));
 
-      // Make some requests
-      unawaited(supabase.from("test").select().then((value) => null));
-      unawaited(supabase.rpc("test").select().then((value) => null));
-      unawaited(supabase.functions.invoke("test").then((value) => null));
-      unawaited(supabase.storage.from("test").list().then((value) => null));
+        var count = 0;
+        var gotTokenRefresh = false;
+        var secondAccessToken = "to be set";
 
-      var count = 0;
-      var gotTokenRefresh = false;
-      var secondAccessToken = "to be set";
+        // Check for every request if the Authorization header is set properly
+        await for (final request in mockServer) {
+          if (request.uri.path == "/auth/v1/token") {
+            if (gotTokenRefresh) {
+              fail("Token was refreshed twice");
+            }
+            gotTokenRefresh = true;
+            String sessionString;
+            (accessToken: secondAccessToken, :sessionString) = getSessionData(
+              DateTime.now().add(Duration(hours: 1)),
+            );
 
-      // Check for every request if the Authorization header is set properly
-      await for (final request in mockServer) {
-        if (request.uri.path == "/auth/v1/token") {
-          if (gotTokenRefresh) {
-            fail("Token was refreshed twice");
-          }
-          gotTokenRefresh = true;
-          String sessionString;
-          (accessToken: secondAccessToken, :sessionString) = getSessionData(
-            DateTime.now().add(Duration(hours: 1)),
-          );
-
-          request.response
-            ..statusCode = HttpStatus.ok
-            ..headers.contentType = ContentType.json
-            ..write(sessionString);
-          await request.response.close();
-        } else {
-          expect(
-            request.headers.value('Authorization')?.split(" ").last,
-            secondAccessToken,
-          );
-          count++;
-          if (count == 4) {
-            break;
+            request.response
+              ..statusCode = HttpStatus.ok
+              ..headers.contentType = ContentType.json
+              ..write(sessionString);
+            await request.response.close();
+          } else {
+            expect(
+              request.headers.value('Authorization')?.split(" ").last,
+              secondAccessToken,
+            );
+            count++;
+            if (count == 4) {
+              break;
+            }
           }
         }
-      }
+      });
 
       await mockServer.close();
     });

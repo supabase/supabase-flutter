@@ -1,6 +1,9 @@
 // The Postgres value types under test are annotated @experimental.
 // ignore_for_file: experimental_member_use
 
+@Tags(['integration'])
+library;
+
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 

@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'package:dotenv/dotenv.dart';
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:http/http.dart' as http;

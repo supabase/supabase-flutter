@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 

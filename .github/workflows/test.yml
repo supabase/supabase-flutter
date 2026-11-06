@@ -76,11 +76,7 @@ jobs:
               postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage|supabase_typegen) backend=true ;;
               *) backend=false ;;
             esac
-            case "$package" in
-              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage|supabase_typegen) concurrency="1" ;;
-              *) concurrency="0" ;;
-            esac
-            entries+=("{\"name\":\"$package\",\"backend\":$backend,\"concurrency\":\"$concurrency\"}")
+            entries+=("{\"name\":\"$package\",\"backend\":$backend}")
           done
 
           if [ "${#entries[@]}" -eq 0 ]; then
@@ -126,30 +122,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
-        with:
-          channel: ${{ matrix.channel }}
-          cache: true
-
-      - name: Show Flutter version
-        run: flutter --version
-
-      - name: Bootstrap workspace
-        run: |
-          dart pub global activate melos
-          melos bootstrap
-
-      - name: Format
-        if: ${{ matrix.channel == 'stable' }}
-        working-directory: packages/${{ matrix.package.name }}
-        run: dart format lib test -l 80 --set-exit-if-changed
-
-      - name: Analyze
-        if: ${{ matrix.channel == 'stable' }}
-        working-directory: packages/${{ matrix.package.name }}
-        run: dart analyze --fatal-infos .
-
       - name: Setup Supabase CLI
         if: ${{ matrix.package.backend }}
         uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
@@ -172,22 +144,66 @@ jobs:
           path: /tmp/supabase-images
           key: supabase-images-${{ steps.supabase-cli.outputs.version }}-${{ hashFiles('supabase/config.toml') }}
 
-      - name: Load cached Supabase Docker images
-        if: ${{ matrix.package.backend && steps.supabase-images.outputs.cache-hit == 'true' }}
-        run: |
-          for image in /tmp/supabase-images/*.tar; do
-            [ -f "$image" ] && docker load -i "$image"
-          done
-
-      - name: Start Supabase
+      # Loading the images and starting the stack takes about a minute, so it
+      # runs in the background while Flutter is set up and the package is
+      # analyzed. "Wait for Supabase" collects the result.
+      - name: Start Supabase in the background
         if: ${{ matrix.package.backend }}
+        env:
+          CACHE_HIT: ${{ steps.supabase-images.outputs.cache-hit }}
         run: |
-          # A container can still lose a host port to a transient conflict, and
-          # the CLI tears the stack down when that happens, so retry once.
-          supabase start || {
-            supabase stop --no-backup || true
-            supabase start
-          }
+          # shellcheck disable=SC2016
+          nohup bash -c '
+            start() {
+              if [ "$CACHE_HIT" = "true" ]; then
+                find /tmp/supabase-images -name "*.tar" -print0 \
+                  | xargs -0 -r -n 1 -P 4 docker load -i
+              fi
+              # A container can still lose a host port to a transient
+              # conflict, and the CLI tears the stack down when that happens,
+              # so retry once.
+              supabase start || {
+                supabase stop --no-backup || true
+                supabase start
+              }
+            }
+            start > "$RUNNER_TEMP/supabase-start.log" 2>&1
+            echo $? > "$RUNNER_TEMP/supabase-start.status.tmp"
+            mv "$RUNNER_TEMP/supabase-start.status.tmp" \
+              "$RUNNER_TEMP/supabase-start.status"
+          ' > /dev/null 2>&1 < /dev/null &
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: ${{ matrix.channel }}
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Resolve workspace dependencies
+        run: flutter pub get
+
+      - name: Format
+        if: ${{ matrix.channel == 'stable' }}
+        working-directory: packages/${{ matrix.package.name }}
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: Analyze
+        if: ${{ matrix.channel == 'stable' }}
+        working-directory: packages/${{ matrix.package.name }}
+        run: dart analyze --fatal-infos .
+
+      - name: Wait for Supabase
+        if: ${{ matrix.package.backend }}
+        timeout-minutes: 10
+        run: |
+          while [ ! -f "$RUNNER_TEMP/supabase-start.status" ]; do
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/supabase-start.log"
+          exit "$(cat "$RUNNER_TEMP/supabase-start.status")"
 
       - name: Save Supabase Docker images to cache
         if: ${{ matrix.package.backend && steps.supabase-images.outputs.cache-hit != 'true' }}
@@ -202,20 +218,35 @@ jobs:
 
       - name: Run tests
         working-directory: packages/${{ matrix.package.name }}
+        env:
+          PACKAGE: ${{ matrix.package.name }}
+          BACKEND: ${{ matrix.package.backend }}
+          COVERAGE: ${{ matrix.channel == 'stable' }}
         run: |
-          CONCURRENCY=""
-          if [ "${{ matrix.package.concurrency }}" = "1" ]; then
-            CONCURRENCY="--concurrency=1"
+          set -euo pipefail
+          unit_coverage=()
+          integration_coverage=()
+          if [ "$COVERAGE" = "true" ]; then
+            scope="--coverage-package=^$PACKAGE\$"
+            unit_coverage=(--coverage-path=coverage/unit.lcov "$scope")
+            integration_coverage=(--coverage-path=coverage/integration.lcov "$scope")
           fi
-          if [ "${{ matrix.channel }}" = "stable" ]; then
-            dart pub global activate coverage
-            dart test $CONCURRENCY --coverage=coverage
-            dart pub global run coverage:format_coverage \
-              --packages=../../.dart_tool/package_config.json \
-              --report-on=lib --lcov -o coverage/lcov.info -i coverage
+          rm -rf coverage
+          status=0
+          if [ "$BACKEND" = "true" ]; then
+            # Only the tests tagged "integration" use the shared stack, so the
+            # rest can run concurrently.
+            dart test -x integration "${unit_coverage[@]}" || status=1
+            dart test -t integration --concurrency=1 \
+              "${integration_coverage[@]}" || status=1
           else
-            dart test $CONCURRENCY
+            dart test "${unit_coverage[@]}" || status=1
           fi
+          if [ "$COVERAGE" = "true" ]; then
+            # Coveralls sums the hits of a file listed twice in one report.
+            cat coverage/*.lcov > coverage/lcov.info
+          fi
+          exit "$status"
 
       - name: Run browser tests
         if: ${{ matrix.package.name == 'supabase_auth' }}
@@ -290,11 +321,9 @@ jobs:
       - name: Show Flutter version
         run: flutter --version
 
-      - name: Bootstrap workspace
-        run: |
-          cd ../../
-          dart pub global activate melos
-          melos bootstrap
+      - name: Resolve workspace dependencies
+        working-directory: .
+        run: flutter pub get
 
       - name: Run formatter
         if: ${{ matrix.flutter-version == 'latest'}}
@@ -344,10 +373,8 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Bootstrap workspace
-        run: |
-          dart pub global activate melos
-          melos bootstrap
+      - name: Resolve workspace dependencies
+        run: flutter pub get
 
       # Only the widget tests under test/; the integration tests need a
       # running stack and run in example-integration-tests.yml.
@@ -382,10 +409,8 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Bootstrap workspace
-        run: |
-          dart pub global activate melos
-          melos bootstrap
+      - name: Resolve workspace dependencies
+        run: flutter pub get
 
       - name: Install DCM
         uses: CQLabs/setup-dcm@87040f30822ed86d362425d3dfadc9866baaa03f # v2.0.2

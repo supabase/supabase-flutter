@@ -130,11 +130,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Bootstrap workspace
-        run: |
-          cd ../../
-          dart pub global activate melos
-          melos bootstrap
+      - name: Resolve workspace dependencies
+        working-directory: .
+        run: flutter pub get
 
       # The runner image ships a package index that goes stale as soon as a
       # security pocket update supersedes an indexed version; resolving

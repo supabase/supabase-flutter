@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'dart:math';
 
 import 'package:dotenv/dotenv.dart';

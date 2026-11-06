@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_common/testing.dart';
 import 'package:test/test.dart';
