@@ -38,8 +38,10 @@ dart run skills@ get --all
 
 Without `--all` the command lets you pick the skills to install, and `-p supabase_flutter` limits
 it to one package. Run it again after every upgrade to update the installed skills, and
-`dart run skills@ prune` to remove the skills of packages you no longer depend on. If you commit
-the installed skills, commit `.config/dart_skills/` with them; otherwise add both to `.gitignore`.
+`dart run skills@ prune` to remove the skills of packages you no longer depend on. The skills
+install into the skills folder of each agent it detects, such as `.claude/skills/` for Claude Code,
+`.cursor/skills/` for Cursor or `.agents/skills/` for Codex, and `.config/dart_skills/` records
+which ones it installed. Commit both, or add both to `.gitignore`.
 
 ### Moving from `from()` to the typed table API
 

@@ -62,8 +62,10 @@ dart run skills@ get -p supabase_test
 | `supabase-test-testing`       | `supabase_test`    | Unit and widget tests with `supabase_test`                               |
 
 Run the commands again after upgrading the packages to update the skills.
-Commit the installed skills together with `.config/dart_skills/` so everyone
-working on the project gets the same version.
+They install into the skills folder of each agent the command detects, such
+as `.claude/skills/` for Claude Code, and `.config/dart_skills/` records which
+ones it installed. Commit both so everyone working on the project gets the
+same version.
 
 ## Getting started
 
