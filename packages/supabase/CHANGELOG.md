@@ -1,3 +1,12 @@
+## 3.0.0-dev.16
+
+> Note: This release has breaking changes.
+
+ - **DOCS**(supabase_typegen): say when to regenerate the schema in the package skills ([#2115](https://github.com/supabase/supabase-flutter/issues/2115)). ([8bf5f102](https://github.com/supabase/supabase-flutter/commit/8bf5f10226f2f8305ff474660b55722080abf239))
+ - **BREAKING** **FIX**(realtime): align reconnect, rejoin and heartbeat recovery with the SDK spec ([#2114](https://github.com/supabase/supabase-flutter/issues/2114)). ([5e69683b](https://github.com/supabase/supabase-flutter/commit/5e69683bf62d5bde666f528f5c986cad00e3fb67))
+ - **BREAKING** **FIX**(postgrest): remove defaultToNull from the typed insert and upsert methods ([#2106](https://github.com/supabase/supabase-flutter/issues/2106)). ([886f3d05](https://github.com/supabase/supabase-flutter/commit/886f3d05f43615aef6881a81cd264c1b4f1467f8))
+ - **BREAKING** **FEAT**(storage): return the response head from downloadStream before the body ([#2105](https://github.com/supabase/supabase-flutter/issues/2105)). ([cdfd66cb](https://github.com/supabase/supabase-flutter/commit/cdfd66cb225d2a8a9fc8b334eaba3375b506da0d))
+
 ## 3.0.0-dev.15
 
  - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))

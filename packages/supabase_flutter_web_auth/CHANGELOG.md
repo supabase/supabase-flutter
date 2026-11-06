@@ -1,3 +1,9 @@
+## 0.3.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FIX**(auth): align signOut with the sign-out spec ([#2111](https://github.com/supabase/supabase-flutter/issues/2111)). ([de2ed636](https://github.com/supabase/supabase-flutter/commit/de2ed636aa977ed083cc6829ea85846832a8b621))
+
 ## 0.2.2
 
  - Update a dependency to the latest release.

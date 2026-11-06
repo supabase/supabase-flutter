@@ -1,3 +1,10 @@
+## 3.0.0-dev.13
+
+> Note: This release has breaking changes.
+
+ - **FIX**(storage): find Content-Encoding in any casing when sizing a download ([#2109](https://github.com/supabase/supabase-flutter/issues/2109)). ([ed2c8748](https://github.com/supabase/supabase-flutter/commit/ed2c8748601788c47d21e91ba2174683cee88721))
+ - **BREAKING** **FEAT**(storage): return the response head from downloadStream before the body ([#2105](https://github.com/supabase/supabase-flutter/issues/2105)). ([cdfd66cb](https://github.com/supabase/supabase-flutter/commit/cdfd66cb225d2a8a9fc8b334eaba3375b506da0d))
+
 ## 3.0.0-dev.12
 
  - **REFACTOR**: name the description argument of jsonObject and jsonObjectList ([#2097](https://github.com/supabase/supabase-flutter/issues/2097)). ([659cf76b](https://github.com/supabase/supabase-flutter/commit/659cf76b59a0ba7c4f3c91d67a1d181864fa9797))

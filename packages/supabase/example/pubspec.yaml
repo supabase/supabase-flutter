@@ -10,10 +10,10 @@ resolution: workspace
 
 dependencies:
   web: ^1.0.0
-  supabase: ^3.0.0-dev.15
+  supabase: ^3.0.0-dev.16
 
 dev_dependencies:
-  supabase_typegen: ^0.8.1
+  supabase_typegen: ^0.8.2
   build_runner: any
   build_web_compilers: any
   supabase_lints: ^0.1.2

@@ -1,3 +1,15 @@
+## 3.0.0-dev.14
+
+> Note: This release has breaking changes.
+
+ - **FIX**(supabase_auth): keep a refresh that overlaps updateUser ([#2122](https://github.com/supabase/supabase-flutter/issues/2122)). ([81cff845](https://github.com/supabase/supabase-flutter/commit/81cff84551109db2913432d121aa058028f49065))
+ - **FIX**(auth): sign out as asked when a global or others sign out finds the refresh token rejected ([#2110](https://github.com/supabase/supabase-flutter/issues/2110)). ([f0844018](https://github.com/supabase/supabase-flutter/commit/f08440186cd89a58953da70b89de70d630454447))
+ - **FIX**(auth): fail a global or others sign out answered with session_not_found ([#2108](https://github.com/supabase/supabase-flutter/issues/2108)). ([95a2fc52](https://github.com/supabase/supabase-flutter/commit/95a2fc52af4ddad8a992a6c106861c10bc3f1f69))
+ - **FIX**(auth): emit a sessionMissing sign out for an unreadable stored session at startup ([#2107](https://github.com/supabase/supabase-flutter/issues/2107)). ([79cd3568](https://github.com/supabase/supabase-flutter/commit/79cd356887f5caf1e8be1207f4ffaf645bb77b61))
+ - **BREAKING** **FIX**(auth): judge session expiry from the time the device received it ([#2123](https://github.com/supabase/supabase-flutter/issues/2123)). ([f075820d](https://github.com/supabase/supabase-flutter/commit/f075820d3ea97a958f627e18cb322cbd91253b24))
+ - **BREAKING** **FIX**(supabase_flutter): only take auth redirects from deep links by default ([#2126](https://github.com/supabase/supabase-flutter/issues/2126)). ([1e1448ef](https://github.com/supabase/supabase-flutter/commit/1e1448efbec1b15c0ba7337eaf09393044a90993))
+ - **BREAKING** **FIX**(auth): align signOut with the sign-out spec ([#2111](https://github.com/supabase/supabase-flutter/issues/2111)). ([de2ed636](https://github.com/supabase/supabase-flutter/commit/de2ed636aa977ed083cc6829ea85846832a8b621))
+
 ## 3.0.0-dev.13
 
 > Note: This release has breaking changes.

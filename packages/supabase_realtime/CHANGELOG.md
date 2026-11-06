@@ -1,3 +1,11 @@
+## 3.0.0-dev.14
+
+> Note: This release has breaking changes.
+
+ - **FIX**(realtime): time out a hung accessToken callback ([#2124](https://github.com/supabase/supabase-flutter/issues/2124)). ([290fdb0e](https://github.com/supabase/supabase-flutter/commit/290fdb0e2fadb6d0af7ecdac43d40f003d3e9690))
+ - **BREAKING** **FIX**(realtime): classify channel join errors and stop retrying fatal ones ([#2125](https://github.com/supabase/supabase-flutter/issues/2125)). ([72c3db96](https://github.com/supabase/supabase-flutter/commit/72c3db96b0471a99095c35d006abde2220fe3987))
+ - **BREAKING** **FIX**(realtime): align reconnect, rejoin and heartbeat recovery with the SDK spec ([#2114](https://github.com/supabase/supabase-flutter/issues/2114)). ([5e69683b](https://github.com/supabase/supabase-flutter/commit/5e69683bf62d5bde666f528f5c986cad00e3fb67))
+
 ## 3.0.0-dev.13
 
  - **REFACTOR**: name the description argument of jsonObject and jsonObjectList ([#2097](https://github.com/supabase/supabase-flutter/issues/2097)). ([659cf76b](https://github.com/supabase/supabase-flutter/commit/659cf76b59a0ba7c4f3c91d67a1d181864fa9797))

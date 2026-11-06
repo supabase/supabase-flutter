@@ -1,3 +1,13 @@
+## 3.0.0-dev.16
+
+> Note: This release has breaking changes.
+
+ - **FIX**(auth): sign out as asked when a global or others sign out finds the refresh token rejected ([#2110](https://github.com/supabase/supabase-flutter/issues/2110)). ([f0844018](https://github.com/supabase/supabase-flutter/commit/f08440186cd89a58953da70b89de70d630454447))
+ - **DOCS**(supabase_typegen): say when to regenerate the schema in the package skills ([#2115](https://github.com/supabase/supabase-flutter/issues/2115)). ([8bf5f102](https://github.com/supabase/supabase-flutter/commit/8bf5f10226f2f8305ff474660b55722080abf239))
+ - **BREAKING** **FIX**(supabase_flutter): only take auth redirects from deep links by default ([#2126](https://github.com/supabase/supabase-flutter/issues/2126)). ([1e1448ef](https://github.com/supabase/supabase-flutter/commit/1e1448efbec1b15c0ba7337eaf09393044a90993))
+ - **BREAKING** **FIX**(auth): align signOut with the sign-out spec ([#2111](https://github.com/supabase/supabase-flutter/issues/2111)). ([de2ed636](https://github.com/supabase/supabase-flutter/commit/de2ed636aa977ed083cc6829ea85846832a8b621))
+ - **BREAKING** **FIX**(postgrest): remove defaultToNull from the typed insert and upsert methods ([#2106](https://github.com/supabase/supabase-flutter/issues/2106)). ([886f3d05](https://github.com/supabase/supabase-flutter/commit/886f3d05f43615aef6881a81cd264c1b4f1467f8))
+
 ## 3.0.0-dev.15
 
  - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
