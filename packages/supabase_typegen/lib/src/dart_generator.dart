@@ -380,12 +380,7 @@ class _TableMembers {
     // the codecs, so a column of such a name may not claim it.
     final rowMembers = _uniqueMemberNames(
       columns,
-      reserved: {
-        ...typeNames,
-        'toJson',
-        'postgresBytea',
-        'postgresVector',
-      },
+      reserved: {...typeNames, 'toJson', ..._codecs},
     );
     final columnMembers = _uniqueMemberNames(
       columns,
@@ -921,6 +916,45 @@ void _writeValues(
     }
     buffer.writeln('       });');
   }
+  buffer.writeln();
+  if (writableColumns.isEmpty) {
+    _writeDocComment(
+      buffer,
+      'Returns this value, which has no columns to replace.',
+      indent: '  ',
+    );
+    buffer.writeln('  $typeName copyWith() => this;');
+  } else {
+    _writeDocComment(
+      buffer,
+      [
+        'Returns a copy with the given columns replaced. Passing `null` keeps '
+            'the current value',
+        if (writableColumns.any((column) => column.isNullable))
+          '; use the `set…ToNull` methods to write SQL NULL',
+        '.',
+      ].join(),
+      indent: '  ',
+    );
+    buffer.writeln('  $typeName copyWith({');
+    for (final column in writableColumns) {
+      buffer.writeln(
+        '    ${bindings[column.name]!.dartType}? ${memberNames[column.name]},',
+      );
+    }
+    buffer
+      ..writeln('  }) => $typeName._({')
+      ..writeln('    ..._json,');
+    for (final column in writableColumns) {
+      final expression = _writeExpression(
+        memberNames[column.name]!,
+        bindings[column.name]!,
+        nullable: true,
+      );
+      buffer.writeln('    ${_stringLiteral(column.name)}: ?$expression,');
+    }
+    buffer.writeln('  });');
+  }
   for (final column in writableColumns) {
     if (!column.isNullable) continue;
     final name = memberNames[column.name]!;
@@ -937,7 +971,16 @@ void _writeValues(
       '$typeName._({..._json, ${_stringLiteral(column.name)}: null});',
     );
   }
+  buffer.writeln();
+  _writeDocComment(
+    buffer,
+    'The values as they are sent, in a map that cannot be changed. Compare '
+    'two values through this map with deep equality, since `==` compares map '
+    'identity.',
+    indent: '  ',
+  );
   buffer
+    ..writeln('  Map<String, dynamic> toJson() => Map.unmodifiable(_json);')
     ..writeln('}')
     ..writeln();
 }
