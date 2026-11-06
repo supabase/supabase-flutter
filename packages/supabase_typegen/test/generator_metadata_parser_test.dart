@@ -242,6 +242,7 @@ void main() {
       'public.book_summaries',
       'public.books',
       'public.loans',
+      'public.profiles',
       'public.review_replies',
       'public.reviews',
     ]);
@@ -258,6 +259,7 @@ void main() {
     );
     expect(parsed.enums.map((enumType) => enumType.qualifiedName), [
       'public.mood',
+      'public.profiles_status',
     ]);
   });
 
@@ -1105,8 +1107,9 @@ void main() {
     expect(schema.enums.map((enumType) => enumType.qualifiedName), [
       'inventory.condition',
       'public.mood',
+      'public.profiles_status',
     ]);
-    final mood = schema.enums.last;
+    final mood = schema.enums[1];
     expect(mood.qualifiedName, 'public.mood');
     expect(mood.schema, 'public');
     expect(mood.name, 'mood');
@@ -1117,6 +1120,91 @@ void main() {
       (column) => column.name == 'mood',
     );
     expect(moodColumn.postgresFormat, 'public.mood');
+  });
+
+  test('reads a check constraint listing values as an enum', () {
+    final status = publicTable(
+      schema,
+      'profiles',
+    ).columns.singleWhere((column) => column.name == 'status');
+
+    expect(status.typeKind, ColumnTypeKind.enumType);
+    expect(status.postgresFormat, 'text');
+    expect(status.enumValues, ['active', 'suspended', 'on hold']);
+    expect(status.enumType?.schema, 'public');
+    expect(status.enumType?.name, 'profiles_status');
+    expect(status.enumType?.checkedColumn, ('profiles', 'status'));
+    expect(schema.enums, contains(same(status.enumType)));
+  });
+
+  test('keeps a check constraint apart from an enum of its name', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'books', name: 'status'),
+          'check': "status = ANY (ARRAY['a'::text, 'b'::text])",
+        },
+        {
+          ..._column(tableId: 1, table: 'books', name: 'kind'),
+          'data_type': 'USER-DEFINED',
+          'format': 'books_status',
+          'type_schema': 'public',
+          'enums': ['x'],
+        },
+        {
+          ..._column(tableId: 1, table: 'books', name: 'note'),
+          'check': 'char_length(note) > 2',
+        },
+      ],
+    });
+
+    expect(
+      [
+        for (final enumType in parsed.enums)
+          (enumType.qualifiedName, enumType.checkedColumn),
+      ],
+      [
+        ('public.books_status', null),
+        ('public.books_status', ('books', 'status')),
+      ],
+    );
+    expect(parsed.enums.map((enumType) => enumType.values), [
+      ['x'],
+      ['a', 'b'],
+    ]);
+    final note = parsed.tables.single.columns.singleWhere(
+      (column) => column.name == 'note',
+    );
+    expect(note.typeKind, ColumnTypeKind.text);
+    expect(note.enumType, isNull);
+  });
+
+  test('reads the JSON Schema of a pg_jsonschema check constraint', () {
+    final columns = publicTable(schema, 'profiles').columns;
+    final settings = columns.singleWhere((column) => column.name == 'settings');
+
+    expect(settings.typeKind, ColumnTypeKind.json);
+    expect(settings.jsonSchema?.description, 'Preferences the user picked.');
+    expect(
+      [
+        for (final property in settings.jsonSchema!.properties)
+          (property.name, property.type.runtimeType, property.isRequired),
+      ],
+      [
+        ('theme', JsonSchemaScalar, true),
+        ('font_size', JsonSchemaScalar, false),
+        ('notifications', JsonSchemaObject, false),
+        ('shortcuts', JsonSchemaArray, false),
+        ('extra', JsonSchemaAny, false),
+      ],
+    );
+    expect(
+      columns.where((column) => column.jsonSchema != null),
+      [same(settings)],
+    );
   });
 
   test(
@@ -1654,6 +1742,7 @@ void main() {
           'inventory.restock',
           'public.author_book_counts',
           'public.book_by_id',
+          'public.book_titles',
           'public.books_of',
           'public.books_with_tags',
           'public.count_books',
@@ -1662,6 +1751,7 @@ void main() {
           'public.latest_book',
           'public.mood_or_default',
           'public.price_label',
+          'public.profile_statuses',
           'public.publication_dates',
           'public.recent_books',
           'public.search_books',
@@ -1727,6 +1817,29 @@ void main() {
           ],
         ),
       );
+      for (final (name, nullability) in [
+        (
+          'book_titles',
+          [('author_name', true), ('id', false), ('title', false)],
+        ),
+        (
+          'profile_statuses',
+          [('id', false), ('settings', true), ('status', false)],
+        ),
+      ]) {
+        expect(
+          overload(name).result,
+          isA<FunctionColumnsResult>().having(
+            (result) => [
+              for (final column in result.columns)
+                (column.name, column.isNullable),
+            ],
+            'columns',
+            nullability,
+          ),
+          reason: name,
+        );
+      }
       expect(
         overload('publication_dates').result,
         isA<FunctionValueResult>()
@@ -1803,6 +1916,49 @@ void main() {
               ColumnTypeKind.json,
             )
             .having((result) => result.isSetReturning, 'isSetReturning', true),
+      );
+    });
+
+    test('reads result columns as nullable without is_nullable', () {
+      final parsed = parseGeneratorMetadata({
+        ...document,
+        'rpcFunctions': [
+          for (final entry
+              in (document['rpcFunctions'] as List<dynamic>)
+                  .cast<Map<String, dynamic>>())
+            if (entry['name'] == 'book_titles')
+              {
+                ...entry,
+                'overloads': [
+                  for (final overload
+                      in (entry['overloads'] as List<dynamic>)
+                          .cast<Map<String, dynamic>>())
+                    {
+                      ...overload,
+                      'returns': {
+                        ...overload['returns'] as Map<String, dynamic>,
+                        'columns': [
+                          for (final column
+                              in ((overload['returns']
+                                          as Map<String, dynamic>)['columns']
+                                      as List<dynamic>)
+                                  .cast<Map<String, dynamic>>())
+                            {...column}..remove('is_nullable'),
+                        ],
+                      },
+                    },
+                ],
+              },
+        ],
+      });
+
+      expect(
+        parsed.functions.single.overloads.single.result,
+        isA<FunctionColumnsResult>().having(
+          (result) => result.columns.map((column) => column.isNullable),
+          'nullability',
+          everyElement(isTrue),
+        ),
       );
     });
 

@@ -274,3 +274,71 @@ CREATE TABLE restricted.loans (
 CREATE VIEW extra.loans AS SELECT * FROM restricted.loans;
 
 CREATE VIEW public.loans AS SELECT * FROM extra.loans;
+
+-- A text column limited to a list of values by a check constraint, generated
+-- as an enum, and a jsonb column matched against a JSON Schema with
+-- pg_jsonschema, generated as a type for the object. The fixture database
+-- has no pg_jsonschema, so a stand-in for its function takes the schema.
+CREATE SCHEMA extensions;
+
+CREATE FUNCTION extensions.jsonb_matches_schema(schema json, instance jsonb)
+RETURNS boolean
+LANGUAGE sql IMMUTABLE AS $$ SELECT true $$;
+
+CREATE TABLE public.profiles (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  status text NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'suspended', 'on hold')),
+  settings jsonb CHECK (extensions.jsonb_matches_schema('{
+    "type": "object",
+    "description": "Preferences the user picked.",
+    "properties": {
+      "theme": {"type": "string", "description": "The color scheme."},
+      "font_size": {"type": "integer"},
+      "notifications": {
+        "type": "object",
+        "properties": {
+          "email": {"type": "boolean"},
+          "digest": {"type": ["string", "null"]}
+        },
+        "required": ["email"]
+      },
+      "shortcuts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "action": {"type": "string"}
+          },
+          "required": ["key", "action"]
+        }
+      },
+      "extra": {}
+    },
+    "required": ["theme"]
+  }', settings))
+);
+
+-- RETURNS TABLE functions whose columns are known not to be NULL: one whose
+-- BEGIN ATOMIC body reads NOT NULL columns, with one column on the nullable
+-- side of an outer join, and one whose comment names them.
+CREATE FUNCTION public.book_titles()
+RETURNS TABLE (id bigint, title text, author_name text)
+LANGUAGE sql STABLE
+BEGIN ATOMIC
+  SELECT books.id, books.title, authors.name
+  FROM public.books
+  LEFT JOIN public.authors ON authors.id = books.author_id;
+END;
+
+CREATE FUNCTION public.profile_statuses()
+RETURNS TABLE (id bigint, status text, settings jsonb)
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN QUERY SELECT profiles.id, profiles.status, profiles.settings
+  FROM public.profiles;
+END;
+$$;
+COMMENT ON FUNCTION public.profile_statuses() IS
+  E'Every profile with its status.\n@notNull id, status';
