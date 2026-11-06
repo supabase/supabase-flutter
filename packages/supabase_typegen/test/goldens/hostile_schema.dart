@@ -125,6 +125,122 @@ enum U441U442U430U442U443U441 implements PostgresValue {
   String toString() => _wireName ?? 'U441U442U430U442U443U441.unknown';
 }
 
+/// The values the check constraint of `string.value` allows.
+enum StringValue implements PostgresValue {
+  unknown('unknown'),
+  itSATrap('it\'s \$a\u{2028}trap'),
+
+  /// A label this code does not know, such as one a later migration added.
+  /// Sending it throws an [ArgumentError].
+  unknown$(null);
+
+  const StringValue(this._wireName);
+
+  final String? _wireName;
+
+  /// The value as stored in the database.
+  ///
+  /// Throws an [ArgumentError] for [unknown$].
+  String get wireName =>
+      _wireName ??
+      (throw ArgumentError.value(
+        this,
+        'value',
+        'An unknown StringValue value cannot be sent',
+      ));
+
+  @override
+  String get literal => wireName;
+
+  /// Parses the database representation of the enum, reading a
+  /// label this code does not know as [unknown$].
+  static StringValue fromWire(String wireName) => values.firstWhere(
+    (value) => value._wireName == wireName,
+    orElse: () => unknown$,
+  );
+
+  @override
+  String toString() => _wireName ?? 'StringValue.unknown\$';
+}
+
+/// The JSON Schema of `string.document.string`.
+extension type const StringDocumentString.fromJson(Map<String, dynamic> _json)
+    implements PostgrestJson {
+  factory StringDocumentString({bool? hashCode$}) =>
+      StringDocumentString.fromJson({'hashCode': ?hashCode$});
+
+  bool? get hashCode$ => _json['hashCode'] as bool?;
+
+  /// The object as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// The JSON Schema of `string.document.items[]`.
+extension type const StringDocumentItemsItem.fromJson(
+  Map<String, dynamic> _json
+)
+    implements PostgrestJson {
+  factory StringDocumentItemsItem({required num n}) =>
+      StringDocumentItemsItem.fromJson({'n': n});
+
+  num get n => _json['n'] as num;
+
+  /// The object as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// The JSON Schema of `string.document`.
+extension type const StringDocument.fromJson(Map<String, dynamic> _json)
+    implements PostgrestJson {
+  factory StringDocument({
+    required String toJson$,
+    required int? fromJson$,
+    List<List<int>>? classSValueNext,
+    required StringDocumentString? string,
+    required List<StringDocumentItemsItem?>? items,
+  }) => StringDocument.fromJson({
+    'toJson': toJson$,
+    'fromJson': fromJson$,
+    'class\'s \$value\nnext': ?classSValueNext,
+    'string': string,
+    'items': items,
+  });
+
+  String get toJson$ => _json['toJson'] as String;
+  int? get fromJson$ => (_json['fromJson'] as num?)?.toInt();
+
+  /// Rows of
+  /// counts $x */ "quoted"
+  List<List<int>>? get classSValueNext =>
+      (_json['class\'s \$value\nnext'] as List<dynamic>?)
+          ?.map(
+            (element) => (element as List<dynamic>)
+                .map((element2) => (element2 as num).toInt())
+                .toList(),
+          )
+          .toList();
+  StringDocumentString? get string => switch (_json['string']) {
+    null => null,
+    final Object value => StringDocumentString.fromJson(
+      value as Map<String, dynamic>,
+    ),
+  };
+  List<StringDocumentItemsItem?>? get items =>
+      (_json['items'] as List<dynamic>?)
+          ?.map(
+            (element) => switch (element) {
+              null => null,
+              final Object value => StringDocumentItemsItem.fromJson(
+                value as Map<String, dynamic>,
+              ),
+            },
+          )
+          .toList();
+
+  /// The object as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
 /// A row of the `postgrest_table` table, as `select()` reads it with every
 /// column.
 /// first
@@ -2502,6 +2618,60 @@ class NoteReply {
   );
 }
 
+/// A row of the `string` table, as `select()` reads it with every column.
+extension type const StringRow(Map<String, dynamic> _json) implements Object {
+  int get id => _json['id'] as int;
+  StringValue get value => StringValue.fromWire(_json['value'] as String);
+  StringDocument get document =>
+      StringDocument.fromJson(_json['document'] as Map<String, dynamic>);
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `string`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const StringInsert._(Map<String, dynamic> _json)
+    implements Object {
+  StringInsert({
+    int? id,
+    required StringValue value,
+    required StringDocument document,
+  }) : this._({'id': ?id, 'value': value.wireName, 'document': document});
+}
+
+/// Values for updating rows of `string`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const StringUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  StringUpdate({int? id, StringValue? value, StringDocument? document})
+    : this._({'id': ?id, 'value': ?value?.wireName, 'document': ?document});
+}
+
+/// Typed access to the `string` table.
+class String$$ {
+  const String$$._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable<StringRow, StringInsert, StringUpdate>(
+    'string',
+    StringRow.new,
+    schema: 'public',
+    primaryKey: [],
+  );
+
+  static const id = PostgrestColumn<StringRow, int>('id');
+  static const value = PostgrestColumn<StringRow, StringValue>(
+    'value',
+    fromJson: _stringValueFromJson,
+  );
+  static const document = PostgrestJsonColumn<StringRow>('document');
+}
+
 /// A row returned by the `class` function.
 extension type const ClassRow(Map<String, dynamic> _json) implements Object {
   String$? get string => switch (_json['string']) {
@@ -2756,6 +2926,9 @@ List<String> _stringListFromJson(Object json) => (json as List<dynamic>).cast();
 List<String$> _stringListFromJson$(Object json) => (json as List<dynamic>)
     .map((element) => String$.fromWire(element as String))
     .toList();
+
+StringValue _stringValueFromJson(Object json) =>
+    StringValue.fromWire(json as String);
 
 U441U442U430U442U443U441 _u441U442U430U442U443U441FromJson(Object json) =>
     U441U442U430U442U443U441.fromWire(json as String);

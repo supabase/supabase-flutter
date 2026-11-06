@@ -47,7 +47,23 @@ For every table the generator emits:
   function,
 - Dart enums for Postgres enums, with wire-name mapping and an `unknown`
   value that a label added by a later migration reads as. Sending `unknown`
-  throws an `ArgumentError`,
+  throws an `ArgumentError`. A text column whose check constraint limits it
+  to a list of values, `CHECK (status IN ('draft', 'published'))`, gets an
+  enum of the same shape named after the table and column, `BooksStatus`,
+- an extension type for a `json` or `jsonb` column whose check constraint
+  matches it against a JSON Schema with
+  [pg_jsonschema](https://github.com/supabase/pg_jsonschema),
+  `CHECK (jsonb_matches_schema('{"type": "object", …}', settings))`, when
+  that schema describes an object with `properties`. It is named after the
+  table and column, `ProfilesSettings`, and nested objects after their
+  property, `ProfilesSettingsNotifications`. Like a row type it wraps the
+  decoded map, with a getter per property, nullable unless the property is
+  `required` and does not allow `null`, and a constructor taking the
+  properties as named parameters. It implements `PostgrestJson`, so it is an
+  operand of the column's filters. `string`, `integer`, `number`, `boolean`,
+  `object` and `array` map to `String`, `int`, `num`, `bool`, the nested
+  extension type and `List`, and a property whose schema uses anything else,
+  such as `$ref`, `oneOf` or a list of types, is `Object?`,
 - an extension method on `PostgrestRpc` for every function PostgREST exposes
   under `/rpc`, so `client.rpc.searchBooks(query: 'dart')` takes the
   arguments as typed parameters, optional where the function declares a
@@ -55,7 +71,9 @@ For every table the generator emits:
   generated table resolves to those rows and can be filtered, ordered and
   paged with the table's column tokens, and one returning a single row to
   that row, or `null` when it finds none; a `RETURNS TABLE (…)` function gets a
-  row type and column tokens of its own; a scalar comes back converted and
+  row type and column tokens of its own, with a column nullable unless the
+  metadata says it cannot be `NULL` (see the known limitations); a scalar
+  comes back converted and
   nullable, since a function can always return `NULL`. Functions of a schema
   other than `public` carry the schema as a prefix, `inventoryRestock`. Of
   overloaded functions, the overload with the fewest arguments is named after
@@ -251,3 +269,14 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
   function without a default through `client.rpc`.
 - A domain used by a function, as a parameter, result or computed field, is
   typed `Object`, since the metadata does not record its base type there.
+- Postgres records no nullability for the columns of a `RETURNS TABLE (…)`
+  function. A column is non-nullable when the last statement of a
+  `BEGIN ATOMIC` body reads a `NOT NULL` column the way a view would, or when
+  a line of the function comment, `@notNull id, title`, names it; a bare
+  `@notNull` line names every column. Any other column, such as every column
+  of a `plpgsql` function without the comment, is nullable.
+- Only the first single-column check constraint of a column is read, and
+  only in the forms Postgres prints `IN (…)` and comparisons joined by `OR`
+  as. A view column reading a check-constrained column is a `String`, and one
+  reading a column with a JSON Schema is `Object?`, since a view column has
+  no constraints of its own. A JSON Schema `enum` of strings is a `String`.

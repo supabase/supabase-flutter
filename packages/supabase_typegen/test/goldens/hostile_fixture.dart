@@ -809,6 +809,100 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
         ),
       ],
     ),
+    // A check constraint enum named like the `string` enum, and a JSON Schema
+    // whose properties are named like the members of the generated type.
+    TableDescription(
+      schema: 'public',
+      name: 'string',
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          hasDefault: true,
+          isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'value',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.enumType,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+          enumValues: ['unknown', "it's \$a\u2028trap"],
+          enumType: EnumDescription(
+            schema: 'public',
+            name: 'string_value',
+            values: ['unknown', "it's \$a\u2028trap"],
+            checkedColumn: ('string', 'value'),
+          ),
+        ),
+        ColumnDescription(
+          name: 'document',
+          postgresFormat: 'jsonb',
+          typeKind: ColumnTypeKind.json,
+          isRequired: true,
+          hasDefault: false,
+          isNullable: false,
+          jsonSchema: JsonSchemaObject(
+            [
+              JsonSchemaProperty(
+                name: 'toJson',
+                type: JsonSchemaScalar(JsonSchemaScalarKind.string),
+                isRequired: true,
+              ),
+              JsonSchemaProperty(
+                name: 'fromJson',
+                type: JsonSchemaScalar(
+                  JsonSchemaScalarKind.integer,
+                  isNullable: true,
+                ),
+                isRequired: true,
+              ),
+              JsonSchemaProperty(
+                name: "class's \$value\nnext",
+                type: JsonSchemaArray(
+                  JsonSchemaArray(
+                    JsonSchemaScalar(JsonSchemaScalarKind.integer),
+                  ),
+                  description: 'Rows of\ncounts \$x */ "quoted"',
+                ),
+                isRequired: false,
+              ),
+              JsonSchemaProperty(
+                name: 'string',
+                type: JsonSchemaObject(
+                  [
+                    JsonSchemaProperty(
+                      name: 'hashCode',
+                      type: JsonSchemaScalar(JsonSchemaScalarKind.boolean),
+                      isRequired: false,
+                    ),
+                  ],
+                  isNullable: true,
+                ),
+                isRequired: true,
+              ),
+              JsonSchemaProperty(
+                name: 'items',
+                type: JsonSchemaArray(
+                  JsonSchemaObject([
+                    JsonSchemaProperty(
+                      name: 'n',
+                      type: JsonSchemaScalar(JsonSchemaScalarKind.number),
+                      isRequired: true,
+                    ),
+                  ], isNullable: true),
+                  isNullable: true,
+                ),
+                isRequired: true,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
   ],
   relationships: [
     // A self reference: PostgREST cannot embed it, so no member is generated.
@@ -1157,6 +1251,12 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
       schema: 'public',
       name: 'статус',
       values: ['новый', 'готов'],
+    ),
+    EnumDescription(
+      schema: 'public',
+      name: 'string_value',
+      values: ['unknown', "it's \$a\u2028trap"],
+      checkedColumn: ('string', 'value'),
     ),
   ],
 );

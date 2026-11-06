@@ -853,6 +853,93 @@ void main() {
     },
   );
 
+  test('check constraint and JSON Schema columns read and write', () async {
+    httpClient.stub([
+      {
+        'id': 1,
+        'status': 'on hold',
+        'settings': {
+          'theme': 'dark',
+          'font_size': 14.0,
+          'notifications': {'email': true, 'digest': null},
+          'shortcuts': [
+            {'key': 'k', 'action': 'search'},
+          ],
+          'extra': [1, 'two'],
+          'untyped': true,
+        },
+      },
+      {'id': 2, 'status': 'archived', 'settings': null},
+    ]);
+
+    final List<ProfilesRow> profiles = await client
+        .table(Profiles.table)
+        .select();
+
+    final [first, second] = profiles;
+    expect(first.status, ProfilesStatus.onHold);
+    final settings = first.settings!;
+    expect(settings.theme, 'dark');
+    expect(settings.fontSize, 14);
+    expect(settings.notifications?.email, isTrue);
+    expect(settings.notifications?.digest, isNull);
+    expect(settings.shortcuts?.single.action, 'search');
+    expect(settings.extra, [1, 'two']);
+    expect(settings.toJson()['untyped'], isTrue);
+    expect(second.status, ProfilesStatus.unknown);
+    expect(second.settings == null, isTrue);
+
+    httpClient.stub(null);
+    await client
+        .table(Profiles.table)
+        .insert(
+          ProfilesInsert(
+            status: ProfilesStatus.suspended,
+            settings: ProfilesSettings(
+              theme: 'light',
+              notifications: ProfilesSettingsNotifications(email: false),
+              shortcuts: [
+                ProfilesSettingsShortcutsItem(key: 'n', action: 'new'),
+              ],
+            ),
+          ),
+        );
+
+    expect(httpClient.requests.last.jsonBody, {
+      'status': 'suspended',
+      'settings': {
+        'theme': 'light',
+        'notifications': {'email': false},
+        'shortcuts': [
+          {'key': 'n', 'action': 'new'},
+        ],
+      },
+    });
+
+    httpClient.stub([]);
+    await client
+        .table(Profiles.table)
+        .select()
+        .where(Profiles.status.eq(ProfilesStatus.onHold))
+        .where(Profiles.settings.containsJson(ProfilesSettings(theme: 'dark')));
+
+    expect(httpClient.requests.last.queryParameters, {
+      'select': '*',
+      'status': 'eq.on hold',
+      'settings': 'cs.{"theme":"dark"}',
+    });
+
+    await client
+        .table(Profiles.table)
+        .select()
+        .where(Profiles.settings.eq(ProfilesSettings(theme: 'dark')));
+
+    expect(
+      httpClient.requests.last.queryParameters['settings'],
+      'eq.{"theme":"dark"}',
+    );
+  });
+
   test('an enum label this code does not know reads as unknown', () {
     expect(Mood.fromWire('grumpy'), Mood.unknown);
     expect(Mood.fromWire('happy'), Mood.happy);
@@ -1227,6 +1314,21 @@ void main() {
         'author_name': 'Ada',
         'max_price': '10',
       });
+    });
+
+    test('result columns known not to be null read as non-nullable', () async {
+      httpClient.stub([
+        {'id': 1, 'title': 'A typed row', 'author_name': null},
+      ], path: '/rest/v1/rpc/book_titles');
+
+      final List<BookTitlesRow> titles = await client.rpc.bookTitles().where(
+        BookTitles.authorName.isNull(),
+      );
+
+      final int id = titles.single.id;
+      final String title = titles.single.title;
+      expect((id, title), (1, 'A typed row'));
+      expect(titles.single.authorName, isNull);
     });
 
     test('a sole unnamed json parameter is sent as the whole body', () async {
