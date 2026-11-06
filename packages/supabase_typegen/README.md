@@ -94,7 +94,22 @@ supabase gen types --lang dart > lib/supabase_schema.g.dart
 # The project linked with `supabase link`, or any project by ref.
 supabase gen types --lang dart --remote > lib/supabase_schema.g.dart
 supabase gen types --lang dart --remote=abcdefghijklmnopqrst > lib/supabase_schema.g.dart
+
+# Any Postgres database, by connection string.
+supabase gen types --lang dart --remote=postgresql://postgres:postgres@127.0.0.1:54322/postgres > lib/supabase_schema.g.dart
 ```
+
+The CLI looks for the `supabase/` directory in the current directory and its
+parents only. When it is elsewhere, such as in a sibling directory of the
+app, keep running the command from the app and pass the directory that
+contains `supabase/` with `--workdir`:
+
+```sh
+supabase gen types --lang dart --workdir ../backend > lib/supabase_schema.g.dart
+```
+
+The `--local` and `--db-url` flags of older CLI versions are deprecated: the
+local stack is the default, and `--remote=<db-url>` replaces `--db-url`.
 
 The CLI introspects the database into the `GeneratorMetadata` document of
 [`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen),

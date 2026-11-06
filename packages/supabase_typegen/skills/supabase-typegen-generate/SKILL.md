@@ -43,9 +43,11 @@ schema on stdin, and the generated code arrives on stdout.
 - Regenerate after upgrading `supabase_typegen` or the Supabase CLI, since
   the generated code can change between versions.
 - Commit the generated file, so the app builds without a database.
-- Run the command from the directory of the app's `pubspec.yaml`. The CLI
-  finds the `supabase/` folder in that directory or any parent, and runs the
-  generator where it was started.
+- Run the command from the directory of the app's `pubspec.yaml`, since the
+  CLI runs the generator where it was started. The CLI looks for the
+  `supabase/` folder in that directory and its parents only. When the folder
+  is elsewhere, such as in a sibling directory of the app, pass the directory
+  that contains it with `--workdir`.
 
 ## Setup
 
@@ -61,15 +63,24 @@ of the package the file is written into, since the CLI runs it with
 
 Pick the database to read from:
 
-| Source                                                               | Command                                                                      |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Local stack from the `supabase/` migrations (after `supabase start`) | `supabase gen types --lang dart > lib/supabase_schema.g.dart`                |
-| The project linked with `supabase link`                              | `supabase gen types --lang dart --remote > lib/supabase_schema.g.dart`       |
-| Any hosted project                                                   | `supabase gen types --lang dart --remote=<ref> > lib/supabase_schema.g.dart` |
+| Source                                                               | Command                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Local stack from the `supabase/` migrations (after `supabase start`) | `supabase gen types --lang dart > lib/supabase_schema.g.dart`                   |
+| Local stack whose `supabase/` folder is not in a parent directory    | `supabase gen types --lang dart --workdir <dir> > lib/supabase_schema.g.dart`   |
+| The project linked with `supabase link`                              | `supabase gen types --lang dart --remote > lib/supabase_schema.g.dart`          |
+| Any hosted project                                                   | `supabase gen types --lang dart --remote=<ref> > lib/supabase_schema.g.dart`    |
+| Any Postgres database, by connection string                          | `supabase gen types --lang dart --remote=<db-url> > lib/supabase_schema.g.dart` |
 
 Prefer the local stack when the project keeps its schema as migrations, so the
 SQL in `supabase/migrations` stays the source of truth. It needs Docker and a
 running stack.
+
+`<dir>` is the directory that contains `supabase/`, not the `supabase/` folder
+itself. `<db-url>` is a `postgresql://` URL with the password in it, such as
+`postgresql://postgres:postgres@127.0.0.1:54322/postgres` for a local stack on
+the default ports. The `--local` and `--db-url` flags of older CLI versions are
+deprecated: the local stack is the default, and `--remote=<db-url>` replaces
+`--db-url`.
 
 Without `--schema`, the CLI generates `public` plus the schemas listed in
 `api.schemas` of `supabase/config.toml`. Pass `--schema` once per schema to
