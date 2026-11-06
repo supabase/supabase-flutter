@@ -756,7 +756,7 @@ void main() {
   });
 
   group('fromJson', () {
-    Matcher throwsMissing(String path) => throwsA(
+    Matcher throwsInvalid(String path) => throwsA(
       isA<ArgumentError>()
           .having((error) => error.name, 'name', 'json')
           .having(
@@ -836,7 +836,7 @@ void main() {
           {'id': 1},
           [Orders.id, Orders.note],
         ),
-        throwsMissing('note'),
+        throwsInvalid('note'),
       );
     });
 
@@ -846,7 +846,7 @@ void main() {
           {'id': 1},
           [Orders.id, Orders.amount.sum()],
         ),
-        throwsMissing(Orders.amount.sum().responseKey),
+        throwsInvalid(Orders.amount.sum().responseKey),
       );
     });
 
@@ -856,7 +856,7 @@ void main() {
           {'id': 1},
           [Orders.id, Orders.customer.select()],
         ),
-        throwsMissing('customers'),
+        throwsInvalid('customers'),
       );
     });
 
@@ -870,7 +870,7 @@ void main() {
             Orders.customer.select([Customers.id, Customers.email]),
           ],
         ),
-        throwsMissing('customers.email'),
+        throwsInvalid('customers.email'),
       );
       expect(
         () => PostgrestPartialRow<Order>.fromJson(
@@ -882,7 +882,7 @@ void main() {
           },
           [Orders.items(Items.sku)],
         ),
-        throwsMissing('items[1].sku'),
+        throwsInvalid('items[1].sku'),
       );
     });
 
@@ -907,10 +907,66 @@ void main() {
       expect(order.toRow(Orders.table).id, 4);
     });
 
+    for (final (description, json, selection, path) in [
+      (
+        'a to-one embed holding a list',
+        <String, dynamic>{
+          'customers': [
+            {'name': 'Ada'},
+          ],
+        },
+        Orders.customer(Customers.name),
+        'customers',
+      ),
+      (
+        'a to-one embed holding a value',
+        <String, dynamic>{'customers': 'Ada'},
+        Orders.customer(Customers.name),
+        'customers',
+      ),
+      (
+        'a to-many embed holding a row',
+        <String, dynamic>{
+          'items': {'sku': 'a'},
+        },
+        Orders.items(Items.sku),
+        'items',
+      ),
+      (
+        'a to-many embed holding null',
+        <String, dynamic>{'items': null},
+        Orders.items.select(),
+        'items',
+      ),
+      (
+        'a to-many embed holding a value in the list',
+        <String, dynamic>{
+          'items': ['a'],
+        },
+        Orders.items(Items.sku),
+        'items[0]',
+      ),
+    ]) {
+      test('throws for $description', () {
+        expect(
+          () => PostgrestPartialRow<Order>.fromJson(json, [selection]),
+          throwsInvalid(path),
+        );
+      });
+    }
+
     test('throws when there are no entries', () {
       expect(
         () => PostgrestPartialRow<Order>.fromJson({'id': 1}, const []),
-        throwsArgumentError,
+        throwsA(
+          isA<ArgumentError>()
+              .having((error) => error.name, 'name', 'selections')
+              .having(
+                (error) => error.message,
+                'message',
+                contains('partial row'),
+              ),
+        ),
       );
     });
   });
