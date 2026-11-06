@@ -98,7 +98,7 @@ void main() {
         .where(Tasks.isComplete.isFalse());
     reopenAfterTest = [
       for (final task in openTasks)
-        if (task.read(Tasks.title) != createdTitle) task.read(Tasks.id),
+        if (Tasks.title.of(task) != createdTitle) Tasks.id.of(task),
     ];
     await tester.tap(find.byTooltip('Complete all'));
     await _pumpUntil(tester, find.textContaining('Completed '));

@@ -116,7 +116,7 @@ class PostgrestTable<Row, Insert, Update> {
   ///       Books.table.allColumns,
   ///       Books.author.select([Authors.name]),
   ///     ]);
-  /// final String title = books.first.read(Books.title);
+  /// final String title = Books.title.of(books.first);
   /// final Book book = books.first.toRow(Books.table);
   /// ```
   ///

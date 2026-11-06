@@ -127,7 +127,7 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// final books = await client
   ///     .table(Books.table)
   ///     .selectOnly([Books.id, Books.title]);
-  /// final String title = books.first.read(Books.title);
+  /// final String title = Books.title.of(books.first);
   /// ```
   ///
   /// An embedded relation is selected column by column,

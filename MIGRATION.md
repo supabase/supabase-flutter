@@ -141,8 +141,12 @@ final books = await supabase.table(Books.table).selectOnly([
   Books.id,
   Books.title,
 ]);
-final String title = books.first.read(Books.title);
+final title = Books.title.of(books.first);
 ```
+
+`of` on a column constant takes its type from the constant, also where the context would change it,
+such as `return Books.title.of(book);` in an `async` function. `read` on the row chains into
+embedded rows, as shown under embedded selects.
 
 #### Filters
 
@@ -430,8 +434,8 @@ final authors = await supabase
     ])
     .embedded(Authors.books, (books) => books.limit(3));
 final List<String> titles = [
-  for (final book in authors.first.read(Authors.books))
-    book.read(Books.title),
+  for (final book in Authors.books.of(authors.first))
+    Books.title.of(book),
 ];
 ```
 

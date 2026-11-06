@@ -71,7 +71,7 @@ void main() {
         .selectOnly([Books.id, Books.title])
         .where(Books.inPrint.isTrue());
 
-    expect(books.single.read(Books.title), 'Dune');
+    expect(Books.title.of(books.single), 'Dune');
   });
 }
 ```
@@ -224,7 +224,7 @@ same entries the query selects:
 ```dart test
 const List<PostgrestSelectable<BooksRow>> bookTitle = [Books.id, Books.title];
 String label(PostgrestPartialRow<BooksRow> book) =>
-    '#${book.read(Books.id)} ${book.read(Books.title)}';
+    '#${Books.id.of(book)} ${Books.title.of(book)}';
 
 final book = PostgrestPartialRow<BooksRow>.fromJson(
   {'id': 1, 'title': 'Dune'},
@@ -270,7 +270,7 @@ class _BookTitlesState extends State<BookTitles> {
       builder: (context, snapshot) => Column(
         children: [
           for (final book in snapshot.data ?? const [])
-            Text(book.read(Books.title), textDirection: TextDirection.ltr),
+            Text(Books.title.of(book), textDirection: TextDirection.ltr),
         ],
       ),
     );

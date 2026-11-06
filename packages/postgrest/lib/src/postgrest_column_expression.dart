@@ -523,7 +523,7 @@ final class PostgrestNullableColumn<Row, Value extends Object>
 ///     .table(Users.table)
 ///     .selectOnly([Users.id, Users.fullName])
 ///     .order(Users.fullName);
-/// final String? fullName = users.first.read(Users.fullName);
+/// final String? fullName = Users.fullName.of(users.first);
 /// ```
 ///
 /// [Value] is the non-nullable Dart type of the function's return type and

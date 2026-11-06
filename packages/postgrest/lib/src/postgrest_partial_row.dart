@@ -23,6 +23,20 @@ sealed class PostgrestReadable<Row, Output> {
   bool get _selectedByStar;
 }
 
+/// Reads the value of an entry from a [PostgrestPartialRow].
+@experimental
+extension PostgrestReadableOf<Row, Output> on PostgrestReadable<Row, Output> {
+  /// The value of this entry in [row], typed by the entry alone:
+  /// `final int id = Books.id.of(book);`.
+  ///
+  /// Unlike [PostgrestPartialRow.read], the surrounding code cannot change
+  /// the type, so `return Books.id.of(book);` in an `async` function reads an
+  /// `int` and not a `FutureOr<int>`.
+  ///
+  /// Throws like [PostgrestPartialRow.read].
+  Output of(PostgrestPartialRow<Row> row) => row.read(this);
+}
+
 /// A row of a `select` list, as returned by
 /// [PostgrestTypedQueryBuilder.selectOnly] and
 /// [PostgrestTypedTransformBuilder.selectOnly].
@@ -40,10 +54,13 @@ sealed class PostgrestReadable<Row, Output> {
 ///     ]);
 ///
 /// for (final book in books) {
-///   final int id = book.read(Books.id);
-///   final String? authorName = book.read(Books.author)?.read(Authors.name);
+///   final id = Books.id.of(book);
+///   final authorName = book.read(Books.author)?.read(Authors.name);
 /// }
 /// ```
+///
+/// [PostgrestReadableOf.of] reads one value, and [read] chains reads into
+/// embedded rows.
 ///
 /// Reading an entry the list did not ask for throws a [StateError] naming it,
 /// instead of the null cast a getter of the full row type would fail with.
@@ -72,7 +89,7 @@ final class PostgrestPartialRow<Row> {
   ///   {'id': 1, 'title': 'Dune'},
   ///   summary,
   /// );
-  /// final String title = book.read(Books.title);
+  /// final title = Books.title.of(book);
   /// ```
   ///
   /// Throws an [ArgumentError] when [selections] is empty, when [json], or a
@@ -147,9 +164,10 @@ final class PostgrestPartialRow<Row> {
   /// and a [TypeError] when the response holds a value of another type than
   /// the entry declares.
   ///
-  /// Returned straight from an `async` function, [Output] is inferred from
-  /// the `FutureOr` return context rather than from [entry], so pass it
-  /// explicitly there: `return book.read<int>(Books.id);`.
+  /// A context type wins over [entry] when inferring [Output], so returned
+  /// straight from an `async` function it becomes a `FutureOr`. Read a single
+  /// value with [PostgrestReadableOf.of] instead, which takes its type from
+  /// the entry alone: `return Books.id.of(book);`.
   Output read<Output>(PostgrestReadable<Row, Output> entry) {
     final nested = _nestedSelection(entry);
     if (nested == null) {

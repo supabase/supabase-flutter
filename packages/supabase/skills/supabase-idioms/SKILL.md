@@ -98,9 +98,14 @@ final books = await supabase.table(Books.table).selectOnly([
   Books.title,
   Books.authors(Authors.name),
 ]);
-final String title = books.first.read(Books.title);
-final String? authorName = books.first.read(Books.authors)?.read(Authors.name);
+final title = Books.title.of(books.first);
+final authorName = books.first.read(Books.authors)?.read(Authors.name);
 ```
+
+Read one value with `of` on the constant, which types the value by the
+constant alone, so `return Books.title.of(book);` in an `async` function
+reads a `String` and not a `FutureOr<String>`. `read` on the row chains into
+embedded rows.
 
 ## Writing rows
 
@@ -212,7 +217,7 @@ final subscription = channel
         case TypedPostgresUpdate(:final newRow):
           print('Changed ${newRow.title}');
         case TypedPostgresDelete(:final oldRow):
-          print('Removed ${oldRow.read(Books.id)}');
+          print('Removed ${Books.id.of(oldRow)}');
       }
     });
 channel.subscribe();

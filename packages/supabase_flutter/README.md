@@ -225,8 +225,8 @@ final titles = await supabase.table(Books.table).selectOnly([
   Books.title,
   Books.authors(Authors.name),
 ]);
-final String title = titles.first.read(Books.title);
-final String? author = titles.first.read(Books.authors)?.read(Authors.name);
+final title = Books.title.of(titles.first);
+final author = titles.first.read(Books.authors)?.read(Authors.name);
 ```
 
 Writes take the generated insert and update types, which mark the required
@@ -634,7 +634,7 @@ final subscription = channel
         case TypedPostgresUpdate(:final newRow):
           print('Changed ${newRow.title}');
         case TypedPostgresDelete(:final oldRow):
-          print('Removed ${oldRow.read(Books.id)}');
+          print('Removed ${Books.id.of(oldRow)}');
       }
     });
 channel.subscribe();

@@ -224,7 +224,7 @@ class _RoomPageState extends State<RoomPage> {
       case TypedPostgresDelete(:final oldRow):
         // On a table with row level security, realtime sends only the
         // primary key of a deleted row, which is all that is needed here.
-        _removeMessage(oldRow.read(Messages.id));
+        _removeMessage(Messages.id.of(oldRow));
       case TypedPostgresUpdate():
         // Messages are never edited, so there are no updates to apply.
         break;
