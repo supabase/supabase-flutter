@@ -181,7 +181,7 @@ A `show` import has to list the extensions of the methods the file calls:
 | `PostgrestTypedDelete`, `PostgrestTypedReadOnlyDelete` | `delete()`                                                             |
 | `DatabaseFunctions`, from the generated file           | The typed function calls, such as `rpc.bookById()`                     |
 | `TypedPostgresChanges`                                 | `onTableChanges()`, `onTableChangesOnly()`                             |
-| `StorageByteStream`                                    | `collectBytes()`                                                       |
+| `StorageByteStream`                                    | `collectBytes()`, `writeToFile()`                                      |
 
 List `PostgrestTypedReadOnlyDelete` together with `PostgrestTypedDelete`.
 Without it, `delete()` on a view that cannot be updated compiles instead of

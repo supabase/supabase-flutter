@@ -1825,7 +1825,7 @@ class _ResultRowNames {
 }
 
 /// Writes the typed calls of [functions] and returns the name of the
-/// extension holding them, or `null` when there is none.
+/// extension holding them, or `null` when it holds no method.
 String? _writeFunctions(
   StringBuffer buffer,
   List<FunctionDescription> functions,
@@ -1920,7 +1920,7 @@ String? _writeFunctions(
   buffer
     ..writeln('}')
     ..writeln();
-  return extensionName;
+  return methods.isEmpty ? null : extensionName;
 }
 
 /// Writes the row type and the column tokens of the rows the

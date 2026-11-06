@@ -52,9 +52,10 @@ it against this file. To upgrade an existing v2 project, use the
 Part of the typed API is made of extension methods, and Dart only finds an
 extension whose name is imported. A `show` import that leaves one out makes
 its methods fail with "isn't defined", and the error does not name the
-extension. Import `package:supabase/supabase.dart` and the generated
-schema whole. When a `show` import has to stay, list the extensions of the
-methods the file calls:
+extension. Import the generated schema and
+`package:supabase/supabase.dart` whole.
+When a `show` import has to stay, list the extensions of the methods the file
+calls:
 
 | Extension                                              | Methods                                                                |
 | ------------------------------------------------------ | ---------------------------------------------------------------------- |
@@ -68,7 +69,7 @@ methods the file calls:
 | `PostgrestTypedDelete`, `PostgrestTypedReadOnlyDelete` | `delete()`                                                             |
 | `DatabaseFunctions`, from the generated file           | The typed function calls, such as `rpc.bookById()`                     |
 | `TypedPostgresChanges`                                 | `onTableChanges()`, `onTableChangesOnly()`                             |
-| `StorageByteStream`                                    | `collectBytes()`                                                       |
+| `StorageByteStream`                                    | `collectBytes()`, `writeToFile()`                                      |
 
 List `PostgrestTypedReadOnlyDelete` together with `PostgrestTypedDelete`.
 Without it, `delete()` on a view that cannot be updated compiles instead of

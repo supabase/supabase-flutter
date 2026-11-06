@@ -2168,6 +2168,7 @@ void main() {
       );
       expect(code, isNot(contains('title_upper')));
       expect(code, isNot(contains('label()')));
+      expect(code, isNot(contains('database function calls')));
     });
 
     test('a bytea argument alone brings the typed_data import', () {
