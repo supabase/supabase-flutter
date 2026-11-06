@@ -1163,7 +1163,7 @@ void main() {
       ], path: '/rest/v1/rpc/search_books');
 
       final List<BooksRow> books = await client.rpc
-          .searchBooks(query: 'typed', mood: Mood.veryHappy)
+          .searchBooks(query: 'typed', mood: Mood.veryHappy, get: true)
           .where(Books.id.gt(0))
           .order(Books.title.asc());
 
@@ -1178,21 +1178,37 @@ void main() {
       expect(lastRequest().headers['accept-profile'], 'public');
     });
 
-    test('a stable function is called read-only and retried', () async {
-      httpClient.stubStatuses([503, 200], body: 3);
-      final retrying = PostgrestClient(
-        'http://localhost/rest/v1',
-        httpClient: httpClient,
-        retryOptions: const SupabaseRetryOptions(initialDelay: Duration.zero),
-      );
-      addTearDown(retrying.dispose);
+    test('a stable function is called with POST unless get is set', () async {
+      httpClient.stub([]);
 
-      final int? count = await retrying.rpc.countBooks().retry(count: 1);
+      await client.rpc.searchBooks(query: 'typed').where(Books.id.gt(0));
 
-      expect(count, 3);
-      expect(httpClient.requests, hasLength(2));
-      expect(lastRequest().method, HttpMethod.get.value);
+      expect(lastRequest().method, HttpMethod.post.value);
+      expect(lastRequest().jsonBody, {'query': 'typed'});
+      expect(lastRequest().url.queryParameters, {'id': 'gt.0'});
+      expect(lastRequest().headers['content-profile'], 'public');
     });
+
+    test(
+      'a stable function called with get is read-only and retried',
+      () async {
+        httpClient.stubStatuses([503, 200], body: 3);
+        final retrying = PostgrestClient(
+          'http://localhost/rest/v1',
+          httpClient: httpClient,
+          retryOptions: const SupabaseRetryOptions(initialDelay: Duration.zero),
+        );
+        addTearDown(retrying.dispose);
+
+        final int? count = await retrying.rpc
+            .countBooks(get: true)
+            .retry(count: 1);
+
+        expect(count, 3);
+        expect(httpClient.requests, hasLength(2));
+        expect(lastRequest().method, HttpMethod.get.value);
+      },
+    );
 
     test('a volatile function is not retried', () async {
       httpClient.stubStatuses([503, 200], body: null);
@@ -1304,16 +1320,13 @@ void main() {
       httpClient.stub([]);
 
       await client.rpc.booksOf(authorId: 1);
-      expect(lastRequest().url.queryParameters, {'author_id': '1'});
+      expect(lastRequest().jsonBody, {'author_id': 1});
 
       await client.rpc.booksOfWithAuthorNameAndMaxPrice(
         authorName: 'Ada',
         maxPrice: 10,
       );
-      expect(lastRequest().url.queryParameters, {
-        'author_name': 'Ada',
-        'max_price': '10',
-      });
+      expect(lastRequest().jsonBody, {'author_name': 'Ada', 'max_price': 10});
     });
 
     test('result columns known not to be null read as non-nullable', () async {
