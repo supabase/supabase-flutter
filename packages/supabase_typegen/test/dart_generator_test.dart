@@ -1951,6 +1951,50 @@ void main() {
       );
     });
 
+    test('the header names the extension holding the function calls', () {
+      expect(
+        generateDartCode(withFunctions(const [])),
+        isNot(contains('database function calls')),
+      );
+
+      final renamed = generateDartCode(
+        DatabaseDescription(
+          schemaNames: const ['public'],
+          tables: const [],
+          enums: const [
+            EnumDescription(
+              schema: 'public',
+              name: 'database_functions',
+              values: ['a'],
+            ),
+          ],
+          functions: [
+            FunctionDescription(
+              schema: 'public',
+              name: 'ping',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [argument('id')],
+                  result: const FunctionNoResult(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      expect(
+        renamed,
+        contains(
+          '// A `show` import of this file has to name the extension holding '
+          'the typed\n// database function calls: DatabaseFunctions\$.\n',
+        ),
+      );
+      expect(
+        renamed,
+        contains(r'extension DatabaseFunctions$ on PostgrestRpc'),
+      );
+    });
+
     test('a stable function is called read-only unless an argument only '
         'fits in a request body', () {
       FunctionDescription stable(

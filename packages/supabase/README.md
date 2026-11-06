@@ -160,6 +160,50 @@ related rows, realtime, auth, storage, edge functions and errors.
   `TimeoutException` or `String`.
 - Create one `SupabaseClient` per process, not one per request.
 
+## Imports
+
+Import `package:supabase/supabase.dart` and the generated schema whole, without
+`show`. Part of the typed API is made of extension methods, and Dart only finds
+an extension whose name is imported. When a `show` import leaves one out, its
+methods fail with "isn't defined", and the error does not name the extension.
+
+A `show` import has to list the extensions of the methods the file calls:
+
+| Extension                                              | Methods                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `PostgrestBooleanFilters`                              | `isTrue()`, `isFalse()`                                                |
+| `PostgrestTextFilters`                                 | `like()`, `ilike()`, `matchRegex()` and the other text filters         |
+| `PostgrestArrayFilters`                                | `contains()`, `containedBy()`, `overlaps()` on an array column         |
+| `PostgrestJsonFilters`                                 | `containsJson()`, `containedByJson()`                                  |
+| `PostgrestRangeFilters`                                | `contains()`, `rangeLt()` and the other filters on a range column      |
+| `PostgrestMultirangeFilters`                           | `contains()`, `rangeLt()` and the other filters on a multirange column |
+| `PostgrestTypedRowsBuilder`                            | `single()`, `maybeSingle()`                                            |
+| `PostgrestTypedDelete`, `PostgrestTypedReadOnlyDelete` | `delete()`                                                             |
+| `DatabaseFunctions`, from the generated file           | The typed function calls, such as `rpc.bookById()`                     |
+| `TypedPostgresChanges`                                 | `onTableChanges()`, `onTableChangesOnly()`                             |
+| `StorageByteStream`                                    | `collectBytes()`                                                       |
+
+List `PostgrestTypedReadOnlyDelete` together with `PostgrestTypedDelete`.
+Without it, `delete()` on a view that cannot be updated compiles instead of
+being rejected.
+
+```dart file
+import 'package:my_app/supabase_schema.g.dart'
+    show Books, BooksRow, DatabaseFunctions;
+import 'package:supabase/supabase.dart'
+    show PostgrestBooleanFilters, PostgrestTypedRowsBuilder, SupabaseClient;
+
+Future<BooksRow?> firstBookInPrint(SupabaseClient supabase) => supabase
+    .table(Books.table)
+    .select()
+    .where(Books.inPrint.isTrue())
+    .limit(1)
+    .maybeSingle();
+
+Future<BooksRow?> bookById(SupabaseClient supabase, int id) =>
+    supabase.rpc.bookById(bookId: id);
+```
+
 ## Supabase Service Compatibility
 
 `supabase` only guarantees compatibility with the latest release of each
