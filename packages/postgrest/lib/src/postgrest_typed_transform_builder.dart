@@ -89,7 +89,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   ///     .table(Books.table)
   ///     .insert(BookInsert(title: 'foo'))
   ///     .selectOnly([Books.id]);
-  /// final int id = rows.single.read(Books.id);
+  /// final int id = Books.id.of(rows.single);
   /// ```
   ///
   /// See [PostgrestTypedQueryBuilder.selectOnly] for [columns].

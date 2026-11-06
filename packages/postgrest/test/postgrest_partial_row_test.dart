@@ -17,6 +17,10 @@ enum Status {
   static Status fromJson(Object json) => values.byName(json as String);
 }
 
+extension<Value> on Value {
+  void recordStaticType(List<Type> types) => types.add(Value);
+}
+
 double _doubleFromJson(Object json) => (json as num).toDouble();
 
 DateTime _dateTimeFromJson(Object json) => DateTime.parse(json as String);
@@ -48,6 +52,7 @@ class Orders {
   );
   static const note = PostgrestNullableColumn<Order, String>('note');
   static const metadata = PostgrestJsonColumn<Order>('metadata');
+  static const label = PostgrestComputedField<Order, String>('label');
   static const customer = PostgrestToOneRelation<Order, Customer>(
     'customers',
     columns: [customerId],
@@ -760,6 +765,9 @@ void main() {
       {
         'id': 1,
         'note': null,
+        'metadata': {'gift': true},
+        'metadata->>"gift"': 'true',
+        'label': 'Order 1',
         'amount.sum()': 12,
         'customers': {'name': 'Ada'},
         'items': [
@@ -772,6 +780,9 @@ void main() {
       [
         Orders.id,
         Orders.note,
+        Orders.metadata,
+        Orders.metadata.jsonText('gift'),
+        Orders.label,
         Orders.amount.sum(),
         Orders.customer(Customers.name),
         Orders.items(Items.sku),
@@ -782,6 +793,9 @@ void main() {
     test('reads every kind of entry as the type of the entry', () {
       final int id = Orders.id.of(order);
       final String? note = Orders.note.of(order);
+      final PostgrestJson? metadata = Orders.metadata.of(order);
+      final String? gift = Orders.metadata.jsonText('gift').of(order);
+      final String? label = Orders.label.of(order);
       final double? total = Orders.amount.sum().of(order);
       final PostgrestPartialRow<Customer>? customer = Orders.customer.of(
         order,
@@ -791,6 +805,9 @@ void main() {
 
       expect(id, 1);
       expect(note, isNull);
+      expect(metadata, {'gift': true});
+      expect(gift, 'true');
+      expect(label, 'Order 1');
       expect(total, 12.0);
       expect(customer?.read(Customers.name), 'Ada');
       expect(Items.sku.of(items.single), 'a');
@@ -798,16 +815,12 @@ void main() {
     });
 
     test('returned from an async function reads the entry type', () async {
-      Future<int> readId(Future<PostgrestPartialRow<Order>> pending) async {
-        try {
-          final row = await pending;
-          return Orders.id.of(row);
-        } on StateError {
-          return 0;
-        }
-      }
+      final types = <Type>[];
+      Future<int> readId(Future<PostgrestPartialRow<Order>> pending) async =>
+          Orders.id.of(await pending)..recordStaticType(types);
 
       expect(await readId(Future.value(order)), 1);
+      expect(types, [int]);
     });
 
     test('throws like read for an entry the row does not hold', () {

@@ -19,7 +19,7 @@ Future<void> exampleUsage(SupabaseClient supabase) async {
       case TypedPostgresUpdate(:final newRow):
         print('updated: ${newRow.name}');
       case TypedPostgresDelete(:final oldRow):
-        print('deleted: ${oldRow.read(Countries.id)}');
+        print('deleted: ${Countries.id.of(oldRow)}');
     }
   });
   final subscribed = realtimeChannel.onStatusChange.firstWhere(

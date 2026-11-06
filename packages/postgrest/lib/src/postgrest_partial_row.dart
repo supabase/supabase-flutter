@@ -164,7 +164,7 @@ final class PostgrestPartialRow<Row> {
   /// and a [TypeError] when the response holds a value of another type than
   /// the entry declares.
   ///
-  /// [Output] is inferred from the context before [entry], so returned
+  /// A context type wins over [entry] when inferring [Output], so returned
   /// straight from an `async` function it becomes a `FutureOr`. Read a single
   /// value with [PostgrestReadableOf.of] instead, which takes its type from
   /// the entry alone: `return Books.id.of(book);`.

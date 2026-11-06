@@ -434,8 +434,8 @@ final authors = await supabase
     ])
     .embedded(Authors.books, (books) => books.limit(3));
 final List<String> titles = [
-  for (final book in authors.first.read(Authors.books))
-    book.read(Books.title),
+  for (final book in Authors.books.of(authors.first))
+    Books.title.of(book),
 ];
 ```
 

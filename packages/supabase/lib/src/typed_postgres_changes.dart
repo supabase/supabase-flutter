@@ -35,9 +35,9 @@ extension TypedPostgresChanges on RealtimeChannel {
   ///         case TypedPostgresInsert(:final newRow):
   ///           print('New message: ${newRow.body}');
   ///         case TypedPostgresUpdate(:final newRow, :final oldRow):
-  ///           print('${oldRow.read(Messages.id)} is now ${newRow.body}');
+  ///           print('${Messages.id.of(oldRow)} is now ${newRow.body}');
   ///         case TypedPostgresDelete(:final oldRow):
-  ///           print('Deleted ${oldRow.read(Messages.id)}');
+  ///           print('Deleted ${Messages.id.of(oldRow)}');
   ///       }
   ///     });
   /// channel.subscribe();
@@ -64,7 +64,7 @@ extension TypedPostgresChanges on RealtimeChannel {
   ///     .onTableChangesOnly(Messages.table, columns: [Messages.body])
   ///     .listen((change) {
   ///       if (change case TypedPostgresInsert(:final newRow)) {
-  ///         print(newRow.read(Messages.body));
+  ///         print(Messages.body.of(newRow));
   ///       }
   ///     });
   /// ```

@@ -287,7 +287,7 @@ final class PostgrestToManyRelation<Row, Target>
   /// final channels = await client
   ///     .table(Channels.table)
   ///     .selectOnly([Channels.id, Channels.messages.count()]);
-  /// final int messageCount = channels.first.read(Channels.messages.count());
+  /// final int messageCount = Channels.messages.count().of(channels.first);
   /// ```
   PostgrestEmbeddedCount<Row> count() => PostgrestEmbeddedCount._(this);
 

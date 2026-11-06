@@ -27,10 +27,10 @@ extension type const Task(PostgrestPartialRow<TasksRow> _row)
     Tasks.projects(Projects.name),
   ];
 
-  String get id => _row.read(Tasks.id);
-  String get title => _row.read(Tasks.title);
-  bool get isComplete => _row.read(Tasks.isComplete);
-  Priority get priority => Priority.fromValue(_row.read(Tasks.priority));
+  String get id => Tasks.id.of(_row);
+  String get title => Tasks.title.of(_row);
+  bool get isComplete => Tasks.isComplete.of(_row);
+  Priority get priority => Priority.fromValue(Tasks.priority.of(_row));
 
   /// Name of the task's project, read from the embedded `projects` row.
   String? get projectName => _row.read(Tasks.projects)?.read(Projects.name);

@@ -217,7 +217,7 @@ final subscription = channel
         case TypedPostgresUpdate(:final newRow):
           print('Changed ${newRow.title}');
         case TypedPostgresDelete(:final oldRow):
-          print('Removed ${oldRow.read(Books.id)}');
+          print('Removed ${Books.id.of(oldRow)}');
       }
     });
 channel.subscribe();

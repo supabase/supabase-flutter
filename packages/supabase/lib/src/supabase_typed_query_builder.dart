@@ -66,7 +66,7 @@ class SupabaseTypedQueryBuilder<Row, Insert, Update>
   ///     .streamOnly(primaryKey: [Books.id], columns: [Books.title])
   ///     .listen((List<PostgrestPartialRow<Book>> books) {
   ///   for (final book in books) {
-  ///     print(book.read(Books.title));
+  ///     print(Books.title.of(book));
   ///   }
   /// });
   /// ```

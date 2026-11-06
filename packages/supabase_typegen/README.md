@@ -39,7 +39,7 @@ For every table the generator emits:
   members for computed relationships, such functions returning a row or a set
   of rows of a generated table. PostgREST leaves both out of `*`, so they are
   no getters of the row type: a computed field goes into a `selectOnly` list
-  and is read back as a nullable value, `book.read(Books.titleUpper)`, and a
+  and is read back as a nullable value, `Books.titleUpper.of(book)`, and a
   computed relationship embeds like a foreign key relation. A function named
   like a column gets no member, since PostgREST resolves the name to the
   column, and a computed relationship named like the table of a foreign key
