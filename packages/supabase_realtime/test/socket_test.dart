@@ -495,6 +495,7 @@ void main() {
       final mockedSocket = RealtimeClient(
         socketEndpoint,
         transport: (url, headers) => mockedSocketChannel,
+        connectionCloseTimeout: const Duration(milliseconds: 100),
       );
       var closeEvents = 0;
       mockedSocket.onStatusChange
@@ -530,7 +531,10 @@ void main() {
     const channelConfig = RealtimeChannelConfig();
     late RealtimeClient socket;
     setUp(() {
-      socket = RealtimeClient(socketEndpoint);
+      socket = RealtimeClient(
+        socketEndpoint,
+        connectionCloseTimeout: const Duration(milliseconds: 100),
+      );
     });
 
     tearDown(() async {

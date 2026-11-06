@@ -1,0 +1,4 @@
+tags:
+  # Tests that use the local Supabase stack. CI runs them one file at a time
+  # after the other tests, which run concurrently.
+  integration: {}

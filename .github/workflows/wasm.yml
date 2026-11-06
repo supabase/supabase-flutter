@@ -95,11 +95,9 @@ jobs:
       - name: Show Flutter version
         run: flutter --version
 
-      - name: Bootstrap workspace
-        run: |
-          cd ../../
-          dart pub global activate melos
-          melos bootstrap
+      - name: Resolve workspace dependencies
+        working-directory: .
+        run: flutter pub get
 
       - name: Test web (WASM)
         # Serial compilation avoids the memory pressure from parallel dart2wasm
