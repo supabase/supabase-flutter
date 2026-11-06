@@ -2,6 +2,9 @@
 // Do not edit by hand.
 //
 // Source schemas: inventory, public
+//
+// A `show` import of this file has to name the extension holding the typed
+// database function calls: DatabaseFunctions.
 
 // The typed table access API is still experimental.
 // ignore_for_file: experimental_member_use
