@@ -123,6 +123,15 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           hasDefault: false,
           isNullable: false,
         ),
+        // Named like the copy method of the value types.
+        ColumnDescription(
+          name: 'copy_with',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
         ColumnDescription(
           name: 'uint8_list',
           postgresFormat: 'bytea',

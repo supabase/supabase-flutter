@@ -164,10 +164,14 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
 
 ## Known limitations
 
-- Passing `null` to an `Insert`/`Update` parameter omits the column. To write
-  SQL NULL explicitly, use the generated `set…ToNull` methods, for example
+- Passing `null` to an `Insert`/`Update` parameter omits the column, and
+  passing it to `copyWith` keeps the current value. To write SQL NULL
+  explicitly, use the generated `set…ToNull` methods, for example
   `BooksUpdate(inPrint: false).setPriceToNull()`; they only exist for
   nullable columns, so nulling a `NOT NULL` column is a compile error.
+- `Insert`/`Update` values wrap a map, so `==` compares identity. Compare
+  their `toJson()` output, the values as they are sent, with deep equality
+  instead.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; an array containing SQL NULL
   elements throws when the column is read. Elements convert like a column of

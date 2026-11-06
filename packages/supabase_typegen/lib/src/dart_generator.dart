@@ -383,6 +383,7 @@ class _TableMembers {
       reserved: {
         ...typeNames,
         'toJson',
+        'copyWith',
         'postgresBytea',
         'postgresVector',
       },
@@ -921,6 +922,35 @@ void _writeValues(
     }
     buffer.writeln('       });');
   }
+  buffer.writeln();
+  _writeDocComment(
+    buffer,
+    'Returns a copy with the given columns replaced. Passing `null` keeps '
+    'the current value; use the `set…ToNull` methods to write SQL NULL.',
+    indent: '  ',
+  );
+  if (writableColumns.isEmpty) {
+    buffer.writeln('  $typeName copyWith() => $typeName._({..._json});');
+  } else {
+    buffer.writeln('  $typeName copyWith({');
+    for (final column in writableColumns) {
+      buffer.writeln(
+        '    ${bindings[column.name]!.dartType}? ${memberNames[column.name]},',
+      );
+    }
+    buffer
+      ..writeln('  }) => $typeName._({')
+      ..writeln('    ..._json,');
+    for (final column in writableColumns) {
+      final expression = _writeExpression(
+        memberNames[column.name]!,
+        bindings[column.name]!,
+        nullable: true,
+      );
+      buffer.writeln('    ${_stringLiteral(column.name)}: ?$expression,');
+    }
+    buffer.writeln('  });');
+  }
   for (final column in writableColumns) {
     if (!column.isNullable) continue;
     final name = memberNames[column.name]!;
@@ -937,7 +967,15 @@ void _writeValues(
       '$typeName._({..._json, ${_stringLiteral(column.name)}: null});',
     );
   }
+  buffer.writeln();
+  _writeDocComment(
+    buffer,
+    'The values as they are sent, as an unmodifiable copy. Compare two values '
+    'through this map with deep equality, since `==` compares map identity.',
+    indent: '  ',
+  );
   buffer
+    ..writeln('  Map<String, dynamic> toJson() => Map.unmodifiable(_json);')
     ..writeln('}')
     ..writeln();
 }

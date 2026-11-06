@@ -914,6 +914,95 @@ void main() {
       'published_on': null,
     });
   });
+  test('toJson returns the values as they are sent', () {
+    final insert = BooksInsert(
+      title: 'x',
+      authorId: 7,
+      mood: Mood.veryHappy,
+      createdAt: DateTime.utc(2026, 7, 23, 10),
+      publishedOn: PostgresDate(2026, 7, 23),
+    );
+
+    expect(insert.toJson(), {
+      'title': 'x',
+      'author_id': 7,
+      'mood': 'very happy',
+      'created_at': '2026-07-23T10:00:00.000Z',
+      'published_on': '2026-07-23',
+    });
+    expect(
+      () => insert.toJson()['title'] = 'y',
+      throwsUnsupportedError,
+      reason: 'the payload cannot be changed behind the encoding',
+    );
+    expect(
+      BooksUpdate(price: 3).setMoodToNull().toJson(),
+      {'price': 3, 'mood': null},
+    );
+  });
+
+  test('values compare through toJson with deep equality', () {
+    final first = BooksUpdate(title: 'x', tags: ['a']);
+    final second = BooksUpdate(title: 'x', tags: ['a']);
+
+    expect(first == second, isFalse);
+    expect(first.toJson(), second.toJson());
+    expect(first.toJson(), isNot(BooksUpdate(title: 'y').toJson()));
+  });
+
+  test('copyWith keeps the values it is not given', () {
+    final insert = BooksInsert(title: 'x', authorId: 7, price: 3);
+
+    expect(insert.copyWith().toJson(), insert.toJson());
+    expect(insert.copyWith(inPrint: true).toJson(), {
+      'title': 'x',
+      'author_id': 7,
+      'price': 3,
+      'in_print': true,
+    });
+  });
+
+  test('copyWith overrides the values it is given, encoded', () {
+    final update = BooksUpdate(title: 'x', mood: Mood.happy);
+
+    final copy = update.copyWith(
+      mood: Mood.veryHappy,
+      updatedAt: DateTime.utc(2026, 7, 23, 10),
+    );
+
+    expect(copy.toJson(), {
+      'title': 'x',
+      'mood': 'very happy',
+      'updated_at': '2026-07-23T10:00:00.000Z',
+    });
+    expect(
+      update.toJson(),
+      {'title': 'x', 'mood': 'happy'},
+      reason: 'copyWith returns a copy and must not mutate',
+    );
+  });
+
+  test('copyWith combines with setXToNull', () {
+    final update = BooksUpdate(title: 'x').setPriceToNull();
+
+    expect(
+      update.copyWith(title: 'y').toJson(),
+      {'title': 'y', 'price': null},
+      reason: 'a null argument keeps an explicit SQL NULL',
+    );
+    expect(
+      update.copyWith(price: 4).toJson(),
+      {'title': 'x', 'price': 4},
+    );
+    expect(
+      BooksInsert(
+        title: 'x',
+        authorId: 7,
+      ).copyWith(price: 4).setPriceToNull().toJson(),
+      {'title': 'x', 'author_id': 7, 'price': null},
+    );
+  });
+
   test('computed fields are selected by name and read as nullable', () async {
     httpClient.stub([
       {'id': 1, 'title_upper': 'A TYPED ROW', 'mood_or_default': 'happy'},

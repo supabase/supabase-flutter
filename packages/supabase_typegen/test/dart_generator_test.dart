@@ -243,6 +243,20 @@ void main() {
     );
   });
 
+  test('a column named like copyWith is kept apart from the method', () {
+    final compact = _normalize(
+      generateDartCode(hostileSchema),
+    ).replaceAll(' ', '');
+
+    expect(
+      compact,
+      contains(r"String?getcopyWith$=>_json['copy_with']asString?;"),
+    );
+    expect(compact, contains(r"'copy_with':?copyWith$,"));
+    expect(compact, contains('PostgrestTableInsertcopyWith({'));
+    expect(compact, contains('PostgrestTableUpdatecopyWith({'));
+  });
+
   test('column tokens decode through one helper per Dart type', () {
     final compact = _normalize(
       generateDartCode(schema),
@@ -1501,6 +1515,14 @@ void main() {
 
     expect(code, contains('CountersInsert() : this._({});'));
     expect(code, contains('CountersUpdate() : this._({});'));
+    expect(
+      code,
+      contains('CountersInsert copyWith() => CountersInsert._({..._json});'),
+    );
+    expect(
+      code,
+      contains('CountersUpdate copyWith() => CountersUpdate._({..._json});'),
+    );
     expect(code, contains("int get id => _json['id'] as int;"));
   });
   test('computed fields are constants next to the columns, with no row '
