@@ -380,13 +380,7 @@ class _TableMembers {
     // the codecs, so a column of such a name may not claim it.
     final rowMembers = _uniqueMemberNames(
       columns,
-      reserved: {
-        ...typeNames,
-        'toJson',
-        'copyWith',
-        'postgresBytea',
-        'postgresVector',
-      },
+      reserved: {...typeNames, 'toJson', ..._codecs},
     );
     final columnMembers = _uniqueMemberNames(
       columns,
@@ -923,15 +917,25 @@ void _writeValues(
     buffer.writeln('       });');
   }
   buffer.writeln();
-  _writeDocComment(
-    buffer,
-    'Returns a copy with the given columns replaced. Passing `null` keeps '
-    'the current value; use the `set…ToNull` methods to write SQL NULL.',
-    indent: '  ',
-  );
   if (writableColumns.isEmpty) {
-    buffer.writeln('  $typeName copyWith() => $typeName._({..._json});');
+    _writeDocComment(
+      buffer,
+      'Returns this value, which has no columns to replace.',
+      indent: '  ',
+    );
+    buffer.writeln('  $typeName copyWith() => this;');
   } else {
+    _writeDocComment(
+      buffer,
+      [
+        'Returns a copy with the given columns replaced. Passing `null` keeps '
+            'the current value',
+        if (writableColumns.any((column) => column.isNullable))
+          '; use the `set…ToNull` methods to write SQL NULL',
+        '.',
+      ].join(),
+      indent: '  ',
+    );
     buffer.writeln('  $typeName copyWith({');
     for (final column in writableColumns) {
       buffer.writeln(
@@ -970,8 +974,9 @@ void _writeValues(
   buffer.writeln();
   _writeDocComment(
     buffer,
-    'The values as they are sent, as an unmodifiable copy. Compare two values '
-    'through this map with deep equality, since `==` compares map identity.',
+    'The values as they are sent, in a map that cannot be changed. Compare '
+    'two values through this map with deep equality, since `==` compares map '
+    'identity.',
     indent: '  ',
   );
   buffer

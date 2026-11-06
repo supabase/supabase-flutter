@@ -146,7 +146,11 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
       .toList();
   Uint8List get postgresBytea$ =>
       postgresBytea.decode(_json['postgres_bytea'] as String);
-  String? get copyWith$ => _json['copy_with'] as String?;
+  DateTime? get postgresTimestamp$ => switch (_json['postgres_timestamp']) {
+    null => null,
+    final Object value => postgresTimestamp.decode(value as String),
+  };
+  String? get copyWith => _json['copy_with'] as String?;
   Uint8List? get uint8List => switch (_json['uint8_list']) {
     null => null,
     final Object value => postgresBytea.decode(value as String),
@@ -198,7 +202,8 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     required List<double> samples,
     List<PostgresDate>? days,
     required Uint8List postgresBytea$,
-    String? copyWith$,
+    DateTime? postgresTimestamp$,
+    String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
     required List<double> postgresVector$,
@@ -214,7 +219,11 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
          'samples': samples,
          'days': ?days?.map((element) => element.literal).toList(),
          'postgres_bytea': postgresBytea.encode(postgresBytea$),
-         'copy_with': ?copyWith$,
+         'postgres_timestamp': ?switch (postgresTimestamp$) {
+           null => null,
+           final value => postgresTimestamp.encode(value.toUtc()),
+         },
+         'copy_with': ?copyWith,
          'uint8_list': ?switch (uint8List) {
            null => null,
            final value => postgresBytea.encode(value),
@@ -246,7 +255,8 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     List<double>? samples,
     List<PostgresDate>? days,
     Uint8List? postgresBytea$,
-    String? copyWith$,
+    DateTime? postgresTimestamp$,
+    String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
     List<double>? postgresVector$,
@@ -266,7 +276,11 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
       null => null,
       final value => postgresBytea.encode(value),
     },
-    'copy_with': ?copyWith$,
+    'postgres_timestamp': ?switch (postgresTimestamp$) {
+      null => null,
+      final value => postgresTimestamp.encode(value.toUtc()),
+    },
+    'copy_with': ?copyWith,
     'uint8_list': ?switch (uint8List) {
       null => null,
       final value => postgresBytea.encode(value),
@@ -301,9 +315,14 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
   PostgrestTableInsert setDaysToNull() =>
       PostgrestTableInsert._({..._json, 'days': null});
 
+  /// Returns a copy with `postgres_timestamp` set to SQL NULL, overriding any
+  /// database default.
+  PostgrestTableInsert setPostgresTimestamp$ToNull() =>
+      PostgrestTableInsert._({..._json, 'postgres_timestamp': null});
+
   /// Returns a copy with `copy_with` set to SQL NULL, overriding any database
   /// default.
-  PostgrestTableInsert setCopyWith$ToNull() =>
+  PostgrestTableInsert setCopyWithToNull() =>
       PostgrestTableInsert._({..._json, 'copy_with': null});
 
   /// Returns a copy with `uint8_list` set to SQL NULL, overriding any database
@@ -346,8 +365,9 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
   PostgrestTableInsert setShiftsToNull() =>
       PostgrestTableInsert._({..._json, 'shifts': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -362,7 +382,8 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
     List<double>? samples,
     List<PostgresDate>? days,
     Uint8List? postgresBytea$,
-    String? copyWith$,
+    DateTime? postgresTimestamp$,
+    String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
     List<double>? postgresVector$,
@@ -381,7 +402,11 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
            null => null,
            final value => postgresBytea.encode(value),
          },
-         'copy_with': ?copyWith$,
+         'postgres_timestamp': ?switch (postgresTimestamp$) {
+           null => null,
+           final value => postgresTimestamp.encode(value.toUtc()),
+         },
+         'copy_with': ?copyWith,
          'uint8_list': ?switch (uint8List) {
            null => null,
            final value => postgresBytea.encode(value),
@@ -416,7 +441,8 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
     List<double>? samples,
     List<PostgresDate>? days,
     Uint8List? postgresBytea$,
-    String? copyWith$,
+    DateTime? postgresTimestamp$,
+    String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
     List<double>? postgresVector$,
@@ -436,7 +462,11 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
       null => null,
       final value => postgresBytea.encode(value),
     },
-    'copy_with': ?copyWith$,
+    'postgres_timestamp': ?switch (postgresTimestamp$) {
+      null => null,
+      final value => postgresTimestamp.encode(value.toUtc()),
+    },
+    'copy_with': ?copyWith,
     'uint8_list': ?switch (uint8List) {
       null => null,
       final value => postgresBytea.encode(value),
@@ -471,9 +501,14 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
   PostgrestTableUpdate setDaysToNull() =>
       PostgrestTableUpdate._({..._json, 'days': null});
 
+  /// Returns a copy with `postgres_timestamp` set to SQL NULL, overriding any
+  /// database default.
+  PostgrestTableUpdate setPostgresTimestamp$ToNull() =>
+      PostgrestTableUpdate._({..._json, 'postgres_timestamp': null});
+
   /// Returns a copy with `copy_with` set to SQL NULL, overriding any database
   /// default.
-  PostgrestTableUpdate setCopyWith$ToNull() =>
+  PostgrestTableUpdate setCopyWithToNull() =>
       PostgrestTableUpdate._({..._json, 'copy_with': null});
 
   /// Returns a copy with `uint8_list` set to SQL NULL, overriding any database
@@ -516,8 +551,9 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
   PostgrestTableUpdate setShiftsToNull() =>
       PostgrestTableUpdate._({..._json, 'shifts': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -566,7 +602,12 @@ class PostgrestTable$ {
     'postgres_bytea',
     fromJson: _uint8ListFromJson,
   );
-  static const copyWith$ = PostgrestNullableColumn<PostgrestTableRow, String>(
+  static const postgresTimestamp$ =
+      PostgrestNullableColumn<PostgrestTableRow, DateTime>(
+        'postgres_timestamp',
+        fromJson: _dateTimeFromJson,
+      );
+  static const copyWith = PostgrestNullableColumn<PostgrestTableRow, String>(
     'copy_with',
   );
   static const uint8List =
@@ -1079,8 +1120,9 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   MapInsert setHardwareHistoryToNull() =>
       MapInsert._({..._json, 'hardware_history': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1347,8 +1389,9 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
   MapUpdate setHardwareHistoryToNull() =>
       MapUpdate._({..._json, 'hardware_history': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1551,7 +1594,7 @@ extension type const CoreTypeNamesInsert._(Map<String, dynamic> _json)
   }) : this._({'num': num$, 'int': int$, 'active': active});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   CoreTypeNamesInsert copyWith({int? num$, num? int$, bool? active}) =>
       CoreTypeNamesInsert._({
         ..._json,
@@ -1560,8 +1603,9 @@ extension type const CoreTypeNamesInsert._(Map<String, dynamic> _json)
         'active': ?active,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1574,7 +1618,7 @@ extension type const CoreTypeNamesUpdate._(Map<String, dynamic> _json)
     : this._({'num': ?num$, 'int': ?int$, 'active': ?active});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   CoreTypeNamesUpdate copyWith({int? num$, num? int$, bool? active}) =>
       CoreTypeNamesUpdate._({
         ..._json,
@@ -1583,8 +1627,9 @@ extension type const CoreTypeNamesUpdate._(Map<String, dynamic> _json)
         'active': ?active,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1645,12 +1690,13 @@ extension type const OrdersInsert._(Map<String, dynamic> _json)
     : this._({'status': status.wireName});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   OrdersInsert copyWith({U441U442U430U442U443U441? status}) =>
       OrdersInsert._({..._json, 'status': ?status?.wireName});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1663,12 +1709,13 @@ extension type const OrdersUpdate._(Map<String, dynamic> _json)
     : this._({'status': ?status?.wireName});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   OrdersUpdate copyWith({U441U442U430U442U443U441? status}) =>
       OrdersUpdate._({..._json, 'status': ?status?.wireName});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1716,12 +1763,13 @@ extension type const EvilMultilineSchemaNamePostgrestColumnInsert._(
     : this._({'id': id});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   EvilMultilineSchemaNamePostgrestColumnInsert copyWith({int? id}) =>
       EvilMultilineSchemaNamePostgrestColumnInsert._({..._json, 'id': ?id});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1735,12 +1783,13 @@ extension type const EvilMultilineSchemaNamePostgrestColumnUpdate._(
   EvilMultilineSchemaNamePostgrestColumnUpdate({int? id}) : this._({'id': ?id});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   EvilMultilineSchemaNamePostgrestColumnUpdate copyWith({int? id}) =>
       EvilMultilineSchemaNamePostgrestColumnUpdate._({..._json, 'id': ?id});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1791,7 +1840,7 @@ extension type const PrivateAchievementItemProgressTblInsert._(
     : this._({'id': ?id, 'name': name});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   PrivateAchievementItemProgressTblInsert copyWith({int? id, String? name}) =>
       PrivateAchievementItemProgressTblInsert._({
         ..._json,
@@ -1799,8 +1848,9 @@ extension type const PrivateAchievementItemProgressTblInsert._(
         'name': ?name,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1815,7 +1865,7 @@ extension type const PrivateAchievementItemProgressTblUpdate._(
     : this._({'id': ?id, 'name': ?name});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   PrivateAchievementItemProgressTblUpdate copyWith({int? id, String? name}) =>
       PrivateAchievementItemProgressTblUpdate._({
         ..._json,
@@ -1823,8 +1873,9 @@ extension type const PrivateAchievementItemProgressTblUpdate._(
         'name': ?name,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1881,8 +1932,9 @@ extension type const TeamInsert._(Map<String, dynamic> _json)
   /// default.
   TeamInsert setOwnerIdToNull() => TeamInsert._({..._json, 'owner_id': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1903,8 +1955,9 @@ extension type const TeamUpdate._(Map<String, dynamic> _json)
   /// default.
   TeamUpdate setOwnerIdToNull() => TeamUpdate._({..._json, 'owner_id': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2004,8 +2057,9 @@ extension type const ProfileInsert._(Map<String, dynamic> _json)
   /// default.
   ProfileInsert setTeamToNull() => ProfileInsert._({..._json, 'team': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2026,8 +2080,9 @@ extension type const ProfileUpdate._(Map<String, dynamic> _json)
   /// default.
   ProfileUpdate setTeamToNull() => ProfileUpdate._({..._json, 'team': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2111,8 +2166,9 @@ extension type const BadgeInsert._(Map<String, dynamic> _json)
   /// default.
   BadgeInsert setTeamToNull() => BadgeInsert._({..._json, 'team': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2139,8 +2195,9 @@ extension type const BadgeUpdate._(Map<String, dynamic> _json)
   /// default.
   BadgeUpdate setTeamToNull() => BadgeUpdate._({..._json, 'team': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2210,12 +2267,13 @@ extension type const TeamBadgeInsert._(Map<String, dynamic> _json)
     : this._({'team_id': teamId, 'badge_id': badgeId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   TeamBadgeInsert copyWith({int? teamId, int? badgeId}) =>
       TeamBadgeInsert._({..._json, 'team_id': ?teamId, 'badge_id': ?badgeId});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2228,12 +2286,13 @@ extension type const TeamBadgeUpdate._(Map<String, dynamic> _json)
     : this._({'team_id': ?teamId, 'badge_id': ?badgeId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   TeamBadgeUpdate copyWith({int? teamId, int? badgeId}) =>
       TeamBadgeUpdate._({..._json, 'team_id': ?teamId, 'badge_id': ?badgeId});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2292,12 +2351,13 @@ extension type const NoteInsert._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'id': ?id, 'team_id': ?teamId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   NoteInsert copyWith({String? body, int? id, int? teamId}) =>
       NoteInsert._({..._json, 'body': ?body, 'id': ?id, 'team_id': ?teamId});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2310,12 +2370,13 @@ extension type const NoteUpdate._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'id': ?id, 'team_id': ?teamId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   NoteUpdate copyWith({String? body, int? id, int? teamId}) =>
       NoteUpdate._({..._json, 'body': ?body, 'id': ?id, 'team_id': ?teamId});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2375,7 +2436,7 @@ extension type const NoteReplyInsert._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'id': ?id, 'note_id': ?noteId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   NoteReplyInsert copyWith({String? body, int? id, int? noteId}) =>
       NoteReplyInsert._({
         ..._json,
@@ -2384,8 +2445,9 @@ extension type const NoteReplyInsert._(Map<String, dynamic> _json)
         'note_id': ?noteId,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -2398,7 +2460,7 @@ extension type const NoteReplyUpdate._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'id': ?id, 'note_id': ?noteId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   NoteReplyUpdate copyWith({String? body, int? id, int? noteId}) =>
       NoteReplyUpdate._({
         ..._json,
@@ -2407,8 +2469,9 @@ extension type const NoteReplyUpdate._(Map<String, dynamic> _json)
         'note_id': ?noteId,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 

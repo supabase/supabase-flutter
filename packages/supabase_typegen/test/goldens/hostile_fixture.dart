@@ -114,7 +114,7 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           hasDefault: false,
           isNullable: true,
         ),
-        // Named like the codec the generated conversions call.
+        // Named like the codecs the generated conversions call.
         ColumnDescription(
           name: 'postgres_bytea',
           postgresFormat: 'bytea',
@@ -122,6 +122,14 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           isRequired: true,
           hasDefault: false,
           isNullable: false,
+        ),
+        ColumnDescription(
+          name: 'postgres_timestamp',
+          postgresFormat: 'timestamptz',
+          typeKind: ColumnTypeKind.timestampWithTimeZone,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
         ),
         // Named like the copy method of the value types.
         ColumnDescription(

@@ -108,12 +108,13 @@ extension type const InventoryBooksInsert._(Map<String, dynamic> _json)
   InventoryBooksInsert({required String isbn}) : this._({'isbn': isbn});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   InventoryBooksInsert copyWith({String? isbn}) =>
       InventoryBooksInsert._({..._json, 'isbn': ?isbn});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -125,12 +126,13 @@ extension type const InventoryBooksUpdate._(Map<String, dynamic> _json)
   InventoryBooksUpdate({String? isbn}) : this._({'isbn': ?isbn});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   InventoryBooksUpdate copyWith({String? isbn}) =>
       InventoryBooksUpdate._({..._json, 'isbn': ?isbn});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -201,7 +203,7 @@ extension type const InventoryStockInsert._(Map<String, dynamic> _json)
        });
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   InventoryStockInsert copyWith({
     int? bookId,
     InventoryCondition? condition,
@@ -215,8 +217,9 @@ extension type const InventoryStockInsert._(Map<String, dynamic> _json)
     'quantity': ?quantity,
   });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -238,7 +241,7 @@ extension type const InventoryStockUpdate._(Map<String, dynamic> _json)
        });
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   InventoryStockUpdate copyWith({
     int? bookId,
     InventoryCondition? condition,
@@ -252,8 +255,9 @@ extension type const InventoryStockUpdate._(Map<String, dynamic> _json)
     'quantity': ?quantity,
   });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -352,12 +356,13 @@ extension type const AuthorsInsert._(Map<String, dynamic> _json)
   AuthorsInsert({required String name}) : this._({'name': name});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   AuthorsInsert copyWith({String? name}) =>
       AuthorsInsert._({..._json, 'name': ?name});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -369,12 +374,13 @@ extension type const AuthorsUpdate._(Map<String, dynamic> _json)
   AuthorsUpdate({String? name}) : this._({'name': ?name});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   AuthorsUpdate copyWith({String? name}) =>
       AuthorsUpdate._({..._json, 'name': ?name});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -464,8 +470,9 @@ extension type const BookPricesInsert._(Map<String, dynamic> _json)
   BookPricesInsert setPriceToNull() =>
       BookPricesInsert._({..._json, 'price': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -492,8 +499,9 @@ extension type const BookPricesUpdate._(Map<String, dynamic> _json)
   BookPricesUpdate setPriceToNull() =>
       BookPricesUpdate._({..._json, 'price': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -563,7 +571,7 @@ extension type const BookSubmissionsInsert._(Map<String, dynamic> _json)
     : this._({'author_name': ?authorName, 'title': ?title});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   BookSubmissionsInsert copyWith({String? authorName, String? title}) =>
       BookSubmissionsInsert._({
         ..._json,
@@ -571,8 +579,9 @@ extension type const BookSubmissionsInsert._(Map<String, dynamic> _json)
         'title': ?title,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -824,8 +833,9 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
   BooksInsert setUpdatedAtToNull() =>
       BooksInsert._({..._json, 'updated_at': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -969,8 +979,9 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
   BooksUpdate setUpdatedAtToNull() =>
       BooksUpdate._({..._json, 'updated_at': null});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1089,7 +1100,7 @@ extension type const LoansInsert._(Map<String, dynamic> _json)
     : this._({'book_id': ?bookId, 'due_on': ?dueOn?.literal, 'id': ?id});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   LoansInsert copyWith({int? bookId, PostgresDate? dueOn, int? id}) =>
       LoansInsert._({
         ..._json,
@@ -1098,8 +1109,9 @@ extension type const LoansInsert._(Map<String, dynamic> _json)
         'id': ?id,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1112,7 +1124,7 @@ extension type const LoansUpdate._(Map<String, dynamic> _json)
     : this._({'book_id': ?bookId, 'due_on': ?dueOn?.literal, 'id': ?id});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   LoansUpdate copyWith({int? bookId, PostgresDate? dueOn, int? id}) =>
       LoansUpdate._({
         ..._json,
@@ -1121,8 +1133,9 @@ extension type const LoansUpdate._(Map<String, dynamic> _json)
         'id': ?id,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1195,7 +1208,7 @@ extension type const ReviewRepliesInsert._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'id': ?id, 'review_id': ?reviewId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   ReviewRepliesInsert copyWith({String? body, int? id, int? reviewId}) =>
       ReviewRepliesInsert._({
         ..._json,
@@ -1204,8 +1217,9 @@ extension type const ReviewRepliesInsert._(Map<String, dynamic> _json)
         'review_id': ?reviewId,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1218,7 +1232,7 @@ extension type const ReviewRepliesUpdate._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'id': ?id, 'review_id': ?reviewId});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   ReviewRepliesUpdate copyWith({String? body, int? id, int? reviewId}) =>
       ReviewRepliesUpdate._({
         ..._json,
@@ -1227,8 +1241,9 @@ extension type const ReviewRepliesUpdate._(Map<String, dynamic> _json)
         'review_id': ?reviewId,
       });
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1284,12 +1299,13 @@ extension type const ReviewsInsert._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'book_id': ?bookId, 'id': ?id});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   ReviewsInsert copyWith({String? body, int? bookId, int? id}) =>
       ReviewsInsert._({..._json, 'body': ?body, 'book_id': ?bookId, 'id': ?id});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
@@ -1302,12 +1318,13 @@ extension type const ReviewsUpdate._(Map<String, dynamic> _json)
     : this._({'body': ?body, 'book_id': ?bookId, 'id': ?id});
 
   /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  /// current value.
   ReviewsUpdate copyWith({String? body, int? bookId, int? id}) =>
       ReviewsUpdate._({..._json, 'body': ?body, 'book_id': ?bookId, 'id': ?id});
 
-  /// The values as they are sent, as an unmodifiable copy. Compare two values
-  /// through this map with deep equality, since `==` compares map identity.
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
