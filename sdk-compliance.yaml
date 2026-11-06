@@ -1002,6 +1002,8 @@ features:
       - PostgrestComputedField.jsonObjectAt
       - PostgrestReadable
       - PostgrestReadable.responseKey
+      - PostgrestReadableOf
+      - PostgrestReadableOf.of
       - PostgrestPartialRow
       - PostgrestPartialRow.fromJson
       - PostgrestPartialRow.read

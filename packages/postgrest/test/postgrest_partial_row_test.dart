@@ -755,6 +755,66 @@ void main() {
     });
   });
 
+  group('of', () {
+    final order = PostgrestPartialRow<Order>.fromJson(
+      {
+        'id': 1,
+        'note': null,
+        'amount.sum()': 12,
+        'customers': {'name': 'Ada'},
+        'items': [
+          {'sku': 'a'},
+        ],
+        'items(count)': [
+          {'count': 1},
+        ],
+      },
+      [
+        Orders.id,
+        Orders.note,
+        Orders.amount.sum(),
+        Orders.customer(Customers.name),
+        Orders.items(Items.sku),
+        Orders.items.count(),
+      ],
+    );
+
+    test('reads every kind of entry as the type of the entry', () {
+      final int id = Orders.id.of(order);
+      final String? note = Orders.note.of(order);
+      final double? total = Orders.amount.sum().of(order);
+      final PostgrestPartialRow<Customer>? customer = Orders.customer.of(
+        order,
+      );
+      final List<PostgrestPartialRow<Item>> items = Orders.items.of(order);
+      final int count = Orders.items.count().of(order);
+
+      expect(id, 1);
+      expect(note, isNull);
+      expect(total, 12.0);
+      expect(customer?.read(Customers.name), 'Ada');
+      expect(Items.sku.of(items.single), 'a');
+      expect(count, 1);
+    });
+
+    test('returned from an async function reads the entry type', () async {
+      Future<int> readId(Future<PostgrestPartialRow<Order>> pending) async {
+        try {
+          final row = await pending;
+          return Orders.id.of(row);
+        } on StateError {
+          return 0;
+        }
+      }
+
+      expect(await readId(Future.value(order)), 1);
+    });
+
+    test('throws like read for an entry the row does not hold', () {
+      expect(() => Orders.status.of(order), throwsNotSelected('status'));
+    });
+  });
+
   group('fromJson', () {
     Matcher throwsInvalid(String path) => throwsA(
       isA<ArgumentError>()
