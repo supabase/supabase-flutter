@@ -93,6 +93,32 @@ The old row of an update or delete only carries the primary key, unless the
 table has `replica identity full`. `onTableChangesOnly(…, columns: [...])`
 asks the server for fewer columns.
 
+Its new rows are the same `PostgrestPartialRow` a `selectOnly` of those
+columns returns, so one list of columns and one mapping serve both. Give the
+list its type, since a list literal of nullable and non-nullable columns
+infers neither:
+
+```dart
+const List<PostgrestStoredColumn<BooksRow, Object>> bookTitle = [
+  Books.id,
+  Books.title,
+];
+String label(PostgrestPartialRow<BooksRow> book) =>
+    '#${book.read(Books.id)} ${book.read(Books.title)}';
+
+final books = await supabase.table(Books.table).selectOnly(bookTitle);
+print(books.map(label));
+
+final channel = supabase.channel('book-titles');
+channel.onTableChangesOnly(Books.table, columns: bookTitle).listen((change) {
+  if (change case TypedPostgresInsert(:final newRow)) print(label(newRow));
+});
+channel.subscribe();
+```
+
+A row from any other source is read the same way after
+`PostgrestPartialRow.fromJson(json, bookTitle)`.
+
 ## Broadcast
 
 ```dart

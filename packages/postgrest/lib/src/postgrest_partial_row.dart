@@ -57,6 +57,43 @@ final class PostgrestPartialRow<Row> {
   }) : _allColumns = allColumns,
        _presentColumns = presentColumns;
 
+  /// A row of [selections] decoded from [json], such as a row of a
+  /// `selectOnly` with the same [selections], a realtime change payload, or a
+  /// test fixture.
+  ///
+  /// It reads exactly like the row the query returns, so a mapping from a
+  /// partial row can be shared between them and unit tested on its own:
+  ///
+  /// ```dart
+  /// const List<PostgrestStoredColumn<Book, Object>> summary = [
+  ///   Books.id,
+  ///   Books.title,
+  /// ];
+  /// final book = PostgrestPartialRow<Book>.fromJson(
+  ///   {'id': 1, 'title': 'Dune'},
+  ///   summary,
+  /// );
+  /// final String title = book.read(Books.title);
+  /// ```
+  ///
+  /// Throws an [ArgumentError] when [selections] is empty, or when [json],
+  /// or a row embedded in it, has no key for one of the entries. A response
+  /// to the `select` list always holds every key, even when its value is
+  /// `null`, while a missing key would otherwise read as `null` too.
+  /// [PostgrestTable.allColumns] does not check which columns are present.
+  factory PostgrestPartialRow.fromJson(
+    Map<String, dynamic> json,
+    List<PostgrestSelectable<Row>> selections,
+  ) {
+    _checkedSelections(selections, 'selections');
+    _checkKeys(json, selections, '');
+    return PostgrestPartialRow._(
+      json,
+      selections,
+      allColumns: _selectsAllColumns(selections),
+    );
+  }
+
   final Map<String, dynamic> _json;
 
   /// The entries of the `select` list this row answers.
@@ -177,6 +214,38 @@ final class PostgrestPartialRow<Row> {
 
   @override
   String toString() => 'PostgrestPartialRow($_json)';
+}
+
+/// Throws an [ArgumentError] when [json], the row at [path], or a row
+/// embedded in it lacks the key of one of [selections].
+void _checkKeys(
+  Map<String, dynamic> json,
+  List<PostgrestSelectable<Object?>> selections,
+  String path,
+) {
+  for (final selection in selections) {
+    if (selection is PostgrestAllColumns) continue;
+    final key = selection.responseKey;
+    if (!json.containsKey(key)) {
+      throw ArgumentError.value(
+        json,
+        'json',
+        'Has no `$path$key`, which the selections ask for',
+      );
+    }
+    if (selection case _Embedded(_selections: final members)) {
+      switch (json[key]) {
+        case final Map<String, dynamic> row:
+          _checkKeys(row, members, '$path$key.');
+        case final List<Object?> rows:
+          for (final (index, row) in rows.indexed) {
+            if (row is Map<String, dynamic>) {
+              _checkKeys(row, members, '$path$key[$index].');
+            }
+          }
+      }
+    }
+  }
 }
 
 /// Whether [selections] ask for every column with [PostgrestAllColumns].
