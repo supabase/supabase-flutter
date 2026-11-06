@@ -251,6 +251,7 @@ class ColumnDescription {
     this.boundTypeKind,
     this.enumValues,
     this.enumType,
+    this.jsonSchema,
     this.foreignKey,
     this.comment,
   });
@@ -277,7 +278,16 @@ class ColumnDescription {
 
   /// The Postgres enum of enum columns and of arrays of an enum, which the
   /// generated column types are resolved through; `null` for other columns.
+  ///
+  /// A text column whose check constraint limits it to a list of values is
+  /// an enum column too, with an enum that has [EnumDescription.checkedColumn]
+  /// set.
   final EnumDescription? enumType;
+
+  /// The shape of a `json` or `jsonb` column whose check constraint matches
+  /// it against a JSON Schema with pg_jsonschema, when that schema describes
+  /// an object; `null` for other columns.
+  final JsonSchemaObject? jsonSchema;
 
   /// Whether the column is `NOT NULL` without a database default, which makes
   /// it required on insert.
@@ -331,6 +341,7 @@ class EnumDescription {
     required this.schema,
     required this.name,
     required this.values,
+    this.checkedColumn,
   });
 
   /// The schema of the enum, for example `public`.
@@ -341,6 +352,12 @@ class EnumDescription {
 
   /// The values of the enum, in declaration order.
   final List<String> values;
+
+  /// The table and column, of [schema], whose check constraint lists the
+  /// [values], when the enum stands for such a constraint rather than for a
+  /// Postgres enum type. Its [name] is then the table and column names joined
+  /// by an underscore.
+  final (String, String)? checkedColumn;
 
   /// The schema-qualified name, for example `public.mood`.
   String get qualifiedName => '$schema.$name';
@@ -550,12 +567,90 @@ class FunctionTableRowsResult extends FunctionResultDescription {
   final bool isSetReturning;
 }
 
-/// The function returns rows of its own shape, `RETURNS TABLE (…)`. Nothing
-/// on the catalog says whether a column can be `NULL`, so every column is
-/// nullable.
+/// The function returns rows of its own shape, `RETURNS TABLE (…)`. A column
+/// is nullable unless the metadata says it cannot be `NULL`.
 class FunctionColumnsResult extends FunctionResultDescription {
   const FunctionColumnsResult(this.columns);
 
   /// The columns of the rows, in name order.
   final List<ColumnDescription> columns;
+}
+
+/// A type in a JSON Schema that the generated code reads and writes.
+sealed class JsonSchemaType {
+  const JsonSchemaType({this.isNullable = false, this.description});
+
+  /// Whether the schema allows the JSON `null`.
+  final bool isNullable;
+
+  /// The `description` of the schema, when it has one.
+  final String? description;
+}
+
+/// A JSON object with the listed [properties]. Other properties the object
+/// may hold are kept but not typed.
+class JsonSchemaObject extends JsonSchemaType {
+  const JsonSchemaObject(
+    this.properties, {
+    super.isNullable,
+    super.description,
+  });
+
+  /// The properties of the object, in document order. Never empty.
+  final List<JsonSchemaProperty> properties;
+}
+
+/// A property of a [JsonSchemaObject].
+class JsonSchemaProperty {
+  const JsonSchemaProperty({
+    required this.name,
+    required this.type,
+    required this.isRequired,
+  });
+
+  /// The key of the property in the JSON object.
+  final String name;
+
+  /// The type of the property value.
+  final JsonSchemaType type;
+
+  /// Whether the schema lists the property under `required`.
+  final bool isRequired;
+}
+
+/// A JSON array whose elements are [items].
+class JsonSchemaArray extends JsonSchemaType {
+  const JsonSchemaArray(this.items, {super.isNullable, super.description});
+
+  /// The type of every element.
+  final JsonSchemaType items;
+}
+
+/// A JSON string, number or boolean.
+class JsonSchemaScalar extends JsonSchemaType {
+  const JsonSchemaScalar(this.kind, {super.isNullable, super.description});
+
+  /// Which scalar it is.
+  final JsonSchemaScalarKind kind;
+}
+
+/// The scalar JSON Schema types.
+enum JsonSchemaScalarKind {
+  /// `string`, read as a `String`.
+  string,
+
+  /// `integer`, read as an `int`.
+  integer,
+
+  /// `number`, read as a `num`.
+  number,
+
+  /// `boolean`, read as a `bool`.
+  boolean,
+}
+
+/// A value whose schema has no generated type, such as a `oneOf` or a
+/// `$ref`, read as the decoded JSON.
+class JsonSchemaAny extends JsonSchemaType {
+  const JsonSchemaAny({super.description}) : super(isNullable: true);
 }

@@ -1,5 +1,6 @@
 import 'package:supabase_common/supabase_common.dart';
 
+import 'check_constraints.dart';
 import 'schema_description.dart';
 
 const _integerFormats = {'int2', 'int4', 'int8'};
@@ -332,7 +333,7 @@ DatabaseDescription _parseGeneratorMetadata(
   final functionsByRelationId = _functionsByRelationId(document, typesById);
 
   final tables = <TableDescription>[];
-  final enumsByType = <(String, String), EnumDescription>{};
+  final enumsByType = <_EnumKey, EnumDescription>{};
 
   for (final (:relation, :isInsertable, :isUpdatable, :isView) in relations) {
     final relationSchema = relation.field<String>('schema');
@@ -367,8 +368,26 @@ DatabaseDescription _parseGeneratorMetadata(
           : null;
 
       var postgresFormat = _qualifiedFormat(format, typeSchema);
+      final check = column.field<String?>('check');
+      final checkedValues = check != null && typeKind == ColumnTypeKind.text
+          ? checkConstraintValues(check, name)
+          : null;
+      final jsonSchema = check != null && typeKind == ColumnTypeKind.json
+          ? checkConstraintJsonSchema(check, name)
+          : null;
       EnumDescription? enumDescription;
-      if (isEnum) {
+      if (checkedValues != null) {
+        final described = EnumDescription(
+          schema: relationSchema,
+          name: '${relationName}_$name',
+          values: checkedValues,
+          checkedColumn: (relationName, name),
+        );
+        enumDescription = enumsByType.putIfAbsent(
+          _enumKey(described),
+          () => described,
+        );
+      } else if (isEnum) {
         final described = _enumDescription(
           elementFormat,
           typeSchema,
@@ -377,7 +396,7 @@ DatabaseDescription _parseGeneratorMetadata(
         );
         // Every column of one enum shares the description registered first.
         enumDescription = enumsByType.putIfAbsent(
-          (described.schema, described.name),
+          _enumKey(described),
           () => described,
         );
         // An array column keeps its array format; the enum of its elements
@@ -397,15 +416,16 @@ DatabaseDescription _parseGeneratorMetadata(
         ColumnDescription(
           name: name,
           postgresFormat: postgresFormat,
-          typeKind: typeKind,
+          typeKind: checkedValues != null ? ColumnTypeKind.enumType : typeKind,
           elementTypeKind: elementTypeKind,
           boundTypeKind: _rangeBoundKind(
             typeKind,
             elementTypeKind,
             elementFormat,
           ),
-          enumValues: isEnum ? enumValues : null,
+          enumValues: checkedValues ?? (isEnum ? enumValues : null),
           enumType: enumDescription,
+          jsonSchema: jsonSchema,
           // A view column does not carry the default of the column it reads,
           // so an insert through the view may still omit it.
           isRequired: !isView && !isNullable && !hasDefault,
@@ -498,9 +518,16 @@ DatabaseDescription _parseGeneratorMetadata(
   );
   final enums = enumsByType.values.toList()
     ..sort(
-      (a, b) => a.schema == b.schema
-          ? a.name.compareTo(b.name)
-          : a.schema.compareTo(b.schema),
+      (a, b) => switch (a.schema.compareTo(b.schema)) {
+        0 => switch (a.name.compareTo(b.name)) {
+          // A Postgres enum sorts before a check constraint of the same name.
+          0 => (a.checkedColumn == null ? 0 : 1).compareTo(
+            b.checkedColumn == null ? 0 : 1,
+          ),
+          final order => order,
+        },
+        final order => order,
+      },
     );
 
   return DatabaseDescription(
@@ -733,7 +760,7 @@ ComputedFieldDescription _computedField(
   Map<String, dynamic>? returnType,
   Map<(String, String), List<String>> enumTypes,
   Set<(String, String)> compositeTypes,
-  Map<(String, String), EnumDescription> enumsByType,
+  Map<_EnumKey, EnumDescription> enumsByType,
 ) {
   final type = _valueType(
     returnType,
@@ -758,7 +785,7 @@ ValueTypeDescription _valueType(
   Map<String, dynamic>? type,
   Map<(String, String), List<String>> enumTypes,
   Set<(String, String)> compositeTypes,
-  Map<(String, String), EnumDescription> enumsByType,
+  Map<_EnumKey, EnumDescription> enumsByType,
 ) {
   if (type == null) {
     return const ValueTypeDescription(
@@ -785,7 +812,7 @@ ValueTypeDescription _valueType(
       enumTypes,
     );
     enumDescription = enumsByType.putIfAbsent(
-      (described.schema, described.name),
+      _enumKey(described),
       () => described,
     );
   }
@@ -824,7 +851,7 @@ List<FunctionDescription> _functions(
   required Map<int, Map<String, dynamic>> typesById,
   required Map<(String, String), List<String>> enumTypes,
   required Set<(String, String)> compositeTypes,
-  required Map<(String, String), EnumDescription> enumsByType,
+  required Map<_EnumKey, EnumDescription> enumsByType,
   required Map<int, (String, String)> relationsById,
   required Set<(String, String)> generatedRelations,
 }) {
@@ -920,7 +947,8 @@ List<FunctionDescription> _functions(
   ];
 }
 
-/// A column of a `RETURNS TABLE` result, which can always be `NULL`.
+/// A column of a `RETURNS TABLE` result, nullable unless its `is_nullable`
+/// says otherwise, which a document predating the field never does.
 ColumnDescription _resultColumn(
   Map<String, dynamic> column,
   ValueTypeDescription type,
@@ -934,6 +962,14 @@ ColumnDescription _resultColumn(
   enumValues: type.enumType?.values,
   isRequired: false,
   hasDefault: false,
-  isNullable: true,
+  isNullable: column.field('is_nullable') ?? true,
   isReadOnly: true,
 );
+
+/// What tells the enums of a document apart: a Postgres enum by its schema
+/// and name, and the check constraint of a column, which may be named like
+/// one, by its column too.
+typedef _EnumKey = (String, String, (String, String)?);
+
+_EnumKey _enumKey(EnumDescription description) =>
+    (description.schema, description.name, description.checkedColumn);
