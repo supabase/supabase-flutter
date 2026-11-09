@@ -15,8 +15,17 @@ extension type const Book(Map<String, dynamic> _json)
 
 extension type const BookInsert._(Map<String, dynamic> _json)
     implements Object {
-  BookInsert({required String title, int? id})
-    : this._({'title': title, 'id': ?id});
+  factory BookInsert({required String title, int? id}) = _BookInsert;
+}
+
+extension type const _BookInsert._(Map<String, dynamic> _json)
+    implements BookInsert {
+  _BookInsert({required String title, Object? id = const _Omitted()})
+    : _json = {'title': title, if (id is! _Omitted) 'id': id};
+}
+
+final class _Omitted {
+  const _Omitted();
 }
 
 extension type const BookUpdate._(Map<String, dynamic> _json)
@@ -1392,7 +1401,7 @@ void main() {
 
       await client.table(Books.table).insertAll([
         BookInsert(title: 'foo'),
-        BookInsert._({'title': 'bar', 'id': null}),
+        BookInsert(title: 'bar', id: null),
       ]);
 
       expect(
@@ -1429,7 +1438,7 @@ void main() {
 
       await client.table(Books.table).upsertAll([
         BookInsert(title: 'foo'),
-        BookInsert._({'title': 'bar', 'id': null}),
+        BookInsert(title: 'bar', id: null),
       ]);
 
       expect(
