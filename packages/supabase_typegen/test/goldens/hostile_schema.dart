@@ -2641,6 +2641,24 @@ extension type const StringInsert._(Map<String, dynamic> _json)
     required StringValue value,
     required StringDocument document,
   }) : this._({'id': ?id, 'value': value.wireName, 'document': document});
+
+  /// Returns a copy with the given columns replaced. Passing `null` keeps the
+  /// current value.
+  StringInsert copyWith({
+    int? id,
+    StringValue? value,
+    StringDocument? document,
+  }) => StringInsert._({
+    ..._json,
+    'id': ?id,
+    'value': ?value?.wireName,
+    'document': ?document,
+  });
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
 /// Values for updating rows of `string`. All columns are optional; passing
@@ -2650,6 +2668,24 @@ extension type const StringUpdate._(Map<String, dynamic> _json)
     implements Object {
   StringUpdate({int? id, StringValue? value, StringDocument? document})
     : this._({'id': ?id, 'value': ?value?.wireName, 'document': ?document});
+
+  /// Returns a copy with the given columns replaced. Passing `null` keeps the
+  /// current value.
+  StringUpdate copyWith({
+    int? id,
+    StringValue? value,
+    StringDocument? document,
+  }) => StringUpdate._({
+    ..._json,
+    'id': ?id,
+    'value': ?value?.wireName,
+    'document': ?document,
+  });
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
 /// Typed access to the `string` table.

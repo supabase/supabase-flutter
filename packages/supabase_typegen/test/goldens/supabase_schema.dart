@@ -1329,10 +1329,26 @@ extension type const ProfilesInsert._(Map<String, dynamic> _json)
   ProfilesInsert({ProfilesSettings? settings, ProfilesStatus? status})
     : this._({'settings': ?settings, 'status': ?status?.wireName});
 
+  /// Returns a copy with the given columns replaced. Passing `null` keeps the
+  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  ProfilesInsert copyWith({
+    ProfilesSettings? settings,
+    ProfilesStatus? status,
+  }) => ProfilesInsert._({
+    ..._json,
+    'settings': ?settings,
+    'status': ?status?.wireName,
+  });
+
   /// Returns a copy with `settings` set to SQL NULL, overriding any database
   /// default.
   ProfilesInsert setSettingsToNull() =>
       ProfilesInsert._({..._json, 'settings': null});
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
 /// Values for updating rows of `profiles`. All columns are optional; passing
@@ -1343,10 +1359,26 @@ extension type const ProfilesUpdate._(Map<String, dynamic> _json)
   ProfilesUpdate({ProfilesSettings? settings, ProfilesStatus? status})
     : this._({'settings': ?settings, 'status': ?status?.wireName});
 
+  /// Returns a copy with the given columns replaced. Passing `null` keeps the
+  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  ProfilesUpdate copyWith({
+    ProfilesSettings? settings,
+    ProfilesStatus? status,
+  }) => ProfilesUpdate._({
+    ..._json,
+    'settings': ?settings,
+    'status': ?status?.wireName,
+  });
+
   /// Returns a copy with `settings` set to SQL NULL, overriding any database
   /// default.
   ProfilesUpdate setSettingsToNull() =>
       ProfilesUpdate._({..._json, 'settings': null});
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
 /// Typed access to the `profiles` table.
