@@ -146,8 +146,9 @@ String generateDartCode(
       ),
   };
   final relationshipCounts = _relationshipCounts(database);
+  final partialRowWriters = <_PartialRowWriter>[];
   for (final table in tables) {
-    _writeTable(
+    final writePartialRow = _writeTable(
       buffer,
       table,
       tableNames[(table.schema, table.name)]!,
@@ -163,6 +164,7 @@ String generateDartCode(
       schemaTypeNames,
       decoders,
     );
+    partialRowWriters.add(writePartialRow);
   }
   final functionsExtension = _writeFunctions(
     buffer,
@@ -172,6 +174,15 @@ String generateDartCode(
     schemaTypeNames,
     decoders,
   );
+  // Claimed after every other name, so adding the extensions moves no name
+  // an earlier version generated.
+  final partialRowTypes = [
+    for (final (index, table) in tables.indexed)
+      partialRowWriters[index](
+        buffer,
+        typeNames.claim('${_typeBaseName(table.schema, table.name)}PartialRow'),
+      ),
+  ];
   decoders.write(buffer);
 
   final header = StringBuffer()
@@ -199,9 +210,9 @@ String generateDartCode(
         '// The getters of a partial row are in an extension per table, which '
         'a `show`',
       )
+      ..writeln('// import has to name too, such as:')
       ..writeln(
-        '// import has to name too: ${example.partialRowType} for '
-        '${example.namespaceType}.',
+        '// ${partialRowTypes.first} for ${example.namespaceType}.',
       );
   }
   header
@@ -400,7 +411,6 @@ class _TableNames {
     required this.insertType,
     required this.updateType,
     required this.namespaceType,
-    required this.partialRowType,
     required this.displayName,
   });
 
@@ -415,7 +425,6 @@ class _TableNames {
       insertType: table.isInsertable ? claim('Insert') : null,
       updateType: table.isUpdatable ? claim('Update') : null,
       namespaceType: claim(''),
-      partialRowType: claim('PartialRow'),
       displayName: _displayName(table.schema, table.name),
     );
   }
@@ -424,9 +433,6 @@ class _TableNames {
   final String? insertType;
   final String? updateType;
   final String namespaceType;
-
-  /// The extension holding the getters of a partial row of the table.
-  final String partialRowType;
 
   /// The table name as written in documentation comments.
   final String displayName;
@@ -763,7 +769,14 @@ List<String> _columnConstants(
         )),
 ];
 
-void _writeTable(
+/// Writes the extension on a partial row of a table, named [extensionName],
+/// and returns the name.
+typedef _PartialRowWriter =
+    String Function(StringBuffer buffer, String extensionName);
+
+/// Writes the row, value and namespace types of [table] and returns the
+/// writer of its partial row extension, whose name is claimed last.
+_PartialRowWriter _writeTable(
   StringBuffer buffer,
   TableDescription table,
   _TableNames names,
@@ -784,7 +797,12 @@ void _writeTable(
     for (final field in table.computedFields)
       field.name: _bindingFor(_computedFieldShape(field), schemaTypeNames),
   };
-  final relationNames = _relationNames(typeNames, members, relations);
+  final relationNames = _relationNames({
+    'table',
+    ...typeNames,
+    ...members.columnMembers.values,
+    ...members.computedFieldMembers.values,
+  }, relations);
   final relationAliases = _embedAliases(table, relations, relationNames);
 
   _writeRow(
@@ -842,32 +860,29 @@ void _writeTable(
     relationAliases,
     decoders,
   );
-  _writePartialRow(
-    buffer,
-    table,
-    names,
-    members,
-    bindings,
-    computedFieldBindings,
-    relations,
-    relationNames,
-    typeNames,
-  );
+  return (partialRowBuffer, extensionName) {
+    _writePartialRow(
+      partialRowBuffer,
+      table,
+      names,
+      extensionName,
+      members,
+      bindings,
+      computedFieldBindings,
+      relations,
+      relationNames,
+      typeNames,
+    );
+    return extensionName;
+  };
 }
 
-/// The Dart names of [relations] in the namespace class, next to the column
-/// constants and the types the table definition names.
+/// The Dart names of [relations] next to the names in [used], which claiming
+/// them adds to.
 List<String> _relationNames(
-  Set<String> typeNames,
-  _TableMembers members,
+  Set<String> used,
   List<_RelationMember> relations,
 ) {
-  final used = {
-    'table',
-    ...typeNames,
-    ...members.columnMembers.values,
-    ...members.computedFieldMembers.values,
-  };
   final baseNameCounts = <String, int>{};
   for (final relation in relations) {
     baseNameCounts.update(
@@ -1188,21 +1203,22 @@ void _writeNamespace(
 /// computed field and relation, each reading its entry of the namespace
 /// class.
 ///
-/// The getters take the names of the row getters, and of the namespace
-/// constants for computed fields and relations, unless a member of
-/// `PostgrestPartialRow` or an earlier getter has the name.
+/// The column getters take the names of the row getters, and the computed
+/// field and relation getters are named like the namespace constants would
+/// be next to them, unless a member of `PostgrestPartialRow` has the name.
 void _writePartialRow(
   StringBuffer buffer,
   TableDescription table,
   _TableNames names,
+  String extensionName,
   _TableMembers members,
   Map<String, _Binding> bindings,
   Map<String, _Binding> computedFieldBindings,
   List<_RelationMember> relations,
-  List<String> relationNames,
+  List<String> relationMembers,
   Set<String> typeNames,
 ) {
-  final _TableNames(:rowType, :namespaceType, :partialRowType) = names;
+  final _TableNames(:rowType, :namespaceType) = names;
   final used = {
     ...typeNames,
     ..._codecs,
@@ -1221,42 +1237,44 @@ void _writePartialRow(
     'not ask for its entry.',
   );
   buffer.writeln(
-    'extension $partialRowType on PostgrestPartialRow<$rowType> {',
+    'extension $extensionName on PostgrestPartialRow<$rowType> {',
   );
   for (final column in table.columns) {
     final binding = bindings[column.name]!;
     final entry = '$namespaceType.${members.columnMembers[column.name]}';
     final name = _claimName(used, members.rowMembers[column.name]!);
-    final (type, body) = switch (binding) {
-      _Binding(kind: ColumnTypeKind.json, isJsonObject: true) => (
-        '${binding.dartType}?',
-        'read($entry) as ${binding.dartType}?',
-      ),
-      _Binding(kind: ColumnTypeKind.json) => ('PostgrestJson?', 'read($entry)'),
-      _ => (_getterType(column, binding), 'read($entry)'),
-    };
+    final type = binding.kind == ColumnTypeKind.json && !binding.isJsonObject
+        ? 'PostgrestJson?'
+        : _getterType(column, binding);
+    final body = binding.isJsonObject
+        ? 'read($entry) as $type'
+        : 'read($entry)';
     _writeDocComment(buffer, column.comment, indent: '  ');
     buffer.writeln('  $type get $name => $body;');
   }
+  final computedFieldNames = _uniqueMemberNames(
+    [for (final field in table.computedFields) field.name],
+    reserved: used,
+  );
+  used.addAll(computedFieldNames.values);
   for (final field in table.computedFields) {
     final binding = computedFieldBindings[field.name]!;
-    final member = members.computedFieldMembers[field.name]!;
     final type = field.typeKind == ColumnTypeKind.json
         ? 'PostgrestJson?'
         : '${binding.dartType}?';
     buffer.writeln(
-      '  $type get ${_claimName(used, member)} => '
-      'read($namespaceType.$member);',
+      '  $type get ${computedFieldNames[field.name]} => '
+      'read($namespaceType.${members.computedFieldMembers[field.name]});',
     );
   }
+  final relationGetters = _relationNames(used, relations);
   for (final (index, relation) in relations.indexed) {
-    final member = relationNames[index];
     final target = 'PostgrestPartialRow<${relation.targetRowType}>';
     final type = relation.isToMany ? 'List<$target>' : '$target?';
     _writeDocComment(buffer, relation.docLine, indent: '  ');
     buffer.writeln(
-      '  $type get ${_claimName(used, member)} => '
-      'read($namespaceType.$member);',
+      '  $type get ${relationGetters[index]} => '
+      'read($namespaceType.${relationMembers[index]});',
     );
   }
   buffer

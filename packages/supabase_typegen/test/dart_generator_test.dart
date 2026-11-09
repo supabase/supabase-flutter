@@ -585,6 +585,38 @@ void main() {
     expect(code, isNot(contains('class PostgrestJson {')));
   });
 
+  test('a partial row extension moves no other generated name', () {
+    const idColumn = ColumnDescription(
+      name: 'id',
+      postgresFormat: 'int8',
+      typeKind: ColumnTypeKind.integer,
+      isRequired: true,
+      hasDefault: false,
+      isNullable: false,
+    );
+    const clashingSchema = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(schema: 'public', name: 'books', columns: [idColumn]),
+        TableDescription(
+          schema: 'public',
+          name: 'books_partial',
+          columns: [idColumn],
+        ),
+      ],
+      enums: [],
+    );
+
+    final code = generateDartCode(clashingSchema);
+
+    expect(code, contains('extension type const BooksPartialRow('));
+    expect(
+      code,
+      contains(r'extension BooksPartialRow$ on PostgrestPartialRow<BooksRow>'),
+    );
+    expect(code, contains('// BooksPartialRow\$ for Books.'));
+  });
+
   test('emits a relation member for each side of a foreign key', () {
     final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
 

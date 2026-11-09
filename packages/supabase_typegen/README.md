@@ -27,12 +27,11 @@ For every table the generator emits:
   foreign key between two generated tables of one schema, named after the
   table on the other side. A relation goes into a `selectOnly` list and the
   embedded rows are read back through it, `book.authors?.name`. When two keys
-  point at the
-  same table the embed carries the constraint hint and is aliased to the
-  member name, so each comes back under its own key. Keys into another schema
-  and self-referential keys get no member, since PostgREST resolves embeds
-  within the schema of the request only and needs a computed relationship to
-  embed a table into itself,
+  point at the same table the embed carries the constraint hint and is aliased
+  to the member name, so each comes back under its own key. Keys into another
+  schema and self-referential keys get no member, since PostgREST resolves
+  embeds within the schema of the request only and needs a computed
+  relationship to embed a table into itself,
 - `PostgrestComputedField` members for computed fields, functions whose only
   argument is the table's row type and that return a scalar, and
   `PostgrestToOneRelation.computed` and `PostgrestToManyRelation.computed`

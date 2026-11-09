@@ -433,7 +433,9 @@ final authors = await supabase
       Authors.books.select([Books.title]),
     ])
     .embedded(Authors.books, (books) => books.limit(3));
-final List<String> titles = [for (final book in authors.first.books) book.title];
+final List<String> titles = [
+  for (final book in authors.first.books) book.title,
+];
 ```
 
 A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.
