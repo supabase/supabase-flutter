@@ -10,8 +10,7 @@ import 'package:test/test.dart';
 
 import 'utils.dart';
 
-extension type const _User(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const _User(Map<String, dynamic> _json) implements Object {
   String get username => _json['username'] as String;
   String? get status => _json['status'] as String?;
 }

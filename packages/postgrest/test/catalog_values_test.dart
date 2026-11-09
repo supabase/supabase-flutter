@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 import 'test_utils.dart';
 
 extension type const CatalogValue(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+    implements Object {}
 
 class CatalogValues {
   static const table = PostgrestTable<CatalogValue, Never, Never>(

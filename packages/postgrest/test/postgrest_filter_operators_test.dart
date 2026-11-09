@@ -6,8 +6,7 @@ import 'dart:typed_data';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-extension type const Post(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Post(Map<String, dynamic> _json) implements Object {}
 
 class Posts {
   static const id = PostgrestColumn<Post, int>('id');

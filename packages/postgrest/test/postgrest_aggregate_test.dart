@@ -1,8 +1,7 @@
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-extension type const Order(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Order(Map<String, dynamic> _json) implements Object {}
 
 class Orders {
   static const amount = PostgrestColumn<Order, double>('amount');

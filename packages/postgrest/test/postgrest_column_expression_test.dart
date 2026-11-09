@@ -1,8 +1,7 @@
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-extension type const Todo(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Todo(Map<String, dynamic> _json) implements Object {}
 
 enum Mood {
   happy('happy'),

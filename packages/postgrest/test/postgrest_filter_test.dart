@@ -6,8 +6,7 @@ import 'package:supabase_common/supabase_common.dart'
     show postgresTimestampLiteral;
 import 'package:test/test.dart';
 
-extension type const Todo(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Todo(Map<String, dynamic> _json) implements Object {}
 
 class Todos {
   static const a = PostgrestColumn<Todo, int>('a');

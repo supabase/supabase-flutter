@@ -6,8 +6,7 @@ import 'package:test/test.dart';
 
 import 'utils.dart';
 
-extension type const Todo(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const Todo(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
   String get task => _json['task'] as String;
 }

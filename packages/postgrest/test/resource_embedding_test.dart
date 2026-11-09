@@ -7,11 +7,9 @@ import 'package:test/test.dart';
 import 'reset_helper.dart';
 import 'test_utils.dart';
 
-extension type const User(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const User(Map<String, dynamic> _json) implements Object {}
 
-extension type const Message(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Message(Map<String, dynamic> _json) implements Object {}
 
 class Users {
   static const table = PostgrestTable<User, Never, Never>(
