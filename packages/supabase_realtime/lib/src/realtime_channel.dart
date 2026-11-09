@@ -683,7 +683,8 @@ class RealtimeChannel {
   /// name and the sent data under `payload`. Messages broadcast from the
   /// database also carry a `meta` map. A message from a v2 client, which has
   /// its data next to `type` and `event`, arrives with that data moved under
-  /// `payload` as well.
+  /// `payload` as well, unless the data has a `payload` key of its own, in
+  /// which case the message is emitted as it was sent.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
@@ -706,6 +707,10 @@ class RealtimeChannel {
   }
 
   static const _broadcastEnvelopeKeys = {'type', 'event', 'meta'};
+  static const _v2ReservedBroadcastKeys = {
+    ..._broadcastEnvelopeKeys,
+    'payload',
+  };
 
   Map<String, dynamic> _normalizeBroadcast(Map<String, dynamic> message) {
     if (message.containsKey('payload')) {
@@ -1079,7 +1084,9 @@ class RealtimeChannel {
         event: event,
         payload: {
           if (_v2BroadcastCompatibility && !isBinary)
-            ...Map<String, dynamic>.from(payload as Map),
+            for (final MapEntry(:key, :value) in (payload as Map).entries)
+              if (key is String && !_v2ReservedBroadcastKeys.contains(key))
+                key: value,
           'payload': payload,
         },
       );
@@ -1395,7 +1402,8 @@ class RealtimeChannel {
         return bind.type.toLowerCase() == typeLower;
       });
       for (final bind in bindings) {
-        if (handledPayload is Map<String, dynamic> &&
+        if (typeLower == 'postgres_changes' &&
+            handledPayload is Map<String, dynamic> &&
             handledPayload.containsKey('ids')) {
           handledPayload = getEnrichedPayload(handledPayload);
         }

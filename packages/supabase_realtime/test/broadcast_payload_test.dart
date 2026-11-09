@@ -220,14 +220,71 @@ void main() {
 
       await compatibleChannel.sendBroadcastMessage(
         event: 'cursor',
-        payload: {'x': 1, 'type': 'pointer', 'payload': 'nested'},
+        payload: {
+          'x': 1,
+          'type': 'pointer',
+          'meta': 'note',
+          'payload': 'nested',
+        },
       );
 
       expect(await lastSentBroadcast(), {
         'type': 'broadcast',
         'event': 'cursor',
         'x': 1,
-        'payload': {'x': 1, 'type': 'pointer', 'payload': 'nested'},
+        'payload': {
+          'x': 1,
+          'type': 'pointer',
+          'meta': 'note',
+          'payload': 'nested',
+        },
+      });
+    });
+
+    test(
+      'emits a v2 broadcast with its own payload key as it was sent',
+      () async {
+        final received = channel.onBroadcast(event: 'file').first;
+        final message = {
+          'type': 'broadcast',
+          'event': 'file',
+          'payload': [1, 2, 3],
+          'name': 'a.bin',
+        };
+
+        realtime.emit(
+          RealtimeMessage(
+            topic: 'realtime:room',
+            event: 'broadcast',
+            payload: message,
+          ),
+        );
+
+        expect(await received, message);
+      },
+    );
+
+    test('does not treat a broadcast with ids as a postgres change', () async {
+      final received = channel.onBroadcast(event: 'selection').first;
+
+      realtime.emit(
+        RealtimeMessage(
+          topic: 'realtime:room',
+          event: 'broadcast',
+          payload: {
+            'type': 'broadcast',
+            'event': 'selection',
+            'ids': [1, 2],
+          },
+        ),
+      );
+
+      expect(await received, {
+        'type': 'broadcast',
+        'event': 'selection',
+        'payload': {
+          'ids': [1, 2],
+        },
       });
     });
 
