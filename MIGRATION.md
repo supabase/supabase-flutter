@@ -1861,9 +1861,21 @@ Future<void> broadcast(RealtimeChannel channel, Uint8List bytes) async {
 }
 ```
 
-Clients on v2 and v3 cannot read each other's broadcasts: a v3 listener finds no `payload` in a
-message from a v2 app, and a v2 listener finds nothing at the top level of a message from a v3 app.
-Move every app that shares a channel to v3 together.
+A v3 listener moves the data of a broadcast from a v2 app under `payload`, so it reads broadcasts
+from v2 and v3 apps the same way. A v2 listener finds nothing at the top level of a message from a
+v3 app. While installed v2 apps still listen on a channel, enable `v2BroadcastCompatibility` on it,
+which sends the data in both places:
+
+```dart
+final channel = supabase.channel(
+  'room',
+  options: const RealtimeChannelConfig(v2BroadcastCompatibility: true),
+);
+```
+
+The option doubles the size of each message and is removed in the next major version. A v2 app
+that is still being released can be made to speak the v3 shape instead, by sending
+`payload: {'payload': data}` and reading `message['payload'] ?? message`.
 
 #### Invalid broadcast payloads throw in release builds
 

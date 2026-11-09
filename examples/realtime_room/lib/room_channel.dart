@@ -140,8 +140,7 @@ class RoomChannel {
   );
 
   /// Reads the sender from a typing ping. A ping without a username under
-  /// `payload`, such as one from an app still on supabase_flutter v2, is
-  /// skipped instead of failing the stream.
+  /// `payload` is skipped instead of failing the stream.
   static String? _typingUsername(Map<String, dynamic> message) {
     return switch (message) {
       {'payload': {'username': final String name}} => name,
