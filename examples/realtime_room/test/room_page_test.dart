@@ -130,7 +130,7 @@ void main() {
     await _closeRoom(tester, supabase);
   });
 
-  testWidgets('skips typing pings from v2 clients', (tester) async {
+  testWidgets('shows typing pings from v2 clients', (tester) async {
     httpClient.stubTable('messages', rows: []);
     final supabase = await openRoom(tester);
     _emitReplicationReady(realtime);
@@ -144,14 +144,9 @@ void main() {
         payload: {'type': 'broadcast', 'event': 'typing', 'username': 'bob'},
       ),
     );
-    realtime.emitBroadcast(
-      _topic,
-      event: 'typing',
-      payload: {'username': 'carol'},
-    );
     await _pumpUntil(
       tester,
-      () => find.text('carol is typing…').evaluate().isNotEmpty,
+      () => find.text('bob is typing…').evaluate().isNotEmpty,
     );
     await _closeRoom(tester, supabase);
   });
