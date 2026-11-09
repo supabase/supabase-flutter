@@ -8,8 +8,10 @@ For every table the generator emits:
 - a zero-cost row extension type over the decoded JSON map with typed getters,
 - `Insert` and `Update` value types that enforce required columns at the
   construction site and are the only values the typed `insert`, `upsert` and
-  `update` methods accept. Read-only relations such as materialized views get
-  neither, so those methods cannot be called on them,
+  `update` methods accept. A parameter left out leaves the column out of the
+  request, and `null` writes SQL NULL, which only the parameter of a nullable
+  column accepts. Read-only relations such as materialized views get neither,
+  so those methods cannot be called on them,
 - a `PostgrestTable` definition that carries the schema of the table, so
   `client.table(Books.table)` queries the right schema without a `.schema()`
   call, and `PostgrestColumn` tokens for compile-time checked filters and
@@ -220,11 +222,6 @@ name is imported.
 
 ## Known limitations
 
-- Passing `null` to an `Insert`/`Update` parameter omits the column, and
-  passing it to `copyWith` keeps the current value. To write SQL NULL
-  explicitly, use the generated `set…ToNull` methods, for example
-  `BooksUpdate(inPrint: false).setPriceToNull()`; they only exist for
-  nullable columns, so nulling a `NOT NULL` column is a compile error.
 - `Insert`/`Update` values wrap a map, so `==` compares identity. Compare
   their `toJson()` output, the values as they are sent, with deep equality
   instead.

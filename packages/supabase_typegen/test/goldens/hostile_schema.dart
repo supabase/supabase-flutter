@@ -324,13 +324,12 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `postgrest_table`. Columns that are
-/// nullable, identity, or covered by a database default are optional; passing
-/// `null` omits the column so the database default applies. Columns the
-/// database always generates itself are left out entirely. Use the `set…ToNull`
-/// methods to insert SQL NULL explicitly.
+/// nullable, identity, or covered by a database default are optional; a column
+/// left out gets its database default, and `null` inserts SQL NULL. Columns the
+/// database always generates itself are left out entirely.
 extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     implements Object {
-  PostgrestTableInsert({
+  factory PostgrestTableInsert({
     required String quoteNameTail,
     String$? mood,
     required List<double> samples,
@@ -349,173 +348,112 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     List<PostgresRange<int>>? spans,
     List<DateTime>? stamps,
     List<PostgresRange<DateTime>>? shifts,
-  }) : this._({
-         'quote\'name\u{2029}tail': quoteNameTail,
-         'mood': ?mood?.wireName,
-         'samples': samples,
-         'days': ?days?.map((element) => element.literal).toList(),
-         'postgres_bytea': postgresBytea.encode(postgresBytea$),
-         'postgres_timestamp': ?switch (postgresTimestamp$) {
-           null => null,
-           final value => postgresTimestamp.encode(value.toUtc()),
-         },
-         'read': ?read,
-         'to_row': ?toRow,
-         'copy_with': ?copyWith,
-         'uint8_list': ?switch (uint8List) {
-           null => null,
-           final value => postgresBytea.encode(value),
-         },
-         'blobs': ?blobs
-             ?.map((element) => postgresBytea.encode(element))
-             .toList(),
-         'postgres_vector': postgresVector.encode(postgresVector$),
-         'half_embedding': ?switch (halfEmbedding) {
-           null => null,
-           final value => postgresVector.encode(value),
-         },
-         'embeddings': ?embeddings,
-         'moods': ?moods?.map((element) => element.wireName).toList(),
-         'spans': ?spans?.map((element) => element.literal).toList(),
-         'stamps': ?stamps
-             ?.map((element) => postgresTimestamp.encode(element.toUtc()))
-             .toList(),
-         'shifts': ?shifts
-             ?.map((element) => element.render(postgresTimestamp.encode))
-             .toList(),
-       });
+  }) = _PostgrestTableInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  PostgrestTableInsert copyWith({
-    String? quoteNameTail,
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  PostgrestTableInsert Function({
+    String quoteNameTail,
     String$? mood,
-    List<double>? samples,
+    List<double> samples,
     List<PostgresDate>? days,
-    Uint8List? postgresBytea$,
+    Uint8List postgresBytea$,
     DateTime? postgresTimestamp$,
     String? read,
     String? toRow,
     String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
-    List<double>? postgresVector$,
+    List<double> postgresVector$,
     List<double>? halfEmbedding,
     List<String>? embeddings,
     List<String$>? moods,
     List<PostgresRange<int>>? spans,
     List<DateTime>? stamps,
     List<PostgresRange<DateTime>>? shifts,
-  }) => PostgrestTableInsert._({
-    ..._json,
-    'quote\'name\u{2029}tail': ?quoteNameTail,
-    'mood': ?mood?.wireName,
-    'samples': ?samples,
-    'days': ?days?.map((element) => element.literal).toList(),
-    'postgres_bytea': ?switch (postgresBytea$) {
-      null => null,
-      final value => postgresBytea.encode(value),
-    },
-    'postgres_timestamp': ?switch (postgresTimestamp$) {
-      null => null,
-      final value => postgresTimestamp.encode(value.toUtc()),
-    },
-    'read': ?read,
-    'to_row': ?toRow,
-    'copy_with': ?copyWith,
-    'uint8_list': ?switch (uint8List) {
-      null => null,
-      final value => postgresBytea.encode(value),
-    },
-    'blobs': ?blobs?.map((element) => postgresBytea.encode(element)).toList(),
-    'postgres_vector': ?switch (postgresVector$) {
-      null => null,
-      final value => postgresVector.encode(value),
-    },
-    'half_embedding': ?switch (halfEmbedding) {
-      null => null,
-      final value => postgresVector.encode(value),
-    },
-    'embeddings': ?embeddings,
-    'moods': ?moods?.map((element) => element.wireName).toList(),
-    'spans': ?spans?.map((element) => element.literal).toList(),
-    'stamps': ?stamps
-        ?.map((element) => postgresTimestamp.encode(element.toUtc()))
-        .toList(),
-    'shifts': ?shifts
-        ?.map((element) => element.render(postgresTimestamp.encode))
-        .toList(),
-  });
-
-  /// Returns a copy with `mood` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setMoodToNull() =>
-      PostgrestTableInsert._({..._json, 'mood': null});
-
-  /// Returns a copy with `days` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setDaysToNull() =>
-      PostgrestTableInsert._({..._json, 'days': null});
-
-  /// Returns a copy with `postgres_timestamp` set to SQL NULL, overriding any
-  /// database default.
-  PostgrestTableInsert setPostgresTimestamp$ToNull() =>
-      PostgrestTableInsert._({..._json, 'postgres_timestamp': null});
-
-  /// Returns a copy with `read` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setReadToNull() =>
-      PostgrestTableInsert._({..._json, 'read': null});
-
-  /// Returns a copy with `to_row` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setToRowToNull() =>
-      PostgrestTableInsert._({..._json, 'to_row': null});
-
-  /// Returns a copy with `copy_with` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setCopyWithToNull() =>
-      PostgrestTableInsert._({..._json, 'copy_with': null});
-
-  /// Returns a copy with `uint8_list` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setUint8ListToNull() =>
-      PostgrestTableInsert._({..._json, 'uint8_list': null});
-
-  /// Returns a copy with `blobs` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setBlobsToNull() =>
-      PostgrestTableInsert._({..._json, 'blobs': null});
-
-  /// Returns a copy with `half_embedding` set to SQL NULL, overriding any
-  /// database default.
-  PostgrestTableInsert setHalfEmbeddingToNull() =>
-      PostgrestTableInsert._({..._json, 'half_embedding': null});
-
-  /// Returns a copy with `embeddings` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setEmbeddingsToNull() =>
-      PostgrestTableInsert._({..._json, 'embeddings': null});
-
-  /// Returns a copy with `moods` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setMoodsToNull() =>
-      PostgrestTableInsert._({..._json, 'moods': null});
-
-  /// Returns a copy with `spans` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setSpansToNull() =>
-      PostgrestTableInsert._({..._json, 'spans': null});
-
-  /// Returns a copy with `stamps` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setStampsToNull() =>
-      PostgrestTableInsert._({..._json, 'stamps': null});
-
-  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableInsert setShiftsToNull() =>
-      PostgrestTableInsert._({..._json, 'shifts': null});
+  })
+  get copyWith =>
+      ({
+        Object quoteNameTail = const _Omitted(),
+        Object? mood = const _Omitted(),
+        Object samples = const _Omitted(),
+        Object? days = const _Omitted(),
+        Object postgresBytea$ = const _Omitted(),
+        Object? postgresTimestamp$ = const _Omitted(),
+        Object? read = const _Omitted(),
+        Object? toRow = const _Omitted(),
+        Object? copyWith = const _Omitted(),
+        Object? uint8List = const _Omitted(),
+        Object? blobs = const _Omitted(),
+        Object postgresVector$ = const _Omitted(),
+        Object? halfEmbedding = const _Omitted(),
+        Object? embeddings = const _Omitted(),
+        Object? moods = const _Omitted(),
+        Object? spans = const _Omitted(),
+        Object? stamps = const _Omitted(),
+        Object? shifts = const _Omitted(),
+      }) => PostgrestTableInsert._({
+        ..._json,
+        if (quoteNameTail is! _Omitted)
+          'quote\'name\u{2029}tail': quoteNameTail,
+        if (mood is! _Omitted) 'mood': (mood as String$?)?.wireName,
+        if (samples is! _Omitted) 'samples': samples,
+        if (days is! _Omitted)
+          'days': (days as List<Object?>?)
+              ?.cast<PostgresDate>()
+              .map((element) => element.literal)
+              .toList(),
+        if (postgresBytea$ is! _Omitted)
+          'postgres_bytea': postgresBytea.encode((postgresBytea$ as Uint8List)),
+        if (postgresTimestamp$ is! _Omitted)
+          'postgres_timestamp': switch (postgresTimestamp$ as DateTime?) {
+            null => null,
+            final value => postgresTimestamp.encode(value.toUtc()),
+          },
+        if (read is! _Omitted) 'read': read,
+        if (toRow is! _Omitted) 'to_row': toRow,
+        if (copyWith is! _Omitted) 'copy_with': copyWith,
+        if (uint8List is! _Omitted)
+          'uint8_list': switch (uint8List as Uint8List?) {
+            null => null,
+            final value => postgresBytea.encode(value),
+          },
+        if (blobs is! _Omitted)
+          'blobs': (blobs as List<Object?>?)
+              ?.cast<Uint8List>()
+              .map((element) => postgresBytea.encode(element))
+              .toList(),
+        if (postgresVector$ is! _Omitted)
+          'postgres_vector': postgresVector.encode(
+            (postgresVector$ as List<Object?>).cast(),
+          ),
+        if (halfEmbedding is! _Omitted)
+          'half_embedding': switch (halfEmbedding as List<Object?>?) {
+            null => null,
+            final value => postgresVector.encode(value.cast()),
+          },
+        if (embeddings is! _Omitted) 'embeddings': embeddings,
+        if (moods is! _Omitted)
+          'moods': (moods as List<Object?>?)
+              ?.cast<String$>()
+              .map((element) => element.wireName)
+              .toList(),
+        if (spans is! _Omitted)
+          'spans': (spans as List<Object?>?)
+              ?.cast<PostgresRange<int>>()
+              .map((element) => element.literal)
+              .toList(),
+        if (stamps is! _Omitted)
+          'stamps': (stamps as List<Object?>?)
+              ?.cast<DateTime>()
+              .map((element) => postgresTimestamp.encode(element.toUtc()))
+              .toList(),
+        if (shifts is! _Omitted)
+          'shifts': (shifts as List<Object?>?)
+              ?.cast<PostgresRange<DateTime>>()
+              .map((element) => element.render(postgresTimestamp.encode))
+              .toList(),
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -523,208 +461,305 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `postgrest_table`. All columns are optional;
-/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
-/// methods to write SQL NULL explicitly.
+extension type const _PostgrestTableInsert._(Map<String, dynamic> _json)
+    implements PostgrestTableInsert {
+  _PostgrestTableInsert({
+    required String quoteNameTail,
+    Object? mood = const _Omitted(),
+    required List<double> samples,
+    Object? days = const _Omitted(),
+    required Uint8List postgresBytea$,
+    Object? postgresTimestamp$ = const _Omitted(),
+    Object? read = const _Omitted(),
+    Object? toRow = const _Omitted(),
+    Object? copyWith = const _Omitted(),
+    Object? uint8List = const _Omitted(),
+    Object? blobs = const _Omitted(),
+    required List<double> postgresVector$,
+    Object? halfEmbedding = const _Omitted(),
+    Object? embeddings = const _Omitted(),
+    Object? moods = const _Omitted(),
+    Object? spans = const _Omitted(),
+    Object? stamps = const _Omitted(),
+    Object? shifts = const _Omitted(),
+  }) : _json = {
+         'quote\'name\u{2029}tail': quoteNameTail,
+         if (mood is! _Omitted) 'mood': (mood as String$?)?.wireName,
+         'samples': samples,
+         if (days is! _Omitted)
+           'days': (days as List<Object?>?)
+               ?.cast<PostgresDate>()
+               .map((element) => element.literal)
+               .toList(),
+         'postgres_bytea': postgresBytea.encode(postgresBytea$),
+         if (postgresTimestamp$ is! _Omitted)
+           'postgres_timestamp': switch (postgresTimestamp$ as DateTime?) {
+             null => null,
+             final value => postgresTimestamp.encode(value.toUtc()),
+           },
+         if (read is! _Omitted) 'read': read,
+         if (toRow is! _Omitted) 'to_row': toRow,
+         if (copyWith is! _Omitted) 'copy_with': copyWith,
+         if (uint8List is! _Omitted)
+           'uint8_list': switch (uint8List as Uint8List?) {
+             null => null,
+             final value => postgresBytea.encode(value),
+           },
+         if (blobs is! _Omitted)
+           'blobs': (blobs as List<Object?>?)
+               ?.cast<Uint8List>()
+               .map((element) => postgresBytea.encode(element))
+               .toList(),
+         'postgres_vector': postgresVector.encode(postgresVector$),
+         if (halfEmbedding is! _Omitted)
+           'half_embedding': switch (halfEmbedding as List<Object?>?) {
+             null => null,
+             final value => postgresVector.encode(value.cast()),
+           },
+         if (embeddings is! _Omitted) 'embeddings': embeddings,
+         if (moods is! _Omitted)
+           'moods': (moods as List<Object?>?)
+               ?.cast<String$>()
+               .map((element) => element.wireName)
+               .toList(),
+         if (spans is! _Omitted)
+           'spans': (spans as List<Object?>?)
+               ?.cast<PostgresRange<int>>()
+               .map((element) => element.literal)
+               .toList(),
+         if (stamps is! _Omitted)
+           'stamps': (stamps as List<Object?>?)
+               ?.cast<DateTime>()
+               .map((element) => postgresTimestamp.encode(element.toUtc()))
+               .toList(),
+         if (shifts is! _Omitted)
+           'shifts': (shifts as List<Object?>?)
+               ?.cast<PostgresRange<DateTime>>()
+               .map((element) => element.render(postgresTimestamp.encode))
+               .toList(),
+       };
+}
+
+/// Values for updating rows of `postgrest_table`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
 extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
     implements Object {
-  PostgrestTableUpdate({
-    String? quoteNameTail,
+  factory PostgrestTableUpdate({
+    String quoteNameTail,
     String$? mood,
-    List<double>? samples,
+    List<double> samples,
     List<PostgresDate>? days,
-    Uint8List? postgresBytea$,
+    Uint8List postgresBytea$,
     DateTime? postgresTimestamp$,
     String? read,
     String? toRow,
     String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
-    List<double>? postgresVector$,
+    List<double> postgresVector$,
     List<double>? halfEmbedding,
     List<String>? embeddings,
     List<String$>? moods,
     List<PostgresRange<int>>? spans,
     List<DateTime>? stamps,
     List<PostgresRange<DateTime>>? shifts,
-  }) : this._({
-         'quote\'name\u{2029}tail': ?quoteNameTail,
-         'mood': ?mood?.wireName,
-         'samples': ?samples,
-         'days': ?days?.map((element) => element.literal).toList(),
-         'postgres_bytea': ?switch (postgresBytea$) {
-           null => null,
-           final value => postgresBytea.encode(value),
-         },
-         'postgres_timestamp': ?switch (postgresTimestamp$) {
-           null => null,
-           final value => postgresTimestamp.encode(value.toUtc()),
-         },
-         'read': ?read,
-         'to_row': ?toRow,
-         'copy_with': ?copyWith,
-         'uint8_list': ?switch (uint8List) {
-           null => null,
-           final value => postgresBytea.encode(value),
-         },
-         'blobs': ?blobs
-             ?.map((element) => postgresBytea.encode(element))
-             .toList(),
-         'postgres_vector': ?switch (postgresVector$) {
-           null => null,
-           final value => postgresVector.encode(value),
-         },
-         'half_embedding': ?switch (halfEmbedding) {
-           null => null,
-           final value => postgresVector.encode(value),
-         },
-         'embeddings': ?embeddings,
-         'moods': ?moods?.map((element) => element.wireName).toList(),
-         'spans': ?spans?.map((element) => element.literal).toList(),
-         'stamps': ?stamps
-             ?.map((element) => postgresTimestamp.encode(element.toUtc()))
-             .toList(),
-         'shifts': ?shifts
-             ?.map((element) => element.render(postgresTimestamp.encode))
-             .toList(),
-       });
+  }) = _PostgrestTableUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  PostgrestTableUpdate copyWith({
-    String? quoteNameTail,
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  PostgrestTableUpdate Function({
+    String quoteNameTail,
     String$? mood,
-    List<double>? samples,
+    List<double> samples,
     List<PostgresDate>? days,
-    Uint8List? postgresBytea$,
+    Uint8List postgresBytea$,
     DateTime? postgresTimestamp$,
     String? read,
     String? toRow,
     String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
-    List<double>? postgresVector$,
+    List<double> postgresVector$,
     List<double>? halfEmbedding,
     List<String>? embeddings,
     List<String$>? moods,
     List<PostgresRange<int>>? spans,
     List<DateTime>? stamps,
     List<PostgresRange<DateTime>>? shifts,
-  }) => PostgrestTableUpdate._({
-    ..._json,
-    'quote\'name\u{2029}tail': ?quoteNameTail,
-    'mood': ?mood?.wireName,
-    'samples': ?samples,
-    'days': ?days?.map((element) => element.literal).toList(),
-    'postgres_bytea': ?switch (postgresBytea$) {
-      null => null,
-      final value => postgresBytea.encode(value),
-    },
-    'postgres_timestamp': ?switch (postgresTimestamp$) {
-      null => null,
-      final value => postgresTimestamp.encode(value.toUtc()),
-    },
-    'read': ?read,
-    'to_row': ?toRow,
-    'copy_with': ?copyWith,
-    'uint8_list': ?switch (uint8List) {
-      null => null,
-      final value => postgresBytea.encode(value),
-    },
-    'blobs': ?blobs?.map((element) => postgresBytea.encode(element)).toList(),
-    'postgres_vector': ?switch (postgresVector$) {
-      null => null,
-      final value => postgresVector.encode(value),
-    },
-    'half_embedding': ?switch (halfEmbedding) {
-      null => null,
-      final value => postgresVector.encode(value),
-    },
-    'embeddings': ?embeddings,
-    'moods': ?moods?.map((element) => element.wireName).toList(),
-    'spans': ?spans?.map((element) => element.literal).toList(),
-    'stamps': ?stamps
-        ?.map((element) => postgresTimestamp.encode(element.toUtc()))
-        .toList(),
-    'shifts': ?shifts
-        ?.map((element) => element.render(postgresTimestamp.encode))
-        .toList(),
-  });
-
-  /// Returns a copy with `mood` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setMoodToNull() =>
-      PostgrestTableUpdate._({..._json, 'mood': null});
-
-  /// Returns a copy with `days` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setDaysToNull() =>
-      PostgrestTableUpdate._({..._json, 'days': null});
-
-  /// Returns a copy with `postgres_timestamp` set to SQL NULL, overriding any
-  /// database default.
-  PostgrestTableUpdate setPostgresTimestamp$ToNull() =>
-      PostgrestTableUpdate._({..._json, 'postgres_timestamp': null});
-
-  /// Returns a copy with `read` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setReadToNull() =>
-      PostgrestTableUpdate._({..._json, 'read': null});
-
-  /// Returns a copy with `to_row` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setToRowToNull() =>
-      PostgrestTableUpdate._({..._json, 'to_row': null});
-
-  /// Returns a copy with `copy_with` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setCopyWithToNull() =>
-      PostgrestTableUpdate._({..._json, 'copy_with': null});
-
-  /// Returns a copy with `uint8_list` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setUint8ListToNull() =>
-      PostgrestTableUpdate._({..._json, 'uint8_list': null});
-
-  /// Returns a copy with `blobs` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setBlobsToNull() =>
-      PostgrestTableUpdate._({..._json, 'blobs': null});
-
-  /// Returns a copy with `half_embedding` set to SQL NULL, overriding any
-  /// database default.
-  PostgrestTableUpdate setHalfEmbeddingToNull() =>
-      PostgrestTableUpdate._({..._json, 'half_embedding': null});
-
-  /// Returns a copy with `embeddings` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setEmbeddingsToNull() =>
-      PostgrestTableUpdate._({..._json, 'embeddings': null});
-
-  /// Returns a copy with `moods` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setMoodsToNull() =>
-      PostgrestTableUpdate._({..._json, 'moods': null});
-
-  /// Returns a copy with `spans` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setSpansToNull() =>
-      PostgrestTableUpdate._({..._json, 'spans': null});
-
-  /// Returns a copy with `stamps` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setStampsToNull() =>
-      PostgrestTableUpdate._({..._json, 'stamps': null});
-
-  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
-  /// default.
-  PostgrestTableUpdate setShiftsToNull() =>
-      PostgrestTableUpdate._({..._json, 'shifts': null});
+  })
+  get copyWith =>
+      ({
+        Object quoteNameTail = const _Omitted(),
+        Object? mood = const _Omitted(),
+        Object samples = const _Omitted(),
+        Object? days = const _Omitted(),
+        Object postgresBytea$ = const _Omitted(),
+        Object? postgresTimestamp$ = const _Omitted(),
+        Object? read = const _Omitted(),
+        Object? toRow = const _Omitted(),
+        Object? copyWith = const _Omitted(),
+        Object? uint8List = const _Omitted(),
+        Object? blobs = const _Omitted(),
+        Object postgresVector$ = const _Omitted(),
+        Object? halfEmbedding = const _Omitted(),
+        Object? embeddings = const _Omitted(),
+        Object? moods = const _Omitted(),
+        Object? spans = const _Omitted(),
+        Object? stamps = const _Omitted(),
+        Object? shifts = const _Omitted(),
+      }) => PostgrestTableUpdate._({
+        ..._json,
+        if (quoteNameTail is! _Omitted)
+          'quote\'name\u{2029}tail': quoteNameTail,
+        if (mood is! _Omitted) 'mood': (mood as String$?)?.wireName,
+        if (samples is! _Omitted) 'samples': samples,
+        if (days is! _Omitted)
+          'days': (days as List<Object?>?)
+              ?.cast<PostgresDate>()
+              .map((element) => element.literal)
+              .toList(),
+        if (postgresBytea$ is! _Omitted)
+          'postgres_bytea': postgresBytea.encode((postgresBytea$ as Uint8List)),
+        if (postgresTimestamp$ is! _Omitted)
+          'postgres_timestamp': switch (postgresTimestamp$ as DateTime?) {
+            null => null,
+            final value => postgresTimestamp.encode(value.toUtc()),
+          },
+        if (read is! _Omitted) 'read': read,
+        if (toRow is! _Omitted) 'to_row': toRow,
+        if (copyWith is! _Omitted) 'copy_with': copyWith,
+        if (uint8List is! _Omitted)
+          'uint8_list': switch (uint8List as Uint8List?) {
+            null => null,
+            final value => postgresBytea.encode(value),
+          },
+        if (blobs is! _Omitted)
+          'blobs': (blobs as List<Object?>?)
+              ?.cast<Uint8List>()
+              .map((element) => postgresBytea.encode(element))
+              .toList(),
+        if (postgresVector$ is! _Omitted)
+          'postgres_vector': postgresVector.encode(
+            (postgresVector$ as List<Object?>).cast(),
+          ),
+        if (halfEmbedding is! _Omitted)
+          'half_embedding': switch (halfEmbedding as List<Object?>?) {
+            null => null,
+            final value => postgresVector.encode(value.cast()),
+          },
+        if (embeddings is! _Omitted) 'embeddings': embeddings,
+        if (moods is! _Omitted)
+          'moods': (moods as List<Object?>?)
+              ?.cast<String$>()
+              .map((element) => element.wireName)
+              .toList(),
+        if (spans is! _Omitted)
+          'spans': (spans as List<Object?>?)
+              ?.cast<PostgresRange<int>>()
+              .map((element) => element.literal)
+              .toList(),
+        if (stamps is! _Omitted)
+          'stamps': (stamps as List<Object?>?)
+              ?.cast<DateTime>()
+              .map((element) => postgresTimestamp.encode(element.toUtc()))
+              .toList(),
+        if (shifts is! _Omitted)
+          'shifts': (shifts as List<Object?>?)
+              ?.cast<PostgresRange<DateTime>>()
+              .map((element) => element.render(postgresTimestamp.encode))
+              .toList(),
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _PostgrestTableUpdate._(Map<String, dynamic> _json)
+    implements PostgrestTableUpdate {
+  _PostgrestTableUpdate({
+    Object quoteNameTail = const _Omitted(),
+    Object? mood = const _Omitted(),
+    Object samples = const _Omitted(),
+    Object? days = const _Omitted(),
+    Object postgresBytea$ = const _Omitted(),
+    Object? postgresTimestamp$ = const _Omitted(),
+    Object? read = const _Omitted(),
+    Object? toRow = const _Omitted(),
+    Object? copyWith = const _Omitted(),
+    Object? uint8List = const _Omitted(),
+    Object? blobs = const _Omitted(),
+    Object postgresVector$ = const _Omitted(),
+    Object? halfEmbedding = const _Omitted(),
+    Object? embeddings = const _Omitted(),
+    Object? moods = const _Omitted(),
+    Object? spans = const _Omitted(),
+    Object? stamps = const _Omitted(),
+    Object? shifts = const _Omitted(),
+  }) : _json = {
+         if (quoteNameTail is! _Omitted)
+           'quote\'name\u{2029}tail': quoteNameTail,
+         if (mood is! _Omitted) 'mood': (mood as String$?)?.wireName,
+         if (samples is! _Omitted) 'samples': samples,
+         if (days is! _Omitted)
+           'days': (days as List<Object?>?)
+               ?.cast<PostgresDate>()
+               .map((element) => element.literal)
+               .toList(),
+         if (postgresBytea$ is! _Omitted)
+           'postgres_bytea': postgresBytea.encode(
+             (postgresBytea$ as Uint8List),
+           ),
+         if (postgresTimestamp$ is! _Omitted)
+           'postgres_timestamp': switch (postgresTimestamp$ as DateTime?) {
+             null => null,
+             final value => postgresTimestamp.encode(value.toUtc()),
+           },
+         if (read is! _Omitted) 'read': read,
+         if (toRow is! _Omitted) 'to_row': toRow,
+         if (copyWith is! _Omitted) 'copy_with': copyWith,
+         if (uint8List is! _Omitted)
+           'uint8_list': switch (uint8List as Uint8List?) {
+             null => null,
+             final value => postgresBytea.encode(value),
+           },
+         if (blobs is! _Omitted)
+           'blobs': (blobs as List<Object?>?)
+               ?.cast<Uint8List>()
+               .map((element) => postgresBytea.encode(element))
+               .toList(),
+         if (postgresVector$ is! _Omitted)
+           'postgres_vector': postgresVector.encode(
+             (postgresVector$ as List<Object?>).cast(),
+           ),
+         if (halfEmbedding is! _Omitted)
+           'half_embedding': switch (halfEmbedding as List<Object?>?) {
+             null => null,
+             final value => postgresVector.encode(value.cast()),
+           },
+         if (embeddings is! _Omitted) 'embeddings': embeddings,
+         if (moods is! _Omitted)
+           'moods': (moods as List<Object?>?)
+               ?.cast<String$>()
+               .map((element) => element.wireName)
+               .toList(),
+         if (spans is! _Omitted)
+           'spans': (spans as List<Object?>?)
+               ?.cast<PostgresRange<int>>()
+               .map((element) => element.literal)
+               .toList(),
+         if (stamps is! _Omitted)
+           'stamps': (stamps as List<Object?>?)
+               ?.cast<DateTime>()
+               .map((element) => postgresTimestamp.encode(element.toUtc()))
+               .toList(),
+         if (shifts is! _Omitted)
+           'shifts': (shifts as List<Object?>?)
+               ?.cast<PostgresRange<DateTime>>()
+               .map((element) => element.render(postgresTimestamp.encode))
+               .toList(),
+       };
 }
 
 /// Typed access to the `postgrest_table` table.
@@ -1032,17 +1067,16 @@ extension type const MapRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `map`. Columns that are nullable, identity,
-/// or covered by a database default are optional; passing `null` omits the
-/// column so the database default applies. Columns the database always
-/// generates itself are left out entirely. Use the `set…ToNull` methods to
-/// insert SQL NULL explicitly.
+/// or covered by a database default are optional; a column left out gets its
+/// database default, and `null` inserts SQL NULL. Columns the database always
+/// generates itself are left out entirely.
 extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
-  MapInsert({
+  factory MapInsert({
     required int list,
     DateTime? dateTime,
     required PostgresRange<int> pages,
     PostgresRange<num>? prices,
-    PostgresRange<PostgresDate>? season,
+    PostgresRange<PostgresDate> season,
     required PostgresRange<DateTime> shift,
     PostgresRange<DateTime>? during,
     required PostgresDate since,
@@ -1069,61 +1103,20 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
-  }) : this._({
-         'list': list,
-         'date_time': ?switch (dateTime) {
-           null => null,
-           final value => postgresTimestamp.encode(value.toUtc()),
-         },
-         'pages': pages.literal,
-         'prices': ?prices?.literal,
-         'season': ?season?.literal,
-         'shift': shift.render(postgresTimestamp.encode),
-         'during': ?during?.render(
-           (bound) => postgresTimestamp.encode(bound.toUtc()),
-         ),
-         'since': since.literal,
-         'opens_at': opensAt.literal,
-         'closes_at': ?closesAt?.literal,
-         'ttl': ?ttl?.literal,
-         'relation': ?relation,
-         'relations': ?relations,
-         'transaction': ?transaction?.toString(),
-         'key_columns': ?keyColumns?.join(' '),
-         'argument_types': ?argumentTypes?.join(' '),
-         'host': ?host?.literal,
-         'allowed_networks': ?allowedNetworks
-             ?.map((element) => element.literal)
-             .toList(),
-         'location': ?location?.literal,
-         'axis': ?axis?.literal,
-         'edge': ?edge?.literal,
-         'bounds': ?bounds?.literal,
-         'route': ?route?.literal,
-         'outline': ?outline?.literal,
-         'reach': ?reach?.literal,
-         'availability': ?availability?.literal,
-         'blackouts': ?blackouts?.map((element) => element.literal).toList(),
-         'shifts': ?shifts?.render(postgresTimestamp.encode),
-         'position': ?position?.literal,
-         'hardware': ?hardware?.literal,
-         'hardware_history': ?hardwareHistory
-             ?.map((element) => element.literal)
-             .toList(),
-       });
+  }) = _MapInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  MapInsert copyWith({
-    int? list,
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  MapInsert Function({
+    int list,
     DateTime? dateTime,
-    PostgresRange<int>? pages,
+    PostgresRange<int> pages,
     PostgresRange<num>? prices,
-    PostgresRange<PostgresDate>? season,
-    PostgresRange<DateTime>? shift,
+    PostgresRange<PostgresDate> season,
+    PostgresRange<DateTime> shift,
     PostgresRange<DateTime>? during,
-    PostgresDate? since,
-    PostgresTime? opensAt,
+    PostgresDate since,
+    PostgresTime opensAt,
     PostgresTime? closesAt,
     PostgresInterval? ttl,
     int? relation,
@@ -1146,155 +1139,114 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
-  }) => MapInsert._({
-    ..._json,
-    'list': ?list,
-    'date_time': ?switch (dateTime) {
-      null => null,
-      final value => postgresTimestamp.encode(value.toUtc()),
-    },
-    'pages': ?pages?.literal,
-    'prices': ?prices?.literal,
-    'season': ?season?.literal,
-    'shift': ?shift?.render(postgresTimestamp.encode),
-    'during': ?during?.render(
-      (bound) => postgresTimestamp.encode(bound.toUtc()),
-    ),
-    'since': ?since?.literal,
-    'opens_at': ?opensAt?.literal,
-    'closes_at': ?closesAt?.literal,
-    'ttl': ?ttl?.literal,
-    'relation': ?relation,
-    'relations': ?relations,
-    'transaction': ?transaction?.toString(),
-    'key_columns': ?keyColumns?.join(' '),
-    'argument_types': ?argumentTypes?.join(' '),
-    'host': ?host?.literal,
-    'allowed_networks': ?allowedNetworks
-        ?.map((element) => element.literal)
-        .toList(),
-    'location': ?location?.literal,
-    'axis': ?axis?.literal,
-    'edge': ?edge?.literal,
-    'bounds': ?bounds?.literal,
-    'route': ?route?.literal,
-    'outline': ?outline?.literal,
-    'reach': ?reach?.literal,
-    'availability': ?availability?.literal,
-    'blackouts': ?blackouts?.map((element) => element.literal).toList(),
-    'shifts': ?shifts?.render(postgresTimestamp.encode),
-    'position': ?position?.literal,
-    'hardware': ?hardware?.literal,
-    'hardware_history': ?hardwareHistory
-        ?.map((element) => element.literal)
-        .toList(),
-  });
-
-  /// Returns a copy with `date_time` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setDateTimeToNull() => MapInsert._({..._json, 'date_time': null});
-
-  /// Returns a copy with `prices` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setPricesToNull() => MapInsert._({..._json, 'prices': null});
-
-  /// Returns a copy with `during` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setDuringToNull() => MapInsert._({..._json, 'during': null});
-
-  /// Returns a copy with `closes_at` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setClosesAtToNull() => MapInsert._({..._json, 'closes_at': null});
-
-  /// Returns a copy with `ttl` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setTtlToNull() => MapInsert._({..._json, 'ttl': null});
-
-  /// Returns a copy with `relation` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setRelationToNull() => MapInsert._({..._json, 'relation': null});
-
-  /// Returns a copy with `relations` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setRelationsToNull() => MapInsert._({..._json, 'relations': null});
-
-  /// Returns a copy with `transaction` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setTransactionToNull() =>
-      MapInsert._({..._json, 'transaction': null});
-
-  /// Returns a copy with `key_columns` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setKeyColumnsToNull() =>
-      MapInsert._({..._json, 'key_columns': null});
-
-  /// Returns a copy with `argument_types` set to SQL NULL, overriding any
-  /// database default.
-  MapInsert setArgumentTypesToNull() =>
-      MapInsert._({..._json, 'argument_types': null});
-
-  /// Returns a copy with `host` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setHostToNull() => MapInsert._({..._json, 'host': null});
-
-  /// Returns a copy with `allowed_networks` set to SQL NULL, overriding any
-  /// database default.
-  MapInsert setAllowedNetworksToNull() =>
-      MapInsert._({..._json, 'allowed_networks': null});
-
-  /// Returns a copy with `location` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setLocationToNull() => MapInsert._({..._json, 'location': null});
-
-  /// Returns a copy with `axis` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setAxisToNull() => MapInsert._({..._json, 'axis': null});
-
-  /// Returns a copy with `edge` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setEdgeToNull() => MapInsert._({..._json, 'edge': null});
-
-  /// Returns a copy with `bounds` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setBoundsToNull() => MapInsert._({..._json, 'bounds': null});
-
-  /// Returns a copy with `route` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setRouteToNull() => MapInsert._({..._json, 'route': null});
-
-  /// Returns a copy with `outline` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setOutlineToNull() => MapInsert._({..._json, 'outline': null});
-
-  /// Returns a copy with `reach` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setReachToNull() => MapInsert._({..._json, 'reach': null});
-
-  /// Returns a copy with `availability` set to SQL NULL, overriding any
-  /// database default.
-  MapInsert setAvailabilityToNull() =>
-      MapInsert._({..._json, 'availability': null});
-
-  /// Returns a copy with `blackouts` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setBlackoutsToNull() => MapInsert._({..._json, 'blackouts': null});
-
-  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setShiftsToNull() => MapInsert._({..._json, 'shifts': null});
-
-  /// Returns a copy with `position` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setPositionToNull() => MapInsert._({..._json, 'position': null});
-
-  /// Returns a copy with `hardware` set to SQL NULL, overriding any database
-  /// default.
-  MapInsert setHardwareToNull() => MapInsert._({..._json, 'hardware': null});
-
-  /// Returns a copy with `hardware_history` set to SQL NULL, overriding any
-  /// database default.
-  MapInsert setHardwareHistoryToNull() =>
-      MapInsert._({..._json, 'hardware_history': null});
+  })
+  get copyWith =>
+      ({
+        Object list = const _Omitted(),
+        Object? dateTime = const _Omitted(),
+        Object pages = const _Omitted(),
+        Object? prices = const _Omitted(),
+        Object season = const _Omitted(),
+        Object shift = const _Omitted(),
+        Object? during = const _Omitted(),
+        Object since = const _Omitted(),
+        Object opensAt = const _Omitted(),
+        Object? closesAt = const _Omitted(),
+        Object? ttl = const _Omitted(),
+        Object? relation = const _Omitted(),
+        Object? relations = const _Omitted(),
+        Object? transaction = const _Omitted(),
+        Object? keyColumns = const _Omitted(),
+        Object? argumentTypes = const _Omitted(),
+        Object? host = const _Omitted(),
+        Object? allowedNetworks = const _Omitted(),
+        Object? location = const _Omitted(),
+        Object? axis = const _Omitted(),
+        Object? edge = const _Omitted(),
+        Object? bounds = const _Omitted(),
+        Object? route = const _Omitted(),
+        Object? outline = const _Omitted(),
+        Object? reach = const _Omitted(),
+        Object? availability = const _Omitted(),
+        Object? blackouts = const _Omitted(),
+        Object? shifts = const _Omitted(),
+        Object? position = const _Omitted(),
+        Object? hardware = const _Omitted(),
+        Object? hardwareHistory = const _Omitted(),
+      }) => MapInsert._({
+        ..._json,
+        if (list is! _Omitted) 'list': list,
+        if (dateTime is! _Omitted)
+          'date_time': switch (dateTime as DateTime?) {
+            null => null,
+            final value => postgresTimestamp.encode(value.toUtc()),
+          },
+        if (pages is! _Omitted) 'pages': (pages as PostgresRange<int>).literal,
+        if (prices is! _Omitted)
+          'prices': (prices as PostgresRange<num>?)?.literal,
+        if (season is! _Omitted)
+          'season': (season as PostgresRange<PostgresDate>).literal,
+        if (shift is! _Omitted)
+          'shift': (shift as PostgresRange<DateTime>).render(
+            postgresTimestamp.encode,
+          ),
+        if (during is! _Omitted)
+          'during': (during as PostgresRange<DateTime>?)?.render(
+            (bound) => postgresTimestamp.encode(bound.toUtc()),
+          ),
+        if (since is! _Omitted) 'since': (since as PostgresDate).literal,
+        if (opensAt is! _Omitted) 'opens_at': (opensAt as PostgresTime).literal,
+        if (closesAt is! _Omitted)
+          'closes_at': (closesAt as PostgresTime?)?.literal,
+        if (ttl is! _Omitted) 'ttl': (ttl as PostgresInterval?)?.literal,
+        if (relation is! _Omitted) 'relation': relation,
+        if (relations is! _Omitted) 'relations': relations,
+        if (transaction is! _Omitted)
+          'transaction': (transaction as BigInt?)?.toString(),
+        if (keyColumns is! _Omitted)
+          'key_columns': (keyColumns as List<Object?>?)?.cast<int>().join(' '),
+        if (argumentTypes is! _Omitted)
+          'argument_types': (argumentTypes as List<Object?>?)?.cast<int>().join(
+            ' ',
+          ),
+        if (host is! _Omitted)
+          'host': (host as PostgresNetworkAddress?)?.literal,
+        if (allowedNetworks is! _Omitted)
+          'allowed_networks': (allowedNetworks as List<Object?>?)
+              ?.cast<PostgresNetworkAddress>()
+              .map((element) => element.literal)
+              .toList(),
+        if (location is! _Omitted)
+          'location': (location as PostgresPoint?)?.literal,
+        if (axis is! _Omitted) 'axis': (axis as PostgresLine?)?.literal,
+        if (edge is! _Omitted) 'edge': (edge as PostgresLineSegment?)?.literal,
+        if (bounds is! _Omitted) 'bounds': (bounds as PostgresBox?)?.literal,
+        if (route is! _Omitted) 'route': (route as PostgresPath?)?.literal,
+        if (outline is! _Omitted)
+          'outline': (outline as PostgresPolygon?)?.literal,
+        if (reach is! _Omitted) 'reach': (reach as PostgresCircle?)?.literal,
+        if (availability is! _Omitted)
+          'availability':
+              (availability as PostgresMultirange<PostgresDate>?)?.literal,
+        if (blackouts is! _Omitted)
+          'blackouts': (blackouts as List<Object?>?)
+              ?.cast<PostgresMultirange<int>>()
+              .map((element) => element.literal)
+              .toList(),
+        if (shifts is! _Omitted)
+          'shifts': (shifts as PostgresMultirange<DateTime>?)?.render(
+            postgresTimestamp.encode,
+          ),
+        if (position is! _Omitted)
+          'position': (position as PostgresLogSequenceNumber?)?.literal,
+        if (hardware is! _Omitted)
+          'hardware': (hardware as PostgresMacAddress?)?.literal,
+        if (hardwareHistory is! _Omitted)
+          'hardware_history': (hardwareHistory as List<Object?>?)
+              ?.cast<PostgresMacAddress>()
+              .map((element) => element.literal)
+              .toList(),
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -1302,20 +1254,125 @@ extension type const MapInsert._(Map<String, dynamic> _json) implements Object {
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `map`. All columns are optional; passing `null`
-/// omits the column, leaving it unchanged. Use the `set…ToNull` methods to
-/// write SQL NULL explicitly.
+extension type const _MapInsert._(Map<String, dynamic> _json)
+    implements MapInsert {
+  _MapInsert({
+    required int list,
+    Object? dateTime = const _Omitted(),
+    required PostgresRange<int> pages,
+    Object? prices = const _Omitted(),
+    Object season = const _Omitted(),
+    required PostgresRange<DateTime> shift,
+    Object? during = const _Omitted(),
+    required PostgresDate since,
+    required PostgresTime opensAt,
+    Object? closesAt = const _Omitted(),
+    Object? ttl = const _Omitted(),
+    Object? relation = const _Omitted(),
+    Object? relations = const _Omitted(),
+    Object? transaction = const _Omitted(),
+    Object? keyColumns = const _Omitted(),
+    Object? argumentTypes = const _Omitted(),
+    Object? host = const _Omitted(),
+    Object? allowedNetworks = const _Omitted(),
+    Object? location = const _Omitted(),
+    Object? axis = const _Omitted(),
+    Object? edge = const _Omitted(),
+    Object? bounds = const _Omitted(),
+    Object? route = const _Omitted(),
+    Object? outline = const _Omitted(),
+    Object? reach = const _Omitted(),
+    Object? availability = const _Omitted(),
+    Object? blackouts = const _Omitted(),
+    Object? shifts = const _Omitted(),
+    Object? position = const _Omitted(),
+    Object? hardware = const _Omitted(),
+    Object? hardwareHistory = const _Omitted(),
+  }) : _json = {
+         'list': list,
+         if (dateTime is! _Omitted)
+           'date_time': switch (dateTime as DateTime?) {
+             null => null,
+             final value => postgresTimestamp.encode(value.toUtc()),
+           },
+         'pages': pages.literal,
+         if (prices is! _Omitted)
+           'prices': (prices as PostgresRange<num>?)?.literal,
+         if (season is! _Omitted)
+           'season': (season as PostgresRange<PostgresDate>).literal,
+         'shift': shift.render(postgresTimestamp.encode),
+         if (during is! _Omitted)
+           'during': (during as PostgresRange<DateTime>?)?.render(
+             (bound) => postgresTimestamp.encode(bound.toUtc()),
+           ),
+         'since': since.literal,
+         'opens_at': opensAt.literal,
+         if (closesAt is! _Omitted)
+           'closes_at': (closesAt as PostgresTime?)?.literal,
+         if (ttl is! _Omitted) 'ttl': (ttl as PostgresInterval?)?.literal,
+         if (relation is! _Omitted) 'relation': relation,
+         if (relations is! _Omitted) 'relations': relations,
+         if (transaction is! _Omitted)
+           'transaction': (transaction as BigInt?)?.toString(),
+         if (keyColumns is! _Omitted)
+           'key_columns': (keyColumns as List<Object?>?)?.cast<int>().join(' '),
+         if (argumentTypes is! _Omitted)
+           'argument_types': (argumentTypes as List<Object?>?)
+               ?.cast<int>()
+               .join(' '),
+         if (host is! _Omitted)
+           'host': (host as PostgresNetworkAddress?)?.literal,
+         if (allowedNetworks is! _Omitted)
+           'allowed_networks': (allowedNetworks as List<Object?>?)
+               ?.cast<PostgresNetworkAddress>()
+               .map((element) => element.literal)
+               .toList(),
+         if (location is! _Omitted)
+           'location': (location as PostgresPoint?)?.literal,
+         if (axis is! _Omitted) 'axis': (axis as PostgresLine?)?.literal,
+         if (edge is! _Omitted) 'edge': (edge as PostgresLineSegment?)?.literal,
+         if (bounds is! _Omitted) 'bounds': (bounds as PostgresBox?)?.literal,
+         if (route is! _Omitted) 'route': (route as PostgresPath?)?.literal,
+         if (outline is! _Omitted)
+           'outline': (outline as PostgresPolygon?)?.literal,
+         if (reach is! _Omitted) 'reach': (reach as PostgresCircle?)?.literal,
+         if (availability is! _Omitted)
+           'availability':
+               (availability as PostgresMultirange<PostgresDate>?)?.literal,
+         if (blackouts is! _Omitted)
+           'blackouts': (blackouts as List<Object?>?)
+               ?.cast<PostgresMultirange<int>>()
+               .map((element) => element.literal)
+               .toList(),
+         if (shifts is! _Omitted)
+           'shifts': (shifts as PostgresMultirange<DateTime>?)?.render(
+             postgresTimestamp.encode,
+           ),
+         if (position is! _Omitted)
+           'position': (position as PostgresLogSequenceNumber?)?.literal,
+         if (hardware is! _Omitted)
+           'hardware': (hardware as PostgresMacAddress?)?.literal,
+         if (hardwareHistory is! _Omitted)
+           'hardware_history': (hardwareHistory as List<Object?>?)
+               ?.cast<PostgresMacAddress>()
+               .map((element) => element.literal)
+               .toList(),
+       };
+}
+
+/// Values for updating rows of `map`. All columns are optional; a column left
+/// out keeps its value, and `null` writes SQL NULL.
 extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
-  MapUpdate({
-    int? list,
+  factory MapUpdate({
+    int list,
     DateTime? dateTime,
-    PostgresRange<int>? pages,
+    PostgresRange<int> pages,
     PostgresRange<num>? prices,
-    PostgresRange<PostgresDate>? season,
-    PostgresRange<DateTime>? shift,
+    PostgresRange<PostgresDate> season,
+    PostgresRange<DateTime> shift,
     PostgresRange<DateTime>? during,
-    PostgresDate? since,
-    PostgresTime? opensAt,
+    PostgresDate since,
+    PostgresTime opensAt,
     PostgresTime? closesAt,
     PostgresInterval? ttl,
     int? relation,
@@ -1338,61 +1395,20 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
-  }) : this._({
-         'list': ?list,
-         'date_time': ?switch (dateTime) {
-           null => null,
-           final value => postgresTimestamp.encode(value.toUtc()),
-         },
-         'pages': ?pages?.literal,
-         'prices': ?prices?.literal,
-         'season': ?season?.literal,
-         'shift': ?shift?.render(postgresTimestamp.encode),
-         'during': ?during?.render(
-           (bound) => postgresTimestamp.encode(bound.toUtc()),
-         ),
-         'since': ?since?.literal,
-         'opens_at': ?opensAt?.literal,
-         'closes_at': ?closesAt?.literal,
-         'ttl': ?ttl?.literal,
-         'relation': ?relation,
-         'relations': ?relations,
-         'transaction': ?transaction?.toString(),
-         'key_columns': ?keyColumns?.join(' '),
-         'argument_types': ?argumentTypes?.join(' '),
-         'host': ?host?.literal,
-         'allowed_networks': ?allowedNetworks
-             ?.map((element) => element.literal)
-             .toList(),
-         'location': ?location?.literal,
-         'axis': ?axis?.literal,
-         'edge': ?edge?.literal,
-         'bounds': ?bounds?.literal,
-         'route': ?route?.literal,
-         'outline': ?outline?.literal,
-         'reach': ?reach?.literal,
-         'availability': ?availability?.literal,
-         'blackouts': ?blackouts?.map((element) => element.literal).toList(),
-         'shifts': ?shifts?.render(postgresTimestamp.encode),
-         'position': ?position?.literal,
-         'hardware': ?hardware?.literal,
-         'hardware_history': ?hardwareHistory
-             ?.map((element) => element.literal)
-             .toList(),
-       });
+  }) = _MapUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  MapUpdate copyWith({
-    int? list,
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  MapUpdate Function({
+    int list,
     DateTime? dateTime,
-    PostgresRange<int>? pages,
+    PostgresRange<int> pages,
     PostgresRange<num>? prices,
-    PostgresRange<PostgresDate>? season,
-    PostgresRange<DateTime>? shift,
+    PostgresRange<PostgresDate> season,
+    PostgresRange<DateTime> shift,
     PostgresRange<DateTime>? during,
-    PostgresDate? since,
-    PostgresTime? opensAt,
+    PostgresDate since,
+    PostgresTime opensAt,
     PostgresTime? closesAt,
     PostgresInterval? ttl,
     int? relation,
@@ -1415,160 +1431,229 @@ extension type const MapUpdate._(Map<String, dynamic> _json) implements Object {
     PostgresLogSequenceNumber? position,
     PostgresMacAddress? hardware,
     List<PostgresMacAddress>? hardwareHistory,
-  }) => MapUpdate._({
-    ..._json,
-    'list': ?list,
-    'date_time': ?switch (dateTime) {
-      null => null,
-      final value => postgresTimestamp.encode(value.toUtc()),
-    },
-    'pages': ?pages?.literal,
-    'prices': ?prices?.literal,
-    'season': ?season?.literal,
-    'shift': ?shift?.render(postgresTimestamp.encode),
-    'during': ?during?.render(
-      (bound) => postgresTimestamp.encode(bound.toUtc()),
-    ),
-    'since': ?since?.literal,
-    'opens_at': ?opensAt?.literal,
-    'closes_at': ?closesAt?.literal,
-    'ttl': ?ttl?.literal,
-    'relation': ?relation,
-    'relations': ?relations,
-    'transaction': ?transaction?.toString(),
-    'key_columns': ?keyColumns?.join(' '),
-    'argument_types': ?argumentTypes?.join(' '),
-    'host': ?host?.literal,
-    'allowed_networks': ?allowedNetworks
-        ?.map((element) => element.literal)
-        .toList(),
-    'location': ?location?.literal,
-    'axis': ?axis?.literal,
-    'edge': ?edge?.literal,
-    'bounds': ?bounds?.literal,
-    'route': ?route?.literal,
-    'outline': ?outline?.literal,
-    'reach': ?reach?.literal,
-    'availability': ?availability?.literal,
-    'blackouts': ?blackouts?.map((element) => element.literal).toList(),
-    'shifts': ?shifts?.render(postgresTimestamp.encode),
-    'position': ?position?.literal,
-    'hardware': ?hardware?.literal,
-    'hardware_history': ?hardwareHistory
-        ?.map((element) => element.literal)
-        .toList(),
-  });
-
-  /// Returns a copy with `date_time` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setDateTimeToNull() => MapUpdate._({..._json, 'date_time': null});
-
-  /// Returns a copy with `prices` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setPricesToNull() => MapUpdate._({..._json, 'prices': null});
-
-  /// Returns a copy with `during` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setDuringToNull() => MapUpdate._({..._json, 'during': null});
-
-  /// Returns a copy with `closes_at` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setClosesAtToNull() => MapUpdate._({..._json, 'closes_at': null});
-
-  /// Returns a copy with `ttl` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setTtlToNull() => MapUpdate._({..._json, 'ttl': null});
-
-  /// Returns a copy with `relation` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setRelationToNull() => MapUpdate._({..._json, 'relation': null});
-
-  /// Returns a copy with `relations` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setRelationsToNull() => MapUpdate._({..._json, 'relations': null});
-
-  /// Returns a copy with `transaction` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setTransactionToNull() =>
-      MapUpdate._({..._json, 'transaction': null});
-
-  /// Returns a copy with `key_columns` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setKeyColumnsToNull() =>
-      MapUpdate._({..._json, 'key_columns': null});
-
-  /// Returns a copy with `argument_types` set to SQL NULL, overriding any
-  /// database default.
-  MapUpdate setArgumentTypesToNull() =>
-      MapUpdate._({..._json, 'argument_types': null});
-
-  /// Returns a copy with `host` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setHostToNull() => MapUpdate._({..._json, 'host': null});
-
-  /// Returns a copy with `allowed_networks` set to SQL NULL, overriding any
-  /// database default.
-  MapUpdate setAllowedNetworksToNull() =>
-      MapUpdate._({..._json, 'allowed_networks': null});
-
-  /// Returns a copy with `location` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setLocationToNull() => MapUpdate._({..._json, 'location': null});
-
-  /// Returns a copy with `axis` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setAxisToNull() => MapUpdate._({..._json, 'axis': null});
-
-  /// Returns a copy with `edge` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setEdgeToNull() => MapUpdate._({..._json, 'edge': null});
-
-  /// Returns a copy with `bounds` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setBoundsToNull() => MapUpdate._({..._json, 'bounds': null});
-
-  /// Returns a copy with `route` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setRouteToNull() => MapUpdate._({..._json, 'route': null});
-
-  /// Returns a copy with `outline` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setOutlineToNull() => MapUpdate._({..._json, 'outline': null});
-
-  /// Returns a copy with `reach` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setReachToNull() => MapUpdate._({..._json, 'reach': null});
-
-  /// Returns a copy with `availability` set to SQL NULL, overriding any
-  /// database default.
-  MapUpdate setAvailabilityToNull() =>
-      MapUpdate._({..._json, 'availability': null});
-
-  /// Returns a copy with `blackouts` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setBlackoutsToNull() => MapUpdate._({..._json, 'blackouts': null});
-
-  /// Returns a copy with `shifts` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setShiftsToNull() => MapUpdate._({..._json, 'shifts': null});
-
-  /// Returns a copy with `position` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setPositionToNull() => MapUpdate._({..._json, 'position': null});
-
-  /// Returns a copy with `hardware` set to SQL NULL, overriding any database
-  /// default.
-  MapUpdate setHardwareToNull() => MapUpdate._({..._json, 'hardware': null});
-
-  /// Returns a copy with `hardware_history` set to SQL NULL, overriding any
-  /// database default.
-  MapUpdate setHardwareHistoryToNull() =>
-      MapUpdate._({..._json, 'hardware_history': null});
+  })
+  get copyWith =>
+      ({
+        Object list = const _Omitted(),
+        Object? dateTime = const _Omitted(),
+        Object pages = const _Omitted(),
+        Object? prices = const _Omitted(),
+        Object season = const _Omitted(),
+        Object shift = const _Omitted(),
+        Object? during = const _Omitted(),
+        Object since = const _Omitted(),
+        Object opensAt = const _Omitted(),
+        Object? closesAt = const _Omitted(),
+        Object? ttl = const _Omitted(),
+        Object? relation = const _Omitted(),
+        Object? relations = const _Omitted(),
+        Object? transaction = const _Omitted(),
+        Object? keyColumns = const _Omitted(),
+        Object? argumentTypes = const _Omitted(),
+        Object? host = const _Omitted(),
+        Object? allowedNetworks = const _Omitted(),
+        Object? location = const _Omitted(),
+        Object? axis = const _Omitted(),
+        Object? edge = const _Omitted(),
+        Object? bounds = const _Omitted(),
+        Object? route = const _Omitted(),
+        Object? outline = const _Omitted(),
+        Object? reach = const _Omitted(),
+        Object? availability = const _Omitted(),
+        Object? blackouts = const _Omitted(),
+        Object? shifts = const _Omitted(),
+        Object? position = const _Omitted(),
+        Object? hardware = const _Omitted(),
+        Object? hardwareHistory = const _Omitted(),
+      }) => MapUpdate._({
+        ..._json,
+        if (list is! _Omitted) 'list': list,
+        if (dateTime is! _Omitted)
+          'date_time': switch (dateTime as DateTime?) {
+            null => null,
+            final value => postgresTimestamp.encode(value.toUtc()),
+          },
+        if (pages is! _Omitted) 'pages': (pages as PostgresRange<int>).literal,
+        if (prices is! _Omitted)
+          'prices': (prices as PostgresRange<num>?)?.literal,
+        if (season is! _Omitted)
+          'season': (season as PostgresRange<PostgresDate>).literal,
+        if (shift is! _Omitted)
+          'shift': (shift as PostgresRange<DateTime>).render(
+            postgresTimestamp.encode,
+          ),
+        if (during is! _Omitted)
+          'during': (during as PostgresRange<DateTime>?)?.render(
+            (bound) => postgresTimestamp.encode(bound.toUtc()),
+          ),
+        if (since is! _Omitted) 'since': (since as PostgresDate).literal,
+        if (opensAt is! _Omitted) 'opens_at': (opensAt as PostgresTime).literal,
+        if (closesAt is! _Omitted)
+          'closes_at': (closesAt as PostgresTime?)?.literal,
+        if (ttl is! _Omitted) 'ttl': (ttl as PostgresInterval?)?.literal,
+        if (relation is! _Omitted) 'relation': relation,
+        if (relations is! _Omitted) 'relations': relations,
+        if (transaction is! _Omitted)
+          'transaction': (transaction as BigInt?)?.toString(),
+        if (keyColumns is! _Omitted)
+          'key_columns': (keyColumns as List<Object?>?)?.cast<int>().join(' '),
+        if (argumentTypes is! _Omitted)
+          'argument_types': (argumentTypes as List<Object?>?)?.cast<int>().join(
+            ' ',
+          ),
+        if (host is! _Omitted)
+          'host': (host as PostgresNetworkAddress?)?.literal,
+        if (allowedNetworks is! _Omitted)
+          'allowed_networks': (allowedNetworks as List<Object?>?)
+              ?.cast<PostgresNetworkAddress>()
+              .map((element) => element.literal)
+              .toList(),
+        if (location is! _Omitted)
+          'location': (location as PostgresPoint?)?.literal,
+        if (axis is! _Omitted) 'axis': (axis as PostgresLine?)?.literal,
+        if (edge is! _Omitted) 'edge': (edge as PostgresLineSegment?)?.literal,
+        if (bounds is! _Omitted) 'bounds': (bounds as PostgresBox?)?.literal,
+        if (route is! _Omitted) 'route': (route as PostgresPath?)?.literal,
+        if (outline is! _Omitted)
+          'outline': (outline as PostgresPolygon?)?.literal,
+        if (reach is! _Omitted) 'reach': (reach as PostgresCircle?)?.literal,
+        if (availability is! _Omitted)
+          'availability':
+              (availability as PostgresMultirange<PostgresDate>?)?.literal,
+        if (blackouts is! _Omitted)
+          'blackouts': (blackouts as List<Object?>?)
+              ?.cast<PostgresMultirange<int>>()
+              .map((element) => element.literal)
+              .toList(),
+        if (shifts is! _Omitted)
+          'shifts': (shifts as PostgresMultirange<DateTime>?)?.render(
+            postgresTimestamp.encode,
+          ),
+        if (position is! _Omitted)
+          'position': (position as PostgresLogSequenceNumber?)?.literal,
+        if (hardware is! _Omitted)
+          'hardware': (hardware as PostgresMacAddress?)?.literal,
+        if (hardwareHistory is! _Omitted)
+          'hardware_history': (hardwareHistory as List<Object?>?)
+              ?.cast<PostgresMacAddress>()
+              .map((element) => element.literal)
+              .toList(),
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _MapUpdate._(Map<String, dynamic> _json)
+    implements MapUpdate {
+  _MapUpdate({
+    Object list = const _Omitted(),
+    Object? dateTime = const _Omitted(),
+    Object pages = const _Omitted(),
+    Object? prices = const _Omitted(),
+    Object season = const _Omitted(),
+    Object shift = const _Omitted(),
+    Object? during = const _Omitted(),
+    Object since = const _Omitted(),
+    Object opensAt = const _Omitted(),
+    Object? closesAt = const _Omitted(),
+    Object? ttl = const _Omitted(),
+    Object? relation = const _Omitted(),
+    Object? relations = const _Omitted(),
+    Object? transaction = const _Omitted(),
+    Object? keyColumns = const _Omitted(),
+    Object? argumentTypes = const _Omitted(),
+    Object? host = const _Omitted(),
+    Object? allowedNetworks = const _Omitted(),
+    Object? location = const _Omitted(),
+    Object? axis = const _Omitted(),
+    Object? edge = const _Omitted(),
+    Object? bounds = const _Omitted(),
+    Object? route = const _Omitted(),
+    Object? outline = const _Omitted(),
+    Object? reach = const _Omitted(),
+    Object? availability = const _Omitted(),
+    Object? blackouts = const _Omitted(),
+    Object? shifts = const _Omitted(),
+    Object? position = const _Omitted(),
+    Object? hardware = const _Omitted(),
+    Object? hardwareHistory = const _Omitted(),
+  }) : _json = {
+         if (list is! _Omitted) 'list': list,
+         if (dateTime is! _Omitted)
+           'date_time': switch (dateTime as DateTime?) {
+             null => null,
+             final value => postgresTimestamp.encode(value.toUtc()),
+           },
+         if (pages is! _Omitted) 'pages': (pages as PostgresRange<int>).literal,
+         if (prices is! _Omitted)
+           'prices': (prices as PostgresRange<num>?)?.literal,
+         if (season is! _Omitted)
+           'season': (season as PostgresRange<PostgresDate>).literal,
+         if (shift is! _Omitted)
+           'shift': (shift as PostgresRange<DateTime>).render(
+             postgresTimestamp.encode,
+           ),
+         if (during is! _Omitted)
+           'during': (during as PostgresRange<DateTime>?)?.render(
+             (bound) => postgresTimestamp.encode(bound.toUtc()),
+           ),
+         if (since is! _Omitted) 'since': (since as PostgresDate).literal,
+         if (opensAt is! _Omitted)
+           'opens_at': (opensAt as PostgresTime).literal,
+         if (closesAt is! _Omitted)
+           'closes_at': (closesAt as PostgresTime?)?.literal,
+         if (ttl is! _Omitted) 'ttl': (ttl as PostgresInterval?)?.literal,
+         if (relation is! _Omitted) 'relation': relation,
+         if (relations is! _Omitted) 'relations': relations,
+         if (transaction is! _Omitted)
+           'transaction': (transaction as BigInt?)?.toString(),
+         if (keyColumns is! _Omitted)
+           'key_columns': (keyColumns as List<Object?>?)?.cast<int>().join(' '),
+         if (argumentTypes is! _Omitted)
+           'argument_types': (argumentTypes as List<Object?>?)
+               ?.cast<int>()
+               .join(' '),
+         if (host is! _Omitted)
+           'host': (host as PostgresNetworkAddress?)?.literal,
+         if (allowedNetworks is! _Omitted)
+           'allowed_networks': (allowedNetworks as List<Object?>?)
+               ?.cast<PostgresNetworkAddress>()
+               .map((element) => element.literal)
+               .toList(),
+         if (location is! _Omitted)
+           'location': (location as PostgresPoint?)?.literal,
+         if (axis is! _Omitted) 'axis': (axis as PostgresLine?)?.literal,
+         if (edge is! _Omitted) 'edge': (edge as PostgresLineSegment?)?.literal,
+         if (bounds is! _Omitted) 'bounds': (bounds as PostgresBox?)?.literal,
+         if (route is! _Omitted) 'route': (route as PostgresPath?)?.literal,
+         if (outline is! _Omitted)
+           'outline': (outline as PostgresPolygon?)?.literal,
+         if (reach is! _Omitted) 'reach': (reach as PostgresCircle?)?.literal,
+         if (availability is! _Omitted)
+           'availability':
+               (availability as PostgresMultirange<PostgresDate>?)?.literal,
+         if (blackouts is! _Omitted)
+           'blackouts': (blackouts as List<Object?>?)
+               ?.cast<PostgresMultirange<int>>()
+               .map((element) => element.literal)
+               .toList(),
+         if (shifts is! _Omitted)
+           'shifts': (shifts as PostgresMultirange<DateTime>?)?.render(
+             postgresTimestamp.encode,
+           ),
+         if (position is! _Omitted)
+           'position': (position as PostgresLogSequenceNumber?)?.literal,
+         if (hardware is! _Omitted)
+           'hardware': (hardware as PostgresMacAddress?)?.literal,
+         if (hardwareHistory is! _Omitted)
+           'hardware_history': (hardwareHistory as List<Object?>?)
+               ?.cast<PostgresMacAddress>()
+               .map((element) => element.literal)
+               .toList(),
+       };
 }
 
 /// Typed access to the `map` table.
@@ -1757,10 +1842,9 @@ extension type const CoreTypeNamesRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `core_type_names`. Columns that are
-/// nullable, identity, or covered by a database default are optional; passing
-/// `null` omits the column so the database default applies. Columns the
-/// database always generates itself are left out entirely. Use the `set…ToNull`
-/// methods to insert SQL NULL explicitly.
+/// nullable, identity, or covered by a database default are optional; a column
+/// left out gets its database default, and `null` inserts SQL NULL. Columns the
+/// database always generates itself are left out entirely.
 extension type const CoreTypeNamesInsert._(Map<String, dynamic> _json)
     implements Object {
   CoreTypeNamesInsert({
@@ -1769,14 +1853,19 @@ extension type const CoreTypeNamesInsert._(Map<String, dynamic> _json)
     required bool active,
   }) : this._({'num': num$, 'int': int$, 'active': active});
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  CoreTypeNamesInsert copyWith({int? num$, num? int$, bool? active}) =>
-      CoreTypeNamesInsert._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  CoreTypeNamesInsert Function({int num$, num int$, bool active})
+  get copyWith =>
+      ({
+        Object num$ = const _Omitted(),
+        Object int$ = const _Omitted(),
+        Object active = const _Omitted(),
+      }) => CoreTypeNamesInsert._({
         ..._json,
-        'num': ?num$,
-        'int': ?int$,
-        'active': ?active,
+        if (num$ is! _Omitted) 'num': num$,
+        if (int$ is! _Omitted) 'int': int$,
+        if (active is! _Omitted) 'active': active,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
@@ -1785,28 +1874,45 @@ extension type const CoreTypeNamesInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `core_type_names`. All columns are optional;
-/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
-/// methods to write SQL NULL explicitly.
+/// Values for updating rows of `core_type_names`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
 extension type const CoreTypeNamesUpdate._(Map<String, dynamic> _json)
     implements Object {
-  CoreTypeNamesUpdate({int? num$, num? int$, bool? active})
-    : this._({'num': ?num$, 'int': ?int$, 'active': ?active});
+  factory CoreTypeNamesUpdate({int num$, num int$, bool active}) =
+      _CoreTypeNamesUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  CoreTypeNamesUpdate copyWith({int? num$, num? int$, bool? active}) =>
-      CoreTypeNamesUpdate._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  CoreTypeNamesUpdate Function({int num$, num int$, bool active})
+  get copyWith =>
+      ({
+        Object num$ = const _Omitted(),
+        Object int$ = const _Omitted(),
+        Object active = const _Omitted(),
+      }) => CoreTypeNamesUpdate._({
         ..._json,
-        'num': ?num$,
-        'int': ?int$,
-        'active': ?active,
+        if (num$ is! _Omitted) 'num': num$,
+        if (int$ is! _Omitted) 'int': int$,
+        if (active is! _Omitted) 'active': active,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _CoreTypeNamesUpdate._(Map<String, dynamic> _json)
+    implements CoreTypeNamesUpdate {
+  _CoreTypeNamesUpdate({
+    Object num$ = const _Omitted(),
+    Object int$ = const _Omitted(),
+    Object active = const _Omitted(),
+  }) : _json = {
+         if (num$ is! _Omitted) 'num': num$,
+         if (int$ is! _Omitted) 'int': int$,
+         if (active is! _Omitted) 'active': active,
+       };
 }
 
 /// Typed access to the `core_type_names` table.
@@ -1856,19 +1962,22 @@ extension type const OrdersRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `orders`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const OrdersInsert._(Map<String, dynamic> _json)
     implements Object {
   OrdersInsert({required U441U442U430U442U443U441 status})
     : this._({'status': status.wireName});
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  OrdersInsert copyWith({U441U442U430U442U443U441? status}) =>
-      OrdersInsert._({..._json, 'status': ?status?.wireName});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  OrdersInsert Function({U441U442U430U442U443U441 status}) get copyWith =>
+      ({Object status = const _Omitted()}) => OrdersInsert._({
+        ..._json,
+        if (status is! _Omitted)
+          'status': (status as U441U442U430U442U443U441).wireName,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -1876,23 +1985,34 @@ extension type const OrdersInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `orders`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+/// Values for updating rows of `orders`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const OrdersUpdate._(Map<String, dynamic> _json)
     implements Object {
-  OrdersUpdate({U441U442U430U442U443U441? status})
-    : this._({'status': ?status?.wireName});
+  factory OrdersUpdate({U441U442U430U442U443U441 status}) = _OrdersUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  OrdersUpdate copyWith({U441U442U430U442U443U441? status}) =>
-      OrdersUpdate._({..._json, 'status': ?status?.wireName});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  OrdersUpdate Function({U441U442U430U442U443U441 status}) get copyWith =>
+      ({Object status = const _Omitted()}) => OrdersUpdate._({
+        ..._json,
+        if (status is! _Omitted)
+          'status': (status as U441U442U430U442U443U441).wireName,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _OrdersUpdate._(Map<String, dynamic> _json)
+    implements OrdersUpdate {
+  _OrdersUpdate({Object status = const _Omitted()})
+    : _json = {
+        if (status is! _Omitted)
+          'status': (status as U441U442U430U442U443U441).wireName,
+      };
 }
 
 /// Typed access to the `orders` table.
@@ -1927,10 +2047,9 @@ extension type const EvilMultilineSchemaNamePostgrestColumnRow(
 
 /// Values for inserting a row into `evil multiline "schema"
 /// name.postgrest_column`. Columns that are nullable, identity, or covered by a
-/// database default are optional; passing `null` omits the column so the
-/// database default applies. Columns the database always generates itself are
-/// left out entirely. Use the `set…ToNull` methods to insert SQL NULL
-/// explicitly.
+/// database default are optional; a column left out gets its database default,
+/// and `null` inserts SQL NULL. Columns the database always generates itself
+/// are left out entirely.
 extension type const EvilMultilineSchemaNamePostgrestColumnInsert._(
   Map<String, dynamic> _json
 )
@@ -1938,10 +2057,15 @@ extension type const EvilMultilineSchemaNamePostgrestColumnInsert._(
   EvilMultilineSchemaNamePostgrestColumnInsert({required int id})
     : this._({'id': id});
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  EvilMultilineSchemaNamePostgrestColumnInsert copyWith({int? id}) =>
-      EvilMultilineSchemaNamePostgrestColumnInsert._({..._json, 'id': ?id});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  EvilMultilineSchemaNamePostgrestColumnInsert Function({int id})
+  get copyWith =>
+      ({Object id = const _Omitted()}) =>
+          EvilMultilineSchemaNamePostgrestColumnInsert._({
+            ..._json,
+            if (id is! _Omitted) 'id': id,
+          });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -1950,23 +2074,37 @@ extension type const EvilMultilineSchemaNamePostgrestColumnInsert._(
 }
 
 /// Values for updating rows of `evil multiline "schema" name.postgrest_column`.
-/// All columns are optional; passing `null` omits the column, leaving it
-/// unchanged. Use the `set…ToNull` methods to write SQL NULL explicitly.
+/// All columns are optional; a column left out keeps its value, and `null`
+/// writes SQL NULL.
 extension type const EvilMultilineSchemaNamePostgrestColumnUpdate._(
   Map<String, dynamic> _json
 )
     implements Object {
-  EvilMultilineSchemaNamePostgrestColumnUpdate({int? id}) : this._({'id': ?id});
+  factory EvilMultilineSchemaNamePostgrestColumnUpdate({int id}) =
+      _EvilMultilineSchemaNamePostgrestColumnUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  EvilMultilineSchemaNamePostgrestColumnUpdate copyWith({int? id}) =>
-      EvilMultilineSchemaNamePostgrestColumnUpdate._({..._json, 'id': ?id});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  EvilMultilineSchemaNamePostgrestColumnUpdate Function({int id})
+  get copyWith =>
+      ({Object id = const _Omitted()}) =>
+          EvilMultilineSchemaNamePostgrestColumnUpdate._({
+            ..._json,
+            if (id is! _Omitted) 'id': id,
+          });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _EvilMultilineSchemaNamePostgrestColumnUpdate._(
+  Map<String, dynamic> _json
+)
+    implements EvilMultilineSchemaNamePostgrestColumnUpdate {
+  _EvilMultilineSchemaNamePostgrestColumnUpdate({Object id = const _Omitted()})
+    : _json = {if (id is! _Omitted) 'id': id};
 }
 
 /// Typed access to the `evil multiline "schema" name.postgrest_column` table.
@@ -2005,24 +2143,28 @@ extension type const PrivateAchievementItemProgressTblRow(
 
 /// Values for inserting a row into `private.achievement_item_progress_tbl`.
 /// Columns that are nullable, identity, or covered by a database default are
-/// optional; passing `null` omits the column so the database default applies.
-/// Columns the database always generates itself are left out entirely. Use the
-/// `set…ToNull` methods to insert SQL NULL explicitly.
+/// optional; a column left out gets its database default, and `null` inserts
+/// SQL NULL. Columns the database always generates itself are left out
+/// entirely.
 extension type const PrivateAchievementItemProgressTblInsert._(
   Map<String, dynamic> _json
 )
     implements Object {
-  PrivateAchievementItemProgressTblInsert({int? id, required String name})
-    : this._({'id': ?id, 'name': name});
+  factory PrivateAchievementItemProgressTblInsert({
+    int id,
+    required String name,
+  }) = _PrivateAchievementItemProgressTblInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  PrivateAchievementItemProgressTblInsert copyWith({int? id, String? name}) =>
-      PrivateAchievementItemProgressTblInsert._({
-        ..._json,
-        'id': ?id,
-        'name': ?name,
-      });
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  PrivateAchievementItemProgressTblInsert Function({int id, String name})
+  get copyWith =>
+      ({Object id = const _Omitted(), Object name = const _Omitted()}) =>
+          PrivateAchievementItemProgressTblInsert._({
+            ..._json,
+            if (id is! _Omitted) 'id': id,
+            if (name is! _Omitted) 'name': name,
+          });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -2030,29 +2172,54 @@ extension type const PrivateAchievementItemProgressTblInsert._(
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
+extension type const _PrivateAchievementItemProgressTblInsert._(
+  Map<String, dynamic> _json
+)
+    implements PrivateAchievementItemProgressTblInsert {
+  _PrivateAchievementItemProgressTblInsert({
+    Object id = const _Omitted(),
+    required String name,
+  }) : _json = {if (id is! _Omitted) 'id': id, 'name': name};
+}
+
 /// Values for updating rows of `private.achievement_item_progress_tbl`. All
-/// columns are optional; passing `null` omits the column, leaving it unchanged.
-/// Use the `set…ToNull` methods to write SQL NULL explicitly.
+/// columns are optional; a column left out keeps its value, and `null` writes
+/// SQL NULL.
 extension type const PrivateAchievementItemProgressTblUpdate._(
   Map<String, dynamic> _json
 )
     implements Object {
-  PrivateAchievementItemProgressTblUpdate({int? id, String? name})
-    : this._({'id': ?id, 'name': ?name});
+  factory PrivateAchievementItemProgressTblUpdate({int id, String name}) =
+      _PrivateAchievementItemProgressTblUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  PrivateAchievementItemProgressTblUpdate copyWith({int? id, String? name}) =>
-      PrivateAchievementItemProgressTblUpdate._({
-        ..._json,
-        'id': ?id,
-        'name': ?name,
-      });
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  PrivateAchievementItemProgressTblUpdate Function({int id, String name})
+  get copyWith =>
+      ({Object id = const _Omitted(), Object name = const _Omitted()}) =>
+          PrivateAchievementItemProgressTblUpdate._({
+            ..._json,
+            if (id is! _Omitted) 'id': id,
+            if (name is! _Omitted) 'name': name,
+          });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _PrivateAchievementItemProgressTblUpdate._(
+  Map<String, dynamic> _json
+)
+    implements PrivateAchievementItemProgressTblUpdate {
+  _PrivateAchievementItemProgressTblUpdate({
+    Object id = const _Omitted(),
+    Object name = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (name is! _Omitted) 'name': name,
+       };
 }
 
 /// Typed access to the `private.achievement_item_progress_tbl` table.
@@ -2090,23 +2257,27 @@ extension type const TeamRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `team`. Columns that are nullable, identity,
-/// or covered by a database default are optional; passing `null` omits the
-/// column so the database default applies. Columns the database always
-/// generates itself are left out entirely. Use the `set…ToNull` methods to
-/// insert SQL NULL explicitly.
+/// or covered by a database default are optional; a column left out gets its
+/// database default, and `null` inserts SQL NULL. Columns the database always
+/// generates itself are left out entirely.
 extension type const TeamInsert._(Map<String, dynamic> _json)
     implements Object {
-  TeamInsert({int? id, required String name, int? ownerId})
-    : this._({'id': ?id, 'name': name, 'owner_id': ?ownerId});
+  factory TeamInsert({int id, required String name, int? ownerId}) =
+      _TeamInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  TeamInsert copyWith({int? id, String? name, int? ownerId}) =>
-      TeamInsert._({..._json, 'id': ?id, 'name': ?name, 'owner_id': ?ownerId});
-
-  /// Returns a copy with `owner_id` set to SQL NULL, overriding any database
-  /// default.
-  TeamInsert setOwnerIdToNull() => TeamInsert._({..._json, 'owner_id': null});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  TeamInsert Function({int id, String name, int? ownerId}) get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object name = const _Omitted(),
+        Object? ownerId = const _Omitted(),
+      }) => TeamInsert._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (name is! _Omitted) 'name': name,
+        if (ownerId is! _Omitted) 'owner_id': ownerId,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -2114,27 +2285,56 @@ extension type const TeamInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `team`. All columns are optional; passing `null`
-/// omits the column, leaving it unchanged. Use the `set…ToNull` methods to
-/// write SQL NULL explicitly.
+extension type const _TeamInsert._(Map<String, dynamic> _json)
+    implements TeamInsert {
+  _TeamInsert({
+    Object id = const _Omitted(),
+    required String name,
+    Object? ownerId = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         'name': name,
+         if (ownerId is! _Omitted) 'owner_id': ownerId,
+       };
+}
+
+/// Values for updating rows of `team`. All columns are optional; a column left
+/// out keeps its value, and `null` writes SQL NULL.
 extension type const TeamUpdate._(Map<String, dynamic> _json)
     implements Object {
-  TeamUpdate({int? id, String? name, int? ownerId})
-    : this._({'id': ?id, 'name': ?name, 'owner_id': ?ownerId});
+  factory TeamUpdate({int id, String name, int? ownerId}) = _TeamUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  TeamUpdate copyWith({int? id, String? name, int? ownerId}) =>
-      TeamUpdate._({..._json, 'id': ?id, 'name': ?name, 'owner_id': ?ownerId});
-
-  /// Returns a copy with `owner_id` set to SQL NULL, overriding any database
-  /// default.
-  TeamUpdate setOwnerIdToNull() => TeamUpdate._({..._json, 'owner_id': null});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  TeamUpdate Function({int id, String name, int? ownerId}) get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object name = const _Omitted(),
+        Object? ownerId = const _Omitted(),
+      }) => TeamUpdate._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (name is! _Omitted) 'name': name,
+        if (ownerId is! _Omitted) 'owner_id': ownerId,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _TeamUpdate._(Map<String, dynamic> _json)
+    implements TeamUpdate {
+  _TeamUpdate({
+    Object id = const _Omitted(),
+    Object name = const _Omitted(),
+    Object? ownerId = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (name is! _Omitted) 'name': name,
+         if (ownerId is! _Omitted) 'owner_id': ownerId,
+       };
 }
 
 /// Typed access to the `team` table.
@@ -2215,23 +2415,27 @@ extension type const ProfileRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `profile`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const ProfileInsert._(Map<String, dynamic> _json)
     implements Object {
-  ProfileInsert({int? id, required String name, int? team})
-    : this._({'id': ?id, 'name': name, 'team': ?team});
+  factory ProfileInsert({int id, required String name, int? team}) =
+      _ProfileInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  ProfileInsert copyWith({int? id, String? name, int? team}) =>
-      ProfileInsert._({..._json, 'id': ?id, 'name': ?name, 'team': ?team});
-
-  /// Returns a copy with `team` set to SQL NULL, overriding any database
-  /// default.
-  ProfileInsert setTeamToNull() => ProfileInsert._({..._json, 'team': null});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  ProfileInsert Function({int id, String name, int? team}) get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object name = const _Omitted(),
+        Object? team = const _Omitted(),
+      }) => ProfileInsert._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (name is! _Omitted) 'name': name,
+        if (team is! _Omitted) 'team': team,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -2239,27 +2443,56 @@ extension type const ProfileInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `profile`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _ProfileInsert._(Map<String, dynamic> _json)
+    implements ProfileInsert {
+  _ProfileInsert({
+    Object id = const _Omitted(),
+    required String name,
+    Object? team = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         'name': name,
+         if (team is! _Omitted) 'team': team,
+       };
+}
+
+/// Values for updating rows of `profile`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const ProfileUpdate._(Map<String, dynamic> _json)
     implements Object {
-  ProfileUpdate({int? id, String? name, int? team})
-    : this._({'id': ?id, 'name': ?name, 'team': ?team});
+  factory ProfileUpdate({int id, String name, int? team}) = _ProfileUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  ProfileUpdate copyWith({int? id, String? name, int? team}) =>
-      ProfileUpdate._({..._json, 'id': ?id, 'name': ?name, 'team': ?team});
-
-  /// Returns a copy with `team` set to SQL NULL, overriding any database
-  /// default.
-  ProfileUpdate setTeamToNull() => ProfileUpdate._({..._json, 'team': null});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  ProfileUpdate Function({int id, String name, int? team}) get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object name = const _Omitted(),
+        Object? team = const _Omitted(),
+      }) => ProfileUpdate._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (name is! _Omitted) 'name': name,
+        if (team is! _Omitted) 'team': team,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _ProfileUpdate._(Map<String, dynamic> _json)
+    implements ProfileUpdate {
+  _ProfileUpdate({
+    Object id = const _Omitted(),
+    Object name = const _Omitted(),
+    Object? team = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (name is! _Omitted) 'name': name,
+         if (team is! _Omitted) 'team': team,
+       };
 }
 
 /// Typed access to the `profile` table.
@@ -2318,29 +2551,34 @@ extension type const BadgeRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `badge`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const BadgeInsert._(Map<String, dynamic> _json)
     implements Object {
-  BadgeInsert({int? id, required String name, required int profile, int? team})
-    : this._({'id': ?id, 'name': name, 'profile': profile, 'team': ?team});
+  factory BadgeInsert({
+    int id,
+    required String name,
+    required int profile,
+    int? team,
+  }) = _BadgeInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  BadgeInsert copyWith({int? id, String? name, int? profile, int? team}) =>
-      BadgeInsert._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  BadgeInsert Function({int id, String name, int profile, int? team})
+  get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object name = const _Omitted(),
+        Object profile = const _Omitted(),
+        Object? team = const _Omitted(),
+      }) => BadgeInsert._({
         ..._json,
-        'id': ?id,
-        'name': ?name,
-        'profile': ?profile,
-        'team': ?team,
+        if (id is! _Omitted) 'id': id,
+        if (name is! _Omitted) 'name': name,
+        if (profile is! _Omitted) 'profile': profile,
+        if (team is! _Omitted) 'team': team,
       });
-
-  /// Returns a copy with `team` set to SQL NULL, overriding any database
-  /// default.
-  BadgeInsert setTeamToNull() => BadgeInsert._({..._json, 'team': null});
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -2348,33 +2586,64 @@ extension type const BadgeInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `badge`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _BadgeInsert._(Map<String, dynamic> _json)
+    implements BadgeInsert {
+  _BadgeInsert({
+    Object id = const _Omitted(),
+    required String name,
+    required int profile,
+    Object? team = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         'name': name,
+         'profile': profile,
+         if (team is! _Omitted) 'team': team,
+       };
+}
+
+/// Values for updating rows of `badge`. All columns are optional; a column left
+/// out keeps its value, and `null` writes SQL NULL.
 extension type const BadgeUpdate._(Map<String, dynamic> _json)
     implements Object {
-  BadgeUpdate({int? id, String? name, int? profile, int? team})
-    : this._({'id': ?id, 'name': ?name, 'profile': ?profile, 'team': ?team});
+  factory BadgeUpdate({int id, String name, int profile, int? team}) =
+      _BadgeUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  BadgeUpdate copyWith({int? id, String? name, int? profile, int? team}) =>
-      BadgeUpdate._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  BadgeUpdate Function({int id, String name, int profile, int? team})
+  get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object name = const _Omitted(),
+        Object profile = const _Omitted(),
+        Object? team = const _Omitted(),
+      }) => BadgeUpdate._({
         ..._json,
-        'id': ?id,
-        'name': ?name,
-        'profile': ?profile,
-        'team': ?team,
+        if (id is! _Omitted) 'id': id,
+        if (name is! _Omitted) 'name': name,
+        if (profile is! _Omitted) 'profile': profile,
+        if (team is! _Omitted) 'team': team,
       });
-
-  /// Returns a copy with `team` set to SQL NULL, overriding any database
-  /// default.
-  BadgeUpdate setTeamToNull() => BadgeUpdate._({..._json, 'team': null});
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _BadgeUpdate._(Map<String, dynamic> _json)
+    implements BadgeUpdate {
+  _BadgeUpdate({
+    Object id = const _Omitted(),
+    Object name = const _Omitted(),
+    Object profile = const _Omitted(),
+    Object? team = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (name is! _Omitted) 'name': name,
+         if (profile is! _Omitted) 'profile': profile,
+         if (team is! _Omitted) 'team': team,
+       };
 }
 
 /// Typed access to the `badge` table.
@@ -2433,19 +2702,23 @@ extension type const TeamBadgeRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `team_badge`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const TeamBadgeInsert._(Map<String, dynamic> _json)
     implements Object {
   TeamBadgeInsert({required int teamId, required int badgeId})
     : this._({'team_id': teamId, 'badge_id': badgeId});
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  TeamBadgeInsert copyWith({int? teamId, int? badgeId}) =>
-      TeamBadgeInsert._({..._json, 'team_id': ?teamId, 'badge_id': ?badgeId});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  TeamBadgeInsert Function({int teamId, int badgeId}) get copyWith =>
+      ({Object teamId = const _Omitted(), Object badgeId = const _Omitted()}) =>
+          TeamBadgeInsert._({
+            ..._json,
+            if (teamId is! _Omitted) 'team_id': teamId,
+            if (badgeId is! _Omitted) 'badge_id': badgeId,
+          });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -2453,23 +2726,37 @@ extension type const TeamBadgeInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `team_badge`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+/// Values for updating rows of `team_badge`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const TeamBadgeUpdate._(Map<String, dynamic> _json)
     implements Object {
-  TeamBadgeUpdate({int? teamId, int? badgeId})
-    : this._({'team_id': ?teamId, 'badge_id': ?badgeId});
+  factory TeamBadgeUpdate({int teamId, int badgeId}) = _TeamBadgeUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  TeamBadgeUpdate copyWith({int? teamId, int? badgeId}) =>
-      TeamBadgeUpdate._({..._json, 'team_id': ?teamId, 'badge_id': ?badgeId});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  TeamBadgeUpdate Function({int teamId, int badgeId}) get copyWith =>
+      ({Object teamId = const _Omitted(), Object badgeId = const _Omitted()}) =>
+          TeamBadgeUpdate._({
+            ..._json,
+            if (teamId is! _Omitted) 'team_id': teamId,
+            if (badgeId is! _Omitted) 'badge_id': badgeId,
+          });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _TeamBadgeUpdate._(Map<String, dynamic> _json)
+    implements TeamBadgeUpdate {
+  _TeamBadgeUpdate({
+    Object teamId = const _Omitted(),
+    Object badgeId = const _Omitted(),
+  }) : _json = {
+         if (teamId is! _Omitted) 'team_id': teamId,
+         if (badgeId is! _Omitted) 'badge_id': badgeId,
+       };
 }
 
 /// Typed access to the `team_badge` table.
@@ -2517,19 +2804,26 @@ extension type const NoteRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `note`. Columns that are nullable, identity,
-/// or covered by a database default are optional; passing `null` omits the
-/// column so the database default applies. Columns the database always
-/// generates itself are left out entirely. Use the `set…ToNull` methods to
-/// insert SQL NULL explicitly.
+/// or covered by a database default are optional; a column left out gets its
+/// database default, and `null` inserts SQL NULL. Columns the database always
+/// generates itself are left out entirely.
 extension type const NoteInsert._(Map<String, dynamic> _json)
     implements Object {
-  NoteInsert({String? body, int? id, int? teamId})
-    : this._({'body': ?body, 'id': ?id, 'team_id': ?teamId});
+  factory NoteInsert({String body, int id, int teamId}) = _NoteInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  NoteInsert copyWith({String? body, int? id, int? teamId}) =>
-      NoteInsert._({..._json, 'body': ?body, 'id': ?id, 'team_id': ?teamId});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  NoteInsert Function({String body, int id, int teamId}) get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object id = const _Omitted(),
+        Object teamId = const _Omitted(),
+      }) => NoteInsert._({
+        ..._json,
+        if (body is! _Omitted) 'body': body,
+        if (id is! _Omitted) 'id': id,
+        if (teamId is! _Omitted) 'team_id': teamId,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -2537,23 +2831,56 @@ extension type const NoteInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `note`. All columns are optional; passing `null`
-/// omits the column, leaving it unchanged. Use the `set…ToNull` methods to
-/// write SQL NULL explicitly.
+extension type const _NoteInsert._(Map<String, dynamic> _json)
+    implements NoteInsert {
+  _NoteInsert({
+    Object body = const _Omitted(),
+    Object id = const _Omitted(),
+    Object teamId = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (id is! _Omitted) 'id': id,
+         if (teamId is! _Omitted) 'team_id': teamId,
+       };
+}
+
+/// Values for updating rows of `note`. All columns are optional; a column left
+/// out keeps its value, and `null` writes SQL NULL.
 extension type const NoteUpdate._(Map<String, dynamic> _json)
     implements Object {
-  NoteUpdate({String? body, int? id, int? teamId})
-    : this._({'body': ?body, 'id': ?id, 'team_id': ?teamId});
+  factory NoteUpdate({String body, int id, int teamId}) = _NoteUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  NoteUpdate copyWith({String? body, int? id, int? teamId}) =>
-      NoteUpdate._({..._json, 'body': ?body, 'id': ?id, 'team_id': ?teamId});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  NoteUpdate Function({String body, int id, int teamId}) get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object id = const _Omitted(),
+        Object teamId = const _Omitted(),
+      }) => NoteUpdate._({
+        ..._json,
+        if (body is! _Omitted) 'body': body,
+        if (id is! _Omitted) 'id': id,
+        if (teamId is! _Omitted) 'team_id': teamId,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _NoteUpdate._(Map<String, dynamic> _json)
+    implements NoteUpdate {
+  _NoteUpdate({
+    Object body = const _Omitted(),
+    Object id = const _Omitted(),
+    Object teamId = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (id is! _Omitted) 'id': id,
+         if (teamId is! _Omitted) 'team_id': teamId,
+       };
 }
 
 /// Typed access to the `note` table.
@@ -2602,23 +2929,25 @@ extension type const NoteReplyRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `note_reply`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const NoteReplyInsert._(Map<String, dynamic> _json)
     implements Object {
-  NoteReplyInsert({String? body, int? id, int? noteId})
-    : this._({'body': ?body, 'id': ?id, 'note_id': ?noteId});
+  factory NoteReplyInsert({String body, int id, int noteId}) = _NoteReplyInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  NoteReplyInsert copyWith({String? body, int? id, int? noteId}) =>
-      NoteReplyInsert._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  NoteReplyInsert Function({String body, int id, int noteId}) get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object id = const _Omitted(),
+        Object noteId = const _Omitted(),
+      }) => NoteReplyInsert._({
         ..._json,
-        'body': ?body,
-        'id': ?id,
-        'note_id': ?noteId,
+        if (body is! _Omitted) 'body': body,
+        if (id is! _Omitted) 'id': id,
+        if (noteId is! _Omitted) 'note_id': noteId,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
@@ -2627,28 +2956,56 @@ extension type const NoteReplyInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `note_reply`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _NoteReplyInsert._(Map<String, dynamic> _json)
+    implements NoteReplyInsert {
+  _NoteReplyInsert({
+    Object body = const _Omitted(),
+    Object id = const _Omitted(),
+    Object noteId = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (id is! _Omitted) 'id': id,
+         if (noteId is! _Omitted) 'note_id': noteId,
+       };
+}
+
+/// Values for updating rows of `note_reply`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const NoteReplyUpdate._(Map<String, dynamic> _json)
     implements Object {
-  NoteReplyUpdate({String? body, int? id, int? noteId})
-    : this._({'body': ?body, 'id': ?id, 'note_id': ?noteId});
+  factory NoteReplyUpdate({String body, int id, int noteId}) = _NoteReplyUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  NoteReplyUpdate copyWith({String? body, int? id, int? noteId}) =>
-      NoteReplyUpdate._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  NoteReplyUpdate Function({String body, int id, int noteId}) get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object id = const _Omitted(),
+        Object noteId = const _Omitted(),
+      }) => NoteReplyUpdate._({
         ..._json,
-        'body': ?body,
-        'id': ?id,
-        'note_id': ?noteId,
+        if (body is! _Omitted) 'body': body,
+        if (id is! _Omitted) 'id': id,
+        if (noteId is! _Omitted) 'note_id': noteId,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _NoteReplyUpdate._(Map<String, dynamic> _json)
+    implements NoteReplyUpdate {
+  _NoteReplyUpdate({
+    Object body = const _Omitted(),
+    Object id = const _Omitted(),
+    Object noteId = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (id is! _Omitted) 'id': id,
+         if (noteId is! _Omitted) 'note_id': noteId,
+       };
 }
 
 /// Typed access to the `note_reply` table.
@@ -2690,30 +3047,31 @@ extension type const StringRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `string`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const StringInsert._(Map<String, dynamic> _json)
     implements Object {
-  StringInsert({
-    int? id,
+  factory StringInsert({
+    int id,
     required StringValue value,
     required StringDocument document,
-  }) : this._({'id': ?id, 'value': value.wireName, 'document': document});
+  }) = _StringInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  StringInsert copyWith({
-    int? id,
-    StringValue? value,
-    StringDocument? document,
-  }) => StringInsert._({
-    ..._json,
-    'id': ?id,
-    'value': ?value?.wireName,
-    'document': ?document,
-  });
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  StringInsert Function({int id, StringValue value, StringDocument document})
+  get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object value = const _Omitted(),
+        Object document = const _Omitted(),
+      }) => StringInsert._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (value is! _Omitted) 'value': (value as StringValue).wireName,
+        if (document is! _Omitted) 'document': document,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -2721,31 +3079,58 @@ extension type const StringInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `string`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _StringInsert._(Map<String, dynamic> _json)
+    implements StringInsert {
+  _StringInsert({
+    Object id = const _Omitted(),
+    required StringValue value,
+    required StringDocument document,
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         'value': value.wireName,
+         'document': document,
+       };
+}
+
+/// Values for updating rows of `string`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const StringUpdate._(Map<String, dynamic> _json)
     implements Object {
-  StringUpdate({int? id, StringValue? value, StringDocument? document})
-    : this._({'id': ?id, 'value': ?value?.wireName, 'document': ?document});
+  factory StringUpdate({int id, StringValue value, StringDocument document}) =
+      _StringUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  StringUpdate copyWith({
-    int? id,
-    StringValue? value,
-    StringDocument? document,
-  }) => StringUpdate._({
-    ..._json,
-    'id': ?id,
-    'value': ?value?.wireName,
-    'document': ?document,
-  });
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  StringUpdate Function({int id, StringValue value, StringDocument document})
+  get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object value = const _Omitted(),
+        Object document = const _Omitted(),
+      }) => StringUpdate._({
+        ..._json,
+        if (id is! _Omitted) 'id': id,
+        if (value is! _Omitted) 'value': (value as StringValue).wireName,
+        if (document is! _Omitted) 'document': document,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _StringUpdate._(Map<String, dynamic> _json)
+    implements StringUpdate {
+  _StringUpdate({
+    Object id = const _Omitted(),
+    Object value = const _Omitted(),
+    Object document = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (value is! _Omitted) 'value': (value as StringValue).wireName,
+         if (document is! _Omitted) 'document': document,
+       };
 }
 
 /// Typed access to the `string` table.
@@ -2822,26 +3207,33 @@ extension DatabaseFunctions on PostgrestRpc {
       value('call', fromJson: (json) => json as int?, schema: 'public');
 
   /// Calls the `rows` function.
-  PostgrestTypedBuilder<List<List<double>?>> rows$({
+  PostgrestTypedBuilder<List<List<double>?>> Function({
     required PostgresRange<int> rows$,
     required String$ value$,
     Uint8List? postgresBytea$,
-  }) => value(
-    'rows',
-    arguments: {
-      'postgres_bytea': ?switch (postgresBytea$) {
-        null => null,
-        final value => postgresBytea.encode(value),
-      },
-      'rows': rows$.literal,
-      'value': value$.wireName,
-    },
-    fromJson: (json) => [
-      for (final element in json! as List<dynamic>)
-        element == null ? null : _doubleListFromJson$(element),
-    ],
-    schema: 'public',
-  );
+  })
+  get rows$ =>
+      ({
+        Object? postgresBytea$ = const _Omitted(),
+        required PostgresRange<int> rows$,
+        required String$ value$,
+      }) => value(
+        'rows',
+        arguments: {
+          if (postgresBytea$ is! _Omitted)
+            'postgres_bytea': switch (postgresBytea$ as Uint8List?) {
+              null => null,
+              final value => postgresBytea.encode(value),
+            },
+          'rows': rows$.literal,
+          'value': value$.wireName,
+        },
+        fromJson: (json) => [
+          for (final element in json! as List<dynamic>)
+            element == null ? null : _doubleListFromJson$(element),
+        ],
+        schema: 'public',
+      );
 
   /// Calls the `class` function, which returns rows filterable through `Class`.
   PostgrestTypedFilterBuilder<ClassRow, List<ClassRow>> class$() =>
@@ -2867,20 +3259,25 @@ extension DatabaseFunctions on PostgrestRpc {
 
   /// Calls the `private.restock` function, which returns a row of `orders`, or
   /// `null` when it finds none.
-  PostgrestTypedBuilder<OrdersRow?> privateRestockWithItemAndNote({
+  PostgrestTypedBuilder<OrdersRow?> Function({
     required PrivateAchievementItemProgressTblRow item,
     Object? note,
-  }) => value(
-    'restock',
-    arguments: {'item': item.toJson(), 'note': ?note},
-    fromJson: (json) => switch (json) {
-      final Map<String, dynamic> row
-          when row.values.any((value) => value != null) =>
-        OrdersRow(row),
-      _ => null,
-    },
-    schema: 'private',
-  );
+  })
+  get privateRestockWithItemAndNote =>
+      ({
+        required PrivateAchievementItemProgressTblRow item,
+        Object? note = const _Omitted(),
+      }) => value(
+        'restock',
+        arguments: {'item': item.toJson(), if (note is! _Omitted) 'note': note},
+        fromJson: (json) => switch (json) {
+          final Map<String, dynamic> row
+              when row.values.any((value) => value != null) =>
+            OrdersRow(row),
+          _ => null,
+        },
+        schema: 'private',
+      );
 
   /// Calls the `evil multiline "schema" name.it's` function, which returns rows
   /// of `evil multiline "schema" name.postgrest_column` filterable through
@@ -3281,3 +3678,8 @@ Uint8List _uint8ListFromJson(Object json) =>
 List<Uint8List> _uint8ListListFromJson(Object json) => (json as List<dynamic>)
     .map((element) => postgresBytea.decode(element as String))
     .toList();
+
+/// The default of a parameter the caller left out.
+final class _Omitted {
+  const _Omitted();
+}

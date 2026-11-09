@@ -39,9 +39,7 @@ class _SchemaTypeNames {
   final jsonObjects = Map<JsonSchemaObject, String>.identity();
 }
 
-/// The lowest language version the generated code is valid for: the value
-/// types omit unset columns with null-aware map elements, which need Dart
-/// 3.8.
+/// The lowest language version the generated code is formatted for.
 final minimumLanguageVersion = Version(3, 8, 0);
 
 /// Generates a Dart source file with typed table definitions, row extension
@@ -104,6 +102,7 @@ String generateDartCode(
   final typeNames = _TypeNameRegistry();
   final schemaTypeNames = _SchemaTypeNames();
   final decoders = _DecoderRegistry();
+  final omitted = _OmittedSentinel();
 
   for (final enumDescription in database.enums) {
     final baseName = _typeBaseName(
@@ -163,6 +162,7 @@ String generateDartCode(
       typeNames.taken,
       schemaTypeNames,
       decoders,
+      omitted,
     );
     partialRowWriters.add(writePartialRow);
   }
@@ -173,6 +173,7 @@ String generateDartCode(
     typeNames,
     schemaTypeNames,
     decoders,
+    omitted,
   );
   // Claimed after every other name, so adding the extensions moves no name
   // an earlier version generated.
@@ -184,6 +185,7 @@ String generateDartCode(
       ),
   ];
   decoders.write(buffer);
+  omitted.write(buffer);
 
   final header = StringBuffer()
     ..writeln(
@@ -785,6 +787,7 @@ _PartialRowWriter _writeTable(
   Set<String> typeNames,
   _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
+  _OmittedSentinel omitted,
 ) {
   final _TableNames(:insertType, :updateType) = names;
 
@@ -822,15 +825,14 @@ _PartialRowWriter _writeTable(
       insertType,
       memberNames,
       bindings,
+      omitted,
       requireRequiredColumns: true,
       docLine:
           'Values for inserting a row into `${names.displayName}`. Columns '
           'that are nullable, identity, or covered by a database default are '
-          'optional; '
-          'passing `null` omits the column so the database default applies. '
-          'Columns the database always generates itself are left out '
-          'entirely. Use the `set…ToNull` methods to insert SQL NULL '
-          'explicitly.',
+          'optional; a column left out gets its database default, and '
+          '`null` inserts SQL NULL. Columns the database always generates '
+          'itself are left out entirely.',
     );
   }
   if (updateType != null) {
@@ -840,12 +842,12 @@ _PartialRowWriter _writeTable(
       updateType,
       memberNames,
       bindings,
+      omitted,
       requireRequiredColumns: false,
       docLine:
           'Values for updating rows of `${names.displayName}`. All columns '
-          'are optional; passing `null` omits the column, leaving it '
-          'unchanged. '
-          'Use the `set…ToNull` methods to write SQL NULL explicitly.',
+          'are optional; a column left out keeps its value, and `null` '
+          'writes SQL NULL.',
     );
   }
   _writeNamespace(
@@ -979,16 +981,24 @@ void _writeValues(
   TableDescription table,
   String typeName,
   Map<String, String> memberNames,
-  Map<String, _Binding> bindings, {
+  Map<String, _Binding> bindings,
+  _OmittedSentinel omitted, {
   required bool requireRequiredColumns,
   required String docLine,
 }) {
   bool isRequired(ColumnDescription column) =>
       requireRequiredColumns && column.isRequired;
+  String parameterType(ColumnDescription column) {
+    final dartType = bindings[column.name]!.dartType;
+    return column.isNullable ? '$dartType?' : dartType;
+  }
+
   final writableColumns = [
     for (final column in table.columns)
       if (!column.isReadOnly) column,
   ];
+  final targetName = '_$typeName';
+  final redirects = writableColumns.any((column) => !isRequired(column));
 
   _writeDocComment(buffer, docLine);
   buffer
@@ -999,32 +1009,27 @@ void _writeValues(
     // all read-only gets a parameterless constructor.
     buffer.writeln('  $typeName() : this._({});');
   } else {
-    buffer.writeln('  $typeName({');
+    buffer.writeln('  ${redirects ? 'factory ' : ''}$typeName({');
     for (final column in writableColumns) {
-      final binding = bindings[column.name]!;
       final name = memberNames[column.name]!;
-      if (isRequired(column)) {
-        buffer.writeln('    required ${binding.dartType} $name,');
-      } else {
-        buffer.writeln('    ${binding.dartType}? $name,');
-      }
+      final required = isRequired(column) ? 'required ' : '';
+      buffer.writeln('    $required${parameterType(column)} $name,');
     }
-    buffer.writeln('  }) : this._({');
-    for (final column in writableColumns) {
-      final binding = bindings[column.name]!;
-      final name = memberNames[column.name]!;
-      final key = _stringLiteral(column.name);
-      if (isRequired(column)) {
-        buffer.writeln(
-          '         $key: ${_writeExpression(name, binding, nullable: false)},',
+    if (redirects) {
+      buffer.writeln('  }) = $targetName;');
+    } else {
+      buffer.writeln('  }) : this._({');
+      for (final column in writableColumns) {
+        final name = memberNames[column.name]!;
+        final value = _writeExpression(
+          name,
+          bindings[column.name]!,
+          nullable: false,
         );
-      } else {
-        buffer.writeln(
-          '         $key: ?${_writeExpression(name, binding, nullable: true)},',
-        );
+        buffer.writeln('         ${_stringLiteral(column.name)}: $value,');
       }
+      buffer.writeln('       });');
     }
-    buffer.writeln('       });');
   }
   buffer.writeln();
   if (writableColumns.isEmpty) {
@@ -1035,50 +1040,14 @@ void _writeValues(
     );
     buffer.writeln('  $typeName copyWith() => this;');
   } else {
-    _writeDocComment(
+    _writeCopyWith(
       buffer,
-      [
-        'Returns a copy with the given columns replaced. Passing `null` keeps '
-            'the current value',
-        if (writableColumns.any((column) => column.isNullable))
-          '; use the `set…ToNull` methods to write SQL NULL',
-        '.',
-      ].join(),
-      indent: '  ',
-    );
-    buffer.writeln('  $typeName copyWith({');
-    for (final column in writableColumns) {
-      buffer.writeln(
-        '    ${bindings[column.name]!.dartType}? ${memberNames[column.name]},',
-      );
-    }
-    buffer
-      ..writeln('  }) => $typeName._({')
-      ..writeln('    ..._json,');
-    for (final column in writableColumns) {
-      final expression = _writeExpression(
-        memberNames[column.name]!,
-        bindings[column.name]!,
-        nullable: true,
-      );
-      buffer.writeln('    ${_stringLiteral(column.name)}: ?$expression,');
-    }
-    buffer.writeln('  });');
-  }
-  for (final column in writableColumns) {
-    if (!column.isNullable) continue;
-    final name = memberNames[column.name]!;
-    final methodName = 'set${name[0].toUpperCase()}${name.substring(1)}ToNull';
-    buffer.writeln();
-    _writeDocComment(
-      buffer,
-      'Returns a copy with `${column.name}` set to SQL NULL, overriding any '
-      'database default.',
-      indent: '  ',
-    );
-    buffer.writeln(
-      '  $typeName $methodName() => '
-      '$typeName._({..._json, ${_stringLiteral(column.name)}: null});',
+      typeName,
+      writableColumns,
+      memberNames,
+      bindings,
+      omitted,
+      parameterType: parameterType,
     );
   }
   buffer.writeln();
@@ -1093,6 +1062,99 @@ void _writeValues(
     ..writeln('  Map<String, dynamic> toJson() => Map.unmodifiable(_json);')
     ..writeln('}')
     ..writeln();
+  if (!redirects) return;
+
+  // The redirecting factory above declares the parameter types, while the
+  // constructor it redirects to takes every optional column as an `Object?`
+  // defaulting to a sentinel, which tells a column left out apart from one
+  // passed as null.
+  buffer
+    ..writeln(
+      'extension type const $targetName._(Map<String, dynamic> _json)',
+    )
+    ..writeln('    implements $typeName {')
+    ..writeln('  $targetName({');
+  for (final column in writableColumns) {
+    final name = memberNames[column.name]!;
+    if (isRequired(column)) {
+      buffer.writeln('    required ${parameterType(column)} $name,');
+    } else {
+      final type = column.isNullable ? 'Object?' : 'Object';
+      buffer.writeln('    ${omitted.parameter(type, name)},');
+    }
+  }
+  buffer.writeln('  }) : _json = {');
+  for (final column in writableColumns) {
+    final binding = bindings[column.name]!;
+    final name = memberNames[column.name]!;
+    final key = _stringLiteral(column.name);
+    if (isRequired(column)) {
+      final value = _writeExpression(name, binding, nullable: false);
+      buffer.writeln('         $key: $value,');
+    } else {
+      final value = _writeExpression(
+        name,
+        binding,
+        nullable: column.isNullable,
+        cast: true,
+      );
+      buffer.writeln('         if (${omitted.isSet(name)}) $key: $value,');
+    }
+  }
+  buffer
+    ..writeln('       };')
+    ..writeln('}')
+    ..writeln();
+}
+
+/// Writes `copyWith` as a getter returning a function, so that its parameters
+/// can default to the sentinel that tells a column left out apart from one
+/// passed as null, which a method of an extension type cannot do.
+void _writeCopyWith(
+  StringBuffer buffer,
+  String typeName,
+  List<ColumnDescription> writableColumns,
+  Map<String, String> memberNames,
+  Map<String, _Binding> bindings,
+  _OmittedSentinel omitted, {
+  required String Function(ColumnDescription column) parameterType,
+}) {
+  final writesNull = writableColumns.any((column) => column.isNullable);
+  _writeDocComment(
+    buffer,
+    'Returns a copy with the given columns replaced. A column left out keeps '
+    'its current value${writesNull ? ', and `null` writes SQL NULL' : ''}.',
+    indent: '  ',
+  );
+  final types = [
+    for (final column in writableColumns)
+      '${parameterType(column)} ${memberNames[column.name]}',
+  ];
+  final parameters = [
+    for (final column in writableColumns)
+      omitted.parameter(
+        column.isNullable ? 'Object?' : 'Object',
+        memberNames[column.name]!,
+      ),
+  ];
+  buffer
+    ..writeln('  $typeName Function({${types.join(', ')}}) get copyWith =>')
+    ..writeln('      ({${parameters.join(', ')}}) => $typeName._({')
+    ..writeln('        ..._json,');
+  for (final column in writableColumns) {
+    final name = memberNames[column.name]!;
+    final value = _writeExpression(
+      name,
+      bindings[column.name]!,
+      nullable: column.isNullable,
+      cast: true,
+    );
+    buffer.writeln(
+      '        if (${omitted.isSet(name)}) '
+      '${_stringLiteral(column.name)}: $value,',
+    );
+  }
+  buffer.writeln('      });');
 }
 
 void _writeNamespace(
@@ -1352,6 +1414,32 @@ class _DecoderRegistry {
         ..writeln('$type $name(Object json) => $body;')
         ..writeln();
     }
+  }
+}
+
+/// The sentinel default of the parameters a caller may leave out, which
+/// tells a parameter left out apart from one passed as `null`. Its class is
+/// written once, and only when a parameter uses it.
+class _OmittedSentinel {
+  bool _used = false;
+
+  /// The declaration of the optional named parameter [name] of [type].
+  String parameter(String type, String name) {
+    _used = true;
+    return '$type $name = const _Omitted()';
+  }
+
+  /// The condition under which the caller passed the parameter [name].
+  String isSet(String name) => '$name is! _Omitted';
+
+  void write(StringBuffer buffer) {
+    if (!_used) return;
+    buffer
+      ..writeln('/// The default of a parameter the caller left out.')
+      ..writeln('final class _Omitted {')
+      ..writeln('  const _Omitted();')
+      ..writeln('}')
+      ..writeln();
   }
 }
 
@@ -1727,22 +1815,44 @@ String? _readConversion(
   ColumnTypeKind.unknown => null,
 };
 
+/// The expression rendering [parameterName], bound to [binding], for the
+/// wire. With [cast], the parameter is declared as `Object` or `Object?`: a
+/// value sent as it is needs no cast, and any other is cast to the type of
+/// [binding] first, a list to `List<Object?>` with its elements cast lazily.
 String _writeExpression(
   String parameterName,
   _Binding binding, {
   required bool nullable,
+  bool cast = false,
 }) {
+  final dartType = binding.dartType;
+  final chained = _writeConversion(binding, 'value')?.chained;
+  if (chained == null) return parameterName;
+  final listElement = cast && dartType.startsWith('List<')
+      ? dartType.substring('List<'.length, dartType.length - 1)
+      : null;
+  // A member chain needs the element type spelled out, while a conversion
+  // that passes the list on as an argument infers it from the parameter.
+  final elementCast = listElement == null
+      ? ''
+      : chained
+      ? '.cast<$listElement>()'
+      : '.cast()';
+  final rendering = _writeConversion(binding, 'value$elementCast')!;
+  final castType = listElement == null ? dartType : 'List<Object?>';
+  final scrutinee = cast && dartType != 'Object'
+      ? '$parameterName as $castType${nullable ? '?' : ''}'
+      : parameterName;
+  final receiver = scrutinee == parameterName ? scrutinee : '($scrutinee)';
   if (!nullable) {
-    return _writeConversion(binding, parameterName)?.expression ??
-        parameterName;
+    return _writeConversion(binding, '$receiver$elementCast')!.expression;
   }
-  final rendering = _writeConversion(binding, 'value');
-  if (rendering == null) return parameterName;
   final expression = rendering.expression;
-  if (rendering.chained) {
-    return '$parameterName?${expression.substring('value'.length)}';
+  if (chained) {
+    final members = expression.substring('value$elementCast'.length);
+    return '$receiver?$elementCast$members';
   }
-  return 'switch ($parameterName) { null => null, final value => $expression }';
+  return 'switch ($scrutinee) { null => null, final value => $expression }';
 }
 
 /// A rendering of a Dart value for the wire, see [_writeConversion]: the
@@ -2073,6 +2183,7 @@ String? _writeFunctions(
   _TypeNameRegistry typeNames,
   _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
+  _OmittedSentinel omitted,
 ) {
   final methods = _functionMethods(
     functions,
@@ -2155,6 +2266,7 @@ String? _writeFunctions(
       resultRows[method],
       schemaTypeNames,
       decoders,
+      omitted,
     );
   }
   buffer
@@ -2221,6 +2333,7 @@ void _writeFunctionMethod(
   _ResultRowNames? resultRows,
   _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
+  _OmittedSentinel omitted,
 ) {
   final _FunctionMethod(:function, :overload) = method;
   final arguments = overload.arguments;
@@ -2238,6 +2351,7 @@ void _writeFunctionMethod(
 
   final requiredParameters = <String>[];
   final optionalParameters = <String>[];
+  final targetParameters = <String>[];
   final entries = <String>[];
   String? body;
   for (final argument in arguments) {
@@ -2258,29 +2372,34 @@ void _writeFunctionMethod(
     final key = _stringLiteral(argument.name);
     if (argument.hasDefault) {
       optionalParameters.add('$dartType? $name');
+      targetParameters.add(omitted.parameter('Object?', name));
       final value = rowType == null
-          ? _writeExpression(name, binding, nullable: true)
-          : '$name?.toJson()';
-      entries.add('$key: ?$value');
+          ? _writeExpression(name, binding, nullable: true, cast: true)
+          : '($name as $rowType?)?.toJson()';
+      entries.add('if (${omitted.isSet(name)}) $key: $value');
     } else {
       requiredParameters.add('required $dartType $name');
+      targetParameters.add('required $dartType $name');
       final value = rowType == null
           ? _writeExpression(name, binding, nullable: false)
           : '$name.toJson()';
       entries.add('$key: $value');
     }
   }
+  final redirects = optionalParameters.isNotEmpty;
   final parameters = [
     ...requiredParameters,
     ...optionalParameters,
-    if (readOnly) 'bool get = false',
+    if (readOnly) redirects ? 'bool get' : 'bool get = false',
   ];
+  if (readOnly) targetParameters.add('bool get = false');
   final unnamed = arguments.isNotEmpty && arguments.first.name == '';
-  final parameterList = parameters.isEmpty
+  String parameterListOf(List<String> declarations) => declarations.isEmpty
       ? ''
       : unnamed
-      ? parameters.single
-      : '{${parameters.join(', ')}}';
+      ? declarations.single
+      : '{${declarations.join(', ')}}';
+  final parameterList = parameterListOf(parameters);
   final argumentsValue =
       body ?? (entries.isEmpty ? null : '{${entries.join(', ')}}');
 
@@ -2305,8 +2424,19 @@ void _writeFunctionMethod(
     '$getDocumentation',
     indent: '  ',
   );
+  if (!redirects) {
+    buffer.writeln('  ${call.returnType} ${method.name}($parameterList) =>');
+  } else {
+    // The getter declares the parameter types, while the function it returns
+    // takes every optional argument as an `Object?` defaulting to a sentinel,
+    // which tells an argument left out apart from one passed as null.
+    buffer
+      ..writeln(
+        '  ${call.returnType} Function($parameterList) get ${method.name} =>',
+      )
+      ..writeln('      (${parameterListOf(targetParameters)}) =>');
+  }
   buffer
-    ..writeln('  ${call.returnType} ${method.name}($parameterList) =>')
     ..writeln('      ${call.method}(')
     ..writeln('        ${_stringLiteral(function.name)},');
   if (argumentsValue != null) {

@@ -332,18 +332,18 @@ await supabase.table(Books.table).insertAll([
 ]);
 await supabase
     .table(Books.table)
-    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .update(BooksUpdate(inPrint: false, price: null))
     .where(Books.id.eq(1));
 await supabase.table(Books.table).delete().where(Books.id.eq(1));
 ```
 
 Several rows go through `insertAll()` and `upsertAll()` instead of a list passed to `insert()`.
-Passing `null` to a parameter of `BooksInsert` or `BooksUpdate` leaves the column out of the
-request, so the database default applies or the value stays unchanged. To write SQL `NULL`, use the
-generated `set…ToNull()` methods, which only exist for nullable columns.
-A column left out of only some of the rows passed to `insertAll()` or `upsertAll()` also gets its
-default, where an untyped `insert()` of a list writes `NULL`. Use `set…ToNull()` on the rows that
-should write `NULL`.
+A parameter of `BooksInsert` or `BooksUpdate` that is left out leaves the column out of the
+request, so the database default applies or the value stays unchanged. Passing `null` writes SQL
+`NULL`, which only a nullable column accepts; the parameter of a column that is not nullable has a
+non-nullable type. A column left out of only some of the rows passed to `insertAll()` or
+`upsertAll()` also gets its default, where an untyped `insert()` of a list writes `NULL`. Pass
+`null` in the rows that should write `NULL`.
 
 An `update()` or `delete()` sends nothing until it says which rows it acts on, through `where()`
 or, for every row in the table, `all()`; a bare `await` of it compiles but performs no request,
@@ -1079,7 +1079,7 @@ Anything chained directly after `update()` or `delete()` has to move after the `
 
 The typed `insert()`, `insertAll()`, `upsert()` and `upsertAll()` no longer take `defaultToNull`.
 A column left out of an inserted row always gets its database default, and SQL `NULL` is written
-with the generated `set…ToNull()` methods. An upsert that merges into an existing row only updates
+by passing `null` for the column. An upsert that merges into an existing row only updates
 the columns the request sends, so a column left out of every row keeps its value. On `insert()` and
 `upsert()` the parameter had no effect.
 
@@ -1095,7 +1095,7 @@ await supabase.table(Books.table).insertAll([
 // After
 await supabase.table(Books.table).insertAll([
   BooksInsert(authorId: 2, title: 'Dune', price: 10),
-  BooksInsert(authorId: 3, title: 'Emma').setPriceToNull(),
+  BooksInsert(authorId: 3, title: 'Emma', price: null),
 ]);
 ```
 

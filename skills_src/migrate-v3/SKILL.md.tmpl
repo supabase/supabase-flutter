@@ -240,7 +240,7 @@ table class, `Books.authorId`.
 | `.insert({...})`                                       | `.insert(BooksInsert(...))`                                                |
 | `.insert([{...}, {...}])`                              | `.insertAll([BooksInsert(...), ...])`                                      |
 | `.update({...}).eq('id', 1)`                           | `.update(BooksUpdate(...)).where(Books.id.eq(1))`                          |
-| `.update({'price': null})`                             | `.update(BooksUpdate().setPriceToNull())`                                  |
+| `.update({'price': null})`                             | `.update(BooksUpdate(price: null))`                                        |
 | `.delete().eq('id', 1)`                                | `.delete().where(Books.id.eq(1))`                                          |
 | `.delete()` with no filter                             | `.delete().all()`                                                          |
 | `.upsert({...}, onConflict: 'name')`                   | `.upsert(AuthorsInsert(...), onConflict: [Authors.name])`                  |
@@ -258,12 +258,13 @@ Rules for the conversion:
 - A typed `update()` or `delete()` sends nothing until it has `.where(…)` or
   `.all()`. A bare `await` of one compiles and silently does nothing, and the
   analyzer reports it as an `unused_result` warning. Fix every one of them.
-- Passing `null` to an `Insert` or `Update` parameter leaves the column out.
-  Use the generated `set…ToNull()` method to write SQL `NULL`.
+- A parameter of an `Insert` or `Update` type that is left out leaves the
+  column out, and passing `null` writes SQL `NULL`, the same as a key that is
+  missing from the map or set to `null`.
 - `insertAll()` and `upsertAll()` give a column left out of only some rows its
   database default, where the untyped list `insert()` wrote `NULL`, and take
-  no `defaultToNull`. Where the code relied on `NULL`, call `set…ToNull()` on
-  those rows.
+  no `defaultToNull`. Where the code relied on `NULL`, pass `null` for the
+  column in those rows.
 - Replace `row['title'] as String` with `row.title` wherever the rows are
   consumed. A model class that only mirrors a table is replaced by the
   generated row type. A model that adds behavior is built from the row
