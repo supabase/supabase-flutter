@@ -2706,6 +2706,7 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.httpSend
+  realtime.channel.broadcast_persist: not_implemented
   # realtime — client
   realtime.client.channel:
     status: implemented
