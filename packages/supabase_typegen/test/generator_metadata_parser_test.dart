@@ -1207,6 +1207,72 @@ void main() {
     );
   });
 
+  test('reads enums only from text and varchar check constraints', () {
+    Map<String, dynamic> checked(String name, String format) => {
+      ..._column(tableId: 1, table: 'books', name: name),
+      'format': format,
+      'type_schema': format == 'citext' ? 'extensions' : 'pg_catalog',
+      'check': "$name = ANY (ARRAY['a'::$format, 'b'::$format])",
+    };
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'books', name: 'kind'),
+          'format': 'varchar',
+          'check':
+              "kind::text = ANY (ARRAY['a'::character varying, "
+              "'b'::character varying]::text[])",
+        },
+        checked('label', 'citext'),
+        checked('code', 'bpchar'),
+      ],
+    });
+
+    expect(
+      {
+        for (final column in parsed.tables.single.columns)
+          column.name: column.typeKind,
+      },
+      {
+        'kind': ColumnTypeKind.enumType,
+        'label': ColumnTypeKind.text,
+        'code': ColumnTypeKind.text,
+      },
+    );
+  });
+
+  test('keeps a NOT NULL column whose JSON Schema allows null opaque', () {
+    const settingsSchema =
+        '{"type": ["object", "null"], "properties": {"a": {"type": "string"}}}';
+    Map<String, dynamic> settings(String name, {required bool isNullable}) => {
+      ..._column(tableId: 1, table: 'profiles', name: name),
+      'data_type': 'jsonb',
+      'format': 'jsonb',
+      'is_nullable': isNullable,
+      'check': "jsonb_matches_schema('$settingsSchema'::json, $name)",
+    };
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'profiles', 'comment': null},
+      ],
+      'columns': [
+        settings('required_settings', isNullable: false),
+        settings('optional_settings', isNullable: true),
+      ],
+    });
+
+    expect(
+      {
+        for (final column in parsed.tables.single.columns)
+          column.name: column.jsonSchema != null,
+      },
+      {'required_settings': false, 'optional_settings': true},
+    );
+  });
+
   test(
     'resolves same-named enums across schemas by the column type_schema',
     () {

@@ -62,8 +62,10 @@ For every table the generator emits:
   properties as named parameters. It implements `PostgrestJson`, so it is an
   operand of the column's filters. `string`, `integer`, `number`, `boolean`,
   `object` and `array` map to `String`, `int`, `num`, `bool`, the nested
-  extension type and `List`, and a property whose schema uses anything else,
-  such as `$ref`, `oneOf` or a list of types, is `Object?`,
+  extension type and `List`. A list of one type and `"null"`, or an `anyOf`
+  or `oneOf` of one schema and `{"type": "null"}`, is that type made
+  nullable, and a property whose schema uses anything else, such as `$ref`,
+  any other `oneOf` or list of types, is `Object?`,
 - an extension method on `PostgrestRpc` for every function PostgREST exposes
   under `/rpc`, so `client.rpc.searchBooks(query: 'dart')` takes the
   arguments as typed parameters, optional where the function declares a
@@ -274,9 +276,13 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
   `BEGIN ATOMIC` body reads a `NOT NULL` column the way a view would, or when
   a line of the function comment, `@notNull id, title`, names it; a bare
   `@notNull` line names every column. Any other column, such as every column
-  of a `plpgsql` function without the comment, is nullable.
+  of a `plpgsql` function without the comment, is nullable, and so is every
+  column when the metadata predates its `is_nullable` field.
 - Only the first single-column check constraint of a column is read, and
   only in the forms Postgres prints `IN (…)` and comparisons joined by `OR`
-  as. A view column reading a check-constrained column is a `String`, and one
-  reading a column with a JSON Schema is `Object?`, since a view column has
-  no constraints of its own. A JSON Schema `enum` of strings is a `String`.
+  as. Only a `text` or `varchar` column gets an enum, since `citext` and
+  `char(n)` do not compare values exactly. A `NOT NULL` column whose JSON
+  Schema allows `null` at its root is `Object?`. A view column reading a
+  check-constrained column is a `String`, and one reading a column with a
+  JSON Schema is `Object?`, since a view column has no constraints of its
+  own. A JSON Schema `enum` of strings is a `String`.

@@ -255,17 +255,14 @@ final _word = RegExp(r'[A-Za-z_][\w$]*');
 final _quotedIdentifier = RegExp(r'"((?:[^"]|"")+)"');
 final _stringLiteral = RegExp(r"'((?:[^']|'')*)'");
 
-/// A cast's type name, `text`, `character varying`, `"char"` or
-/// `extensions.citext`, with an optional length and array brackets.
-final _castType = RegExp(
-  r'(?:(?:"(?:[^"]|"")+"|[A-Za-z_][\w$]*)\.)?'
-  r'(?:"(?:[^"]|"")+"|[A-Za-z_][\w$]*(?: varying| precision)?)'
-  r'(?:\(\d+\))?(?:\[\])*',
-);
+/// A cast to `text` or `character varying`, or an array of either, which
+/// compare strings exactly. Any other cast, such as to `citext`, `bpchar` or
+/// a type with a length, can change which values the constraint allows.
+final _castType = RegExp(r'(?:text|character varying)(?:\[\])*(?![\w$(])');
 
-/// The tokens of [definition] without its parentheses and casts, which do
-/// not change which values it allows, or `null` when it has a token the
-/// readable forms never have.
+/// The tokens of [definition] without its parentheses and exact string casts,
+/// which do not change which values it allows, or `null` when it has a token
+/// or cast the readable forms never have.
 List<_Token>? _tokens(String definition) {
   final tokens = <_Token>[];
   var position = 0;

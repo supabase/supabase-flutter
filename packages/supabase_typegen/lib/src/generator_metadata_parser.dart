@@ -56,6 +56,10 @@ const _vectorFormats = {'vector', 'halfvec'};
 /// they live in whichever schema the extension was created in.
 const _extensionTextFormats = {'citext'};
 
+/// The text types whose values compare exactly, so that a check constraint
+/// listing values of one can become an enum.
+const _exactTextFormats = {'text', 'varchar'};
+
 /// The geometric types, keyed to their kind.
 const _geometricKinds = {
   'point': ColumnTypeKind.point,
@@ -368,12 +372,17 @@ DatabaseDescription _parseGeneratorMetadata(
           : null;
 
       var postgresFormat = _qualifiedFormat(format, typeSchema);
+      final isNullable = column.field<bool>('is_nullable');
       final check = column.field<String?>('check');
-      final checkedValues = check != null && typeKind == ColumnTypeKind.text
+      final checkedValues = check != null && _exactTextFormats.contains(format)
           ? checkConstraintValues(check, name)
           : null;
-      final jsonSchema = check != null && typeKind == ColumnTypeKind.json
+      final schema = check != null && typeKind == ColumnTypeKind.json
           ? checkConstraintJsonSchema(check, name)
+          : null;
+      // A NOT NULL column whose schema allows JSON null keeps it opaque.
+      final jsonSchema = schema != null && (isNullable || !schema.isNullable)
+          ? schema
           : null;
       EnumDescription? enumDescription;
       if (checkedValues != null) {
@@ -410,7 +419,6 @@ DatabaseDescription _parseGeneratorMetadata(
           column['default_value'] != null ||
           column.field<bool>('is_identity') ||
           column.field<bool>('is_generated');
-      final isNullable = column.field<bool>('is_nullable');
 
       columns.add(
         ColumnDescription(

@@ -37,16 +37,6 @@ void main() {
       );
     });
 
-    test('reads an IN list of a bpchar column', () {
-      expect(
-        checkConstraintValues(
-          "status = ANY (ARRAY['m'::bpchar, 'n'::bpchar])",
-          'status',
-        ),
-        ['m', 'n'],
-      );
-    });
-
     test('reads comparisons joined by OR', () {
       expect(
         checkConstraintValues(
@@ -100,6 +90,10 @@ void main() {
         "status <> ALL (ARRAY['a'::text, 'b'::text])",
         "status = ANY (ARRAY['a'::text, 'b'::text]) NOT VALI",
         "status = ANY (ARRAY[lower('A'::text)])",
+        "status = ANY (ARRAY['m'::bpchar, 'n'::bpchar])",
+        "status::citext = ANY (ARRAY['a'::citext, 'b'::citext])",
+        "status::character varying(1) = 'a'::text",
+        "status = 'a'::texts",
         '',
       ]) {
         expect(
