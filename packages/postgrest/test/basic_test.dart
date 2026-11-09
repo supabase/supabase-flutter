@@ -16,10 +16,17 @@ extension type const User(Map<String, dynamic> _json)
 
 extension type const UserInsert._(Map<String, dynamic> _json)
     implements Object {
-  UserInsert({required String username, String? status})
-    : this._({'username': username, 'status': ?status});
+  factory UserInsert({required String username, String? status}) = _UserInsert;
+}
 
-  UserInsert setStatusToNull() => UserInsert._({..._json, 'status': null});
+extension type const _UserInsert._(Map<String, dynamic> _json)
+    implements UserInsert {
+  _UserInsert({required String username, Object? status = const _Omitted()})
+    : _json = {'username': username, if (status is! _Omitted) 'status': status};
+}
+
+final class _Omitted {
+  const _Omitted();
 }
 
 class JsonUserInsert {
@@ -416,7 +423,7 @@ void main() {
     test('typed bulk insert writes an explicit NULL', () async {
       final response = await postgrest.table(Users.table).insertAll([
         UserInsert(username: 'null bot', status: 'OFFLINE'),
-        UserInsert(username: 'null crazy bot').setStatusToNull(),
+        UserInsert(username: 'null crazy bot', status: null),
         UserInsert(username: 'default crazy bot'),
       ]).select();
       expect(response[1]['status'], null);

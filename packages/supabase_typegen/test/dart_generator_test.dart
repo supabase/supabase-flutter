@@ -112,7 +112,10 @@ void main() {
       ),
     );
     expect(code, contains("'pages': pages.literal,"));
-    expect(code, contains("'season': ?season?.literal,"));
+    expect(
+      code,
+      contains("'season': (season as PostgresRange<PostgresDate>).literal,"),
+    );
     expect(
       code,
       contains("'shift': shift.render(postgresTimestamp.encode),"),
@@ -120,7 +123,7 @@ void main() {
     expect(
       compact,
       contains(
-        "'during':?during?.render("
+        "'during':(duringasPostgresRange<DateTime>?)?.render("
         "(bound)=>postgresTimestamp.encode(bound.toUtc()),),",
       ),
     );
@@ -211,7 +214,7 @@ void main() {
     expect(
       compact,
       contains(
-        "'uint8_list':?switch(uint8List){null=>null,"
+        "'uint8_list':switch(uint8ListasUint8List?){null=>null,"
         "finalvalue=>postgresBytea.encode(value),},",
       ),
     );
@@ -245,8 +248,8 @@ void main() {
     expect(
       compact,
       contains(
-        "'blobs':?blobs?.map((element)=>postgresBytea.encode(element))"
-        ".toList(),",
+        "'blobs':(blobsasList<Object?>?)?.cast<Uint8List>()"
+        ".map((element)=>postgresBytea.encode(element)).toList(),",
       ),
     );
   });
@@ -260,9 +263,9 @@ void main() {
       compact,
       contains("String?getcopyWith=>_json['copy_with']asString?;"),
     );
-    expect(compact, contains("'copy_with':?copyWith,"));
-    expect(compact, contains('PostgrestTableInsertcopyWith({'));
-    expect(compact, contains('PostgrestTableUpdatecopyWith({'));
+    expect(compact, contains("if(copyWithis!_Omitted)'copy_with':copyWith,"));
+    expect(compact, contains('PostgrestTableInsertFunction({'));
+    expect(compact, contains('PostgrestTableUpdateFunction({'));
   });
 
   test('column tokens decode through one helper per Dart type', () {
@@ -396,8 +399,8 @@ void main() {
     expect(
       compact,
       contains(
-        "'half_embedding':?switch(halfEmbedding){null=>null,"
-        "finalvalue=>postgresVector.encode(value),},",
+        "'half_embedding':switch(halfEmbeddingasList<Object?>?){null=>null,"
+        "finalvalue=>postgresVector.encode(value.cast()),},",
       ),
     );
     // A column named like the codec cannot shadow it in the conversions.
@@ -471,8 +474,11 @@ void main() {
     );
     expect(code, contains("'since': since.literal,"));
     expect(code, contains("'opens_at': opensAt.literal,"));
-    expect(code, contains("'closes_at': ?closesAt?.literal,"));
-    expect(code, contains("'ttl': ?ttl?.literal,"));
+    expect(
+      code,
+      contains("'closes_at': (closesAt as PostgresTime?)?.literal,"),
+    );
+    expect(code, contains("'ttl': (ttl as PostgresInterval?)?.literal,"));
     expect(code, isNot(contains('_dateString')));
   });
 
@@ -934,7 +940,7 @@ void main() {
     final code = generateDartCode(schema);
 
     expect(code, contains('required String title'));
-    expect(code, contains('int? id'));
+    expect(code, contains('    int id,'));
   });
 
   test('not null columns with a default read non-nullable', () {
@@ -954,7 +960,7 @@ void main() {
     final code = generateDartCode(schema);
 
     expect(code, contains('AuthorsInsert({required String name})'));
-    expect(code, contains('AuthorsUpdate({String? name})'));
+    expect(code, contains('AuthorsUpdate({String name})'));
     expect(code, contains("PostgrestColumn<AuthorsRow, int>('id')"));
   });
 
@@ -976,7 +982,7 @@ void main() {
     final code = generateDartCode(schema);
 
     expect(code, contains('extension type const BookSubmissionsRow'));
-    expect(code, contains('BookSubmissionsInsert({String? authorName'));
+    expect(code, contains('BookSubmissionsInsert({String authorName'));
     expect(code, isNot(contains('BookSubmissionsUpdate')));
   });
 
@@ -993,11 +999,11 @@ void main() {
     );
     expect(
       code,
-      contains('BookPricesInsert({int? id, num? price, String? title})'),
+      contains('BookPricesInsert({int id, num? price, String title})'),
     );
     expect(
       code,
-      contains('BookPricesUpdate({int? id, num? price, String? title})'),
+      contains('BookPricesUpdate({int id, num? price, String title})'),
     );
   });
 
@@ -1386,7 +1392,10 @@ void main() {
     );
     expect(
       compact,
-      contains("'days':?days?.map((element)=>element.literal).toList(),"),
+      contains(
+        "'days':(daysasList<Object?>?)?.cast<PostgresDate>()"
+        ".map((element)=>element.literal).toList(),",
+      ),
     );
     expect(
       compact,
@@ -1397,7 +1406,10 @@ void main() {
     );
     expect(
       compact,
-      contains("'moods':?moods?.map((element)=>element.wireName).toList(),"),
+      contains(
+        "'moods':(moodsasList<Object?>?)?.cast<String\$>()"
+        ".map((element)=>element.wireName).toList(),",
+      ),
     );
     expect(
       compact,
@@ -1409,7 +1421,10 @@ void main() {
     );
     expect(
       compact,
-      contains("'spans':?spans?.map((element)=>element.literal).toList(),"),
+      contains(
+        "'spans':(spansasList<Object?>?)?.cast<PostgresRange<int>>()"
+        ".map((element)=>element.literal).toList(),",
+      ),
     );
     expect(
       compact,
@@ -1421,14 +1436,15 @@ void main() {
     expect(
       compact,
       contains(
-        "'stamps':?stamps?.map("
+        "'stamps':(stampsasList<Object?>?)?.cast<DateTime>().map("
         "(element)=>postgresTimestamp.encode(element.toUtc())).toList(),",
       ),
     );
     expect(
       compact,
       contains(
-        "'shifts':?shifts?.map("
+        "'shifts':(shiftsasList<Object?>?)"
+        "?.cast<PostgresRange<DateTime>>().map("
         "(element)=>element.render(postgresTimestamp.encode)).toList(),",
       ),
     );
@@ -2156,7 +2172,7 @@ void main() {
       expect(limited, isNot(contains('get:')));
 
       String call(String name) => RegExp(
-        "\\w+\\([^)]*\\) => value\\( '$name'.*?\\);",
+        "\\(\\{[^}]*\\}\\) => value\\( '$name'.*?\\);",
       ).firstMatch(code)![0]!;
       expect(
         call('with_integers'),

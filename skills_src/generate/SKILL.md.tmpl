@@ -119,7 +119,7 @@ For a table `books` in `public`:
 | ---------------------------------- | ----------------------------------------------------------------------------------------- |
 | `BooksRow`                         | The row type returned by `select()`, with one typed getter per column                     |
 | `BooksInsert`                      | The only value `insert()` and `upsert()` accept; required columns are required parameters |
-| `BooksUpdate`                      | The only value `update()` accepts, plus `set…ToNull()` for nullable columns               |
+| `BooksUpdate`                      | The only value `update()` accepts; `null` writes SQL `NULL`, a left out column is kept    |
 | `Books.table`                      | The table definition passed to `client.table()`                                           |
 | `Books.title`, `Books.authorId`, … | Column constants for filters, orderings and `selectOnly`                                  |
 | `Books.authors`                    | A relation constant per foreign key, for embedding                                        |

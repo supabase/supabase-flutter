@@ -224,18 +224,20 @@ extension type const InventoryBooksRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `inventory.books`. Columns that are
-/// nullable, identity, or covered by a database default are optional; passing
-/// `null` omits the column so the database default applies. Columns the
-/// database always generates itself are left out entirely. Use the `set…ToNull`
-/// methods to insert SQL NULL explicitly.
+/// nullable, identity, or covered by a database default are optional; a column
+/// left out gets its database default, and `null` inserts SQL NULL. Columns the
+/// database always generates itself are left out entirely.
 extension type const InventoryBooksInsert._(Map<String, dynamic> _json)
     implements Object {
   InventoryBooksInsert({required String isbn}) : this._({'isbn': isbn});
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  InventoryBooksInsert copyWith({String? isbn}) =>
-      InventoryBooksInsert._({..._json, 'isbn': ?isbn});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  InventoryBooksInsert Function({String isbn}) get copyWith =>
+      ({Object isbn = const _Omitted()}) => InventoryBooksInsert._({
+        ..._json,
+        if (isbn is! _Omitted) 'isbn': isbn,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -243,22 +245,30 @@ extension type const InventoryBooksInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `inventory.books`. All columns are optional;
-/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
-/// methods to write SQL NULL explicitly.
+/// Values for updating rows of `inventory.books`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
 extension type const InventoryBooksUpdate._(Map<String, dynamic> _json)
     implements Object {
-  InventoryBooksUpdate({String? isbn}) : this._({'isbn': ?isbn});
+  factory InventoryBooksUpdate({String isbn}) = _InventoryBooksUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  InventoryBooksUpdate copyWith({String? isbn}) =>
-      InventoryBooksUpdate._({..._json, 'isbn': ?isbn});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  InventoryBooksUpdate Function({String isbn}) get copyWith =>
+      ({Object isbn = const _Omitted()}) => InventoryBooksUpdate._({
+        ..._json,
+        if (isbn is! _Omitted) 'isbn': isbn,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _InventoryBooksUpdate._(Map<String, dynamic> _json)
+    implements InventoryBooksUpdate {
+  _InventoryBooksUpdate({Object isbn = const _Omitted()})
+    : _json = {if (isbn is! _Omitted) 'isbn': isbn};
 }
 
 /// Typed access to the `inventory.books` table.
@@ -309,38 +319,40 @@ extension type const InventoryStockRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `inventory.stock`. Columns that are
-/// nullable, identity, or covered by a database default are optional; passing
-/// `null` omits the column so the database default applies. Columns the
-/// database always generates itself are left out entirely. Use the `set…ToNull`
-/// methods to insert SQL NULL explicitly.
+/// nullable, identity, or covered by a database default are optional; a column
+/// left out gets its database default, and `null` inserts SQL NULL. Columns the
+/// database always generates itself are left out entirely.
 extension type const InventoryStockInsert._(Map<String, dynamic> _json)
     implements Object {
-  InventoryStockInsert({
+  factory InventoryStockInsert({
     required int bookId,
-    InventoryCondition? condition,
+    InventoryCondition condition,
     required int copyId,
-    int? quantity,
-  }) : this._({
-         'book_id': bookId,
-         'condition': ?condition?.wireName,
-         'copy_id': copyId,
-         'quantity': ?quantity,
-       });
+    int quantity,
+  }) = _InventoryStockInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  InventoryStockInsert copyWith({
-    int? bookId,
-    InventoryCondition? condition,
-    int? copyId,
-    int? quantity,
-  }) => InventoryStockInsert._({
-    ..._json,
-    'book_id': ?bookId,
-    'condition': ?condition?.wireName,
-    'copy_id': ?copyId,
-    'quantity': ?quantity,
-  });
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  InventoryStockInsert Function({
+    int bookId,
+    InventoryCondition condition,
+    int copyId,
+    int quantity,
+  })
+  get copyWith =>
+      ({
+        Object bookId = const _Omitted(),
+        Object condition = const _Omitted(),
+        Object copyId = const _Omitted(),
+        Object quantity = const _Omitted(),
+      }) => InventoryStockInsert._({
+        ..._json,
+        if (bookId is! _Omitted) 'book_id': bookId,
+        if (condition is! _Omitted)
+          'condition': (condition as InventoryCondition).wireName,
+        if (copyId is! _Omitted) 'copy_id': copyId,
+        if (quantity is! _Omitted) 'quantity': quantity,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -348,42 +360,76 @@ extension type const InventoryStockInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `inventory.stock`. All columns are optional;
-/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
-/// methods to write SQL NULL explicitly.
+extension type const _InventoryStockInsert._(Map<String, dynamic> _json)
+    implements InventoryStockInsert {
+  _InventoryStockInsert({
+    required int bookId,
+    Object condition = const _Omitted(),
+    required int copyId,
+    Object quantity = const _Omitted(),
+  }) : _json = {
+         'book_id': bookId,
+         if (condition is! _Omitted)
+           'condition': (condition as InventoryCondition).wireName,
+         'copy_id': copyId,
+         if (quantity is! _Omitted) 'quantity': quantity,
+       };
+}
+
+/// Values for updating rows of `inventory.stock`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
 extension type const InventoryStockUpdate._(Map<String, dynamic> _json)
     implements Object {
-  InventoryStockUpdate({
-    int? bookId,
-    InventoryCondition? condition,
-    int? copyId,
-    int? quantity,
-  }) : this._({
-         'book_id': ?bookId,
-         'condition': ?condition?.wireName,
-         'copy_id': ?copyId,
-         'quantity': ?quantity,
-       });
+  factory InventoryStockUpdate({
+    int bookId,
+    InventoryCondition condition,
+    int copyId,
+    int quantity,
+  }) = _InventoryStockUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  InventoryStockUpdate copyWith({
-    int? bookId,
-    InventoryCondition? condition,
-    int? copyId,
-    int? quantity,
-  }) => InventoryStockUpdate._({
-    ..._json,
-    'book_id': ?bookId,
-    'condition': ?condition?.wireName,
-    'copy_id': ?copyId,
-    'quantity': ?quantity,
-  });
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  InventoryStockUpdate Function({
+    int bookId,
+    InventoryCondition condition,
+    int copyId,
+    int quantity,
+  })
+  get copyWith =>
+      ({
+        Object bookId = const _Omitted(),
+        Object condition = const _Omitted(),
+        Object copyId = const _Omitted(),
+        Object quantity = const _Omitted(),
+      }) => InventoryStockUpdate._({
+        ..._json,
+        if (bookId is! _Omitted) 'book_id': bookId,
+        if (condition is! _Omitted)
+          'condition': (condition as InventoryCondition).wireName,
+        if (copyId is! _Omitted) 'copy_id': copyId,
+        if (quantity is! _Omitted) 'quantity': quantity,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _InventoryStockUpdate._(Map<String, dynamic> _json)
+    implements InventoryStockUpdate {
+  _InventoryStockUpdate({
+    Object bookId = const _Omitted(),
+    Object condition = const _Omitted(),
+    Object copyId = const _Omitted(),
+    Object quantity = const _Omitted(),
+  }) : _json = {
+         if (bookId is! _Omitted) 'book_id': bookId,
+         if (condition is! _Omitted)
+           'condition': (condition as InventoryCondition).wireName,
+         if (copyId is! _Omitted) 'copy_id': copyId,
+         if (quantity is! _Omitted) 'quantity': quantity,
+       };
 }
 
 /// Typed access to the `inventory.stock` table.
@@ -472,18 +518,18 @@ extension type const AuthorsRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `authors`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const AuthorsInsert._(Map<String, dynamic> _json)
     implements Object {
   AuthorsInsert({required String name}) : this._({'name': name});
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  AuthorsInsert copyWith({String? name}) =>
-      AuthorsInsert._({..._json, 'name': ?name});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  AuthorsInsert Function({String name}) get copyWith =>
+      ({Object name = const _Omitted()}) =>
+          AuthorsInsert._({..._json, if (name is! _Omitted) 'name': name});
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -491,22 +537,28 @@ extension type const AuthorsInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `authors`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+/// Values for updating rows of `authors`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const AuthorsUpdate._(Map<String, dynamic> _json)
     implements Object {
-  AuthorsUpdate({String? name}) : this._({'name': ?name});
+  factory AuthorsUpdate({String name}) = _AuthorsUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  AuthorsUpdate copyWith({String? name}) =>
-      AuthorsUpdate._({..._json, 'name': ?name});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  AuthorsUpdate Function({String name}) get copyWith =>
+      ({Object name = const _Omitted()}) =>
+          AuthorsUpdate._({..._json, if (name is! _Omitted) 'name': name});
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _AuthorsUpdate._(Map<String, dynamic> _json)
+    implements AuthorsUpdate {
+  _AuthorsUpdate({Object name = const _Omitted()})
+    : _json = {if (name is! _Omitted) 'name': name};
 }
 
 /// Typed access to the `authors` table.
@@ -571,29 +623,27 @@ extension type const BookPricesRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `book_prices`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const BookPricesInsert._(Map<String, dynamic> _json)
     implements Object {
-  BookPricesInsert({int? id, num? price, String? title})
-    : this._({'id': ?id, 'price': ?price, 'title': ?title});
+  factory BookPricesInsert({int id, num? price, String title}) =
+      _BookPricesInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  BookPricesInsert copyWith({int? id, num? price, String? title}) =>
-      BookPricesInsert._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  BookPricesInsert Function({int id, num? price, String title}) get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object? price = const _Omitted(),
+        Object title = const _Omitted(),
+      }) => BookPricesInsert._({
         ..._json,
-        'id': ?id,
-        'price': ?price,
-        'title': ?title,
+        if (id is! _Omitted) 'id': id,
+        if (price is! _Omitted) 'price': price,
+        if (title is! _Omitted) 'title': title,
       });
-
-  /// Returns a copy with `price` set to SQL NULL, overriding any database
-  /// default.
-  BookPricesInsert setPriceToNull() =>
-      BookPricesInsert._({..._json, 'price': null});
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -601,33 +651,57 @@ extension type const BookPricesInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `book_prices`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _BookPricesInsert._(Map<String, dynamic> _json)
+    implements BookPricesInsert {
+  _BookPricesInsert({
+    Object id = const _Omitted(),
+    Object? price = const _Omitted(),
+    Object title = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (price is! _Omitted) 'price': price,
+         if (title is! _Omitted) 'title': title,
+       };
+}
+
+/// Values for updating rows of `book_prices`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
 extension type const BookPricesUpdate._(Map<String, dynamic> _json)
     implements Object {
-  BookPricesUpdate({int? id, num? price, String? title})
-    : this._({'id': ?id, 'price': ?price, 'title': ?title});
+  factory BookPricesUpdate({int id, num? price, String title}) =
+      _BookPricesUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  BookPricesUpdate copyWith({int? id, num? price, String? title}) =>
-      BookPricesUpdate._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  BookPricesUpdate Function({int id, num? price, String title}) get copyWith =>
+      ({
+        Object id = const _Omitted(),
+        Object? price = const _Omitted(),
+        Object title = const _Omitted(),
+      }) => BookPricesUpdate._({
         ..._json,
-        'id': ?id,
-        'price': ?price,
-        'title': ?title,
+        if (id is! _Omitted) 'id': id,
+        if (price is! _Omitted) 'price': price,
+        if (title is! _Omitted) 'title': title,
       });
-
-  /// Returns a copy with `price` set to SQL NULL, overriding any database
-  /// default.
-  BookPricesUpdate setPriceToNull() =>
-      BookPricesUpdate._({..._json, 'price': null});
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _BookPricesUpdate._(Map<String, dynamic> _json)
+    implements BookPricesUpdate {
+  _BookPricesUpdate({
+    Object id = const _Omitted(),
+    Object? price = const _Omitted(),
+    Object title = const _Omitted(),
+  }) : _json = {
+         if (id is! _Omitted) 'id': id,
+         if (price is! _Omitted) 'price': price,
+         if (title is! _Omitted) 'title': title,
+       };
 }
 
 /// Typed access to the `book_prices` table.
@@ -686,28 +760,42 @@ extension type const BookSubmissionsRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `book_submissions`. Columns that are
-/// nullable, identity, or covered by a database default are optional; passing
-/// `null` omits the column so the database default applies. Columns the
-/// database always generates itself are left out entirely. Use the `set…ToNull`
-/// methods to insert SQL NULL explicitly.
+/// nullable, identity, or covered by a database default are optional; a column
+/// left out gets its database default, and `null` inserts SQL NULL. Columns the
+/// database always generates itself are left out entirely.
 extension type const BookSubmissionsInsert._(Map<String, dynamic> _json)
     implements Object {
-  BookSubmissionsInsert({String? authorName, String? title})
-    : this._({'author_name': ?authorName, 'title': ?title});
+  factory BookSubmissionsInsert({String authorName, String title}) =
+      _BookSubmissionsInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  BookSubmissionsInsert copyWith({String? authorName, String? title}) =>
-      BookSubmissionsInsert._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  BookSubmissionsInsert Function({String authorName, String title})
+  get copyWith =>
+      ({
+        Object authorName = const _Omitted(),
+        Object title = const _Omitted(),
+      }) => BookSubmissionsInsert._({
         ..._json,
-        'author_name': ?authorName,
-        'title': ?title,
+        if (authorName is! _Omitted) 'author_name': authorName,
+        if (title is! _Omitted) 'title': title,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _BookSubmissionsInsert._(Map<String, dynamic> _json)
+    implements BookSubmissionsInsert {
+  _BookSubmissionsInsert({
+    Object authorName = const _Omitted(),
+    Object title = const _Omitted(),
+  }) : _json = {
+         if (authorName is! _Omitted) 'author_name': authorName,
+         if (title is! _Omitted) 'title': title,
+       };
 }
 
 /// Typed access to the `book_submissions` table.
@@ -817,19 +905,18 @@ extension type const BooksRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `books`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const BooksInsert._(Map<String, dynamic> _json)
     implements Object {
-  BooksInsert({
+  factory BooksInsert({
     required int authorId,
     Uint8List? coverImage,
     String? coverUuid,
-    DateTime? createdAt,
-    int? id,
-    bool? inPrint,
+    DateTime createdAt,
+    int id,
+    bool inPrint,
     Object? metadata,
     Mood? mood,
     List<int>? pageCounts,
@@ -839,42 +926,17 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
     List<String>? tags,
     required String title,
     DateTime? updatedAt,
-  }) : this._({
-         'author_id': authorId,
-         'cover_image': ?switch (coverImage) {
-           null => null,
-           final value => postgresBytea.encode(value),
-         },
-         'cover_uuid': ?coverUuid,
-         'created_at': ?switch (createdAt) {
-           null => null,
-           final value => postgresTimestamp.encode(value.toUtc()),
-         },
-         'id': ?id,
-         'in_print': ?inPrint,
-         'metadata': ?metadata,
-         'mood': ?mood?.wireName,
-         'page_counts': ?pageCounts,
-         'price': ?price,
-         'published_on': ?publishedOn?.literal,
-         'rating': ?rating,
-         'tags': ?tags,
-         'title': title,
-         'updated_at': ?switch (updatedAt) {
-           null => null,
-           final value => postgresTimestamp.encode(value),
-         },
-       });
+  }) = _BooksInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  BooksInsert copyWith({
-    int? authorId,
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  BooksInsert Function({
+    int authorId,
     Uint8List? coverImage,
     String? coverUuid,
-    DateTime? createdAt,
-    int? id,
-    bool? inPrint,
+    DateTime createdAt,
+    int id,
+    bool inPrint,
     Object? metadata,
     Mood? mood,
     List<int>? pageCounts,
@@ -882,81 +944,56 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
     PostgresDate? publishedOn,
     double? rating,
     List<String>? tags,
-    String? title,
+    String title,
     DateTime? updatedAt,
-  }) => BooksInsert._({
-    ..._json,
-    'author_id': ?authorId,
-    'cover_image': ?switch (coverImage) {
-      null => null,
-      final value => postgresBytea.encode(value),
-    },
-    'cover_uuid': ?coverUuid,
-    'created_at': ?switch (createdAt) {
-      null => null,
-      final value => postgresTimestamp.encode(value.toUtc()),
-    },
-    'id': ?id,
-    'in_print': ?inPrint,
-    'metadata': ?metadata,
-    'mood': ?mood?.wireName,
-    'page_counts': ?pageCounts,
-    'price': ?price,
-    'published_on': ?publishedOn?.literal,
-    'rating': ?rating,
-    'tags': ?tags,
-    'title': ?title,
-    'updated_at': ?switch (updatedAt) {
-      null => null,
-      final value => postgresTimestamp.encode(value),
-    },
-  });
-
-  /// Returns a copy with `cover_image` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setCoverImageToNull() =>
-      BooksInsert._({..._json, 'cover_image': null});
-
-  /// Returns a copy with `cover_uuid` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setCoverUuidToNull() =>
-      BooksInsert._({..._json, 'cover_uuid': null});
-
-  /// Returns a copy with `metadata` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setMetadataToNull() =>
-      BooksInsert._({..._json, 'metadata': null});
-
-  /// Returns a copy with `mood` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setMoodToNull() => BooksInsert._({..._json, 'mood': null});
-
-  /// Returns a copy with `page_counts` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setPageCountsToNull() =>
-      BooksInsert._({..._json, 'page_counts': null});
-
-  /// Returns a copy with `price` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setPriceToNull() => BooksInsert._({..._json, 'price': null});
-
-  /// Returns a copy with `published_on` set to SQL NULL, overriding any
-  /// database default.
-  BooksInsert setPublishedOnToNull() =>
-      BooksInsert._({..._json, 'published_on': null});
-
-  /// Returns a copy with `rating` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setRatingToNull() => BooksInsert._({..._json, 'rating': null});
-
-  /// Returns a copy with `tags` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setTagsToNull() => BooksInsert._({..._json, 'tags': null});
-
-  /// Returns a copy with `updated_at` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setUpdatedAtToNull() =>
-      BooksInsert._({..._json, 'updated_at': null});
+  })
+  get copyWith =>
+      ({
+        Object authorId = const _Omitted(),
+        Object? coverImage = const _Omitted(),
+        Object? coverUuid = const _Omitted(),
+        Object createdAt = const _Omitted(),
+        Object id = const _Omitted(),
+        Object inPrint = const _Omitted(),
+        Object? metadata = const _Omitted(),
+        Object? mood = const _Omitted(),
+        Object? pageCounts = const _Omitted(),
+        Object? price = const _Omitted(),
+        Object? publishedOn = const _Omitted(),
+        Object? rating = const _Omitted(),
+        Object? tags = const _Omitted(),
+        Object title = const _Omitted(),
+        Object? updatedAt = const _Omitted(),
+      }) => BooksInsert._({
+        ..._json,
+        if (authorId is! _Omitted) 'author_id': authorId,
+        if (coverImage is! _Omitted)
+          'cover_image': switch (coverImage as Uint8List?) {
+            null => null,
+            final value => postgresBytea.encode(value),
+          },
+        if (coverUuid is! _Omitted) 'cover_uuid': coverUuid,
+        if (createdAt is! _Omitted)
+          'created_at': postgresTimestamp.encode(
+            (createdAt as DateTime).toUtc(),
+          ),
+        if (id is! _Omitted) 'id': id,
+        if (inPrint is! _Omitted) 'in_print': inPrint,
+        if (metadata is! _Omitted) 'metadata': metadata,
+        if (mood is! _Omitted) 'mood': (mood as Mood?)?.wireName,
+        if (pageCounts is! _Omitted) 'page_counts': pageCounts,
+        if (price is! _Omitted) 'price': price,
+        if (publishedOn is! _Omitted)
+          'published_on': (publishedOn as PostgresDate?)?.literal,
+        if (rating is! _Omitted) 'rating': rating,
+        if (tags is! _Omitted) 'tags': tags,
+        if (title is! _Omitted) 'title': title,
+        if (updatedAt is! _Omitted)
+          'updated_at': switch (updatedAt as DateTime?) {
+            null => null,
+            final value => postgresTimestamp.encode(value),
+          },
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -964,18 +1001,66 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `books`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _BooksInsert._(Map<String, dynamic> _json)
+    implements BooksInsert {
+  _BooksInsert({
+    required int authorId,
+    Object? coverImage = const _Omitted(),
+    Object? coverUuid = const _Omitted(),
+    Object createdAt = const _Omitted(),
+    Object id = const _Omitted(),
+    Object inPrint = const _Omitted(),
+    Object? metadata = const _Omitted(),
+    Object? mood = const _Omitted(),
+    Object? pageCounts = const _Omitted(),
+    Object? price = const _Omitted(),
+    Object? publishedOn = const _Omitted(),
+    Object? rating = const _Omitted(),
+    Object? tags = const _Omitted(),
+    required String title,
+    Object? updatedAt = const _Omitted(),
+  }) : _json = {
+         'author_id': authorId,
+         if (coverImage is! _Omitted)
+           'cover_image': switch (coverImage as Uint8List?) {
+             null => null,
+             final value => postgresBytea.encode(value),
+           },
+         if (coverUuid is! _Omitted) 'cover_uuid': coverUuid,
+         if (createdAt is! _Omitted)
+           'created_at': postgresTimestamp.encode(
+             (createdAt as DateTime).toUtc(),
+           ),
+         if (id is! _Omitted) 'id': id,
+         if (inPrint is! _Omitted) 'in_print': inPrint,
+         if (metadata is! _Omitted) 'metadata': metadata,
+         if (mood is! _Omitted) 'mood': (mood as Mood?)?.wireName,
+         if (pageCounts is! _Omitted) 'page_counts': pageCounts,
+         if (price is! _Omitted) 'price': price,
+         if (publishedOn is! _Omitted)
+           'published_on': (publishedOn as PostgresDate?)?.literal,
+         if (rating is! _Omitted) 'rating': rating,
+         if (tags is! _Omitted) 'tags': tags,
+         'title': title,
+         if (updatedAt is! _Omitted)
+           'updated_at': switch (updatedAt as DateTime?) {
+             null => null,
+             final value => postgresTimestamp.encode(value),
+           },
+       };
+}
+
+/// Values for updating rows of `books`. All columns are optional; a column left
+/// out keeps its value, and `null` writes SQL NULL.
 extension type const BooksUpdate._(Map<String, dynamic> _json)
     implements Object {
-  BooksUpdate({
-    int? authorId,
+  factory BooksUpdate({
+    int authorId,
     Uint8List? coverImage,
     String? coverUuid,
-    DateTime? createdAt,
-    int? id,
-    bool? inPrint,
+    DateTime createdAt,
+    int id,
+    bool inPrint,
     Object? metadata,
     Mood? mood,
     List<int>? pageCounts,
@@ -983,44 +1068,19 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
     PostgresDate? publishedOn,
     double? rating,
     List<String>? tags,
-    String? title,
+    String title,
     DateTime? updatedAt,
-  }) : this._({
-         'author_id': ?authorId,
-         'cover_image': ?switch (coverImage) {
-           null => null,
-           final value => postgresBytea.encode(value),
-         },
-         'cover_uuid': ?coverUuid,
-         'created_at': ?switch (createdAt) {
-           null => null,
-           final value => postgresTimestamp.encode(value.toUtc()),
-         },
-         'id': ?id,
-         'in_print': ?inPrint,
-         'metadata': ?metadata,
-         'mood': ?mood?.wireName,
-         'page_counts': ?pageCounts,
-         'price': ?price,
-         'published_on': ?publishedOn?.literal,
-         'rating': ?rating,
-         'tags': ?tags,
-         'title': ?title,
-         'updated_at': ?switch (updatedAt) {
-           null => null,
-           final value => postgresTimestamp.encode(value),
-         },
-       });
+  }) = _BooksUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  BooksUpdate copyWith({
-    int? authorId,
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  BooksUpdate Function({
+    int authorId,
     Uint8List? coverImage,
     String? coverUuid,
-    DateTime? createdAt,
-    int? id,
-    bool? inPrint,
+    DateTime createdAt,
+    int id,
+    bool inPrint,
     Object? metadata,
     Mood? mood,
     List<int>? pageCounts,
@@ -1028,86 +1088,110 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
     PostgresDate? publishedOn,
     double? rating,
     List<String>? tags,
-    String? title,
+    String title,
     DateTime? updatedAt,
-  }) => BooksUpdate._({
-    ..._json,
-    'author_id': ?authorId,
-    'cover_image': ?switch (coverImage) {
-      null => null,
-      final value => postgresBytea.encode(value),
-    },
-    'cover_uuid': ?coverUuid,
-    'created_at': ?switch (createdAt) {
-      null => null,
-      final value => postgresTimestamp.encode(value.toUtc()),
-    },
-    'id': ?id,
-    'in_print': ?inPrint,
-    'metadata': ?metadata,
-    'mood': ?mood?.wireName,
-    'page_counts': ?pageCounts,
-    'price': ?price,
-    'published_on': ?publishedOn?.literal,
-    'rating': ?rating,
-    'tags': ?tags,
-    'title': ?title,
-    'updated_at': ?switch (updatedAt) {
-      null => null,
-      final value => postgresTimestamp.encode(value),
-    },
-  });
-
-  /// Returns a copy with `cover_image` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setCoverImageToNull() =>
-      BooksUpdate._({..._json, 'cover_image': null});
-
-  /// Returns a copy with `cover_uuid` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setCoverUuidToNull() =>
-      BooksUpdate._({..._json, 'cover_uuid': null});
-
-  /// Returns a copy with `metadata` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setMetadataToNull() =>
-      BooksUpdate._({..._json, 'metadata': null});
-
-  /// Returns a copy with `mood` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setMoodToNull() => BooksUpdate._({..._json, 'mood': null});
-
-  /// Returns a copy with `page_counts` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setPageCountsToNull() =>
-      BooksUpdate._({..._json, 'page_counts': null});
-
-  /// Returns a copy with `price` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setPriceToNull() => BooksUpdate._({..._json, 'price': null});
-
-  /// Returns a copy with `published_on` set to SQL NULL, overriding any
-  /// database default.
-  BooksUpdate setPublishedOnToNull() =>
-      BooksUpdate._({..._json, 'published_on': null});
-
-  /// Returns a copy with `rating` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setRatingToNull() => BooksUpdate._({..._json, 'rating': null});
-
-  /// Returns a copy with `tags` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setTagsToNull() => BooksUpdate._({..._json, 'tags': null});
-
-  /// Returns a copy with `updated_at` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setUpdatedAtToNull() =>
-      BooksUpdate._({..._json, 'updated_at': null});
+  })
+  get copyWith =>
+      ({
+        Object authorId = const _Omitted(),
+        Object? coverImage = const _Omitted(),
+        Object? coverUuid = const _Omitted(),
+        Object createdAt = const _Omitted(),
+        Object id = const _Omitted(),
+        Object inPrint = const _Omitted(),
+        Object? metadata = const _Omitted(),
+        Object? mood = const _Omitted(),
+        Object? pageCounts = const _Omitted(),
+        Object? price = const _Omitted(),
+        Object? publishedOn = const _Omitted(),
+        Object? rating = const _Omitted(),
+        Object? tags = const _Omitted(),
+        Object title = const _Omitted(),
+        Object? updatedAt = const _Omitted(),
+      }) => BooksUpdate._({
+        ..._json,
+        if (authorId is! _Omitted) 'author_id': authorId,
+        if (coverImage is! _Omitted)
+          'cover_image': switch (coverImage as Uint8List?) {
+            null => null,
+            final value => postgresBytea.encode(value),
+          },
+        if (coverUuid is! _Omitted) 'cover_uuid': coverUuid,
+        if (createdAt is! _Omitted)
+          'created_at': postgresTimestamp.encode(
+            (createdAt as DateTime).toUtc(),
+          ),
+        if (id is! _Omitted) 'id': id,
+        if (inPrint is! _Omitted) 'in_print': inPrint,
+        if (metadata is! _Omitted) 'metadata': metadata,
+        if (mood is! _Omitted) 'mood': (mood as Mood?)?.wireName,
+        if (pageCounts is! _Omitted) 'page_counts': pageCounts,
+        if (price is! _Omitted) 'price': price,
+        if (publishedOn is! _Omitted)
+          'published_on': (publishedOn as PostgresDate?)?.literal,
+        if (rating is! _Omitted) 'rating': rating,
+        if (tags is! _Omitted) 'tags': tags,
+        if (title is! _Omitted) 'title': title,
+        if (updatedAt is! _Omitted)
+          'updated_at': switch (updatedAt as DateTime?) {
+            null => null,
+            final value => postgresTimestamp.encode(value),
+          },
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _BooksUpdate._(Map<String, dynamic> _json)
+    implements BooksUpdate {
+  _BooksUpdate({
+    Object authorId = const _Omitted(),
+    Object? coverImage = const _Omitted(),
+    Object? coverUuid = const _Omitted(),
+    Object createdAt = const _Omitted(),
+    Object id = const _Omitted(),
+    Object inPrint = const _Omitted(),
+    Object? metadata = const _Omitted(),
+    Object? mood = const _Omitted(),
+    Object? pageCounts = const _Omitted(),
+    Object? price = const _Omitted(),
+    Object? publishedOn = const _Omitted(),
+    Object? rating = const _Omitted(),
+    Object? tags = const _Omitted(),
+    Object title = const _Omitted(),
+    Object? updatedAt = const _Omitted(),
+  }) : _json = {
+         if (authorId is! _Omitted) 'author_id': authorId,
+         if (coverImage is! _Omitted)
+           'cover_image': switch (coverImage as Uint8List?) {
+             null => null,
+             final value => postgresBytea.encode(value),
+           },
+         if (coverUuid is! _Omitted) 'cover_uuid': coverUuid,
+         if (createdAt is! _Omitted)
+           'created_at': postgresTimestamp.encode(
+             (createdAt as DateTime).toUtc(),
+           ),
+         if (id is! _Omitted) 'id': id,
+         if (inPrint is! _Omitted) 'in_print': inPrint,
+         if (metadata is! _Omitted) 'metadata': metadata,
+         if (mood is! _Omitted) 'mood': (mood as Mood?)?.wireName,
+         if (pageCounts is! _Omitted) 'page_counts': pageCounts,
+         if (price is! _Omitted) 'price': price,
+         if (publishedOn is! _Omitted)
+           'published_on': (publishedOn as PostgresDate?)?.literal,
+         if (rating is! _Omitted) 'rating': rating,
+         if (tags is! _Omitted) 'tags': tags,
+         if (title is! _Omitted) 'title': title,
+         if (updatedAt is! _Omitted)
+           'updated_at': switch (updatedAt as DateTime?) {
+             null => null,
+             final value => postgresTimestamp.encode(value),
+           },
+       };
 }
 
 /// Typed access to the `books` table.
@@ -1215,23 +1299,25 @@ extension type const LoansRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `loans`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const LoansInsert._(Map<String, dynamic> _json)
     implements Object {
-  LoansInsert({int? bookId, PostgresDate? dueOn, int? id})
-    : this._({'book_id': ?bookId, 'due_on': ?dueOn?.literal, 'id': ?id});
+  factory LoansInsert({int bookId, PostgresDate dueOn, int id}) = _LoansInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  LoansInsert copyWith({int? bookId, PostgresDate? dueOn, int? id}) =>
-      LoansInsert._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  LoansInsert Function({int bookId, PostgresDate dueOn, int id}) get copyWith =>
+      ({
+        Object bookId = const _Omitted(),
+        Object dueOn = const _Omitted(),
+        Object id = const _Omitted(),
+      }) => LoansInsert._({
         ..._json,
-        'book_id': ?bookId,
-        'due_on': ?dueOn?.literal,
-        'id': ?id,
+        if (bookId is! _Omitted) 'book_id': bookId,
+        if (dueOn is! _Omitted) 'due_on': (dueOn as PostgresDate).literal,
+        if (id is! _Omitted) 'id': id,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
@@ -1240,28 +1326,56 @@ extension type const LoansInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `loans`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _LoansInsert._(Map<String, dynamic> _json)
+    implements LoansInsert {
+  _LoansInsert({
+    Object bookId = const _Omitted(),
+    Object dueOn = const _Omitted(),
+    Object id = const _Omitted(),
+  }) : _json = {
+         if (bookId is! _Omitted) 'book_id': bookId,
+         if (dueOn is! _Omitted) 'due_on': (dueOn as PostgresDate).literal,
+         if (id is! _Omitted) 'id': id,
+       };
+}
+
+/// Values for updating rows of `loans`. All columns are optional; a column left
+/// out keeps its value, and `null` writes SQL NULL.
 extension type const LoansUpdate._(Map<String, dynamic> _json)
     implements Object {
-  LoansUpdate({int? bookId, PostgresDate? dueOn, int? id})
-    : this._({'book_id': ?bookId, 'due_on': ?dueOn?.literal, 'id': ?id});
+  factory LoansUpdate({int bookId, PostgresDate dueOn, int id}) = _LoansUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  LoansUpdate copyWith({int? bookId, PostgresDate? dueOn, int? id}) =>
-      LoansUpdate._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  LoansUpdate Function({int bookId, PostgresDate dueOn, int id}) get copyWith =>
+      ({
+        Object bookId = const _Omitted(),
+        Object dueOn = const _Omitted(),
+        Object id = const _Omitted(),
+      }) => LoansUpdate._({
         ..._json,
-        'book_id': ?bookId,
-        'due_on': ?dueOn?.literal,
-        'id': ?id,
+        if (bookId is! _Omitted) 'book_id': bookId,
+        if (dueOn is! _Omitted) 'due_on': (dueOn as PostgresDate).literal,
+        if (id is! _Omitted) 'id': id,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _LoansUpdate._(Map<String, dynamic> _json)
+    implements LoansUpdate {
+  _LoansUpdate({
+    Object bookId = const _Omitted(),
+    Object dueOn = const _Omitted(),
+    Object id = const _Omitted(),
+  }) : _json = {
+         if (bookId is! _Omitted) 'book_id': bookId,
+         if (dueOn is! _Omitted) 'due_on': (dueOn as PostgresDate).literal,
+         if (id is! _Omitted) 'id': id,
+       };
 }
 
 /// Typed access to the `loans` table.
@@ -1327,30 +1441,26 @@ extension type const ProfilesRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `profiles`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const ProfilesInsert._(Map<String, dynamic> _json)
     implements Object {
-  ProfilesInsert({ProfilesSettings? settings, ProfilesStatus? status})
-    : this._({'settings': ?settings, 'status': ?status?.wireName});
+  factory ProfilesInsert({ProfilesSettings? settings, ProfilesStatus status}) =
+      _ProfilesInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  ProfilesInsert copyWith({
-    ProfilesSettings? settings,
-    ProfilesStatus? status,
-  }) => ProfilesInsert._({
-    ..._json,
-    'settings': ?settings,
-    'status': ?status?.wireName,
-  });
-
-  /// Returns a copy with `settings` set to SQL NULL, overriding any database
-  /// default.
-  ProfilesInsert setSettingsToNull() =>
-      ProfilesInsert._({..._json, 'settings': null});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  ProfilesInsert Function({ProfilesSettings? settings, ProfilesStatus status})
+  get copyWith =>
+      ({
+        Object? settings = const _Omitted(),
+        Object status = const _Omitted(),
+      }) => ProfilesInsert._({
+        ..._json,
+        if (settings is! _Omitted) 'settings': settings,
+        if (status is! _Omitted) 'status': (status as ProfilesStatus).wireName,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -1358,34 +1468,52 @@ extension type const ProfilesInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `profiles`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _ProfilesInsert._(Map<String, dynamic> _json)
+    implements ProfilesInsert {
+  _ProfilesInsert({
+    Object? settings = const _Omitted(),
+    Object status = const _Omitted(),
+  }) : _json = {
+         if (settings is! _Omitted) 'settings': settings,
+         if (status is! _Omitted) 'status': (status as ProfilesStatus).wireName,
+       };
+}
+
+/// Values for updating rows of `profiles`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const ProfilesUpdate._(Map<String, dynamic> _json)
     implements Object {
-  ProfilesUpdate({ProfilesSettings? settings, ProfilesStatus? status})
-    : this._({'settings': ?settings, 'status': ?status?.wireName});
+  factory ProfilesUpdate({ProfilesSettings? settings, ProfilesStatus status}) =
+      _ProfilesUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value; use the `set…ToNull` methods to write SQL NULL.
-  ProfilesUpdate copyWith({
-    ProfilesSettings? settings,
-    ProfilesStatus? status,
-  }) => ProfilesUpdate._({
-    ..._json,
-    'settings': ?settings,
-    'status': ?status?.wireName,
-  });
-
-  /// Returns a copy with `settings` set to SQL NULL, overriding any database
-  /// default.
-  ProfilesUpdate setSettingsToNull() =>
-      ProfilesUpdate._({..._json, 'settings': null});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value, and `null` writes SQL NULL.
+  ProfilesUpdate Function({ProfilesSettings? settings, ProfilesStatus status})
+  get copyWith =>
+      ({
+        Object? settings = const _Omitted(),
+        Object status = const _Omitted(),
+      }) => ProfilesUpdate._({
+        ..._json,
+        if (settings is! _Omitted) 'settings': settings,
+        if (status is! _Omitted) 'status': (status as ProfilesStatus).wireName,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _ProfilesUpdate._(Map<String, dynamic> _json)
+    implements ProfilesUpdate {
+  _ProfilesUpdate({
+    Object? settings = const _Omitted(),
+    Object status = const _Omitted(),
+  }) : _json = {
+         if (settings is! _Omitted) 'settings': settings,
+         if (status is! _Omitted) 'status': (status as ProfilesStatus).wireName,
+       };
 }
 
 /// Typed access to the `profiles` table.
@@ -1422,23 +1550,27 @@ extension type const ReviewRepliesRow(Map<String, dynamic> _json)
 }
 
 /// Values for inserting a row into `review_replies`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const ReviewRepliesInsert._(Map<String, dynamic> _json)
     implements Object {
-  ReviewRepliesInsert({String? body, int? id, int? reviewId})
-    : this._({'body': ?body, 'id': ?id, 'review_id': ?reviewId});
+  factory ReviewRepliesInsert({String body, int id, int reviewId}) =
+      _ReviewRepliesInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  ReviewRepliesInsert copyWith({String? body, int? id, int? reviewId}) =>
-      ReviewRepliesInsert._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  ReviewRepliesInsert Function({String body, int id, int reviewId})
+  get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object id = const _Omitted(),
+        Object reviewId = const _Omitted(),
+      }) => ReviewRepliesInsert._({
         ..._json,
-        'body': ?body,
-        'id': ?id,
-        'review_id': ?reviewId,
+        if (body is! _Omitted) 'body': body,
+        if (id is! _Omitted) 'id': id,
+        if (reviewId is! _Omitted) 'review_id': reviewId,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
@@ -1447,28 +1579,58 @@ extension type const ReviewRepliesInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `review_replies`. All columns are optional;
-/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
-/// methods to write SQL NULL explicitly.
+extension type const _ReviewRepliesInsert._(Map<String, dynamic> _json)
+    implements ReviewRepliesInsert {
+  _ReviewRepliesInsert({
+    Object body = const _Omitted(),
+    Object id = const _Omitted(),
+    Object reviewId = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (id is! _Omitted) 'id': id,
+         if (reviewId is! _Omitted) 'review_id': reviewId,
+       };
+}
+
+/// Values for updating rows of `review_replies`. All columns are optional; a
+/// column left out keeps its value, and `null` writes SQL NULL.
 extension type const ReviewRepliesUpdate._(Map<String, dynamic> _json)
     implements Object {
-  ReviewRepliesUpdate({String? body, int? id, int? reviewId})
-    : this._({'body': ?body, 'id': ?id, 'review_id': ?reviewId});
+  factory ReviewRepliesUpdate({String body, int id, int reviewId}) =
+      _ReviewRepliesUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  ReviewRepliesUpdate copyWith({String? body, int? id, int? reviewId}) =>
-      ReviewRepliesUpdate._({
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  ReviewRepliesUpdate Function({String body, int id, int reviewId})
+  get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object id = const _Omitted(),
+        Object reviewId = const _Omitted(),
+      }) => ReviewRepliesUpdate._({
         ..._json,
-        'body': ?body,
-        'id': ?id,
-        'review_id': ?reviewId,
+        if (body is! _Omitted) 'body': body,
+        if (id is! _Omitted) 'id': id,
+        if (reviewId is! _Omitted) 'review_id': reviewId,
       });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _ReviewRepliesUpdate._(Map<String, dynamic> _json)
+    implements ReviewRepliesUpdate {
+  _ReviewRepliesUpdate({
+    Object body = const _Omitted(),
+    Object id = const _Omitted(),
+    Object reviewId = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (id is! _Omitted) 'id': id,
+         if (reviewId is! _Omitted) 'review_id': reviewId,
+       };
 }
 
 /// Typed access to the `review_replies` table.
@@ -1513,19 +1675,26 @@ extension type const ReviewsRow(Map<String, dynamic> _json) implements Object {
 }
 
 /// Values for inserting a row into `reviews`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
+/// identity, or covered by a database default are optional; a column left out
+/// gets its database default, and `null` inserts SQL NULL. Columns the database
+/// always generates itself are left out entirely.
 extension type const ReviewsInsert._(Map<String, dynamic> _json)
     implements Object {
-  ReviewsInsert({String? body, int? bookId, int? id})
-    : this._({'body': ?body, 'book_id': ?bookId, 'id': ?id});
+  factory ReviewsInsert({String body, int bookId, int id}) = _ReviewsInsert;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  ReviewsInsert copyWith({String? body, int? bookId, int? id}) =>
-      ReviewsInsert._({..._json, 'body': ?body, 'book_id': ?bookId, 'id': ?id});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  ReviewsInsert Function({String body, int bookId, int id}) get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object bookId = const _Omitted(),
+        Object id = const _Omitted(),
+      }) => ReviewsInsert._({
+        ..._json,
+        if (body is! _Omitted) 'body': body,
+        if (bookId is! _Omitted) 'book_id': bookId,
+        if (id is! _Omitted) 'id': id,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
@@ -1533,23 +1702,56 @@ extension type const ReviewsInsert._(Map<String, dynamic> _json)
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
 }
 
-/// Values for updating rows of `reviews`. All columns are optional; passing
-/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
-/// to write SQL NULL explicitly.
+extension type const _ReviewsInsert._(Map<String, dynamic> _json)
+    implements ReviewsInsert {
+  _ReviewsInsert({
+    Object body = const _Omitted(),
+    Object bookId = const _Omitted(),
+    Object id = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (bookId is! _Omitted) 'book_id': bookId,
+         if (id is! _Omitted) 'id': id,
+       };
+}
+
+/// Values for updating rows of `reviews`. All columns are optional; a column
+/// left out keeps its value, and `null` writes SQL NULL.
 extension type const ReviewsUpdate._(Map<String, dynamic> _json)
     implements Object {
-  ReviewsUpdate({String? body, int? bookId, int? id})
-    : this._({'body': ?body, 'book_id': ?bookId, 'id': ?id});
+  factory ReviewsUpdate({String body, int bookId, int id}) = _ReviewsUpdate;
 
-  /// Returns a copy with the given columns replaced. Passing `null` keeps the
-  /// current value.
-  ReviewsUpdate copyWith({String? body, int? bookId, int? id}) =>
-      ReviewsUpdate._({..._json, 'body': ?body, 'book_id': ?bookId, 'id': ?id});
+  /// Returns a copy with the given columns replaced. A column left out keeps
+  /// its current value.
+  ReviewsUpdate Function({String body, int bookId, int id}) get copyWith =>
+      ({
+        Object body = const _Omitted(),
+        Object bookId = const _Omitted(),
+        Object id = const _Omitted(),
+      }) => ReviewsUpdate._({
+        ..._json,
+        if (body is! _Omitted) 'body': body,
+        if (bookId is! _Omitted) 'book_id': bookId,
+        if (id is! _Omitted) 'id': id,
+      });
 
   /// The values as they are sent, in a map that cannot be changed. Compare two
   /// values through this map with deep equality, since `==` compares map
   /// identity.
   Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+extension type const _ReviewsUpdate._(Map<String, dynamic> _json)
+    implements ReviewsUpdate {
+  _ReviewsUpdate({
+    Object body = const _Omitted(),
+    Object bookId = const _Omitted(),
+    Object id = const _Omitted(),
+  }) : _json = {
+         if (body is! _Omitted) 'body': body,
+         if (bookId is! _Omitted) 'book_id': bookId,
+         if (id is! _Omitted) 'id': id,
+       };
 }
 
 /// Typed access to the `reviews` table.
@@ -1702,21 +1904,23 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `author_book_counts` function, which returns rows filterable
   /// through `AuthorBookCounts`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
-  /// which is not retried.
+  /// argument that starts like a filter, such as `eq.foo`, or that is passed as
+  /// `null`, keeps it a `POST`, which is not retried.
   PostgrestTypedFilterBuilder<AuthorBookCountsRow, List<AuthorBookCountsRow>>
-  authorBookCounts({int? minBooks, bool get = false}) => rows(
-    'author_book_counts',
-    arguments: {'min_books': ?minBooks},
-    rowFromJson: AuthorBookCountsRow.new,
-    schema: 'public',
-    get: get,
-  );
+  Function({int? minBooks, bool get})
+  get authorBookCounts =>
+      ({Object? minBooks = const _Omitted(), bool get = false}) => rows(
+        'author_book_counts',
+        arguments: {if (minBooks is! _Omitted) 'min_books': minBooks},
+        rowFromJson: AuthorBookCountsRow.new,
+        schema: 'public',
+        get: get,
+      );
 
   /// Calls the `book_by_id` function, which returns a row of `books`, or `null`
   /// when it finds none. When [get] is set, it is called with a `GET` request
   /// in read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedBuilder<BooksRow?> bookById({
     required int bookId,
@@ -1737,7 +1941,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `book_titles` function, which returns rows filterable through
   /// `BookTitles`. When [get] is set, it is called with a `GET` request in
   /// read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedFilterBuilder<BookTitlesRow, List<BookTitlesRow>> bookTitles({
     bool get = false,
@@ -1751,7 +1955,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `books_of` function, which returns rows of `books` filterable
   /// through `Books`. When [get] is set, it is called with a `GET` request in
   /// read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksOf({
     required int authorId,
@@ -1767,7 +1971,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `books_of` function, which returns rows of `books` filterable
   /// through `Books`. When [get] is set, it is called with a `GET` request in
   /// read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>>
   booksOfWithAuthorNameAndMaxPrice({
@@ -1785,7 +1989,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `books_with_tags` function, which returns rows of `books`
   /// filterable through `Books`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// argument that starts like a filter, such as `eq.foo` keeps it a `POST`,
   /// which is not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksWithTags({
     required List<String> tags,
@@ -1800,8 +2004,8 @@ extension DatabaseFunctions on PostgrestRpc {
 
   /// Calls the `count_books` function. When [get] is set, it is called with a
   /// `GET` request in read-only access mode, so that it is retried like a
-  /// select. An argument that starts like a filter, such as `eq.foo`, keeps it
-  /// a `POST`, which is not retried.
+  /// select. An argument that starts like a filter, such as `eq.foo` keeps it a
+  /// `POST`, which is not retried.
   PostgrestTypedBuilder<int?> countBooks({bool get = false}) => value(
     'count_books',
     fromJson: (json) => json as int?,
@@ -1828,7 +2032,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `profile_statuses` function, which returns rows filterable
   /// through `ProfileStatuses`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// argument that starts like a filter, such as `eq.foo` keeps it a `POST`,
   /// which is not retried.
   PostgrestTypedFilterBuilder<ProfileStatusesRow, List<ProfileStatusesRow>>
   profileStatuses({bool get = false}) => rows(
@@ -1840,8 +2044,8 @@ extension DatabaseFunctions on PostgrestRpc {
 
   /// Calls the `publication_dates` function. When [get] is set, it is called
   /// with a `GET` request in read-only access mode, so that it is retried like
-  /// a select. An argument that starts like a filter, such as `eq.foo`, keeps
-  /// it a `POST`, which is not retried.
+  /// a select. An argument that starts like a filter, such as `eq.foo` keeps it
+  /// a `POST`, which is not retried.
   PostgrestTypedBuilder<List<PostgresDate?>> publicationDates({
     required int authorId,
     bool get = false,
@@ -1859,41 +2063,51 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `search_books` function, which returns rows of `books`
   /// filterable through `Books`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
-  /// which is not retried.
-  PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> searchBooks({
+  /// argument that starts like a filter, such as `eq.foo`, or that is passed as
+  /// `null`, keeps it a `POST`, which is not retried.
+  PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> Function({
     required String query,
     num? maxPrice,
     Mood? mood,
-    bool get = false,
-  }) => rows(
-    'search_books',
-    arguments: {
-      'max_price': ?maxPrice,
-      'mood': ?mood?.wireName,
-      'query': query,
-    },
-    rowFromJson: BooksRow.new,
-    schema: 'public',
-    get: get,
-  );
+    bool get,
+  })
+  get searchBooks =>
+      ({
+        Object? maxPrice = const _Omitted(),
+        Object? mood = const _Omitted(),
+        required String query,
+        bool get = false,
+      }) => rows(
+        'search_books',
+        arguments: {
+          if (maxPrice is! _Omitted) 'max_price': maxPrice,
+          if (mood is! _Omitted) 'mood': (mood as Mood?)?.wireName,
+          'query': query,
+        },
+        rowFromJson: BooksRow.new,
+        schema: 'public',
+        get: get,
+      );
 
   /// Calls the `touch_book` function.
-  PostgrestTypedBuilder<void> touchBook({
+  PostgrestTypedBuilder<void> Function({
     required int bookId,
     DateTime? touchedAt,
-  }) => value(
-    'touch_book',
-    arguments: {
-      'book_id': bookId,
-      'touched_at': ?switch (touchedAt) {
-        null => null,
-        final value => postgresTimestamp.encode(value.toUtc()),
-      },
-    },
-    fromJson: (_) {},
-    schema: 'public',
-  );
+  })
+  get touchBook =>
+      ({required int bookId, Object? touchedAt = const _Omitted()}) => value(
+        'touch_book',
+        arguments: {
+          'book_id': bookId,
+          if (touchedAt is! _Omitted)
+            'touched_at': switch (touchedAt as DateTime?) {
+              null => null,
+              final value => postgresTimestamp.encode(value.toUtc()),
+            },
+        },
+        fromJson: (_) {},
+        schema: 'public',
+      );
 }
 
 /// The values of a partial row of `inventory.books`, as `selectOnly` returns
@@ -2116,3 +2330,8 @@ List<String> _stringListFromJson(Object json) => (json as List<dynamic>).cast();
 
 Uint8List _uint8ListFromJson(Object json) =>
     postgresBytea.decode(json as String);
+
+/// The default of a parameter the caller left out.
+final class _Omitted {
+  const _Omitted();
+}

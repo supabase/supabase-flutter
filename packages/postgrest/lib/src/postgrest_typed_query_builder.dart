@@ -190,8 +190,8 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   /// ```
   ///
   /// An empty [rows] writes nothing. A column left out of a row gets its
-  /// database default, even when other rows set it. Use the generated
-  /// `set…ToNull` methods of [Insert] to write `NULL` instead.
+  /// database default, even when other rows set it. Pass `null` for the
+  /// column to write `NULL` instead.
   PostgrestTypedTransformBuilder<Row, void> insertAll(List<Insert> rows) =>
       _insertion(
         _request(PostgrestTableOperation.insert).copyWith(payload: rows),
@@ -238,8 +238,8 @@ class PostgrestTypedQueryBuilder<Row, Insert, Update> {
   ///
   /// An empty [rows] writes nothing. A column left out of a row that another
   /// row sets is written as its database default, also when the row merges
-  /// into an existing one. Use the generated `set…ToNull` methods of [Insert]
-  /// to write `NULL` instead.
+  /// into an existing one. Pass `null` for the column to write `NULL`
+  /// instead.
   ///
   /// See [upsert] for [onConflict] and [PostgrestQueryBuilder.upsert] for
   /// [ignoreDuplicates].

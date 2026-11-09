@@ -294,15 +294,15 @@ final BooksRow inserted = await supabase
 
 await supabase
     .table(Books.table)
-    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .update(BooksUpdate(inPrint: false, price: null))
     .where(Books.id.eq(1));
 
 await supabase.table(Books.table).delete().where(Books.id.eq(1));
 ```
 
-A `null` argument to `BooksInsert` or `BooksUpdate` leaves the column out,
-and the generated `set…ToNull()` methods write SQL `NULL`. Several rows go
-through `insertAll()` and `upsertAll()`.
+A column left out of `BooksInsert` or `BooksUpdate` is left out of the
+request, and a `null` argument writes SQL `NULL`. Several rows go through
+`insertAll()` and `upsertAll()`.
 
 Database functions get a typed method on `rpc`:
 

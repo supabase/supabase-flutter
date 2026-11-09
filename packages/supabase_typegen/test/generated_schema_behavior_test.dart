@@ -972,13 +972,13 @@ void main() {
     expect(httpClient.requests.last.queryParameters['id'], 'eq.1');
   });
 
-  test('setXToNull writes SQL NULL explicitly', () async {
+  test('null writes SQL NULL and a column left out is not sent', () async {
     httpClient.stub(null);
+    num? clearedPrice;
 
-    final update = BooksUpdate(inPrint: false);
     await client
         .table(Books.table)
-        .update(update.setPriceToNull().setMoodToNull())
+        .update(BooksUpdate(inPrint: false, price: clearedPrice, mood: null))
         .where(Books.id.eq(1));
 
     expect(httpClient.requests.last.jsonBody, {
@@ -986,18 +986,10 @@ void main() {
       'price': null,
       'mood': null,
     });
-    await client.table(Books.table).update(update).where(Books.id.eq(1));
-    expect(
-      httpClient.requests.last.jsonBody,
-      {'in_print': false},
-      reason: 'setPriceToNull returns a copy and must not mutate',
-    );
 
     await client
         .table(Books.table)
-        .insert(
-          BooksInsert(title: 'x', authorId: 7).setPublishedOnToNull(),
-        );
+        .insert(BooksInsert(title: 'x', authorId: 7, publishedOn: null));
 
     expect(httpClient.requests.last.jsonBody, {
       'title': 'x',
@@ -1005,6 +997,26 @@ void main() {
       'published_on': null,
     });
   });
+
+  test('null overwrites the existing value on upsert', () async {
+    httpClient.stub(null);
+
+    await client
+        .table(Books.table)
+        .upsert(BooksInsert(id: 1, title: 'x', authorId: 7, price: null));
+
+    expect(
+      httpClient.requests.last.headers['Prefer'],
+      contains('resolution=merge-duplicates'),
+    );
+    expect(httpClient.requests.last.jsonBody, {
+      'id': 1,
+      'title': 'x',
+      'author_id': 7,
+      'price': null,
+    });
+  });
+
   test('toJson returns the values as they are sent', () {
     final insert = BooksInsert(
       title: 'x',
@@ -1027,7 +1039,7 @@ void main() {
       reason: 'the payload cannot be changed behind the encoding',
     );
     expect(
-      BooksUpdate(price: 3).setMoodToNull().toJson(),
+      BooksUpdate(price: 3, mood: null).toJson(),
       {'price': 3, 'mood': null},
     );
   });
@@ -1073,13 +1085,13 @@ void main() {
     );
   });
 
-  test('copyWith combines with setXToNull', () {
-    final update = BooksUpdate(title: 'x').setPriceToNull();
+  test('copyWith writes null and keeps the columns it is not given', () {
+    final update = BooksUpdate(title: 'x', price: null);
 
     expect(
       update.copyWith(title: 'y').toJson(),
       {'title': 'y', 'price': null},
-      reason: 'a null argument keeps an explicit SQL NULL',
+      reason: 'a column left out keeps an explicit SQL NULL',
     );
     expect(
       update.copyWith(price: 4).toJson(),
@@ -1089,7 +1101,8 @@ void main() {
       BooksInsert(
         title: 'x',
         authorId: 7,
-      ).copyWith(price: 4).setPriceToNull().toJson(),
+        price: 4,
+      ).copyWith(price: null).toJson(),
       {'title': 'x', 'author_id': 7, 'price': null},
     );
   });
@@ -1416,6 +1429,32 @@ void main() {
         'book_count': 'gte.2',
         'order': 'author_name.asc',
       });
+    });
+
+    test('an argument with a default is sent as null when passed null, and '
+        'left out otherwise', () async {
+      httpClient.stub([]);
+
+      await client.rpc.authorBookCounts(minBooks: 2);
+      expect(lastRequest().jsonBody, {'min_books': 2});
+
+      await client.rpc.authorBookCounts();
+      expect(lastRequest().jsonBody, isEmpty);
+
+      await client.rpc.authorBookCounts(minBooks: null);
+      expect(lastRequest().jsonBody, {'min_books': null});
+
+      await client.rpc.authorBookCounts(minBooks: 2, get: true);
+      expect(lastRequest().method, HttpMethod.get.value);
+      expect(lastRequest().url.queryParameters, {'min_books': '2'});
+
+      await client.rpc.authorBookCounts(get: true);
+      expect(lastRequest().method, HttpMethod.get.value);
+      expect(lastRequest().url.queryParameters, isEmpty);
+
+      await client.rpc.authorBookCounts(minBooks: null, get: true);
+      expect(lastRequest().method, HttpMethod.post.value);
+      expect(lastRequest().jsonBody, {'min_books': null});
     });
 
     test('scalars and sets of scalars are converted', () async {
