@@ -20,7 +20,17 @@ extension type const BookInsert._(Map<String, dynamic> _json)
 
 extension type const BookUpdate._(Map<String, dynamic> _json)
     implements Object {
-  BookUpdate({String? title}) : this._({'title': ?title});
+  factory BookUpdate({String? title}) = _BookUpdate;
+}
+
+extension type const _BookUpdate._(Map<String, dynamic> _json)
+    implements BookUpdate {
+  _BookUpdate({Object? title = const _Omitted()})
+    : _json = {if (title is! _Omitted) 'title': title};
+}
+
+final class _Omitted {
+  const _Omitted();
 }
 
 extension type const Review(Map<String, dynamic> _json)

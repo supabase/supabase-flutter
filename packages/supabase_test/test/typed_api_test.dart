@@ -14,14 +14,33 @@ extension type const Todo(Map<String, dynamic> _json)
 
 extension type const TodoInsert._(Map<String, dynamic> _json)
     implements Object {
-  TodoInsert({required String task, bool? status})
-    : this._({'task': task, 'status': ?status});
+  factory TodoInsert({required String task, bool? status}) = _TodoInsert;
+}
+
+extension type const _TodoInsert._(Map<String, dynamic> _json)
+    implements TodoInsert {
+  _TodoInsert({required String task, Object? status = const _Omitted()})
+    : _json = {'task': task, if (status is! _Omitted) 'status': status};
+}
+
+final class _Omitted {
+  const _Omitted();
 }
 
 extension type const TodoUpdate._(Map<String, dynamic> _json)
     implements Object {
-  TodoUpdate({String? task, bool? status})
-    : this._({'task': ?task, 'status': ?status});
+  factory TodoUpdate({String? task, bool? status}) = _TodoUpdate;
+}
+
+extension type const _TodoUpdate._(Map<String, dynamic> _json)
+    implements TodoUpdate {
+  _TodoUpdate({
+    Object? task = const _Omitted(),
+    Object? status = const _Omitted(),
+  }) : _json = {
+         if (task is! _Omitted) 'task': task,
+         if (status is! _Omitted) 'status': status,
+       };
 }
 
 class Todos {

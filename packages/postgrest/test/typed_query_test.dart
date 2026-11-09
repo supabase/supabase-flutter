@@ -30,7 +30,13 @@ final class _Omitted {
 
 extension type const BookUpdate._(Map<String, dynamic> _json)
     implements Object {
-  BookUpdate({String? title}) : this._({'title': ?title});
+  factory BookUpdate({String? title}) = _BookUpdate;
+}
+
+extension type const _BookUpdate._(Map<String, dynamic> _json)
+    implements BookUpdate {
+  _BookUpdate({Object? title = const _Omitted()})
+    : _json = {if (title is! _Omitted) 'title': title};
 }
 
 class JsonBookInsert {
