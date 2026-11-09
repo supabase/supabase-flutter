@@ -184,15 +184,15 @@ final BooksRow inserted = await supabase
 
 await supabase
     .table(Books.table)
-    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .update(BooksUpdate(inPrint: false, price: null))
     .where(Books.id.eq(1));
 
 await supabase.table(Books.table).delete().where(Books.id.eq(1));
 ```
 
 - Several rows go through `insertAll()` and `upsertAll()`.
-- A `null` argument to `BooksInsert` or `BooksUpdate` leaves the column out.
-  Write SQL `NULL` with the generated `set…ToNull()` methods.
+- A parameter of `BooksInsert` or `BooksUpdate` that is left out leaves the
+  column out, and a `null` argument writes SQL `NULL`.
 - Writes resolve to `void`. Add `.select()` to get the written rows back.
 - `upsert()` takes `onConflict` as a list of columns,
   `onConflict: [Authors.name]`.
