@@ -2019,8 +2019,8 @@ void main() {
       );
     });
 
-    test('a stable function is called read-only unless an argument only '
-        'fits in a request body', () {
+    test('a stable function takes get unless an argument only fits in a '
+        'request body', () {
       FunctionDescription stable(
         String name,
         ValueTypeDescription type,
@@ -2110,15 +2110,48 @@ void main() {
       );
       expect(limited, isNot(contains('get:')));
 
-      String call(String name) =>
-          RegExp("value\\( '$name'.*?\\);").firstMatch(code)![0]!;
-      expect(call('with_integers'), contains('get: true'));
-      expect(call('with_json'), isNot(contains('get:')));
-      expect(call('with_json_array'), isNot(contains('get:')));
-      expect(call('with_integer_vector'), contains('get: true'));
+      String call(String name) => RegExp(
+        "\\w+\\([^)]*\\) => value\\( '$name'.*?\\);",
+      ).firstMatch(code)![0]!;
+      expect(
+        call('with_integers'),
+        allOf(contains('bool get = false'), contains('get: get')),
+      );
+      expect(call('with_json'), isNot(contains('get')));
+      expect(call('with_json_array'), isNot(contains('get')));
+      expect(call('with_integer_vector'), contains('get: get'));
       expect(call('with_integer_vector'), contains(".join(' ')"));
-      expect(call('with_integer_vector_array'), isNot(contains('get:')));
-      expect(call('volatile'), isNot(contains('get:')));
+      expect(call('with_integer_vector_array'), isNot(contains('get')));
+      expect(call('volatile'), isNot(contains('get')));
+    });
+
+    test('an argument named get of a stable function is renamed', () {
+      final code = _normalize(
+        generateDartCode(
+          withFunctions([
+            FunctionDescription(
+              schema: 'public',
+              name: 'fetch',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [argument('get')],
+                  result: const FunctionNoResult(),
+                  isVolatile: false,
+                ),
+              ],
+            ),
+          ]),
+        ),
+      );
+
+      expect(
+        code,
+        contains(
+          r"fetch({required int get$, bool get = false}) => value( 'fetch', "
+          r"arguments: {'get': get$},",
+        ),
+      );
+      expect(code, contains('get: get, );'));
     });
 
     test('the overload with the fewest arguments keeps the plain name', () {

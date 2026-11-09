@@ -1696,19 +1696,28 @@ extension DatabaseFunctions on PostgrestRpc {
   );
 
   /// Calls the `author_book_counts` function, which returns rows filterable
-  /// through `AuthorBookCounts`.
+  /// through `AuthorBookCounts`. When [get] is set, it is called with a `GET`
+  /// request in read-only access mode, so that it is retried like a select. An
+  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// which is not retried.
   PostgrestTypedFilterBuilder<AuthorBookCountsRow, List<AuthorBookCountsRow>>
-  authorBookCounts({int? minBooks}) => rows(
+  authorBookCounts({int? minBooks, bool get = false}) => rows(
     'author_book_counts',
     arguments: {'min_books': ?minBooks},
     rowFromJson: AuthorBookCountsRow.new,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `book_by_id` function, which returns a row of `books`, or `null`
-  /// when it finds none.
-  PostgrestTypedBuilder<BooksRow?> bookById({required int bookId}) => value(
+  /// when it finds none. When [get] is set, it is called with a `GET` request
+  /// in read-only access mode, so that it is retried like a select. An argument
+  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// not retried.
+  PostgrestTypedBuilder<BooksRow?> bookById({
+    required int bookId,
+    bool get = false,
+  }) => value(
     'book_by_id',
     arguments: {'book_id': bookId},
     fromJson: (json) => switch (json) {
@@ -1718,63 +1727,82 @@ extension DatabaseFunctions on PostgrestRpc {
       _ => null,
     },
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `book_titles` function, which returns rows filterable through
-  /// `BookTitles`.
-  PostgrestTypedFilterBuilder<BookTitlesRow, List<BookTitlesRow>>
-  bookTitles() => rows(
+  /// `BookTitles`. When [get] is set, it is called with a `GET` request in
+  /// read-only access mode, so that it is retried like a select. An argument
+  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// not retried.
+  PostgrestTypedFilterBuilder<BookTitlesRow, List<BookTitlesRow>> bookTitles({
+    bool get = false,
+  }) => rows(
     'book_titles',
     rowFromJson: BookTitlesRow.new,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `books_of` function, which returns rows of `books` filterable
-  /// through `Books`.
+  /// through `Books`. When [get] is set, it is called with a `GET` request in
+  /// read-only access mode, so that it is retried like a select. An argument
+  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksOf({
     required int authorId,
+    bool get = false,
   }) => rows(
     'books_of',
     arguments: {'author_id': authorId},
     rowFromJson: BooksRow.new,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `books_of` function, which returns rows of `books` filterable
-  /// through `Books`.
+  /// through `Books`. When [get] is set, it is called with a `GET` request in
+  /// read-only access mode, so that it is retried like a select. An argument
+  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>>
   booksOfWithAuthorNameAndMaxPrice({
     required String authorName,
     required num maxPrice,
+    bool get = false,
   }) => rows(
     'books_of',
     arguments: {'author_name': authorName, 'max_price': maxPrice},
     rowFromJson: BooksRow.new,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `books_with_tags` function, which returns rows of `books`
-  /// filterable through `Books`.
+  /// filterable through `Books`. When [get] is set, it is called with a `GET`
+  /// request in read-only access mode, so that it is retried like a select. An
+  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// which is not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksWithTags({
     required List<String> tags,
+    bool get = false,
   }) => rows(
     'books_with_tags',
     arguments: {'tags': tags},
     rowFromJson: BooksRow.new,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
-  /// Calls the `count_books` function.
-  PostgrestTypedBuilder<int?> countBooks() => value(
+  /// Calls the `count_books` function. When [get] is set, it is called with a
+  /// `GET` request in read-only access mode, so that it is retried like a
+  /// select. An argument that starts like a filter, such as `eq.foo`, keeps it
+  /// a `POST`, which is not retried.
+  PostgrestTypedBuilder<int?> countBooks({bool get = false}) => value(
     'count_books',
     fromJson: (json) => json as int?,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `echo` function.
@@ -1794,18 +1822,25 @@ extension DatabaseFunctions on PostgrestRpc {
   );
 
   /// Calls the `profile_statuses` function, which returns rows filterable
-  /// through `ProfileStatuses`.
+  /// through `ProfileStatuses`. When [get] is set, it is called with a `GET`
+  /// request in read-only access mode, so that it is retried like a select. An
+  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// which is not retried.
   PostgrestTypedFilterBuilder<ProfileStatusesRow, List<ProfileStatusesRow>>
-  profileStatuses() => rows(
+  profileStatuses({bool get = false}) => rows(
     'profile_statuses',
     rowFromJson: ProfileStatusesRow.new,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
-  /// Calls the `publication_dates` function.
+  /// Calls the `publication_dates` function. When [get] is set, it is called
+  /// with a `GET` request in read-only access mode, so that it is retried like
+  /// a select. An argument that starts like a filter, such as `eq.foo`, keeps
+  /// it a `POST`, which is not retried.
   PostgrestTypedBuilder<List<PostgresDate?>> publicationDates({
     required int authorId,
+    bool get = false,
   }) => value(
     'publication_dates',
     arguments: {'author_id': authorId},
@@ -1814,15 +1849,19 @@ extension DatabaseFunctions on PostgrestRpc {
         element == null ? null : _postgresDateFromJson(element),
     ],
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `search_books` function, which returns rows of `books`
-  /// filterable through `Books`.
+  /// filterable through `Books`. When [get] is set, it is called with a `GET`
+  /// request in read-only access mode, so that it is retried like a select. An
+  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// which is not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> searchBooks({
     required String query,
     num? maxPrice,
     Mood? mood,
+    bool get = false,
   }) => rows(
     'search_books',
     arguments: {
@@ -1832,7 +1871,7 @@ extension DatabaseFunctions on PostgrestRpc {
     },
     rowFromJson: BooksRow.new,
     schema: 'public',
-    get: true,
+    get: get,
   );
 
   /// Calls the `touch_book` function.

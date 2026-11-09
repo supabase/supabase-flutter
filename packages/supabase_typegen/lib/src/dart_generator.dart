@@ -2082,9 +2082,10 @@ void _writeFunctionMethod(
 ) {
   final _FunctionMethod(:function, :overload) = method;
   final arguments = overload.arguments;
+  final readOnly = !overload.isVolatile && arguments.every(_isQueryParameter);
   final parameterNames = _uniqueMemberNames(
     [for (final argument in arguments) argument.name],
-    reserved: {...typeNames, ..._rpcMembers, ..._codecs},
+    reserved: {...typeNames, ..._rpcMembers, ..._codecs, if (readOnly) 'get'},
   );
 
   String? rowTypeOf(FunctionArgumentDescription argument) =>
@@ -2127,7 +2128,11 @@ void _writeFunctionMethod(
       entries.add('$key: $value');
     }
   }
-  final parameters = [...requiredParameters, ...optionalParameters];
+  final parameters = [
+    ...requiredParameters,
+    ...optionalParameters,
+    if (readOnly) 'bool get = false',
+  ];
   final unnamed = arguments.isNotEmpty && arguments.first.name == '';
   final parameterList = parameters.isEmpty
       ? ''
@@ -2145,10 +2150,17 @@ void _writeFunctionMethod(
     decoders,
   );
   final displayName = _displayName(function.schema, function.name);
+  final getDocumentation = readOnly
+      ? ' When [get] is set, it is called with a `GET` request in read-only '
+            'access mode, so that it is retried like a select. An argument '
+            'that starts like a filter, such as `eq.foo`, keeps it a `POST`, '
+            'which is not retried.'
+      : '';
   _writeDocComment(
     buffer,
     'Calls the `$displayName` function'
-    '${call.description.isEmpty ? '' : ', ${call.description}'}.',
+    '${call.description.isEmpty ? '' : ', ${call.description}'}.'
+    '$getDocumentation',
     indent: '  ',
   );
   buffer
@@ -2161,8 +2173,8 @@ void _writeFunctionMethod(
   buffer
     ..writeln('        ${call.converter},')
     ..writeln('        schema: ${_stringLiteral(function.schema)},');
-  if (!overload.isVolatile && arguments.every(_isQueryParameter)) {
-    buffer.writeln('        get: true,');
+  if (readOnly) {
+    buffer.writeln('        get: get,');
   }
   buffer.writeln('      );');
 }
