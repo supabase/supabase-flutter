@@ -1904,8 +1904,8 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `author_book_counts` function, which returns rows filterable
   /// through `AuthorBookCounts`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
-  /// which is not retried.
+  /// argument that starts like a filter, such as `eq.foo`, or that is passed as
+  /// `null`, keeps it a `POST`, which is not retried.
   PostgrestTypedFilterBuilder<AuthorBookCountsRow, List<AuthorBookCountsRow>>
   Function({int? minBooks, bool get})
   get authorBookCounts =>
@@ -1920,7 +1920,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `book_by_id` function, which returns a row of `books`, or `null`
   /// when it finds none. When [get] is set, it is called with a `GET` request
   /// in read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedBuilder<BooksRow?> bookById({
     required int bookId,
@@ -1941,7 +1941,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `book_titles` function, which returns rows filterable through
   /// `BookTitles`. When [get] is set, it is called with a `GET` request in
   /// read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedFilterBuilder<BookTitlesRow, List<BookTitlesRow>> bookTitles({
     bool get = false,
@@ -1955,7 +1955,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `books_of` function, which returns rows of `books` filterable
   /// through `Books`. When [get] is set, it is called with a `GET` request in
   /// read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksOf({
     required int authorId,
@@ -1971,7 +1971,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `books_of` function, which returns rows of `books` filterable
   /// through `Books`. When [get] is set, it is called with a `GET` request in
   /// read-only access mode, so that it is retried like a select. An argument
-  /// that starts like a filter, such as `eq.foo`, keeps it a `POST`, which is
+  /// that starts like a filter, such as `eq.foo` keeps it a `POST`, which is
   /// not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>>
   booksOfWithAuthorNameAndMaxPrice({
@@ -1989,7 +1989,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `books_with_tags` function, which returns rows of `books`
   /// filterable through `Books`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// argument that starts like a filter, such as `eq.foo` keeps it a `POST`,
   /// which is not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> booksWithTags({
     required List<String> tags,
@@ -2004,8 +2004,8 @@ extension DatabaseFunctions on PostgrestRpc {
 
   /// Calls the `count_books` function. When [get] is set, it is called with a
   /// `GET` request in read-only access mode, so that it is retried like a
-  /// select. An argument that starts like a filter, such as `eq.foo`, keeps it
-  /// a `POST`, which is not retried.
+  /// select. An argument that starts like a filter, such as `eq.foo` keeps it a
+  /// `POST`, which is not retried.
   PostgrestTypedBuilder<int?> countBooks({bool get = false}) => value(
     'count_books',
     fromJson: (json) => json as int?,
@@ -2032,7 +2032,7 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `profile_statuses` function, which returns rows filterable
   /// through `ProfileStatuses`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
+  /// argument that starts like a filter, such as `eq.foo` keeps it a `POST`,
   /// which is not retried.
   PostgrestTypedFilterBuilder<ProfileStatusesRow, List<ProfileStatusesRow>>
   profileStatuses({bool get = false}) => rows(
@@ -2044,8 +2044,8 @@ extension DatabaseFunctions on PostgrestRpc {
 
   /// Calls the `publication_dates` function. When [get] is set, it is called
   /// with a `GET` request in read-only access mode, so that it is retried like
-  /// a select. An argument that starts like a filter, such as `eq.foo`, keeps
-  /// it a `POST`, which is not retried.
+  /// a select. An argument that starts like a filter, such as `eq.foo` keeps it
+  /// a `POST`, which is not retried.
   PostgrestTypedBuilder<List<PostgresDate?>> publicationDates({
     required int authorId,
     bool get = false,
@@ -2063,8 +2063,8 @@ extension DatabaseFunctions on PostgrestRpc {
   /// Calls the `search_books` function, which returns rows of `books`
   /// filterable through `Books`. When [get] is set, it is called with a `GET`
   /// request in read-only access mode, so that it is retried like a select. An
-  /// argument that starts like a filter, such as `eq.foo`, keeps it a `POST`,
-  /// which is not retried.
+  /// argument that starts like a filter, such as `eq.foo`, or that is passed as
+  /// `null`, keeps it a `POST`, which is not retried.
   PostgrestTypedFilterBuilder<BooksRow, List<BooksRow>> Function({
     required String query,
     num? maxPrice,
