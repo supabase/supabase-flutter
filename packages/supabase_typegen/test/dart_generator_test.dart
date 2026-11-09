@@ -2344,6 +2344,7 @@ void main() {
       );
 
       expect(code, contains('extension type const BooksPartialRow('));
+      expect(code, contains('rowFromJson: BooksPartialRow.new'));
       expect(
         code,
         contains(
