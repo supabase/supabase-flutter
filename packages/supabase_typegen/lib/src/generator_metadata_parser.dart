@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 import 'check_constraints.dart';
@@ -520,23 +521,18 @@ DatabaseDescription _parseGeneratorMetadata(
   );
 
   tables.sort(
-    (a, b) => a.schema == b.schema
-        ? a.name.compareTo(b.name)
-        : a.schema.compareTo(b.schema),
+    _compareText
+        .compareBy((TableDescription table) => table.schema)
+        .then(_compareText.compareBy((table) => table.name)),
   );
-  final enums = enumsByType.values.toList()
-    ..sort(
-      (a, b) => switch (a.schema.compareTo(b.schema)) {
-        0 => switch (a.name.compareTo(b.name)) {
-          // A Postgres enum sorts before a check constraint of the same name.
-          0 => (a.checkedColumn == null ? 0 : 1).compareTo(
-            b.checkedColumn == null ? 0 : 1,
-          ),
-          final order => order,
-        },
-        final order => order,
-      },
-    );
+  // A Postgres enum sorts before the check constraints named like it.
+  final enums = enumsByType.values.sorted(
+    _compareText
+        .compareBy((EnumDescription type) => type.schema)
+        .then(_compareText.compareBy((type) => type.name))
+        .then(_compareText.compareBy((type) => type.checkedColumn?.$1 ?? ''))
+        .then(_compareText.compareBy((type) => type.checkedColumn?.$2 ?? '')),
+  );
 
   return DatabaseDescription(
     metadataVersion: document.field('version') ?? 1,
@@ -973,6 +969,8 @@ ColumnDescription _resultColumn(
   isNullable: column.field('is_nullable') ?? true,
   isReadOnly: true,
 );
+
+const Comparator<String> _compareText = Comparable.compare;
 
 /// What tells the enums of a document apart: a Postgres enum by its schema
 /// and name, and the check constraint of a column, which may be named like

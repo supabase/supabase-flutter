@@ -1207,6 +1207,36 @@ void main() {
     );
   });
 
+  test('orders check constraints of the same name by their column', () {
+    final parsed = parseGeneratorMetadata({
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'a_b', 'comment': null},
+        {'id': 2, 'schema': 'public', 'name': 'a', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'a_b', name: 'c'),
+          'check': "c = ANY (ARRAY['x'::text, 'y'::text])",
+        },
+        {
+          ..._column(tableId: 2, table: 'a', name: 'b_c'),
+          'check': "b_c = ANY (ARRAY['x'::text, 'y'::text])",
+        },
+      ],
+    });
+
+    expect(
+      [
+        for (final enumType in parsed.enums)
+          (enumType.qualifiedName, enumType.checkedColumn),
+      ],
+      [
+        ('public.a_b_c', ('a', 'b_c')),
+        ('public.a_b_c', ('a_b', 'c')),
+      ],
+    );
+  });
+
   test('reads enums only from text and varchar check constraints', () {
     Map<String, dynamic> checked(String name, String format) => {
       ..._column(tableId: 1, table: 'books', name: name),
