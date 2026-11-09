@@ -245,6 +245,7 @@ class RealtimeChannelConfig {
     this.presenceEnabled = false,
     this.private = false,
     this.replicationReady = false,
+    this.v2BroadcastCompatibility = false,
   });
 
   /// [ack] option instructs server to acknowledge that broadcast message was
@@ -279,6 +280,21 @@ class RealtimeChannelConfig {
   /// (message: `'Replication connection established'`) on success or `'error'`
   /// if the connection is not ready in time.
   final bool replicationReady;
+
+  /// Whether broadcasts sent on this channel can also be read by clients on
+  /// v2 of the SDK.
+  ///
+  /// v2 clients read broadcast data next to `type` and `event` instead of
+  /// under `payload`. With this enabled,
+  /// [RealtimeChannel.sendBroadcastMessage] sends the entries of a map payload
+  /// in both places, which roughly doubles the message size. Entries named
+  /// `type`, `event` or `payload` are only sent under `payload`. Binary
+  /// payloads are sent as usual.
+  ///
+  /// Broadcasts from v2 clients are always readable, so this is only needed
+  /// while v2 clients still listen on the channel. It will be removed in the
+  /// next major version.
+  final bool v2BroadcastCompatibility;
 
   /// Converts this to the shape sent when joining the channel.
   Map<String, dynamic> toMap() {

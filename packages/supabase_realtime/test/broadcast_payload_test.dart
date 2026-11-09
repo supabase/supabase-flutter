@@ -162,4 +162,107 @@ void main() {
       expect(messages.first['payload'], {'x': 1});
     },
   );
+
+  group('v2 compatibility', () {
+    Future<RealtimeChannel> subscribeV2CompatibleChannel() async {
+      final compatibleChannel = client.channel(
+        'v2-room',
+        const RealtimeChannelConfig(v2BroadcastCompatibility: true),
+      );
+      final subscribed = compatibleChannel.onStatusChange.firstWhere(
+        (change) => change.status == RealtimeSubscribeStatus.subscribed,
+      );
+      compatibleChannel.subscribe();
+      await subscribed;
+      return compatibleChannel;
+    }
+
+    test('moves the data of a v2 broadcast under payload', () async {
+      final received = channel.onBroadcast(event: 'cursor').first;
+
+      realtime.emit(
+        RealtimeMessage(
+          topic: 'realtime:room',
+          event: 'broadcast',
+          payload: {'type': 'broadcast', 'event': 'cursor', 'x': 1, 'y': 2},
+        ),
+      );
+
+      expect(await received, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 1, 'y': 2},
+      });
+    });
+
+    test('leaves a broadcast that has a payload unchanged', () async {
+      final received = channel.onBroadcast(event: 'cursor').first;
+      final message = {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 1},
+        'meta': {'id': 'abc'},
+      };
+
+      realtime.emit(
+        RealtimeMessage(
+          topic: 'realtime:room',
+          event: 'broadcast',
+          payload: message,
+        ),
+      );
+
+      expect(await received, message);
+    });
+
+    test('sends map data under payload and next to type and event', () async {
+      final compatibleChannel = await subscribeV2CompatibleChannel();
+
+      await compatibleChannel.sendBroadcastMessage(
+        event: 'cursor',
+        payload: {'x': 1, 'type': 'pointer', 'payload': 'nested'},
+      );
+
+      expect(await lastSentBroadcast(), {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'x': 1,
+        'payload': {'x': 1, 'type': 'pointer', 'payload': 'nested'},
+      });
+    });
+
+    test('sends binary data as usual', () async {
+      final compatibleChannel = await subscribeV2CompatibleChannel();
+      final bytes = Uint8List.fromList([1, 2, 3]);
+
+      await compatibleChannel.sendBroadcastMessage(
+        event: 'file',
+        payload: bytes,
+      );
+      await pumpEventQueue();
+
+      final frame = frames.last;
+      expect(frame, isA<Uint8List>());
+      expect((frame as Uint8List).first, Serializer.kindUserBroadcastPush);
+    });
+
+    test('a compatible broadcast is received like a regular one', () async {
+      final compatibleChannel = await subscribeV2CompatibleChannel();
+      final received = compatibleChannel.onBroadcast(event: 'cursor').first;
+
+      await compatibleChannel.sendBroadcastMessage(
+        event: 'cursor',
+        payload: {'x': 1},
+      );
+      realtime.emit(
+        RealtimeMessage(
+          topic: 'realtime:v2-room',
+          event: 'broadcast',
+          payload: await lastSentBroadcast(),
+        ),
+      );
+
+      expect((await received)['payload'], {'x': 1});
+    });
+  });
 }

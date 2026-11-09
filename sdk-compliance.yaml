@@ -3531,6 +3531,7 @@ supporting_symbols:
   - RealtimeChannelConfig.RealtimeChannelConfig
   - RealtimeChannelConfig.presenceEnabled
   - RealtimeChannelConfig.toMap
+  - RealtimeChannelConfig.v2BroadcastCompatibility
   - RealtimeClient
   - RealtimeClient.RealtimeClient
   - RealtimeClient.endpoint

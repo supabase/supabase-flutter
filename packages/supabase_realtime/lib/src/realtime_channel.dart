@@ -32,6 +32,7 @@ class RealtimeChannel {
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
   }) : _timeout = socket.timeout,
        _parameters = config.toMap(),
+       _v2BroadcastCompatibility = config.v2BroadcastCompatibility,
        subTopic = topic.replaceFirst(
          RegExp(r"^realtime:", caseSensitive: false),
          "",
@@ -140,6 +141,7 @@ class RealtimeChannel {
   }
   final Map<String, List<Binding>> _bindings = {};
   final Duration _timeout;
+  final bool _v2BroadcastCompatibility;
   ChannelState _state = ChannelState.closed;
   bool _joinedOnce = false;
 
@@ -679,7 +681,9 @@ class RealtimeChannel {
   ///
   /// Each message is a map with the `type` (always `broadcast`), the `event`
   /// name and the sent data under `payload`. Messages broadcast from the
-  /// database also carry a `meta` map.
+  /// database also carry a `meta` map. A message from a v2 client, which has
+  /// its data next to `type` and `event`, arrives with that data moved under
+  /// `payload` as well.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
@@ -694,11 +698,28 @@ class RealtimeChannel {
       () => _eventStream(
         'broadcast',
         ChannelFilter(event: event),
-        (payload) => Map<String, dynamic>.of(
+        (payload) => _normalizeBroadcast(
           jsonObject(payload, description: 'the broadcast payload'),
         ),
       ),
     );
+  }
+
+  static const _broadcastEnvelopeKeys = {'type', 'event', 'meta'};
+
+  Map<String, dynamic> _normalizeBroadcast(Map<String, dynamic> message) {
+    if (message.containsKey('payload')) {
+      return Map.of(message);
+    }
+    return {
+      for (final key in _broadcastEnvelopeKeys)
+        if (message.containsKey(key)) key: message[key],
+      'payload': {
+        for (final entry in message.entries)
+          if (!_broadcastEnvelopeKeys.contains(entry.key))
+            entry.key: entry.value,
+      },
+    };
   }
 
   /// Emits whenever the presence state of the channel is synced.
@@ -1037,7 +1058,9 @@ class RealtimeChannel {
   /// is sent as a WebSocket binary frame. Any other payload throws an
   /// [ArgumentError]. Receivers get it under the `payload` key of the message
   /// emitted by [onBroadcast], the same as messages sent with [httpSend], from
-  /// the database or from other Supabase clients.
+  /// the database or from other Supabase clients. With
+  /// [RealtimeChannelConfig.v2BroadcastCompatibility], the entries of a map
+  /// payload are also sent next to `type` and `event`.
   ///
   /// ```dart
   /// await channel.sendBroadcastMessage(
@@ -1050,11 +1073,15 @@ class RealtimeChannel {
     required Object payload,
   }) {
     return Future.sync(() {
-      _isBinaryBroadcastPayload(payload);
+      final isBinary = _isBinaryBroadcastPayload(payload);
       return send(
         type: RealtimeListenType.broadcast,
         event: event,
-        payload: {'payload': payload},
+        payload: {
+          if (_v2BroadcastCompatibility && !isBinary)
+            ...Map<String, dynamic>.from(payload as Map),
+          'payload': payload,
+        },
       );
     });
   }
