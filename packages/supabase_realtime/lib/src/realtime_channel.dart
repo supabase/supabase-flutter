@@ -710,6 +710,7 @@ class RealtimeChannel {
   static const _v2ReservedBroadcastKeys = {
     ..._broadcastEnvelopeKeys,
     'payload',
+    'ids',
   };
 
   Map<String, dynamic> _normalizeBroadcast(Map<String, dynamic> message) {

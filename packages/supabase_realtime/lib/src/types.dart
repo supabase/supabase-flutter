@@ -288,9 +288,9 @@ class RealtimeChannelConfig {
   /// under `payload`. With this enabled,
   /// [RealtimeChannel.sendBroadcastMessage] sends the entries of a map payload
   /// in both places, which roughly doubles the message size. Entries named
-  /// `type`, `event`, `meta` or `payload` are only sent under `payload`, so a
-  /// v2 listener does not find them at the top level. Binary payloads are sent
-  /// as usual.
+  /// `type`, `event`, `meta`, `payload` or `ids` are only sent under
+  /// `payload`, so a v2 listener does not find them at the top level, where v2
+  /// would read `ids` as a Postgres change. Binary payloads are sent as usual.
   ///
   /// Broadcasts from v2 clients are always readable, so this is only needed
   /// while v2 clients still listen on the channel. It will be removed in the

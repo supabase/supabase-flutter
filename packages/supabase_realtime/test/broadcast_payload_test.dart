@@ -225,6 +225,7 @@ void main() {
           'type': 'pointer',
           'meta': 'note',
           'payload': 'nested',
+          'ids': [1],
         },
       );
 
@@ -237,6 +238,7 @@ void main() {
           'type': 'pointer',
           'meta': 'note',
           'payload': 'nested',
+          'ids': [1],
         },
       });
     });
