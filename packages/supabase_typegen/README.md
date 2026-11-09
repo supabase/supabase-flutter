@@ -281,8 +281,10 @@ final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
 - Only the first single-column check constraint of a column is read, and
   only in the forms Postgres prints `IN (…)` and comparisons joined by `OR`
   as. Only a `text` or `varchar` column gets an enum, since `citext` and
-  `char(n)` do not compare values exactly. A `NOT NULL` column whose JSON
-  Schema allows `null` at its root is `Object?`. A view column reading a
-  check-constrained column is a `String`, and one reading a column with a
-  JSON Schema is `Object?`, since a view column has no constraints of its
-  own. A JSON Schema `enum` of strings is a `String`.
+  `char(n)` do not compare values exactly. The metadata does not record a
+  column's collation, so one with a nondeterministic collation still gets
+  an enum, and a value that differs from the listed ones only in case reads
+  as `unknown`. A `NOT NULL` column whose JSON Schema allows `null` at its
+  root is `Object?`. A view column reading a check-constrained column is a
+  `String`, and one reading a column with a JSON Schema is `Object?`, since
+  a view column has no constraints of its own. A JSON Schema `enum` of strings is a `String`.

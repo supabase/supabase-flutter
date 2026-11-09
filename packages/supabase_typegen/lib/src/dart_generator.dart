@@ -2307,7 +2307,7 @@ String _writeJsonObject(
   final memberNames = _uniqueMemberNames(
     [for (final property in object.properties) property.name],
     reserved: {
-      typeName,
+      ...typeNames.taken,
       'fromJson',
       'toJson',
       'toString',

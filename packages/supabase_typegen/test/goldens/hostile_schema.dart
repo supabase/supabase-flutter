@@ -198,12 +198,18 @@ extension type const StringDocument.fromJson(Map<String, dynamic> _json)
     List<List<int>>? classSValueNext,
     required StringDocumentString? string,
     required List<StringDocumentItemsItem?>? items,
+    required int int$,
+    num? num$,
+    required bool bool$,
   }) => StringDocument.fromJson({
     'toJson': toJson$,
     'fromJson': fromJson$,
     'class\'s \$value\nnext': ?classSValueNext,
     'string': string,
     'items': items,
+    'int': int$,
+    'num': ?num$,
+    'bool': bool$,
   });
 
   String get toJson$ => _json['toJson'] as String;
@@ -236,6 +242,9 @@ extension type const StringDocument.fromJson(Map<String, dynamic> _json)
             },
           )
           .toList();
+  int get int$ => (_json['int'] as num).toInt();
+  num? get num$ => _json['num'] as num?;
+  bool get bool$ => _json['bool'] as bool;
 
   /// The object as decoded from the response.
   Map<String, dynamic> toJson() => _json;

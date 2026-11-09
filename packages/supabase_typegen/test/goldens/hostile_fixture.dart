@@ -898,6 +898,22 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
                 ),
                 isRequired: true,
               ),
+              // Named like the types of the generated getters.
+              JsonSchemaProperty(
+                name: 'int',
+                type: JsonSchemaScalar(JsonSchemaScalarKind.integer),
+                isRequired: true,
+              ),
+              JsonSchemaProperty(
+                name: 'num',
+                type: JsonSchemaScalar(JsonSchemaScalarKind.number),
+                isRequired: false,
+              ),
+              JsonSchemaProperty(
+                name: 'bool',
+                type: JsonSchemaScalar(JsonSchemaScalarKind.boolean),
+                isRequired: true,
+              ),
             ],
           ),
         ),
