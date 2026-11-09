@@ -9,7 +9,13 @@ import 'schema_description.dart';
 import 'version.dart';
 
 class _Binding {
-  const _Binding(this.dartType, this.kind, {this.boundKind, this.element});
+  const _Binding(
+    this.dartType,
+    this.kind, {
+    this.boundKind,
+    this.element,
+    this.isJsonObject = false,
+  });
 
   /// The non-nullable Dart type of the column.
   final String dartType;
@@ -21,6 +27,16 @@ class _Binding {
 
   /// The binding of the elements of a [ColumnTypeKind.array] column.
   final _Binding? element;
+
+  /// Whether [dartType] is a generated JSON Schema object of a
+  /// [ColumnTypeKind.json] column.
+  final bool isJsonObject;
+}
+
+/// The generated Dart names of the enums and the JSON Schema objects.
+class _SchemaTypeNames {
+  final enums = <(String, String, (String, String)?), String>{};
+  final jsonObjects = Map<JsonSchemaObject, String>.identity();
 }
 
 /// The lowest language version the generated code is valid for: the value
@@ -106,7 +122,7 @@ String generateDartCode(
     ..writeln();
 
   final typeNames = _TypeNameRegistry();
-  final enumTypeNames = <(String, String), String>{};
+  final schemaTypeNames = _SchemaTypeNames();
   final decoders = _DecoderRegistry();
 
   for (final enumDescription in database.enums) {
@@ -115,8 +131,23 @@ String generateDartCode(
       enumDescription.name,
     );
     final typeName = typeNames.claim(baseName);
-    enumTypeNames[(enumDescription.schema, enumDescription.name)] = typeName;
+    schemaTypeNames.enums[_enumKey(enumDescription)] = typeName;
     _writeEnum(buffer, enumDescription, typeName);
+  }
+
+  for (final table in database.tables) {
+    for (final column in table.columns) {
+      if (column.jsonSchema case final schema?) {
+        _writeJsonObject(
+          buffer,
+          schema,
+          _typeBaseName(table.schema, '${table.name}_${column.name}'),
+          '${_displayName(table.schema, table.name)}.${column.name}',
+          typeNames,
+          schemaTypeNames,
+        );
+      }
+    }
   }
 
   final tables = [
@@ -149,7 +180,7 @@ String generateDartCode(
         relationshipCounts,
       ),
       typeNames.taken,
-      enumTypeNames,
+      schemaTypeNames,
       decoders,
     );
   }
@@ -158,7 +189,7 @@ String generateDartCode(
     database.functions,
     tableNames,
     typeNames,
-    enumTypeNames,
+    schemaTypeNames,
     decoders,
   );
   decoders.write(buffer);
@@ -276,8 +307,16 @@ void _writeEnum(
 
   _writeDocComment(
     buffer,
-    'Postgres enum '
-    '`${enumDescription.qualifiedName.replaceAll(_lineTerminators, ' ')}`.',
+    switch (enumDescription.checkedColumn) {
+      (final table, final column) =>
+        'The values the check constraint of '
+            '`${_displayName(enumDescription.schema, table)}.'
+            '${column.replaceAll(_lineTerminators, ' ')}` allows.',
+      null =>
+        'Postgres enum `'
+            '${enumDescription.qualifiedName.replaceAll(_lineTerminators, ' ')}'
+            '`.',
+    },
   );
   buffer.writeln('enum $typeName implements PostgresValue {');
   for (final value in enumDescription.values) {
@@ -686,7 +725,7 @@ void _writeTable(
   _TableMembers members,
   List<_RelationMember> relations,
   Set<String> typeNames,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
 ) {
   final _TableNames(:insertType, :updateType) = names;
@@ -694,11 +733,11 @@ void _writeTable(
   final memberNames = members.rowMembers;
   final bindings = {
     for (final column in table.columns)
-      column.name: _bindingFor(_columnShape(column), enumTypeNames),
+      column.name: _bindingFor(_columnShape(column), schemaTypeNames),
   };
   final computedFieldBindings = {
     for (final field in table.computedFields)
-      field.name: _bindingFor(_computedFieldShape(field), enumTypeNames),
+      field.name: _bindingFor(_computedFieldShape(field), schemaTypeNames),
   };
   final relationNames = _relationNames(typeNames, members, relations);
   final relationAliases = _embedAliases(table, relations, relationNames);
@@ -1116,10 +1155,11 @@ void _writeColumnTokens(
       (_, true) => 'PostgrestNullableColumn<$rowType, ${binding.dartType}>',
       (_, false) => 'PostgrestColumn<$rowType, ${binding.dartType}>',
     };
-    // A vector column decodes its value itself.
+    // Vector and JSON columns decode their values themselves.
     final decoder =
         binding.kind == ColumnTypeKind.vector ||
-            binding.kind == ColumnTypeKind.integerVector
+            binding.kind == ColumnTypeKind.integerVector ||
+            binding.kind == ColumnTypeKind.json
         ? null
         : decoders.claim(binding);
     final arguments = decoder == null ? '' : ', fromJson: $decoder';
@@ -1205,6 +1245,7 @@ typedef _TypeShape = ({
   ColumnTypeKind? elementTypeKind,
   ColumnTypeKind? boundTypeKind,
   EnumDescription? enumType,
+  JsonSchemaObject? jsonSchema,
 });
 
 _TypeShape _columnShape(ColumnDescription column) => (
@@ -1213,6 +1254,7 @@ _TypeShape _columnShape(ColumnDescription column) => (
   elementTypeKind: column.elementTypeKind,
   boundTypeKind: column.boundTypeKind,
   enumType: column.enumType,
+  jsonSchema: column.jsonSchema,
 );
 
 _TypeShape _computedFieldShape(ComputedFieldDescription field) => (
@@ -1221,21 +1263,22 @@ _TypeShape _computedFieldShape(ComputedFieldDescription field) => (
   elementTypeKind: field.elementTypeKind,
   boundTypeKind: field.boundTypeKind,
   enumType: field.enumType,
+  jsonSchema: null,
 );
 
 _Binding _bindingFor(
   _TypeShape shape,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
 ) {
   if (shape.typeKind == ColumnTypeKind.array) {
-    final element = _elementBindingFor(shape, enumTypeNames);
+    final element = _elementBindingFor(shape, schemaTypeNames);
     return _Binding(
       'List<${element.dartType}>',
       ColumnTypeKind.array,
       element: element,
     );
   }
-  return _scalarBindingFor(shape.typeKind, shape, enumTypeNames);
+  return _scalarBindingFor(shape.typeKind, shape, schemaTypeNames);
 }
 
 /// The binding of a scalar of [kind], resolving an enum or the range bounds
@@ -1243,10 +1286,10 @@ _Binding _bindingFor(
 _Binding _scalarBindingFor(
   ColumnTypeKind kind,
   _TypeShape shape,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
 ) => switch (kind) {
   ColumnTypeKind.enumType => _Binding(
-    _enumTypeName(shape, enumTypeNames),
+    _enumTypeName(shape, schemaTypeNames),
     ColumnTypeKind.enumType,
   ),
   ColumnTypeKind.integer => const _Binding('int', ColumnTypeKind.integer),
@@ -1323,6 +1366,11 @@ _Binding _scalarBindingFor(
     ColumnTypeKind.multirange,
     boundKind: shape.boundTypeKind,
   ),
+  ColumnTypeKind.json when shape.jsonSchema != null => _Binding(
+    schemaTypeNames.jsonObjects[shape.jsonSchema]!,
+    ColumnTypeKind.json,
+    isJsonObject: true,
+  ),
   ColumnTypeKind.json ||
   ColumnTypeKind.array ||
   ColumnTypeKind.unknown => const _Binding('Object', ColumnTypeKind.json),
@@ -1337,12 +1385,12 @@ _Binding _scalarBindingFor(
 /// are `Object`.
 _Binding _elementBindingFor(
   _TypeShape shape,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
 ) => switch (shape.elementTypeKind) {
   ColumnTypeKind.vector => const _Binding('String', ColumnTypeKind.text),
   ColumnTypeKind.integerVector ||
   null => const _Binding('Object', ColumnTypeKind.json),
-  final kind => _scalarBindingFor(kind, shape, enumTypeNames),
+  final kind => _scalarBindingFor(kind, shape, schemaTypeNames),
 };
 
 /// The generated Dart enum of the enum column or computed field [shape],
@@ -1351,7 +1399,7 @@ _Binding _elementBindingFor(
 /// `tenant`.`v1.status`.
 String _enumTypeName(
   _TypeShape shape,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
 ) {
   final enumType = shape.enumType;
   if (enumType == null) {
@@ -1361,7 +1409,7 @@ String _enumTypeName(
       'An enum column has to name its enum type.',
     );
   }
-  return enumTypeNames[(enumType.schema, enumType.name)] ??
+  return schemaTypeNames.enums[_enumKey(enumType)] ??
       (throw ArgumentError.value(
         shape.name,
         'name',
@@ -1441,14 +1489,18 @@ String _boundParser(ColumnTypeKind? boundTypeKind) => switch (boundTypeKind) {
 };
 
 String _getterType(ColumnDescription column, _Binding binding) {
-  if (binding.kind == ColumnTypeKind.json) return 'Object?';
+  if (binding.kind == ColumnTypeKind.json && !binding.isJsonObject) {
+    return 'Object?';
+  }
   return column.isNullable ? '${binding.dartType}?' : binding.dartType;
 }
 
 String _readExpression(ColumnDescription column, _Binding binding) {
   final access = "_json[${_stringLiteral(column.name)}]";
   final suffix = column.isNullable ? '?' : '';
-  if (binding.kind == ColumnTypeKind.json) return '$access as Object?';
+  if (binding.kind == ColumnTypeKind.json && !binding.isJsonObject) {
+    return '$access as Object?';
+  }
   if (binding.kind == ColumnTypeKind.floating) {
     return '($access as num$suffix)$suffix.toDouble()';
   }
@@ -1479,6 +1531,8 @@ String? _readConversion(
   _Binding binding,
   String value,
 ) => switch (binding.kind) {
+  ColumnTypeKind.json when binding.isJsonObject =>
+    '${binding.dartType}.fromJson($value as Map<String, dynamic>)',
   ColumnTypeKind.floating => '($value as num).toDouble()',
   ColumnTypeKind.integerString => 'int.parse($value as String)',
   ColumnTypeKind.bigInteger => 'BigInt.parse($value as String)',
@@ -1741,6 +1795,7 @@ _TypeShape _valueShape(String name, ValueTypeDescription type) => (
   elementTypeKind: type.elementTypeKind,
   boundTypeKind: type.boundTypeKind,
   enumType: type.enumType,
+  jsonSchema: null,
 );
 
 /// The shapes of every argument and result type of [function].
@@ -1860,7 +1915,7 @@ void _writeFunctions(
   List<FunctionDescription> functions,
   Map<(String, String), _TableNames> tableNames,
   _TypeNameRegistry typeNames,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
 ) {
   final methods = _functionMethods(
@@ -1907,7 +1962,7 @@ void _writeFunctions(
       buffer,
       method,
       names,
-      enumTypeNames,
+      schemaTypeNames,
       decoders,
     );
   }
@@ -1942,7 +1997,7 @@ void _writeFunctions(
       tableNames,
       typeNames.taken,
       resultRows[method],
-      enumTypeNames,
+      schemaTypeNames,
       decoders,
     );
   }
@@ -1957,14 +2012,14 @@ void _writeResultRows(
   StringBuffer buffer,
   _FunctionMethod method,
   _ResultRowNames names,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
 ) {
   final function = method.function;
   final columns = (method.overload.result as FunctionColumnsResult).columns;
   final bindings = {
     for (final column in columns)
-      column.name: _bindingFor(_columnShape(column), enumTypeNames),
+      column.name: _bindingFor(_columnShape(column), schemaTypeNames),
   };
   final displayName = _displayName(function.schema, function.name);
   _writeRow(
@@ -2007,7 +2062,7 @@ void _writeFunctionMethod(
   Map<(String, String), _TableNames> tableNames,
   Set<String> typeNames,
   _ResultRowNames? resultRows,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
 ) {
   final _FunctionMethod(:function, :overload) = method;
@@ -2031,7 +2086,7 @@ void _writeFunctionMethod(
     final rowType = rowTypeOf(argument);
     final binding = _bindingFor(
       _valueShape(argument.name, argument.type),
-      enumTypeNames,
+      schemaTypeNames,
     );
     final dartType =
         rowType ??
@@ -2071,7 +2126,7 @@ void _writeFunctionMethod(
     method,
     tableNames,
     resultRows,
-    enumTypeNames,
+    schemaTypeNames,
     decoders,
   );
   final displayName = _displayName(function.schema, function.name);
@@ -2145,7 +2200,7 @@ _FunctionCall _functionCall(
   _FunctionMethod method,
   Map<(String, String), _TableNames> tableNames,
   _ResultRowNames? resultRows,
-  Map<(String, String), String> enumTypeNames,
+  _SchemaTypeNames schemaTypeNames,
   _DecoderRegistry decoders,
 ) {
   _FunctionCall rows(String rowType, String description) => (
@@ -2206,7 +2261,7 @@ _FunctionCall _functionCall(
     case FunctionValueResult(:final type, :final isSetReturning):
       final binding = _bindingFor(
         _valueShape(method.function.name, type),
-        enumTypeNames,
+        schemaTypeNames,
       );
       if (binding.kind == ColumnTypeKind.json) return json(isSetReturning);
       final dartType = '${binding.dartType}?';
@@ -2226,5 +2281,176 @@ _FunctionCall _functionCall(
             ? '(json) => json as $dartType'
             : '(json) => json == null ? null : $decoder(json)',
       );
+  }
+}
+
+(String, String, (String, String)?) _enumKey(EnumDescription description) =>
+    (description.schema, description.name, description.checkedColumn);
+
+/// Writes the extension type of the JSON Schema [object], named after
+/// [baseName], and those of the objects nested in it, and returns its name.
+///
+/// The type wraps the decoded JSON map, so it is sent as it is, and
+/// implements `PostgrestJson`, so it is an operand of the column's filters.
+/// [location] names the column, or the property of an enclosing object, in
+/// the documentation.
+String _writeJsonObject(
+  StringBuffer buffer,
+  JsonSchemaObject object,
+  String baseName,
+  String location,
+  _TypeNameRegistry typeNames,
+  _SchemaTypeNames schemaTypeNames,
+) {
+  final typeName = typeNames.claim(baseName);
+  schemaTypeNames.jsonObjects[object] = typeName;
+  final memberNames = _uniqueMemberNames(
+    [for (final property in object.properties) property.name],
+    reserved: {
+      ...typeNames.taken,
+      'fromJson',
+      'toJson',
+      'toString',
+      'hashCode',
+      'runtimeType',
+      'noSuchMethod',
+    },
+  );
+
+  String dartType(JsonSchemaType type, String typeBase, String path) =>
+      switch (type) {
+        JsonSchemaObject() => _writeJsonObject(
+          buffer,
+          type,
+          typeBase,
+          path,
+          typeNames,
+          schemaTypeNames,
+        ),
+        JsonSchemaArray(:final items) => switch (dartType(
+          items,
+          '${typeBase}Item',
+          '$path[]',
+        )) {
+          final element =>
+            'List<${_nullableJsonType(element, items.isNullable)}>',
+        },
+        JsonSchemaScalar(kind: JsonSchemaScalarKind.string) => 'String',
+        JsonSchemaScalar(kind: JsonSchemaScalarKind.integer) => 'int',
+        JsonSchemaScalar(kind: JsonSchemaScalarKind.number) => 'num',
+        JsonSchemaScalar(kind: JsonSchemaScalarKind.boolean) => 'bool',
+        JsonSchemaAny() => 'Object',
+      };
+
+  final properties = [
+    for (final property in object.properties)
+      (
+        property: property,
+        member: memberNames[property.name]!,
+        dartType: dartType(
+          property.type,
+          '$baseName${pascalCase(property.name)}',
+          '$location.${property.name}',
+        ),
+        isNullable: property.type.isNullable || !property.isRequired,
+      ),
+  ];
+
+  _writeDocComment(
+    buffer,
+    'The JSON Schema of '
+    '`${location.replaceAll(_lineTerminators, ' ')}`.',
+  );
+  _writeDocComment(buffer, object.description);
+  buffer
+    ..writeln(
+      'extension type const $typeName.fromJson(Map<String, dynamic> _json)',
+    )
+    ..writeln('    implements PostgrestJson {')
+    ..writeln('  factory $typeName({');
+  for (final (:property, :member, :dartType, isNullable: _) in properties) {
+    final type = _nullableJsonType(dartType, property.type.isNullable);
+    buffer.writeln(
+      property.isRequired
+          ? '    required $type $member,'
+          : '    ${_nullableJsonType(dartType, true)} $member,',
+    );
+  }
+  buffer.writeln('  }) => $typeName.fromJson({');
+  for (final (:property, :member, dartType: _, isNullable: _) in properties) {
+    final key = _stringLiteral(property.name);
+    buffer.writeln(
+      property.isRequired ? '    $key: $member,' : '    $key: ?$member,',
+    );
+  }
+  buffer
+    ..writeln('  });')
+    ..writeln();
+  for (final (:property, :member, :dartType, :isNullable) in properties) {
+    _writeDocComment(buffer, property.type.description, indent: '  ');
+    final access = '_json[${_stringLiteral(property.name)}]';
+    buffer.writeln(
+      '  ${_nullableJsonType(dartType, isNullable)} get $member => '
+      '${_jsonRead(property.type, dartType, access, nullable: isNullable)};',
+    );
+  }
+  buffer
+    ..writeln()
+    ..writeln('  /// The object as decoded from the response.')
+    ..writeln('  Map<String, dynamic> toJson() => _json;')
+    ..writeln('}')
+    ..writeln();
+  return typeName;
+}
+
+/// [dartType], or `Object?` for an `Object`, made nullable when [nullable].
+String _nullableJsonType(String dartType, bool nullable) =>
+    nullable || dartType == 'Object' ? '$dartType?' : dartType;
+
+/// The expression reading [value], decoded JSON of the schema [type], as
+/// [dartType], which is nullable when [nullable].
+String _jsonRead(
+  JsonSchemaType type,
+  String dartType,
+  String value, {
+  required bool nullable,
+  int depth = 1,
+}) {
+  final suffix = nullable ? '?' : '';
+  switch (type) {
+    case JsonSchemaAny():
+      return '$value as Object?';
+    case JsonSchemaScalar(kind: JsonSchemaScalarKind.integer):
+      return '($value as num$suffix)$suffix.toInt()';
+    case JsonSchemaScalar():
+      return '$value as $dartType$suffix';
+    case JsonSchemaObject():
+      final conversion = '$dartType.fromJson($value as Map<String, dynamic>)';
+      if (!nullable) return conversion;
+      return 'switch ($value) { null => null, final Object value => '
+          '$dartType.fromJson(value as Map<String, dynamic>) }';
+    case JsonSchemaArray(:final items):
+      final elementType = dartType.substring(
+        'List<'.length,
+        dartType.length - 1,
+      );
+      final list = '($value as List<dynamic>$suffix)$suffix';
+      if (items is JsonSchemaObject ||
+          items is JsonSchemaArray ||
+          items is JsonSchemaScalar &&
+              items.kind == JsonSchemaScalarKind.integer) {
+        final name = depth == 1 ? 'element' : 'element$depth';
+        final element = _jsonRead(
+          items,
+          items.isNullable
+              ? elementType.substring(0, elementType.length - 1)
+              : elementType,
+          name,
+          nullable: items.isNullable,
+          depth: depth + 1,
+        );
+        return '$list.map(($name) => $element).toList()';
+      }
+      return '$list.cast<$elementType>()';
   }
 }

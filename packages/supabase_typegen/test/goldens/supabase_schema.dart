@@ -87,6 +87,124 @@ enum Mood implements PostgresValue {
   String toString() => _wireName ?? 'Mood.unknown';
 }
 
+/// The values the check constraint of `profiles.status` allows.
+enum ProfilesStatus implements PostgresValue {
+  active('active'),
+  suspended('suspended'),
+  onHold('on hold'),
+
+  /// A label this code does not know, such as one a later migration added.
+  /// Sending it throws an [ArgumentError].
+  unknown(null);
+
+  const ProfilesStatus(this._wireName);
+
+  final String? _wireName;
+
+  /// The value as stored in the database.
+  ///
+  /// Throws an [ArgumentError] for [unknown].
+  String get wireName =>
+      _wireName ??
+      (throw ArgumentError.value(
+        this,
+        'value',
+        'An unknown ProfilesStatus value cannot be sent',
+      ));
+
+  @override
+  String get literal => wireName;
+
+  /// Parses the database representation of the enum, reading a
+  /// label this code does not know as [unknown].
+  static ProfilesStatus fromWire(String wireName) => values.firstWhere(
+    (value) => value._wireName == wireName,
+    orElse: () => unknown,
+  );
+
+  @override
+  String toString() => _wireName ?? 'ProfilesStatus.unknown';
+}
+
+/// The JSON Schema of `profiles.settings.notifications`.
+extension type const ProfilesSettingsNotifications.fromJson(
+  Map<String, dynamic> _json
+)
+    implements PostgrestJson {
+  factory ProfilesSettingsNotifications({
+    required bool email,
+    String? digest,
+  }) => ProfilesSettingsNotifications.fromJson({
+    'email': email,
+    'digest': ?digest,
+  });
+
+  bool get email => _json['email'] as bool;
+  String? get digest => _json['digest'] as String?;
+
+  /// The object as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// The JSON Schema of `profiles.settings.shortcuts[]`.
+extension type const ProfilesSettingsShortcutsItem.fromJson(
+  Map<String, dynamic> _json
+)
+    implements PostgrestJson {
+  factory ProfilesSettingsShortcutsItem({
+    required String key,
+    required String action,
+  }) => ProfilesSettingsShortcutsItem.fromJson({'key': key, 'action': action});
+
+  String get key => _json['key'] as String;
+  String get action => _json['action'] as String;
+
+  /// The object as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// The JSON Schema of `profiles.settings`.
+/// Preferences the user picked.
+extension type const ProfilesSettings.fromJson(Map<String, dynamic> _json)
+    implements PostgrestJson {
+  factory ProfilesSettings({
+    required String theme,
+    int? fontSize,
+    ProfilesSettingsNotifications? notifications,
+    List<ProfilesSettingsShortcutsItem>? shortcuts,
+    Object? extra,
+  }) => ProfilesSettings.fromJson({
+    'theme': theme,
+    'font_size': ?fontSize,
+    'notifications': ?notifications,
+    'shortcuts': ?shortcuts,
+    'extra': ?extra,
+  });
+
+  /// The color scheme.
+  String get theme => _json['theme'] as String;
+  int? get fontSize => (_json['font_size'] as num?)?.toInt();
+  ProfilesSettingsNotifications? get notifications =>
+      switch (_json['notifications']) {
+        null => null,
+        final Object value => ProfilesSettingsNotifications.fromJson(
+          value as Map<String, dynamic>,
+        ),
+      };
+  List<ProfilesSettingsShortcutsItem>? get shortcuts =>
+      (_json['shortcuts'] as List<dynamic>?)
+          ?.map(
+            (element) => ProfilesSettingsShortcutsItem.fromJson(
+              element as Map<String, dynamic>,
+            ),
+          )
+          .toList();
+  Object? get extra => _json['extra'] as Object?;
+
+  /// The object as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
 /// A row of the `inventory.books` table, as `select()` reads it with every
 /// column.
 extension type const InventoryBooksRow(Map<String, dynamic> _json)
@@ -1185,6 +1303,105 @@ class Loans {
   );
 }
 
+/// A row of the `profiles` table, as `select()` reads it with every column.
+extension type const ProfilesRow(Map<String, dynamic> _json) implements Object {
+  int get id => _json['id'] as int;
+  ProfilesSettings? get settings => switch (_json['settings']) {
+    null => null,
+    final Object value => ProfilesSettings.fromJson(
+      value as Map<String, dynamic>,
+    ),
+  };
+  ProfilesStatus get status =>
+      ProfilesStatus.fromWire(_json['status'] as String);
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Values for inserting a row into `profiles`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const ProfilesInsert._(Map<String, dynamic> _json)
+    implements Object {
+  ProfilesInsert({ProfilesSettings? settings, ProfilesStatus? status})
+    : this._({'settings': ?settings, 'status': ?status?.wireName});
+
+  /// Returns a copy with the given columns replaced. Passing `null` keeps the
+  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  ProfilesInsert copyWith({
+    ProfilesSettings? settings,
+    ProfilesStatus? status,
+  }) => ProfilesInsert._({
+    ..._json,
+    'settings': ?settings,
+    'status': ?status?.wireName,
+  });
+
+  /// Returns a copy with `settings` set to SQL NULL, overriding any database
+  /// default.
+  ProfilesInsert setSettingsToNull() =>
+      ProfilesInsert._({..._json, 'settings': null});
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+/// Values for updating rows of `profiles`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const ProfilesUpdate._(Map<String, dynamic> _json)
+    implements Object {
+  ProfilesUpdate({ProfilesSettings? settings, ProfilesStatus? status})
+    : this._({'settings': ?settings, 'status': ?status?.wireName});
+
+  /// Returns a copy with the given columns replaced. Passing `null` keeps the
+  /// current value; use the `set…ToNull` methods to write SQL NULL.
+  ProfilesUpdate copyWith({
+    ProfilesSettings? settings,
+    ProfilesStatus? status,
+  }) => ProfilesUpdate._({
+    ..._json,
+    'settings': ?settings,
+    'status': ?status?.wireName,
+  });
+
+  /// Returns a copy with `settings` set to SQL NULL, overriding any database
+  /// default.
+  ProfilesUpdate setSettingsToNull() =>
+      ProfilesUpdate._({..._json, 'settings': null});
+
+  /// The values as they are sent, in a map that cannot be changed. Compare two
+  /// values through this map with deep equality, since `==` compares map
+  /// identity.
+  Map<String, dynamic> toJson() => Map.unmodifiable(_json);
+}
+
+/// Typed access to the `profiles` table.
+class Profiles {
+  const Profiles._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table =
+      PostgrestTable<ProfilesRow, ProfilesInsert, ProfilesUpdate>(
+        'profiles',
+        ProfilesRow.new,
+        schema: 'public',
+        primaryKey: [id],
+      );
+
+  static const id = PostgrestColumn<ProfilesRow, int>('id');
+  static const settings = PostgrestNullableJsonColumn<ProfilesRow>('settings');
+  static const status = PostgrestColumn<ProfilesRow, ProfilesStatus>(
+    'status',
+    fromJson: _profilesStatusFromJson,
+  );
+}
+
 /// A row of the `review_replies` table, as `select()` reads it with every
 /// column.
 extension type const ReviewRepliesRow(Map<String, dynamic> _json)
@@ -1402,6 +1619,52 @@ class AuthorBookCounts {
   );
 }
 
+/// A row returned by the `book_titles` function.
+extension type const BookTitlesRow(Map<String, dynamic> _json)
+    implements Object {
+  String? get authorName => _json['author_name'] as String?;
+  int get id => _json['id'] as int;
+  String get title => _json['title'] as String;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Column tokens of the rows the `book_titles` function returns, for filtering
+/// and ordering them.
+class BookTitles {
+  const BookTitles._();
+
+  static const authorName = PostgrestNullableColumn<BookTitlesRow, String>(
+    'author_name',
+  );
+  static const id = PostgrestColumn<BookTitlesRow, int>('id');
+  static const title = PostgrestColumn<BookTitlesRow, String>('title');
+}
+
+/// A row returned by the `profile_statuses` function.
+extension type const ProfileStatusesRow(Map<String, dynamic> _json)
+    implements Object {
+  int get id => _json['id'] as int;
+  Object? get settings => _json['settings'] as Object?;
+  String get status => _json['status'] as String;
+
+  /// The row as decoded from the response.
+  Map<String, dynamic> toJson() => _json;
+}
+
+/// Column tokens of the rows the `profile_statuses` function returns, for
+/// filtering and ordering them.
+class ProfileStatuses {
+  const ProfileStatuses._();
+
+  static const id = PostgrestColumn<ProfileStatusesRow, int>('id');
+  static const settings = PostgrestNullableJsonColumn<ProfileStatusesRow>(
+    'settings',
+  );
+  static const status = PostgrestColumn<ProfileStatusesRow, String>('status');
+}
+
 /// Typed calls of the database functions, `client.rpc.functionName(…)`.
 ///
 /// `price_label(amount int4)` has no method: Could not choose the best
@@ -1451,6 +1714,16 @@ extension DatabaseFunctions on PostgrestRpc {
         BooksRow(row),
       _ => null,
     },
+    schema: 'public',
+    get: true,
+  );
+
+  /// Calls the `book_titles` function, which returns rows filterable through
+  /// `BookTitles`.
+  PostgrestTypedFilterBuilder<BookTitlesRow, List<BookTitlesRow>>
+  bookTitles() => rows(
+    'book_titles',
+    rowFromJson: BookTitlesRow.new,
     schema: 'public',
     get: true,
   );
@@ -1517,6 +1790,16 @@ extension DatabaseFunctions on PostgrestRpc {
     schema: 'public',
   );
 
+  /// Calls the `profile_statuses` function, which returns rows filterable
+  /// through `ProfileStatuses`.
+  PostgrestTypedFilterBuilder<ProfileStatusesRow, List<ProfileStatusesRow>>
+  profileStatuses() => rows(
+    'profile_statuses',
+    rowFromJson: ProfileStatusesRow.new,
+    schema: 'public',
+    get: true,
+  );
+
   /// Calls the `publication_dates` function.
   PostgrestTypedBuilder<List<PostgresDate?>> publicationDates({
     required int authorId,
@@ -1581,6 +1864,9 @@ Mood _moodFromJson(Object json) => Mood.fromWire(json as String);
 
 PostgresDate _postgresDateFromJson(Object json) =>
     PostgresDate.parse(json as String);
+
+ProfilesStatus _profilesStatusFromJson(Object json) =>
+    ProfilesStatus.fromWire(json as String);
 
 List<String> _stringListFromJson(Object json) => (json as List<dynamic>).cast();
 
