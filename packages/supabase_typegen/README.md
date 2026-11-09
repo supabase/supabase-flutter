@@ -199,6 +199,11 @@ final archived = await supabase
 final BooksRow? book = await supabase.rpc.bookById(bookId: 1);
 ```
 
+The typed function calls are the extension `DatabaseFunctions` on
+`PostgrestRpc`, which the header of the generated file names. An import of
+the file with `show` has to list it, since Dart only finds an extension whose
+name is imported.
+
 ## Known limitations
 
 - Passing `null` to an `Insert`/`Update` parameter omits the column, and

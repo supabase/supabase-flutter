@@ -151,6 +151,9 @@ constants but no insert or update type, so writes to them do not compile.
 - **A function has no method.** The generated file has a comment where the
   method would be, explaining why. Call it untyped with
   `supabase.rpc('fn', params: {...})`.
+- **A function method "isn't defined".** The typed function calls are the
+  extension `DatabaseFunctions`, which the header of the generated file
+  names. An import of the file with `show` has to list it.
 - **A column has an unexpected type.** `numeric` maps to `num`, `date` to
   `PostgresDate`, `interval` to `PostgresInterval`, and array elements are
   assumed non-null. The full list is in the

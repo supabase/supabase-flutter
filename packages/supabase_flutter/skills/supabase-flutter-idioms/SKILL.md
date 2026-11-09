@@ -42,7 +42,40 @@ it against this file. To upgrade an existing v2 project, use the
 - A typed `update()` or `delete()` does nothing until `.where(…)` or
   `.all()` is called on it. The analyzer reports a missing one as an
   `unused_result` warning.
+- Import `supabase_flutter` and the generated schema without `show`. A `show`
+  import has to list every extension the file uses, see Imports below.
 - Use one client, `Supabase.instance.client`, for the whole app.
+
+## Imports
+
+Part of the typed API is made of extension methods, and Dart only finds an
+extension whose name is imported. A `show` import that leaves one out makes
+its methods fail with "isn't defined", and the error does not name the
+extension. Import the generated schema and
+`package:supabase_flutter/supabase_flutter.dart` whole.
+When a `show` import has to stay, list the extensions of the methods the file
+calls:
+
+| Extension                                              | Methods                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `PostgrestBooleanFilters`                              | `isTrue()`, `isFalse()`                                                        |
+| `PostgrestTextFilters`                                 | `like()`, `ilike()`, `matchRegex()` and the other text filters                 |
+| `PostgrestArrayFilters`                                | `contains()`, `containedBy()`, `overlaps()` on an array column                 |
+| `PostgrestJsonFilters`                                 | `containsJson()`, `containedByJson()`                                          |
+| `PostgrestRangeFilters`                                | `contains()`, `rangeLt()` and the other filters on a range column              |
+| `PostgrestMultirangeFilters`                           | `contains()`, `rangeLt()` and the other filters on a multirange column         |
+| `PostgrestTypedRowsBuilder`                            | `single()`, `maybeSingle()`                                                    |
+| `PostgrestTypedDelete`, `PostgrestTypedReadOnlyDelete` | `delete()`                                                                     |
+| `DatabaseFunctions`, from the generated file           | The typed function calls, such as `rpc.bookById()`                             |
+| `TypedPostgresChanges`                                 | `onTableChanges()`, `onTableChangesOnly()`                                     |
+| `StorageByteStream`                                    | `collectBytes()`, `writeToFile()`                                              |
+| `AuthClientSignInProvider`                             | `signInWithOAuth()`, `signInWithSSO()`, `linkIdentity()`, `generateRawNonce()` |
+| `AuthClientPasskey`                                    | `registerPasskey()`, `signInWithPasskey()`                                     |
+| `AuthClientRestoreCredential`                          | `createRestoreKey()`, `signInWithRestoreKey()`                                 |
+
+List `PostgrestTypedReadOnlyDelete` together with `PostgrestTypedDelete`.
+Without it, `delete()` on a view that cannot be updated compiles instead of
+being rejected.
 
 ## Client setup
 
