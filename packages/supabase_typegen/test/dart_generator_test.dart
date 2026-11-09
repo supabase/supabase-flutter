@@ -2297,6 +2297,61 @@ void main() {
       expect(code, contains('PostgrestTypedBuilder<void> postgresBytea\$()'));
     });
 
+    test('a result row type keeps a name a partial row extension wants', () {
+      final code = generateDartCode(
+        DatabaseDescription(
+          schemaNames: const ['public'],
+          tables: const [
+            TableDescription(
+              schema: 'public',
+              name: 'books',
+              columns: [
+                ColumnDescription(
+                  name: 'id',
+                  postgresFormat: 'int8',
+                  typeKind: ColumnTypeKind.integer,
+                  isRequired: true,
+                  hasDefault: false,
+                  isNullable: false,
+                ),
+              ],
+            ),
+          ],
+          enums: const [],
+          functions: const [
+            FunctionDescription(
+              schema: 'public',
+              name: 'books_partial',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [],
+                  result: FunctionColumnsResult([
+                    ColumnDescription(
+                      name: 'title',
+                      postgresFormat: 'text',
+                      typeKind: ColumnTypeKind.text,
+                      isRequired: false,
+                      hasDefault: false,
+                      isNullable: true,
+                      isReadOnly: true,
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      expect(code, contains('extension type const BooksPartialRow('));
+      expect(
+        code,
+        contains(
+          r'extension BooksPartialRow$ on PostgrestPartialRow<BooksRow>',
+        ),
+      );
+    });
+
     test('result row getters keep clear of the codecs', () {
       final code = generateDartCode(
         withFunctions([
