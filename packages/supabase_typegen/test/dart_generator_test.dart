@@ -555,6 +555,8 @@ void main() {
       contains("PostgrestNullableColumn<NotesRow,Object>('shape');"),
     );
     expect(compact, contains("Object?getbody=>_json['body']asObject?;"));
+    expect(compact, contains('PostgrestJson?getbody=>read(Notes.body);'));
+    expect(compact, contains('Object?getshape=>read(Notes.shape);'));
   });
 
   test('a table named like PostgrestJson does not shadow it', () {

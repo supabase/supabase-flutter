@@ -1243,7 +1243,7 @@ void _writePartialRow(
     final binding = bindings[column.name]!;
     final entry = '$namespaceType.${members.columnMembers[column.name]}';
     final name = _claimName(used, members.rowMembers[column.name]!);
-    final type = binding.kind == ColumnTypeKind.json && !binding.isJsonObject
+    final type = column.typeKind == ColumnTypeKind.json && !binding.isJsonObject
         ? 'PostgrestJson?'
         : _getterType(column, binding);
     final body = binding.isJsonObject
