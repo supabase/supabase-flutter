@@ -942,10 +942,14 @@ void main() {
           .stream(primaryKey: [Todos.id])
           .filter(Todos.status.eq(true));
       expect(
-        stream.map((todos) => [for (final todo in todos) todo.id]),
+        stream.map(
+          (todos) => [
+            for (final todo in todos) (todo.id, todo.task, todo.status),
+          ],
+        ),
         emitsInOrder([
-          contains(1),
-          containsAllInOrder([1, 3]),
+          contains((1, 'task 1', true)),
+          containsAllInOrder([(1, 'task 1', true), (3, 'task 3', true)]),
         ]),
       );
     });
