@@ -154,16 +154,20 @@ nullable columns. `order()` sorts ascending unless the ordering says
 `.desc()`.
 
 Read some columns only, or embed related rows, with `selectOnly`, and read
-the values back through the same constants:
+the values back through the getters the generated `BooksPartialRow` extension
+adds, named like those of the row type:
 
 ```dart
 final books = await supabase.table(Books.table).selectOnly([
   Books.title,
   Books.authors(Authors.name),
 ]);
-final String title = books.first.read(Books.title);
-final String? authorName = books.first.read(Books.authors)?.read(Authors.name);
+final String title = books.first.title;
+final String? authorName = books.first.authors?.name;
 ```
+
+Aggregates, JSON paths and casts have no getter and are read through their
+expression, `books.first.read(Books.price.sum())`.
 
 ## Writing rows
 
@@ -275,7 +279,7 @@ final subscription = channel
         case TypedPostgresUpdate(:final newRow):
           print('Changed ${newRow.title}');
         case TypedPostgresDelete(:final oldRow):
-          print('Removed ${oldRow.read(Books.id)}');
+          print('Removed ${oldRow.id}');
       }
     });
 channel.subscribe();

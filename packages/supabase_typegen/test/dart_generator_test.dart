@@ -1528,7 +1528,7 @@ void main() {
     expect(code, contains("int get id => _json['id'] as int;"));
   });
   test('computed fields are constants next to the columns, with no row '
-      'getter', () {
+      'getter but a partial row one', () {
     final code = _normalize(generateDartCode(schema));
     final compact = code.replaceAll(' ', '');
 
@@ -1554,9 +1554,20 @@ void main() {
       ),
     );
     expect(compact, contains('computedFields:[discount],'));
-    expect(code, isNot(contains('get titleUpper')));
-    expect(code, isNot(contains('get moodOrDefault')));
-    expect(code, isNot(contains('get discount =>')));
+    String row(String rowType) {
+      final start = code.indexOf('extension type const $rowType(');
+      return code.substring(start, code.indexOf('toJson() => _json;', start));
+    }
+
+    expect(row('BooksRow'), isNot(contains('get titleUpper')));
+    expect(row('BooksRow'), isNot(contains('get moodOrDefault')));
+    expect(row('BookPricesRow'), isNot(contains('get discount =>')));
+    expect(code, contains('String? get titleUpper => read(Books.titleUpper);'));
+    expect(
+      code,
+      contains('Mood? get moodOrDefault => read(Books.moodOrDefault);'),
+    );
+    expect(code, contains('num? get discount => read(BookPrices.discount);'));
     expect(code, isNot(contains('titleUpper,')));
     expect(code, isNot(contains('String? titleUpper')));
   });

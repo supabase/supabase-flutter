@@ -213,7 +213,7 @@ table class, `Books.authorId`.
 | Untyped                                                | Typed                                                                      |
 | ------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `.from('books').select()`                              | `.table(Books.table).select()`                                             |
-| `.select('id, title')`                                 | `.selectOnly([Books.id, Books.title])`, read with `row.read(Books.title)`  |
+| `.select('id, title')`                                 | `.selectOnly([Books.id, Books.title])`, read with `row.title`              |
 | `.select('title, authors(name)')`                      | `.selectOnly([Books.title, Books.authors(Authors.name)])`                  |
 | `.eq('author_id', 2)`                                  | `.where(Books.authorId.eq(2))`                                             |
 | `.or('price.lt.10,in_print.eq.false')`                 | `.where(Books.price.lt(10) \| Books.inPrint.isFalse())`                    |

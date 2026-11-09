@@ -26,8 +26,8 @@ For every table the generator emits:
 - `PostgrestToOneRelation` and `PostgrestToManyRelation` members for every
   foreign key between two generated tables of one schema, named after the
   table on the other side. A relation goes into a `selectOnly` list and the
-  embedded rows are read back through it,
-  `book.read(Books.authors)?.read(Authors.name)`. When two keys point at the
+  embedded rows are read back through it, `book.authors?.name`. When two keys
+  point at the
   same table the embed carries the constraint hint and is aliased to the
   member name, so each comes back under its own key. Keys into another schema
   and self-referential keys get no member, since PostgREST resolves embeds
@@ -39,7 +39,7 @@ For every table the generator emits:
   members for computed relationships, such functions returning a row or a set
   of rows of a generated table. PostgREST leaves both out of `*`, so they are
   no getters of the row type: a computed field goes into a `selectOnly` list
-  and is read back as a nullable value, `book.read(Books.titleUpper)`, and a
+  and is read back as a nullable value, `book.titleUpper`, and a
   computed relationship embeds like a foreign key relation. A function named
   like a column gets no member, since PostgREST resolves the name to the
   column, and a computed relationship named like the table of a foreign key
@@ -66,6 +66,16 @@ For every table the generator emits:
   or `oneOf` of one schema and `{"type": "null"}`, is that type made
   nullable, and a property whose schema uses anything else, such as `$ref`,
   any other `oneOf` or list of types, is `Object?`,
+- an extension on `PostgrestPartialRow` of the row type, `BooksPartialRow`,
+  with a getter per column, computed field and relation, so a row of a
+  `selectOnly` reads as `book.title` and an embedded row as
+  `book.authors?.name`. Each getter reads its entry with `read`, typed by the
+  column rather than by the surrounding code, and throws a `StateError` when
+  the `select` list left it out. A getter named like a member of
+  `PostgrestPartialRow`, such as `read` or `toRow`, gets a `$`. A `show`
+  import of the generated file has to name the extension of every table whose
+  partial rows it reads. Aggregates, JSON paths and casts are built at the
+  call site and are still read with `read`,
 - an extension method on `PostgrestRpc` for every function PostgREST exposes
   under `/rpc`, so `client.rpc.searchBooks(query: 'dart')` takes the
   arguments as typed parameters, optional where the function declares a

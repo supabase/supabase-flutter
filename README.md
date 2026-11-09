@@ -164,7 +164,7 @@ final books = await supabase.table(Books.table).selectOnly([
   Books.title,
 ]);
 
-expect(books.single.read(Books.title), 'Dune');
+expect(books.single.title, 'Dune');
 ```
 
 See the [supabase_test README](packages/supabase_test/README.md) for the

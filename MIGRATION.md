@@ -128,9 +128,9 @@ A table outside the `public` schema carries its schema in the definition, so
 `supabase.table(InventoryBooks.table)` replaces `supabase.schema('inventory').from('books')`.
 
 To read some columns only, `selectOnly` replaces the column string of `select()`. The rows are
-`PostgrestPartialRow`s, read through the same column constants. Each value comes back with the
-type of its column, and reading a column that was not selected throws a `StateError` instead of
-returning `null`:
+`PostgrestPartialRow`s, read through getters named like those of the row type, which the generated
+`BooksPartialRow` extension adds. Each value comes back with the type of its column, and reading a
+column that was not selected throws a `StateError` instead of returning `null`:
 
 ```dart skip
 // Before
@@ -144,8 +144,11 @@ final books = await supabase.table(Books.table).selectOnly([
   Books.id,
   Books.title,
 ]);
-final String title = books.first.read(Books.title);
+final String title = books.first.title;
 ```
+
+Aggregates, JSON paths and casts have no getter and are read through their expression,
+`books.first.read(Books.price.sum())`, as are the columns of a table written by hand.
 
 #### Filters
 
@@ -421,9 +424,7 @@ final books = await supabase.table(Books.table).selectOnly([
   Books.title,
   Books.authors(Authors.name),
 ]);
-final String? authorName = books.first
-    .read(Books.authors)
-    ?.read(Authors.name);
+final String? authorName = books.first.authors?.name;
 
 final authors = await supabase
     .table(Authors.table)
@@ -432,10 +433,7 @@ final authors = await supabase
       Authors.books.select([Books.title]),
     ])
     .embedded(Authors.books, (books) => books.limit(3));
-final List<String> titles = [
-  for (final book in authors.first.read(Authors.books))
-    book.read(Books.title),
-];
+final List<String> titles = [for (final book in authors.first.books) book.title];
 ```
 
 A to-one relation reads back as a nullable partial row and a to-many relation as a list of them.

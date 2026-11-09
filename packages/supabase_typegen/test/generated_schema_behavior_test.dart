@@ -10,6 +10,10 @@ import 'package:test/test.dart';
 import 'goldens/hostile_schema.dart' as hostile;
 import 'goldens/supabase_schema.dart';
 
+extension<Value> on Value {
+  void recordStaticType(List<Type> types) => types.add(Value);
+}
+
 void main() {
   late MockSupabaseHttpClient httpClient;
   late PostgrestClient client;
@@ -1152,6 +1156,126 @@ void main() {
       Authors.latestBook,
       Authors.recentBooks,
     ]);
+  });
+
+  group('partial row getters', () {
+    test(
+      'read columns, computed fields and relations as their types',
+      () async {
+        httpClient.stub([
+          {
+            'id': 1,
+            'title': 'A typed row',
+            'mood': 'very happy',
+            'metadata': {'reprint': true},
+            'created_at': '2026-07-23T10:00:00Z',
+            'updated_at': null,
+            'title_upper': 'A TYPED ROW',
+            'authors': {'name': 'Ada'},
+          },
+        ]);
+
+        final books = await client.table(Books.table).selectOnly([
+          Books.id,
+          Books.title,
+          Books.mood,
+          Books.metadata,
+          Books.createdAt,
+          Books.updatedAt,
+          Books.titleUpper,
+          Books.authors(Authors.name),
+        ]);
+
+        final book = books.single;
+        final int id = book.id;
+        final String title = book.title;
+        final Mood? mood = book.mood;
+        final PostgrestJson? metadata = book.metadata;
+        final DateTime createdAt = book.createdAt;
+        final DateTime? updatedAt = book.updatedAt;
+        final String? titleUpper = book.titleUpper;
+        final PostgrestPartialRow<AuthorsRow>? author = book.authors;
+        expect(id, 1);
+        expect(title, 'A typed row');
+        expect(mood, Mood.veryHappy);
+        expect(metadata, {'reprint': true});
+        expect(createdAt, DateTime.utc(2026, 7, 23, 10));
+        expect(updatedAt, isNull);
+        expect(titleUpper, 'A TYPED ROW');
+        expect(author?.name, 'Ada');
+      },
+    );
+
+    test('read to-many and computed relationships as partial rows', () async {
+      httpClient.stub([
+        {
+          'id': 7,
+          'books': [
+            {'title': 'a'},
+            {'title': 'b'},
+          ],
+          'latest_book': {'title': 'b'},
+        },
+      ]);
+
+      final authors = await client.table(Authors.table).selectOnly([
+        Authors.id,
+        Authors.books(Books.title),
+        Authors.latestBook(Books.title),
+      ]);
+
+      final author = authors.single;
+      expect([for (final book in author.books) book.title], ['a', 'b']);
+      expect(author.latestBook?.title, 'b');
+    });
+
+    test('read a JSON Schema column as its object type', () async {
+      httpClient.stub([
+        {
+          'settings': {'theme': 'dark'},
+        },
+        {'settings': null},
+      ]);
+
+      final profiles = await client.table(Profiles.table).selectOnly([
+        Profiles.settings,
+      ]);
+
+      final ProfilesSettings? settings = profiles.first.settings;
+      expect(settings?.theme, 'dark');
+      expect(profiles.last.settings == null, isTrue);
+    });
+
+    test('keep their type returned from an async function', () async {
+      httpClient.stub({'id': 1});
+      final types = <Type>[];
+
+      Future<int> bookId() async =>
+          (await client.table(Books.table).selectOnly([Books.id]).single()).id
+            ..recordStaticType(types);
+
+      expect(await bookId(), 1);
+      expect(types, [int]);
+    });
+
+    test('throw for an entry the select list left out', () async {
+      httpClient.stub({'id': 1});
+
+      final book = await client.table(Books.table).selectOnly([
+        Books.id,
+      ]).single();
+
+      expect(
+        () => book.title,
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('`title` was not selected'),
+          ),
+        ),
+      );
+    });
   });
 
   group('functions', () {

@@ -131,6 +131,24 @@ const DatabaseDescription hostileSchema = DatabaseDescription(
           hasDefault: false,
           isNullable: true,
         ),
+        // Named like the members of a partial row, which an extension getter
+        // cannot shadow.
+        ColumnDescription(
+          name: 'read',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
+        ColumnDescription(
+          name: 'to_row',
+          postgresFormat: 'text',
+          typeKind: ColumnTypeKind.text,
+          isRequired: false,
+          hasDefault: false,
+          isNullable: true,
+        ),
         // Named like the copy method of the value types.
         ColumnDescription(
           name: 'copy_with',

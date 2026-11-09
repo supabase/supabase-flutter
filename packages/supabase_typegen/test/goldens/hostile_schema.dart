@@ -5,6 +5,9 @@
 //
 // A `show` import of this file has to name the extension holding the typed
 // database function calls: DatabaseFunctions.
+//
+// The getters of a partial row are in an extension per table, which a `show`
+// import has to name too: PostgrestTablePartialRow for PostgrestTable$.
 
 // The typed table access API is still experimental.
 // ignore_for_file: experimental_member_use
@@ -278,6 +281,8 @@ extension type const PostgrestTableRow(Map<String, dynamic> _json)
     null => null,
     final Object value => postgresTimestamp.decode(value as String),
   };
+  String? get read => _json['read'] as String?;
+  String? get toRow => _json['to_row'] as String?;
   String? get copyWith => _json['copy_with'] as String?;
   Uint8List? get uint8List => switch (_json['uint8_list']) {
     null => null,
@@ -331,6 +336,8 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     List<PostgresDate>? days,
     required Uint8List postgresBytea$,
     DateTime? postgresTimestamp$,
+    String? read,
+    String? toRow,
     String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
@@ -351,6 +358,8 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
            null => null,
            final value => postgresTimestamp.encode(value.toUtc()),
          },
+         'read': ?read,
+         'to_row': ?toRow,
          'copy_with': ?copyWith,
          'uint8_list': ?switch (uint8List) {
            null => null,
@@ -384,6 +393,8 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
     List<PostgresDate>? days,
     Uint8List? postgresBytea$,
     DateTime? postgresTimestamp$,
+    String? read,
+    String? toRow,
     String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
@@ -408,6 +419,8 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
       null => null,
       final value => postgresTimestamp.encode(value.toUtc()),
     },
+    'read': ?read,
+    'to_row': ?toRow,
     'copy_with': ?copyWith,
     'uint8_list': ?switch (uint8List) {
       null => null,
@@ -447,6 +460,16 @@ extension type const PostgrestTableInsert._(Map<String, dynamic> _json)
   /// database default.
   PostgrestTableInsert setPostgresTimestamp$ToNull() =>
       PostgrestTableInsert._({..._json, 'postgres_timestamp': null});
+
+  /// Returns a copy with `read` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setReadToNull() =>
+      PostgrestTableInsert._({..._json, 'read': null});
+
+  /// Returns a copy with `to_row` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableInsert setToRowToNull() =>
+      PostgrestTableInsert._({..._json, 'to_row': null});
 
   /// Returns a copy with `copy_with` set to SQL NULL, overriding any database
   /// default.
@@ -511,6 +534,8 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
     List<PostgresDate>? days,
     Uint8List? postgresBytea$,
     DateTime? postgresTimestamp$,
+    String? read,
+    String? toRow,
     String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
@@ -534,6 +559,8 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
            null => null,
            final value => postgresTimestamp.encode(value.toUtc()),
          },
+         'read': ?read,
+         'to_row': ?toRow,
          'copy_with': ?copyWith,
          'uint8_list': ?switch (uint8List) {
            null => null,
@@ -570,6 +597,8 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
     List<PostgresDate>? days,
     Uint8List? postgresBytea$,
     DateTime? postgresTimestamp$,
+    String? read,
+    String? toRow,
     String? copyWith,
     Uint8List? uint8List,
     List<Uint8List>? blobs,
@@ -594,6 +623,8 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
       null => null,
       final value => postgresTimestamp.encode(value.toUtc()),
     },
+    'read': ?read,
+    'to_row': ?toRow,
     'copy_with': ?copyWith,
     'uint8_list': ?switch (uint8List) {
       null => null,
@@ -633,6 +664,16 @@ extension type const PostgrestTableUpdate._(Map<String, dynamic> _json)
   /// database default.
   PostgrestTableUpdate setPostgresTimestamp$ToNull() =>
       PostgrestTableUpdate._({..._json, 'postgres_timestamp': null});
+
+  /// Returns a copy with `read` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setReadToNull() =>
+      PostgrestTableUpdate._({..._json, 'read': null});
+
+  /// Returns a copy with `to_row` set to SQL NULL, overriding any database
+  /// default.
+  PostgrestTableUpdate setToRowToNull() =>
+      PostgrestTableUpdate._({..._json, 'to_row': null});
 
   /// Returns a copy with `copy_with` set to SQL NULL, overriding any database
   /// default.
@@ -735,6 +776,12 @@ class PostgrestTable$ {
         'postgres_timestamp',
         fromJson: _dateTimeFromJson,
       );
+  static const read = PostgrestNullableColumn<PostgrestTableRow, String>(
+    'read',
+  );
+  static const toRow = PostgrestNullableColumn<PostgrestTableRow, String>(
+    'to_row',
+  );
   static const copyWith = PostgrestNullableColumn<PostgrestTableRow, String>(
     'copy_with',
   );
@@ -842,6 +889,50 @@ class PostgrestTable$ {
         PostgrestTableRow,
         EvilMultilineSchemaNamePostgrestColumnRow
       >.computed('postgrest_column', referencedTable: 'postgrest_column');
+}
+
+/// The values of a partial row of `postgrest_table`, as `selectOnly` returns
+/// it. A getter throws a [StateError] when the `select` list did not ask for
+/// its entry.
+extension PostgrestTablePartialRow on PostgrestPartialRow<PostgrestTableRow> {
+  /// says "hi" \ and $more
+  String get quoteNameTail => read(PostgrestTable$.quoteNameTail);
+  String$? get mood => read(PostgrestTable$.mood);
+  List<double> get samples => read(PostgrestTable$.samples);
+  List<PostgresDate>? get days => read(PostgrestTable$.days);
+  Uint8List get postgresBytea$ => read(PostgrestTable$.postgresBytea$);
+  DateTime? get postgresTimestamp$ => read(PostgrestTable$.postgresTimestamp$);
+  String? get read$ => read(PostgrestTable$.read);
+  String? get toRow$ => read(PostgrestTable$.toRow);
+  String? get copyWith => read(PostgrestTable$.copyWith);
+  Uint8List? get uint8List => read(PostgrestTable$.uint8List);
+  List<Uint8List>? get blobs => read(PostgrestTable$.blobs);
+  List<double> get postgresVector$ => read(PostgrestTable$.postgresVector$);
+  List<double>? get halfEmbedding => read(PostgrestTable$.halfEmbedding);
+  List<String>? get embeddings => read(PostgrestTable$.embeddings);
+  List<String$>? get moods => read(PostgrestTable$.moods);
+  List<PostgresRange<int>>? get spans => read(PostgrestTable$.spans);
+  List<DateTime>? get stamps => read(PostgrestTable$.stamps);
+  List<PostgresRange<DateTime>>? get shifts => read(PostgrestTable$.shifts);
+  String? get class$ => read(PostgrestTable$.class$);
+  bool? get table$ => read(PostgrestTable$.table$);
+  int? get quoteNameTail$ => read(PostgrestTable$.quoteNameTail$);
+  List<String$>? get moodsByWeight => read(PostgrestTable$.moodsByWeight);
+  Uint8List? get thumbnail => read(PostgrestTable$.thumbnail);
+
+  /// The `map` row referenced by `mood`.
+  PostgrestPartialRow<MapRow>? get mapByMood => read(PostgrestTable$.mapByMood);
+
+  /// The `map` row referenced by `days`.
+  PostgrestPartialRow<MapRow>? get mapByDays => read(PostgrestTable$.mapByDays);
+
+  /// The `map` row computed by `map`.
+  PostgrestPartialRow<MapRow>? get map => read(PostgrestTable$.map);
+
+  /// The `evil multiline "schema" name.postgrest_column` rows computed by
+  /// `postgrest_column`.
+  List<PostgrestPartialRow<EvilMultilineSchemaNamePostgrestColumnRow>>
+  get postgrestColumn => read(PostgrestTable$.postgrestColumn);
 }
 
 /// A row of the `map` table, as `select()` reads it with every column.
@@ -1696,6 +1787,57 @@ class Map$ {
   );
 }
 
+/// The values of a partial row of `map`, as `selectOnly` returns it. A getter
+/// throws a [StateError] when the `select` list did not ask for its entry.
+extension MapPartialRow on PostgrestPartialRow<MapRow> {
+  int get list => read(Map$.list);
+  DateTime? get dateTime => read(Map$.dateTime);
+  PostgresRange<int> get pages => read(Map$.pages);
+  PostgresRange<num>? get prices => read(Map$.prices);
+  PostgresRange<PostgresDate> get season => read(Map$.season);
+  PostgresRange<DateTime> get shift => read(Map$.shift);
+  PostgresRange<DateTime>? get during => read(Map$.during);
+  PostgresDate get since => read(Map$.since);
+  PostgresTime get opensAt => read(Map$.opensAt);
+  PostgresTime? get closesAt => read(Map$.closesAt);
+  PostgresInterval? get ttl => read(Map$.ttl);
+  int? get relation => read(Map$.relation);
+  List<int>? get relations => read(Map$.relations);
+  BigInt? get transaction => read(Map$.transaction);
+  List<int>? get keyColumns => read(Map$.keyColumns);
+  List<int>? get argumentTypes => read(Map$.argumentTypes);
+  PostgresNetworkAddress? get host => read(Map$.host);
+  List<PostgresNetworkAddress>? get allowedNetworks =>
+      read(Map$.allowedNetworks);
+  PostgresPoint? get location => read(Map$.location);
+  PostgresLine? get axis => read(Map$.axis);
+  PostgresLineSegment? get edge => read(Map$.edge);
+  PostgresBox? get bounds => read(Map$.bounds);
+  PostgresPath? get route => read(Map$.route);
+  PostgresPolygon? get outline => read(Map$.outline);
+  PostgresCircle? get reach => read(Map$.reach);
+  PostgresMultirange<PostgresDate>? get availability => read(Map$.availability);
+  List<PostgresMultirange<int>>? get blackouts => read(Map$.blackouts);
+  PostgresMultirange<DateTime>? get shifts => read(Map$.shifts);
+  PostgresLogSequenceNumber? get position => read(Map$.position);
+  PostgresMacAddress? get hardware => read(Map$.hardware);
+  List<PostgresMacAddress>? get hardwareHistory => read(Map$.hardwareHistory);
+
+  /// The `postgrest_table` rows referencing this row through `mood`.
+  List<PostgrestPartialRow<PostgrestTableRow>> get postgrestTableViaMood =>
+      read(Map$.postgrestTableViaMood);
+
+  /// The `postgrest_table` row referencing this row through `days`.
+  PostgrestPartialRow<PostgrestTableRow>? get postgrestTableViaDays =>
+      read(Map$.postgrestTableViaDays);
+
+  /// The `map` row computed by `parent`.
+  PostgrestPartialRow<MapRow>? get parent => read(Map$.parent);
+
+  /// The `map` rows computed by `children`.
+  List<PostgrestPartialRow<MapRow>> get children => read(Map$.children);
+}
+
 /// A row of the `core_type_names` table, as `select()` reads it with every
 /// column.
 extension type const CoreTypeNamesRow(Map<String, dynamic> _json)
@@ -1798,6 +1940,19 @@ class CoreTypeNames {
       );
 }
 
+/// The values of a partial row of `core_type_names`, as `selectOnly` returns
+/// it. A getter throws a [StateError] when the `select` list did not ask for
+/// its entry.
+extension CoreTypeNamesPartialRow on PostgrestPartialRow<CoreTypeNamesRow> {
+  int get num$ => read(CoreTypeNames.num$);
+  num get int$ => read(CoreTypeNames.int$);
+  bool get active => read(CoreTypeNames.active);
+  double? get bool$ => read(CoreTypeNames.bool$);
+
+  /// The `map` row computed by `double`.
+  PostgrestPartialRow<MapRow>? get double$ => read(CoreTypeNames.double$);
+}
+
 /// A row of the `orders` table, as `select()` reads it with every column.
 extension type const OrdersRow(Map<String, dynamic> _json) implements Object {
   U441U442U430U442U443U441 get status =>
@@ -1863,6 +2018,13 @@ class Orders {
     'status',
     fromJson: _u441U442U430U442U443U441FromJson,
   );
+}
+
+/// The values of a partial row of `orders`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension OrdersPartialRow on PostgrestPartialRow<OrdersRow> {
+  U441U442U430U442U443U441 get status => read(Orders.status);
 }
 
 /// A row of the `evil multiline "schema" name.postgrest_column` table, as
@@ -1940,6 +2102,14 @@ class EvilMultilineSchemaNamePostgrestColumn {
 
   static const id =
       PostgrestColumn<EvilMultilineSchemaNamePostgrestColumnRow, int>('id');
+}
+
+/// The values of a partial row of `evil multiline "schema"
+/// name.postgrest_column`, as `selectOnly` returns it. A getter throws a
+/// [StateError] when the `select` list did not ask for its entry.
+extension EvilMultilineSchemaNamePostgrestColumnPartialRow
+    on PostgrestPartialRow<EvilMultilineSchemaNamePostgrestColumnRow> {
+  int get id => read(EvilMultilineSchemaNamePostgrestColumn.id);
 }
 
 /// A row of the `private.achievement_item_progress_tbl` table, as `select()`
@@ -2029,6 +2199,15 @@ class PrivateAchievementItemProgressTbl {
   );
   static const name =
       PostgrestColumn<PrivateAchievementItemProgressTblRow, String>('name');
+}
+
+/// The values of a partial row of `private.achievement_item_progress_tbl`, as
+/// `selectOnly` returns it. A getter throws a [StateError] when the `select`
+/// list did not ask for its entry.
+extension PrivateAchievementItemProgressTblPartialRow
+    on PostgrestPartialRow<PrivateAchievementItemProgressTblRow> {
+  int get id => read(PrivateAchievementItemProgressTbl.id);
+  String get name => read(PrivateAchievementItemProgressTbl.name);
 }
 
 /// A row of the `team` table, as `select()` reads it with every column.
@@ -2156,6 +2335,32 @@ class Team {
   );
 }
 
+/// The values of a partial row of `team`, as `selectOnly` returns it. A getter
+/// throws a [StateError] when the `select` list did not ask for its entry.
+extension TeamPartialRow on PostgrestPartialRow<TeamRow> {
+  int get id => read(Team.id);
+  String get name => read(Team.name);
+  int? get ownerId => read(Team.ownerId);
+
+  /// The `profile` rows referencing this row through `team`.
+  List<PostgrestPartialRow<ProfileRow>> get profileViaTeam =>
+      read(Team.profileViaTeam);
+
+  /// The `profile` row referenced by `owner_id`.
+  PostgrestPartialRow<ProfileRow>? get profileByOwnerId =>
+      read(Team.profileByOwnerId);
+
+  /// The `badge` rows referencing this row through `team`.
+  List<PostgrestPartialRow<BadgeRow>> get badgeViaTeam =>
+      read(Team.badgeViaTeam);
+
+  /// The `team_badge` rows referencing this row through `team_id`.
+  List<PostgrestPartialRow<TeamBadgeRow>> get teamBadge => read(Team.teamBadge);
+
+  /// The `note` rows referencing this row through `team_id`.
+  List<PostgrestPartialRow<NoteRow>> get note => read(Team.note);
+}
+
 /// A row of the `profile` table, as `select()` reads it with every column.
 extension type const ProfileRow(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
@@ -2256,6 +2461,25 @@ class Profile {
     referencedTable: 'badge',
     referencedColumns: [Badge.profile],
   );
+}
+
+/// The values of a partial row of `profile`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension ProfilePartialRow on PostgrestPartialRow<ProfileRow> {
+  int get id => read(Profile.id);
+  String get name => read(Profile.name);
+  int? get team => read(Profile.team);
+
+  /// The `team` row referenced by `team`.
+  PostgrestPartialRow<TeamRow>? get teamByTeam => read(Profile.teamByTeam);
+
+  /// The `team` rows referencing this row through `owner_id`.
+  List<PostgrestPartialRow<TeamRow>> get teamViaOwnerId =>
+      read(Profile.teamViaOwnerId);
+
+  /// The `badge` rows referencing this row through `profile`.
+  List<PostgrestPartialRow<BadgeRow>> get badge => read(Profile.badge);
 }
 
 /// A row of the `badge` table, as `select()` reads it with every column.
@@ -2374,6 +2598,26 @@ class Badge {
   );
 }
 
+/// The values of a partial row of `badge`, as `selectOnly` returns it. A getter
+/// throws a [StateError] when the `select` list did not ask for its entry.
+extension BadgePartialRow on PostgrestPartialRow<BadgeRow> {
+  int get id => read(Badge.id);
+  String get name => read(Badge.name);
+  int get profile => read(Badge.profile);
+  int? get team => read(Badge.team);
+
+  /// The `profile` row referenced by `profile`.
+  PostgrestPartialRow<ProfileRow>? get profileByProfile =>
+      read(Badge.profileByProfile);
+
+  /// The `team` row referenced by `team`.
+  PostgrestPartialRow<TeamRow>? get teamByTeam => read(Badge.teamByTeam);
+
+  /// The `team_badge` rows referencing this row through `badge_id`.
+  List<PostgrestPartialRow<TeamBadgeRow>> get teamBadge =>
+      read(Badge.teamBadge);
+}
+
 /// A row of the `team_badge` table, as `select()` reads it with every column.
 extension type const TeamBadgeRow(Map<String, dynamic> _json)
     implements Object {
@@ -2458,6 +2702,20 @@ class TeamBadge {
   );
 }
 
+/// The values of a partial row of `team_badge`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension TeamBadgePartialRow on PostgrestPartialRow<TeamBadgeRow> {
+  int get teamId => read(TeamBadge.teamId);
+  int get badgeId => read(TeamBadge.badgeId);
+
+  /// The `team` row referenced by `team_id`.
+  PostgrestPartialRow<TeamRow>? get team => read(TeamBadge.team);
+
+  /// The `badge` row referenced by `badge_id`.
+  PostgrestPartialRow<BadgeRow>? get badge => read(TeamBadge.badge);
+}
+
 /// A row of the `note` table, as `select()` reads it with every column.
 extension type const NoteRow(Map<String, dynamic> _json) implements Object {
   String get body => _json['body'] as String;
@@ -2540,6 +2798,20 @@ class Note {
     referencedTable: 'note_reply',
     referencedColumns: [NoteReply.noteId],
   );
+}
+
+/// The values of a partial row of `note`, as `selectOnly` returns it. A getter
+/// throws a [StateError] when the `select` list did not ask for its entry.
+extension NotePartialRow on PostgrestPartialRow<NoteRow> {
+  String get body => read(Note.body);
+  int get id => read(Note.id);
+  int get teamId => read(Note.teamId);
+
+  /// The `team` row referenced by `team_id`.
+  PostgrestPartialRow<TeamRow>? get team => read(Note.team);
+
+  /// The `note_reply` rows referencing this row through `note_id`.
+  List<PostgrestPartialRow<NoteReplyRow>> get noteReply => read(Note.noteReply);
 }
 
 /// A row of the `note_reply` table, as `select()` reads it with every column.
@@ -2630,6 +2902,18 @@ class NoteReply {
   );
 }
 
+/// The values of a partial row of `note_reply`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension NoteReplyPartialRow on PostgrestPartialRow<NoteReplyRow> {
+  String get body => read(NoteReply.body);
+  int get id => read(NoteReply.id);
+  int get noteId => read(NoteReply.noteId);
+
+  /// The `note` row referenced by `note_id`.
+  PostgrestPartialRow<NoteRow>? get note => read(NoteReply.note);
+}
+
 /// A row of the `string` table, as `select()` reads it with every column.
 extension type const StringRow(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
@@ -2718,6 +3002,15 @@ class String$$ {
     fromJson: _stringValueFromJson,
   );
   static const document = PostgrestJsonColumn<StringRow>('document');
+}
+
+/// The values of a partial row of `string`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension StringPartialRow on PostgrestPartialRow<StringRow> {
+  int get id => read(String$$.id);
+  StringValue get value => read(String$$.value);
+  StringDocument? get document => read(String$$.document) as StringDocument?;
 }
 
 /// A row returned by the `class` function.

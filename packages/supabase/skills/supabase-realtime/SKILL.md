@@ -66,7 +66,7 @@ To receive only some columns:
 final titles = supabase
     .table(Books.table)
     .streamOnly(primaryKey: [Books.id], columns: [Books.title])
-    .map((rows) => [for (final row in rows) row.read(Books.title)]);
+    .map((rows) => [for (final row in rows) row.title]);
 ```
 
 ## Reacting to changes
@@ -105,7 +105,7 @@ const List<PostgrestStoredColumn<BooksRow, Object>> bookTitle = [
   Books.title,
 ];
 String label(PostgrestPartialRow<BooksRow> book) =>
-    '#${book.read(Books.id)} ${book.read(Books.title)}';
+    '#${book.id} ${book.title}';
 
 final books = await supabase.table(Books.table).selectOnly(bookTitle);
 print(books.map(label));

@@ -62,7 +62,7 @@ void main() {
         .selectOnly([Books.id, Books.title])
         .where(Books.inPrint.isTrue());
 
-    expect(books.single.read(Books.title), 'Dune');
+    expect(books.single.title, 'Dune');
   });
 }
 ```
@@ -241,7 +241,7 @@ final book = await supabase
     .selectOnly([Books.title])
     .where(Books.id.eq(1))
     .single();
-expect(book.read(Books.title), 'Dune');
+expect(book.title, 'Dune');
 ```
 
 A query asking for a count receives the number of stubbed rows, or the
