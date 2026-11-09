@@ -146,8 +146,9 @@ String generateDartCode(
       ),
   };
   final relationshipCounts = _relationshipCounts(database);
+  final partialRowWriters = <_PartialRowWriter>[];
   for (final table in tables) {
-    _writeTable(
+    final writePartialRow = _writeTable(
       buffer,
       table,
       tableNames[(table.schema, table.name)]!,
@@ -163,6 +164,7 @@ String generateDartCode(
       schemaTypeNames,
       decoders,
     );
+    partialRowWriters.add(writePartialRow);
   }
   final functionsExtension = _writeFunctions(
     buffer,
@@ -172,6 +174,15 @@ String generateDartCode(
     schemaTypeNames,
     decoders,
   );
+  // Claimed after every other name, so adding the extensions moves no name
+  // an earlier version generated.
+  final partialRowTypes = [
+    for (final (index, table) in tables.indexed)
+      partialRowWriters[index](
+        buffer,
+        typeNames.claim('${_typeBaseName(table.schema, table.name)}PartialRow'),
+      ),
+  ];
   decoders.write(buffer);
 
   final header = StringBuffer()
@@ -190,6 +201,19 @@ String generateDartCode(
         'the typed',
       )
       ..writeln('// database function calls: $functionsExtension.');
+  }
+  if (tables.isNotEmpty) {
+    final example = tableNames[(tables.first.schema, tables.first.name)]!;
+    header
+      ..writeln('//')
+      ..writeln(
+        '// The getters of a partial row are in an extension per table, which '
+        'a `show`',
+      )
+      ..writeln('// import has to name too, such as:')
+      ..writeln(
+        '// ${partialRowTypes.first} for ${example.namespaceType}.',
+      );
   }
   header
     ..writeln()
@@ -278,6 +302,7 @@ class _TypeNameRegistry {
     'PostgrestRelation',
     'PostgrestToOneRelation',
     'PostgrestToManyRelation',
+    'PostgrestPartialRow',
     'PostgrestRpc',
     'PostgrestTypedBuilder',
     'PostgrestTypedFilterBuilder',
@@ -459,6 +484,8 @@ class _RelationMember {
     required this.baseName,
     required this.disambiguatedName,
     required this.type,
+    required this.targetRowType,
+    required this.isToMany,
     required this.embedName,
     required this.ambiguous,
     required this.columns,
@@ -483,6 +510,8 @@ class _RelationMember {
       baseName: name,
       disambiguatedName: name,
       type: '$kind<${source.rowType}, ${target.rowType}>.computed',
+      targetRowType: target.rowType,
+      isToMany: relationship.isToMany,
       embedName: relationship.name,
       ambiguous: false,
       columns: const [],
@@ -505,6 +534,12 @@ class _RelationMember {
 
   /// `PostgrestToOneRelation<SourceRow, TargetRow>` or the to-many kind.
   final String type;
+
+  /// The row type of the table the relation points at.
+  final String targetRowType;
+
+  /// Whether the relation reads as a list of rows rather than one row.
+  final bool isToMany;
 
   /// The name PostgREST addresses the embed by: the table name, with a
   /// foreign key hint when the plain name would be ambiguous, or the
@@ -597,6 +632,8 @@ List<_RelationMember> _relationMembers(
           baseName: ambiguous ? '$targetName$byColumns' : targetName,
           disambiguatedName: '$targetName$byColumns',
           type: 'PostgrestToOneRelation<${source.rowType}, ${target.rowType}>',
+          targetRowType: target.rowType,
+          isToMany: false,
           embedName: ambiguous
               ? '${relationship.targetTable}!${relationship.foreignKeyName}'
               : relationship.targetTable,
@@ -623,6 +660,8 @@ List<_RelationMember> _relationMembers(
           baseName: ambiguous ? '$sourceName$viaColumns' : sourceName,
           disambiguatedName: '$sourceName$viaColumns',
           type: '$kind<${target.rowType}, ${source.rowType}>',
+          targetRowType: source.rowType,
+          isToMany: !relationship.isOneToOne,
           embedName: ambiguous
               ? '${relationship.sourceTable}!${relationship.foreignKeyName}'
               : relationship.sourceTable,
@@ -730,7 +769,14 @@ List<String> _columnConstants(
         )),
 ];
 
-void _writeTable(
+/// Writes the extension on a partial row of a table, named [extensionName],
+/// and returns the name.
+typedef _PartialRowWriter =
+    String Function(StringBuffer buffer, String extensionName);
+
+/// Writes the row, value and namespace types of [table] and returns the
+/// writer of its partial row extension, whose name is claimed last.
+_PartialRowWriter _writeTable(
   StringBuffer buffer,
   TableDescription table,
   _TableNames names,
@@ -751,7 +797,12 @@ void _writeTable(
     for (final field in table.computedFields)
       field.name: _bindingFor(_computedFieldShape(field), schemaTypeNames),
   };
-  final relationNames = _relationNames(typeNames, members, relations);
+  final relationNames = _relationNames({
+    'table',
+    ...typeNames,
+    ...members.columnMembers.values,
+    ...members.computedFieldMembers.values,
+  }, relations);
   final relationAliases = _embedAliases(table, relations, relationNames);
 
   _writeRow(
@@ -809,21 +860,29 @@ void _writeTable(
     relationAliases,
     decoders,
   );
+  return (partialRowBuffer, extensionName) {
+    _writePartialRow(
+      partialRowBuffer,
+      table,
+      names,
+      extensionName,
+      members,
+      bindings,
+      computedFieldBindings,
+      relations,
+      relationNames,
+      typeNames,
+    );
+    return extensionName;
+  };
 }
 
-/// The Dart names of [relations] in the namespace class, next to the column
-/// constants and the types the table definition names.
+/// The Dart names of [relations] next to the names in [used], which claiming
+/// them adds to.
 List<String> _relationNames(
-  Set<String> typeNames,
-  _TableMembers members,
+  Set<String> used,
   List<_RelationMember> relations,
 ) {
-  final used = {
-    'table',
-    ...typeNames,
-    ...members.columnMembers.values,
-    ...members.computedFieldMembers.values,
-  };
   final baseNameCounts = <String, int>{};
   for (final relation in relations) {
     baseNameCounts.update(
@@ -1134,6 +1193,89 @@ void _writeNamespace(
       buffer.writeln('    alias: ${_stringLiteral(alias)},');
     }
     buffer.writeln('  );');
+  }
+  buffer
+    ..writeln('}')
+    ..writeln();
+}
+
+/// Writes the extension on a partial row of [table] with a getter per column,
+/// computed field and relation, each reading its entry of the namespace
+/// class.
+///
+/// The column getters take the names of the row getters, and the computed
+/// field and relation getters are named like the namespace constants would
+/// be next to them, unless a member of `PostgrestPartialRow` has the name.
+void _writePartialRow(
+  StringBuffer buffer,
+  TableDescription table,
+  _TableNames names,
+  String extensionName,
+  _TableMembers members,
+  Map<String, _Binding> bindings,
+  Map<String, _Binding> computedFieldBindings,
+  List<_RelationMember> relations,
+  List<String> relationMembers,
+  Set<String> typeNames,
+) {
+  final _TableNames(:rowType, :namespaceType) = names;
+  final used = {
+    ...typeNames,
+    ..._codecs,
+    'read',
+    'toRow',
+    'toJson',
+    'toString',
+    'hashCode',
+    'runtimeType',
+    'noSuchMethod',
+  };
+  _writeDocComment(
+    buffer,
+    'The values of a partial row of `${names.displayName}`, as `selectOnly` '
+    'returns it. A getter throws a [StateError] when the `select` list did '
+    'not ask for its entry.',
+  );
+  buffer.writeln(
+    'extension $extensionName on PostgrestPartialRow<$rowType> {',
+  );
+  for (final column in table.columns) {
+    final binding = bindings[column.name]!;
+    final entry = '$namespaceType.${members.columnMembers[column.name]}';
+    final name = _claimName(used, members.rowMembers[column.name]!);
+    final type = binding.kind == ColumnTypeKind.json && !binding.isJsonObject
+        ? 'PostgrestJson?'
+        : _getterType(column, binding);
+    final body = binding.isJsonObject
+        ? 'read($entry) as $type'
+        : 'read($entry)';
+    _writeDocComment(buffer, column.comment, indent: '  ');
+    buffer.writeln('  $type get $name => $body;');
+  }
+  final computedFieldNames = _uniqueMemberNames(
+    [for (final field in table.computedFields) field.name],
+    reserved: used,
+  );
+  used.addAll(computedFieldNames.values);
+  for (final field in table.computedFields) {
+    final binding = computedFieldBindings[field.name]!;
+    final type = field.typeKind == ColumnTypeKind.json
+        ? 'PostgrestJson?'
+        : '${binding.dartType}?';
+    buffer.writeln(
+      '  $type get ${computedFieldNames[field.name]} => '
+      'read($namespaceType.${members.computedFieldMembers[field.name]});',
+    );
+  }
+  final relationGetters = _relationNames(used, relations);
+  for (final (index, relation) in relations.indexed) {
+    final target = 'PostgrestPartialRow<${relation.targetRowType}>';
+    final type = relation.isToMany ? 'List<$target>' : '$target?';
+    _writeDocComment(buffer, relation.docLine, indent: '  ');
+    buffer.writeln(
+      '  $type get ${relationGetters[index]} => '
+      'read($namespaceType.${relationMembers[index]});',
+    );
   }
   buffer
     ..writeln('}')

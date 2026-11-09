@@ -5,6 +5,10 @@
 //
 // A `show` import of this file has to name the extension holding the typed
 // database function calls: DatabaseFunctions.
+//
+// The getters of a partial row are in an extension per table, which a `show`
+// import has to name too, such as:
+// InventoryBooksPartialRow for InventoryBooks.
 
 // The typed table access API is still experimental.
 // ignore_for_file: experimental_member_use
@@ -1890,6 +1894,204 @@ extension DatabaseFunctions on PostgrestRpc {
     fromJson: (_) {},
     schema: 'public',
   );
+}
+
+/// The values of a partial row of `inventory.books`, as `selectOnly` returns
+/// it. A getter throws a [StateError] when the `select` list did not ask for
+/// its entry.
+extension InventoryBooksPartialRow on PostgrestPartialRow<InventoryBooksRow> {
+  int get id => read(InventoryBooks.id);
+  String get isbn => read(InventoryBooks.isbn);
+
+  /// The `inventory.stock` rows referencing this row through `copy_id`.
+  List<PostgrestPartialRow<InventoryStockRow>> get stock =>
+      read(InventoryBooks.stock);
+}
+
+/// The values of a partial row of `inventory.stock`, as `selectOnly` returns
+/// it. A getter throws a [StateError] when the `select` list did not ask for
+/// its entry.
+extension InventoryStockPartialRow on PostgrestPartialRow<InventoryStockRow> {
+  int get bookId => read(InventoryStock.bookId);
+  InventoryCondition get condition => read(InventoryStock.condition);
+  int get copyId => read(InventoryStock.copyId);
+  int get id => read(InventoryStock.id);
+  int get quantity => read(InventoryStock.quantity);
+
+  /// The `inventory.books` row referenced by `copy_id`.
+  PostgrestPartialRow<InventoryBooksRow>? get books =>
+      read(InventoryStock.books);
+}
+
+/// The values of a partial row of `author_stats`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension AuthorStatsPartialRow on PostgrestPartialRow<AuthorStatsRow> {
+  int get authorId => read(AuthorStats.authorId);
+  int? get bookCount => read(AuthorStats.bookCount);
+
+  /// The `authors` row referenced by `author_id`.
+  PostgrestPartialRow<AuthorsRow>? get authors => read(AuthorStats.authors);
+}
+
+/// The values of a partial row of `authors`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension AuthorsPartialRow on PostgrestPartialRow<AuthorsRow> {
+  int get id => read(Authors.id);
+  String get name => read(Authors.name);
+
+  /// The `author_stats` rows referencing this row through `author_id`.
+  List<PostgrestPartialRow<AuthorStatsRow>> get authorStats =>
+      read(Authors.authorStats);
+
+  /// The `books` rows referencing this row through `author_id`.
+  List<PostgrestPartialRow<BooksRow>> get books => read(Authors.books);
+
+  /// The `books` row computed by `latest_book`.
+  PostgrestPartialRow<BooksRow>? get latestBook => read(Authors.latestBook);
+
+  /// The `books` rows computed by `recent_books`.
+  List<PostgrestPartialRow<BooksRow>> get recentBooks =>
+      read(Authors.recentBooks);
+}
+
+/// The values of a partial row of `book_prices`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension BookPricesPartialRow on PostgrestPartialRow<BookPricesRow> {
+  num? get discountedPrice => read(BookPrices.discountedPrice);
+  int get id => read(BookPrices.id);
+  num? get price => read(BookPrices.price);
+  String get title => read(BookPrices.title);
+  num? get discount => read(BookPrices.discount);
+
+  /// The `loans` rows referencing this row through `book_id`.
+  List<PostgrestPartialRow<LoansRow>> get loans => read(BookPrices.loans);
+
+  /// The `reviews` rows referencing this row through `book_id`.
+  List<PostgrestPartialRow<ReviewsRow>> get reviews => read(BookPrices.reviews);
+}
+
+/// The values of a partial row of `book_submissions`, as `selectOnly` returns
+/// it. A getter throws a [StateError] when the `select` list did not ask for
+/// its entry.
+extension BookSubmissionsPartialRow on PostgrestPartialRow<BookSubmissionsRow> {
+  String get authorName => read(BookSubmissions.authorName);
+  String get title => read(BookSubmissions.title);
+}
+
+/// The values of a partial row of `book_summaries`, as `selectOnly` returns it.
+/// A getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension BookSummariesPartialRow on PostgrestPartialRow<BookSummariesRow> {
+  String get authorName => read(BookSummaries.authorName);
+  int get id => read(BookSummaries.id);
+  String get title => read(BookSummaries.title);
+
+  /// The `loans` rows referencing this row through `book_id`.
+  List<PostgrestPartialRow<LoansRow>> get loans => read(BookSummaries.loans);
+
+  /// The `reviews` rows referencing this row through `book_id`.
+  List<PostgrestPartialRow<ReviewsRow>> get reviews =>
+      read(BookSummaries.reviews);
+}
+
+/// The values of a partial row of `books`, as `selectOnly` returns it. A getter
+/// throws a [StateError] when the `select` list did not ask for its entry.
+extension BooksPartialRow on PostgrestPartialRow<BooksRow> {
+  int get authorId => read(Books.authorId);
+  Uint8List? get coverImage => read(Books.coverImage);
+  String? get coverUuid => read(Books.coverUuid);
+
+  /// When the row was created
+  DateTime get createdAt => read(Books.createdAt);
+  int get id => read(Books.id);
+  bool get inPrint => read(Books.inPrint);
+  PostgrestJson? get metadata => read(Books.metadata);
+  Mood? get mood => read(Books.mood);
+  List<int>? get pageCounts => read(Books.pageCounts);
+  num? get price => read(Books.price);
+  PostgresDate? get publishedOn => read(Books.publishedOn);
+  double? get rating => read(Books.rating);
+  List<String>? get tags => read(Books.tags);
+  String get title => read(Books.title);
+  DateTime? get updatedAt => read(Books.updatedAt);
+  Mood? get moodOrDefault => read(Books.moodOrDefault);
+  String? get titleUpper => read(Books.titleUpper);
+
+  /// The `authors` row referenced by `author_id`.
+  PostgrestPartialRow<AuthorsRow>? get authors => read(Books.authors);
+
+  /// The `loans` rows referencing this row through `book_id`.
+  List<PostgrestPartialRow<LoansRow>> get loans => read(Books.loans);
+
+  /// The `reviews` rows referencing this row through `book_id`.
+  List<PostgrestPartialRow<ReviewsRow>> get reviews => read(Books.reviews);
+}
+
+/// The values of a partial row of `loans`, as `selectOnly` returns it. A getter
+/// throws a [StateError] when the `select` list did not ask for its entry.
+extension LoansPartialRow on PostgrestPartialRow<LoansRow> {
+  int get bookId => read(Loans.bookId);
+  PostgresDate get dueOn => read(Loans.dueOn);
+  int get id => read(Loans.id);
+
+  /// The `book_prices` row referenced by `book_id`.
+  PostgrestPartialRow<BookPricesRow>? get bookPrices => read(Loans.bookPrices);
+
+  /// The `book_summaries` row referenced by `book_id`.
+  PostgrestPartialRow<BookSummariesRow>? get bookSummaries =>
+      read(Loans.bookSummaries);
+
+  /// The `books` row referenced by `book_id`.
+  PostgrestPartialRow<BooksRow>? get books => read(Loans.books);
+}
+
+/// The values of a partial row of `profiles`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension ProfilesPartialRow on PostgrestPartialRow<ProfilesRow> {
+  int get id => read(Profiles.id);
+  ProfilesSettings? get settings =>
+      read(Profiles.settings) as ProfilesSettings?;
+  ProfilesStatus get status => read(Profiles.status);
+}
+
+/// The values of a partial row of `review_replies`, as `selectOnly` returns it.
+/// A getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension ReviewRepliesPartialRow on PostgrestPartialRow<ReviewRepliesRow> {
+  String get body => read(ReviewReplies.body);
+  int get id => read(ReviewReplies.id);
+  int get reviewId => read(ReviewReplies.reviewId);
+
+  /// The `reviews` row referenced by `review_id`.
+  PostgrestPartialRow<ReviewsRow>? get reviews => read(ReviewReplies.reviews);
+}
+
+/// The values of a partial row of `reviews`, as `selectOnly` returns it. A
+/// getter throws a [StateError] when the `select` list did not ask for its
+/// entry.
+extension ReviewsPartialRow on PostgrestPartialRow<ReviewsRow> {
+  String get body => read(Reviews.body);
+  int get bookId => read(Reviews.bookId);
+  int get id => read(Reviews.id);
+
+  /// The `review_replies` rows referencing this row through `review_id`.
+  List<PostgrestPartialRow<ReviewRepliesRow>> get reviewReplies =>
+      read(Reviews.reviewReplies);
+
+  /// The `book_prices` row referenced by `book_id`.
+  PostgrestPartialRow<BookPricesRow>? get bookPrices =>
+      read(Reviews.bookPrices);
+
+  /// The `book_summaries` row referenced by `book_id`.
+  PostgrestPartialRow<BookSummariesRow>? get bookSummaries =>
+      read(Reviews.bookSummaries);
+
+  /// The `books` row referenced by `book_id`.
+  PostgrestPartialRow<BooksRow>? get books => read(Reviews.books);
 }
 
 DateTime _dateTimeFromJson(Object json) =>

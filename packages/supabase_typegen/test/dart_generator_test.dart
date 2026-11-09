@@ -585,6 +585,38 @@ void main() {
     expect(code, isNot(contains('class PostgrestJson {')));
   });
 
+  test('a partial row extension moves no other generated name', () {
+    const idColumn = ColumnDescription(
+      name: 'id',
+      postgresFormat: 'int8',
+      typeKind: ColumnTypeKind.integer,
+      isRequired: true,
+      hasDefault: false,
+      isNullable: false,
+    );
+    const clashingSchema = DatabaseDescription(
+      schemaNames: ['public'],
+      tables: [
+        TableDescription(schema: 'public', name: 'books', columns: [idColumn]),
+        TableDescription(
+          schema: 'public',
+          name: 'books_partial',
+          columns: [idColumn],
+        ),
+      ],
+      enums: [],
+    );
+
+    final code = generateDartCode(clashingSchema);
+
+    expect(code, contains('extension type const BooksPartialRow('));
+    expect(
+      code,
+      contains(r'extension BooksPartialRow$ on PostgrestPartialRow<BooksRow>'),
+    );
+    expect(code, contains('// BooksPartialRow\$ for Books.'));
+  });
+
   test('emits a relation member for each side of a foreign key', () {
     final compact = _normalize(generateDartCode(schema)).replaceAll(' ', '');
 
@@ -1528,7 +1560,7 @@ void main() {
     expect(code, contains("int get id => _json['id'] as int;"));
   });
   test('computed fields are constants next to the columns, with no row '
-      'getter', () {
+      'getter but a partial row one', () {
     final code = _normalize(generateDartCode(schema));
     final compact = code.replaceAll(' ', '');
 
@@ -1554,9 +1586,20 @@ void main() {
       ),
     );
     expect(compact, contains('computedFields:[discount],'));
-    expect(code, isNot(contains('get titleUpper')));
-    expect(code, isNot(contains('get moodOrDefault')));
-    expect(code, isNot(contains('get discount =>')));
+    String row(String rowType) {
+      final start = code.indexOf('extension type const $rowType(');
+      return code.substring(start, code.indexOf('toJson() => _json;', start));
+    }
+
+    expect(row('BooksRow'), isNot(contains('get titleUpper')));
+    expect(row('BooksRow'), isNot(contains('get moodOrDefault')));
+    expect(row('BookPricesRow'), isNot(contains('get discount =>')));
+    expect(code, contains('String? get titleUpper => read(Books.titleUpper);'));
+    expect(
+      code,
+      contains('Mood? get moodOrDefault => read(Books.moodOrDefault);'),
+    );
+    expect(code, contains('num? get discount => read(BookPrices.discount);'));
     expect(code, isNot(contains('titleUpper,')));
     expect(code, isNot(contains('String? titleUpper')));
   });
@@ -2285,6 +2328,62 @@ void main() {
 
       expect(code, contains('PostgrestTypedBuilder<int?> int\$()'));
       expect(code, contains('PostgrestTypedBuilder<void> postgresBytea\$()'));
+    });
+
+    test('a result row type keeps a name a partial row extension wants', () {
+      final code = generateDartCode(
+        DatabaseDescription(
+          schemaNames: const ['public'],
+          tables: const [
+            TableDescription(
+              schema: 'public',
+              name: 'books',
+              columns: [
+                ColumnDescription(
+                  name: 'id',
+                  postgresFormat: 'int8',
+                  typeKind: ColumnTypeKind.integer,
+                  isRequired: true,
+                  hasDefault: false,
+                  isNullable: false,
+                ),
+              ],
+            ),
+          ],
+          enums: const [],
+          functions: const [
+            FunctionDescription(
+              schema: 'public',
+              name: 'books_partial',
+              overloads: [
+                FunctionOverloadDescription(
+                  arguments: [],
+                  result: FunctionColumnsResult([
+                    ColumnDescription(
+                      name: 'title',
+                      postgresFormat: 'text',
+                      typeKind: ColumnTypeKind.text,
+                      isRequired: false,
+                      hasDefault: false,
+                      isNullable: true,
+                      isReadOnly: true,
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      expect(code, contains('extension type const BooksPartialRow('));
+      expect(code, contains('rowFromJson: BooksPartialRow.new'));
+      expect(
+        code,
+        contains(
+          r'extension BooksPartialRow$ on PostgrestPartialRow<BooksRow>',
+        ),
+      );
     });
 
     test('result row getters keep clear of the codecs', () {
