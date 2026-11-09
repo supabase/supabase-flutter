@@ -7,8 +7,7 @@ import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
-extension type const Book(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const Book(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
   String get title => _json['title'] as String;
 }
@@ -52,11 +51,9 @@ class JsonBooks {
   );
 }
 
-extension type const Author(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Author(Map<String, dynamic> _json) implements Object {}
 
-extension type const Review(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Review(Map<String, dynamic> _json) implements Object {}
 
 const bookRows = [
   {'id': 1, 'title': 'a'},

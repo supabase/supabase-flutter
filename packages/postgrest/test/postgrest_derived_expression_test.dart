@@ -3,8 +3,7 @@ import 'dart:convert';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-extension type const Item(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Item(Map<String, dynamic> _json) implements Object {}
 
 class Items {
   static const cost = PostgrestColumn<Item, double>('cost');

@@ -5,8 +5,7 @@ import 'package:supabase/supabase.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
-extension type const Item(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const Item(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
 }
 

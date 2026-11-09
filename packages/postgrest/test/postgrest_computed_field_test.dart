@@ -2,11 +2,9 @@ import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
-extension type const User(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const User(Map<String, dynamic> _json) implements Object {}
 
-extension type const Message(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Message(Map<String, dynamic> _json) implements Object {}
 
 class Users {
   static const table = PostgrestTable<User, Never, Never>(

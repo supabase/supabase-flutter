@@ -7,8 +7,7 @@ import 'package:supabase_common/supabase_common.dart'
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
-extension type const Event(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Event(Map<String, dynamic> _json) implements Object {}
 
 class Events {
   static const table = PostgrestTable<Event, Object, Object>(

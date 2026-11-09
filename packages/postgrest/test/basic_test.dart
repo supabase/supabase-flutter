@@ -11,8 +11,9 @@ import 'custom_http_client.dart';
 import 'reset_helper.dart';
 import 'test_utils.dart';
 
-extension type const User(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const User(Map<String, dynamic> _json) implements Object {
+  String? get status => _json['status'] as String?;
+}
 
 extension type const UserInsert._(Map<String, dynamic> _json)
     implements Object {
@@ -409,8 +410,8 @@ void main() {
         UserInsert(username: 'typed crazy bot'),
       ]).select();
       expect(response.length, 2);
-      expect(response.first['status'], 'OFFLINE');
-      expect(response.last['status'], 'ONLINE');
+      expect(response.first.status, 'OFFLINE');
+      expect(response.last.status, 'ONLINE');
     });
 
     test('typed bulk insert writes an explicit NULL', () async {
@@ -419,8 +420,8 @@ void main() {
         UserInsert(username: 'null crazy bot').setStatusToNull(),
         UserInsert(username: 'default crazy bot'),
       ]).select();
-      expect(response[1]['status'], null);
-      expect(response[2]['status'], 'ONLINE');
+      expect(response[1].status, null);
+      expect(response[2].status, 'ONLINE');
     });
 
     test('typed bulk upsert applies column defaults', () async {
@@ -429,8 +430,8 @@ void main() {
         UserInsert(username: 'upsert crazy bot'),
       ]).select();
       expect(response.length, 2);
-      expect(response.first['status'], 'OFFLINE');
-      expect(response.last['status'], 'ONLINE');
+      expect(response.first.status, 'OFFLINE');
+      expect(response.last.status, 'ONLINE');
     });
 
     test('typed bulk upsert resets a left out column on conflict', () async {
@@ -444,7 +445,7 @@ void main() {
         UserInsert(username: 'conflict bot'),
         UserInsert(username: 'conflict new bot', status: 'OFFLINE'),
       ]).select();
-      expect(response.first['status'], 'ONLINE');
+      expect(response.first.status, 'ONLINE');
     });
 
     test('typed bulk insert of rows encoded with toJson', () async {
@@ -452,8 +453,8 @@ void main() {
         const JsonUserInsert(username: 'typed json bot', status: 'OFFLINE'),
         const JsonUserInsert(username: 'typed json crazy bot'),
       ]).select();
-      expect(response.first['status'], 'OFFLINE');
-      expect(response.last['status'], 'ONLINE');
+      expect(response.first.status, 'OFFLINE');
+      expect(response.last.status, 'ONLINE');
     });
 
     test('basic update', () async {

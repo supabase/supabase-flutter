@@ -10,8 +10,7 @@ import 'package:supabase_test/internal.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
-extension type const Todo(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
+extension type const Todo(Map<String, dynamic> _json) implements Object {
   int get id => _json['id'] as int;
   String get task => _json['task'] as String;
   bool get status => _json['status'] as bool;
@@ -943,13 +942,10 @@ void main() {
           .stream(primaryKey: [Todos.id])
           .filter(Todos.status.eq(true));
       expect(
-        stream,
+        stream.map((todos) => [for (final todo in todos) todo.id]),
         emitsInOrder([
-          contains(equals({'id': 1, 'task': 'task 1', 'status': true})),
-          containsAllInOrder([
-            {'id': 1, 'task': 'task 1', 'status': true},
-            {'id': 3, 'task': 'task 3', 'status': true},
-          ]),
+          contains(1),
+          containsAllInOrder([1, 3]),
         ]),
       );
     });

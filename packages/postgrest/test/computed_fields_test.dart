@@ -6,14 +6,13 @@ import 'package:test/test.dart';
 
 import 'test_utils.dart';
 
-extension type const User(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const User(Map<String, dynamic> _json) implements Object {
+  Map<String, dynamic> toJson() => _json;
+}
 
-extension type const Channel(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Channel(Map<String, dynamic> _json) implements Object {}
 
-extension type const Message(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {}
+extension type const Message(Map<String, dynamic> _json) implements Object {}
 
 class Users {
   static const table = PostgrestTable<User, Never, Never>(
@@ -79,8 +78,8 @@ void main() {
 
       expect(users, isNotEmpty);
       for (final user in users) {
-        expect(user.keys, isNot(contains('username_upper')));
-        expect(user.keys, isNot(contains('message_count')));
+        expect(user.toJson().keys, isNot(contains('username_upper')));
+        expect(user.toJson().keys, isNot(contains('message_count')));
       }
     });
 
