@@ -79,7 +79,9 @@ For every table the generator emits:
   nullable, since a function can always return `NULL`. Calls are sent as a
   `POST`. A `STABLE` or `IMMUTABLE` function whose arguments fit in query
   parameters also takes `get`, which sends the call as a `GET` in read-only
-  access mode, so that it is retried like a select. Functions of a schema
+  access mode, so that it is retried like a select. An argument that starts
+  like a filter, such as `eq.foo`, keeps the call a `POST`, which is not
+  retried. Functions of a schema
   other than `public` carry the schema as a prefix, `inventoryRestock`. Of
   overloaded functions, the overload with the fewest arguments is named after
   the function and every other one spells out its arguments,

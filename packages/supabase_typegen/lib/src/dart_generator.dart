@@ -2152,7 +2152,9 @@ void _writeFunctionMethod(
   final displayName = _displayName(function.schema, function.name);
   final getDocumentation = readOnly
       ? ' When [get] is set, it is called with a `GET` request in read-only '
-            'access mode, so that it is retried like a select.'
+            'access mode, so that it is retried like a select. An argument '
+            'that starts like a filter, such as `eq.foo`, keeps it a `POST`, '
+            'which is not retried.'
       : '';
   _writeDocComment(
     buffer,
