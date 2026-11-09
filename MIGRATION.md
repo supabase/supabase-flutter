@@ -1102,6 +1102,33 @@ await supabase.table(Books.table).insertAll([
 `insert()` and `upsert()` on `from()` keep `defaultToNull`. `PostgrestTableRequest` has no
 `defaultToNull` either: an executor sends a list payload with `Prefer: missing=default`.
 
+#### Passing `null` to a generated `Insert` or `Update` type writes SQL `NULL`
+
+A parameter of a generated `Insert` or `Update` type that is passed `null` now writes SQL `NULL`.
+It used to leave the column out, and the `set…ToNull()` methods, which are removed, wrote `NULL`.
+Leaving the argument out still leaves the column out. `copyWith()` and the generated function calls
+with arguments that have a default follow the same rule.
+
+```dart skip
+// Before
+await supabase
+    .table(Books.table)
+    .update(BooksUpdate(inPrint: false).setPriceToNull())
+    .where(Books.id.eq(1));
+```
+
+```dart
+// After
+await supabase
+    .table(Books.table)
+    .update(BooksUpdate(inPrint: false, price: null))
+    .where(Books.id.eq(1));
+```
+
+A call that passes a variable which can be `null` still compiles after regenerating, but now
+writes `NULL` where it used to keep the stored value, also on an upsert. Check such calls, and
+leave the argument out where the stored value should stay.
+
 #### Transforms that sent a different request now throw or narrow
 
 These used to compile and send something other than what was asked for:

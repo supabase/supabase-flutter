@@ -1005,6 +1005,10 @@ void main() {
         .table(Books.table)
         .upsert(BooksInsert(id: 1, title: 'x', authorId: 7, price: null));
 
+    expect(
+      httpClient.requests.last.headers['Prefer'],
+      contains('resolution=merge-duplicates'),
+    );
     expect(httpClient.requests.last.jsonBody, {
       'id': 1,
       'title': 'x',
