@@ -1246,6 +1246,22 @@ void main() {
       expect(profiles.last.settings == null, isTrue);
     });
 
+    test('read a NOT NULL JSON Schema column as non-nullable', () async {
+      httpClient.stub([
+        {
+          'document': {'toJson': 'a', 'fromJson': 1},
+        },
+      ]);
+
+      final rows = await client.table(hostile.String$$.table).selectOnly([
+        hostile.String$$.document,
+      ]);
+
+      final hostile.StringDocument document = rows.single.document;
+      expect(document.toJson$, 'a');
+      expect(document.fromJson$, 1);
+    });
+
     test('keep their type returned from an async function', () async {
       httpClient.stub({'id': 1});
       final types = <Type>[];
