@@ -1066,7 +1066,8 @@ class RealtimeChannel {
   /// emitted by [onBroadcast], the same as messages sent with [httpSend], from
   /// the database or from other Supabase clients. With
   /// [RealtimeChannelConfig.v2BroadcastCompatibility], the entries of a map
-  /// payload are also sent next to `type` and `event`.
+  /// payload are also sent next to `type` and `event`, except for the reserved
+  /// keys listed there, which are only sent under `payload`.
   ///
   /// ```dart
   /// await channel.sendBroadcastMessage(
