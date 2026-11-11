@@ -5,7 +5,8 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 
 import '../test/goldens/hostile_fixture.dart';
 
-/// Regenerates the golden files under `test/goldens` from the fixtures.
+/// Regenerates the golden files under `test/goldens` from the fixtures, and
+/// the generated code in `example/README.md` from its metadata.
 ///
 /// Run from the package root with `dart run tool/regenerate_goldens.dart`.
 void main() {
@@ -21,4 +22,18 @@ void main() {
   File(
     'test/goldens/hostile_schema.dart',
   ).writeAsStringSync(generateDartCode(hostileSchema));
+
+  final example =
+      jsonDecode(File('example/generator_metadata.json').readAsStringSync())
+          as Map<String, dynamic>;
+  final readme = File('example/README.md');
+  readme.writeAsStringSync(
+    readme.readAsStringSync().replaceFirstMapped(
+      RegExp(r'(```dart file\n).*?(```)', dotAll: true),
+      (match) =>
+          '${match[1]}'
+          '${generateDartCode(parseGeneratorMetadata(example))}'
+          '${match[2]}',
+    ),
+  );
 }
