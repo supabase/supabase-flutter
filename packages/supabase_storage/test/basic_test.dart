@@ -268,7 +268,7 @@ void main() {
       const encoded = 'my%20bucket%3Fx';
       customHttpClient
         ..stub({'Key': 'my bucket?x/a.txt'}, method: HttpMethod.post)
-        ..stub([], method: HttpMethod.post, times: 1)
+        ..stub(<String, dynamic>{}, method: HttpMethod.post, times: 1)
         ..stub([], method: HttpMethod.delete);
       final api = client.from('my bucket?x');
 
@@ -279,7 +279,7 @@ void main() {
       expect(
         customHttpClient.requests.map((request) => request.url.path),
         [
-          endsWith('/storage/v1/object/list/$encoded'),
+          endsWith('/storage/v1/object/list-v2/$encoded'),
           endsWith('/storage/v1/object/$encoded/a.txt'),
           endsWith('/storage/v1/object/$encoded'),
         ],
@@ -517,15 +517,7 @@ void main() {
       expect(request.headers['x-upsert'], 'true');
     });
 
-    test('should list files', () async {
-      customHttpClient.stub([testFileObjectJson, testFileObjectJson]);
-
-      final response = await client.from('public').list();
-      expect(response, isA<List<FileObject>>());
-      expect(response.length, 2);
-    });
-
-    test('listPaginated posts options and parses the result', () async {
+    test('list posts options and parses the result', () async {
       customHttpClient.stub({
         'hasNext': true,
         'nextCursor': 'cursor-2',
@@ -546,8 +538,8 @@ void main() {
 
       final result = await client
           .from('public')
-          .listPaginated(
-            options: const PaginatedSearchOptions(
+          .list(
+            options: const ListFilesOptions(
               prefix: 'prefix/',
               limit: 100,
               withDelimiter: true,
@@ -576,13 +568,13 @@ void main() {
       expect(result.objects.single.metadata, {'size': 10});
     });
 
-    test('listPaginated defaults to an empty body and empty result', () async {
+    test('list defaults to an empty body and empty result', () async {
       customHttpClient.stub({
         'hasNext': false,
         'objects': <dynamic>[],
       });
 
-      final result = await client.from('public').listPaginated();
+      final result = await client.from('public').list();
 
       final request = customHttpClient.requests.single;
       expect(request.jsonBody, <String, dynamic>{});
@@ -1284,12 +1276,16 @@ void main() {
       });
 
       test('list sends the version options and parses the fields', () async {
-        customHttpClient.stub([versionedFileJson]);
+        customHttpClient.stub({
+          'hasNext': false,
+          'folders': [],
+          'objects': [versionedFileJson],
+        });
 
-        final files = await client
+        final result = await client
             .from('public')
             .list(
-              searchOptions: const SearchOptions(
+              options: const ListFilesOptions(
                 noncurrentVersions: ListInclusion.include,
                 deleteMarkers: ListInclusion.only,
                 exactMatch: true,
@@ -1300,14 +1296,15 @@ void main() {
         expect(body['noncurrentVersions'], 'include');
         expect(body['deleteMarkers'], 'only');
         expect(body['exactMatch'], isTrue);
-        expect(files.single.version, 'version-1');
-        expect(files.single.archivedAt, DateTime.utc(2024, 5, 1, 10));
-        expect(files.single.isDeleteMarker, isFalse);
-        expect(files.single.isVersioned, isTrue);
+        final file = result.objects.single;
+        expect(file.version, 'version-1');
+        expect(file.archivedAt, DateTime.utc(2024, 5, 1, 10));
+        expect(file.isDeleteMarker, isFalse);
+        expect(file.isVersioned, isTrue);
       });
 
       test('list omits the version options by default', () async {
-        customHttpClient.stub([testFileObjectJson]);
+        customHttpClient.stub({'hasNext': false, 'objects': []});
 
         await client.from('public').list();
 
@@ -1317,31 +1314,6 @@ void main() {
             containsAll(['noncurrentVersions', 'deleteMarkers', 'exactMatch']),
           ),
         );
-      });
-
-      test('listPaginated sends the version options', () async {
-        customHttpClient.stub({
-          'hasNext': false,
-          'folders': [],
-          'objects': [
-            {'name': 'a.txt', 'version': 'version-1', 'is_versioned': true},
-          ],
-        });
-
-        final result = await client
-            .from('public')
-            .listPaginated(
-              options: const PaginatedSearchOptions(
-                noncurrentVersions: ListInclusion.only,
-                deleteMarkers: ListInclusion.exclude,
-              ),
-            );
-
-        final body = sentBody();
-        expect(body['noncurrentVersions'], 'only');
-        expect(body['deleteMarkers'], 'exclude');
-        expect(result.objects.single.version, 'version-1');
-        expect(result.objects.single.isVersioned, isTrue);
       });
 
       test('getMetadata requests a specific version', () async {

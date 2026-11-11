@@ -1216,7 +1216,7 @@ void main() {
 
       test('is read from a success response of the wrong shape', () async {
         final httpClient = MockSupabaseHttpClient()
-          ..stub({'not': 'a list'}, headers: requestIdHeaders);
+          ..stub(['not an object'], headers: requestIdHeaders);
         final client = SupabaseStorageClient(
           storageUrl,
           headers,

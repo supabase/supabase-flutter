@@ -232,7 +232,8 @@ class AnalyticsBucket {
   final DateTime updatedAt;
 }
 
-/// A file or folder entry returned by `StorageFileApi.list`.
+/// An object returned by `StorageFileApi.remove` and
+/// `StorageFileApi.removeVersions`.
 class FileObject {
   const FileObject({
     required this.name,
@@ -292,25 +293,25 @@ class FileObject {
   /// The creation timestamp.
   final DateTime? createdAt;
 
-  /// The file metadata, including size and mimetype. `null` for a folder.
+  /// The file metadata, including size and mimetype.
   final Map<String, dynamic>? metadata;
 
   /// The bucket the object belongs to, when requested.
   final Bucket? buckets;
 
-  /// The version identifier of the object. `null` for a folder and on servers
-  /// without object versioning.
+  /// The version identifier of the object. `null` on servers without object
+  /// versioning.
   final String? version;
 
   /// When this version stopped being the current one, or `null` while it is.
   final DateTime? archivedAt;
 
   /// Whether this entry marks a deletion rather than an object version. `null`
-  /// for a folder and on servers without object versioning.
+  /// on servers without object versioning.
   final bool? isDeleteMarker;
 
   /// Whether this object was written while the bucket had versioning enabled.
-  /// `null` for a folder and on servers without object versioning.
+  /// `null` on servers without object versioning.
   final bool? isVersioned;
 }
 
@@ -538,90 +539,19 @@ enum ListInclusion {
   only,
 }
 
-/// Options for `StorageFileApi.list`.
-class SearchOptions {
-  const SearchOptions({
-    this.limit = 100,
-    this.offset = 0,
-    this.sortBy = const SortBy(),
-    this.search,
-    this.noncurrentVersions,
-    this.deleteMarkers,
-    this.exactMatch,
-  });
-
-  /// The number of files you want to be returned.
-  final int? limit;
-
-  /// The starting position.
-  final int? offset;
-
-  /// The column and direction to sort by.
-  final SortBy? sortBy;
-
-  /// The search string to filter files by.
-  final String? search;
-
-  /// Whether previous versions of the objects are listed. Requires a bucket
-  /// that has had versioning enabled.
-  final ListInclusion? noncurrentVersions;
-
-  /// Whether the entries marking deleted objects are listed. Requires a
-  /// bucket that has had versioning enabled.
-  final ListInclusion? deleteMarkers;
-
-  /// When `true`, only lists objects whose key is exactly the given path.
-  final bool? exactMatch;
-
-  @internal
-  Map<String, dynamic> toMap() {
-    return {
-      'limit': limit ?? 100,
-      'offset': offset ?? 0,
-      'sortBy': (sortBy ?? const SortBy()).toMap(),
-      'search': ?search,
-      'noncurrentVersions': ?noncurrentVersions?.snakeCase,
-      'deleteMarkers': ?deleteMarkers?.snakeCase,
-      'exactMatch': ?exactMatch,
-    };
-  }
-}
-
-/// The column and direction that [StorageFileApi.list] sorts its results by.
-class SortBy {
-  const SortBy({
-    this.column = 'name',
-    this.order = SortDirection.ascending,
-  });
-
-  /// The column to sort by. Can be any column inside a [FileObject].
-  final String? column;
-
-  /// The sort direction.
-  final SortDirection order;
-
-  @internal
-  Map<String, dynamic> toMap() {
-    return {
-      'column': column ?? 'name',
-      'order': order.value,
-    };
-  }
-}
-
-/// The column that [StorageFileApi.listPaginated] can sort its results by.
+/// The column that [StorageFileApi.list] can sort its results by.
 enum FileSortColumn {
-  /// Sorts by [PaginatedFile.name].
+  /// Sorts by [ListedFile.name].
   name,
 
-  /// Sorts by [PaginatedFile.updatedAt].
+  /// Sorts by [ListedFile.updatedAt].
   updatedAt,
 
-  /// Sorts by [PaginatedFile.createdAt].
+  /// Sorts by [ListedFile.createdAt].
   createdAt,
 }
 
-/// The column and direction that [StorageFileApi.listPaginated] sorts its
+/// The column and direction that [StorageFileApi.list] sorts its
 /// results by.
 class FileSort {
   const FileSort({
@@ -644,9 +574,9 @@ class FileSort {
   }
 }
 
-/// Options for [StorageFileApi.listPaginated].
-class PaginatedSearchOptions {
-  const PaginatedSearchOptions({
+/// Options for [StorageFileApi.list].
+class ListFilesOptions {
+  const ListFilesOptions({
     this.limit,
     this.prefix,
     this.cursor,
@@ -665,7 +595,7 @@ class PaginatedSearchOptions {
   /// The prefix to filter files by.
   final String? prefix;
 
-  /// The cursor used for pagination. Pass the [PaginatedListResult.nextCursor]
+  /// The cursor used for pagination. Pass the [ListFilesResult.nextCursor]
   /// value from the previous request to fetch the next page.
   final String? cursor;
 
@@ -673,7 +603,7 @@ class PaginatedSearchOptions {
   ///
   /// When `false` (default) all objects are listed as a flat list. When `true`
   /// the response groups objects by delimiter, separating them into
-  /// [PaginatedListResult.folders] and [PaginatedListResult.objects].
+  /// [ListFilesResult.folders] and [ListFilesResult.objects].
   final bool? withDelimiter;
 
   /// The column and direction to sort by.
@@ -705,9 +635,9 @@ class PaginatedSearchOptions {
   }
 }
 
-/// A file entry returned by [StorageFileApi.listPaginated].
-class PaginatedFile {
-  const PaginatedFile({
+/// A file entry returned by [StorageFileApi.list].
+class ListedFile {
+  const ListedFile({
     required this.name,
     required this.key,
     required this.id,
@@ -720,8 +650,8 @@ class PaginatedFile {
     this.isVersioned,
   });
 
-  factory PaginatedFile.fromJson(Map<String, dynamic> json) {
-    return PaginatedFile(
+  factory ListedFile.fromJson(Map<String, dynamic> json) {
+    return ListedFile(
       name: json.field<String>('name'),
       key: json.field<String?>('key'),
       id: json.field<String?>('id'),
@@ -735,10 +665,12 @@ class PaginatedFile {
     );
   }
 
-  /// The file name.
+  /// The path of the file within the bucket, including the
+  /// [ListFilesOptions.prefix].
   final String name;
 
-  /// The full object key/path.
+  /// The path of the file relative to the [ListFilesOptions.prefix]. Only set
+  /// when listing with [ListFilesOptions.withDelimiter].
   final String? key;
 
   /// The unique identifier of the file.
@@ -776,48 +708,49 @@ class FileVersion {
   /// The file path, including the file name. For example `folder/image.png`.
   final String path;
 
-  /// The version identifier, as [FileObject.version] reports it.
+  /// The version identifier, as [ListedFile.version] reports it.
   final String versionId;
 }
 
-/// A folder entry returned by [StorageFileApi.listPaginated] when using a
+/// A folder entry returned by [StorageFileApi.list] when using a
 /// delimiter.
-class PaginatedFolder {
-  const PaginatedFolder({
+class ListedFolder {
+  const ListedFolder({
     required this.name,
     required this.key,
   });
 
-  factory PaginatedFolder.fromJson(Map<String, dynamic> json) {
-    return PaginatedFolder(
+  factory ListedFolder.fromJson(Map<String, dynamic> json) {
+    return ListedFolder(
       name: json.field<String>('name'),
       key: json.field<String?>('key'),
     );
   }
 
-  /// The folder name/prefix.
+  /// The path of the folder within the bucket, ending in `/`.
   final String name;
 
-  /// The full folder key/path.
+  /// The path of the folder relative to the [ListFilesOptions.prefix], when the
+  /// server reports it.
   final String? key;
 }
 
-/// The result of [StorageFileApi.listPaginated].
-class PaginatedListResult {
-  const PaginatedListResult({
+/// The result of [StorageFileApi.list].
+class ListFilesResult {
+  const ListFilesResult({
     required this.hasNext,
     required this.folders,
     required this.objects,
     required this.nextCursor,
   });
 
-  factory PaginatedListResult.fromJson(Map<String, dynamic> json) {
+  factory ListFilesResult.fromJson(Map<String, dynamic> json) {
     final folders = json.listOf<Map<String, dynamic>>('folders') ?? const [];
     final objects = json.listOf<Map<String, dynamic>>('objects') ?? const [];
-    return PaginatedListResult(
+    return ListFilesResult(
       hasNext: json.field<bool?>('hasNext') ?? false,
-      folders: folders.map(PaginatedFolder.fromJson).toList(),
-      objects: objects.map(PaginatedFile.fromJson).toList(),
+      folders: folders.map(ListedFolder.fromJson).toList(),
+      objects: objects.map(ListedFile.fromJson).toList(),
       nextCursor: json.field<String?>('nextCursor'),
     );
   }
@@ -826,12 +759,12 @@ class PaginatedListResult {
   final bool hasNext;
 
   /// The folders in this page. Only populated when a delimiter is used.
-  final List<PaginatedFolder> folders;
+  final List<ListedFolder> folders;
 
   /// The files in this page.
-  final List<PaginatedFile> objects;
+  final List<ListedFile> objects;
 
-  /// The cursor to pass as [PaginatedSearchOptions.cursor] to fetch the next
+  /// The cursor to pass as [ListFilesOptions.cursor] to fetch the next
   /// page.
   final String? nextCursor;
 }

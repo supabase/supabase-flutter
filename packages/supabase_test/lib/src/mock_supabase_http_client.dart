@@ -718,18 +718,28 @@ class MockSupabaseHttpClient extends BaseClient {
     );
   }
 
-  /// Answers `list` on [bucket] with [objects], each in the JSON shape of a
-  /// `FileObject`, which [storageObjectJson] produces.
+  /// Answers `list` on [bucket] with one page of [objects], each in the JSON
+  /// shape of a `ListedFile`, which [storageObjectJson] produces, and of
+  /// [folders], each a map with the `name` of the folder.
+  ///
+  /// A [nextCursor] reports that there is another page.
   void stubStorageList(
     String bucket, {
     required List<Map<String, dynamic>> objects,
+    List<Map<String, dynamic>> folders = const [],
+    String? nextCursor,
     int statusCode = 200,
     int? times,
   }) {
     stub(
-      objects,
+      {
+        'hasNext': nextCursor != null,
+        'folders': folders,
+        'objects': objects,
+        'nextCursor': ?nextCursor,
+      },
       method: HttpMethod.post,
-      path: '/storage/v1/object/list/$bucket',
+      path: '/storage/v1/object/list-v2/$bucket',
       statusCode: statusCode,
       times: times,
     );

@@ -1976,67 +1976,44 @@ features:
       - StorageDownloadTooLargeException.maxBytes
   storage.file_buckets.list_files:
     status: implemented
-    note: "Cursor-based pagination is exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name."
+    note: "Only the cursor-based list-v2 endpoint is exposed, as list; the legacy offset-based list endpoint is not."
     symbols:
       - StorageFileApi.list
-      - StorageFileApi.listPaginated
     supporting_symbols:
-      - FileObject
-      - FileObject.FileObject
-      - FileObject.bucketId
-      - FileObject.buckets
-      - FileObject.createdAt
-      - FileObject.fromJson
-      - FileObject.id
-      - FileObject.metadata
-      - FileObject.name
-      - FileObject.owner
-      - FileObject.updatedAt
       - FileSort
       - FileSort.FileSort
       - FileSort.column
       - FileSort.order
       - FileSortColumn
-      - PaginatedFile
-      - PaginatedFile.PaginatedFile
-      - PaginatedFile.createdAt
-      - PaginatedFile.fromJson
-      - PaginatedFile.id
-      - PaginatedFile.key
-      - PaginatedFile.metadata
-      - PaginatedFile.name
-      - PaginatedFile.updatedAt
-      - PaginatedFolder
-      - PaginatedFolder.PaginatedFolder
-      - PaginatedFolder.fromJson
-      - PaginatedFolder.key
-      - PaginatedFolder.name
-      - PaginatedListResult
-      - PaginatedListResult.PaginatedListResult
-      - PaginatedListResult.folders
-      - PaginatedListResult.fromJson
-      - PaginatedListResult.hasNext
-      - PaginatedListResult.nextCursor
-      - PaginatedListResult.objects
-      - PaginatedSearchOptions
-      - PaginatedSearchOptions.PaginatedSearchOptions
-      - PaginatedSearchOptions.cursor
-      - PaginatedSearchOptions.exactMatch
-      - PaginatedSearchOptions.limit
-      - PaginatedSearchOptions.prefix
-      - PaginatedSearchOptions.sortBy
-      - PaginatedSearchOptions.withDelimiter
-      - SearchOptions
-      - SearchOptions.SearchOptions
-      - SearchOptions.exactMatch
-      - SearchOptions.limit
-      - SearchOptions.offset
-      - SearchOptions.search
-      - SearchOptions.sortBy
-      - SortBy
-      - SortBy.SortBy
-      - SortBy.column
-      - SortBy.order
+      - ListFilesOptions
+      - ListFilesOptions.ListFilesOptions
+      - ListFilesOptions.cursor
+      - ListFilesOptions.exactMatch
+      - ListFilesOptions.limit
+      - ListFilesOptions.prefix
+      - ListFilesOptions.sortBy
+      - ListFilesOptions.withDelimiter
+      - ListFilesResult
+      - ListFilesResult.ListFilesResult
+      - ListFilesResult.folders
+      - ListFilesResult.fromJson
+      - ListFilesResult.hasNext
+      - ListFilesResult.nextCursor
+      - ListFilesResult.objects
+      - ListedFile
+      - ListedFile.ListedFile
+      - ListedFile.createdAt
+      - ListedFile.fromJson
+      - ListedFile.id
+      - ListedFile.key
+      - ListedFile.metadata
+      - ListedFile.name
+      - ListedFile.updatedAt
+      - ListedFolder
+      - ListedFolder.ListedFolder
+      - ListedFolder.fromJson
+      - ListedFolder.key
+      - ListedFolder.name
   storage.file_buckets.move:
     status: implemented
     symbols:
@@ -2057,6 +2034,18 @@ features:
     status: implemented
     symbols:
       - StorageFileApi.remove
+    supporting_symbols:
+      - FileObject
+      - FileObject.FileObject
+      - FileObject.bucketId
+      - FileObject.buckets
+      - FileObject.createdAt
+      - FileObject.fromJson
+      - FileObject.id
+      - FileObject.metadata
+      - FileObject.name
+      - FileObject.owner
+      - FileObject.updatedAt
   storage.file_buckets.purge_cache:
     status: implemented
     symbols:
@@ -2220,20 +2209,14 @@ features:
   storage.file_buckets.list_file_versions:
     status: implemented
     symbols:
-      - SearchOptions.deleteMarkers
-      - SearchOptions.noncurrentVersions
-      - PaginatedSearchOptions.deleteMarkers
-      - PaginatedSearchOptions.noncurrentVersions
+      - ListFilesOptions.deleteMarkers
+      - ListFilesOptions.noncurrentVersions
     supporting_symbols:
       - ListInclusion
-      - FileObject.archivedAt
-      - FileObject.isDeleteMarker
-      - FileObject.isVersioned
-      - FileObject.version
-      - PaginatedFile.archivedAt
-      - PaginatedFile.isDeleteMarker
-      - PaginatedFile.isVersioned
-      - PaginatedFile.version
+      - ListedFile.archivedAt
+      - ListedFile.isDeleteMarker
+      - ListedFile.isVersioned
+      - ListedFile.version
   storage.file_buckets.file_info_specific_version:
     status: implemented
     symbols:
@@ -2263,6 +2246,10 @@ features:
     symbols:
       - StorageFileApi.removeVersions
     supporting_symbols:
+      - FileObject.archivedAt
+      - FileObject.isDeleteMarker
+      - FileObject.isVersioned
+      - FileObject.version
       - FileVersion
       - FileVersion.FileVersion
       - FileVersion.path

@@ -163,45 +163,6 @@ void main() {
     });
   });
 
-  group('SearchOptions.toMap', () {
-    test('uses default limit, offset and sortBy', () {
-      const options = SearchOptions();
-      expect(options.toMap(), {
-        'limit': 100,
-        'offset': 0,
-        'sortBy': {'column': 'name', 'order': 'asc'},
-      });
-    });
-
-    test('falls back to the defaults for explicit nulls', () {
-      const options = SearchOptions(limit: null, offset: null, sortBy: null);
-      expect(options.toMap(), {
-        'limit': 100,
-        'offset': 0,
-        'sortBy': {'column': 'name', 'order': 'asc'},
-      });
-    });
-
-    test('sends the search string when set', () {
-      expect(const SearchOptions(search: 'cat').toMap()['search'], 'cat');
-    });
-  });
-
-  group('SortBy.toMap', () {
-    test('falls back to the default column when it is null', () {
-      const sortBy = SortBy(column: null);
-      expect(sortBy.toMap(), {'column': 'name', 'order': 'asc'});
-    });
-
-    test('serializes the order to its value', () {
-      const sortBy = SortBy(
-        column: 'updated_at',
-        order: SortDirection.descending,
-      );
-      expect(sortBy.toMap(), {'column': 'updated_at', 'order': 'desc'});
-    });
-  });
-
   group('FileSort.toMap', () {
     test('serializes column to snake_case and order to its value', () {
       const sort = FileSort(
@@ -212,16 +173,16 @@ void main() {
     });
   });
 
-  group('PaginatedSearchOptions.toMap', () {
+  group('ListFilesOptions.toMap', () {
     test('omits null values', () {
-      const options = PaginatedSearchOptions(limit: 50, prefix: 'folder/');
+      const options = ListFilesOptions(limit: 50, prefix: 'folder/');
       expect(options.toMap(), {'limit': 50, 'prefix': 'folder/'});
     });
   });
 
-  group('PaginatedListResult.fromJson', () {
+  group('ListFilesResult.fromJson', () {
     test('parses folders and objects', () {
-      final result = PaginatedListResult.fromJson({
+      final result = ListFilesResult.fromJson({
         'hasNext': true,
         'nextCursor': 'cursor-1',
         'folders': [
@@ -239,7 +200,7 @@ void main() {
     });
 
     test('defaults to an empty page when fields are missing', () {
-      final result = PaginatedListResult.fromJson({});
+      final result = ListFilesResult.fromJson({});
       expect(result.hasNext, isFalse);
       expect(result.folders, isEmpty);
       expect(result.objects, isEmpty);
@@ -484,8 +445,8 @@ void main() {
       expect(file.isVersioned, isTrue);
     });
 
-    test('PaginatedFile.fromJson parses them', () {
-      final file = PaginatedFile.fromJson({'name': 'a.txt', ...versionJson});
+    test('ListedFile.fromJson parses them', () {
+      final file = ListedFile.fromJson({'name': 'a.txt', ...versionJson});
 
       expect(file.version, 'version-1');
       expect(file.archivedAt, DateTime.utc(2024, 5, 1, 10));
@@ -495,31 +456,8 @@ void main() {
   });
 
   group('version listing options', () {
-    test('SearchOptions.toMap serializes them and omits unset ones', () {
-      const options = SearchOptions(
-        noncurrentVersions: ListInclusion.include,
-        deleteMarkers: ListInclusion.only,
-        exactMatch: true,
-      );
-
-      expect(options.toMap(), {
-        'limit': 100,
-        'offset': 0,
-        'sortBy': {'column': 'name', 'order': 'asc'},
-        'noncurrentVersions': 'include',
-        'deleteMarkers': 'only',
-        'exactMatch': true,
-      });
-      expect(
-        const SearchOptions().toMap().keys,
-        isNot(
-          containsAll(['noncurrentVersions', 'deleteMarkers', 'exactMatch']),
-        ),
-      );
-    });
-
-    test('PaginatedSearchOptions.toMap serializes them', () {
-      const options = PaginatedSearchOptions(
+    test('ListFilesOptions.toMap serializes them', () {
+      const options = ListFilesOptions(
         noncurrentVersions: ListInclusion.exclude,
         deleteMarkers: ListInclusion.include,
         exactMatch: false,
@@ -530,6 +468,7 @@ void main() {
         'deleteMarkers': 'include',
         'exactMatch': false,
       });
+      expect(const ListFilesOptions().toMap(), isEmpty);
     });
   });
 

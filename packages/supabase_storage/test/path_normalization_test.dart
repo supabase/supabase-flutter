@@ -225,15 +225,6 @@ void main() {
         expect(body['paths'], ['folder/file.txt']);
       });
 
-      test('by list, in the request body', () async {
-        mockClient.stub(<dynamic>[]);
-
-        await client.from('bucket').list(path: path);
-
-        final body = requestBody() as Map<String, dynamic>;
-        expect(body['prefix'], 'folder/file.txt');
-      });
-
       test('by uploadBinaryToSignedUrl, including the returned path', () async {
         mockClient.stub({
           'Key': 'bucket/folder/file.txt',
@@ -256,7 +247,7 @@ void main() {
     });
   }
 
-  group('listPaginated prefix', () {
+  group('list prefix', () {
     const prefixes = {
       '/folder/file.txt': 'folder/file.txt',
       'folder//file.txt': 'folder/file.txt',
@@ -275,8 +266,8 @@ void main() {
 
         await client
             .from('bucket')
-            .listPaginated(
-              options: PaginatedSearchOptions(
+            .list(
+              options: ListFilesOptions(
                 prefix: prefix,
                 withDelimiter: true,
               ),

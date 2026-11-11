@@ -1206,48 +1206,22 @@ class StorageFileApi {
     );
   }
 
-  /// Lists all the files within a bucket.
-  ///
-  /// [path] The folder path.
-  ///
-  /// [searchOptions] includes `limit`, `offset`, and `sortBy`.
-  Future<List<FileObject>> list({
-    String? path,
-    SearchOptions searchOptions = const SearchOptions(),
-  }) async {
-    final Map<String, dynamic> body = {
-      'prefix': _removeEmptyFolders(path ?? ''),
-      ...searchOptions.toMap(),
-    };
-    final options = _fetchOptions;
-    final response = await _storageFetch.post<List<dynamic>>(
-      '$url/object/list/$_encodedBucketId',
-      body,
-      options: options,
-    );
-    final fileObjects = List<FileObject>.from(
-      response.map(
-        (item) => FileObject.fromJson(item),
-      ),
-    );
-    return fileObjects;
-  }
-
-  /// Lists files and folders within a bucket with cursor-based pagination and
-  /// hierarchical (delimiter) listing.
+  /// Lists one page of the files, and optionally the folders, within a bucket.
   ///
   /// [options] includes `prefix`, `cursor`, `limit`, `withDelimiter` and
-  /// `sortBy`.
+  /// `sortBy`. Pass [ListFilesResult.nextCursor] as [ListFilesOptions.cursor]
+  /// to fetch the next page.
   ///
-  /// Folder entries in [PaginatedListResult.folders] only contain a name (and
-  /// optionally a key); full metadata is only available on the file entries in
-  /// [PaginatedListResult.objects].
-  Future<PaginatedListResult> listPaginated({
-    PaginatedSearchOptions options = const PaginatedSearchOptions(),
+  /// The prefix is matched case-sensitively against the full object key, so
+  /// end it with a `/` to list the contents of a folder. Folder entries in
+  /// [ListFilesResult.folders] only contain a name (and optionally a key);
+  /// full metadata is only available on the file entries in
+  /// [ListFilesResult.objects].
+  Future<ListFilesResult> list({
+    ListFilesOptions options = const ListFilesOptions(),
   }) async {
     final body = options.toMap();
-    final prefix = body['prefix'] as String?;
-    if (prefix != null) {
+    if (options.prefix case final prefix?) {
       body['prefix'] = _normalizePrefix(prefix);
     }
     final response = await _storageFetch.post<Map<String, dynamic>>(
@@ -1255,6 +1229,6 @@ class StorageFileApi {
       body,
       options: _fetchOptions,
     );
-    return PaginatedListResult.fromJson(response);
+    return ListFilesResult.fromJson(response);
   }
 }

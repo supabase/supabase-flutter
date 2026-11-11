@@ -1,7 +1,8 @@
 import 'package:meta/meta.dart';
 
 /// The JSON form of a storage object named [name], as the storage API lists
-/// it and as `FileObject.fromJson` reads it.
+/// or removes it and as `ListedFile.fromJson` and `FileObject.fromJson` read
+/// it.
 @visibleForTesting
 Map<String, dynamic> storageObjectJson(
   String name, {

@@ -1015,11 +1015,31 @@ void main() {
         ],
       );
 
-      final objects = await supabase.storage.from('avatars').list();
+      final result = await supabase.storage.from('avatars').list();
 
-      expect(objects.map((object) => object.name), ['me.png', 'you.png']);
-      expect(objects.last.bucketId, 'avatars');
-      expect(objects.first.metadata?['size'], 1024);
+      expect(result.objects.map((object) => object.name), [
+        'me.png',
+        'you.png',
+      ]);
+      expect(result.objects.first.metadata?['size'], 1024);
+      expect(result.hasNext, isFalse);
+    });
+
+    test('stubStorageList answers list with folders and a cursor', () async {
+      httpClient.stubStorageList(
+        'avatars',
+        objects: [],
+        folders: [
+          {'name': 'photos/'},
+        ],
+        nextCursor: 'cursor-1',
+      );
+
+      final result = await supabase.storage.from('avatars').list();
+
+      expect(result.folders.single.name, 'photos/');
+      expect(result.hasNext, isTrue);
+      expect(result.nextCursor, 'cursor-1');
     });
 
     test('stubStorageRemove answers remove with the deleted objects', () async {
@@ -1057,13 +1077,14 @@ void main() {
         ],
       );
 
-      final objects = await supabase.storage
+      final result = await supabase.storage
           .from('avatars')
           .list(
-            searchOptions: const SearchOptions(
+            options: const ListFilesOptions(
               noncurrentVersions: ListInclusion.include,
             ),
           );
+      final objects = result.objects;
 
       expect(objects.first.version, 'version-1');
       expect(objects.first.archivedAt, DateTime.utc(2024, 5, 1, 10));
