@@ -267,7 +267,7 @@ void main() {
         await client
             .from('bucket')
             .list(
-              options: ListOptions(
+              options: ListFilesOptions(
                 prefix: prefix,
                 withDelimiter: true,
               ),

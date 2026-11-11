@@ -575,8 +575,8 @@ class FileSort {
 }
 
 /// Options for [StorageFileApi.list].
-class ListOptions {
-  const ListOptions({
+class ListFilesOptions {
+  const ListFilesOptions({
     this.limit,
     this.prefix,
     this.cursor,
@@ -595,7 +595,7 @@ class ListOptions {
   /// The prefix to filter files by.
   final String? prefix;
 
-  /// The cursor used for pagination. Pass the [ListResult.nextCursor]
+  /// The cursor used for pagination. Pass the [ListFilesResult.nextCursor]
   /// value from the previous request to fetch the next page.
   final String? cursor;
 
@@ -603,7 +603,7 @@ class ListOptions {
   ///
   /// When `false` (default) all objects are listed as a flat list. When `true`
   /// the response groups objects by delimiter, separating them into
-  /// [ListResult.folders] and [ListResult.objects].
+  /// [ListFilesResult.folders] and [ListFilesResult.objects].
   final bool? withDelimiter;
 
   /// The column and direction to sort by.
@@ -666,11 +666,11 @@ class ListedFile {
   }
 
   /// The path of the file within the bucket, including the
-  /// [ListOptions.prefix].
+  /// [ListFilesOptions.prefix].
   final String name;
 
-  /// The path of the file relative to the [ListOptions.prefix]. Only set when
-  /// listing with [ListOptions.withDelimiter].
+  /// The path of the file relative to the [ListFilesOptions.prefix]. Only set
+  /// when listing with [ListFilesOptions.withDelimiter].
   final String? key;
 
   /// The unique identifier of the file.
@@ -730,24 +730,24 @@ class ListedFolder {
   /// The path of the folder within the bucket, ending in `/`.
   final String name;
 
-  /// The path of the folder relative to the [ListOptions.prefix], when the
+  /// The path of the folder relative to the [ListFilesOptions.prefix], when the
   /// server reports it.
   final String? key;
 }
 
 /// The result of [StorageFileApi.list].
-class ListResult {
-  const ListResult({
+class ListFilesResult {
+  const ListFilesResult({
     required this.hasNext,
     required this.folders,
     required this.objects,
     required this.nextCursor,
   });
 
-  factory ListResult.fromJson(Map<String, dynamic> json) {
+  factory ListFilesResult.fromJson(Map<String, dynamic> json) {
     final folders = json.listOf<Map<String, dynamic>>('folders') ?? const [];
     final objects = json.listOf<Map<String, dynamic>>('objects') ?? const [];
-    return ListResult(
+    return ListFilesResult(
       hasNext: json.field<bool?>('hasNext') ?? false,
       folders: folders.map(ListedFolder.fromJson).toList(),
       objects: objects.map(ListedFile.fromJson).toList(),
@@ -764,7 +764,7 @@ class ListResult {
   /// The files in this page.
   final List<ListedFile> objects;
 
-  /// The cursor to pass as [ListOptions.cursor] to fetch the next
+  /// The cursor to pass as [ListFilesOptions.cursor] to fetch the next
   /// page.
   final String? nextCursor;
 }

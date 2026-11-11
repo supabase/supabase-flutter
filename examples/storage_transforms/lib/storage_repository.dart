@@ -37,10 +37,11 @@ class StorageRepository {
   /// Lists the images at the root of the bucket, newest first.
   ///
   /// With `withDelimiter`, folders are reported separately in
-  /// [ListResult.folders], so every entry in [ListResult.objects] is a file.
+  /// [ListFilesResult.folders], so every entry in [ListFilesResult.objects] is
+  /// a file.
   Future<List<StoredImage>> listImages() async {
     final result = await _files.list(
-      options: const ListOptions(
+      options: const ListFilesOptions(
         withDelimiter: true,
         sortBy: FileSort(
           column: FileSortColumn.createdAt,

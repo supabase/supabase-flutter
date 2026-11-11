@@ -1209,17 +1209,19 @@ class StorageFileApi {
   /// Lists one page of the files, and optionally the folders, within a bucket.
   ///
   /// [options] includes `prefix`, `cursor`, `limit`, `withDelimiter` and
-  /// `sortBy`. Pass [ListResult.nextCursor] as [ListOptions.cursor] to fetch
-  /// the next page.
+  /// `sortBy`. Pass [ListFilesResult.nextCursor] as [ListFilesOptions.cursor]
+  /// to fetch the next page.
   ///
   /// The prefix is matched case-sensitively against the full object key, so
   /// end it with a `/` to list the contents of a folder. Folder entries in
-  /// [ListResult.folders] only contain a name (and optionally a key); full
-  /// metadata is only available on the file entries in [ListResult.objects].
-  Future<ListResult> list({ListOptions options = const ListOptions()}) async {
+  /// [ListFilesResult.folders] only contain a name (and optionally a key);
+  /// full metadata is only available on the file entries in
+  /// [ListFilesResult.objects].
+  Future<ListFilesResult> list({
+    ListFilesOptions options = const ListFilesOptions(),
+  }) async {
     final body = options.toMap();
-    final prefix = body['prefix'] as String?;
-    if (prefix != null) {
+    if (options.prefix case final prefix?) {
       body['prefix'] = _normalizePrefix(prefix);
     }
     final response = await _storageFetch.post<Map<String, dynamic>>(
@@ -1227,6 +1229,6 @@ class StorageFileApi {
       body,
       options: _fetchOptions,
     );
-    return ListResult.fromJson(response);
+    return ListFilesResult.fromJson(response);
   }
 }

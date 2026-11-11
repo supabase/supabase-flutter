@@ -1985,21 +1985,21 @@ features:
       - FileSort.column
       - FileSort.order
       - FileSortColumn
-      - ListOptions
-      - ListOptions.ListOptions
-      - ListOptions.cursor
-      - ListOptions.exactMatch
-      - ListOptions.limit
-      - ListOptions.prefix
-      - ListOptions.sortBy
-      - ListOptions.withDelimiter
-      - ListResult
-      - ListResult.ListResult
-      - ListResult.folders
-      - ListResult.fromJson
-      - ListResult.hasNext
-      - ListResult.nextCursor
-      - ListResult.objects
+      - ListFilesOptions
+      - ListFilesOptions.ListFilesOptions
+      - ListFilesOptions.cursor
+      - ListFilesOptions.exactMatch
+      - ListFilesOptions.limit
+      - ListFilesOptions.prefix
+      - ListFilesOptions.sortBy
+      - ListFilesOptions.withDelimiter
+      - ListFilesResult
+      - ListFilesResult.ListFilesResult
+      - ListFilesResult.folders
+      - ListFilesResult.fromJson
+      - ListFilesResult.hasNext
+      - ListFilesResult.nextCursor
+      - ListFilesResult.objects
       - ListedFile
       - ListedFile.ListedFile
       - ListedFile.createdAt
@@ -2209,8 +2209,8 @@ features:
   storage.file_buckets.list_file_versions:
     status: implemented
     symbols:
-      - ListOptions.deleteMarkers
-      - ListOptions.noncurrentVersions
+      - ListFilesOptions.deleteMarkers
+      - ListFilesOptions.noncurrentVersions
     supporting_symbols:
       - ListInclusion
       - ListedFile.archivedAt

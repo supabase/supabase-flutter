@@ -720,7 +720,7 @@ class MockSupabaseHttpClient extends BaseClient {
 
   /// Answers `list` on [bucket] with one page of [objects], each in the JSON
   /// shape of a `ListedFile`, which [storageObjectJson] produces, and of
-  /// [folders], each a map with a `name` and a `key`.
+  /// [folders], each a map with the `name` of the folder.
   ///
   /// A [nextCursor] reports that there is another page.
   void stubStorageList(

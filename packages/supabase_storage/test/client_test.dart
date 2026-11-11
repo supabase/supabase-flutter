@@ -61,7 +61,7 @@ void main() {
   test('List files', () async {
     final response = await storage
         .from('bucket2')
-        .list(options: const ListOptions(prefix: 'public/'));
+        .list(options: const ListFilesOptions(prefix: 'public/'));
     expect(response.objects.length, 2);
   });
 
@@ -997,7 +997,7 @@ void main() {
       final result = await storage
           .from(bucket)
           .list(
-            options: const ListOptions(
+            options: const ListFilesOptions(
               prefix: 'folder/',
               withDelimiter: true,
             ),
@@ -1007,6 +1007,10 @@ void main() {
         result.objects.map((object) => object.name),
         unorderedEquals(['folder/a.txt', 'folder/b.txt']),
       );
+      expect(
+        result.objects.map((object) => object.key),
+        unorderedEquals(['a.txt', 'b.txt']),
+      );
       expect(result.folders, isEmpty);
     });
 
@@ -1014,7 +1018,7 @@ void main() {
       final result = await storage
           .from(bucket)
           .list(
-            options: const ListOptions(
+            options: const ListFilesOptions(
               prefix: 'folder',
               withDelimiter: true,
             ),
@@ -1065,7 +1069,7 @@ void main() {
         final folder = key.substring(0, key.indexOf('/'));
         final listed = await storage
             .from(bucket)
-            .list(options: ListOptions(prefix: '$folder/'));
+            .list(options: ListFilesOptions(prefix: '$folder/'));
         expect(
           listed.objects.map((object) => object.name),
           contains(key),
@@ -1099,7 +1103,7 @@ void main() {
   group('object versioning', () {
     final bucketName = '${_bucketNamespace}versioned-$timestamp';
     const path = 'versioned/file.txt';
-    const versionedFolder = ListOptions(prefix: 'versioned/');
+    const versionedFolder = ListFilesOptions(prefix: 'versioned/');
     final firstBytes = Uint8List.fromList(utf8.encode('first'));
     final secondBytes = Uint8List.fromList(utf8.encode('second'));
     var versioningSupported = false;
@@ -1143,7 +1147,7 @@ void main() {
       });
     }
 
-    List<ListedFile> versionsOf(ListResult result) {
+    List<ListedFile> versionsOf(ListFilesResult result) {
       return result.objects.where((entry) => entry.name == path).toList();
     }
 
@@ -1180,7 +1184,7 @@ void main() {
         final withNoncurrent = await storage
             .from(bucketName)
             .list(
-              options: const ListOptions(
+              options: const ListFilesOptions(
                 prefix: 'versioned/',
                 noncurrentVersions: ListInclusion.include,
               ),
@@ -1188,7 +1192,7 @@ void main() {
         final onlyNoncurrent = await storage
             .from(bucketName)
             .list(
-              options: const ListOptions(
+              options: const ListFilesOptions(
                 prefix: 'versioned/',
                 noncurrentVersions: ListInclusion.only,
               ),
@@ -1209,7 +1213,7 @@ void main() {
       final result = await storage
           .from(bucketName)
           .list(
-            options: const ListOptions(
+            options: const ListFilesOptions(
               prefix: 'versioned/',
               noncurrentVersions: ListInclusion.only,
             ),
@@ -1292,7 +1296,7 @@ void main() {
       final remaining = await storage
           .from(bucketName)
           .list(
-            options: const ListOptions(
+            options: const ListFilesOptions(
               prefix: 'versioned/',
               noncurrentVersions: ListInclusion.include,
             ),
@@ -1315,7 +1319,7 @@ void main() {
       final markers = await storage
           .from(bucketName)
           .list(
-            options: const ListOptions(
+            options: const ListFilesOptions(
               prefix: 'versioned/',
               deleteMarkers: ListInclusion.only,
             ),

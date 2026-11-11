@@ -1030,7 +1030,7 @@ void main() {
         'avatars',
         objects: [],
         folders: [
-          {'name': 'photos/', 'key': 'photos/'},
+          {'name': 'photos/'},
         ],
         nextCursor: 'cursor-1',
       );
@@ -1080,7 +1080,7 @@ void main() {
       final result = await supabase.storage
           .from('avatars')
           .list(
-            options: const ListOptions(
+            options: const ListFilesOptions(
               noncurrentVersions: ListInclusion.include,
             ),
           );

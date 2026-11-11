@@ -539,7 +539,7 @@ void main() {
       final result = await client
           .from('public')
           .list(
-            options: const ListOptions(
+            options: const ListFilesOptions(
               prefix: 'prefix/',
               limit: 100,
               withDelimiter: true,
@@ -1285,7 +1285,7 @@ void main() {
         final result = await client
             .from('public')
             .list(
-              options: const ListOptions(
+              options: const ListFilesOptions(
                 noncurrentVersions: ListInclusion.include,
                 deleteMarkers: ListInclusion.only,
                 exactMatch: true,

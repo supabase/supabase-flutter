@@ -2460,13 +2460,13 @@ The offset-based `list()`, which called the legacy `/object/list` endpoint, is r
 with `SearchOptions` and `SortBy`. `listPaginated()` takes its name, and its types lose the
 `Paginated` prefix:
 
-| Before                   | After          |
-| ------------------------ | -------------- |
-| `listPaginated()`        | `list()`       |
-| `PaginatedSearchOptions` | `ListOptions`  |
-| `PaginatedListResult`    | `ListResult`   |
-| `PaginatedFile`          | `ListedFile`   |
-| `PaginatedFolder`        | `ListedFolder` |
+| Before                   | After              |
+| ------------------------ | ------------------ |
+| `listPaginated()`        | `list()`           |
+| `PaginatedSearchOptions` | `ListFilesOptions` |
+| `PaginatedListResult`    | `ListFilesResult`  |
+| `PaginatedFile`          | `ListedFile`       |
+| `PaginatedFolder`        | `ListedFolder`     |
 
 A call to the old `list()` moves its folder into `prefix`, ending in a `/`, and sets
 `withDelimiter` to list one level like before. The result is a page with the files in `objects` and
@@ -2490,7 +2490,7 @@ final files = await supabase.storage
 final page = await supabase.storage
     .from('avatars')
     .list(
-      options: const ListOptions(
+      options: const ListFilesOptions(
         prefix: 'public/',
         withDelimiter: true,
         limit: 50,
@@ -2504,14 +2504,15 @@ final names = page.objects.map((file) => file.key);
 ```
 
 `ListedFile.name` is the path within the bucket, including the prefix, where `FileObject.name` was
-relative to the folder. The relative path is in `key`.
+relative to the folder. With `withDelimiter`, the relative path is in `key`, which is `null`
+otherwise.
 
 Some things the old endpoint did have no direct replacement:
 
 - **Case-insensitive matching.** The old endpoint lowercased the path and the keys, so `public` also
   found `Public/`. The prefix is now matched as written.
 - **`offset`.** Page with the cursor instead: while `hasNext` is `true`, pass the `nextCursor` of
-  the previous page as `ListOptions.cursor`.
+  the previous page as `ListFilesOptions.cursor`.
 - **Sorting by any column.** `FileSortColumn` has `name`, `createdAt` and `updatedAt`. Sort a page
   yourself for anything else.
 - **`search`.** It was appended to the path, so `path: 'photos'` with `search: 'cat'` becomes
@@ -2524,7 +2525,7 @@ servers can no longer be listed.
 
 The `StorageFileApi` constructor is internal. Get one for a bucket with
 `supabase.storage.from(bucketId)` instead. The methods that encode options for a request,
-`ListBucketsOptions.toQueryParameters`, `toMap` on `FileSort` and `ListOptions`, and
+`ListBucketsOptions.toQueryParameters`, `toMap` on `FileSort` and `ListFilesOptions`, and
 `Vector.toJson`, are internal too.
 
 ### Errors
@@ -2940,18 +2941,18 @@ turns propagation on, so drop `enabled: true`. To keep propagation off, drop the
 Every timestamp the SDK returns is a `DateTime` in UTC instead of an ISO 8601 `String` or a Unix
 timestamp `int`.
 
-| Type            | Fields                                                                                                                                        | Before                | After       |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ----------- |
-| `Session`       | `expiresAt`                                                                                                                                   | `int?` (Unix seconds) | `DateTime?` |
-| `User`          | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
-| `User`          | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?`             | `DateTime?` |
-| `UserIdentity`  | `createdAt`, `lastSignInAt`, `updatedAt`                                                                                                      | `String?`             | `DateTime?` |
-| `OAuthClient`   | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
-| `Bucket`        | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
-| `FileObject`    | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
-| `FileObjectV2`  | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
-| `FileObjectV2`  | `updatedAt`, `lastModified`                                                                                                                   | `String?`             | `DateTime?` |
-| `PaginatedFile` | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
+| Type           | Fields                                                                                                                                        | Before                | After       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ----------- |
+| `Session`      | `expiresAt`                                                                                                                                   | `int?` (Unix seconds) | `DateTime?` |
+| `User`         | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
+| `User`         | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?`             | `DateTime?` |
+| `UserIdentity` | `createdAt`, `lastSignInAt`, `updatedAt`                                                                                                      | `String?`             | `DateTime?` |
+| `OAuthClient`  | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
+| `Bucket`       | `createdAt`, `updatedAt`                                                                                                                      | `String`              | `DateTime`  |
+| `FileObject`   | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
+| `FileObjectV2` | `createdAt`                                                                                                                                   | `String`              | `DateTime`  |
+| `FileObjectV2` | `updatedAt`, `lastModified`                                                                                                                   | `String?`             | `DateTime?` |
+| `ListedFile`   | `createdAt`, `updatedAt`                                                                                                                      | `String?`             | `DateTime?` |
 
 ```dart skip
 // Before

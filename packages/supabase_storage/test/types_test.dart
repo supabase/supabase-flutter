@@ -173,16 +173,16 @@ void main() {
     });
   });
 
-  group('ListOptions.toMap', () {
+  group('ListFilesOptions.toMap', () {
     test('omits null values', () {
-      const options = ListOptions(limit: 50, prefix: 'folder/');
+      const options = ListFilesOptions(limit: 50, prefix: 'folder/');
       expect(options.toMap(), {'limit': 50, 'prefix': 'folder/'});
     });
   });
 
-  group('ListResult.fromJson', () {
+  group('ListFilesResult.fromJson', () {
     test('parses folders and objects', () {
-      final result = ListResult.fromJson({
+      final result = ListFilesResult.fromJson({
         'hasNext': true,
         'nextCursor': 'cursor-1',
         'folders': [
@@ -200,7 +200,7 @@ void main() {
     });
 
     test('defaults to an empty page when fields are missing', () {
-      final result = ListResult.fromJson({});
+      final result = ListFilesResult.fromJson({});
       expect(result.hasNext, isFalse);
       expect(result.folders, isEmpty);
       expect(result.objects, isEmpty);
@@ -456,8 +456,8 @@ void main() {
   });
 
   group('version listing options', () {
-    test('ListOptions.toMap serializes them', () {
-      const options = ListOptions(
+    test('ListFilesOptions.toMap serializes them', () {
+      const options = ListFilesOptions(
         noncurrentVersions: ListInclusion.exclude,
         deleteMarkers: ListInclusion.include,
         exactMatch: false,
@@ -468,7 +468,7 @@ void main() {
         'deleteMarkers': 'include',
         'exactMatch': false,
       });
-      expect(const ListOptions().toMap(), isEmpty);
+      expect(const ListFilesOptions().toMap(), isEmpty);
     });
   });
 
