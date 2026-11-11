@@ -285,9 +285,12 @@ await Supabase.initialize(
   gets no imports injected, so it imports everything it uses, the schema as
   `package:my_app/supabase_schema.g.dart`
 - Line length limit is 80 characters
-- The "Pana" CI check scores every published package a pull request changes,
-  and every package in a release pull request, and fails when one loses pub.dev
-  points. Run `pana .` in the package directory to reproduce it
+- The "Pana" CI check scores the published packages a pull request changes and
+  their dependents, or every package in a release pull request, and fails when
+  one loses pub.dev points. To reproduce it, start
+  `dart .github/scripts/local_pub_server.dart`, which serves the sibling
+  packages from the checkout, and run `pana --hosted-url <printed url> .` in
+  the package directory
 - Markdown lines are at most 100 characters, outside code blocks and tables,
   and tables are padded so their columns line up. `melos run check-markdown`
   checks both and `--fix` pads the tables. Changelogs are not checked

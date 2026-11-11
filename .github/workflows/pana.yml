@@ -46,11 +46,11 @@ jobs:
 
           CHANGED_FILES=$(git diff --name-only "$BASE...HEAD")
           if [[ "$TITLE" == chore\(release\):* ]] \
-              || grep -qE '^\.github/(workflows/pana\.yml|scripts/check_pana_report\.dart)$' <<< "$CHANGED_FILES"; then
+              || grep -qE '^\.github/(workflows/pana\.yml|scripts/(check_pana_report|local_pub_server)\.dart)$' <<< "$CHANGED_FILES"; then
             echo "Scoring every published package."
             PACKAGES=$(melos list --no-private --json | jq -c '[.[].name]')
           else
-            PACKAGES=$(melos list --no-private --json --diff="$BASE...HEAD" | jq -c '[.[].name]')
+            PACKAGES=$(melos list --no-private --json --diff="$BASE...HEAD" --include-dependents | jq -c '[.[].name]')
           fi
 
           echo "Packages to score: $PACKAGES"
@@ -82,8 +82,25 @@ jobs:
         run: dart pub global activate pana
 
       - name: Run pana
-        working-directory: packages/${{ matrix.package }}
-        run: pana --json . > "$RUNNER_TEMP/pana.json"
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          set -euo pipefail
+
+          SERVER_LOG="$RUNNER_TEMP/local_pub_server.log"
+          dart .github/scripts/local_pub_server.dart > "$SERVER_LOG" &
+          for _ in $(seq 60); do
+            grep -q '^Serving ' "$SERVER_LOG" && break
+            sleep 1
+          done
+          HOSTED_URL=$(sed -n 's/^Serving //p' "$SERVER_LOG")
+          if [ -z "$HOSTED_URL" ]; then
+            echo "::error::The local package server did not start."
+            exit 1
+          fi
+
+          cd "packages/$PACKAGE"
+          pana --hosted-url "$HOSTED_URL" --json . > "$RUNNER_TEMP/pana.json"
 
       - name: Check the pana report
         env:
