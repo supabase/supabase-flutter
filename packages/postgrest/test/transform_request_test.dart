@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -367,6 +369,81 @@ void main() {
         () => client.rpcInSchema('sum', null, params: [1, 2], get: true),
         throwsArgumentError,
       );
+    });
+
+    test('sends arguments that fit a query as query parameters', () async {
+      await client.rpc(
+        'search',
+        params: {'query': 'dart', 'page': 2},
+        get: true,
+      );
+
+      final request = httpClient.requests.single;
+      expect(request.method, 'GET');
+      expect(request.queryParameters, {'query': 'dart', 'page': '2'});
+      expect(request.body, isEmpty);
+    });
+
+    for (final (description, params) in [
+      ('a reserved name', {'limit': 5}),
+      ('a dotted name', {'author.name': 'Ada'}),
+      ('a null value', {'name_param': null}),
+      ('a value that reads as a filter', {'name_param': 'eq.supabot'}),
+      ('a value that reads as a negated filter', {'ids': 'not.in.(1)'}),
+    ]) {
+      test('sends $description as a POST body', () async {
+        await client.rpc('search', params: params, get: true);
+
+        final request = httpClient.requests.single;
+        expect(request.method, 'POST');
+        expect(request.url.path, '/rest/v1/rpc/search');
+        expect(request.queryParameters, isEmpty);
+        expect(request.jsonBody, params);
+      });
+    }
+
+    test('renders values JSON cannot carry the way a GET does', () async {
+      await client.rpc(
+        'search',
+        params: {
+          'limit': 5,
+          'after': DateTime.utc(2024, 2, 29, 12),
+          'days': [DateTime.utc(2024, 3)],
+          'cover': Uint8List.fromList([1, 2]),
+          'filter': {'tag': 'dart'},
+        },
+        get: true,
+      );
+
+      final request = httpClient.requests.single;
+      expect(request.method, 'POST');
+      expect(request.jsonBody, {
+        'limit': 5,
+        'after': '2024-02-29T12:00:00.000Z',
+        'days': ['2024-03-01T00:00:00.000Z'],
+        'cover': r'\x0102',
+        'filter': {'tag': 'dart'},
+      });
+    });
+
+    test('keeps chained filters on a call sent as a POST', () async {
+      await client
+          .rpc('search', params: {'limit': 5}, get: true)
+          .eq('id', 1)
+          .select('id');
+
+      final request = httpClient.requests.single;
+      expect(request.method, 'POST');
+      expect(request.queryParameters, {'select': 'id', 'id': 'eq.1'});
+      expect(request.jsonBody, {'limit': 5});
+    });
+
+    test('head() still rejects arguments that do not fit a query', () {
+      expect(
+        () => client.rpc('search', params: {'limit': 5}, get: true).head(),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
     });
   });
 

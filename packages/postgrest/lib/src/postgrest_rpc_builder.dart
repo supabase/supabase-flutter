@@ -30,21 +30,39 @@ class PostgrestRpcBuilder {
   /// [params] is an optional object to pass as arguments to the function call.
   ///
   /// When [get] is set to `true`, [params] must be a [Map] or `null`, and the
-  /// function is called with read-only access mode.
+  /// function is called with a `GET` request in read-only access mode, with
+  /// [params] as query parameters. A call with an argument PostgREST would
+  /// read as an option of the request, such as `limit`, a `null` value, or a
+  /// value it would read as a filter, such as `eq.foo`, is sent as a `POST`
+  /// instead, which is neither read-only nor retried.
   PostgrestFilterBuilder<T> rpc<T>([
     Object? params,
     bool get = false,
   ]) {
+    final query = get && postgrestArgumentsFitQuery(params);
     return _filterBuilder(
       _config.copyWith(
-        method: get ? HttpMethod.get : HttpMethod.post,
-        url: get ? _appendArguments(_config.url, params) : null,
-        body: params,
+        method: query ? HttpMethod.get : HttpMethod.post,
+        url: query ? _appendArguments(_config.url, params) : null,
+        body: get && !query ? _jsonArguments(params! as Map) : params,
         functionCall: true,
       ),
     );
   }
 }
+
+/// [arguments] with each value that JSON cannot carry, such as a [DateTime],
+/// rendered the way [_appendArguments] renders it, for a read-only call sent
+/// as a `POST`.
+Map<Object?, Object?> _jsonArguments(Map<Object?, Object?> arguments) =>
+    arguments.map((name, value) => MapEntry(name, _jsonArgument(value)));
+
+Object? _jsonArgument(Object? value) => switch (value) {
+  null || String() || num() || bool() || Map() => value,
+  Uint8List() => renderPostgrestQueryValue(value),
+  List() => value.map(_jsonArgument).toList(),
+  _ => renderPostgrestQueryValue(value),
+};
 
 /// [url] with each of the function arguments in [params] appended as a query
 /// parameter, for a call sent without a body.

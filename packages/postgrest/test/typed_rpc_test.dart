@@ -91,13 +91,13 @@ void main() {
 
       final PostgrestList rows = await client.rpc<PostgrestList>(
         'list_books',
-        params: {'limit': 2},
+        params: {'max_count': 2},
         get: true,
       );
 
       expect(rows, bookRows);
       expect(lastRequest().method, HttpMethod.get.value);
-      expect(lastRequest().url.queryParameters, {'limit': '2'});
+      expect(lastRequest().url.queryParameters, {'max_count': '2'});
     });
 
     test('calls in the schema the client was scoped to', () async {
