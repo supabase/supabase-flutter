@@ -9,7 +9,7 @@ on:
       - edited
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.action == 'edited' && !github.event.changes.title && '-body-edit' || '' }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.action == 'edited' && !github.event.changes.title && !github.event.changes.base && '-body-edit' || '' }}
   cancel-in-progress: true
 
 permissions:
@@ -18,7 +18,7 @@ permissions:
 jobs:
   changes:
     name: Detect packages to score
-    if: ${{ github.event.action != 'edited' || github.event.changes.title }}
+    if: ${{ github.event.action != 'edited' || github.event.changes.title || github.event.changes.base }}
     runs-on: ubuntu-latest
     outputs:
       packages: ${{ steps.detect.outputs.packages }}
@@ -50,7 +50,7 @@ jobs:
             echo "Scoring every published package."
             PACKAGES=$(melos list --no-private --json | jq -c '[.[].name]')
           else
-            PACKAGES=$(melos list --no-private --json --diff="$BASE...HEAD" --include-dependents | jq -c '[.[].name]')
+            PACKAGES=$(melos list --no-private --json --diff="$BASE...HEAD" --include-dependents | jq -c '[.[] | select(.private | not) | .name]')
           fi
 
           echo "Packages to score: $PACKAGES"

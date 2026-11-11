@@ -288,9 +288,12 @@ await Supabase.initialize(
 - The "Pana" CI check scores the published packages a pull request changes and
   their dependents, or every package in a release pull request, and fails when
   one loses pub.dev points. To reproduce it, start
-  `dart .github/scripts/local_pub_server.dart`, which serves the sibling
-  packages from the checkout, and run `pana --hosted-url <printed url> .` in
-  the package directory
+  `dart .github/scripts/local_pub_server.dart` at the repository root, which
+  serves the sibling packages from the checkout, run
+  `pana --hosted-url <printed url> --json . > /tmp/pana.json` in the package
+  directory, and then
+  `dart .github/scripts/check_pana_report.dart <package> /tmp/pana.json` at
+  the repository root
 - Markdown lines are at most 100 characters, outside code blocks and tables,
   and tables are padded so their columns line up. `melos run check-markdown`
   checks both and `--fix` pads the tables. Changelogs are not checked
