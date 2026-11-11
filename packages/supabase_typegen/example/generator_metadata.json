@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "schemas": [
+    {
+      "id": 2200,
+      "name": "public",
+      "owner": "pg_database_owner"
+    }
+  ],
+  "tables": [
+    {
+      "id": 16392,
+      "schema": "public",
+      "name": "authors",
+      "rls_enabled": true,
+      "rls_forced": false,
+      "replica_identity": "DEFAULT",
+      "bytes": 16384,
+      "size": "16 kB",
+      "live_rows_estimate": 0,
+      "dead_rows_estimate": 0,
+      "comment": null
+    }
+  ],
+  "foreignTables": [],
+  "views": [],
+  "materializedViews": [],
+  "columns": [
+    {
+      "table_id": 16392,
+      "schema": "public",
+      "table": "authors",
+      "id": "16392.1",
+      "ordinal_position": 1,
+      "name": "id",
+      "default_value": null,
+      "data_type": "bigint",
+      "format": "int8",
+      "type_schema": "pg_catalog",
+      "is_identity": true,
+      "identity_generation": "ALWAYS",
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    },
+    {
+      "table_id": 16392,
+      "schema": "public",
+      "table": "authors",
+      "id": "16392.2",
+      "ordinal_position": 2,
+      "name": "name",
+      "default_value": null,
+      "data_type": "text",
+      "format": "text",
+      "type_schema": "pg_catalog",
+      "is_identity": false,
+      "identity_generation": null,
+      "is_generated": false,
+      "is_nullable": false,
+      "is_updatable": true,
+      "is_unique": false,
+      "check": null,
+      "enums": [],
+      "comment": null
+    }
+  ],
+  "primaryKeys": [
+    {
+      "table_id": 16392,
+      "schema": "public",
+      "table_name": "authors",
+      "name": "id"
+    }
+  ],
+  "relationships": [],
+  "functions": [],
+  "types": [],
+  "rpcFunctions": []
+}

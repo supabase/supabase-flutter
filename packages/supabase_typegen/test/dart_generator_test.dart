@@ -61,6 +61,32 @@ void main() {
     );
   });
 
+  test('matches the generated code shown in the example', () {
+    final document =
+        jsonDecode(
+              File('example/generator_metadata.json').readAsStringSync(),
+            )
+            as Map<String, dynamic>;
+    final readme = File('example/README.md').readAsStringSync();
+    final example = RegExp(
+      r'```dart file\r?\n(.*?)```',
+      dotAll: true,
+    ).firstMatch(readme);
+
+    expect(
+      example,
+      isNotNull,
+      reason: 'example/README.md has no ```dart file block.',
+    );
+    expect(
+      _normalize(generateDartCode(parseGeneratorMetadata(document))),
+      _normalize(example![1]!),
+      reason:
+          'The generator output changed for the example. Regenerate it with '
+          '`dart run tool/regenerate_goldens.dart` and review the diff.',
+    );
+  });
+
   test('split representation clauses carry no trailing comma', () {
     final code = generateDartCode(hostileSchema);
 
