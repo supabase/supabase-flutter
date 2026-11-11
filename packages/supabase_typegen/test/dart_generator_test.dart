@@ -69,13 +69,18 @@ void main() {
             as Map<String, dynamic>;
     final readme = File('example/README.md').readAsStringSync();
     final example = RegExp(
-      r'```dart file\n(.*?)```',
+      r'```dart file\r?\n(.*?)```',
       dotAll: true,
-    ).firstMatch(readme)!.group(1)!;
+    ).firstMatch(readme);
 
     expect(
+      example,
+      isNotNull,
+      reason: 'example/README.md has no ```dart file block.',
+    );
+    expect(
       _normalize(generateDartCode(parseGeneratorMetadata(document))),
-      _normalize(example),
+      _normalize(example![1]!),
       reason:
           'The generator output changed for the example. Regenerate it with '
           '`dart run tool/regenerate_goldens.dart` and review the diff.',

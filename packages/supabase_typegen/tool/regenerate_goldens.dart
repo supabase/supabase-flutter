@@ -27,13 +27,19 @@ void main() {
       jsonDecode(File('example/generator_metadata.json').readAsStringSync())
           as Map<String, dynamic>;
   final readme = File('example/README.md');
+  final contents = readme.readAsStringSync();
+  final block = RegExp(
+    r'(```dart file\r?\n).*?```',
+    dotAll: true,
+  ).firstMatch(contents);
+  if (block == null) {
+    throw StateError('example/README.md has no ```dart file block.');
+  }
   readme.writeAsStringSync(
-    readme.readAsStringSync().replaceFirstMapped(
-      RegExp(r'(```dart file\n).*?(```)', dotAll: true),
-      (match) =>
-          '${match[1]}'
-          '${generateDartCode(parseGeneratorMetadata(example))}'
-          '${match[2]}',
+    contents.replaceRange(
+      block.start,
+      block.end,
+      '${block[1]}${generateDartCode(parseGeneratorMetadata(example))}```',
     ),
   );
 }
