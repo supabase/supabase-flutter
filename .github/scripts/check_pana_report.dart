@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// Pana subsections that only warn when they lose points, because their
-/// result changes with releases outside this repository.
 const warnOnlySubsections = {
   'All of the package dependencies are supported in the latest version':
       'A new major release of a dependency lowers it on the day it ships.',
@@ -14,6 +12,7 @@ final _subsectionHeader = RegExp(
   r'^### \[.\] (\d+)/(\d+) points: (.+)$',
   multiLine: true,
 );
+final _stopToken = 'pana-${DateTime.now().microsecondsSinceEpoch}';
 final _issue = RegExp(
   r'^<summary>\n([\s\S]*?)\n</summary>$|^\* (.+)$',
   multiLine: true,
@@ -28,12 +27,20 @@ Future<void> main(List<String> arguments) async {
   final json =
       jsonDecode(await File(arguments[1]).readAsString())
           as Map<String, Object?>;
-  final report = json['report']! as Map<String, Object?>;
+  final report = json['report'] as Map<String, Object?>?;
+  final scores = json['scores'] as Map<String, Object?>?;
+  if (report == null || scores == null) {
+    stdout.writeln(
+      '::error title=${_escapeProperty('$package: pana')}::'
+      '${_escapeData('pana did not produce a report for $package.\n${jsonEncode(json)}')}',
+    );
+    exitCode = 1;
+    return;
+  }
   final sections = (report['sections']! as List<Object?>)
       .cast<Map<String, Object?>>()
       .map(Section.fromJson)
       .toList();
-  final scores = json['scores']! as Map<String, Object?>;
   final tags = (json['tags'] as List<Object?>? ?? const []).cast<String>();
 
   final findings = [for (final section in sections) ...section.findings()];
@@ -49,8 +56,10 @@ Future<void> main(List<String> arguments) async {
     final message = _escapeData(finding.annotation);
     stdout
       ..writeln('::$command title=$title::$message')
-      ..writeln('::group::${finding.subsectionTitle}')
+      ..writeln('::group::${_escapeData(finding.subsectionTitle)}')
+      ..writeln('::stop-commands::$_stopToken')
       ..writeln(finding.body)
+      ..writeln('::$_stopToken::')
       ..writeln('::endgroup::');
   }
   if (supportsWeb && !wasmReady) {
@@ -113,7 +122,8 @@ Future<void> main(List<String> arguments) async {
   }
 
   if (errors.isNotEmpty || (supportsWeb && !wasmReady)) {
-    exit(1);
+    exitCode = 1;
+    return;
   }
   stdout.writeln(
     '$package scores the maximum in every pana section that blocks a '
@@ -224,8 +234,6 @@ class Finding {
   }
 }
 
-/// The text of a pana summary without its tables, link definitions and
-/// markup, shortened to fit in an annotation.
 String _prose(String markdown) {
   final prose = markdown
       .split('\n')
