@@ -3,6 +3,86 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-11-11
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`postgrest` - `v3.0.0-dev.17`](#postgrest---v300-dev17)
+ - [`supabase` - `v3.0.0-dev.17`](#supabase---v300-dev17)
+ - [`supabase_flutter` - `v3.0.0-dev.17`](#supabase_flutter---v300-dev17)
+ - [`supabase_storage` - `v3.0.0-dev.14`](#supabase_storage---v300-dev14)
+ - [`supabase_test` - `v0.8.0`](#supabase_test---v080)
+ - [`supabase_typegen` - `v0.9.0`](#supabase_typegen---v090)
+
+Packages with other changes:
+
+ - [`supabase_realtime` - `v3.0.0-dev.15`](#supabase_realtime---v300-dev15)
+ - [`supabase_flutter_web_auth` - `v0.3.1`](#supabase_flutter_web_auth---v031)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter_web_auth` - `v0.3.1`
+
+---
+
+#### `postgrest` - `v3.0.0-dev.17`
+
+ - **FEAT**(typegen): generate typed getters for partial rows ([#2138](https://github.com/supabase/supabase-flutter/issues/2138)). ([48e0e47c](https://github.com/supabase/supabase-flutter/commit/48e0e47c01500a7800f350c2b9e456dbef6d0941))
+ - **FEAT**(typegen): name the extensions a show import needs ([#2139](https://github.com/supabase/supabase-flutter/issues/2139)). ([efe9e947](https://github.com/supabase/supabase-flutter/commit/efe9e947baabb316b13fab746e36ceb5ab5dcd13))
+ - **FEAT**(postgrest): construct a PostgrestPartialRow outside a query ([#2132](https://github.com/supabase/supabase-flutter/issues/2132)). ([1fc7500c](https://github.com/supabase/supabase-flutter/commit/1fc7500c0d0200eb7753a6e75eb35d6f08fe371d))
+ - **BREAKING** **FEAT**(typegen): null writes SQL NULL in generated Insert/Update types and RPC arguments ([#2147](https://github.com/supabase/supabase-flutter/issues/2147)). ([53e34797](https://github.com/supabase/supabase-flutter/commit/53e347976ff7768f3926b139a41e6b713b1a12f4))
+
+#### `supabase` - `v3.0.0-dev.17`
+
+ - **FEAT**(typegen): generate typed getters for partial rows ([#2138](https://github.com/supabase/supabase-flutter/issues/2138)). ([48e0e47c](https://github.com/supabase/supabase-flutter/commit/48e0e47c01500a7800f350c2b9e456dbef6d0941))
+ - **FEAT**(realtime): read v2 broadcasts and opt in to sending them to v2 clients ([#2145](https://github.com/supabase/supabase-flutter/issues/2145)). ([d613866a](https://github.com/supabase/supabase-flutter/commit/d613866a1527ba4fdb082eac6728dd0e08dcffa8))
+ - **FEAT**(typegen): name the extensions a show import needs ([#2139](https://github.com/supabase/supabase-flutter/issues/2139)). ([efe9e947](https://github.com/supabase/supabase-flutter/commit/efe9e947baabb316b13fab746e36ceb5ab5dcd13))
+ - **FEAT**(postgrest): construct a PostgrestPartialRow outside a query ([#2132](https://github.com/supabase/supabase-flutter/issues/2132)). ([1fc7500c](https://github.com/supabase/supabase-flutter/commit/1fc7500c0d0200eb7753a6e75eb35d6f08fe371d))
+ - **DOCS**: say where the package skills install ([#2133](https://github.com/supabase/supabase-flutter/issues/2133)). ([5d08e46d](https://github.com/supabase/supabase-flutter/commit/5d08e46d4315ec71b25e5e8eb99e0cbf010413ce))
+ - **BREAKING** **FEAT**(typegen): null writes SQL NULL in generated Insert/Update types and RPC arguments ([#2147](https://github.com/supabase/supabase-flutter/issues/2147)). ([53e34797](https://github.com/supabase/supabase-flutter/commit/53e347976ff7768f3926b139a41e6b713b1a12f4))
+
+#### `supabase_flutter` - `v3.0.0-dev.17`
+
+ - **FEAT**(typegen): generate typed getters for partial rows ([#2138](https://github.com/supabase/supabase-flutter/issues/2138)). ([48e0e47c](https://github.com/supabase/supabase-flutter/commit/48e0e47c01500a7800f350c2b9e456dbef6d0941))
+ - **FEAT**(realtime): read v2 broadcasts and opt in to sending them to v2 clients ([#2145](https://github.com/supabase/supabase-flutter/issues/2145)). ([d613866a](https://github.com/supabase/supabase-flutter/commit/d613866a1527ba4fdb082eac6728dd0e08dcffa8))
+ - **FEAT**(typegen): name the extensions a show import needs ([#2139](https://github.com/supabase/supabase-flutter/issues/2139)). ([efe9e947](https://github.com/supabase/supabase-flutter/commit/efe9e947baabb316b13fab746e36ceb5ab5dcd13))
+ - **FEAT**(postgrest): construct a PostgrestPartialRow outside a query ([#2132](https://github.com/supabase/supabase-flutter/issues/2132)). ([1fc7500c](https://github.com/supabase/supabase-flutter/commit/1fc7500c0d0200eb7753a6e75eb35d6f08fe371d))
+ - **DOCS**: say where the package skills install ([#2133](https://github.com/supabase/supabase-flutter/issues/2133)). ([5d08e46d](https://github.com/supabase/supabase-flutter/commit/5d08e46d4315ec71b25e5e8eb99e0cbf010413ce))
+ - **BREAKING** **FEAT**(typegen): null writes SQL NULL in generated Insert/Update types and RPC arguments ([#2147](https://github.com/supabase/supabase-flutter/issues/2147)). ([53e34797](https://github.com/supabase/supabase-flutter/commit/53e347976ff7768f3926b139a41e6b713b1a12f4))
+
+#### `supabase_storage` - `v3.0.0-dev.14`
+
+ - **BREAKING** **FEAT**(storage): make list the cursor-based listing and drop the legacy list endpoint ([#2150](https://github.com/supabase/supabase-flutter/issues/2150)). ([11e1d189](https://github.com/supabase/supabase-flutter/commit/11e1d1890146c4efe2fd6702a93744c5055388ce))
+
+#### `supabase_test` - `v0.8.0`
+
+ - **FEAT**(typegen): generate typed getters for partial rows ([#2138](https://github.com/supabase/supabase-flutter/issues/2138)). ([48e0e47c](https://github.com/supabase/supabase-flutter/commit/48e0e47c01500a7800f350c2b9e456dbef6d0941))
+ - **FEAT**(postgrest): construct a PostgrestPartialRow outside a query ([#2132](https://github.com/supabase/supabase-flutter/issues/2132)). ([1fc7500c](https://github.com/supabase/supabase-flutter/commit/1fc7500c0d0200eb7753a6e75eb35d6f08fe371d))
+ - **BREAKING** **FEAT**(storage): make list the cursor-based listing and drop the legacy list endpoint ([#2150](https://github.com/supabase/supabase-flutter/issues/2150)). ([11e1d189](https://github.com/supabase/supabase-flutter/commit/11e1d1890146c4efe2fd6702a93744c5055388ce))
+ - **BREAKING** **FEAT**(typegen): null writes SQL NULL in generated Insert/Update types and RPC arguments ([#2147](https://github.com/supabase/supabase-flutter/issues/2147)). ([53e34797](https://github.com/supabase/supabase-flutter/commit/53e347976ff7768f3926b139a41e6b713b1a12f4))
+
+#### `supabase_typegen` - `v0.9.0`
+
+ - **FIX**(typegen): type the partial row getter of a column of an unknown type as Object? ([#2148](https://github.com/supabase/supabase-flutter/issues/2148)). ([5b720b51](https://github.com/supabase/supabase-flutter/commit/5b720b516fb00d3484cfaa091c62679abd0d1d67))
+ - **FEAT**(typegen): generate typed getters for partial rows ([#2138](https://github.com/supabase/supabase-flutter/issues/2138)). ([48e0e47c](https://github.com/supabase/supabase-flutter/commit/48e0e47c01500a7800f350c2b9e456dbef6d0941))
+ - **FEAT**(typegen): name the extensions a show import needs ([#2139](https://github.com/supabase/supabase-flutter/issues/2139)). ([efe9e947](https://github.com/supabase/supabase-flutter/commit/efe9e947baabb316b13fab746e36ceb5ab5dcd13))
+ - **FEAT**(typegen): generate toJson and copyWith on the Insert and Update types ([#2137](https://github.com/supabase/supabase-flutter/issues/2137)). ([fcf2739f](https://github.com/supabase/supabase-flutter/commit/fcf2739f523c08bb6d035c59b5412db7048fc5cf))
+ - **DOCS**(typegen): document --workdir and --remote=<db-url> for gen types ([#2134](https://github.com/supabase/supabase-flutter/issues/2134)). ([2e7d2f63](https://github.com/supabase/supabase-flutter/commit/2e7d2f636de297b527dc80d62b2bbdf36ead8189))
+ - **BREAKING** **FIX**(typegen): make GET opt-in for generated function calls ([#2146](https://github.com/supabase/supabase-flutter/issues/2146)). ([584b48f5](https://github.com/supabase/supabase-flutter/commit/584b48f5036e851d9061c88720b1b5e85d2e0fac))
+ - **BREAKING** **FEAT**(typegen): null writes SQL NULL in generated Insert/Update types and RPC arguments ([#2147](https://github.com/supabase/supabase-flutter/issues/2147)). ([53e34797](https://github.com/supabase/supabase-flutter/commit/53e347976ff7768f3926b139a41e6b713b1a12f4))
+ - **BREAKING** **FEAT**(typegen): enums from check constraints, JSON Schema types and non-null RETURNS TABLE columns ([#2135](https://github.com/supabase/supabase-flutter/issues/2135)). ([f16172e2](https://github.com/supabase/supabase-flutter/commit/f16172e2a2661f7220778fa67ad13da457313d15))
+
+#### `supabase_realtime` - `v3.0.0-dev.15`
+
+ - **FEAT**(realtime): read v2 broadcasts and opt in to sending them to v2 clients ([#2145](https://github.com/supabase/supabase-flutter/issues/2145)). ([d613866a](https://github.com/supabase/supabase-flutter/commit/d613866a1527ba4fdb082eac6728dd0e08dcffa8))
+
+
 ## 2026-11-05
 
 ### Changes

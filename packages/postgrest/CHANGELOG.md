@@ -1,3 +1,12 @@
+## 3.0.0-dev.17
+
+> Note: This release has breaking changes.
+
+ - **FEAT**(typegen): generate typed getters for partial rows ([#2138](https://github.com/supabase/supabase-flutter/issues/2138)). ([48e0e47c](https://github.com/supabase/supabase-flutter/commit/48e0e47c01500a7800f350c2b9e456dbef6d0941))
+ - **FEAT**(typegen): name the extensions a show import needs ([#2139](https://github.com/supabase/supabase-flutter/issues/2139)). ([efe9e947](https://github.com/supabase/supabase-flutter/commit/efe9e947baabb316b13fab746e36ceb5ab5dcd13))
+ - **FEAT**(postgrest): construct a PostgrestPartialRow outside a query ([#2132](https://github.com/supabase/supabase-flutter/issues/2132)). ([1fc7500c](https://github.com/supabase/supabase-flutter/commit/1fc7500c0d0200eb7753a6e75eb35d6f08fe371d))
+ - **BREAKING** **FEAT**(typegen): null writes SQL NULL in generated Insert/Update types and RPC arguments ([#2147](https://github.com/supabase/supabase-flutter/issues/2147)). ([53e34797](https://github.com/supabase/supabase-flutter/commit/53e347976ff7768f3926b139a41e6b713b1a12f4))
+
 ## 3.0.0-dev.16
 
 > Note: This release has breaking changes.

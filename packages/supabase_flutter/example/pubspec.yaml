@@ -13,10 +13,10 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^3.0.0-dev.16
+  supabase_flutter: ^3.0.0-dev.17
 
 dev_dependencies:
-  supabase_typegen: ^0.8.2
+  supabase_typegen: ^0.9.0
   flutter_test:
     sdk: flutter
 
