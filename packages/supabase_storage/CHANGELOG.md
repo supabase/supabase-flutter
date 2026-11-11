@@ -1,3 +1,9 @@
+## 3.0.0-dev.14
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FEAT**(storage): make list the cursor-based listing and drop the legacy list endpoint ([#2150](https://github.com/supabase/supabase-flutter/issues/2150)). ([11e1d189](https://github.com/supabase/supabase-flutter/commit/11e1d1890146c4efe2fd6702a93744c5055388ce))
+
 ## 3.0.0-dev.13
 
 > Note: This release has breaking changes.

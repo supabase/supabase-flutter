@@ -1,3 +1,7 @@
+## 3.0.0-dev.15
+
+ - **FEAT**(realtime): read v2 broadcasts and opt in to sending them to v2 clients ([#2145](https://github.com/supabase/supabase-flutter/issues/2145)). ([d613866a](https://github.com/supabase/supabase-flutter/commit/d613866a1527ba4fdb082eac6728dd0e08dcffa8))
+
 ## 3.0.0-dev.14
 
 > Note: This release has breaking changes.

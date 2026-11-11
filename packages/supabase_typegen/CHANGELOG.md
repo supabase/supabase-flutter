@@ -1,3 +1,16 @@
+## 0.9.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(typegen): type the partial row getter of a column of an unknown type as Object? ([#2148](https://github.com/supabase/supabase-flutter/issues/2148)). ([5b720b51](https://github.com/supabase/supabase-flutter/commit/5b720b516fb00d3484cfaa091c62679abd0d1d67))
+ - **FEAT**(typegen): generate typed getters for partial rows ([#2138](https://github.com/supabase/supabase-flutter/issues/2138)). ([48e0e47c](https://github.com/supabase/supabase-flutter/commit/48e0e47c01500a7800f350c2b9e456dbef6d0941))
+ - **FEAT**(typegen): name the extensions a show import needs ([#2139](https://github.com/supabase/supabase-flutter/issues/2139)). ([efe9e947](https://github.com/supabase/supabase-flutter/commit/efe9e947baabb316b13fab746e36ceb5ab5dcd13))
+ - **FEAT**(typegen): generate toJson and copyWith on the Insert and Update types ([#2137](https://github.com/supabase/supabase-flutter/issues/2137)). ([fcf2739f](https://github.com/supabase/supabase-flutter/commit/fcf2739f523c08bb6d035c59b5412db7048fc5cf))
+ - **DOCS**(typegen): document --workdir and --remote=<db-url> for gen types ([#2134](https://github.com/supabase/supabase-flutter/issues/2134)). ([2e7d2f63](https://github.com/supabase/supabase-flutter/commit/2e7d2f636de297b527dc80d62b2bbdf36ead8189))
+ - **BREAKING** **FIX**(typegen): make GET opt-in for generated function calls ([#2146](https://github.com/supabase/supabase-flutter/issues/2146)). ([584b48f5](https://github.com/supabase/supabase-flutter/commit/584b48f5036e851d9061c88720b1b5e85d2e0fac))
+ - **BREAKING** **FEAT**(typegen): null writes SQL NULL in generated Insert/Update types and RPC arguments ([#2147](https://github.com/supabase/supabase-flutter/issues/2147)). ([53e34797](https://github.com/supabase/supabase-flutter/commit/53e347976ff7768f3926b139a41e6b713b1a12f4))
+ - **BREAKING** **FEAT**(typegen): enums from check constraints, JSON Schema types and non-null RETURNS TABLE columns ([#2135](https://github.com/supabase/supabase-flutter/issues/2135)). ([f16172e2](https://github.com/supabase/supabase-flutter/commit/f16172e2a2661f7220778fa67ad13da457313d15))
+
 ## 0.8.2
 
  - **FIX**(typegen): key view columns into hidden-schema tables deterministically ([#2130](https://github.com/supabase/supabase-flutter/issues/2130)). ([c5953f73](https://github.com/supabase/supabase-flutter/commit/c5953f73f3fd5be62e00eb3b8be5b259b3aa6a8a))
