@@ -153,7 +153,7 @@ void main() {
       );
     });
 
-    test('listPaginated names an entry of the wrong type', () async {
+    test('list names an entry of the wrong type', () async {
       httpClient.stub({
         'hasNext': false,
         'folders': ['photos'],
@@ -161,7 +161,7 @@ void main() {
       });
 
       await expectLater(
-        () => storage.from('avatars').listPaginated(),
+        () => storage.from('avatars').list(),
         throwsFormatExceptionNaming('folders'),
       );
     });

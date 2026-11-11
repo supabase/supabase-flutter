@@ -2454,12 +2454,78 @@ final key = copy.fullPath;
 standalone `SignedUploadUrlResponse` with the same `path` and `signedUrl` fields and its `token`.
 `SignedUrl.copyWith` is gone with it.
 
+#### `list()` is the cursor-based listing
+
+The offset-based `list()`, which called the legacy `/object/list` endpoint, is removed together
+with `SearchOptions` and `SortBy`. `listPaginated()` takes its name, and its types lose the
+`Paginated` prefix:
+
+| Before                   | After          |
+| ------------------------ | -------------- |
+| `listPaginated()`        | `list()`       |
+| `PaginatedSearchOptions` | `ListOptions`  |
+| `PaginatedListResult`    | `ListResult`   |
+| `PaginatedFile`          | `ListedFile`   |
+| `PaginatedFolder`        | `ListedFolder` |
+
+A call to the old `list()` moves its folder into `prefix`, ending in a `/`, and sets
+`withDelimiter` to list one level like before. The result is a page with the files in `objects` and
+the subfolders in `folders`, instead of one list where a folder is a `FileObject` without an `id`:
+
+```dart skip
+// Before
+final files = await supabase.storage
+    .from('avatars')
+    .list(
+      path: 'public',
+      searchOptions: const SearchOptions(
+        limit: 50,
+        sortBy: SortBy(column: 'created_at', order: SortDirection.descending),
+      ),
+    );
+```
+
+```dart
+// After
+final page = await supabase.storage
+    .from('avatars')
+    .list(
+      options: const ListOptions(
+        prefix: 'public/',
+        withDelimiter: true,
+        limit: 50,
+        sortBy: FileSort(
+          column: FileSortColumn.createdAt,
+          order: SortDirection.descending,
+        ),
+      ),
+    );
+final names = page.objects.map((file) => file.key);
+```
+
+`ListedFile.name` is the path within the bucket, including the prefix, where `FileObject.name` was
+relative to the folder. The relative path is in `key`.
+
+Some things the old endpoint did have no direct replacement:
+
+- **Case-insensitive matching.** The old endpoint lowercased the path and the keys, so `public` also
+  found `Public/`. The prefix is now matched as written.
+- **`offset`.** Page with the cursor instead: while `hasNext` is `true`, pass the `nextCursor` of
+  the previous page as `ListOptions.cursor`.
+- **Sorting by any column.** `FileSortColumn` has `name`, `createdAt` and `updatedAt`. Sort a page
+  yourself for anything else.
+- **`search`.** It was appended to the path, so `path: 'photos'` with `search: 'cat'` becomes
+  `prefix: 'photos/cat'`.
+
+The endpoint behind `list()` first shipped in Supabase Storage v1.19.0, so older self-hosted
+servers can no longer be listed.
+
 #### Storage wire helpers are internal
 
 The `StorageFileApi` constructor is internal. Get one for a bucket with
 `supabase.storage.from(bucketId)` instead. The methods that encode options for a request,
-`ListBucketsOptions.toQueryParameters`, `toMap` on `SearchOptions`, `SortBy`, `FileSort` and
-`PaginatedSearchOptions`, and `Vector.toJson`, are internal too.
+`ListBucketsOptions.toQueryParameters`, `toMap` on `FileSort` and `ListOptions`, and
+`Vector.toJson`, are internal too.
 
 ### Errors
 
@@ -2932,10 +2998,7 @@ type where you name it explicitly.
 | `FileSortOrder`   | `SortDirection` |
 | `SortDirection`   | unchanged       |
 
-The values are unchanged, so only the type name moves. `SortBy.order` is a `SortDirection` too,
-rather than a `String`, so `SortBy(column: 'created_at', order: 'desc')` becomes
-`SortBy(column: 'created_at', order: SortDirection.descending)`. It is non-nullable and defaults to
-ascending, so leave it out instead of passing `null`.
+The values are unchanged, so only the type name moves.
 
 #### `HttpMethod` is one shared enum
 

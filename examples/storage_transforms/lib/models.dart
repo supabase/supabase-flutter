@@ -1,11 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// A single image stored in the bucket, built from the Storage [FileObject]
+/// A single image stored in the bucket, built from the Storage [ListedFile]
 /// returned by `list()`.
 class StoredImage {
   const StoredImage({required this.path, this.createdAt});
 
-  factory StoredImage.fromFileObject(FileObject file) =>
+  factory StoredImage.fromListedFile(ListedFile file) =>
       StoredImage(path: file.name, createdAt: file.createdAt);
 
   /// Path within the bucket, which is also the object's file name here.

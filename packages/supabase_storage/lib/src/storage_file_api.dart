@@ -1206,45 +1206,17 @@ class StorageFileApi {
     );
   }
 
-  /// Lists all the files within a bucket.
-  ///
-  /// [path] The folder path.
-  ///
-  /// [searchOptions] includes `limit`, `offset`, and `sortBy`.
-  Future<List<FileObject>> list({
-    String? path,
-    SearchOptions searchOptions = const SearchOptions(),
-  }) async {
-    final Map<String, dynamic> body = {
-      'prefix': _removeEmptyFolders(path ?? ''),
-      ...searchOptions.toMap(),
-    };
-    final options = _fetchOptions;
-    final response = await _storageFetch.post<List<dynamic>>(
-      '$url/object/list/$_encodedBucketId',
-      body,
-      options: options,
-    );
-    final fileObjects = List<FileObject>.from(
-      response.map(
-        (item) => FileObject.fromJson(item),
-      ),
-    );
-    return fileObjects;
-  }
-
-  /// Lists files and folders within a bucket with cursor-based pagination and
-  /// hierarchical (delimiter) listing.
+  /// Lists one page of the files, and optionally the folders, within a bucket.
   ///
   /// [options] includes `prefix`, `cursor`, `limit`, `withDelimiter` and
-  /// `sortBy`.
+  /// `sortBy`. Pass [ListResult.nextCursor] as [ListOptions.cursor] to fetch
+  /// the next page.
   ///
-  /// Folder entries in [PaginatedListResult.folders] only contain a name (and
-  /// optionally a key); full metadata is only available on the file entries in
-  /// [PaginatedListResult.objects].
-  Future<PaginatedListResult> listPaginated({
-    PaginatedSearchOptions options = const PaginatedSearchOptions(),
-  }) async {
+  /// The prefix is matched case-sensitively against the full object key, so
+  /// end it with a `/` to list the contents of a folder. Folder entries in
+  /// [ListResult.folders] only contain a name (and optionally a key); full
+  /// metadata is only available on the file entries in [ListResult.objects].
+  Future<ListResult> list({ListOptions options = const ListOptions()}) async {
     final body = options.toMap();
     final prefix = body['prefix'] as String?;
     if (prefix != null) {
@@ -1255,6 +1227,6 @@ class StorageFileApi {
       body,
       options: _fetchOptions,
     );
-    return PaginatedListResult.fromJson(response);
+    return ListResult.fromJson(response);
   }
 }

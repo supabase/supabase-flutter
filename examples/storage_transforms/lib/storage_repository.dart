@@ -34,20 +34,21 @@ class StorageRepository {
     return response.path;
   }
 
-  /// Lists the images in the bucket, newest first.
+  /// Lists the images at the root of the bucket, newest first.
   ///
-  /// `list()` also returns folder placeholders, which have no `id`, so those
-  /// are filtered out before mapping to [StoredImage].
+  /// With `withDelimiter`, folders are reported separately in
+  /// [ListResult.folders], so every entry in [ListResult.objects] is a file.
   Future<List<StoredImage>> listImages() async {
-    final files = await _files.list(
-      searchOptions: const SearchOptions(
-        sortBy: SortBy(column: 'created_at', order: SortDirection.descending),
+    final result = await _files.list(
+      options: const ListOptions(
+        withDelimiter: true,
+        sortBy: FileSort(
+          column: FileSortColumn.createdAt,
+          order: SortDirection.descending,
+        ),
       ),
     );
-    return files
-        .where((file) => file.id != null)
-        .map(StoredImage.fromFileObject)
-        .toList();
+    return result.objects.map(StoredImage.fromListedFile).toList();
   }
 
   /// Builds a public URL for [path], optionally applying an image

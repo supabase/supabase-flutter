@@ -59,8 +59,10 @@ void main() {
   });
 
   test('List files', () async {
-    final response = await storage.from('bucket2').list(path: 'public');
-    expect(response.length, 2);
+    final response = await storage
+        .from('bucket2')
+        .list(options: const ListOptions(prefix: 'public/'));
+    expect(response.objects.length, 2);
   });
 
   test('List buckets', () async {
@@ -846,7 +848,7 @@ void main() {
     });
 
     test('headers set on client are included in file operations', () async {
-      customHttpClient.stub([]);
+      customHttpClient.stub(<String, dynamic>{});
 
       client.setHeader('x-custom-header', 'custom-value');
       await client.from('test-bucket').list();
@@ -859,7 +861,7 @@ void main() {
     });
 
     test('setHeader on StorageFileApi sets header for that instance', () async {
-      customHttpClient.stub([]);
+      customHttpClient.stub(<String, dynamic>{});
 
       final fileApi = client.from('test-bucket');
       fileApi.setHeader('x-file-header', 'file-value');
@@ -876,7 +878,7 @@ void main() {
       'setHeader on StorageFileApi does not affect other StorageFileApi '
       'instances',
       () async {
-        customHttpClient.stub([]);
+        customHttpClient.stub(<String, dynamic>{});
 
         final fileApi1 = client.from('bucket1');
         final fileApi2 = client.from('bucket2');
@@ -963,7 +965,7 @@ void main() {
     test(
       'does not mutate the stored headers map after a non-GET request',
       () async {
-        customHttpClient.stub([]);
+        customHttpClient.stub(<String, dynamic>{});
 
         final fileApi = client.from('test-bucket');
         final headersBefore = Map<String, String>.of(fileApi.headers);
@@ -975,7 +977,7 @@ void main() {
     );
   });
 
-  group('listPaginated prefix', () {
+  group('list prefix', () {
     late String bucket;
 
     setUpAll(() async {
@@ -994,8 +996,8 @@ void main() {
     test('with a trailing slash lists the contents of the folder', () async {
       final result = await storage
           .from(bucket)
-          .listPaginated(
-            options: const PaginatedSearchOptions(
+          .list(
+            options: const ListOptions(
               prefix: 'folder/',
               withDelimiter: true,
             ),
@@ -1011,8 +1013,8 @@ void main() {
     test('without a trailing slash matches the folder and siblings', () async {
       final result = await storage
           .from(bucket)
-          .listPaginated(
-            options: const PaginatedSearchOptions(
+          .list(
+            options: const ListOptions(
               prefix: 'folder',
               withDelimiter: true,
             ),
@@ -1061,11 +1063,12 @@ void main() {
         expect(downloaded, isNotEmpty);
 
         final folder = key.substring(0, key.indexOf('/'));
-        final name = key.substring(key.indexOf('/') + 1);
-        final listed = await storage.from(bucket).list(path: folder);
+        final listed = await storage
+            .from(bucket)
+            .list(options: ListOptions(prefix: '$folder/'));
         expect(
-          listed.map((object) => object.name),
-          contains(name),
+          listed.objects.map((object) => object.name),
+          contains(key),
           reason: 'server must store the decoded key, not the encoded form',
         );
       });
@@ -1096,6 +1099,7 @@ void main() {
   group('object versioning', () {
     final bucketName = '${_bucketNamespace}versioned-$timestamp';
     const path = 'versioned/file.txt';
+    const versionedFolder = ListOptions(prefix: 'versioned/');
     final firstBytes = Uint8List.fromList(utf8.encode('first'));
     final secondBytes = Uint8List.fromList(utf8.encode('second'));
     var versioningSupported = false;
@@ -1139,8 +1143,8 @@ void main() {
       });
     }
 
-    List<FileObject> versionsOf(List<FileObject> files) {
-      return files.where((entry) => entry.name == 'file.txt').toList();
+    List<ListedFile> versionsOf(ListResult result) {
+      return result.objects.where((entry) => entry.name == path).toList();
     }
 
     versionedTest('reports the versioning status of the bucket', () async {
@@ -1170,20 +1174,22 @@ void main() {
               fileOptions: const FileOptions(upsert: true),
             );
 
-        final current = await storage.from(bucketName).list(path: 'versioned');
+        final current = await storage
+            .from(bucketName)
+            .list(options: versionedFolder);
         final withNoncurrent = await storage
             .from(bucketName)
             .list(
-              path: 'versioned',
-              searchOptions: const SearchOptions(
+              options: const ListOptions(
+                prefix: 'versioned/',
                 noncurrentVersions: ListInclusion.include,
               ),
             );
         final onlyNoncurrent = await storage
             .from(bucketName)
             .list(
-              path: 'versioned',
-              searchOptions: const SearchOptions(
+              options: const ListOptions(
+                prefix: 'versioned/',
                 noncurrentVersions: ListInclusion.only,
               ),
             );
@@ -1202,8 +1208,8 @@ void main() {
     versionedTest('lists previous versions with pagination', () async {
       final result = await storage
           .from(bucketName)
-          .listPaginated(
-            options: const PaginatedSearchOptions(
+          .list(
+            options: const ListOptions(
               prefix: 'versioned/',
               noncurrentVersions: ListInclusion.only,
             ),
@@ -1286,8 +1292,8 @@ void main() {
       final remaining = await storage
           .from(bucketName)
           .list(
-            path: 'versioned',
-            searchOptions: const SearchOptions(
+            options: const ListOptions(
+              prefix: 'versioned/',
               noncurrentVersions: ListInclusion.include,
             ),
           );
@@ -1303,12 +1309,14 @@ void main() {
     versionedTest('lists the delete marker of a removed file', () async {
       await storage.from(bucketName).remove([path]);
 
-      final current = await storage.from(bucketName).list(path: 'versioned');
+      final current = await storage
+          .from(bucketName)
+          .list(options: versionedFolder);
       final markers = await storage
           .from(bucketName)
           .list(
-            path: 'versioned',
-            searchOptions: const SearchOptions(
+            options: const ListOptions(
+              prefix: 'versioned/',
               deleteMarkers: ListInclusion.only,
             ),
           );
@@ -1424,93 +1432,6 @@ void main() {
           completes,
         );
       });
-    });
-  });
-
-  group('list sortBy defaults', () {
-    late MockSupabaseHttpClient customHttpClient;
-    late SupabaseStorageClient client;
-
-    setUp(() {
-      customHttpClient = MockSupabaseHttpClient();
-      client = SupabaseStorageClient(
-        localStackStorageUrl,
-        {'Authorization': 'Bearer $localStackServiceRoleKey'},
-        httpClient: customHttpClient,
-      );
-    });
-
-    Map<String, dynamic> sentSortBy() {
-      final body =
-          customHttpClient.requests.first.jsonBody as Map<String, dynamic>;
-      return body['sortBy'] as Map<String, dynamic>;
-    }
-
-    test('fills in order when only column is provided', () async {
-      customHttpClient.stub([]);
-
-      await client
-          .from('test-bucket')
-          .list(
-            searchOptions: const SearchOptions(
-              sortBy: SortBy(column: 'updated_at'),
-            ),
-          );
-
-      expect(sentSortBy(), {'column': 'updated_at', 'order': 'asc'});
-    });
-
-    test('fills in column when only order is provided', () async {
-      customHttpClient.stub([]);
-
-      await client
-          .from('test-bucket')
-          .list(
-            searchOptions: const SearchOptions(
-              sortBy: SortBy(order: SortDirection.descending),
-            ),
-          );
-
-      expect(sentSortBy(), {'column': 'name', 'order': 'desc'});
-    });
-
-    test('uses defaults when no options are provided', () async {
-      customHttpClient.stub([]);
-
-      await client.from('test-bucket').list();
-
-      expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
-    });
-
-    test('fills in a column passed explicitly as null', () async {
-      customHttpClient.stub([]);
-
-      await client
-          .from('test-bucket')
-          .list(
-            searchOptions: const SearchOptions(
-              sortBy: SortBy(column: null),
-            ),
-          );
-
-      expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
-    });
-
-    test('preserves a complete sortBy', () async {
-      customHttpClient.stub([]);
-
-      await client
-          .from('test-bucket')
-          .list(
-            searchOptions: const SearchOptions(
-              sortBy: SortBy(
-                column: 'created_at',
-                order: SortDirection.descending,
-              ),
-            ),
-          );
-
-      expect(sentSortBy(), {'column': 'created_at', 'order': 'desc'});
     });
   });
 }
