@@ -91,6 +91,16 @@ void main() {
       expect(result, 'ONLINE');
     });
 
+    test('read-only stored procedure with an argument that looks like a '
+        'filter', () async {
+      final response = await postgrest.rpc<PostgrestList>(
+        'get_username_and_status',
+        params: {'name_param': 'eq.supabot'},
+        get: true,
+      );
+      expect(response, isEmpty);
+    });
+
     test('select on stored procedure', () async {
       final response = await postgrest
           .rpc(

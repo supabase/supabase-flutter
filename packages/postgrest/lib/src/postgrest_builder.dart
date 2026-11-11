@@ -10,6 +10,7 @@ import 'package:postgrest/src/postgrest_typed_builder.dart'
     show
         checkPostgrestHeadArguments,
         checkPostgrestRange,
+        postgrestArgumentsFitQuery,
         renderPostgrestQueryValue;
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';

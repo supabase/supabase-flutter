@@ -368,6 +368,45 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('sends arguments that fit a query as query parameters', () async {
+      await client.rpc(
+        'search',
+        params: {'query': 'dart', 'page': 2},
+        get: true,
+      );
+
+      final request = httpClient.requests.single;
+      expect(request.method, 'GET');
+      expect(request.queryParameters, {'query': 'dart', 'page': '2'});
+      expect(request.body, isEmpty);
+    });
+
+    for (final (description, params) in [
+      ('a reserved name', {'limit': 5}),
+      ('a dotted name', {'author.name': 'Ada'}),
+      ('a null value', {'name_param': null}),
+      ('a value that reads as a filter', {'name_param': 'eq.supabot'}),
+      ('a value that reads as a negated filter', {'ids': 'not.in.(1)'}),
+    ]) {
+      test('sends $description as a POST body', () async {
+        await client.rpc('search', params: params, get: true);
+
+        final request = httpClient.requests.single;
+        expect(request.method, 'POST');
+        expect(request.url.path, '/rest/v1/rpc/search');
+        expect(request.queryParameters, isEmpty);
+        expect(request.jsonBody, params);
+      });
+    }
+
+    test('head() still rejects arguments that do not fit a query', () {
+      expect(
+        () => client.rpc('search', params: {'limit': 5}, get: true).head(),
+        throwsArgumentError,
+      );
+      expect(httpClient.requests, isEmpty);
+    });
   });
 
   group('range()', () {

@@ -30,15 +30,20 @@ class PostgrestRpcBuilder {
   /// [params] is an optional object to pass as arguments to the function call.
   ///
   /// When [get] is set to `true`, [params] must be a [Map] or `null`, and the
-  /// function is called with read-only access mode.
+  /// function is called with a `GET` request in read-only access mode, with
+  /// [params] as query parameters. A call with an argument PostgREST would
+  /// read as an option of the request, such as `limit`, a `null` value, or a
+  /// value it would read as a filter, such as `eq.foo`, is sent as a `POST`
+  /// instead and not retried.
   PostgrestFilterBuilder<T> rpc<T>([
     Object? params,
     bool get = false,
   ]) {
+    final query = get && postgrestArgumentsFitQuery(params);
     return _filterBuilder(
       _config.copyWith(
-        method: get ? HttpMethod.get : HttpMethod.post,
-        url: get ? _appendArguments(_config.url, params) : null,
+        method: query ? HttpMethod.get : HttpMethod.post,
+        url: query ? _appendArguments(_config.url, params) : null,
         body: params,
         functionCall: true,
       ),

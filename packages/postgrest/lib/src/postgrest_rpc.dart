@@ -63,9 +63,12 @@ final class PostgrestRpc {
   /// arguments, or the value of a function's sole unnamed `json` or `jsonb`
   /// parameter, such as a list or a number.
   ///
-  /// When [get] is set to `true`, the function will be called with read-only
-  /// access mode, and [params] has to be a [Map] of named arguments or
-  /// `null`.
+  /// When [get] is set to `true`, the function is called with a `GET`
+  /// request in read-only access mode, and [params] has to be a [Map] of
+  /// named arguments or `null`, which are sent as query parameters. A call
+  /// with an argument PostgREST would read as an option of the request, such
+  /// as `limit`, a `null` value, or a value it would read as a filter, such
+  /// as `eq.foo`, is sent as a `POST` instead and not retried.
   /// {@endtemplate}
   ///
   /// ```dart
