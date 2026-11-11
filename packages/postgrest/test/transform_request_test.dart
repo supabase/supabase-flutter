@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
@@ -399,6 +401,30 @@ void main() {
         expect(request.jsonBody, params);
       });
     }
+
+    test('renders values JSON cannot carry the way a GET does', () async {
+      await client.rpc(
+        'search',
+        params: {
+          'limit': 5,
+          'after': DateTime.utc(2024, 2, 29, 12),
+          'days': [DateTime.utc(2024, 3)],
+          'cover': Uint8List.fromList([1, 2]),
+          'filter': {'tag': 'dart'},
+        },
+        get: true,
+      );
+
+      final request = httpClient.requests.single;
+      expect(request.method, 'POST');
+      expect(request.jsonBody, {
+        'limit': 5,
+        'after': '2024-02-29T12:00:00.000Z',
+        'days': ['2024-03-01T00:00:00.000Z'],
+        'cover': r'\x0102',
+        'filter': {'tag': 'dart'},
+      });
+    });
 
     test('keeps chained filters on a call sent as a POST', () async {
       await client

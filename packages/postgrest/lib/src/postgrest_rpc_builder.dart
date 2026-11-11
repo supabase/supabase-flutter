@@ -44,12 +44,25 @@ class PostgrestRpcBuilder {
       _config.copyWith(
         method: query ? HttpMethod.get : HttpMethod.post,
         url: query ? _appendArguments(_config.url, params) : null,
-        body: params,
+        body: get && !query ? _jsonArguments(params! as Map) : params,
         functionCall: true,
       ),
     );
   }
 }
+
+/// [arguments] with each value that JSON cannot carry, such as a [DateTime],
+/// rendered the way [_appendArguments] renders it, for a read-only call sent
+/// as a `POST`.
+Map<Object?, Object?> _jsonArguments(Map<Object?, Object?> arguments) =>
+    arguments.map((name, value) => MapEntry(name, _jsonArgument(value)));
+
+Object? _jsonArgument(Object? value) => switch (value) {
+  null || String() || num() || bool() || Map() => value,
+  Uint8List() => renderPostgrestQueryValue(value),
+  List() => value.map(_jsonArgument).toList(),
+  _ => renderPostgrestQueryValue(value),
+};
 
 /// [url] with each of the function arguments in [params] appended as a query
 /// parameter, for a call sent without a body.
