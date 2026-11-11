@@ -1,10 +1,7 @@
 import 'package:supabase_realtime/supabase_realtime.dart';
 
-/// {@template realtime_client_options}
 /// Options to pass to the RealtimeClient.
-/// {@endtemplate}
 class RealtimeClientOptions {
-  /// {@macro realtime_client_options}
   const RealtimeClientOptions({
     this.logLevel,
     this.timeout,

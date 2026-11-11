@@ -462,7 +462,6 @@ sealed class PostgrestStoredColumn<Row, Value extends Object>
 final class PostgrestColumn<Row, Value extends Object>
     extends PostgrestStoredColumn<Row, Value>
     implements PostgrestReadable<Row, Value> {
-  /// Creates a reference to the column called [name] in the database.
   const PostgrestColumn(String name, {Value Function(Object json)? fromJson})
     : super._(name, fromJson);
 
@@ -485,8 +484,6 @@ final class PostgrestNullableColumn<Row, Value extends Object>
     extends PostgrestStoredColumn<Row, Value>
     with PostgrestNullableExpression<Row, Value>
     implements PostgrestReadable<Row, Value?> {
-  /// Creates a reference to the nullable column called [name] in the
-  /// database.
   const PostgrestNullableColumn(
     String name, {
     Value Function(Object json)? fromJson,
@@ -537,8 +534,6 @@ final class PostgrestComputedField<Row, Value extends Object>
         PostgrestOrderableExpression<Row, Value>,
         PostgrestNullableExpression<Row, Value>
     implements PostgrestReadable<Row, Value?> {
-  /// Creates a reference to the computed field backed by the function called
-  /// [name] in the database.
   const PostgrestComputedField(
     this.name, {
     Value Function(Object json)? fromJson,

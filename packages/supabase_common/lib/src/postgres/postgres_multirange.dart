@@ -14,7 +14,6 @@ part of 'postgres_values.dart';
 /// written in the order and the number of its ranges.
 @experimental
 final class PostgresMultirange<Bound extends Object> implements PostgresValue {
-  /// The multirange made of [ranges].
   PostgresMultirange(List<PostgresRange<Bound>> ranges)
     : ranges = List.unmodifiable(ranges);
 

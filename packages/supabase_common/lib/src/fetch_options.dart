@@ -1,10 +1,5 @@
 /// Options for a single HTTP request made by the Supabase client packages.
 class FetchOptions {
-  /// Creates a set of request options.
-  ///
-  /// [headers] are the extra headers to send, defaulting to an empty map.
-  /// [noResolveJson] toggles returning the raw response bytes instead of
-  /// decoded JSON, defaulting to `false`.
   const FetchOptions(
     Map<String, String>? headers, {
     bool? noResolveJson,

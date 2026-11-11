@@ -378,8 +378,6 @@ class PostgresChangePayload {
     required this.errors,
   });
 
-  /// Creates a PostgresChangePayload instance from the enriched postgres change
-  /// payload
   factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
     final commitTimestampValue = payload['commit_timestamp'];
     DateTime commitTimestamp;
@@ -546,11 +544,8 @@ enum PostgresChangeFilterType {
   };
 }
 
-/// {@template postgres_change_filter}
 /// Creates a filter for realtime postgres change listener.
-/// {@endtemplate}
 class PostgresChangeFilter {
-  /// {@macro postgres_change_filter}
   const PostgresChangeFilter({
     required this.type,
     required this.column,

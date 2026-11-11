@@ -9,8 +9,6 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 final class PostgrestIntegerVectorColumn<Row>
     extends PostgrestColumn<Row, List<int>> {
-  /// Creates a reference to the integer vector column called [name] in the
-  /// database.
   const PostgrestIntegerVectorColumn(super.name)
     : super(fromJson: _decodeIntegerVector);
 }
@@ -20,8 +18,6 @@ final class PostgrestIntegerVectorColumn<Row>
 @experimental
 final class PostgrestNullableIntegerVectorColumn<Row>
     extends PostgrestNullableColumn<Row, List<int>> {
-  /// Creates a reference to the nullable integer vector column called [name]
-  /// in the database.
   const PostgrestNullableIntegerVectorColumn(super.name)
     : super(fromJson: _decodeIntegerVector);
 }

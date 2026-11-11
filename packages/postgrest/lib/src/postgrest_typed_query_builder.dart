@@ -1,16 +1,13 @@
 part of 'postgrest_typed_builder.dart';
 
-/// {@template postgrest_typed_query_builder}
 /// The typed counterpart of [PostgrestQueryBuilder], returned by
 /// [PostgrestClient.table].
 ///
 /// Query results are converted into [Row] through
 /// [PostgrestTable.rowFromJson], so no raw `Map<String, dynamic>` is exposed,
 /// and writes only accept the table's [Insert] and [Update] types.
-/// {@endtemplate}
 @experimental
 class PostgrestTypedQueryBuilder<Row, Insert, Update> {
-  /// {@macro postgrest_typed_query_builder}
   const PostgrestTypedQueryBuilder(
     this.table, {
     required PostgrestTableExecutor executor,

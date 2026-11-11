@@ -10,12 +10,9 @@ import 'package:meta/meta.dart';
 @internal
 typedef Callback = void Function(dynamic response);
 
-/// {@template push}
 /// Initializes the Push
-/// {@endtemplate}
 @internal
 class Push {
-  /// {@macro push}
   Push(
     this._channel,
     this._event, [

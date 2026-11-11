@@ -9,7 +9,6 @@ import 'dart:typed_data';
 /// be listened to once. Listening and then cancelling the subscription closes
 /// the connection.
 final class StorageDownload extends StreamView<Uint8List> {
-  /// A download of [statusCode] with [headers], whose body is [body].
   StorageDownload(
     super.body, {
     required this.statusCode,

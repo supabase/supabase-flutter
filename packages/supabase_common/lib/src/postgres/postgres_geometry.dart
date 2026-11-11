@@ -11,7 +11,6 @@ part of 'postgres_values.dart';
 /// column fails on the server.
 @experimental
 final class PostgresPoint implements PostgresValue {
-  /// The point at [x] and [y].
   const PostgresPoint(this.x, this.y);
 
   /// Parses the `(x,y)` literal Postgres emits for a `point`.
@@ -105,7 +104,6 @@ final class PostgresLine implements PostgresValue {
 /// ```
 @experimental
 final class PostgresLineSegment implements PostgresValue {
-  /// The segment from [start] to [end].
   const PostgresLineSegment(this.start, this.end);
 
   /// Parses the `[(x1,y1),(x2,y2)]` literal Postgres emits for an `lseg`.
@@ -216,8 +214,6 @@ final class PostgresBox implements PostgresValue {
 /// `path` column matches every path with as many points.
 @experimental
 final class PostgresPath implements PostgresValue {
-  /// The path through [points], which joins its last point back to its
-  /// first when [isClosed].
   PostgresPath(List<PostgresPoint> points, {required this.isClosed})
     : points = List.unmodifiable(points) {
     if (points.isEmpty) {
@@ -279,7 +275,6 @@ final class PostgresPath implements PostgresValue {
 /// `polygon` column fails on the server.
 @experimental
 final class PostgresPolygon implements PostgresValue {
-  /// The polygon with the corners [points], in order.
   PostgresPolygon(List<PostgresPoint> points)
     : points = List.unmodifiable(points) {
     if (points.isEmpty) {
