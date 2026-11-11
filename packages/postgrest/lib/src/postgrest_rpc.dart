@@ -68,7 +68,8 @@ final class PostgrestRpc {
   /// named arguments or `null`, which are sent as query parameters. A call
   /// with an argument PostgREST would read as an option of the request, such
   /// as `limit`, a `null` value, or a value it would read as a filter, such
-  /// as `eq.foo`, is sent as a `POST` instead and not retried.
+  /// as `eq.foo`, is sent as a `POST` instead, which is neither read-only
+  /// nor retried.
   /// {@endtemplate}
   ///
   /// ```dart
@@ -109,7 +110,8 @@ final class PostgrestRpc {
   /// [Map] of values a query parameter can hold, and not rows or `json`. A
   /// call with an argument PostgREST would read as an option of the request,
   /// such as `limit`, a `null` value, or a value it would read as a filter,
-  /// such as `eq.foo`, is sent as a `POST` instead and not retried.
+  /// such as `eq.foo`, is sent as a `POST` instead, which is neither
+  /// read-only nor retried.
   @experimental
   PostgrestTypedFilterBuilder<Row, List<Row>> rows<Row>(
     String function, {

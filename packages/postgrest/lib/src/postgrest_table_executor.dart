@@ -146,17 +146,16 @@ final class PostgrestHttpTableExecutor implements PostgrestTableExecutor {
   ///
   /// A GET or HEAD request has no body, so a [PostgrestTableRequest.readOnly]
   /// call, and a call read with [PostgrestResultShape.head], sends its
-  /// arguments as query parameters. A read-only call whose arguments
-  /// PostgREST would read as filters is sent as a POST instead, and such a
-  /// call read with [PostgrestResultShape.head] is rejected.
+  /// arguments as query parameters. A read-only call whose arguments would
+  /// not reach the function as query parameters is sent as a POST instead,
+  /// see [PostgrestRpc.call], and such a call read with
+  /// [PostgrestResultShape.head] is rejected.
   PostgrestFilterBuilder<Object?> _call(PostgrestTableRequest request) {
     final name = request.table.name;
     if (request.shape == PostgrestResultShape.head) {
       checkPostgrestHeadArguments(request.payload);
     }
-    final get =
-        request.shape == PostgrestResultShape.head ||
-        (request.readOnly && postgrestArgumentsFitQuery(request.payload));
+    final get = request.shape == PostgrestResultShape.head || request.readOnly;
     final arguments = get
         ? (request.payload ?? const <String, Object?>{})
         : request.payload;

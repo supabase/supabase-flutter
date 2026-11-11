@@ -34,7 +34,7 @@ class PostgrestRpcBuilder {
   /// [params] as query parameters. A call with an argument PostgREST would
   /// read as an option of the request, such as `limit`, a `null` value, or a
   /// value it would read as a filter, such as `eq.foo`, is sent as a `POST`
-  /// instead and not retried.
+  /// instead, which is neither read-only nor retried.
   PostgrestFilterBuilder<T> rpc<T>([
     Object? params,
     bool get = false,

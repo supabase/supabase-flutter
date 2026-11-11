@@ -400,6 +400,18 @@ void main() {
       });
     }
 
+    test('keeps chained filters on a call sent as a POST', () async {
+      await client
+          .rpc('search', params: {'limit': 5}, get: true)
+          .eq('id', 1)
+          .select('id');
+
+      final request = httpClient.requests.single;
+      expect(request.method, 'POST');
+      expect(request.queryParameters, {'select': 'id', 'id': 'eq.1'});
+      expect(request.jsonBody, {'limit': 5});
+    });
+
     test('head() still rejects arguments that do not fit a query', () {
       expect(
         () => client.rpc('search', params: {'limit': 5}, get: true).head(),
