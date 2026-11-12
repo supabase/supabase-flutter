@@ -925,7 +925,7 @@ class StorageDownloadTooLargeException extends StorageException {
 }
 
 /// Thrown by a resumable upload that was cancelled with
-/// `ResumableUpload.cancel`.
+/// `ResumableUpload.cancel`, or because the user signed out.
 class ResumableUploadCancelledException extends StorageException {
   const ResumableUploadCancelledException(this.uploadId)
     : super('Resumable upload $uploadId was cancelled');

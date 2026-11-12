@@ -77,6 +77,12 @@ import 'trace_http_client.dart';
 /// and the typed function calls run through, in the order given, and are
 /// disposed together with the client.
 ///
+/// When the user is signed out, by [AuthClient.signOut] or because the
+/// session could no longer be refreshed, every realtime channel is removed
+/// and every resumable upload is cancelled and forgotten, so the next user of
+/// the device neither receives the events of the previous one nor continues
+/// their uploads. Subscribe the channels again after the next sign-in.
+///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `asyncStorage` field of [authOptions].
 /// Without one, a `MemoryAuthAsyncStorage` is used, which only suits flows
@@ -557,11 +563,38 @@ class SupabaseClient {
     // ignore: invalid_use_of_internal_member
     _authStateSubscription = auth.onAuthStateChangeSync.listen(
       (data) {
+        if (data.event == AuthChangeEvent.signedOut) {
+          _forgetSignedOutUser();
+        }
         unawaited(
           _handleTokenChanged(data.event, data.session?.accessToken),
         );
       },
       onError: (error, stack) {},
+    );
+  }
+
+  /// Removes the channels and resumable uploads of the user who signed out.
+  void _forgetSignedOutUser() {
+    unawaited(
+      realtime.removeAllChannels().then<void>(
+        (_) {},
+        onError: (Object error, StackTrace stackTrace) => clientLogger.warning(
+          'Could not remove the realtime channels after a sign-out',
+          error,
+          stackTrace,
+        ),
+      ),
+    );
+    unawaited(
+      // ignore: invalid_use_of_internal_member
+      storage.forgetResumableUploads().onError<Object>(
+        (error, stackTrace) => clientLogger.warning(
+          'Could not forget the resumable uploads after a sign-out',
+          error,
+          stackTrace,
+        ),
+      ),
     );
   }
 

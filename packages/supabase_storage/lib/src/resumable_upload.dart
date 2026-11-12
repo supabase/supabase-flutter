@@ -390,6 +390,19 @@ class ResumableUploadRegistry {
     if (records.remove(id) != null) await _write(records);
   });
 
+  /// Cancels every upload of this process and removes every record, leaving
+  /// what the server holds of them to expire.
+  Future<void> forgetAll() async {
+    final stopped = [
+      for (final upload in _live.values.toList()) upload._forget(),
+    ];
+    await _serialize(() {
+      _unreadable = {};
+      return _storage.removeItem(storageKey);
+    });
+    await Future.wait(stopped);
+  }
+
   /// Starts uploading [source] to [path] in [bucketId].
   ResumableUpload start({
     required String bucketId,
@@ -549,6 +562,10 @@ enum _Step { create, resync, append }
 /// it completes or is cancelled. After a restart,
 /// `SupabaseStorageClient.resumableUploads` lists the records and
 /// `SupabaseStorageClient.resumeUpload` continues one with the same file.
+///
+/// When the user signs out of the `SupabaseClient` the upload belongs to,
+/// the upload is cancelled and its record removed, but what the server holds
+/// of it is left to expire.
 class ResumableUpload {
   ResumableUpload._({
     required this.id,
@@ -648,9 +665,13 @@ class ResumableUpload {
   ///
   /// When the response that completes the upload is already in, the upload
   /// completes instead, and [done] with it.
-  Future<void> cancel() => _cancellation ??= _cancel();
+  Future<void> cancel() => _cancellation ??= _cancel(terminate: true);
 
-  Future<void> _cancel() async {
+  /// Cancels the upload like [cancel] without deleting what the server holds
+  /// of it.
+  Future<void> _forget() => _cancellation ??= _cancel(terminate: false);
+
+  Future<void> _cancel({required bool terminate}) async {
     if (_status == ResumableUploadStatus.completed ||
         _status == ResumableUploadStatus.cancelled) {
       return;
@@ -662,7 +683,7 @@ class ResumableUpload {
     _finish();
     final record = _record;
     if (record != null) {
-      await _registry._terminate(record, _headers);
+      if (terminate) await _registry._terminate(record, _headers);
       await _registry._remove(id);
     }
     if (_done.isCompleted) _done = Completer()..future.ignore();

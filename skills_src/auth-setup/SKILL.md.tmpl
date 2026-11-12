@@ -167,7 +167,9 @@ as soon as it is called, so it works offline and the app can navigate to the
 sign in screen without awaiting it. The returned future waits up to 10 seconds
 for the server to revoke the session, so await it before disposing the client.
 When the revoke fails it throws an `AuthException`, but the device stays signed
-out, so catch it where you call `signOut()` without awaiting it.
+out, so catch it where you call `signOut()` without awaiting it. Signing out
+also removes every realtime channel and cancels every resumable upload and its
+record, so the next user of the device gets none of them.
 
 To sign out every device, use `signOut(scope: SignOutScope.global)`. It asks
 the server first and throws an `AuthException` when that fails, keeping the

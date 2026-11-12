@@ -208,6 +208,14 @@ class SupabaseStorageClient extends StorageBucketApi {
   Future<void> discardResumableUpload(String id) =>
       _resumableUploadRegistry.discard(id, headers);
 
+  /// Cancels every resumable upload of this client and removes every record,
+  /// without deleting what the server holds of them, which expires.
+  ///
+  /// `SupabaseClient` calls this when the user signs out, so the next user of
+  /// the device cannot list or continue those uploads.
+  @internal
+  Future<void> forgetResumableUploads() => _resumableUploadRegistry.forgetAll();
+
   /// Returns an Iceberg REST Catalog client for an analytics bucket.
   ///
   /// [bucketId] is the identifier of the analytics bucket (the warehouse) whose
