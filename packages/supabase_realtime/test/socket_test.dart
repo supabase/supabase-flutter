@@ -616,19 +616,30 @@ void main() {
       expect(socket.channels, [channel]);
     });
 
-    test('creates a channel with new options once the old one is removed', () {
-      final channel = socket.channel(tTopic).subscribe();
-      unawaited(socket.removeChannel(channel));
+    test(
+      'creates a channel with new options once the old one is removed',
+      () async {
+        final realtime = MockRealtimeTransport();
+        final client = RealtimeClient(socketEndpoint, transport: realtime.call);
+        addTearDown(client.disconnect);
+        final channel = client.channel(tTopic);
+        final subscribed = channel.onStatusChange.firstWhere(
+          (change) => change.status == RealtimeSubscribeStatus.subscribed,
+        );
+        channel.subscribe();
+        await subscribed;
 
-      final replacement = socket.channel(
-        tTopic,
-        const RealtimeChannelConfig(private: true),
-      );
+        unawaited(client.removeChannel(channel));
+        final replacement = client.channel(
+          tTopic,
+          const RealtimeChannelConfig(private: true),
+        );
 
-      expect(replacement, isNot(same(channel)));
-      expect(replacement.parameters['config']['private'], isTrue);
-      expect(socket.channels, [replacement]);
-    });
+        expect(replacement, isNot(same(channel)));
+        expect(replacement.parameters['config']['private'], isTrue);
+        expect(client.channels, [replacement]);
+      },
+    );
 
     test('creates a new channel for a topic whose channel is leaving', () {
       final channel = socket.channel(tTopic).subscribe();

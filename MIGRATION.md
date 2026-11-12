@@ -1962,16 +1962,10 @@ await channel.sendBroadcastMessage(event: 'note', payload: {'text': 'hello'});
 
 `channel()` returns the channel already registered for a name instead of creating a second one,
 with the listeners already added to it. It throws a `StateError` if that channel was created with
-other options, so a channel created as public is never returned for a private one, and the presence
-key of a previous user is never kept. `subscribe()` on a channel that is already subscribed does
-nothing. Creating a second channel with the same name used to unsubscribe the first one, which
-reported `closed`, so remove a channel before reusing its name with other options:
-
-```dart
-final channel = supabase.channel('room-1');
-await supabase.removeChannel(channel);
-supabase.channel('room-1', options: const RealtimeChannelConfig(private: true));
-```
+other options, so it never returns a public channel for a private one, or a channel with another
+presence key. `subscribe()` on a channel that is already subscribed does nothing. Creating a second
+channel with the same name used to unsubscribe the first one, which reported `closed`, so remove a
+channel with `removeChannel()` before reusing its name with other options.
 
 `RealtimeClient.disconnect()` keeps the channels and rejoins them on the next connection. Call
 `removeAllChannels()` to unsubscribe them as well. A broadcast without `ack` resolves to `ok` once

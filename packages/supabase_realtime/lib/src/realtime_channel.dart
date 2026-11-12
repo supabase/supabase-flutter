@@ -32,13 +32,11 @@ class RealtimeChannel {
     this.config = const RealtimeChannelConfig(),
   }) : _timeout = socket.timeout,
        _parameters = config.toMap(),
-       _v2BroadcastCompatibility = config.v2BroadcastCompatibility,
        subTopic = topic.replaceFirst(
          RegExp(r"^realtime:", caseSensitive: false),
          "",
        ) {
     broadcastEndpointUrl = '${httpEndpointUrl(socket.endpoint)}/api/broadcast';
-    _private = config.private;
 
     _joinPush = Push(
       this,
@@ -141,7 +139,6 @@ class RealtimeChannel {
   }
   final Map<String, List<Binding>> _bindings = {};
   final Duration _timeout;
-  final bool _v2BroadcastCompatibility;
   ChannelState _state = ChannelState.closed;
   bool _joinedOnce = false;
 
@@ -209,10 +206,6 @@ class RealtimeChannel {
   /// The options this channel was created with.
   @internal
   final RealtimeChannelConfig config;
-
-  /// Defines if the channel is private or not and if RLS policies will be used
-  /// to check data
-  late final bool _private;
 
   final _statusController =
       StreamController<RealtimeSubscribeStatusChange>.broadcast();
@@ -991,7 +984,7 @@ class RealtimeChannel {
 
     final url = Uri.parse(
       '$broadcastEndpointUrl/${Uri.encodeComponent(subTopic)}/events/'
-      '${Uri.encodeComponent(event)}${_private ? '?private=true' : ''}',
+      '${Uri.encodeComponent(event)}${config.private ? '?private=true' : ''}',
     );
 
     final body = isBinary ? _asBytes(payload) : json.encode(payload);
@@ -1091,7 +1084,7 @@ class RealtimeChannel {
         type: RealtimeListenType.broadcast,
         event: event,
         payload: {
-          if (_v2BroadcastCompatibility && !isBinary)
+          if (config.v2BroadcastCompatibility && !isBinary)
             for (final MapEntry(:key, :value) in (payload as Map).entries)
               if (key is String && !_v2ReservedBroadcastKeys.contains(key))
                 key: value,
