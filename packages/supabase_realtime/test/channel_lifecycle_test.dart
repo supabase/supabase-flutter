@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_test/supabase_test.dart';
 import 'package:test/test.dart';
 
@@ -86,7 +87,10 @@ void main() {
         event: 'message',
         payload: {'text': 'hello'},
       );
-      expect((await received)['payload'], {'text': 'hello'});
+      expect(
+        (await received).payload,
+        const JsonBroadcastPayload({'text': 'hello'}),
+      );
     });
 
     test('a channel removed while disconnected does not leave the channel '
@@ -257,7 +261,7 @@ void main() {
       channel.onStatusChange.listen(statuses.add);
 
       channel.subscribe();
-      channel.joinPush.trigger('ok', {'postgres_changes': <Object>[]});
+      channel.joinPush.trigger(PushStatus.ok, {'postgres_changes': <Object>[]});
       await pumpEventQueue();
 
       final mismatch = statuses.firstWhere(

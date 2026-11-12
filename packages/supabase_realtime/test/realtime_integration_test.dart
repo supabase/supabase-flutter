@@ -126,9 +126,9 @@ void main() {
         'broadcast-self',
         const RealtimeChannelConfig(self: true),
       );
-      final received = Completer<Map<String, dynamic>>();
-      channel.onBroadcast(event: 'ping').listen((payload) {
-        if (!received.isCompleted) received.complete(payload);
+      final received = Completer<BroadcastMessage>();
+      channel.onBroadcast(event: 'ping').listen((message) {
+        if (!received.isCompleted) received.complete(message);
       });
       await _subscribe(channel);
       await channel.sendBroadcastMessage(
@@ -136,11 +136,11 @@ void main() {
         payload: {'value': 42},
       );
 
-      final payload = await received.future.timeout(
+      final message = await received.future.timeout(
         const Duration(seconds: 15),
       );
-      expect(payload['event'], 'ping');
-      expect(payload['payload'], {'value': 42});
+      expect(message.event, 'ping');
+      expect(message.payload, const JsonBroadcastPayload({'value': 42}));
     });
 
     test('broadcasts between two clients', () async {
@@ -152,10 +152,10 @@ void main() {
         await sender.disconnect();
       });
 
-      final received = Completer<Map<String, dynamic>>();
+      final received = Completer<BroadcastMessage>();
       final receiverChannel = receiver.channel(topic);
-      receiverChannel.onBroadcast(event: 'cursor').listen((payload) {
-        if (!received.isCompleted) received.complete(payload);
+      receiverChannel.onBroadcast(event: 'cursor').listen((message) {
+        if (!received.isCompleted) received.complete(message);
       });
       await _subscribe(receiverChannel);
 
@@ -166,10 +166,10 @@ void main() {
         payload: {'x': 1, 'y': 2},
       );
 
-      final payload = await received.future.timeout(
+      final message = await received.future.timeout(
         const Duration(seconds: 15),
       );
-      expect(payload['payload'], {'x': 1, 'y': 2});
+      expect(message.payload, const JsonBroadcastPayload({'x': 1, 'y': 2}));
     });
 
     test('receives broadcasts from every source in the same shape', () async {
@@ -178,10 +178,10 @@ void main() {
         topic,
         const RealtimeChannelConfig(self: true),
       );
-      final received = <String, Map<String, dynamic>>{};
+      final received = <String, BroadcastMessage>{};
       final allReceived = Completer<void>();
       channel.onBroadcast(event: '*').listen((message) {
-        received[message['event'] as String] = message;
+        received[message.event] = message;
         if (received.length == 3 && !allReceived.isCompleted) {
           allReceived.complete();
         }
@@ -201,9 +201,17 @@ void main() {
       );
 
       await allReceived.future.timeout(const Duration(seconds: 15));
-      expect(received['socket']!['payload'], {'x': 1});
-      expect(received['http']!['payload'], {'x': 1});
-      expect(received['database']!['payload'], containsPair('x', 1));
+      expect(received['socket']!.payload, const JsonBroadcastPayload({'x': 1}));
+      expect(received['http']!.payload, const JsonBroadcastPayload({'x': 1}));
+      expect(
+        received['database']!.payload,
+        isA<JsonBroadcastPayload>().having(
+          (payload) => payload.value,
+          'value',
+          containsPair('x', 1),
+        ),
+      );
+      expect(received['database']!.id, isNotNull);
     });
 
     test('round trips a binary broadcast', () async {
@@ -211,19 +219,19 @@ void main() {
         'broadcast-binary',
         const RealtimeChannelConfig(self: true),
       );
-      final received = Completer<Map<String, dynamic>>();
+      final received = Completer<BroadcastMessage>();
       channel.onBroadcast(event: 'file').listen((message) {
         if (!received.isCompleted) received.complete(message);
       });
       await _subscribe(channel);
 
       final bytes = Uint8List.fromList([1, 2, 3]);
-      await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+      await channel.sendBinaryBroadcastMessage(event: 'file', bytes: bytes);
 
       final message = await received.future.timeout(
         const Duration(seconds: 15),
       );
-      expect(message['payload'], bytes);
+      expect(message.payload, BinaryBroadcastPayload(bytes));
     });
 
     test('tracks and syncs presence', () async {
@@ -431,8 +439,12 @@ void main() {
 
       final received = <int>[];
       final allReceived = Completer<void>();
-      channel.onBroadcast(event: 'tick').listen((payload) {
-        received.add(payload['payload']['index'] as int);
+      channel.onBroadcast(event: 'tick').listen((message) {
+        if (message.payload case JsonBroadcastPayload(
+          value: {'index': final int index},
+        )) {
+          received.add(index);
+        }
         if (received.length == _asyncCodecMessageCount &&
             !allReceived.isCompleted) {
           allReceived.complete();

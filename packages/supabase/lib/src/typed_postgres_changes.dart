@@ -117,7 +117,7 @@ extension TypedPostgresChanges on RealtimeChannel {
       StreamTransformer.fromHandlers(
         handleData: (payload, sink) {
           final errors = payload.errors;
-          if (errors is List && errors.isNotEmpty) {
+          if (errors.isNotEmpty) {
             sink.addError(
               RealtimeException(
                 'The ${payload.eventType.name} on '

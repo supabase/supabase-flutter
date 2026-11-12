@@ -139,11 +139,11 @@ class RoomChannel {
     payload: {'username': username},
   );
 
-  /// Reads the sender from a typing ping. A ping without a username under
-  /// `payload` is skipped instead of failing the stream.
-  static String? _typingUsername(Map<String, dynamic> message) {
-    return switch (message) {
-      {'payload': {'username': final String name}} => name,
+  /// Reads the sender from a typing ping. A ping without a username is
+  /// skipped instead of failing the stream.
+  static String? _typingUsername(BroadcastMessage message) {
+    return switch (message.payload) {
+      JsonBroadcastPayload(value: {'username': final String name}) => name,
       _ => null,
     };
   }

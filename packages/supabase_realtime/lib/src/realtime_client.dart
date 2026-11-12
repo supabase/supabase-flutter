@@ -289,7 +289,7 @@ class RealtimeClient {
   final WebSocketTransport transport;
 
   /// Used instead of the default HTTP client for a broadcast sent with
-  /// `RealtimeChannel.httpSend`.
+  /// `RealtimeChannel.httpSend` or `RealtimeChannel.httpSendBinary`.
   final Client? httpClient;
 
   /// The interval at which a heartbeat message is sent.

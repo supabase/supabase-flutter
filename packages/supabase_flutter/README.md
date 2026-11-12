@@ -709,7 +709,7 @@ going through the database. Send once the channel is subscribed:
 final channel = supabase.channel('room');
 
 channel.onBroadcast(event: 'cursor').listen((message) {
-  print('Cursor moved: ${message['payload']}');
+  print('Cursor moved: ${message.payload}');
 });
 
 channel.onStatusChange.listen((change) async {

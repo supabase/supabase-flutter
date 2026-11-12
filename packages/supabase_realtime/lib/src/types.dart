@@ -3,36 +3,28 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart'
     show JsonFields, postgresTimestampLiteral;
 import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/constants.dart';
 
 @internal
-typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
+typedef BindingCallback = void Function(Object? payload, String? ref);
 
 @internal
 class Binding {
-  Binding(
+  const Binding(
     this.type,
     this.filter,
     this.callback, [
     this.id,
   ]);
-  String type;
-  Map<String, dynamic> filter;
-  BindingCallback callback;
-  String? id;
+  final String type;
+  final ChannelFilter filter;
+  final BindingCallback callback;
 
-  Binding copyWith({
-    String? type,
-    Map<String, dynamic>? filter,
-    BindingCallback? callback,
-    String? id,
-  }) {
-    return Binding(
-      type ?? this.type,
-      filter ?? this.filter,
-      callback ?? this.callback,
-      id ?? this.id,
-    );
-  }
+  /// The id the server assigned to a `postgres_changes` binding when the
+  /// channel joined, matched against the `ids` of each change.
+  final int? id;
+
+  Binding copyWith({int? id}) => Binding(type, filter, callback, id ?? this.id);
 }
 
 /// The kind of Postgres change a [PostgresChangeFilter] listens for.
@@ -111,7 +103,7 @@ class ChannelFilter {
   /// a subset of columns instead of the full row.
   final List<String>? select;
 
-  Map<String, dynamic> toMap() {
+  Map<String, Object> toMap() {
     return {
       'event': ?event,
       'schema': ?schema,
@@ -120,6 +112,24 @@ class ChannelFilter {
       'select': ?select,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is ChannelFilter &&
+      other.event == event &&
+      other.schema == schema &&
+      other.table == table &&
+      other.filter == filter &&
+      const ListEquality<String>().equals(other.select, select);
+
+  @override
+  int get hashCode => Object.hash(
+    event,
+    schema,
+    table,
+    filter,
+    const ListEquality<String>().hash(select),
+  );
 }
 
 /// The result of sending a message on a [RealtimeChannel], such as a
@@ -137,17 +147,14 @@ enum ChannelResponse {
 
 @internal
 enum RealtimeListenType {
-  postgresChanges,
-  broadcast,
-  presence,
-  system;
+  postgresChanges(ChannelEvent.postgresChanges),
+  broadcast(ChannelEvent.broadcast),
+  presence(ChannelEvent.presence);
 
-  String toType() {
-    if (this == RealtimeListenType.postgresChanges) {
-      return 'postgres_changes';
-    }
-    return name;
-  }
+  const RealtimeListenType(this.channelEvent);
+
+  /// The event a message of this type is sent under.
+  final ChannelEvent channelEvent;
 }
 
 /// The kind of change a presence callback is reporting.
@@ -315,26 +322,25 @@ class RealtimeChannelConfig {
 
   /// Converts this to the shape sent when joining the channel.
   Map<String, dynamic> toMap() {
-    final broadcastConfig = <String, dynamic>{
-      'ack': ack,
-      'self': self,
-    };
-    if (replay != null) {
-      broadcastConfig['replay'] = replay!.toMap();
-    }
-    if (replicationReady) {
-      broadcastConfig['replication_ready'] = true;
-    }
+    return {'config': joinConfig(enablePresence: presenceEnabled)};
+  }
 
+  /// The `config` sent when joining the channel, with presence enabled when
+  /// [enablePresence] is `true`.
+  @internal
+  Map<String, Object> joinConfig({required bool enablePresence}) {
     return {
-      'config': {
-        'broadcast': broadcastConfig,
-        'presence': {
-          'key': presenceKey,
-          'enabled': presenceEnabled,
-        },
-        'private': private,
+      'broadcast': {
+        'ack': ack,
+        'self': self,
+        'replay': ?replay?.toMap(),
+        if (replicationReady) 'replication_ready': true,
       },
+      'presence': {
+        'key': presenceKey,
+        'enabled': enablePresence,
+      },
+      'private': private,
     };
   }
 
@@ -415,7 +421,7 @@ class PostgresChangePayload {
     required this.eventType,
     required this.newRecord,
     required this.oldRecord,
-    required this.errors,
+    this.errors = const [],
   });
 
   factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
@@ -441,7 +447,12 @@ class PostgresChangePayload {
       ),
       newRecord: newData is Map ? Map.from(newData) : {},
       oldRecord: oldData is Map ? Map.from(oldData) : {},
-      errors: payload['errors'],
+      errors: switch (payload['errors']) {
+        final List<dynamic> errors => List.unmodifiable(
+          errors.whereType<String>(),
+        ),
+        _ => const [],
+      },
     );
   }
 
@@ -463,8 +474,11 @@ class PostgresChangePayload {
   /// The row before the change, empty for an insert.
   final Map<String, dynamic> oldRecord;
 
-  /// Errors reported by the server for this change, if any.
-  final dynamic errors;
+  /// Errors the server reported for this change, empty when there are none.
+  ///
+  /// The records of a change with errors can be incomplete, for example when
+  /// the row was too large to send.
+  final List<String> errors;
 
   @override
   String toString() {
@@ -485,7 +499,7 @@ class PostgresChangePayload {
         other.eventType == eventType &&
         mapEquals(other.newRecord, newRecord) &&
         mapEquals(other.oldRecord, oldRecord) &&
-        other.errors == errors;
+        const ListEquality<String>().equals(other.errors, errors);
   }
 
   @override
@@ -498,7 +512,7 @@ class PostgresChangePayload {
       eventType,
       mapEquality.hash(newRecord),
       mapEquality.hash(oldRecord),
-      errors,
+      const ListEquality<String>().hash(errors),
     );
   }
 }

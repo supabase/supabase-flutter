@@ -125,22 +125,26 @@ A row from any other source is read the same way after
 
 ```dart
 final channel = supabase.channel('room-1');
-channel
-    .onBroadcast(event: 'cursor')
-    .listen((message) => print('Cursor at ${message['payload']['x']}'));
+channel.onBroadcast(event: 'cursor').listen((message) {
+  if (message.payload case JsonBroadcastPayload(value: {'x': final num x})) {
+    print('Cursor at $x');
+  }
+});
 channel.subscribe();
 
 await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 ```
 
-Every `onBroadcast` message is a map with `type`, `event` and the sent data
-under `payload`, whether it came from `sendBroadcastMessage`, `httpSend`,
-the database or another Supabase client. Apps on v2 put the data at the top
-level instead. A v3 listener moves it under `payload`, but a v2 listener cannot
-read a v3 broadcast unless the channel is created with
+Every `onBroadcast` message is a `BroadcastMessage` with the `event` and the
+sent data as its `payload`, whether it came from `sendBroadcastMessage`,
+`httpSend`, the database or another Supabase client. The payload is a sealed
+`BroadcastPayload`: a `JsonBroadcastPayload` with the decoded JSON `value`, or
+a `BinaryBroadcastPayload` with the `bytes`. Send a `Uint8List` with
+`sendBinaryBroadcastMessage` or `httpSendBinary`. Apps on v2 put the data at
+the top level instead. A v3 listener reads it as the payload, but a v2 listener
+cannot read a v3 broadcast unless the channel is created with
 `RealtimeChannelConfig(v2BroadcastCompatibility: true)`, which sends the data
-in both places until the v2 apps are gone. Pass binary data such as a
-`Uint8List` as the `payload` itself to send it as a binary frame.
+in both places until the v2 apps are gone.
 
 Pass `RealtimeChannelConfig(self: true)` as `options` to `supabase.channel`
 to receive your own broadcasts, and `private: true` for a channel guarded by

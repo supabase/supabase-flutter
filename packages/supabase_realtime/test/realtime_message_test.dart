@@ -36,7 +36,11 @@ void main() {
     });
 
     test('replaces a nested binding with its serializable shape', () {
-      final binding = Binding('postgres_changes', {'event': '*'}, (_, [_]) {});
+      final binding = Binding(
+        'postgres_changes',
+        const ChannelFilter(event: '*'),
+        (_, _) {},
+      );
       final message = RealtimeMessage.outgoing(
         topic: 'realtime:room',
         event: ChannelEvent.join,
@@ -78,7 +82,11 @@ void main() {
     });
 
     test('replaces a binding nested inside a list', () {
-      final binding = Binding('postgres_changes', {'event': '*'}, (_, [_]) {});
+      final binding = Binding(
+        'postgres_changes',
+        const ChannelFilter(event: '*'),
+        (_, _) {},
+      );
       final message = RealtimeMessage.outgoing(
         topic: 'realtime:room',
         event: ChannelEvent.join,
@@ -102,7 +110,11 @@ void main() {
     });
 
     test('replaces a binding nested three levels deep', () {
-      final binding = Binding('postgres_changes', {'event': '*'}, (_, [_]) {});
+      final binding = Binding(
+        'postgres_changes',
+        const ChannelFilter(event: '*'),
+        (_, _) {},
+      );
       final message = RealtimeMessage.outgoing(
         topic: 'realtime:room',
         event: ChannelEvent.join,

@@ -103,7 +103,7 @@ class RealtimeMessage {
 
   static Object? _withoutBindings(Object? payload) {
     if (payload is Binding) {
-      return {'type': payload.type, 'filter': payload.filter};
+      return {'type': payload.type, 'filter': payload.filter.toMap()};
     }
     // Binary payloads (Uint8List and other TypedData/ByteBuffer) are opaque
     // bytes for a binary broadcast, not a JSON list to recurse into.

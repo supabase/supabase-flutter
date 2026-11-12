@@ -8,7 +8,22 @@ import 'package:supabase_realtime/src/types.dart';
 import 'package:meta/meta.dart';
 
 @internal
-typedef Callback = void Function(dynamic response);
+typedef Callback = void Function(Object? response);
+
+/// The outcome of a [Push], from the `status` of the server reply or from the
+/// push timing out.
+@internal
+enum PushStatus {
+  ok,
+  error,
+  timeout;
+
+  static final _byName = PushStatus.values.asNameMap();
+
+  /// Parses the `status` of a reply, or returns `null` for a status this
+  /// client does not know.
+  static PushStatus? fromValue(Object? value) => _byName[value];
+}
 
 /// Initializes the Push
 @internal
@@ -65,7 +80,7 @@ class Push {
   }
 
   void send() {
-    if (_hasReceived('timeout')) {
+    if (_hasReceived(PushStatus.timeout)) {
       return;
     }
     startTimeout();
@@ -85,7 +100,7 @@ class Push {
     _payload = {..._payload, ...newPayload};
   }
 
-  Push receive(String status, Callback callback) {
+  Push receive(PushStatus status, Callback callback) {
     if (_hasReceived(status)) {
       callback(_receivedResponse?['response']);
     }
@@ -101,7 +116,7 @@ class Push {
     _ref = _channel.socket.makeRef();
     _refEvent = _channel.replyEventName(ref);
 
-    _channel.onEvents(_refEvent!, ChannelFilter(), (dynamic response, [_]) {
+    _channel.onEvents(_refEvent!, const ChannelFilter(), (response, _) {
       _cancelRefEvent();
       _cancelTimeout();
       if (response is! Map<String, dynamic>) {
@@ -111,17 +126,23 @@ class Push {
         );
       }
       _receivedResponse = response;
-      _matchReceive(response.field('status'), response['response']);
+      final status = PushStatus.fromValue(response.field<String>('status'));
+      if (status != null) {
+        _matchReceive(status, response['response']);
+      }
     });
 
     _timeoutTimer = Timer(timeout, () {
-      trigger('timeout', {});
+      trigger(PushStatus.timeout, {});
     });
   }
 
-  void trigger(String status, Map<String, dynamic> response) {
+  void trigger(PushStatus status, Map<String, dynamic> response) {
     if (_refEvent != null) {
-      _channel.trigger(_refEvent!, {'status': status, 'response': response});
+      _channel.trigger(_refEvent!, {
+        'status': status.name,
+        'response': response,
+      });
     }
   }
 
@@ -135,7 +156,7 @@ class Push {
       return;
     }
 
-    _channel.off(_refEvent!, {});
+    _channel.off(_refEvent!, const ChannelFilter());
   }
 
   void _cancelTimeout() {
@@ -143,23 +164,20 @@ class Push {
     _timeoutTimer = null;
   }
 
-  void _matchReceive(
-    String status,
-    dynamic response,
-  ) {
+  void _matchReceive(PushStatus status, Object? response) {
     _receiveHooks.where((h) => h.status == status).forEach((h) {
       h.callback(response);
     });
   }
 
-  bool _hasReceived(String status) {
-    return _receivedResponse is Map && _receivedResponse?['status'] == status;
+  bool _hasReceived(PushStatus status) {
+    return _receivedResponse?['status'] == status.name;
   }
 }
 
 @internal
 class Hook {
   const Hook(this.status, this.callback);
-  final String status;
+  final PushStatus status;
   final Callback callback;
 }

@@ -294,7 +294,7 @@ Broadcast and connection status are streams too:
 final channel = supabase.channel('room');
 channel
     .onBroadcast(event: 'cursor')
-    .listen((message) => print(message['payload']));
+    .listen((message) => print(message.payload));
 channel.onStatusChange.listen((change) async {
   if (change.status == RealtimeSubscribeStatus.subscribed) {
     await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 1});

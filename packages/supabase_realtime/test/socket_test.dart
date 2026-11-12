@@ -549,7 +549,7 @@ void main() {
 
       expect(channel.socket, socket);
       expect(channel.topic, 'realtime:topic');
-      expect(channel.parameters, {
+      expect(channel.joinPush.payload, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
@@ -626,7 +626,7 @@ void main() {
         );
 
         expect(replacement, isNot(same(channel)));
-        expect(replacement.parameters['config']['private'], isTrue);
+        expect(replacement.config.private, isTrue);
         expect(client.channels, [replacement]);
       },
     );
@@ -1075,9 +1075,9 @@ void main() {
       final socket = RealtimeClient(socketEndpoint);
       final channel = socket.channel('room');
 
-      Map<String, dynamic>? received;
-      channel.onBroadcast(event: 'cursor').listen((payload) {
-        received = payload;
+      BroadcastMessage? received;
+      channel.onBroadcast(event: 'cursor').listen((message) {
+        received = message;
       });
 
       final topic = utf8.encode('realtime:room');
@@ -1098,11 +1098,13 @@ void main() {
       // Wait for the async stream delivery of the broadcast event.
       await Future<void>.delayed(Duration.zero);
 
-      expect(received, {
-        'type': 'broadcast',
-        'event': 'cursor',
-        'payload': {'x': 1},
-      });
+      expect(
+        received,
+        const BroadcastMessage(
+          event: 'cursor',
+          payload: JsonBroadcastPayload({'x': 1}),
+        ),
+      );
     });
   });
 

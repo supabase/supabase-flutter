@@ -37,7 +37,7 @@ void main() {
     test('sets defaults', () {
       expect(channel.isClosed, isTrue);
       expect(channel.topic, 'topic');
-      expect(channel.parameters, {
+      expect(channel.joinPush.payload, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
@@ -73,7 +73,7 @@ void main() {
         config: RealtimeChannelConfig(replicationReady: true),
       );
 
-      expect(channel.parameters, {
+      expect(channel.joinPush.payload, {
         'config': {
           'broadcast': {
             'ack': false,
@@ -142,7 +142,7 @@ void main() {
         channel.onStatusChange.listen(changes.add, onError: errors.add);
         channel.subscribe();
 
-        channel.joinPush.trigger('error', {'reason': 'Unauthorized'});
+        channel.joinPush.trigger(PushStatus.error, {'reason': 'Unauthorized'});
         await Future<void>.delayed(Duration.zero);
 
         expect(errors, isEmpty);
@@ -169,7 +169,7 @@ void main() {
       channel.subscribe();
       expect(channel.state, ChannelState.joining);
 
-      channel.joinPush.trigger('error', {'reason': 'Unauthorized'});
+      channel.joinPush.trigger(PushStatus.error, {'reason': 'Unauthorized'});
 
       expect(channel.state, ChannelState.errored);
     });
@@ -188,7 +188,7 @@ void main() {
       localChannel.subscribe();
 
       final resolution = localSocket.setAccessToken(null);
-      localChannel.joinPush.trigger('ok', {});
+      localChannel.joinPush.trigger(PushStatus.ok, {});
       pendingToken.complete('fresh-token');
       await resolution;
 
@@ -234,7 +234,7 @@ void main() {
               as Map<String, dynamic>;
       expect(sentFilter['filter'], r'name=in.("a\"b\\c")');
 
-      channel.joinPush.trigger('ok', {
+      channel.joinPush.trigger(PushStatus.ok, {
         'postgres_changes': [
           {'id': 1, ...sentFilter},
         ],
@@ -269,7 +269,7 @@ void main() {
           (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
               as Map<String, dynamic>;
 
-      channel.joinPush.trigger('ok', {
+      channel.joinPush.trigger(PushStatus.ok, {
         'postgres_changes': [
           {...sentFilter, 'id': 1, 'filter': 'name=in.("a"b\\c")'},
         ],
@@ -294,7 +294,7 @@ void main() {
         channel.onStatusChange.listen((change) => error = change.error);
         channel.subscribe();
 
-        channel.joinPush.trigger('error', {
+        channel.joinPush.trigger(PushStatus.error, {
           'reason': 'Unauthorized',
           'detail': 'token expired',
         });
@@ -510,23 +510,38 @@ void main() {
     });
   });
 
-  group('onMessage', () {
-    setUp(() {
-      socket = RealtimeClient('/socket');
-
-      channel = socket.channel('topic');
-    });
-
-    test('returns payload by default', () {
-      final payload = channel.onMessage('event', {'one': 'two'});
-
-      expect(payload, {'one': 'two'});
-    });
-  });
-
   group('on', () {
     setUp(() {
       channel = RealtimeChannel('topic', RealtimeClient('endpoint'));
+    });
+
+    test('delivers a legacy insert event to every matching postgres changes '
+        'stream', () async {
+      final received = <PostgresChangePayload>[];
+      channel
+          .onPostgresChanges(event: PostgresChangeEvent.all, table: 'todos')
+          .listen(received.add);
+      channel
+          .onPostgresChanges(event: PostgresChangeEvent.insert, table: 'todos')
+          .listen(received.add);
+
+      channel.trigger('insert', {
+        'schema': 'public',
+        'table': 'todos',
+        'type': 'INSERT',
+        'commit_timestamp': '2026-01-01T00:00:00Z',
+        'columns': [
+          {'name': 'id', 'type': 'int4'},
+        ],
+        'record': {'id': '1'},
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received, hasLength(2));
+      for (final payload in received) {
+        expect(payload.eventType, PostgresChangeEvent.insert);
+        expect(payload.newRecord, {'id': 1});
+      }
     });
 
     test('sets up callback for event', () {
@@ -534,7 +549,7 @@ void main() {
       channel.onEvents(
         'event',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) => callbackCalled++,
+        (payload, ref) => callbackCalled++,
       );
 
       channel.trigger('event', {});
@@ -547,12 +562,12 @@ void main() {
       channel.onEvents(
         'event',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) => eventCallbackCalled++,
+        (payload, ref) => eventCallbackCalled++,
       );
       channel.onEvents(
         'otherEvent',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) => otherEventCallbackCalled++,
+        (payload, ref) => otherEventCallbackCalled++,
       );
 
       channel.trigger('event', {});
@@ -565,7 +580,7 @@ void main() {
       channel.onEvents(
         'realtime',
         ChannelFilter(event: '*'),
-        (dynamic payload, [dynamic ref]) => callbackCalled++,
+        (payload, ref) => callbackCalled++,
       );
 
       channel.trigger('realtime', {'event': 'INSERT'});
@@ -670,7 +685,7 @@ void main() {
 
     test('throws when adding postgres_changes listener after join', () {
       channel.subscribe();
-      channel.joinPush.trigger('ok', {});
+      channel.joinPush.trigger(PushStatus.ok, {});
       expect(channel.isJoined, isTrue);
 
       expect(
@@ -728,20 +743,20 @@ void main() {
       channel.onEvents(
         'event',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) => callBackEventCalled1++,
+        (payload, ref) => callBackEventCalled1++,
       );
       channel.onEvents(
         'event',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) => callbackEventCalled2++,
+        (payload, ref) => callbackEventCalled2++,
       );
       channel.onEvents(
         'other',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) => callbackOtherCalled++,
+        (payload, ref) => callbackOtherCalled++,
       );
 
-      channel.off('event', {});
+      channel.off('event', const ChannelFilter());
 
       channel.trigger('event', {}, defaultRef);
       channel.trigger('other', {}, defaultRef);
@@ -762,17 +777,17 @@ void main() {
       channel.onEvents(
         'postgres_changes',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) {},
+        (payload, ref) {},
       );
       channel.onEvents(
         'postgres_changes',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) {},
+        (payload, ref) {},
       );
       channel.onEvents(
         'broadcast',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) {},
+        (payload, ref) {},
       );
 
       // Call off() which internally uses .where().toList()
@@ -780,7 +795,7 @@ void main() {
       // TypeError: Instance of 'JSArray<dynamic>': type 'List<dynamic>' is
       // not a subtype of type 'List<Binding>'
       expect(
-        () => channel.off('postgres_changes', {}),
+        () => channel.off('postgres_changes', const ChannelFilter()),
         returnsNormally,
       );
 
@@ -789,7 +804,7 @@ void main() {
       channel.onEvents(
         'postgres_changes',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) {},
+        (payload, ref) {},
       );
 
       // Verify functionality still works
@@ -797,7 +812,7 @@ void main() {
       channel.onEvents(
         'broadcast',
         ChannelFilter(),
-        (dynamic payload, [dynamic ref]) => broadcastCalled++,
+        (payload, ref) => broadcastCalled++,
       );
       channel.trigger('broadcast', <String, dynamic>{}, defaultRef);
       expect(broadcastCalled, 1);
@@ -810,7 +825,7 @@ void main() {
 
       channel = socket.channel('topic');
       channel.subscribe();
-      channel.joinPush.trigger('ok', {});
+      channel.joinPush.trigger(PushStatus.ok, {});
     });
 
     test("closes channel on 'ok' from server", () {
@@ -818,7 +833,7 @@ void main() {
       expect(socket.channels, hasLength(2));
 
       unawaited(channel.unsubscribe());
-      channel.joinPush.trigger('ok', {});
+      channel.joinPush.trigger(PushStatus.ok, {});
 
       expect(socket.channels, hasLength(1));
       expect(socket.channels[0].topic, anotherChannel.topic);
@@ -828,7 +843,7 @@ void main() {
       expect(channel.isClosed, isFalse);
 
       unawaited(channel.unsubscribe());
-      channel.joinPush.trigger('ok', {});
+      channel.joinPush.trigger(PushStatus.ok, {});
 
       expect(channel.isClosed, isTrue);
     });
@@ -838,7 +853,7 @@ void main() {
       expect(socket.channels, hasLength(1));
 
       unawaited(channel.unsubscribe());
-      channel.joinPush.trigger('ok', {});
+      channel.joinPush.trigger(PushStatus.ok, {});
 
       expect(socket.channels, isEmpty);
     });
@@ -1028,15 +1043,15 @@ void main() {
       );
 
       expect(
-        capturingChannel.capturedOptions,
-        {'timeout': const Duration(milliseconds: 2500)},
+        capturingChannel.capturedTimeout,
+        const Duration(milliseconds: 2500),
       );
     });
 
     test('track leaves the default timeout to send', () async {
       await capturingChannel.track({'id': 123});
 
-      expect(capturingChannel.capturedOptions, isEmpty);
+      expect(capturingChannel.capturedTimeout, isNull);
     });
 
     test('untrack forwards the timeout to send', () async {
@@ -1045,8 +1060,8 @@ void main() {
       );
 
       expect(
-        capturingChannel.capturedOptions,
-        {'timeout': const Duration(milliseconds: 2500)},
+        capturingChannel.capturedTimeout,
+        const Duration(milliseconds: 2500),
       );
     });
   });
@@ -1167,12 +1182,18 @@ void main() {
         );
 
         channel.subscribe();
-        channel.joinPush.trigger('ok', {});
-        expect(channel.parameters['config']['presence']['enabled'], isFalse);
+        channel.joinPush.trigger(PushStatus.ok, {});
+        expect(
+          channel.joinPush.payload['config']['presence']['enabled'],
+          isFalse,
+        );
 
         channel.onPresenceSync.listen((payload) {});
 
-        expect(channel.parameters['config']['presence']['enabled'], isTrue);
+        expect(
+          channel.joinPush.payload['config']['presence']['enabled'],
+          isTrue,
+        );
       },
     );
 
@@ -1187,13 +1208,16 @@ void main() {
         );
 
         channel.subscribe();
-        channel.joinPush.trigger('ok', {});
-        final initialPayload = Map.from(channel.parameters);
+        channel.joinPush.trigger(PushStatus.ok, {});
+        final initialPayload = Map.from(channel.joinPush.payload);
 
         channel.onPresenceSync.listen((payload) {});
 
-        expect(channel.parameters['config']['presence']['enabled'], isTrue);
-        expect(channel.parameters, equals(initialPayload));
+        expect(
+          channel.joinPush.payload['config']['presence']['enabled'],
+          isTrue,
+        );
+        expect(channel.joinPush.payload, equals(initialPayload));
       },
     );
 
@@ -1207,20 +1231,63 @@ void main() {
         );
 
         channel.subscribe();
-        channel.joinPush.trigger('ok', {});
-        expect(channel.parameters['config']['presence']['enabled'], isFalse);
+        channel.joinPush.trigger(PushStatus.ok, {});
+        expect(
+          channel.joinPush.payload['config']['presence']['enabled'],
+          isFalse,
+        );
 
         channel.onPresenceSync.listen((payload) {});
-        expect(channel.parameters['config']['presence']['enabled'], isTrue);
+        expect(
+          channel.joinPush.payload['config']['presence']['enabled'],
+          isTrue,
+        );
 
-        final payloadAfterFirst = Map.from(channel.parameters);
+        final payloadAfterFirst = Map.from(channel.joinPush.payload);
 
         channel.onPresenceJoin.listen((payload) {});
         channel.onPresenceLeave.listen((payload) {});
 
-        expect(channel.parameters, equals(payloadAfterFirst));
+        expect(channel.joinPush.payload, equals(payloadAfterFirst));
       },
     );
+
+    test('keeps the postgres changes in the join payload when presence is '
+        'added to a joined channel', () {
+      channel = RealtimeChannel('topic', socket);
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+      );
+      channel.subscribe();
+      final postgresChanges =
+          channel.joinPush.payload['config']['postgres_changes'];
+      channel.joinPush.trigger(PushStatus.ok, {});
+
+      channel.onPresenceSync.listen((payload) {});
+
+      expect(channel.isJoining, isTrue);
+      expect(
+        channel.joinPush.payload['config']['postgres_changes'],
+        postgresChanges,
+      );
+      expect(postgresChanges, isNotEmpty);
+    });
+
+    test('does not rejoin when presence is added to a join that already '
+        'enabled it', () {
+      channel = RealtimeChannel('topic', socket);
+      channel.onPresenceSync.listen((payload) {});
+      channel.subscribe();
+      channel.joinPush.trigger(PushStatus.ok, {});
+      final joinRef = channel.joinRef;
+
+      channel.onPresenceJoin.listen((payload) {});
+
+      expect(channel.isJoined, isTrue);
+      expect(channel.joinRef, joinRef);
+    });
 
     test(
       'should not resubscribe when presence callback added to unsubscribed '
@@ -1236,7 +1303,10 @@ void main() {
 
         channel.onPresenceSync.listen((payload) {});
 
-        expect(channel.parameters['config']['presence']['enabled'], isFalse);
+        expect(
+          channel.joinPush.payload['config']['presence']['enabled'],
+          isFalse,
+        );
       },
     );
 
@@ -1251,7 +1321,7 @@ void main() {
         );
 
         channel.subscribe();
-        channel.joinPush.trigger('ok', {});
+        channel.joinPush.trigger(PushStatus.ok, {});
 
         bool syncCalled = false;
         channel.onPresenceSync.listen((payload) {
@@ -1273,12 +1343,15 @@ void main() {
       );
 
       channel.subscribe();
-      channel.joinPush.trigger('ok', {});
-      expect(channel.parameters['config']['presence']['enabled'], isFalse);
+      channel.joinPush.trigger(PushStatus.ok, {});
+      expect(
+        channel.joinPush.payload['config']['presence']['enabled'],
+        isFalse,
+      );
 
       channel.onPresenceJoin.listen((payload) {});
 
-      expect(channel.parameters['config']['presence']['enabled'], isTrue);
+      expect(channel.joinPush.payload['config']['presence']['enabled'], isTrue);
     });
 
     test('should handle presence leave callback resubscription', () {
@@ -1289,12 +1362,15 @@ void main() {
       );
 
       channel.subscribe();
-      channel.joinPush.trigger('ok', {});
-      expect(channel.parameters['config']['presence']['enabled'], isFalse);
+      channel.joinPush.trigger(PushStatus.ok, {});
+      expect(
+        channel.joinPush.payload['config']['presence']['enabled'],
+        isFalse,
+      );
 
       channel.onPresenceLeave.listen((payload) {});
 
-      expect(channel.parameters['config']['presence']['enabled'], isTrue);
+      expect(channel.joinPush.payload['config']['presence']['enabled'], isTrue);
     });
   });
 
@@ -1410,37 +1486,10 @@ void main() {
 
       final bytes = Uint8List.fromList([1, 2, 3, 4]);
       final requestFuture = mockServer.first;
-      final sendFuture = channel.httpSend(event: 'bin', payload: bytes);
+      final sendFuture = channel.httpSendBinary(event: 'bin', bytes: bytes);
 
       final request = await requestFuture;
       expect(request.uri.path, '/realtime/v1/api/broadcast/myTopic/events/bin');
-      expect(request.headers.contentType?.mimeType, 'application/octet-stream');
-
-      final received = await request.fold<List<int>>(
-        <int>[],
-        (accumulated, chunk) => accumulated..addAll(chunk),
-      );
-      expect(received, equals(bytes));
-
-      request.response.statusCode = 202;
-      await request.response.close();
-
-      await sendFuture;
-    });
-
-    test('sends ByteBuffer payload as application/octet-stream', () async {
-      socket = RealtimeClient(
-        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
-        headers: {'apikey': 'supabaseKey'},
-        parameters: {'apikey': 'supabaseKey'},
-      );
-      channel = socket.channel('myTopic');
-
-      final bytes = Uint8List.fromList([10, 20, 30]);
-      final requestFuture = mockServer.first;
-      final sendFuture = channel.httpSend(event: 'bin', payload: bytes.buffer);
-
-      final request = await requestFuture;
       expect(request.headers.contentType?.mimeType, 'application/octet-stream');
 
       final received = await request.fold<List<int>>(
@@ -1728,16 +1777,16 @@ void main() {
 class _OptionsCapturingChannel extends RealtimeChannel {
   _OptionsCapturingChannel(super.topic, super.socket);
 
-  Map<String, dynamic>? capturedOptions;
+  Duration? capturedTimeout;
 
   @override
   Future<ChannelResponse> send({
     required RealtimeListenType type,
     String? event,
     required Map<String, dynamic> payload,
-    Map<String, dynamic> options = const {},
+    Duration? timeout,
   }) async {
-    capturedOptions = options;
+    capturedTimeout = timeout;
     return ChannelResponse.ok;
   }
 }
