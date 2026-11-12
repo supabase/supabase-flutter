@@ -575,6 +575,8 @@ explicitly:
 - [`AuthChangeEvent.initialSession` is emitted to every subscriber](#authchangeeventinitialsession-is-emitted-to-every-subscriber)
 - [`Supabase.initialize` rejects another url or key](#supabaseinitialize-rejects-another-url-or-key),
   and `initializeTestSupabase` throws when an earlier test did not dispose
+- [`Supabase.initialize` rejects a secret key](#supabaseinitialize-rejects-a-secret-key), so an
+  app that passes a secret or `service_role` key fails to start
 - [A web callback URL is exchanged after `Supabase.initialize` completes](#a-web-callback-url-is-exchanged-after-supabaseinitialize-completes)
 - [Deep links are only exchanged when they are auth redirects](#deep-links-are-only-exchanged-when-they-are-auth-redirects),
   so a `code` link with no pending PKCE flow no longer surfaces an `AuthException`
@@ -707,6 +709,13 @@ initialized, and throws a `StateError` when its `url` or `publishableKey` differ
 `initializeTestSupabase` throws a `StateError` too when an earlier test left the instance
 initialized, since it would otherwise hand back that test's mocks. Dispose it at the end of every
 test, for example with `addTearDown(supabase.dispose)`.
+
+#### `Supabase.initialize` rejects a secret key
+
+`Supabase.initialize` throws an `ArgumentError` when `publishableKey` is a secret key
+(`sb_secret_...`) or a legacy `service_role` key. Both bypass row level security, and a key shipped
+in an app can be extracted from it. Pass the publishable key or the legacy anon key instead. Use
+the secret key only on a server, through a `SupabaseClient`, which still accepts it.
 
 #### `SupabaseClient` builds its own default HTTP client
 

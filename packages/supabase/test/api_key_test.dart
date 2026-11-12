@@ -178,5 +178,21 @@ void main() {
         );
       },
     );
+
+    test('accepts a secret key for use on a server', () async {
+      final httpClient = MockSupabaseHttpClient()..stub([]);
+      final client = testSupabaseClient(
+        httpClient: httpClient,
+        publishableKey: 'sb_secret_abc',
+      );
+      addTearDown(client.dispose);
+
+      await client.from('todos').select();
+
+      expect(
+        httpClient.requestsTo('/rest/v1/todos').single.headers,
+        containsPair('apikey', 'sb_secret_abc'),
+      );
+    });
   });
 }
