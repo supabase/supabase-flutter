@@ -970,7 +970,7 @@ class RealtimeChannel {
     await _httpSend(
       event: event,
       body: json.encode(payload),
-      contentType: 'application/json',
+      contentType: HttpMediaType.json,
       timeout: timeout,
     );
   }
@@ -996,7 +996,7 @@ class RealtimeChannel {
     await _httpSend(
       event: event,
       body: bytes,
-      contentType: 'application/octet-stream',
+      contentType: HttpMediaType.octetStream,
       timeout: timeout,
     );
   }
@@ -1220,7 +1220,7 @@ class RealtimeChannel {
   }
 
   Map<String, String> get _broadcastHeaders => {
-    HttpHeader.contentType: 'application/json',
+    HttpHeader.contentType: HttpMediaType.json,
     if (socket.parameters['apikey'] != null)
       HttpHeader.apiKey: socket.parameters['apikey']!,
     ...socket.headers,

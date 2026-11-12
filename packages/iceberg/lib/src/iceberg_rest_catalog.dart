@@ -308,7 +308,7 @@ class IcebergRestCatalog {
     if (body != null) {
       request.headers.putIfAbsent(
         HttpHeader.contentType,
-        () => 'application/json',
+        () => HttpMediaType.json,
       );
       request.body = body;
     }
@@ -367,7 +367,7 @@ class IcebergRestCatalog {
     final isSuccess = isSuccessStatusCode(response.statusCode);
     final text = response.body;
     Object? decoded = text;
-    if (response.headers.mediaType == 'application/json' && text.isNotEmpty) {
+    if (response.headers.mediaType == HttpMediaType.json && text.isNotEmpty) {
       try {
         decoded = json.decode(text);
       } on FormatException catch (error) {
