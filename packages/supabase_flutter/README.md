@@ -99,6 +99,12 @@ final supabase = Supabase.instance.client;
 
 Use this one client everywhere in the app.
 
+The URL must use `https`, or `http` with a loopback host such as `localhost` for
+a local stack started with `supabase start`. To reach that stack over `http` on
+another host, such as `10.0.2.2` from an Android emulator or the LAN IP address
+of your computer from a phone, also pass `allowInsecureHttp: kDebugMode`, which
+keeps plain `http` to any host other than a loopback one out of release builds.
+
 ### 3. Generate the typed schema
 
 Queries are typed by a Dart file generated from your database schema. It

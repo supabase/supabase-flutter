@@ -577,6 +577,8 @@ explicitly:
   and `initializeTestSupabase` throws when an earlier test did not dispose
 - [`Supabase.initialize` rejects a secret key](#supabaseinitialize-rejects-a-secret-key), so an
   app that passes a secret or `service_role` key fails to start
+- [The Supabase URL must use `https`](#the-supabase-url-must-use-https), so an `http` URL of a host
+  other than `localhost`, such as `10.0.2.2` from the Android emulator, throws an `ArgumentError`
 - [A web callback URL is exchanged after `Supabase.initialize` completes](#a-web-callback-url-is-exchanged-after-supabaseinitialize-completes)
 - [Deep links are only exchanged when they are auth redirects](#deep-links-are-only-exchanged-when-they-are-auth-redirects),
   so a `code` link with no pending PKCE flow no longer surfaces an `AuthException`
@@ -717,6 +719,29 @@ test, for example with `addTearDown(supabase.dispose)`.
 (`sb_secret_...`) or a legacy `service_role` key. Both bypass row level security, and a key shipped
 in an app can be extracted from it. Pass the publishable key or the legacy anon key instead. Use
 the secret key only on a server, through a `SupabaseClient`, which still accepts it.
+
+#### The Supabase URL must use `https`
+
+`SupabaseClient` and `Supabase.initialize` throw an `ArgumentError` for a URL that does not use
+`https`, since `http` sends the key and the session of the user in clear text. `http` is still
+accepted for a loopback host, `localhost`, `127.0.0.1` or `::1`, so a local stack started with
+`supabase start` keeps working.
+
+To use `http` with any other host, such as `10.0.2.2` from the Android emulator, the LAN IP address
+of your computer, or a self-hosted instance on a network you trust, set `allowInsecureHttp`:
+
+```dart file
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> initializeSupabase() async {
+  await Supabase.initialize(
+    url: 'http://10.0.2.2:54321',
+    publishableKey: 'your-publishable-key',
+    allowInsecureHttp: kDebugMode,
+  );
+}
+```
 
 #### `SupabaseClient` builds its own default HTTP client
 

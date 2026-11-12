@@ -37,7 +37,7 @@ void main() {
   Future<void> initialize({required bool autoRefreshToken}) async {
     mockAppLink();
     final supabase = await Supabase.initialize(
-      url: '',
+      url: 'http://localhost:54321',
       publishableKey: '',
       authOptions: FlutterAuthClientOptions(
         asyncStorage: MockAsyncStorage(),

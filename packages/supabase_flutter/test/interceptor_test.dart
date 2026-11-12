@@ -52,7 +52,7 @@ void main() {
     mockAppLink();
     interceptor = CountingInterceptor();
     await Supabase.initialize(
-      url: '',
+      url: 'http://localhost:54321',
       publishableKey: '',
       authOptions: FlutterAuthClientOptions(asyncStorage: MockAsyncStorage()),
       interceptors: [interceptor],

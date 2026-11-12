@@ -18,7 +18,7 @@ class _RecordingStorage extends MockAsyncStorage {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = '';
+  const supabaseUrl = 'http://localhost:54321';
   const supabaseKey = '';
 
   group('Authentication', () {

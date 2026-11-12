@@ -15,7 +15,7 @@ import 'utils.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
-  const supabaseUrl = '';
+  const supabaseUrl = 'http://localhost:54321';
   const supabaseKey = '';
 
   tearDown(() async {
@@ -184,8 +184,7 @@ void main() {
   });
 
   group('persistSession flag', () {
-    // With url '', the default persist session key resolves to this value.
-    const persistSessionKey = 'sb--auth-token';
+    final persistSessionKey = defaultPersistSessionKey(supabaseUrl);
 
     test(
       'persists the session to the default storage when persistSession is true',

@@ -90,6 +90,11 @@ final supabase = SupabaseClient(
 );
 ```
 
+The URL must use `https`, or `http` with a loopback host such as `localhost`
+for a local stack started with `supabase start`. Set `allowInsecureHttp: true`
+to use `http` with another host, such as a self-hosted instance in the same
+Docker network or on a network you trust.
+
 The client keeps the session, and the code verifiers of the default PKCE
 flow, in memory for as long as the process runs. Pass an `AuthAsyncStorage`
 as the `asyncStorage` of `AuthClientOptions` when a sign-in has to survive a

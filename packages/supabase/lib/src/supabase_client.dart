@@ -14,6 +14,7 @@ import 'package:supabase_common/supabase_common.dart';
 import 'api_key.dart';
 import 'auth_http_client.dart';
 import 'counter.dart';
+import 'supabase_url.dart';
 import 'trace_http_client.dart';
 
 /// {@template supabase_client}
@@ -22,6 +23,14 @@ import 'trace_http_client.dart';
 /// [supabaseUrl] and [supabaseKey] can be found on your Supabase dashboard.
 /// Pass the `publishable` (anon) key for client-side usage or the `secret`
 /// key for trusted server-side environments.
+///
+/// [supabaseUrl] must use `https`, since `http` sends the key and the session
+/// of the user in clear text. `http` is accepted for a loopback host, such as
+/// `localhost` or `127.0.0.1`, to reach a local Supabase stack. Set
+/// [allowInsecureHttp] to accept `http` for any other host, for example a
+/// self-hosted instance on a network you trust, or a local stack reached from
+/// the Android emulator through `10.0.2.2`. The constructor throws an
+/// [ArgumentError] for any other URL.
 ///
 /// You can access a schema other than the default `public` schema by setting
 /// the `schema` field of [postgrestOptions].
@@ -95,17 +104,17 @@ class SupabaseClient {
     Client? httpClient,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
+    bool allowInsecureHttp = false,
     @experimental List<SupabaseClientInterceptor> interceptors = const [],
-  }) : _supabaseKey = supabaseKey,
+  }) : _supabaseUrl = parseSupabaseUrl(
+         supabaseUrl,
+         allowInsecureHttp: allowInsecureHttp,
+       ),
+       _supabaseKey = supabaseKey,
        // Disposed one by one from dispose, which the rule cannot see.
        // ignore: dispose-class-fields
        interceptors = List.unmodifiable(interceptors),
        _functionsOptions = functionsOptions,
-       _restUrl = _serviceUrl(supabaseUrl, 'rest/v1'),
-       _realtimeUrl = _serviceUrl(supabaseUrl, 'realtime/v1', webSocket: true),
-       _authUrl = _serviceUrl(supabaseUrl, 'auth/v1'),
-       _storageUrl = _serviceUrl(supabaseUrl, 'storage/v1'),
-       _functionsUrl = _serviceUrl(supabaseUrl, 'functions/v1'),
        _postgrestOptions = postgrestOptions,
        _requestTimeout = requestTimeout,
        _headers = {
@@ -177,16 +186,21 @@ class SupabaseClient {
       rethrow;
     }
   }
+  final Uri _supabaseUrl;
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
   final Duration? _requestTimeout;
   final FunctionsClientOptions _functionsOptions;
 
-  final String _restUrl;
-  final String _realtimeUrl;
-  final String _authUrl;
-  final String _storageUrl;
-  final String _functionsUrl;
+  late final String _restUrl = _serviceUrl(_supabaseUrl, 'rest/v1');
+  late final String _realtimeUrl = _serviceUrl(
+    _supabaseUrl,
+    'realtime/v1',
+    webSocket: true,
+  );
+  late final String _authUrl = _serviceUrl(_supabaseUrl, 'auth/v1');
+  late final String _storageUrl = _serviceUrl(_supabaseUrl, 'storage/v1');
+  late final String _functionsUrl = _serviceUrl(_supabaseUrl, 'functions/v1');
   final Map<String, String> _headers;
   final Client? _httpClient;
   late final Client _authHttpClient;
@@ -559,11 +573,10 @@ class SupabaseClient {
 }
 
 String _serviceUrl(
-  String supabaseUrl,
+  Uri baseUrl,
   String servicePath, {
   bool webSocket = false,
 }) {
-  final baseUrl = Uri.parse(supabaseUrl);
   final basePath = baseUrl.path.replaceFirst(RegExp(r'/+$'), '');
   final scheme = switch (baseUrl.scheme) {
     'http' when webSocket => 'ws',

@@ -68,7 +68,7 @@ class FakeWebSocketSink extends Fake implements WebSocketSink {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = '';
+  const supabaseUrl = 'http://localhost:54321';
   const supabaseKey = '';
 
   late List<Completer<void>> readyCompleters;
