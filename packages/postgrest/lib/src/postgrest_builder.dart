@@ -264,7 +264,6 @@ String _cleanFilterList(List<dynamic> filter) {
 /// [count].
 @immutable
 class PostgrestBuilder<T> implements Future<T> {
-  /// Creates a request that resolves to its decoded response body as [T].
   PostgrestBuilder({
     required Uri url,
     required Headers headers,

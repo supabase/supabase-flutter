@@ -28,7 +28,6 @@ class AuthResponse {
 
 /// Response of OAuth signin
 class OAuthResponse {
-  /// Instantiates an `OAuthResponse` object from json response.
   const OAuthResponse({
     required this.provider,
     required this.url,

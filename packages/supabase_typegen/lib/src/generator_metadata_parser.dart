@@ -182,8 +182,6 @@ extension on Map<String, dynamic> {
 
 /// Thrown when a document does not have the `GeneratorMetadata` shape.
 class GeneratorMetadataFormatException extends FormatException {
-  /// An exception explaining in [message] why the document is not a
-  /// `GeneratorMetadata` document.
   const GeneratorMetadataFormatException(String message)
     : super('Not a GeneratorMetadata document: $message');
 }

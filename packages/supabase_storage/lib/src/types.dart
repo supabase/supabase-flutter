@@ -1019,11 +1019,8 @@ enum RequestImageFormat {
   origin,
 }
 
-/// {@template transform_options}
 /// Specifies the dimensions and the resize mode of the requesting image.
-/// {@endtemplate}
 class TransformOptions {
-  /// {@macro transform_options}
   const TransformOptions({
     this.width,
     this.height,

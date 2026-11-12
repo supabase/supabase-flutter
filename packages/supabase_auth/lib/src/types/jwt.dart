@@ -186,11 +186,8 @@ class JWKSet {
   }
 }
 
-/// {@template jwk}
 /// JSON Web Key (JWK) representation.
-/// {@endtemplate}
 class JWK {
-  /// {@macro jwk}
   JWK({
     required this.keyType,
     required this.keyOperations,
@@ -199,7 +196,6 @@ class JWK {
     Map<String, dynamic>? additionalProperties,
   }) : _additionalProperties = additionalProperties ?? {};
 
-  /// Creates a [JWK] from a JSON map.
   factory JWK.fromJson(Map<String, dynamic> json) {
     final keyType = json.field<String>('kty');
     final keyOperations = json.listOf<String>('key_ops') ?? [];

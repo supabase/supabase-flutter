@@ -12,7 +12,6 @@ part of 'postgrest_typed_builder.dart';
 @experimental
 final class PostgrestVectorColumn<Row>
     extends PostgrestColumn<Row, List<double>> {
-  /// Creates a reference to the vector column called [name] in the database.
   const PostgrestVectorColumn(super.name) : super(fromJson: _decodeVector);
 }
 
@@ -25,8 +24,6 @@ List<double> _decodeVector(Object json) =>
 @experimental
 final class PostgrestNullableVectorColumn<Row>
     extends PostgrestNullableColumn<Row, List<double>> {
-  /// Creates a reference to the nullable vector column called [name] in the
-  /// database.
   const PostgrestNullableVectorColumn(super.name)
     : super(fromJson: _decodeVector);
 }

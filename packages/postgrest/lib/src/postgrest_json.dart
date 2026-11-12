@@ -34,7 +34,6 @@ extension type const PostgrestJson(Object _value) implements Object {}
 final class PostgrestJsonColumn<Row>
     extends PostgrestStoredColumn<Row, PostgrestJson>
     implements PostgrestReadable<Row, PostgrestJson?> {
-  /// Creates a reference to the JSON column called [name] in the database.
   const PostgrestJsonColumn(String name) : super._(name, null);
 
   @override
@@ -53,8 +52,6 @@ final class PostgrestJsonColumn<Row>
 @experimental
 final class PostgrestNullableJsonColumn<Row>
     extends PostgrestNullableColumn<Row, PostgrestJson> {
-  /// Creates a reference to the nullable JSON column called [name] in the
-  /// database.
   const PostgrestNullableJsonColumn(super.name);
 
   @override
@@ -66,8 +63,6 @@ final class PostgrestNullableJsonColumn<Row>
 @experimental
 final class PostgrestJsonComputedField<Row>
     extends PostgrestComputedField<Row, PostgrestJson> {
-  /// Creates a reference to the computed field backed by the function called
-  /// [name] in the database.
   const PostgrestJsonComputedField(super.name);
 
   @override

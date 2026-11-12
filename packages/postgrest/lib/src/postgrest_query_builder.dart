@@ -1,6 +1,5 @@
 part of 'postgrest_builder.dart';
 
-/// {@template postgrest_query_builder}
 /// The query builder class provides a convenient interface to creating request
 /// queries.
 ///
@@ -19,10 +18,8 @@ part of 'postgrest_builder.dart';
 /// The query builder itself is not executable: a request without one of the
 /// table operations above is meaningless, so awaiting it is a compile-time
 /// error rather than a runtime one.
-/// {@endtemplate}
 @immutable
 class PostgrestQueryBuilder {
-  /// {@macro postgrest_query_builder}
   PostgrestQueryBuilder({
     required Uri url,
     Map<String, String>? headers,

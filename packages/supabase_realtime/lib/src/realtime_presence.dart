@@ -79,12 +79,6 @@ class PresenceEvents {
 /// and read the current state with [RealtimeChannel.presenceState].
 @internal
 class RealtimePresence {
-  /// Initializes the Presence
-  ///
-  /// `channel` - The RealtimeChannel
-  ///
-  /// `options` - The options, for example `PresenceOptions(events:
-  /// PresenceEvents(state: 'state', diff: 'diff'))`
   RealtimePresence(this.channel, [PresenceOptions? options]) {
     final events =
         options?.events ??
