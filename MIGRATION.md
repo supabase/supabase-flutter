@@ -718,6 +718,29 @@ test, for example with `addTearDown(supabase.dispose)`.
 in an app can be extracted from it. Pass the publishable key or the legacy anon key instead. Use
 the secret key only on a server, through a `SupabaseClient`, which still accepts it.
 
+#### The Supabase URL must use `https`
+
+`SupabaseClient` and `Supabase.initialize` throw an `ArgumentError` for a URL that does not use
+`https`, since `http` sends the key and the session of the user in clear text. `http` is still
+accepted for a loopback host, `localhost`, `127.0.0.1` or `::1`, so a local stack started with
+`supabase start` keeps working.
+
+To use `http` with any other host, such as `10.0.2.2` from the Android emulator, the LAN IP address
+of your computer, or a self-hosted instance on a network you trust, set `allowInsecureHttp`:
+
+```dart file
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> initializeSupabase() async {
+  await Supabase.initialize(
+    url: 'http://10.0.2.2:54321',
+    publishableKey: 'your-publishable-key',
+    allowInsecureHttp: kDebugMode,
+  );
+}
+```
+
 #### `SupabaseClient` builds its own default HTTP client
 
 On `dart:io` platforms a `SupabaseClient` created without an `httpClient` now builds an `IOClient`

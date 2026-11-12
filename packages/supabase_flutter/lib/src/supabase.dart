@@ -83,6 +83,13 @@ class Supabase {
   /// secret key or a legacy `service_role` key, which bypass row level
   /// security. Use those only on a server, through [SupabaseClient].
   ///
+  /// [url] must use `https`, or `http` with a loopback host such as
+  /// `localhost`. Set [allowInsecureHttp] to use `http` with any other host,
+  /// for example `http://10.0.2.2:54321` to reach a local Supabase stack from
+  /// the Android emulator, or a self-hosted instance on a network you trust.
+  /// `http` sends the publishable key and the session of the user in clear
+  /// text, so `allowInsecureHttp: kDebugMode` keeps it out of release builds.
+  ///
   /// Default headers can be overridden by specifying [headers].
   ///
   /// Custom http client can be used by passing [httpClient] parameter. Without
@@ -148,6 +155,7 @@ class Supabase {
     Future<String?> Function()? accessToken,
     AsyncJsonCodec? jsonCodec,
     Duration? requestTimeout,
+    bool allowInsecureHttp = false,
     @experimental List<SupabaseClientInterceptor> interceptors = const [],
   }) {
     if (_isSecretKey(publishableKey)) {
@@ -190,6 +198,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      allowInsecureHttp: allowInsecureHttp,
       interceptors: interceptors,
     );
     _instance._initialization = (
@@ -227,6 +236,7 @@ class Supabase {
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
     required Duration? requestTimeout,
+    required bool allowInsecureHttp,
     required List<SupabaseClientInterceptor> interceptors,
   }) async {
     flutterLogger.config('Initialize Supabase v$version');
@@ -260,6 +270,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      allowInsecureHttp: allowInsecureHttp,
       interceptors: interceptors,
     );
 
@@ -439,6 +450,7 @@ class Supabase {
     required Future<String?> Function()? accessToken,
     required AsyncJsonCodec? jsonCodec,
     required Duration? requestTimeout,
+    required bool allowInsecureHttp,
     required List<SupabaseClientInterceptor> interceptors,
   }) {
     _realtimeLifecycleOptions = realtimeLifecycleOptions;
@@ -459,6 +471,7 @@ class Supabase {
       accessToken: accessToken,
       jsonCodec: jsonCodec,
       requestTimeout: requestTimeout,
+      allowInsecureHttp: allowInsecureHttp,
       interceptors: interceptors,
     );
 

@@ -18,7 +18,7 @@ void main() {
       mockAppLink();
 
       await Supabase.initialize(
-        url: '',
+        url: 'http://localhost:54321',
         publishableKey: '',
         accessToken: () async => 'custom-access-token',
       );

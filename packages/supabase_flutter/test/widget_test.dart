@@ -6,7 +6,7 @@ import 'package:supabase_test/supabase_test.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
-  const supabaseUrl = '';
+  const supabaseUrl = 'http://localhost:54321';
   const supabaseKey = '';
 
   setUpAll(() {

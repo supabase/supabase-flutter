@@ -466,7 +466,7 @@ void main() {
 
     test('create a client with third-party auth accessToken', () async {
       final supabase = SupabaseClient(
-        'URL',
+        'https://example.supabase.co',
         'KEY',
         accessToken: () async {
           return 'jwt';
@@ -485,7 +485,7 @@ void main() {
   });
 
   group('Custom Header', () {
-    const supabaseUrl = '';
+    const supabaseUrl = 'https://example.supabase.co';
     const supabaseKey = '';
     late SupabaseClient supabase;
 

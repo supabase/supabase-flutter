@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() {
   test('initializes the binding when a custom storage is passed', () async {
     final supabase = await Supabase.initialize(
-      url: '',
+      url: 'http://localhost:54321',
       publishableKey: '',
       authOptions: FlutterAuthClientOptions(
         asyncStorage: MemoryAuthAsyncStorage(),

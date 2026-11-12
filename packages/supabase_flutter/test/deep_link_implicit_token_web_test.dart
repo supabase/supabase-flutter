@@ -24,7 +24,7 @@ void main() {
 
     final httpClient = createGetUserHttpClient('attacker@email.com');
     final supabase = await Supabase.initialize(
-      url: '',
+      url: 'http://localhost:54321',
       publishableKey: '',
       httpClient: httpClient,
       authOptions: FlutterAuthClientOptions(asyncStorage: MockAsyncStorage()),

@@ -10,7 +10,7 @@ import 'widget_test_stubs.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = '';
+  const supabaseUrl = 'http://localhost:54321';
   const supabaseKey = '';
 
   setUpAll(() {
@@ -131,6 +131,28 @@ void main() {
           ),
           completes,
         );
+      });
+    });
+
+    group('URL validation', () {
+      test('rejects an http url of a host that is not loopback', () async {
+        await expectLater(
+          Supabase.initialize(
+            url: 'http://192.168.1.20:8000',
+            publishableKey: supabaseKey,
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('accepts an http url of any host with allowInsecureHttp', () async {
+        final supabase = await Supabase.initialize(
+          url: 'http://10.0.2.2:54321',
+          publishableKey: supabaseKey,
+          allowInsecureHttp: true,
+        );
+
+        expect(supabase.client.rest.url, 'http://10.0.2.2:54321/rest/v1');
       });
     });
 

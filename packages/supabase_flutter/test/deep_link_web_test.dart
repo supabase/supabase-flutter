@@ -9,7 +9,7 @@ import 'package:web/web.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
-  const supabaseUrl = '';
+  const supabaseUrl = 'http://localhost:54321';
 
   test('the URL the page was loaded with is exchanged after initialize and '
       'cleared from the address bar', () async {

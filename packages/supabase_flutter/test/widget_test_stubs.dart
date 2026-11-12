@@ -101,7 +101,10 @@ class MockAsyncStorage extends MemoryAuthAsyncStorage {
 
   /// Holds a session expiring at [expiresAt] under the key the session is
   /// stored under for [url].
-  MockAsyncStorage.withSession(DateTime expiresAt, {String url = ''}) {
+  MockAsyncStorage.withSession(
+    DateTime expiresAt, {
+    String url = 'http://localhost:54321',
+  }) {
     unawaited(
       setItem(
         defaultPersistSessionKey(url),

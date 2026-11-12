@@ -42,7 +42,7 @@ void main() {
 
   Future<void> initialize() {
     return Supabase.initialize(
-      url: '',
+      url: 'http://localhost:54321',
       publishableKey: '',
       authOptions: FlutterAuthClientOptions(
         asyncStorage: MockAsyncStorage.withSession(

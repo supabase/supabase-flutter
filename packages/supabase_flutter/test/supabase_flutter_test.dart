@@ -7,7 +7,7 @@ import 'utils.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
-  const supabaseUrl = '';
+  const supabaseUrl = 'http://localhost:54321';
   const supabaseKey = '';
   tearDown(() async => await Supabase.instance.dispose());
 
