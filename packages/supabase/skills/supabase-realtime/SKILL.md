@@ -187,9 +187,9 @@ channel.subscribe();
 await supabase.removeChannel(channel);
 ```
 
-`supabase.removeAllChannels()` closes every channel. The client does that
-itself when the user is signed out, so subscribe the channels again after the
-next sign-in.
+`supabase.removeAllChannels()` closes every channel. The client removes every
+channel itself when the user is signed out, so subscribe the channels again
+after the next sign-in.
 A typed `stream()` reports its failures, including a `RealtimeException`, as
 errors of the stream itself, and keeps running: a failed fetch is retried, and
 a dropped connection is not reported, since the rows are fetched again once the

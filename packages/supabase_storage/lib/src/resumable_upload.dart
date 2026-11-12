@@ -309,6 +309,9 @@ class ResumableUploadRegistry {
   /// same handle.
   final _live = <String, ResumableUpload>{};
 
+  /// How often [forgetAll] ran, so an upload from before it cannot continue.
+  int _forgetCount = 0;
+
   Future<void> _operations = Future.value();
 
   /// The stored entries the last read could not parse, such as those of a
@@ -393,6 +396,7 @@ class ResumableUploadRegistry {
   /// Cancels every upload of this process and removes every record, leaving
   /// what the server holds of them to expire.
   Future<void> forgetAll() async {
+    _forgetCount++;
     final stopped = [
       for (final upload in _live.values.toList()) upload._forget(),
     ];
@@ -453,11 +457,15 @@ class ResumableUploadRegistry {
   ) async {
     final live = _live[id];
     if (live != null) return live..resume();
+    final forgetCount = _forgetCount;
     final record = await _record(id);
     if (record == null) {
       throw StorageException('No resumable upload is recorded under $id');
     }
     final length = await source.length;
+    if (forgetCount != _forgetCount) {
+      throw StorageException('No resumable upload is recorded under $id');
+    }
     if (length != record.totalBytes) {
       throw ArgumentError.value(
         length,
@@ -589,6 +597,7 @@ class ResumableUpload {
        _token = token,
        _record = record,
        _registry = registry,
+       _forgetCount = registry._forgetCount,
        _totalBytes = record?.totalBytes {
     _done.future.ignore();
   }
@@ -611,6 +620,7 @@ class ResumableUpload {
   final Map<String, dynamic>? _metadata;
   final String? _token;
   final ResumableUploadRegistry _registry;
+  final int _forgetCount;
 
   ResumableUploadRecord? _record;
   int? _totalBytes;
@@ -649,11 +659,17 @@ class ResumableUpload {
   }
 
   /// Continues a paused or failed upload from the offset the server
-  /// confirmed.
+  /// confirmed, or cancels it like [cancel] once the user signed out, without
+  /// deleting what the server holds of it.
   void resume() {
     if (_status != ResumableUploadStatus.paused &&
             _status != ResumableUploadStatus.failed ||
         _cancellation != null) {
+      return;
+    }
+    if (_forgetCount != _registry._forgetCount) {
+      if (_done.isCompleted) _done = Completer()..future.ignore();
+      unawaited(_forget());
       return;
     }
     _registry._live[id] = this;

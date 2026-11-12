@@ -575,17 +575,13 @@ class SupabaseClient {
   }
 
   /// Removes the channels and resumable uploads of the user who signed out.
+  ///
+  /// The socket is left to close once no channel is left, so a channel the
+  /// app subscribes in reaction to the sign-out stays joined.
   void _forgetSignedOutUser() {
-    unawaited(
-      realtime.removeAllChannels().then<void>(
-        (_) {},
-        onError: (Object error, StackTrace stackTrace) => clientLogger.warning(
-          'Could not remove the realtime channels after a sign-out',
-          error,
-          stackTrace,
-        ),
-      ),
-    );
+    for (final channel in realtime.channels) {
+      unawaited(channel.unsubscribe());
+    }
     unawaited(
       // ignore: invalid_use_of_internal_member
       storage.forgetResumableUploads().onError<Object>(

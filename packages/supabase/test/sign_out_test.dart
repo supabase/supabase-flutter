@@ -114,7 +114,29 @@ void main() {
 
     expect(supabase.channels, isEmpty);
     expect(await supabase.storage.resumableUploads(), isEmpty);
-    expect(upload.status, ResumableUploadStatus.cancelled);
+    await expectLater(
+      upload.done,
+      throwsA(isA<ResumableUploadCancelledException>()),
+    );
+  });
+
+  test('keeps a channel subscribed again once signed out', () async {
+    await subscribe('room');
+    httpClient.stubSignOut();
+    RealtimeChannel? lobby;
+    final subscription = supabase.auth.onAuthStateChange.listen((state) {
+      if (state is AuthSignedOut) {
+        lobby = supabase.channel('lobby')..subscribe();
+      }
+    });
+    addTearDown(subscription.cancel);
+
+    await supabase.auth.signOut();
+    await pumpEventQueue();
+
+    expect(supabase.channels, [lobby]);
+    expect(lobby?.state, ChannelState.joined);
+    expect(realtime.joinedTopics, ['realtime:lobby']);
   });
 
   test('keeps the channels and uploads on a token refresh', () async {

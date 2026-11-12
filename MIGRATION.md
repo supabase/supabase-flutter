@@ -2011,8 +2011,8 @@ it is written to the socket, and to `error` on a channel that is leaving or has 
 
 Channels used to stay subscribed after a sign-out, with the publishable key in place of the access
 token, so a channel opened for one user kept its listeners, presence and buffered messages for the
-next user of the device. Now `SupabaseClient` removes every channel, as `removeAllChannels()` does,
-when the user is signed out by `signOut()` or because the session could no longer be refreshed.
+next user of the device. Now `SupabaseClient` unsubscribes and removes every channel when the user
+is signed out by `signOut()` or because the session could no longer be refreshed.
 Each subscribed channel reports `closed`, and the streams of its listeners and of `stream()` close.
 
 Subscribe the channels again after the next sign-in. A channel that does not need a signed-in user,
