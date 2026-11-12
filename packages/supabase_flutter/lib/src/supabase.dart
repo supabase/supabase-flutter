@@ -2,6 +2,7 @@
 // ignore_for_file: experimental_member_use
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart' show experimental;
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart' show Base64Url;
 import 'package:supabase_flutter/src/auth_async_resumable_upload_storage.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
@@ -76,8 +78,10 @@ class Supabase {
   /// links yourself.
   ///
   /// [url] and [publishableKey] can be found on your Supabase dashboard.
-  /// Use the `publishable` (anon) key here, never the secret key in a
-  /// Flutter app.
+  /// Use the publishable key or the legacy anon key here. A key shipped in an
+  /// app can be extracted from it, so this throws an [ArgumentError] for a
+  /// secret key or a legacy `service_role` key, which bypass row level
+  /// security. Use those only on a server, through [SupabaseClient].
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
@@ -146,6 +150,13 @@ class Supabase {
     Duration? requestTimeout,
     @experimental List<SupabaseClientInterceptor> interceptors = const [],
   }) {
+    if (_isSecretKey(publishableKey)) {
+      const message =
+          'A secret or service_role key bypasses row level security and can '
+          'be extracted from a shipped app. Pass the publishable key, and use '
+          'the secret key only on a server through SupabaseClient.';
+      return Future.error(ArgumentError(message, 'publishableKey'));
+    }
     final initialization = _instance._initialization;
     if (initialization != null) {
       if (url != initialization.url ||
@@ -597,5 +608,24 @@ class Supabase {
         await realtime.disconnect();
       }
     }
+  }
+}
+
+bool _isSecretKey(String key) {
+  final trimmedKey = key.trim();
+  if (trimmedKey.startsWith('sb_secret_')) {
+    return true;
+  }
+  final parts = trimmedKey.split('.');
+  if (parts.length != 3) {
+    return false;
+  }
+  try {
+    return switch (json.decode(Base64Url.decodeToString(parts[1]))) {
+      {'role': 'service_role'} => true,
+      _ => false,
+    };
+  } on FormatException {
+    return false;
   }
 }

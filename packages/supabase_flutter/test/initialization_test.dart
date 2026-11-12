@@ -43,6 +43,97 @@ void main() {
       });
     });
 
+    group('API key', () {
+      const secretKey = 'sb_secret_abc123';
+      final serviceRoleKey = unsignedTestJwt({
+        'iss': 'supabase',
+        'role': 'service_role',
+      });
+
+      Matcher throwsSecretKeyError(String key) => throwsA(
+        isA<ArgumentError>()
+            .having((error) => error.name, 'name', 'publishableKey')
+            .having((error) => '$error', 'toString()', isNot(contains(key))),
+      );
+
+      test('rejects a secret key', () async {
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: secretKey),
+          throwsSecretKeyError(secretKey),
+        );
+      });
+
+      test('rejects a service_role JWT', () async {
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: serviceRoleKey),
+          throwsSecretKeyError(serviceRoleKey),
+        );
+      });
+
+      test('rejects a key surrounded by whitespace', () async {
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: ' $secretKey'),
+          throwsSecretKeyError(secretKey),
+        );
+        await expectLater(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: '$serviceRoleKey\n',
+          ),
+          throwsSecretKeyError(serviceRoleKey),
+        );
+      });
+
+      test('rejects a service_role JWT with a malformed signature', () async {
+        final [header, payload, _] = serviceRoleKey.split('.');
+        final key = '$header.$payload.not base64';
+
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: key),
+          throwsSecretKeyError(key),
+        );
+      });
+
+      test('keeps an initialized instance when a key is rejected', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: 'sb_publishable_abc123',
+        );
+        final client = Supabase.instance.client;
+
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: secretKey),
+          throwsArgumentError,
+        );
+
+        expect(Supabase.instance.isInitialized, isTrue);
+        expect(Supabase.instance.client, same(client));
+      });
+
+      test('accepts a publishable key', () async {
+        await expectLater(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: 'sb_publishable_abc123',
+          ),
+          completes,
+        );
+      });
+
+      test('accepts a legacy anon JWT', () async {
+        await expectLater(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: unsignedTestJwt({
+              'iss': 'supabase',
+              'role': 'anon',
+            }),
+          ),
+          completes,
+        );
+      });
+    });
+
     group('Custom JSON codec initialization', () {
       test('initializes with a supplied codec', () async {
         final jsonCodec = _RecordingJsonCodec();
