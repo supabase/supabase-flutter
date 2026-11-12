@@ -34,7 +34,6 @@ workspace:
 
 dev_dependencies:
   melos: ^8.2.1
-  yaml: ^3.1.4
 
 melos:
   ide:

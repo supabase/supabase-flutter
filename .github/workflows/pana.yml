@@ -46,7 +46,7 @@ jobs:
 
           CHANGED_FILES=$(git diff --name-only "$BASE...HEAD")
           if [[ "$TITLE" == chore\(release\):* ]] \
-              || grep -qE '^\.github/(workflows/pana\.yml|scripts/(check_pana_report|local_pub_server)\.dart)$' <<< "$CHANGED_FILES"; then
+              || grep -qxF '.github/workflows/pana.yml' <<< "$CHANGED_FILES"; then
             echo "Scoring every published package."
             PACKAGES=$(melos list --no-private --json | jq -c '[.[].name]')
           else
@@ -75,34 +75,7 @@ jobs:
         with:
           cache: true
 
-      - name: Setup Melos
-        uses: bluefireteam/melos-action@b79b63bcd183f823740a7976cbdb4b0fc95a0eb8 # v3.10.0
-
-      - name: Activate pana
-        run: dart pub global activate pana
-
-      - name: Run pana
-        env:
-          PACKAGE: ${{ matrix.package }}
-        run: |
-          set -euo pipefail
-
-          SERVER_LOG="$RUNNER_TEMP/local_pub_server.log"
-          dart .github/scripts/local_pub_server.dart > "$SERVER_LOG" &
-          for _ in $(seq 60); do
-            grep -q '^Serving ' "$SERVER_LOG" && break
-            sleep 1
-          done
-          HOSTED_URL=$(sed -n 's/^Serving //p' "$SERVER_LOG")
-          if [ -z "$HOSTED_URL" ]; then
-            echo "::error::The local package server did not start."
-            exit 1
-          fi
-
-          cd "packages/$PACKAGE"
-          pana --hosted-url "$HOSTED_URL" --json . > "$RUNNER_TEMP/pana.json"
-
-      - name: Check the pana report
-        env:
-          PACKAGE: ${{ matrix.package }}
-        run: dart .github/scripts/check_pana_report.dart "$PACKAGE" "$RUNNER_TEMP/pana.json"
+      - name: Score the package with pana
+        uses: bluefireteam/pana_workspace@39adcf363538c00f60c1533a89373958bcbd3941 # v0.1.1
+        with:
+          packages: ${{ matrix.package }}

@@ -287,13 +287,11 @@ await Supabase.initialize(
 - Line length limit is 80 characters
 - The "Pana" CI check scores the published packages a pull request changes and
   their dependents, or every package in a release pull request, and fails when
-  one loses pub.dev points. To reproduce it, start
-  `dart .github/scripts/local_pub_server.dart` at the repository root, which
-  serves the sibling packages from the checkout, run
-  `pana --hosted-url <printed url> --json . > /tmp/pana.json` in the package
-  directory, and then
-  `dart .github/scripts/check_pana_report.dart <package> /tmp/pana.json` at
-  the repository root
+  one loses pub.dev points. It runs
+  [pana_workspace](https://pub.dev/packages/pana_workspace), which resolves
+  the sibling packages from the checkout. To reproduce it, run
+  `dart pub global activate pana_workspace` and then
+  `pana_workspace check <package>` anywhere in the repository
 - Markdown lines are at most 100 characters, outside code blocks and tables,
   and tables are padded so their columns line up. `melos run check-markdown`
   checks both and `--fix` pads the tables. Changelogs are not checked
