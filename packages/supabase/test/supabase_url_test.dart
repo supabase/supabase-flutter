@@ -51,6 +51,8 @@ void main() {
     'http://0.0.0.0:54321',
     'http://localhost.example.com',
     'http://127.0.0.1.example.com',
+    'http://0127.0.0.1',
+    'http://127.000.0.1',
     'http://[::2]',
     'http://[::ffff:7f00:1]',
   ]) {

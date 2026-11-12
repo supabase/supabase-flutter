@@ -88,7 +88,8 @@ class Supabase {
   /// for example `http://10.0.2.2:54321` to reach a local Supabase stack from
   /// the Android emulator, or a self-hosted instance on a network you trust.
   /// `http` sends the publishable key and the session of the user in clear
-  /// text, so `allowInsecureHttp: kDebugMode` keeps it out of release builds.
+  /// text, so `allowInsecureHttp: kDebugMode` keeps `http` to a host that is
+  /// not loopback out of release builds.
   ///
   /// Default headers can be overridden by specifying [headers].
   ///

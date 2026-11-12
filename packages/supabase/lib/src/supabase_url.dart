@@ -40,7 +40,10 @@ bool _isLoopbackHost(String host) {
       final address = Uri.parseIPv6Address(host);
       return address.last == 1 && address.take(15).every((byte) => byte == 0);
     }
-    return Uri.parseIPv4Address(host).first == 127;
+    final address = Uri.parseIPv4Address(host);
+    // Browsers and inet_aton read a part with a leading zero as octal, so
+    // 0127.0.0.1 is 87.0.0.1 to them. Only the canonical form is trusted.
+    return address.first == 127 && address.join('.') == host;
   } on FormatException {
     return false;
   }
