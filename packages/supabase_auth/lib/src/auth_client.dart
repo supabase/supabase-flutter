@@ -84,6 +84,8 @@ bool _holdSameTokens(Session? a, Session? b) =>
 /// others.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
+/// With the default [AuthFlowType.pkce], [getSessionFromUrl] rejects the
+/// tokens of an implicit flow link.
 ///
 /// Set [AuthClient.appendPkceFlowIdToRedirects] to match a pkce callback to the
 /// flow that started it when several flows can be pending at once.
@@ -1405,6 +1407,12 @@ class AuthClient {
   /// for a password recovery link, which emits
   /// [AuthChangeEvent.passwordRecovery], and an email change confirmation link,
   /// which emits [AuthChangeEvent.userUpdated].
+  ///
+  /// With [AuthFlowType.pkce] only a URL with a `code` is exchanged, and a
+  /// URL with the `access_token` of an implicit flow throws an
+  /// [AuthPKCEGrantCodeExchangeException]. With [AuthFlowType.implicit] the
+  /// tokens in the URL are stored whoever sent the link, so a link from an
+  /// attacker signs the user in to the attacker's account.
   Future<AuthSessionUrlResponse> getSessionFromUrl(
     Uri originUrl, {
     bool storeSession = true,
@@ -1456,10 +1464,12 @@ class AuthClient {
       );
     }
 
-    if (_flowType == AuthFlowType.pkce &&
-        !parameters.containsKey('access_token')) {
+    if (_flowType == AuthFlowType.pkce) {
       throw AuthPKCEGrantCodeExchangeException(
-        'No code detected in query parameters.',
+        parameters.containsKey('access_token')
+            ? 'The URL carries the tokens of an implicit flow, which a client '
+                  'using the pkce flow does not accept.'
+            : 'No code detected in query parameters.',
       );
     }
 

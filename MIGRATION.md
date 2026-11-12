@@ -578,6 +578,8 @@ explicitly:
 - [A web callback URL is exchanged after `Supabase.initialize` completes](#a-web-callback-url-is-exchanged-after-supabaseinitialize-completes)
 - [Deep links are only exchanged when they are auth redirects](#deep-links-are-only-exchanged-when-they-are-auth-redirects),
   so a `code` link with no pending PKCE flow no longer surfaces an `AuthException`
+- [A PKCE client rejects links with an `access_token`](#a-pkce-client-rejects-links-with-an-access_token),
+  so an invite link no longer signs the user in with the default flow
 - [The retry backoff defaults are the same in every client](#the-retry-backoff-defaults-are-the-same-in-every-client)
 - [`DateTime` filter values carry their offset from UTC](#datetime-filter-values-carry-their-offset-from-utc)
 - [The rest client and its builders are stateless](#the-rest-client-and-its-builders-are-stateless),
@@ -1388,9 +1390,9 @@ if (!launched) {
 `supabase_flutter` used to treat every deep link with a `code`, `error`, `error_code` or
 `error_description` parameter as an auth callback, so an app link such as `myapp://invite?code=X`
 started a code exchange and put an error on `onAuthStateChange`. By default it now takes a link
-only when it has an `access_token`, at least two of the three error parameters, or a `code` while a
-PKCE flow started on this device waits for it. A `code` link with the `sb_flow_id` parameter that
-`appendPkceFlowIdToRedirects` adds is always taken.
+only when it has an `access_token` with the implicit flow, at least two of the three error
+parameters, or a `code` while a PKCE flow started on this device waits for it. A `code` link with
+the `sb_flow_id` parameter that `appendPkceFlowIdToRedirects` adds is always taken.
 
 A link with a `code` but no pending flow, such as a magic link opened on another device, is now
 left to your app instead of surfacing an `AuthException`. To take a link the default skips, pass a
@@ -1404,6 +1406,37 @@ await Supabase.initialize(
     detectSessionInUriPredicate: (uri) => uri.path == '/login-callback',
   ),
 );
+```
+
+#### A PKCE client rejects links with an `access_token`
+
+With `AuthFlowType.pkce`, the default, `getSessionFromUrl()` used to store the session of any link
+with an `access_token` and a `refresh_token`, and `supabase_flutter` exchanged such links by
+default. Nothing ties those tokens to a sign in started on the device, so anyone could send the user
+a link with the tokens of their own account and sign the app in to it.
+
+`getSessionFromUrl()` on a PKCE client now throws an `AuthPKCEGrantCodeExchangeException` for such
+a link, and the default `supabase_flutter` handling leaves it to your app, on the web too. A
+`detectSessionInUriPredicate` that claims the link gets the exception on `onAuthStateChange`.
+
+The links that carry an `access_token` come from flows that the device did not start, such as
+`inviteUserByEmail()`, `generateLink()` and emails sent from the dashboard. The sign ins, sign ups,
+password resets and email changes the client starts send a `code` and are not affected. If your app
+relies on such links, either set `authFlowType: AuthFlowType.implicit`, which accepts the tokens of
+any link, or read the tokens from the link yourself and pass them to `setSession()` once your app
+trusts the link:
+
+```dart
+Future<void> signInWithLinkTokens(Uri link) async {
+  final parameters = Uri.splitQueryString(link.fragment);
+  final refreshToken = parameters['refresh_token'];
+  if (refreshToken != null) {
+    await supabase.auth.setSession(
+      refreshToken,
+      accessToken: parameters['access_token'],
+    );
+  }
+}
 ```
 
 #### Switching to another user's session emits `signedIn`

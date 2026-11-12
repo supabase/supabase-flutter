@@ -31,6 +31,13 @@ class FlutterAuthClientOptions extends AuthClientOptions {
 
   /// If true, the client will start the deep link observer and obtain sessions
   /// when a valid URI is detected.
+  ///
+  /// With [AuthFlowType.pkce], the default, a link only signs the user in
+  /// when it carries the `code` of a flow started on this device, and a link
+  /// with an `access_token` is left to the app. With [AuthFlowType.implicit]
+  /// a link with an `access_token` signs in the account the token belongs to,
+  /// whoever sent the link, so an attacker can send the user a link that signs
+  /// the app in to the attacker's account.
   final bool detectSessionInUri;
 
   /// An optional predicate that decides whether an incoming deep link should be
@@ -38,16 +45,18 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   ///
   /// When null, only links the auth server redirects to are treated as auth
   /// callbacks, by their parameters in the query or the fragment: an
-  /// `access_token`, at least two of `error`, `error_code` and
-  /// `error_description`, or a `code` while a PKCE flow started by this client
-  /// is waiting for it. A `code` link that carries the `sb_flow_id` parameter
-  /// the client appends to its redirects is always treated as one. Other
-  /// links, such as `myapp://invite?code=X` when no sign-in is pending, are
-  /// left to the app.
+  /// `access_token` with [AuthFlowType.implicit], at least two of `error`,
+  /// `error_code` and `error_description`, or a `code` while a PKCE flow
+  /// started by this client is waiting for it. A `code` link that carries the
+  /// `sb_flow_id` parameter the client appends to its redirects is always
+  /// treated as one. Other links, such as `myapp://invite?code=X` when no
+  /// sign-in is pending, are left to the app.
   ///
   /// Provide a custom predicate to disambiguate links when your app uses those
   /// same parameters for other purposes, or to restrict detection to specific
-  /// redirect paths.
+  /// redirect paths. With [AuthFlowType.pkce] a link with an `access_token`
+  /// that the predicate claims is rejected and reported as an
+  /// [AuthPKCEGrantCodeExchangeException] on [AuthClient.onAuthStateChange].
   final bool Function(Uri uri)? detectSessionInUriPredicate;
 
   @override

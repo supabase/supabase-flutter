@@ -62,6 +62,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Whether to automatically refresh the token
   late bool _autoRefreshToken;
 
+  late AuthFlowType _authFlowType;
+
   /// Optional custom predicate to decide whether a deep link is an auth
   /// callback. When null, [_defaultIsAuthCallbackDeeplink] is used.
   bool Function(Uri uri)? _detectSessionInUriPredicate;
@@ -100,6 +102,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     required FlutterAuthClientOptions options,
   }) async {
     _autoRefreshToken = options.autoRefreshToken;
+    _authFlowType = options.authFlowType;
     _detectSessionInUriPredicate = options.detectSessionInUriPredicate;
 
     if (options.detectSessionInUri) {
@@ -171,7 +174,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Claims only the links the auth server redirects to, read from the query
   /// and the fragment:
   ///
-  /// - an `access_token`, from the implicit flow
+  /// - an `access_token`, when this client uses the implicit flow
   /// - a `code`, when it carries the flow id this client appends to its
   ///   redirects or a PKCE flow of this client is waiting for its code
   /// - at least two of `error`, `error_code` and `error_description`, which
@@ -182,7 +185,8 @@ class SupabaseAuth with WidgetsBindingObserver {
       ...Uri.splitQueryString(uri.fragment),
     };
 
-    if (parameters.containsKey('access_token')) {
+    if (_authFlowType == AuthFlowType.implicit &&
+        parameters.containsKey('access_token')) {
       return true;
     }
     final errorParameters = [

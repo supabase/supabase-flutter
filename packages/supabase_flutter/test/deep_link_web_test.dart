@@ -19,7 +19,7 @@ void main() {
       queryParameters: {'code': 'my-code-verifier', 'tab': 'settings'},
     );
     window.history.replaceState(null, '', callbackUrl.toString());
-    AppLinksPlatform.instance = _FakeAppLinks(callbackUrl);
+    AppLinksPlatform.instance = FakeInitialAppLinks(callbackUrl);
 
     final httpClient = createPkceHttpClient();
     final asyncStorage = MockAsyncStorage();
@@ -48,14 +48,4 @@ void main() {
       'tab': 'settings',
     });
   });
-}
-
-/// Reports [initialLink] as the URL the page was loaded with.
-class _FakeAppLinks extends AppLinksPlatform {
-  _FakeAppLinks(this.initialLink);
-
-  final Uri initialLink;
-
-  @override
-  Future<Uri?> getInitialLink() async => initialLink;
 }

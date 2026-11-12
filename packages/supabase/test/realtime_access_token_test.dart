@@ -83,13 +83,37 @@ void main() {
     expect(await realtimeToken(), aal2Token);
   });
 
-  for (final (redirectType, event) in [
-    ('recovery', AuthChangeEvent.passwordRecovery),
-    ('email_change', AuthChangeEvent.userUpdated),
+  for (final (event, startFlow) in [
+    (
+      AuthChangeEvent.passwordRecovery,
+      () async {
+        httpClient.stub(
+          {},
+          method: HttpMethod.post,
+          path: '/auth/v1/recover',
+        );
+        await supabase.auth.resetPasswordForEmail('fake1@email.com');
+      },
+    ),
+    (
+      AuthChangeEvent.userUpdated,
+      () async {
+        await signInTestUser(supabase.auth);
+        httpClient.stubUser();
+        await supabase.auth.updateUser(
+          UserAttributes(email: 'new@email.com'),
+        );
+      },
+    ),
   ]) {
     test('follows the session of a ${event.name} redirect', () async {
       final redirectToken = accessTokenWith({});
-      httpClient.stubUser();
+      await startFlow();
+      httpClient.stub(
+        testSessionResponseJson(accessToken: redirectToken),
+        method: HttpMethod.post,
+        path: '/auth/v1/token',
+      );
       final events = <AuthChangeEvent>[];
       final subscription = supabase.auth.onAuthStateChange.listen(
         (state) => events.add(state.event),
@@ -97,11 +121,7 @@ void main() {
       addTearDown(subscription.cancel);
 
       await supabase.auth.getSessionFromUrl(
-        Uri.parse(
-          'http://localhost/#access_token=$redirectToken'
-          '&expires_in=3600&refresh_token=refresh&token_type=bearer'
-          '&type=$redirectType',
-        ),
+        Uri.parse('http://localhost/?code=auth-code'),
       );
 
       expect(await realtimeToken(), redirectToken);
