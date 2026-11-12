@@ -60,19 +60,32 @@ void main() {
       });
     }
 
-    test('stores the session of an email_change link and emits '
-        'userUpdated', () async {
-      final event = client.onAuthStateChange
-          .firstWhere((state) => state.event != AuthChangeEvent.initialSession)
-          .then((state) => state.event);
+    test(
+      'stores the user of an email_change link and emits userUpdated',
+      () async {
+        final implicitClient = AuthClient(
+          url: 'https://example.supabase.co',
+          httpClient: MockSupabaseHttpClient()
+            ..stubUser(user: testUserJson(email: 'new@email.com')),
+          asyncStorage: TestAsyncStorage(),
+          flowType: AuthFlowType.implicit,
+        );
+        addTearDown(implicitClient.dispose);
+        final event = implicitClient.onAuthStateChange
+            .firstWhere(
+              (state) => state.event != AuthChangeEvent.initialSession,
+            )
+            .then((state) => state.event);
 
-      final response = await client.getSessionFromUrl(
-        _callbackUrl('3600', type: 'email_change'),
-      );
+        final response = await implicitClient.getSessionFromUrl(
+          _callbackUrl('3600', type: 'email_change'),
+        );
 
-      expect(client.currentSession?.accessToken, response.session.accessToken);
-      expect(await event, AuthChangeEvent.userUpdated);
-    });
+        expect(response.session.user.email, 'new@email.com');
+        expect(implicitClient.currentUser?.email, 'new@email.com');
+        expect(await event, AuthChangeEvent.userUpdated);
+      },
+    );
 
     group('with the pkce flow', () {
       late MockSupabaseHttpClient httpClient;
@@ -108,7 +121,7 @@ void main() {
             pkceClient.getSessionFromUrl(url),
             throwsA(
               isA<AuthPKCEGrantCodeExchangeException>().having(
-                (e) => e.message,
+                (exception) => exception.message,
                 'message',
                 'The URL carries the tokens of an implicit flow, which a '
                     'client using the pkce flow does not accept.',

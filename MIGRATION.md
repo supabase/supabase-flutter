@@ -1424,17 +1424,23 @@ The links that carry an `access_token` come from flows that the device did not s
 password resets and email changes the client starts send a `code` and are not affected. If your app
 relies on such links, either set `authFlowType: AuthFlowType.implicit`, which accepts the tokens of
 any link, or read the tokens from the link yourself and pass them to `setSession()` once your app
-trusts the link:
+trusts the link. `setSession()` emits `signedIn`, so check the `type` of the link for a password
+recovery:
 
 ```dart
 Future<void> signInWithLinkTokens(Uri link) async {
-  final parameters = Uri.splitQueryString(link.fragment);
+  final parameters = {
+    ...link.queryParameters,
+    ...Uri.splitQueryString(link.fragment),
+  };
   final refreshToken = parameters['refresh_token'];
-  if (refreshToken != null) {
-    await supabase.auth.setSession(
-      refreshToken,
-      accessToken: parameters['access_token'],
-    );
+  if (refreshToken == null) return;
+  await supabase.auth.setSession(
+    refreshToken,
+    accessToken: parameters['access_token'],
+  );
+  if (parameters['type'] == 'recovery') {
+    // Show the form that sets a new password.
   }
 }
 ```

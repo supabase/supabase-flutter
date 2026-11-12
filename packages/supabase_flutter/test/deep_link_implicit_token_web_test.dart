@@ -30,8 +30,15 @@ void main() {
       authOptions: FlutterAuthClientOptions(asyncStorage: MockAsyncStorage()),
     );
     addTearDown(supabase.dispose);
+    final errors = <Object>[];
+    final subscription = supabase.client.auth.onAuthStateChange.listen(
+      (_) {},
+      onError: errors.add,
+    );
+    addTearDown(subscription.cancel);
     await pumpEventQueue();
 
+    expect(errors, isEmpty);
     expect(httpClient.requests, isEmpty);
     expect(supabase.client.auth.currentSession, isNull);
     expect(window.location.href, callbackUrl.toString());

@@ -403,7 +403,19 @@ void main() {
           '&expires_in=3600&token_type=bearer',
     ]) {
       test('$link is ignored with the PKCE flow', () async {
+        final logged = Logger.root.onRecord.firstWhere(
+          (record) =>
+              record.message ==
+              'A client using the pkce flow does not accept the access_token '
+                  'of a deeplink',
+        );
+
         await expectIgnored(link);
+
+        expect(
+          (await logged.timeout(const Duration(seconds: 5))).level,
+          Level.INFO,
+        );
       });
     }
 

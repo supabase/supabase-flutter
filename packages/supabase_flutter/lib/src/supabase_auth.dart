@@ -185,9 +185,12 @@ class SupabaseAuth with WidgetsBindingObserver {
       ...Uri.splitQueryString(uri.fragment),
     };
 
-    if (_authFlowType == AuthFlowType.implicit &&
-        parameters.containsKey('access_token')) {
-      return true;
+    if (parameters.containsKey('access_token')) {
+      if (_authFlowType == AuthFlowType.implicit) return true;
+      flutterLogger.info(
+        'A client using the pkce flow does not accept the access_token of a '
+        'deeplink',
+      );
     }
     final errorParameters = [
       'error',
