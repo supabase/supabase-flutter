@@ -70,19 +70,44 @@ void main() {
         );
       });
 
-      test('can be initialized after a rejected key', () async {
+      test('rejects a key surrounded by whitespace', () async {
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: ' $secretKey'),
+          throwsSecretKeyError(secretKey),
+        );
+        await expectLater(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: '$serviceRoleKey\n',
+          ),
+          throwsSecretKeyError(serviceRoleKey),
+        );
+      });
+
+      test('rejects a service_role JWT with a malformed signature', () async {
+        final [header, payload, _] = serviceRoleKey.split('.');
+        final key = '$header.$payload.not base64';
+
+        await expectLater(
+          Supabase.initialize(url: supabaseUrl, publishableKey: key),
+          throwsSecretKeyError(key),
+        );
+      });
+
+      test('keeps an initialized instance when a key is rejected', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: 'sb_publishable_abc123',
+        );
+        final client = Supabase.instance.client;
+
         await expectLater(
           Supabase.initialize(url: supabaseUrl, publishableKey: secretKey),
           throwsArgumentError,
         );
 
-        await expectLater(
-          Supabase.initialize(
-            url: supabaseUrl,
-            publishableKey: 'sb_publishable_abc123',
-          ),
-          completes,
-        );
+        expect(Supabase.instance.isInitialized, isTrue);
+        expect(Supabase.instance.client, same(client));
       });
 
       test('accepts a publishable key', () async {

@@ -2,6 +2,7 @@
 // ignore_for_file: experimental_member_use
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart' show experimental;
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart' show Base64Url;
 import 'package:supabase_flutter/src/auth_async_resumable_upload_storage.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
@@ -610,12 +612,20 @@ class Supabase {
 }
 
 bool _isSecretKey(String key) {
-  if (key.startsWith('sb_secret_')) {
+  final trimmedKey = key.trim();
+  if (trimmedKey.startsWith('sb_secret_')) {
     return true;
   }
+  final parts = trimmedKey.split('.');
+  if (parts.length != 3) {
+    return false;
+  }
   try {
-    return decodeJwt(key).payload.claims['role'] == 'service_role';
-  } on AuthInvalidJwtException {
+    return switch (json.decode(Base64Url.decodeToString(parts[1]))) {
+      {'role': 'service_role'} => true,
+      _ => false,
+    };
+  } on FormatException {
     return false;
   }
 }
