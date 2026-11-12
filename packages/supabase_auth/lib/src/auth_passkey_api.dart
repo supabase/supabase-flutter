@@ -218,7 +218,8 @@ class AuthPasskeyApi {
     final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.requestObject(
-      '${_client._url}/passkeys/$passkeyId',
+      '${_client._url}/passkeys/'
+      '${encodePathSegment(passkeyId, name: 'passkeyId')}',
       HttpMethod.patch,
       options: AuthRequestOptions(
         headers: _client._headers,
@@ -238,7 +239,8 @@ class AuthPasskeyApi {
     final accessToken = await _client._userAccessToken();
 
     await _fetch.request(
-      '${_client._url}/passkeys/$passkeyId',
+      '${_client._url}/passkeys/'
+      '${encodePathSegment(passkeyId, name: 'passkeyId')}',
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _client._headers,

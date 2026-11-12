@@ -16,6 +16,10 @@ class AuthMFAApi {
   @experimental
   final AuthMFARecoveryCodesApi recoveryCodes;
 
+  String _factorUrl(String factorId) =>
+      '${_client._url}/factors/'
+      '${encodePathSegment(factorId, name: 'factorId')}';
+
   /// Unenroll removes a MFA factor.
   ///
   /// A user has to have an `aal2` authenticator level in order to unenroll a
@@ -24,7 +28,7 @@ class AuthMFAApi {
     final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.requestObject(
-      '${_client._url}/factors/$factorId',
+      _factorUrl(factorId),
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _client._headers,
@@ -118,7 +122,7 @@ class AuthMFAApi {
     final accessToken = await _client._userAccessToken();
 
     final response = await _fetch.requestWithResponse(
-      '${_client._url}/factors/$factorId/verify',
+      '${_factorUrl(factorId)}/verify',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _client._headers,
@@ -151,7 +155,7 @@ class AuthMFAApi {
     final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.requestObject(
-      '${_client._url}/factors/$factorId/challenge',
+      '${_factorUrl(factorId)}/challenge',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _client._headers,

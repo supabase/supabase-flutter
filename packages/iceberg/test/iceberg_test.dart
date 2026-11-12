@@ -319,6 +319,82 @@ void main() {
     });
   });
 
+  group('path segments', () {
+    test('keep a namespace and a table name in their own segments', () async {
+      stubOperation(<String, dynamic>{});
+
+      await catalog.dropTable(
+        const TableIdentifier(namespace: ['a/b', '..'], name: '../x?y#z'),
+      );
+
+      final url = lastOperation().url;
+      expect(url.pathSegments.skip(4), [
+        'v1',
+        'warehouse',
+        'namespaces',
+        'a/b\u001F..',
+        'tables',
+        '../x?y#z',
+      ]);
+      expect(url.query, 'purgeRequested=false');
+      expect(url.hasFragment, isFalse);
+    });
+
+    test('keep the warehouse in its own segment', () async {
+      final warehouseCatalog = IcebergRestCatalog(
+        baseUrl: '$supabaseUrl/storage/v1/iceberg',
+        warehouse: '../../auth/v1/logout?',
+        httpClient: httpClient,
+        retryOptions: _noRetries,
+      );
+      httpClient
+        ..stub({'namespaces': []})
+        ..stub({'defaults': <String, String>{}}, path: '/v1/config');
+
+      await warehouseCatalog.listNamespaces();
+
+      final url = lastOperation().url;
+      expect(url.pathSegments.skip(4), [
+        'v1',
+        '../../auth/v1/logout?',
+        'namespaces',
+      ]);
+      expect(url.hasQuery, isFalse);
+    });
+
+    for (final namespace in [
+      <String>[],
+      [''],
+      ['.'],
+      ['..'],
+    ]) {
+      final parts = namespace.map((part) => '"$part"').join(', ');
+      test('throw an ArgumentError for the namespace [$parts]', () async {
+        stubOperation(<String, dynamic>{});
+
+        await expectLater(
+          catalog.dropNamespace(namespace),
+          throwsArgumentError,
+        );
+        expect(operations(), isEmpty);
+      });
+    }
+
+    for (final name in ['', '.', '..']) {
+      test('throw an ArgumentError for the table name "$name"', () async {
+        stubOperation(<String, dynamic>{});
+
+        await expectLater(
+          catalog.dropTable(
+            TableIdentifier(namespace: const ['analytics'], name: name),
+          ),
+          throwsArgumentError,
+        );
+        expect(operations(), isEmpty);
+      });
+    }
+  });
+
   group('tables', () {
     TableSchema schema() => const TableSchema(
       schemaId: 0,

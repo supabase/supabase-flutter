@@ -21,6 +21,10 @@ class AuthAdminCustomProvidersApi {
   final Map<String, String> _headers;
   final AuthFetch _fetch;
 
+  String _providerUrl(String identifier) =>
+      '$_url/admin/custom-providers/'
+      '${encodePathSegment(identifier, name: 'identifier')}';
+
   /// Lists all custom providers, optionally filtered by [type].
   ///
   /// This function should only be called on a server. Never expose your
@@ -82,7 +86,7 @@ class AuthAdminCustomProvidersApi {
   /// `service_role` key in the browser.
   Future<CustomOAuthProvider> getProvider(String identifier) async {
     final data = await _fetch.requestObject(
-      '$_url/admin/custom-providers/$identifier',
+      _providerUrl(identifier),
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _headers,
@@ -106,7 +110,7 @@ class AuthAdminCustomProvidersApi {
     UpdateCustomProviderOptions options,
   ) async {
     final data = await _fetch.requestObject(
-      '$_url/admin/custom-providers/$identifier',
+      _providerUrl(identifier),
       HttpMethod.put,
       options: AuthRequestOptions(
         headers: _headers,
@@ -123,7 +127,7 @@ class AuthAdminCustomProvidersApi {
   /// `service_role` key in the browser.
   Future<void> deleteProvider(String identifier) async {
     await _fetch.request(
-      '$_url/admin/custom-providers/$identifier',
+      _providerUrl(identifier),
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _headers,

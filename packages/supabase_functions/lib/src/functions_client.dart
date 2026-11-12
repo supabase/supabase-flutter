@@ -122,7 +122,10 @@ class FunctionsClient {
 
   /// Invokes a function
   ///
-  /// [functionName] is the name of the function to invoke
+  /// [functionName] is the name of the function to invoke, optionally
+  /// followed by a subpath and a query string, `'api/users?page=2'`. A name
+  /// with a `.` or `..` segment, which would address another function or
+  /// endpoint, throws an [ArgumentError], and so does an empty name.
   ///
   /// [headers] to send with the request
   ///
@@ -221,7 +224,7 @@ class FunctionsClient {
       'forceFunctionRegion': ?forcedRegion,
     };
 
-    final functionUri = Uri.parse('$_url/$functionName');
+    final functionUri = _functionUri(functionName);
     final uri = effectiveQueryParameters.isEmpty
         ? functionUri
         : functionUri.replace(
@@ -406,6 +409,26 @@ class FunctionsClient {
         message: 'Failed to read the response of the Edge Function',
         cause: error,
       );
+
+  static final _pathEnd = RegExp('[?#]');
+  static final _pathSeparator = RegExp(r'[/\\]');
+  static final _dotSegment = RegExp(r'^(\.|%2e){1,2}$', caseSensitive: false);
+
+  /// The URL of [functionName], checked so that `Uri.parse` cannot resolve it
+  /// to another function or endpoint, which it does for a `.` or `..`
+  /// segment, also when percent-encoded or separated by `\`.
+  Uri _functionUri(String functionName) {
+    final path = functionName.split(_pathEnd).first;
+    final segments = path.split(_pathSeparator);
+    if (path.isEmpty || segments.any(_dotSegment.hasMatch)) {
+      throw ArgumentError.value(
+        functionName,
+        'functionName',
+        'Must name a function and hold no "." or ".." segment',
+      );
+    }
+    return Uri.parse('$_url/$functionName');
+  }
 
   /// A query parameter [value] as text, a [DateTime] in ISO 8601.
   static String _queryValue(Object? value) =>

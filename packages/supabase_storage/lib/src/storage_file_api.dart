@@ -63,7 +63,10 @@ class StorageFileApi {
     return '$_encodedBucketId/$encodedPath';
   }
 
-  late final String _encodedBucketId = encodePathSegment('$bucketId');
+  late final String _encodedBucketId = encodePathSegment(
+    '$bucketId',
+    name: 'bucketId',
+  );
 
   String _removeEmptyFolders(String path) {
     return _normalizePrefix(path).replaceAll(RegExp(r'/$'), '');
