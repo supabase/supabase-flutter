@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supabase_test/supabase_test.dart';
@@ -31,7 +31,12 @@ void main() {
     addTearDown(() => tester.runAsync(() => Supabase.instance.dispose()));
 
     Supabase.instance.client.auth.stopAutoRefresh();
-    await tester.pumpWidget(const MaterialApp(home: MockWidget()));
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: MockWidget(),
+      ),
+    );
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(find.text('You have signed out'), findsOneWidget);
