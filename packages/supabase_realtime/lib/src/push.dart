@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:supabase_common/supabase_common.dart' show JsonFields;
+import 'package:supabase_common/supabase_common.dart'
+    show JsonFields, jsonObject;
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/types.dart';
@@ -36,7 +37,10 @@ class Push {
   ]) : _payload = payload;
   Timer? _timeoutTimer;
   String _ref = '';
-  Map<String, dynamic>? _receivedResponse;
+
+  /// The outcome of the last send, set once the server replied or the push
+  /// was triggered.
+  ({PushStatus status, Object? response})? _reply;
   final List<Hook> _receiveHooks = [];
 
   /// Called every time this push is handed to the socket.
@@ -74,8 +78,7 @@ class Push {
     _cancelRefEvent();
     _cancelTimeout();
     _ref = '';
-    _refEvent = null;
-    _receivedResponse = null;
+    _reply = null;
     send();
   }
 
@@ -101,8 +104,9 @@ class Push {
   }
 
   Push receive(PushStatus status, Callback callback) {
-    if (_hasReceived(status)) {
-      callback(_receivedResponse?['response']);
+    final reply = _reply;
+    if (reply != null && reply.status == status) {
+      callback(reply.response);
     }
 
     _receiveHooks.add(Hook(status, callback));
@@ -116,19 +120,13 @@ class Push {
     _ref = _channel.socket.makeRef();
     _refEvent = _channel.replyEventName(ref);
 
-    _channel.onEvents(_refEvent!, const ChannelFilter(), (response, _) {
+    _channel.onEvents(_refEvent!, const ChannelFilter(), (message, _) {
       _cancelRefEvent();
       _cancelTimeout();
-      if (response is! Map<String, dynamic>) {
-        throw FormatException(
-          'Expected a reply to be Map<String, dynamic>, got '
-          '${response.runtimeType}',
-        );
-      }
-      _receivedResponse = response;
-      final status = PushStatus.fromValue(response.field<String>('status'));
+      final reply = jsonObject(message, description: 'a reply');
+      final status = PushStatus.fromValue(reply.field<String>('status'));
       if (status != null) {
-        _matchReceive(status, response['response']);
+        _receive(status, reply['response']);
       }
     });
 
@@ -137,13 +135,15 @@ class Push {
     });
   }
 
+  /// Settles a push that is waiting for its reply with [status] and
+  /// [response], as if the server had replied with them.
   void trigger(PushStatus status, Map<String, dynamic> response) {
-    if (_refEvent != null) {
-      _channel.trigger(_refEvent!, {
-        'status': status.name,
-        'response': response,
-      });
+    if (_refEvent == null) {
+      return;
     }
+    _cancelRefEvent();
+    _cancelTimeout();
+    _receive(status, response);
   }
 
   void destroy() {
@@ -157,6 +157,7 @@ class Push {
     }
 
     _channel.off(_refEvent!, const ChannelFilter());
+    _refEvent = null;
   }
 
   void _cancelTimeout() {
@@ -164,15 +165,14 @@ class Push {
     _timeoutTimer = null;
   }
 
-  void _matchReceive(PushStatus status, Object? response) {
+  void _receive(PushStatus status, Object? response) {
+    _reply = (status: status, response: response);
     _receiveHooks.where((h) => h.status == status).forEach((h) {
       h.callback(response);
     });
   }
 
-  bool _hasReceived(PushStatus status) {
-    return _receivedResponse?['status'] == status.name;
-  }
+  bool _hasReceived(PushStatus status) => _reply?.status == status;
 }
 
 @internal
