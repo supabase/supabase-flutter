@@ -40,6 +40,27 @@ void main() {
       expect(payload.eventType, PostgresChangeEvent.unknown);
     });
 
+    test('reads errors as strings, keeping entries that are not strings', () {
+      final payload = PostgresChangePayload.fromPayload({
+        ...payloadWith('2022-09-21T04:59:30Z'),
+        'errors': [
+          'Error 413: Payload Too Large',
+          {'code': 401},
+          null,
+        ],
+      });
+
+      expect(payload.errors, ['Error 413: Payload Too Large', '{code: 401}']);
+    });
+
+    test('reads missing errors as an empty list', () {
+      final payload = PostgresChangePayload.fromPayload(
+        payloadWith('2022-09-21T04:59:30Z'),
+      );
+
+      expect(payload.errors, isEmpty);
+    });
+
     test('falls back to the UTC epoch when the timestamp is missing', () {
       final payload = PostgresChangePayload.fromPayload(payloadWith(null));
 

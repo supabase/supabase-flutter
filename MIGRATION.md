@@ -616,6 +616,8 @@ explicitly:
 - [`exists()` only returns `false` for a missing object](#exists-only-returns-false-for-a-missing-object),
   so a missing bucket or an invalid token throws instead of returning `false`
 - [An `Authorization` header passed to `SupabaseClient` reaches the auth client](#an-authorization-header-passed-to-supabaseclient-reaches-the-auth-client)
+- [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so a `payload`
+  key that you wrapped the data in yourself arrives nested twice
 - [`PostgresChangePayload.errors` is a `List<String>`](#postgreschangepayloaderrors-is-a-liststring),
   so a null check on it no longer tells whether the server reported errors
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
@@ -1935,8 +1937,8 @@ and `event`, so a listener only found them at the top level for messages sent fr
 `onBroadcast` message now carries the data as its payload, see
 [Broadcast messages are typed](#broadcast-messages-are-typed). If you wrapped the data in a
 `payload` key yourself, for example to match the JavaScript client or to send binary data, remove
-the wrapper, or the data arrives nested twice. Send binary data with
-`sendBinaryBroadcastMessage()`:
+the wrapper, or the data arrives nested twice and wrapped bytes are sent as a JSON list of numbers.
+Send binary data with `sendBinaryBroadcastMessage()`:
 
 ```dart skip
 // Before

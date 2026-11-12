@@ -449,7 +449,7 @@ class PostgresChangePayload {
       oldRecord: oldData is Map ? Map.from(oldData) : {},
       errors: switch (payload['errors']) {
         final List<dynamic> errors => List.unmodifiable(
-          errors.whereType<String>(),
+          errors.nonNulls.map((error) => error is String ? error : '$error'),
         ),
         _ => const [],
       },

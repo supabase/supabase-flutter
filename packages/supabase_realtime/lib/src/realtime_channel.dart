@@ -295,6 +295,13 @@ class RealtimeChannel {
       return;
     }
     updateJoinPayload({'config': _joinConfig()});
+    _rejoinIfPresenceMissing();
+  }
+
+  /// Rejoins a joined channel whose join did not ask for presence although a
+  /// presence listener was added since, for example while the join was in
+  /// flight.
+  void _rejoinIfPresenceMissing() {
     if (isJoined && _presenceEnabled && !_joinRequestedPresence) {
       rejoin();
     }
@@ -377,9 +384,10 @@ class RealtimeChannel {
     _joinPush
         .receive(
           PushStatus.ok,
-          (response) => _handleJoinOk(
-            jsonObject(response, description: 'the join reply'),
-          ),
+          (response) {
+            _handleJoinOk(jsonObject(response, description: 'the join reply'));
+            _rejoinIfPresenceMissing();
+          },
         )
         .receive(PushStatus.error, (error) {
           _state = ChannelState.errored;
@@ -460,7 +468,11 @@ class RealtimeChannel {
           serverPostgresFilter['filter'] == filter) {
         newPostgresBindings.add(
           clientPostgresBinding.copyWith(
-            id: serverPostgresFilter.field('id'),
+            id: switch (serverPostgresFilter['id']) {
+              final num id => id.toInt(),
+              final String id => int.tryParse(id),
+              _ => null,
+            },
           ),
         );
       } else {

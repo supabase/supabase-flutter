@@ -212,6 +212,42 @@ void main() {
       );
     });
 
+    test('matches changes against a binding id the server echoed back as a '
+        'string', () async {
+      final changes = channel
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'todos',
+          )
+          .first;
+      channel.subscribe();
+      final sentFilter =
+          (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
+              as Map<String, dynamic>;
+      channel.joinPush.trigger(PushStatus.ok, {
+        'postgres_changes': [
+          {...sentFilter, 'id': '7'},
+        ],
+      });
+
+      channel.trigger('postgres_changes', {
+        'ids': [7],
+        'data': {
+          'schema': 'public',
+          'table': 'todos',
+          'commit_timestamp': '2026-01-01T00:00:00Z',
+          'type': 'INSERT',
+          'columns': [
+            {'name': 'id', 'type': 'int4'},
+          ],
+          'record': {'id': '1'},
+        },
+      });
+
+      expect((await changes).newRecord, {'id': 1});
+    });
+
     test('subscribes when the server echoes back an `in` filter with escaped '
         'quotes and backslashes', () async {
       RealtimeSubscribeStatus? status;
@@ -1273,6 +1309,23 @@ void main() {
         postgresChanges,
       );
       expect(postgresChanges, isNotEmpty);
+    });
+
+    test('rejoins with presence when it is added while the join is in '
+        'flight', () {
+      channel = RealtimeChannel('topic', socket);
+      channel.subscribe();
+      final joinRef = channel.joinRef;
+
+      channel.onPresenceSync.listen((payload) {});
+      channel.joinPush.trigger(PushStatus.ok, {});
+
+      expect(channel.isJoining, isTrue);
+      expect(channel.joinRef, isNot(joinRef));
+      expect(
+        channel.joinPush.payload['config']['presence']['enabled'],
+        isTrue,
+      );
     });
 
     test('does not rejoin when presence is added to a join that already '

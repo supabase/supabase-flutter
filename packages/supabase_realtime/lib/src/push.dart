@@ -22,7 +22,7 @@ enum PushStatus {
 
   /// Parses the `status` of a reply, or returns `null` for a status this
   /// client does not know.
-  static PushStatus? fromValue(Object? value) => _byName[value];
+  static PushStatus? fromValue(String value) => _byName[value];
 }
 
 /// Initializes the Push
