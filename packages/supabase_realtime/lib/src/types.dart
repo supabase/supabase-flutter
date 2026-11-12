@@ -232,6 +232,13 @@ class ReplayOption {
     }
     return map;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is ReplayOption && other.since == since && other.limit == limit;
+
+  @override
+  int get hashCode => Object.hash(since, limit);
 }
 
 /// Configuration for a [RealtimeChannel]'s broadcast, presence, and RLS
@@ -267,8 +274,17 @@ class RealtimeChannelConfig {
   /// Enables presence even without presence bindings.
   final bool presenceEnabled;
 
-  /// Defines if the channel is private or not and if RLS policies will be used
-  /// to check data
+  /// Whether the channel is private, so that a client can only join it, and
+  /// send or receive its broadcast and presence messages, when the RLS
+  /// policies on `realtime.messages` allow it.
+  ///
+  /// Defaults to `false`, and any client with the project's API key can join
+  /// a public channel. Postgres Changes are checked against the RLS policies
+  /// of their table either way.
+  ///
+  /// [RealtimeClient.channel] throws a [StateError] instead of returning a
+  /// channel that is registered for the same topic with other options, so a
+  /// channel created as public is never returned for a private one.
   final bool private;
 
   /// [replicationReady] instructs the server to emit a `system` event once the
@@ -321,6 +337,30 @@ class RealtimeChannelConfig {
       },
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is RealtimeChannelConfig &&
+      other.ack == ack &&
+      other.self == self &&
+      other.replay == replay &&
+      other.presenceKey == presenceKey &&
+      other.presenceEnabled == presenceEnabled &&
+      other.private == private &&
+      other.replicationReady == replicationReady &&
+      other.v2BroadcastCompatibility == v2BroadcastCompatibility;
+
+  @override
+  int get hashCode => Object.hash(
+    ack,
+    self,
+    replay,
+    presenceKey,
+    presenceEnabled,
+    private,
+    replicationReady,
+    v2BroadcastCompatibility,
+  );
 }
 
 /// Payload of a `system` event emitted by the server.

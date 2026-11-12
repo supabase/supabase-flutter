@@ -619,7 +619,8 @@ explicitly:
 - [Invalid broadcast payloads throw in release builds](#invalid-broadcast-payloads-throw-in-release-builds),
   so a `String` or `List` payload that used to be sent now fails
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
-  second channel with the same name shares the first one instead of replacing it
+  second channel with the same name shares the first one instead of replacing it, and one with
+  other options throws
 - [`stream()` keeps running through reconnects](#stream-keeps-running-through-reconnects), so
   `onDone` no longer fires after a failed fetch that a retry can fix
 - [Realtime reconnects with full jitter up to 30 seconds](#realtime-reconnects-with-full-jitter-up-to-30-seconds),
@@ -1969,10 +1970,11 @@ await channel.sendBroadcastMessage(event: 'note', payload: {'text': 'hello'});
 #### A channel name in use returns its channel
 
 `channel()` returns the channel already registered for a name instead of creating a second one,
-and the options passed with the repeated call are ignored. `subscribe()` on a channel that is
-already subscribed does nothing. Creating a second channel with the same name used to unsubscribe
-the first one, which reported `closed`, so remove a channel before reusing its name with other
-options.
+with the listeners already added to it. It throws a `StateError` if that channel was created with
+other options, so it never returns a public channel for a private one, or a channel with another
+presence key. `subscribe()` on a channel that is already subscribed does nothing. Creating a second
+channel with the same name used to unsubscribe the first one, which reported `closed`, so remove a
+channel with `removeChannel()` before reusing its name with other options.
 
 `RealtimeClient.disconnect()` keeps the channels and rejoins them on the next connection. Call
 `removeAllChannels()` to unsubscribe them as well. A broadcast without `ack` resolves to `ok` once

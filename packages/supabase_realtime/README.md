@@ -47,6 +47,22 @@ The docs can be found on the official Supabase website.
 - [Dart reference](https://supabase.com/docs/reference/dart/subscribe)
 - [Realtime guide](https://supabase.com/docs/guides/realtime)
 
+## Channel security
+
+Channels are public unless they are created with `RealtimeChannelConfig(private: true)`. Any
+client with the project's API key can join a public channel and send or receive its broadcast and
+presence messages. A client can only join a private channel when the RLS policies on
+`realtime.messages` allow it, see
+[Realtime Authorization](https://supabase.com/docs/guides/realtime/authorization).
+
+`channel()` returns the channel that is already registered for a topic, and throws a `StateError`
+if that channel was created with other options. Remove the channel with `removeChannel()` before
+creating it again with new options, for example when another user signs in.
+
+The API key is sent as the `apikey` query parameter of the WebSocket URL, so servers and proxies
+can log it. Only use the publishable key in a client. The access token of the signed-in user is
+sent in the messages on the socket, not in the URL.
+
 ## Testing
 
 The unit tests run without any external services:

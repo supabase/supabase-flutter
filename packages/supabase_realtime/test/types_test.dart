@@ -150,6 +150,58 @@ void main() {
     });
   });
 
+  group('RealtimeChannelConfig equality', () {
+    RealtimeChannelConfig config({
+      bool ack = true,
+      bool self = true,
+      int replaySince = 1,
+      String presenceKey = 'user-1',
+      bool presenceEnabled = true,
+      bool private = true,
+      bool replicationReady = true,
+      bool v2BroadcastCompatibility = true,
+    }) => RealtimeChannelConfig(
+      ack: ack,
+      self: self,
+      replay: ReplayOption(since: replaySince, limit: 10),
+      presenceKey: presenceKey,
+      presenceEnabled: presenceEnabled,
+      private: private,
+      replicationReady: replicationReady,
+      v2BroadcastCompatibility: v2BroadcastCompatibility,
+    );
+
+    test('equal configs share a hash code', () {
+      expect(config(), config());
+      expect(config().hashCode, config().hashCode);
+      expect({config(), config()}, hasLength(1));
+    });
+
+    test('configs that differ in any option are not equal', () {
+      for (final other in [
+        config(ack: false),
+        config(self: false),
+        config(replaySince: 2),
+        config(presenceKey: 'user-2'),
+        config(presenceEnabled: false),
+        config(private: false),
+        config(replicationReady: false),
+        config(v2BroadcastCompatibility: false),
+        const RealtimeChannelConfig(),
+      ]) {
+        expect(other, isNot(config()));
+      }
+    });
+
+    test('replay options compare their limit', () {
+      expect(
+        ReplayOption(since: 1, limit: 10),
+        isNot(ReplayOption(since: 1, limit: 20)),
+      );
+      expect(ReplayOption(since: 1), ReplayOption(since: 1));
+    });
+  });
+
   group('RealtimePresencePayload', () {
     test('decodes an unrecognized event as unknown', () {
       final payload = RealtimePresenceSyncPayload.fromJson({

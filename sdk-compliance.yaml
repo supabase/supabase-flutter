@@ -2901,7 +2901,9 @@ features:
       - RealtimeChannelConfig.replay
     supporting_symbols:
       - ReplayOption
+      - ReplayOption.==
       - ReplayOption.ReplayOption
+      - ReplayOption.hashCode
       - ReplayOption.limit
       - ReplayOption.since
       - ReplayOption.toMap
@@ -3515,7 +3517,9 @@ supporting_symbols:
   - RealtimeChannel
   - RealtimeChannel.RealtimeChannel
   - RealtimeChannelConfig
+  - RealtimeChannelConfig.==
   - RealtimeChannelConfig.RealtimeChannelConfig
+  - RealtimeChannelConfig.hashCode
   - RealtimeChannelConfig.presenceEnabled
   - RealtimeChannelConfig.toMap
   - RealtimeChannelConfig.v2BroadcastCompatibility
