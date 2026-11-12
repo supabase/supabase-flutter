@@ -46,7 +46,7 @@ jobs:
 
           CHANGED_FILES=$(git diff --name-only "$BASE...HEAD")
           if [[ "$TITLE" == chore\(release\):* ]] \
-              || grep -qxF '.github/workflows/pana.yml' <<< "$CHANGED_FILES"; then
+              || grep -qE '^(\.github/workflows/pana\.yml|(packages/)?\.(git|pub)ignore)$' <<< "$CHANGED_FILES"; then
             echo "Scoring every published package."
             PACKAGES=$(melos list --no-private --json | jq -c '[.[].name]')
           else
