@@ -29,8 +29,9 @@ description: >-
 - Cancel the subscriptions and call `supabase.removeChannel(channel)` when the
   feature is closed. A forgotten channel keeps receiving messages.
 - `supabase.channel(name)` returns the channel already open under that name,
-  and ignores the options passed with it. Remove the channel before reusing
-  its name with other options.
+  and throws a `StateError` if it was created with other options. Remove the
+  channel before reusing its name with other options, for example when
+  another user signs in.
 - Use the typed table definitions from the generated schema, not table names
   as strings.
 - Database changes only arrive for tables in the `supabase_realtime`
@@ -181,9 +182,6 @@ in both places until the v2 apps are gone. Pass binary data such as a
 Pass `RealtimeChannelConfig(self: true)` as `options` to `supabase.channel`
 to receive your own broadcasts, and `private: true` for a channel guarded by
 realtime authorization policies. Channels are public by default.
-`supabase.channel` returns the channel already registered for a name and
-throws a `StateError` if it was created with other options, so remove it with
-`supabase.removeChannel` first, for example when another user signs in.
 
 ## Presence
 
