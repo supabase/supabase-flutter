@@ -345,6 +345,10 @@ class SupabaseClient {
   PostgrestRpc get rpc => _defaultSchema.rpc;
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
+  ///
+  /// Returns the channel already registered for [name] if there is one, and
+  /// throws a [StateError] if that channel was created with other [options],
+  /// see [RealtimeClient.channel].
   RealtimeChannel channel(
     String name, {
     RealtimeChannelConfig options = const RealtimeChannelConfig(),

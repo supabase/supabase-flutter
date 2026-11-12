@@ -573,13 +573,61 @@ void main() {
     });
 
     test('returns the registered channel for a topic in use', () {
-      final channel = socket.channel(tTopic);
+      final channel = socket.channel(
+        tTopic,
+        const RealtimeChannelConfig(
+          private: true,
+          replay: ReplayOption(since: 1, limit: 10),
+        ),
+      );
 
       expect(
-        socket.channel(tTopic, const RealtimeChannelConfig(ack: true)),
+        socket.channel(
+          tTopic,
+          const RealtimeChannelConfig(
+            private: true,
+            replay: ReplayOption(since: 1, limit: 10),
+          ),
+        ),
         same(channel),
       );
       expect(socket.channels, [channel]);
+    });
+
+    test('throws for a topic in use with other options', () {
+      final channel = socket.channel(tTopic);
+
+      for (final config in [
+        const RealtimeChannelConfig(private: true),
+        const RealtimeChannelConfig(presenceKey: 'other-user'),
+        const RealtimeChannelConfig(replay: ReplayOption(since: 1)),
+      ]) {
+        expect(
+          () => socket.channel(tTopic, config),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains("'$tTopic' is already registered with other options"),
+            ),
+          ),
+        );
+      }
+      expect(socket.channels, [channel]);
+    });
+
+    test('creates a channel with new options once the old one is removed', () {
+      final channel = socket.channel(tTopic).subscribe();
+      unawaited(socket.removeChannel(channel));
+
+      final replacement = socket.channel(
+        tTopic,
+        const RealtimeChannelConfig(private: true),
+      );
+
+      expect(replacement, isNot(same(channel)));
+      expect(replacement.parameters['config']['private'], isTrue);
+      expect(socket.channels, [replacement]);
     });
 
     test('creates a new channel for a topic whose channel is leaving', () {

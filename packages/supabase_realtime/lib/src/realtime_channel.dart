@@ -29,7 +29,7 @@ class RealtimeChannel {
   RealtimeChannel(
     this.topic,
     this.socket, {
-    RealtimeChannelConfig config = const RealtimeChannelConfig(),
+    this.config = const RealtimeChannelConfig(),
   }) : _timeout = socket.timeout,
        _parameters = config.toMap(),
        _v2BroadcastCompatibility = config.v2BroadcastCompatibility,
@@ -206,6 +206,10 @@ class RealtimeChannel {
   @internal
   final RealtimeClient socket;
 
+  /// The options this channel was created with.
+  @internal
+  final RealtimeChannelConfig config;
+
   /// Defines if the channel is private or not and if RLS policies will be used
   /// to check data
   late final bool _private;
@@ -315,11 +319,13 @@ class RealtimeChannel {
       final shouldEnablePresence = _shouldEnablePresence();
 
       if (!currentPresenceEnabled && shouldEnablePresence) {
-        final config = Map<String, dynamic>.from(_parameters['config']);
-        config['presence'] = Map<String, dynamic>.from(config['presence']);
-        config['presence']['enabled'] = true;
-        _parameters['config'] = config;
-        updateJoinPayload({'config': config});
+        final joinConfig = Map<String, dynamic>.from(_parameters['config']);
+        joinConfig['presence'] = Map<String, dynamic>.from(
+          joinConfig['presence'],
+        );
+        joinConfig['presence']['enabled'] = true;
+        _parameters['config'] = joinConfig;
+        updateJoinPayload({'config': joinConfig});
         rejoin();
       }
     }
@@ -397,7 +403,7 @@ class RealtimeChannel {
     final presenceEnabled = _shouldEnablePresence();
 
     final accessTokenPayload = <String, String>{};
-    final config = {
+    final joinConfig = {
       'broadcast': broadcast,
       'presence': {...presenceConfig, 'enabled': presenceEnabled},
       'postgres_changes':
@@ -409,7 +415,7 @@ class RealtimeChannel {
       accessTokenPayload['access_token'] = socket.accessToken!;
     }
 
-    updateJoinPayload({'config': config, ...accessTokenPayload});
+    updateJoinPayload({'config': joinConfig, ...accessTokenPayload});
 
     _joinedOnce = true;
     rejoin(timeout ?? _timeout);

@@ -176,7 +176,10 @@ in both places until the v2 apps are gone. Pass binary data such as a
 
 Pass `RealtimeChannelConfig(self: true)` as `options` to `supabase.channel`
 to receive your own broadcasts, and `private: true` for a channel guarded by
-realtime authorization policies.
+realtime authorization policies. Channels are public by default.
+`supabase.channel` returns the channel already registered for a name and
+throws a `StateError` if it was created with other options, so remove it with
+`supabase.removeChannel` first, for example when another user signs in.
 
 ## Presence
 

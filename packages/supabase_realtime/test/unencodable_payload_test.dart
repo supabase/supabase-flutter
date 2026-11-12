@@ -47,7 +47,7 @@ void main() {
 
   test('a broadcast with an acknowledgement fails the send too', () async {
     channel = client.channel(
-      'room',
+      'ack-room',
       const RealtimeChannelConfig(ack: true),
     );
     await subscribe();

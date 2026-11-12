@@ -625,7 +625,10 @@ class RealtimeClient {
   /// Creates and registers a new channel for [topic].
   ///
   /// If a channel for [topic] is already registered and not leaving, that
-  /// channel is returned instead and [config] is ignored.
+  /// channel is returned instead, with the listeners already added to it.
+  /// Throws a [StateError] if that channel was created with other options
+  /// than [config]; remove it with [removeChannel] before creating the topic
+  /// again with new options.
   ///
   /// Call `RealtimeChannel.subscribe` on the result to join it.
   RealtimeChannel channel(
@@ -638,6 +641,13 @@ class RealtimeClient {
       (channel) => channel.topic == realtimeTopic && !channel.isLeaving,
     );
     if (existing != null) {
+      if (existing.config != config) {
+        throw StateError(
+          "A channel for the topic '$topic' is already registered with other "
+          'options. Remove it with removeChannel() before creating it again '
+          'with new options.',
+        );
+      }
       return existing;
     }
     final newChannel = RealtimeChannel(realtimeTopic, this, config: config);
