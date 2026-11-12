@@ -44,6 +44,17 @@ void main() {
       expect(rows, [
         {'id': 1},
       ]);
+      expect(httpClient.requestsTo('/rest/v1/my table/2026'), hasLength(1));
+    });
+
+    test('a path that is not UTF-8 is matched as sent', () async {
+      httpClient
+        ..stubEdgeFunction('%FF', body: {'ok': true})
+        ..stub({}, path: '/rest/v1/todos');
+
+      final response = await supabase.functions.invoke('%FF');
+
+      expect(response.data, {'ok': true});
     });
 
     test('records the payload an insert sent', () async {

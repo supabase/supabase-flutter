@@ -104,8 +104,7 @@ class _Stub {
       return false;
     }
     if (path != null &&
-        !_pathMatches(request.url.path, path!) &&
-        !_pathMatches(Uri.decodeFull(request.url.path), path!) &&
+        !_urlPathMatches(request.url, path!) &&
         request.url.path != bareEndpoint) {
       return false;
     }
@@ -160,6 +159,20 @@ bool _pathMatches(String requestPath, String stubPath) {
   }
   final boundary = requestPath.length - stubPath.length;
   return stubPath.startsWith('/') || requestPath[boundary - 1] == '/';
+}
+
+/// Whether the path of [url] matches [stubPath], either as sent or
+/// percent-decoded, so `/rest/v1/my table` matches the `/rest/v1/my%20table`
+/// a client sends. A path that does not decode as UTF-8 is matched as sent.
+bool _urlPathMatches(Uri url, String stubPath) {
+  if (_pathMatches(url.path, stubPath)) {
+    return true;
+  }
+  try {
+    return _pathMatches(Uri.decodeFull(url.path), stubPath);
+  } on FormatException {
+    return false;
+  }
 }
 
 bool _methodMatches(String requestMethod, HttpMethod? method) {
@@ -224,8 +237,8 @@ class MockSupabaseHttpClient extends BaseClient {
   @override
   void close() => _isClosed = true;
 
-  /// The answered requests whose URL path ends in [path], optionally
-  /// narrowed to [method], oldest first.
+  /// The answered requests whose URL path, as sent or percent-decoded, ends
+  /// in [path], optionally narrowed to [method], oldest first.
   ///
   /// ```dart
   /// final inserts = httpClient.requestsTo(
@@ -238,7 +251,7 @@ class MockSupabaseHttpClient extends BaseClient {
     return requests
         .where(
           (request) =>
-              _pathMatches(request.url.path, path) &&
+              _urlPathMatches(request.url, path) &&
               _methodMatches(request.method, method),
         )
         .toList();
