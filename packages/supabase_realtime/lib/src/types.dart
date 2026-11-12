@@ -322,27 +322,21 @@ class RealtimeChannelConfig {
 
   /// Converts this to the shape sent when joining the channel.
   Map<String, dynamic> toMap() {
-    return {'config': joinConfig(enablePresence: presenceEnabled)};
-  }
-
-  /// The `config` sent when joining the channel, with presence enabled when
-  /// [enablePresence] is `true`.
-  @internal
-  Map<String, Object> joinConfig({required bool enablePresence}) {
     return {
-      'broadcast': {
-        'ack': ack,
-        'self': self,
-        'replay': ?replay?.toMap(),
-        if (replicationReady) 'replication_ready': true,
+      'config': {
+        'broadcast': _broadcastJson,
+        'presence': {'key': presenceKey, 'enabled': presenceEnabled},
+        'private': private,
       },
-      'presence': {
-        'key': presenceKey,
-        'enabled': enablePresence,
-      },
-      'private': private,
     };
   }
+
+  Map<String, Object> get _broadcastJson => {
+    'ack': ack,
+    'self': self,
+    'replay': ?replay?.toMap(),
+    if (replicationReady) 'replication_ready': true,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -367,6 +361,49 @@ class RealtimeChannelConfig {
     replicationReady,
     v2BroadcastCompatibility,
   );
+}
+
+/// The payload of the request that joins a channel.
+@internal
+class ChannelJoinPayload {
+  const ChannelJoinPayload({
+    required this.config,
+    required this.presenceEnabled,
+    this.postgresChanges = const [],
+    this.accessToken,
+    this.version,
+  });
+
+  /// The options the channel was created with.
+  final RealtimeChannelConfig config;
+
+  /// Whether the server should track presence on the channel, either because
+  /// [RealtimeChannelConfig.presenceEnabled] is set or because a presence
+  /// listener was added.
+  final bool presenceEnabled;
+
+  /// The Postgres changes the channel listens to.
+  final List<ChannelFilter> postgresChanges;
+
+  /// The access token the server authorizes the join with.
+  final String? accessToken;
+
+  /// The client version sent along with the access token.
+  final String? version;
+
+  /// The JSON sent as the payload of the join.
+  Map<String, Object> toJson() => {
+    'config': {
+      'broadcast': config._broadcastJson,
+      'presence': {'key': config.presenceKey, 'enabled': presenceEnabled},
+      'postgres_changes': [
+        for (final filter in postgresChanges) filter.toMap(),
+      ],
+      'private': config.private,
+    },
+    'access_token': ?accessToken,
+    'version': ?version,
+  };
 }
 
 /// Payload of a `system` event emitted by the server.

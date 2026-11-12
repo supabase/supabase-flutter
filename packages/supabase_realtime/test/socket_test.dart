@@ -553,6 +553,7 @@ void main() {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
+          'postgres_changes': <Object>[],
           'private': false,
         },
       });
@@ -1135,10 +1136,7 @@ void main() {
 
   group('setAccessToken', () {
     final token = generateJwt();
-    final updateJoinPayload = {
-      'access_token': token,
-      'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
-    };
+    final version = RealtimeConstants.defaultHeaders['X-Client-Info'];
     final pushPayload = {'access_token': token};
 
     test(
@@ -1175,8 +1173,12 @@ void main() {
 
         expect(mockedSocket.accessToken, token);
 
-        verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
-        verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
+        verify(
+          () => channel1.updateJoinAccessToken(token, version: version),
+        ).called(1);
+        verify(
+          () => channel2.updateJoinAccessToken(token, version: version),
+        ).called(1);
         verify(
           () => channel1.push(ChannelEvent.accessToken, pushPayload),
         ).called(1);
@@ -1229,23 +1231,19 @@ void main() {
 
         const authToken = 'sb-key';
         final expectedPushPayload = {'access_token': authToken};
-        final expectedUpdateJoinPayload = {
-          'access_token': authToken,
-          'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
-        };
 
         await mockedSocket.setAccessToken(authToken);
 
         expect(mockedSocket.accessToken, authToken);
 
         verify(
-          () => channel1.updateJoinPayload(expectedUpdateJoinPayload),
+          () => channel1.updateJoinAccessToken(authToken, version: version),
         ).called(1);
         verify(
-          () => channel2.updateJoinPayload(expectedUpdateJoinPayload),
+          () => channel2.updateJoinAccessToken(authToken, version: version),
         ).called(1);
         verify(
-          () => channel3.updateJoinPayload(expectedUpdateJoinPayload),
+          () => channel3.updateJoinAccessToken(authToken, version: version),
         ).called(1);
 
         verify(

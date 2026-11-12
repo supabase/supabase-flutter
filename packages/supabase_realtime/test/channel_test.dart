@@ -41,6 +41,7 @@ void main() {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
+          'postgres_changes': <Object>[],
           'private': false,
         },
       });
@@ -61,6 +62,7 @@ void main() {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
+          'postgres_changes': <Object>[],
           'private': true,
         },
       });
@@ -81,6 +83,7 @@ void main() {
             'replication_ready': true,
           },
           'presence': {'key': '', 'enabled': false},
+          'postgres_changes': <Object>[],
           'private': false,
         },
       });
@@ -1364,9 +1367,11 @@ void main() {
 
         channel.onPresenceSync.listen((payload) {});
 
+        expect(channel.joinedOnce, isFalse);
+        expect(channel.isClosed, isTrue);
         expect(
           channel.joinPush.payload['config']['presence']['enabled'],
-          isFalse,
+          isTrue,
         );
       },
     );

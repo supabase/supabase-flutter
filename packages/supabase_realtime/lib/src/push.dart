@@ -34,7 +34,16 @@ class Push {
     this._event, [
     Map<String, dynamic> payload = const {},
     this._timeout = RealtimeConstants.defaultTimeout,
-  ]) : _payload = payload;
+  ]) : _buildPayload = (() => payload);
+
+  /// Creates a push whose payload is built when it is sent, so that every
+  /// resend carries the current state of the channel.
+  Push.lazy(
+    this._channel,
+    this._event,
+    this._buildPayload, [
+    this._timeout = RealtimeConstants.defaultTimeout,
+  ]);
   Timer? _timeoutTimer;
   String _ref = '';
 
@@ -53,15 +62,14 @@ class Push {
   /// The event, for example [ChannelEvent.join]
   final ChannelEvent _event;
 
-  Map<String, dynamic> _payload;
+  final Map<String, dynamic> Function() _buildPayload;
 
-  /// The payload, for example `{user_id: 123}`, replaced through
-  /// [updatePayload].
+  /// The payload, for example `{user_id: 123}`.
   ///
   /// The view is unmodifiable at the top level only: values can hold binary
   /// data such as [Uint8List], which a recursive wrap would copy into plain
   /// lists and thereby change its type.
-  Map<String, dynamic> get payload => UnmodifiableMapView(_payload);
+  Map<String, dynamic> get payload => UnmodifiableMapView(_buildPayload());
 
   /// The push timeout
   Duration _timeout;
@@ -91,16 +99,12 @@ class Push {
       RealtimeMessage.outgoing(
         topic: _channel.topic,
         event: _event,
-        payload: _payload,
+        payload: _buildPayload(),
         ref: ref,
         joinRef: _channel.joinRef,
       ),
     );
     onSent?.call();
-  }
-
-  void updatePayload(Map<String, dynamic> newPayload) {
-    _payload = {..._payload, ...newPayload};
   }
 
   Push receive(PushStatus status, Callback callback) {

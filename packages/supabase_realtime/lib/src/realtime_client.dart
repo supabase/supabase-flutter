@@ -1046,10 +1046,10 @@ class RealtimeClient {
     // from [_channels].
     for (final channel in _channels.toList()) {
       if (tokenToSend != null) {
-        channel.updateJoinPayload({
-          'access_token': tokenToSend,
-          'version': RealtimeConstants.defaultHeaders[HttpHeader.clientInfo],
-        });
+        channel.updateJoinAccessToken(
+          tokenToSend,
+          version: RealtimeConstants.defaultHeaders[HttpHeader.clientInfo],
+        );
       }
       if (channel.joinedOnce && channel.isJoined) {
         channel.push(ChannelEvent.accessToken, {'access_token': tokenToSend});
@@ -1228,7 +1228,7 @@ class RealtimeClient {
         // channel from [_channels] synchronously.
         final channelsSnapshot = _channels.toList();
         for (final channel in channelsSnapshot) {
-          channel.updateJoinPayload({'access_token': resolvedToken});
+          channel.updateJoinAccessToken(resolvedToken);
         }
         _sendBuffer.clear();
         for (final channel in channelsSnapshot) {

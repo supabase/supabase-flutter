@@ -36,10 +36,10 @@ class RealtimeChannel {
        ) {
     broadcastEndpointUrl = '${httpEndpointUrl(socket.endpoint)}/api/broadcast';
 
-    _joinPush = Push(
+    _joinPush = Push.lazy(
       this,
       ChannelEvent.join,
-      config.toMap(),
+      () => _joinPayload.toJson(),
       _timeout,
     );
     _rejoinTimer = RetryTimer(
@@ -209,6 +209,12 @@ class RealtimeChannel {
   /// Whether the last join sent to the server asked it to enable presence.
   bool _joinRequestedPresence = false;
 
+  /// The access token sent with the join.
+  String? _joinAccessToken;
+
+  /// The client version sent with the join.
+  String? _joinVersion;
+
   /// Whether the server rejected the last join with an error that a retry
   /// cannot fix, such as a row level security policy denying the topic.
   @internal
@@ -276,27 +282,18 @@ class RealtimeChannel {
   bool get _presenceEnabled =>
       config.presenceEnabled || (_bindings['presence']?.isNotEmpty ?? false);
 
-  /// The `config` of the join payload, built from [config] and the bindings
-  /// registered so far.
-  Map<String, Object> _joinConfig() {
-    return {
-      ...config.joinConfig(enablePresence: _presenceEnabled),
-      'postgres_changes': [
-        for (final binding in _bindings['postgres_changes'] ?? [])
-          binding.filter.toMap(),
-      ],
-    };
-  }
-
-  /// Adds presence to the join payload of a subscribed channel, and rejoins
-  /// a joined channel whose join did not ask for presence.
-  void _updatePresenceInJoin() {
-    if (!_joinedOnce) {
-      return;
-    }
-    updateJoinPayload({'config': _joinConfig()});
-    _rejoinIfPresenceMissing();
-  }
+  /// The payload of the next join, built from [config], the bindings
+  /// registered so far and the access token.
+  ChannelJoinPayload get _joinPayload => ChannelJoinPayload(
+    config: config,
+    presenceEnabled: _presenceEnabled,
+    postgresChanges: [
+      for (final binding in _bindings['postgres_changes'] ?? <Binding>[])
+        binding.filter,
+    ],
+    accessToken: _joinAccessToken,
+    version: _joinVersion,
+  );
 
   /// Rejoins a joined channel whose join did not ask for presence although a
   /// presence listener was added since, for example while the join was in
@@ -375,10 +372,7 @@ class RealtimeChannel {
       }
     });
 
-    updateJoinPayload({
-      'config': _joinConfig(),
-      'access_token': ?socket.accessToken,
-    });
+    _joinAccessToken = socket.accessToken ?? _joinAccessToken;
 
     _joinedOnce = true;
     rejoin(timeout ?? _timeout);
@@ -781,7 +775,7 @@ class RealtimeChannel {
       (payload) =>
           fromJson(jsonObject(payload, description: 'the presence payload')),
     );
-    _updatePresenceInJoin();
+    _rejoinIfPresenceMissing();
     return stream;
   }
 
@@ -1217,10 +1211,12 @@ class RealtimeChannel {
       HttpHeader.authorization: 'Bearer ${socket.accessToken}',
   };
 
-  /// Merges [payload] into the join request sent to the server.
+  /// Sends [accessToken] with the next join, and [version] as the client
+  /// version when given.
   @internal
-  void updateJoinPayload(Map<String, dynamic> payload) {
-    _joinPush.updatePayload(payload);
+  void updateJoinAccessToken(String accessToken, {String? version}) {
+    _joinAccessToken = accessToken;
+    _joinVersion = version ?? _joinVersion;
   }
 
   /// Leaves the channel
