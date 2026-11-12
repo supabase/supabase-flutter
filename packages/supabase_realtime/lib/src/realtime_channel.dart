@@ -300,11 +300,13 @@ class RealtimeChannel {
 
   /// Rejoins a joined channel whose join did not ask for presence although a
   /// presence listener was added since, for example while the join was in
-  /// flight.
-  void _rejoinIfPresenceMissing() {
-    if (isJoined && _presenceEnabled && !_joinRequestedPresence) {
-      rejoin();
+  /// flight, and returns whether it rejoined.
+  bool _rejoinIfPresenceMissing() {
+    if (!isJoined || !_presenceEnabled || _joinRequestedPresence) {
+      return false;
     }
+    rejoin();
+    return true;
   }
 
   /// Subscribes to receive real-time changes
@@ -385,8 +387,11 @@ class RealtimeChannel {
         .receive(
           PushStatus.ok,
           (response) {
-            _handleJoinOk(jsonObject(response, description: 'the join reply'));
-            _rejoinIfPresenceMissing();
+            if (!_rejoinIfPresenceMissing()) {
+              _handleJoinOk(
+                jsonObject(response, description: 'the join reply'),
+              );
+            }
           },
         )
         .receive(PushStatus.error, (error) {

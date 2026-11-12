@@ -1312,8 +1312,10 @@ void main() {
     });
 
     test('rejoins with presence when it is added while the join is in '
-        'flight', () {
+        'flight', () async {
       channel = RealtimeChannel('topic', socket);
+      final statuses = <RealtimeSubscribeStatus>[];
+      channel.onStatusChange.listen((change) => statuses.add(change.status));
       channel.subscribe();
       final joinRef = channel.joinRef;
 
@@ -1326,6 +1328,12 @@ void main() {
         channel.joinPush.payload['config']['presence']['enabled'],
         isTrue,
       );
+
+      channel.joinPush.trigger(PushStatus.ok, {});
+      await pumpEventQueue();
+
+      expect(channel.isJoined, isTrue);
+      expect(statuses, [RealtimeSubscribeStatus.subscribed]);
     });
 
     test('does not rejoin when presence is added to a join that already '
