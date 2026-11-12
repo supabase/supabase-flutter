@@ -1,0 +1,81 @@
+name: Pana
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.action == 'edited' && !github.event.changes.title && !github.event.changes.base && '-body-edit' || '' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect packages to score
+    if: ${{ github.event.action != 'edited' || github.event.changes.title || github.event.changes.base }}
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.detect.outputs.packages }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Detect packages to score
+        id: detect
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+
+          dart pub global activate melos
+
+          CHANGED_FILES=$(git diff --name-only "$BASE...HEAD")
+          if [[ "$TITLE" == chore\(release\):* ]] \
+              || grep -qE '^(\.github/workflows/pana\.yml|(packages/)?\.(git|pub)ignore)$' <<< "$CHANGED_FILES"; then
+            echo "Scoring every published package."
+            PACKAGES=$(melos list --no-private --json | jq -c '[.[].name]')
+          else
+            PACKAGES=$(melos list --no-private --json --diff="$BASE...HEAD" --include-dependents | jq -c '[.[] | select(.private | not) | .name]')
+          fi
+
+          echo "Packages to score: $PACKAGES"
+          echo "packages=$PACKAGES" >> "$GITHUB_OUTPUT"
+
+  pana:
+    name: Pana (${{ matrix.package }})
+    needs: changes
+    if: ${{ needs.changes.outputs.packages != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.changes.outputs.packages) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          cache: true
+
+      - name: Score the package with pana
+        uses: bluefireteam/pana_workspace@39adcf363538c00f60c1533a89373958bcbd3941 # v0.1.1
+        with:
+          packages: ${{ matrix.package }}
