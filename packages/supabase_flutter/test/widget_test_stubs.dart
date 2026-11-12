@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,8 +21,8 @@ class _MockWidgetState extends State<MockWidget> {
   @override
   Widget build(BuildContext context) {
     return isSignedIn
-        ? TextButton(
-            onPressed: () {
+        ? GestureDetector(
+            onTap: () {
               unawaited(
                 Supabase.instance.client.auth.signOut().catchError((_) {}),
               );
