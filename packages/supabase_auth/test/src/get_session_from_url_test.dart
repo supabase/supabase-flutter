@@ -19,6 +19,7 @@ void main() {
       url: 'https://example.supabase.co',
       httpClient: MockSupabaseHttpClient()..stubUser(),
       asyncStorage: TestAsyncStorage(),
+      flowType: AuthFlowType.implicit,
     );
   });
 
@@ -58,6 +59,83 @@ void main() {
         expect(response.redirectType, redirectType);
       });
     }
+
+    test(
+      'stores the user of an email_change link and emits userUpdated',
+      () async {
+        final implicitClient = AuthClient(
+          url: 'https://example.supabase.co',
+          httpClient: MockSupabaseHttpClient()
+            ..stubUser(user: testUserJson(email: 'new@email.com')),
+          asyncStorage: TestAsyncStorage(),
+          flowType: AuthFlowType.implicit,
+        );
+        addTearDown(implicitClient.dispose);
+        final event = implicitClient.onAuthStateChange
+            .firstWhere(
+              (state) => state.event != AuthChangeEvent.initialSession,
+            )
+            .then((state) => state.event);
+
+        final response = await implicitClient.getSessionFromUrl(
+          _callbackUrl('3600', type: 'email_change'),
+        );
+
+        expect(response.session.user.email, 'new@email.com');
+        expect(implicitClient.currentUser?.email, 'new@email.com');
+        expect(await event, AuthChangeEvent.userUpdated);
+      },
+    );
+
+    group('with the pkce flow', () {
+      late MockSupabaseHttpClient httpClient;
+      late AuthClient pkceClient;
+
+      setUp(() {
+        httpClient = MockSupabaseHttpClient()..stubUser();
+        pkceClient = AuthClient(
+          url: 'https://example.supabase.co',
+          httpClient: httpClient,
+          asyncStorage: TestAsyncStorage(),
+        );
+        addTearDown(pkceClient.dispose);
+      });
+
+      for (final url in [
+        _callbackUrl('3600'),
+        _callbackUrl('3600', type: 'recovery'),
+        Uri.parse(
+          'myapp://login-callback?access_token=my_access_token'
+          '&expires_in=3600&refresh_token=my_refresh_token&token_type=bearer',
+        ),
+      ]) {
+        test('rejects the tokens of the implicit flow link $url', () async {
+          final events = <AuthChangeEvent>[];
+          final subscription = pkceClient.onAuthStateChange.listen(
+            (state) => events.add(state.event),
+            onError: (_) {},
+          );
+          addTearDown(subscription.cancel);
+
+          await expectLater(
+            pkceClient.getSessionFromUrl(url),
+            throwsA(
+              isA<AuthPKCEGrantCodeExchangeException>().having(
+                (exception) => exception.message,
+                'message',
+                'The URL carries the tokens of an implicit flow, which a '
+                    'client using the pkce flow does not accept.',
+              ),
+            ),
+          );
+          await pumpEventQueue();
+
+          expect(httpClient.requests, isEmpty);
+          expect(pkceClient.currentSession, isNull);
+          expect(events, [AuthChangeEvent.initialSession]);
+        });
+      }
+    });
 
     test('reports a PKCE password recovery like an implicit one', () async {
       final httpClient = MockSupabaseHttpClient()

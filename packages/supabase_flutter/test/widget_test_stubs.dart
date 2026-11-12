@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links_platform_interface/app_links_platform_interface.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -190,4 +191,14 @@ Future<void> sendAppLink(String link) {
         const StandardMethodCodec().encodeSuccessEnvelope(link),
         (_) {},
       );
+}
+
+/// Reports [initialLink] as the URL the page was loaded with.
+class FakeInitialAppLinks extends AppLinksPlatform {
+  FakeInitialAppLinks(this.initialLink);
+
+  final Uri initialLink;
+
+  @override
+  Future<Uri?> getInitialLink() async => initialLink;
 }

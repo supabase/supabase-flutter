@@ -841,12 +841,13 @@ Set them up when you use any of these:
 
 `supabase_flutter` handles deep links on Android, iOS, the web, macOS, Windows
 and Linux. It completes the sign in itself when the app is opened through a
-link carrying a `code` (the PKCE flow, the default) or an `access_token`.
+link carrying a `code` (the PKCE flow, the default), or an `access_token` with
+the implicit flow.
 
 By default, only auth redirects are treated as auth callbacks, by their
-parameters in the query or the fragment: an `access_token`, at least two of
-`error`, `error_code` and `error_description`, or a `code` while a sign in
-started on this device waits for it. Other links, such as
+parameters in the query or the fragment: an `access_token` with the implicit
+flow, at least two of `error`, `error_code` and `error_description`, or a
+`code` while a sign in started on this device waits for it. Other links, such as
 `myapp://invite?code=X` with no sign in pending, are left to your app. To
 decide yourself, pass `detectSessionInUriPredicate`, for example to tell the
 auth callbacks apart by the redirect URL they arrive on. On the web the predicate receives
@@ -856,7 +857,7 @@ the URL of the page, so check only the parameters there:
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _authParameters = {'access_token', 'code', 'error_description'};
+const _authParameters = {'code', 'error_description'};
 
 bool _isAuthCallback(Uri uri) {
   if (!kIsWeb && uri.host != 'login-callback') return false;
@@ -881,6 +882,11 @@ Future<void> initializeSupabase() async {
 
 `detectSessionInUri: false` turns the handling off, for example when the app
 calls `exchangeCodeForSession` itself.
+
+With the PKCE flow a link with an `access_token` never signs the user in,
+since nothing ties its tokens to a sign in started on the device. With the
+implicit flow any such link does, so whoever sends the user a link with the
+tokens of their own account can sign the app in to that account.
 
 ### Dashboard configuration
 

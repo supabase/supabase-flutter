@@ -66,7 +66,7 @@ void main() {
     );
   });
 
-  group('Deep Link with implicit token while PKCE flow is configured', () {
+  group('Deep Link with an implicit token with the implicit flow', () {
     late final MockSupabaseHttpClient getUserHttpClient;
     late final Future<AuthState> userUpdatedState;
 
@@ -86,6 +86,7 @@ void main() {
         publishableKey: supabaseKey,
         httpClient: getUserHttpClient,
         authOptions: FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.implicit,
           asyncStorage: MockAsyncStorage(),
         ),
       );
@@ -395,6 +396,29 @@ void main() {
       });
     }
 
+    for (final link in [
+      'com.supabase://login-callback#access_token=A&refresh_token=R'
+          '&expires_in=3600&token_type=bearer',
+      'com.supabase://login-callback?access_token=A&refresh_token=R'
+          '&expires_in=3600&token_type=bearer',
+    ]) {
+      test('$link is ignored with the PKCE flow', () async {
+        final logged = Logger.root.onRecord.firstWhere(
+          (record) =>
+              record.message ==
+              'A client using the pkce flow does not accept the access_token '
+                  'of a deeplink',
+        );
+
+        await expectIgnored(link);
+
+        expect(
+          (await logged.timeout(const Duration(seconds: 5))).level,
+          Level.INFO,
+        );
+      });
+    }
+
     test('a link with a code received later is ignored when no PKCE flow is '
         'pending', () async {
       final httpClient = createPkceHttpClient();
@@ -488,6 +512,32 @@ void main() {
         (await nextAuthException()).message,
         'Code verifier could not be found in local storage.',
       );
+    });
+
+    test('an access_token link the custom predicate claims is rejected with '
+        'the PKCE flow', () async {
+      final httpClient = createGetUserHttpClient('attacker@email.com');
+      mockNativeAppLinks(
+        launchLink:
+            'com.supabase://login-callback#access_token=A&refresh_token=R'
+            '&expires_in=3600&token_type=bearer',
+      );
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        httpClient: httpClient,
+        authOptions: FlutterAuthClientOptions(
+          asyncStorage: MockAsyncStorage(),
+          detectSessionInUriPredicate: (uri) => true,
+        ),
+      );
+
+      expect(
+        await nextAuthException(),
+        isA<AuthPKCEGrantCodeExchangeException>(),
+      );
+      expect(httpClient.requests, isEmpty);
+      expect(Supabase.instance.client.auth.currentSession, isNull);
     });
   });
 
