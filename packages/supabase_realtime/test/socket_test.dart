@@ -573,24 +573,14 @@ void main() {
     });
 
     test('returns the registered channel for a topic in use', () {
-      final channel = socket.channel(
-        tTopic,
-        const RealtimeChannelConfig(
-          private: true,
-          replay: ReplayOption(since: 1, limit: 10),
-        ),
+      RealtimeChannelConfig config() => RealtimeChannelConfig(
+        private: true,
+        presenceKey: 'user-1',
+        replay: ReplayOption(since: 1, limit: 10),
       );
+      final channel = socket.channel(tTopic, config());
 
-      expect(
-        socket.channel(
-          tTopic,
-          const RealtimeChannelConfig(
-            private: true,
-            replay: ReplayOption(since: 1, limit: 10),
-          ),
-        ),
-        same(channel),
-      );
+      expect(socket.channel(tTopic, config()), same(channel));
       expect(socket.channels, [channel]);
     });
 
