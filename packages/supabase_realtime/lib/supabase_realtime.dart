@@ -16,4 +16,9 @@ export 'src/realtime_presence.dart' show Presence;
 export 'src/retry_timer.dart' show TimerCalculation;
 export 'src/transformers.dart' show PostgresColumn, PostgresType;
 export 'src/types.dart'
-    hide Binding, BindingCallback, ChannelFilter, RealtimeListenType;
+    hide
+        Binding,
+        BindingCallback,
+        ChannelFilter,
+        ChannelJoinPayload,
+        RealtimeListenType;
