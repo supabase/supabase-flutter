@@ -222,10 +222,10 @@ class RealtimeChannel {
 
   /// The `reason` of a join error reply, which the server sends as
   /// `<code>: <message>` or as a bare message.
-  static String _joinErrorReason(Object? error) {
-    final reason = error is Map ? error['reason'] : null;
-    return reason is String ? reason : '';
-  }
+  static String _joinErrorReason(Object? error) => switch (error) {
+    {'reason': final String reason} => reason,
+    _ => '',
+  };
 
   void _rejectJoin(String reason) {
     realtimeLogger.warning('Channel join rejected: $topic ($reason)');
@@ -361,12 +361,17 @@ class RealtimeChannel {
     // `subscribed` yet delivers nothing. Forward it as `channelError` so
     // consumers can detect and recover from the failed subscription.
     onEvents('system', const ChannelFilter(), (payload, _) {
-      if (payload is Map && payload['status'] == 'error') {
+      if (payload is! Map<String, dynamic>) {
+        return;
+      }
+      final system = RealtimeSystemPayload.fromJson(payload);
+      if (system.status == 'error') {
         _addStatus(
           RealtimeSubscribeStatus.channelError,
           RealtimeException(
-            payload['message']?.toString() ??
-                'postgres_changes subscription failed',
+            system.message.isEmpty
+                ? 'postgres_changes subscription failed'
+                : system.message,
           ),
         );
       }
@@ -436,45 +441,36 @@ class RealtimeChannel {
       _addStatus(RealtimeSubscribeStatus.subscribed);
       return;
     }
-    final clientPostgresBindings = _bindings['postgres_changes'];
-    final bindingsLength = clientPostgresBindings?.length ?? 0;
+    final echoedBindings = switch (serverPostgresFilters) {
+      final List<dynamic> filters => filters,
+      _ => const <dynamic>[],
+    };
     final newPostgresBindings = <Binding>[];
 
-    for (var i = 0; i < bindingsLength; i++) {
-      final clientPostgresBinding = clientPostgresBindings![i];
+    for (final (i, clientPostgresBinding)
+        in (_bindings['postgres_changes'] ?? <Binding>[]).indexed) {
+      final echoed = i < echoedBindings.length && echoedBindings[i] != null
+          ? _echoedBinding(
+              jsonObject(
+                echoedBindings[i],
+                description: 'element $i of "postgres_changes"',
+              ),
+            )
+          : null;
       final ChannelFilter(:event, :schema, :table, :filter) =
           clientPostgresBinding.filter;
-      final serverPostgresFilter = switch (serverPostgresFilters) {
-        final List<dynamic> filters when i < filters.length =>
-          switch (filters[i]) {
-            null => null,
-            final echoed => jsonObject(
-              echoed,
-              description: 'element $i of "postgres_changes"',
-            ),
-          },
-        _ => null,
-      };
 
       // NOTE: `select` is intentionally not part of this equality check
       // (mirroring supabase-js), so a server that echoes `select` back in a
       // slightly different shape does not force a spurious unsubscribe. The
       // client binding keeps its own `select` regardless.
-      if (serverPostgresFilter != null &&
-          serverPostgresFilter['event'] == event &&
-          serverPostgresFilter['schema'] == schema &&
-          serverPostgresFilter['table'] == table &&
-          serverPostgresFilter['filter'] == filter) {
-        newPostgresBindings.add(
-          clientPostgresBinding.copyWith(
-            id: switch (serverPostgresFilter['id']) {
-              final num id => id.toInt(),
-              final String id => int.tryParse(id),
-              _ => null,
-            },
-          ),
-        );
-      } else {
+      final expected = ChannelFilter(
+        event: event,
+        schema: schema,
+        table: table,
+        filter: filter,
+      );
+      if (echoed == null || echoed.filter != expected) {
         unawaited(unsubscribe());
         _addStatus(
           RealtimeSubscribeStatus.channelError,
@@ -485,11 +481,32 @@ class RealtimeChannel {
         );
         return;
       }
+      newPostgresBindings.add(clientPostgresBinding.copyWith(id: echoed.id));
     }
 
     _bindings['postgres_changes'] = newPostgresBindings;
 
     _addStatus(RealtimeSubscribeStatus.subscribed);
+  }
+
+  /// Reads a binding the server echoed back in its join reply, without its
+  /// `select`, which the reply is not checked against.
+  static ({ChannelFilter filter, int? id}) _echoedBinding(
+    Map<String, dynamic> echo,
+  ) {
+    return (
+      filter: ChannelFilter(
+        event: echo.field('event'),
+        schema: echo.field('schema'),
+        table: echo.field('table'),
+        filter: echo.field('filter'),
+      ),
+      id: switch (echo['id']) {
+        final num id => id.toInt(),
+        final String id => int.tryParse(id),
+        _ => null,
+      },
+    );
   }
 
   /// The current presence state, keyed by presence key.
