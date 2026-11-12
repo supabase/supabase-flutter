@@ -1,19 +1,26 @@
+import 'package:meta/meta.dart';
+
 /// Parses [supabaseUrl] and checks that it is safe to send the API key and the
 /// session of the user to.
 ///
 /// Throws an [ArgumentError] unless [supabaseUrl] is an absolute `https` URL,
 /// or an `http` URL whose host is a loopback host or [allowInsecureHttp] is
 /// set.
+@internal
 Uri parseSupabaseUrl(String supabaseUrl, {required bool allowInsecureHttp}) {
   final url = Uri.tryParse(supabaseUrl);
-  if (url != null && url.host.isNotEmpty) {
-    if (url.isScheme('https')) {
-      return url;
-    }
-    if (url.isScheme('http') &&
-        (allowInsecureHttp || _isLoopbackHost(url.host))) {
-      return url;
-    }
+  if (url == null || url.host.isEmpty) {
+    throw ArgumentError.value(
+      supabaseUrl,
+      'supabaseUrl',
+      'Must be an absolute URL with a host, such as '
+          'https://your-project.supabase.co',
+    );
+  }
+  if (url.isScheme('https') ||
+      (url.isScheme('http') &&
+          (allowInsecureHttp || _isLoopbackHost(url.host)))) {
+    return url;
   }
   throw ArgumentError.value(
     supabaseUrl,

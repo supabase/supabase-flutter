@@ -458,6 +458,11 @@ class Supabase {
       ...SupabaseFlutterConstants.defaultHeaders,
       ...?customHeaders,
     };
+    // Close any previous realtime client that may still be connected due to
+    // flutter web hot-restart, even when the new configuration is rejected.
+    if (kDebugMode) {
+      disposePreviousClient();
+    }
     final newClient = _client = SupabaseClient(
       supabaseUrl,
       supabaseKey,
@@ -475,10 +480,7 @@ class Supabase {
       interceptors: interceptors,
     );
 
-    // Close any previous realtime client that may still be connected due to
-    // flutter web hot-restart.
     if (kDebugMode) {
-      disposePreviousClient();
       markClientToDispose(newClient);
     }
 

@@ -14,11 +14,13 @@ void main() {
     return supabase;
   }
 
-  Matcher throwsInvalidUrl(String url) => throwsA(
-    isA<ArgumentError>()
-        .having((error) => error.name, 'name', 'supabaseUrl')
-        .having((error) => error.invalidValue, 'invalidValue', url),
-  );
+  Matcher throwsInvalidUrl(String url, {String message = 'Must be an https'}) =>
+      throwsA(
+        isA<ArgumentError>()
+            .having((error) => error.name, 'name', 'supabaseUrl')
+            .having((error) => error.invalidValue, 'invalidValue', url)
+            .having((error) => error.message, 'message', startsWith(message)),
+      );
 
   test('accepts an https url', () {
     final supabase = buildClient('https://abc.supabase.co');
@@ -57,19 +59,29 @@ void main() {
     });
   }
 
-  for (final url in [
-    '',
-    'abc.supabase.co',
-    'https://',
-    'https:///rest',
-    'ws://localhost:54321',
-    'ftp://abc.supabase.co',
-    'http://[',
-  ]) {
-    test('rejects "$url"', () {
+  for (final url in ['ws://localhost:54321', 'ftp://abc.supabase.co']) {
+    test('rejects the scheme of $url', () {
       expect(() => buildClient(url), throwsInvalidUrl(url));
     });
   }
+
+  for (final url in ['', 'abc.supabase.co', 'https://', 'https:///rest']) {
+    test('rejects "$url", which has no host', () {
+      expect(
+        () => buildClient(url),
+        throwsInvalidUrl(url, message: 'Must be an absolute URL'),
+      );
+    });
+  }
+
+  test('rejects a url that cannot be parsed', () {
+    const url = 'http://[';
+
+    expect(
+      () => buildClient(url),
+      throwsInvalidUrl(url, message: 'Must be an absolute URL'),
+    );
+  });
 
   group('with allowInsecureHttp', () {
     test('accepts http on any host', () {

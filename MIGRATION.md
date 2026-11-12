@@ -577,6 +577,8 @@ explicitly:
   and `initializeTestSupabase` throws when an earlier test did not dispose
 - [`Supabase.initialize` rejects a secret key](#supabaseinitialize-rejects-a-secret-key), so an
   app that passes a secret or `service_role` key fails to start
+- [The Supabase URL must use `https`](#the-supabase-url-must-use-https), so an `http` URL of a host
+  other than `localhost`, such as `10.0.2.2` from the Android emulator, throws an `ArgumentError`
 - [A web callback URL is exchanged after `Supabase.initialize` completes](#a-web-callback-url-is-exchanged-after-supabaseinitialize-completes)
 - [Deep links are only exchanged when they are auth redirects](#deep-links-are-only-exchanged-when-they-are-auth-redirects),
   so a `code` link with no pending PKCE flow no longer surfaces an `AuthException`
