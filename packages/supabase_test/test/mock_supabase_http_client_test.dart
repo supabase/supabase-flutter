@@ -31,6 +31,21 @@ void main() {
       expect(todos.single['task'], 'Ship it');
     });
 
+    test('answers a table whose name the client percent-encodes', () async {
+      httpClient.stubTable(
+        'my table/2026',
+        rows: [
+          {'id': 1},
+        ],
+      );
+
+      final rows = await supabase.from('my table/2026').select();
+
+      expect(rows, [
+        {'id': 1},
+      ]);
+    });
+
     test('records the payload an insert sent', () async {
       httpClient.stubTable('todos', method: HttpMethod.post, statusCode: 201);
 

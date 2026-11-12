@@ -105,6 +105,7 @@ class _Stub {
     }
     if (path != null &&
         !_pathMatches(request.url.path, path!) &&
+        !_pathMatches(Uri.decodeFull(request.url.path), path!) &&
         request.url.path != bareEndpoint) {
       return false;
     }
@@ -256,17 +257,19 @@ class MockSupabaseHttpClient extends BaseClient {
   /// A null [method] or [path] matches any method or path. [path] matches a
   /// request whose URL path is [path] or ends in it, ignoring the query, so a
   /// stub for `/rest/v1/todos` also answers a project served under a path
-  /// prefix. [query] narrows the match further to requests whose query
-  /// carries every one of its entries, so two stubs of the same endpoint can
-  /// answer differently filtered queries. An entry matches a key repeated in
-  /// the query when any of its values equals the entry, so
-  /// `{'id': 'lt.10'}` answers `.gt('id', 1).lt('id', 10)`. A [Uint8List]
-  /// body is sent as is with the content type `application/octet-stream`, any
-  /// other body is encoded as JSON, and a null [body] produces an empty
-  /// response body. [headers] are added to the response, and override the
-  /// content type. [times] limits how many requests the stub answers before
-  /// it stops matching, so consecutive stubs of the same endpoint can model
-  /// state that changes between calls.
+  /// prefix. The URL path is compared both as sent and percent-decoded, so a
+  /// stub for `/rest/v1/my table` answers the `/rest/v1/my%20table` the
+  /// client sends for `from('my table')`. [query] narrows the match further
+  /// to requests whose query carries every one of its entries, so two stubs
+  /// of the same endpoint can answer differently filtered queries. An entry
+  /// matches a key repeated in the query when any of its values equals the
+  /// entry, so `{'id': 'lt.10'}` answers `.gt('id', 1).lt('id', 10)`. A
+  /// [Uint8List] body is sent as is with the content type
+  /// `application/octet-stream`, any other body is encoded as JSON, and a
+  /// null [body] produces an empty response body. [headers] are added to the
+  /// response, and override the content type. [times] limits how many
+  /// requests the stub answers before it stops matching, so consecutive stubs
+  /// of the same endpoint can model state that changes between calls.
   void stub(
     Object? body, {
     HttpMethod? method,

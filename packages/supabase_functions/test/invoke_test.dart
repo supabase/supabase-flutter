@@ -207,6 +207,9 @@ void main() {
       '%2e%2e/auth',
       '.%2E/auth',
       'hello/%2E',
+      '..%2fadmin',
+      'hello/..%2F..%2Fauth',
+      '%2e%2e%5Cadmin',
     ]) {
       test('"$name" throws an ArgumentError', () async {
         await expectLater(functions.invoke(name), throwsArgumentError);

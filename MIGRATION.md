@@ -598,6 +598,8 @@ explicitly:
   so a catch of the transport exception no longer matches a token failure
 - [The request timeout bounds idle time, not the whole request](#the-request-timeout-bounds-idle-time-not-the-whole-request),
   so a response that keeps arriving can take longer than `requestTimeout`
+- [Names and ids in a request path are encoded](#names-and-ids-in-a-request-path-are-encoded), so
+  a name or id you percent-encoded yourself is encoded twice
 - [Iceberg catalog options are named and take an `abortSignal`](#iceberg-catalog-options-are-named-and-take-an-abortsignal),
   where a failing catalog configuration request now fails the operation
 - [Transforms that sent a different request now throw or narrow](#transforms-that-sent-a-different-request-now-throw-or-narrow),
@@ -2961,6 +2963,18 @@ Every `headers` getter returns an unmodifiable view, and mutating one throws an 
 Assigning `SupabaseClient.headers` propagates the new headers to every sub-client at once.
 `SupabaseStorageClient.vectors` builds a new client on each access, so it always carries the
 current headers.
+
+#### Names and ids in a request path are encoded
+
+A table, function, bucket or Iceberg name, and an id such as `factorId` or `passkeyId`, is
+percent-encoded as one segment of the request path, so a `/`, `?` or `..` in it can no longer reach
+another endpoint. Pass these values as they are. A value you encoded yourself, such as
+`from(Uri.encodeComponent(name))`, is now encoded twice and is not found.
+
+An empty value, `.` and `..` throw an `ArgumentError` before any request is sent. So does an
+`authorizationId` of the OAuth server API that holds anything other than letters, digits, `-` and
+`_`. `functions.invoke()` still sends a subpath and a query string in the function name, such as
+`invoke('api/users?page=2')`, but throws an `ArgumentError` for a name with a `.` or `..` segment.
 
 #### An `Authorization` header passed to `SupabaseClient` reaches the auth client
 

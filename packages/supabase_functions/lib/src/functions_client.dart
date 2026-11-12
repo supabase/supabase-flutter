@@ -411,12 +411,16 @@ class FunctionsClient {
       );
 
   static final _pathEnd = RegExp('[?#]');
-  static final _pathSeparator = RegExp(r'[/\\]');
+  static final _pathSeparator = RegExp(
+    r'[/\\]|%2f|%5c',
+    caseSensitive: false,
+  );
   static final _dotSegment = RegExp(r'^(\.|%2e){1,2}$', caseSensitive: false);
 
-  /// The URL of [functionName], checked so that `Uri.parse` cannot resolve it
-  /// to another function or endpoint, which it does for a `.` or `..`
-  /// segment, also when percent-encoded or separated by `\`.
+  /// The URL of [functionName], checked so that neither `Uri.parse` nor a
+  /// server that decodes the path first can resolve it to another function
+  /// or endpoint, which a `.` or `..` segment does, also when it is
+  /// percent-encoded or separated by `\`, `%2F` or `%5C`.
   Uri _functionUri(String functionName) {
     final path = functionName.split(_pathEnd).first;
     final segments = path.split(_pathSeparator);

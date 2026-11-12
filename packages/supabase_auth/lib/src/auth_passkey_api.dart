@@ -47,6 +47,10 @@ class AuthPasskeyApi {
   final AuthClient _client;
   final AuthFetch _fetch;
 
+  String _passkeyUrl(String passkeyId) =>
+      '${_client._url}/passkeys/'
+      '${encodePathSegment(passkeyId, name: 'passkeyId')}';
+
   /// Starts the registration of a new passkey for the signed in user.
   ///
   /// Pass the returned [PasskeyRegistrationOptionsResponse.options] to the
@@ -218,8 +222,7 @@ class AuthPasskeyApi {
     final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.requestObject(
-      '${_client._url}/passkeys/'
-      '${encodePathSegment(passkeyId, name: 'passkeyId')}',
+      _passkeyUrl(passkeyId),
       HttpMethod.patch,
       options: AuthRequestOptions(
         headers: _client._headers,
@@ -239,8 +242,7 @@ class AuthPasskeyApi {
     final accessToken = await _client._userAccessToken();
 
     await _fetch.request(
-      '${_client._url}/passkeys/'
-      '${encodePathSegment(passkeyId, name: 'passkeyId')}',
+      _passkeyUrl(passkeyId),
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _client._headers,

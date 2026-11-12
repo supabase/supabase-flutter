@@ -380,6 +380,25 @@ void main() {
       });
     }
 
+    test(
+      'throw an ArgumentError for an empty warehouse before any request',
+      () async {
+        final warehouseCatalog = IcebergRestCatalog(
+          baseUrl: '$supabaseUrl/storage/v1/iceberg',
+          warehouse: '',
+          httpClient: httpClient,
+          retryOptions: _noRetries,
+        );
+        stubOperation({'namespaces': []});
+
+        await expectLater(
+          warehouseCatalog.listNamespaces(),
+          throwsArgumentError,
+        );
+        expect(httpClient.requests, isEmpty);
+      },
+    );
+
     for (final name in ['', '.', '..']) {
       test('throw an ArgumentError for the table name "$name"', () async {
         stubOperation(<String, dynamic>{});

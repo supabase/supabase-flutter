@@ -213,6 +213,8 @@ class IcebergRestCatalog {
     if (warehouse == null) {
       return 'v1';
     }
+    final fallbackPrefix =
+        'v1/${encodePathSegment(warehouse, name: 'warehouse')}';
     final response = await _request(
       HttpMethod.get,
       'v1/config',
@@ -222,9 +224,7 @@ class IcebergRestCatalog {
     _idempotencyKeysSupported = config['idempotency-key-lifetime'] != null;
     final serverPrefix =
         _prefixOf(config['overrides']) ?? _prefixOf(config['defaults']);
-    return serverPrefix != null
-        ? 'v1/$serverPrefix'
-        : 'v1/${encodePathSegment(warehouse, name: 'warehouse')}';
+    return serverPrefix != null ? 'v1/$serverPrefix' : fallbackPrefix;
   }
 
   static String? _prefixOf(Object? properties) => switch (properties) {
