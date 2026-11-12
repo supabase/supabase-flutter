@@ -44,6 +44,7 @@ class FakeTusServer {
 
   final MockSupabaseHttpClient httpClient;
   int? length;
+  String location = uploadUrl;
   final received = BytesBuilder();
 
   Response _create(RecordedRequest request) {
@@ -56,7 +57,7 @@ class FakeTusServer {
         headers: {'tus-complete': '1', ..._completeHeaders},
       );
     }
-    return Response('', 201, headers: {'location': uploadUrl});
+    return Response('', 201, headers: {'location': location});
   }
 
   Response _head(RecordedRequest request) {
@@ -742,6 +743,22 @@ void main() {
     expect(jsonDecode((await recordStorage.getItem(key))!), unreadable);
   });
 
+  test(
+    'keeps the upload on the storage origin when Location names another',
+    () async {
+      server.location = 'https://storage.example:8443$uploadUrlPath';
+
+      await storage.from('videos').resumableUploadBinary('clip.mp4', data).done;
+
+      expect(server.received.toBytes(), data);
+      expect(patches(), isNotEmpty);
+      expect(
+        httpClient.requests.map((request) => request.url.origin).toSet(),
+        {'http://localhost'},
+      );
+    },
+  );
+
   test('uploads with a signed upload token and the client headers', () async {
     await storage
         .from('videos')
@@ -892,6 +909,29 @@ void main() {
       await expectLater(resumed, throwsA(isA<StorageException>()));
       expect(heads(), isEmpty);
       expect(await restarted.resumableUploads(), isEmpty);
+    });
+
+    test('skips a record with an upload URL on another origin', () async {
+      const key = 'sb-localhost-resumable-uploads';
+      final id = await interruptedUpload();
+      final stored =
+          jsonDecode((await recordStorage.getItem(key))!)
+              as Map<String, dynamic>;
+      (stored[id] as Map<String, dynamic>)['uploadUrl'] =
+          'https://storage.example$uploadUrlPath';
+      await recordStorage.setItem(key, jsonEncode(stored));
+      final restarted = createClient();
+      final sent = httpClient.requests.length;
+
+      expect(await restarted.resumableUploads(), isEmpty);
+      await expectLater(
+        restarted.resumeUploadBinary(id, data),
+        throwsA(isA<StorageException>()),
+      );
+      await restarted.discardResumableUpload(id);
+
+      expect(httpClient.requests.skip(sent), isEmpty);
+      expect(jsonDecode((await recordStorage.getItem(key))!), stored);
     });
 
     test('discards a record without the data', () async {
