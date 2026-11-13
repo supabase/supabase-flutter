@@ -68,7 +68,10 @@ class Fetch {
           'StorageTransportException (${error.runtimeType}) for '
           '${url?.loggable}',
     );
-    return StorageTransportException('Request failed: $error', cause: error);
+    return StorageTransportException(
+      'Request failed: ${loggableErrorText(error)}',
+      cause: error,
+    );
   }
 
   /// Sends [request] under [idleTimeout], wrapping a failure to get a

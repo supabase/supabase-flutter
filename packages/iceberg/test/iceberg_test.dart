@@ -163,6 +163,35 @@ void main() {
       expect(operations(), isEmpty);
     });
 
+    test('keeps the request query out of a network failure', () async {
+      httpClient
+        ..stubHandler(
+          (request) => throw ClientException('Connection refused', request.url),
+        )
+        ..stub(_config(), method: HttpMethod.get, path: '/v1/config');
+      final httpCatalog = IcebergRestCatalog(
+        baseUrl: 'http://localhost/storage/v1/iceberg',
+        warehouse: 'warehouse',
+        httpClient: httpClient,
+        retryOptions: _noRetries,
+      );
+      final withoutQuery = allOf(
+        contains('http://localhost/storage/v1/iceberg/v1/warehouse/namespaces'),
+        isNot(contains('secret-page-token')),
+      );
+
+      await expectLater(
+        httpCatalog.listNamespaces(
+          options: const ListNamespacesOptions(pageToken: 'secret-page-token'),
+        ),
+        throwsA(
+          isA<IcebergNetworkException>()
+              .having((error) => error.message, 'message', withoutQuery)
+              .having((error) => '$error', 'toString', withoutQuery),
+        ),
+      );
+    });
+
     test('fetches the config again after a failure, then caches it', () async {
       httpClient
         ..stub({'namespaces': []})

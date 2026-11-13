@@ -131,6 +131,28 @@ void main() {
     );
   });
 
+  test('the transport mixin keeps the query of the cause out', () {
+    const exception = TestTransportException(
+      'offline',
+      cause: 'uri=https://example.com/rest/v1/users?email=eq.alice@a.com',
+    );
+
+    expect(
+      exception.toString(),
+      'TestTransportException(message: offline, errorCode: null, '
+      'requestId: null, cause: uri=https://example.com/rest/v1/users)',
+    );
+  });
+
+  test('AccessTokenException keeps the query of the cause out', () {
+    final exception = AccessTokenException(
+      'uri=https://example.com/token?client_secret=secret',
+    );
+
+    expect(exception.message, isNot(contains('secret')));
+    expect(exception.toString(), isNot(contains('secret')));
+  });
+
   test('subtypes can replace toString with their own fields', () {
     const exception = DetailedException('boom', details: 'stack');
 

@@ -330,7 +330,7 @@ class IcebergRestCatalog {
       throw IcebergNetworkException('Request timed out', cause: error);
     } catch (error) {
       throw IcebergNetworkException(
-        'Network request failed: $error',
+        'Network request failed: ${loggableErrorText(error)}',
         cause: error,
       );
     }
@@ -347,7 +347,7 @@ class IcebergRestCatalog {
       if (isSuccessStatusCode(streamedResponse.statusCode) ||
           error is TimeoutException) {
         throw IcebergNetworkException(
-          'Failed to read the response: $error',
+          'Failed to read the response: ${loggableErrorText(error)}',
           cause: error,
         );
       }

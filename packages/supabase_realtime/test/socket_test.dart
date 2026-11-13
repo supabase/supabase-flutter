@@ -191,7 +191,16 @@ void main() {
 
       unawaited(erroneousSocket.connect());
 
-      await expectLater(errorFuture, throwsA(isA<WebSocketException>()));
+      await expectLater(
+        errorFuture,
+        throwsA(
+          isA<RealtimeTransportException>().having(
+            (error) => error.cause,
+            'cause',
+            isA<WebSocketException>(),
+          ),
+        ),
+      );
     });
 
     test('reports the close code and reason with the closed status', () async {

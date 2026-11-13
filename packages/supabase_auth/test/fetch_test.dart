@@ -114,6 +114,35 @@ void main() {
     });
   });
 
+  group('AuthFetch transport failure', () {
+    test('keeps the request query out of its text', () async {
+      final client = MockSupabaseHttpClient()
+        ..stubHandler(
+          (request) => throw ClientException('Connection refused', request.url),
+        );
+      final withoutQuery = allOf(
+        contains('$_mockUrl/admin/users'),
+        isNot(contains('alice')),
+      );
+
+      await expectLater(
+        AuthFetch(client).request(
+          '$_mockUrl/admin/users',
+          HttpMethod.get,
+          options: AuthRequestOptions(
+            headers: const {},
+            query: const {'email': 'alice@example.com'},
+          ),
+        ),
+        throwsA(
+          isA<AuthRetryableFetchException>()
+              .having((error) => error.message, 'message', withoutQuery)
+              .having((error) => '$error', 'toString', withoutQuery),
+        ),
+      );
+    });
+  });
+
   group('AuthFetch API version header', () {
     test('sends the supported API version', () async {
       final client = MockSupabaseHttpClient()..stub({});

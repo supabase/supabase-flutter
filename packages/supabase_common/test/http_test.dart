@@ -96,6 +96,55 @@ void main() {
     });
   });
 
+  group('loggableErrorText', () {
+    test('keeps the query of a request URL out of a ClientException', () {
+      final error = ClientException(
+        'Connection refused',
+        Uri.parse('https://example.com/rest/v1/users?email=eq.alice@a.com'),
+      );
+
+      expect(
+        loggableErrorText(error),
+        'ClientException: Connection refused, '
+        'uri=https://example.com/rest/v1/users',
+      );
+    });
+
+    test('keeps the quotes around a quoted URL', () {
+      const text =
+          "WebSocketException: Connection to 'http://localhost/realtime/v1/"
+          "websocket?apikey=the-key&vsn=2.0.0#' was not upgraded to websocket";
+
+      expect(
+        loggableErrorText(text),
+        "WebSocketException: Connection to 'http://localhost/realtime/v1/"
+        "websocket' was not upgraded to websocket",
+      );
+    });
+
+    test('drops a quote in the query of a quoted URL with the query', () {
+      const text = "to 'http://localhost/users?name=O'Brien&apikey=key' failed";
+
+      expect(loggableErrorText(text), "to 'http://localhost/users' failed");
+    });
+
+    test('drops the user info and fragment of every URL', () {
+      const text =
+          'first https://user:pass@example.com/a#access_token=x and '
+          'then http://example.com/b?token=y';
+
+      expect(
+        loggableErrorText(text),
+        'first https://example.com/a and then http://example.com/b',
+      );
+    });
+
+    test('leaves text without a URL as it is', () {
+      expect(loggableErrorText('Connection reset'), 'Connection reset');
+      expect(loggableErrorText(null), 'null');
+    });
+  });
+
   group('redacted', () {
     test('replaces credential values but keeps the names', () {
       const headers = {

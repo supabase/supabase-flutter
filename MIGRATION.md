@@ -2934,6 +2934,7 @@ exception for token failures. An exception that is already a `SupabaseException`
 | `httpSend()` times out with a `TimeoutException`                | `RealtimeTransportException` with the `TimeoutException` as `cause`      |
 | `httpSend()` gets a non-202 status, as `Exception(message)`     | `RealtimeApiException` with `statusCode`, `requestId`, `headers`, `body` |
 | `onStatusChange` reports `channelError` with an `Exception`     | `RealtimeException` with the server's reason as `message`                |
+| `onStatusChange` reports a failed connection with the raw error | `RealtimeTransportException` with the raw error as `cause`               |
 
 Replace a `toString()` check such as `contains('404')` with `on RealtimeApiException` and its
 `statusCode`. The message of a declined join no longer carries the quotes of a JSON-encoded string.

@@ -1020,7 +1020,7 @@ class RealtimeChannel {
       rethrow;
     } on Exception catch (error) {
       throw RealtimeTransportException(
-        'Request failed: $error',
+        'Request failed: ${loggableErrorText(error)}',
         cause: error,
       );
     }

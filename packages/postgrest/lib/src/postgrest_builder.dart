@@ -605,7 +605,7 @@ class PostgrestBuilder<T> implements Future<T> {
             rethrow;
           }
           throw PostgrestApiException(
-            message: 'Failed to read the response: $error',
+            message: 'Failed to read the response: ${loggableErrorText(error)}',
             statusCode: streamResponse.statusCode,
             requestId: streamResponse.headers.requestId,
             headers: streamResponse.headers,
@@ -620,7 +620,7 @@ class PostgrestBuilder<T> implements Future<T> {
         throw PostgrestTransportException('Request timed out', cause: error);
       } on Exception catch (error) {
         throw PostgrestTransportException(
-          'Request failed: $error',
+          'Request failed: ${loggableErrorText(error)}',
           cause: error,
         );
       }

@@ -111,7 +111,7 @@ sealed class FunctionsException extends SupabaseException {
   @override
   String toString() =>
       '$exceptionName(message: $message, requestId: $requestId, '
-      'details: $details)';
+      'details: ${loggableErrorText(details)})';
 }
 
 /// Thrown when the request to the Edge Function could not be sent, for example
@@ -139,7 +139,7 @@ class FunctionsFetchException extends FunctionsException
   @override
   String toString() =>
       '$exceptionName(message: $message, requestId: $requestId, '
-      'details: $details)';
+      'details: ${loggableErrorText(details)})';
 }
 
 /// Thrown when the Edge Function responded with a non-2xx status code.
@@ -180,7 +180,8 @@ class FunctionsApiException extends FunctionsException
   @override
   String toString() =>
       '$exceptionName(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode, requestId: $requestId, details: $details)';
+      'errorCode: $errorCode, requestId: $requestId, '
+      'details: ${loggableErrorText(details)})';
 }
 
 /// Thrown when the Supabase relay returns an error while invoking the Edge

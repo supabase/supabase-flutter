@@ -161,18 +161,18 @@ class User {
     };
   }
 
+  /// The email addresses, phone number, metadata and action link are left
+  /// out so that a logged user never exposes them; use the fields directly
+  /// when the actual values are needed.
   @override
   String toString() {
-    return 'User(id: $id, appMetadata: $appMetadata, userMetadata: '
-        '$userMetadata, audience: $audience, confirmationSentAt: '
-        '$confirmationSentAt, '
-        'recoverySentAt: $recoverySentAt, emailChangeSentAt: '
-        '$emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, '
-        'actionLink: $actionLink, email: $email, phone: $phone, createdAt: '
-        '$createdAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: '
-        '$phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, '
-        'updatedAt: $updatedAt, identities: '
-        '$identities, factors: $factors, isAnonymous: $isAnonymous)';
+    return 'User(id: $id, audience: $audience, confirmationSentAt: '
+        '$confirmationSentAt, recoverySentAt: $recoverySentAt, '
+        'emailChangeSentAt: $emailChangeSentAt, invitedAt: $invitedAt, '
+        'createdAt: $createdAt, emailConfirmedAt: $emailConfirmedAt, '
+        'phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: $lastSignInAt, '
+        'role: $role, updatedAt: $updatedAt, identities: $identities, '
+        'factors: $factors, isAnonymous: $isAnonymous)';
   }
 
   @override
@@ -318,12 +318,13 @@ class UserIdentity {
     };
   }
 
+  /// The [identityData] is left out, since it holds the profile of the user
+  /// such as their email address and name.
   @override
   String toString() {
-    return 'UserIdentity(id: $id, userId: $userId, identityData: '
-        '$identityData, identityId: $identityId, provider: $provider, '
-        'createdAt: $createdAt, lastSignInAt: $lastSignInAt, updatedAt: '
-        '$updatedAt)';
+    return 'UserIdentity(id: $id, userId: $userId, identityId: $identityId, '
+        'provider: $provider, createdAt: $createdAt, lastSignInAt: '
+        '$lastSignInAt, updatedAt: $updatedAt)';
   }
 
   @override
