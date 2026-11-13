@@ -31,6 +31,9 @@ class StorageBucketApi {
   @internal
   late final Fetch storageFetch;
 
+  String _bucketUrl(String id) =>
+      '$url/bucket/${encodePathSegment(id, name: 'id')}';
+
   /// Replaces the request headers with [newHeaders].
   @internal
   void replaceHeaders(Map<String, String> newHeaders) {
@@ -77,7 +80,7 @@ class StorageBucketApi {
   Future<Bucket> getBucket(String id) async {
     final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.get<Map<String, dynamic>>(
-      '$url/bucket/${encodePathSegment(id)}',
+      _bucketUrl(id),
       options: options,
     );
     return Bucket.fromJson(response);
@@ -118,7 +121,7 @@ class StorageBucketApi {
     BucketOptions bucketOptions,
   ) async {
     await storageFetch.put(
-      '$url/bucket/${encodePathSegment(id)}',
+      _bucketUrl(id),
       _bucketPayload(id, bucketOptions),
       options: FetchOptions(_headers),
     );
@@ -132,7 +135,7 @@ class StorageBucketApi {
   /// while after this completes.
   Future<void> emptyBucket(String id) async {
     await storageFetch.post(
-      '$url/bucket/${encodePathSegment(id)}/empty',
+      '${_bucketUrl(id)}/empty',
       {},
       options: FetchOptions(_headers),
     );
@@ -144,7 +147,7 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you would like to delete.
   Future<void> deleteBucket(String id) async {
     await storageFetch.delete(
-      '$url/bucket/${encodePathSegment(id)}',
+      _bucketUrl(id),
       {},
       options: FetchOptions(_headers),
     );
@@ -158,7 +161,7 @@ class StorageBucketApi {
   /// policies enabled.
   Future<List<LifecycleRule>> getBucketLifecycle(String id) async {
     final response = await storageFetch.get<Map<String, dynamic>>(
-      '$url/bucket/${encodePathSegment(id)}/lifecycle',
+      '${_bucketUrl(id)}/lifecycle',
       options: FetchOptions(_headers),
     );
     return _lifecycleRules(response);
@@ -181,7 +184,7 @@ class StorageBucketApi {
       'A lifecycle policy has between 1 and 1000 rules',
     );
     final response = await storageFetch.put<Map<String, dynamic>>(
-      '$url/bucket/${encodePathSegment(id)}/lifecycle',
+      '${_bucketUrl(id)}/lifecycle',
       {'rules': rules.map((rule) => rule.toJson()).toList()},
       options: FetchOptions(_headers),
     );
@@ -193,7 +196,7 @@ class StorageBucketApi {
   /// Succeeds even when the bucket has no policy.
   Future<void> deleteBucketLifecycle(String id) async {
     await storageFetch.delete(
-      '$url/bucket/${encodePathSegment(id)}/lifecycle',
+      '${_bucketUrl(id)}/lifecycle',
       {},
       options: FetchOptions(_headers),
     );
@@ -223,7 +226,7 @@ class StorageBucketApi {
     String id, {
     bool transformations = false,
   }) async {
-    var requestUrl = Uri.parse('$url/cdn/${encodePathSegment(id)}');
+    var requestUrl = Uri.parse('$url/cdn/${encodePathSegment(id, name: 'id')}');
     if (transformations) {
       requestUrl = requestUrl.replace(
         queryParameters: {'transformations': 'true'},
@@ -305,7 +308,7 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you would like to delete.
   Future<void> deleteAnalyticsBucket(String id) async {
     await storageFetch.delete(
-      '$url/iceberg/bucket/${encodePathSegment(id)}',
+      '$url/iceberg/bucket/${encodePathSegment(id, name: 'id')}',
       {},
       options: FetchOptions(_headers),
     );

@@ -232,7 +232,9 @@ class OAuthConsentResponse {
 /// ```
 ///
 /// These methods require a signed-in user and only work when the OAuth 2.1
-/// server feature is enabled in your Supabase Auth configuration.
+/// server feature is enabled in your Supabase Auth configuration. They throw
+/// an [ArgumentError] for an `authorizationId` that holds anything other than
+/// letters, digits, `-` and `_`, which an id issued by the server never does.
 /// {@endtemplate}
 class AuthOAuthApi {
   const AuthOAuthApi({
@@ -242,6 +244,19 @@ class AuthOAuthApi {
        _fetch = fetch;
   final AuthFetch _fetch;
   final AuthClient _client;
+
+  static final _authorizationIdPattern = RegExp(r'^[A-Za-z0-9_-]+$');
+
+  String _authorizationUrl(String authorizationId) {
+    if (!_authorizationIdPattern.hasMatch(authorizationId)) {
+      throw ArgumentError.value(
+        authorizationId,
+        'authorizationId',
+        'Must only hold letters, digits, "-" and "_"',
+      );
+    }
+    return '${_client._url}/oauth/authorizations/$authorizationId';
+  }
 
   /// Retrieves details about an OAuth authorization request.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
@@ -255,10 +270,11 @@ class AuthOAuthApi {
   Future<OAuthAuthorizationResponse> getAuthorizationDetails(
     String authorizationId,
   ) async {
+    final url = _authorizationUrl(authorizationId);
     final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.requestObject(
-      '${_client._url}/oauth/authorizations/$authorizationId',
+      url,
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _client._headers,
@@ -278,10 +294,11 @@ class AuthOAuthApi {
   Future<OAuthConsentResponse> approveAuthorization(
     String authorizationId,
   ) async {
+    final url = _authorizationUrl(authorizationId);
     final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.requestObject(
-      '${_client._url}/oauth/authorizations/$authorizationId/consent',
+      '$url/consent',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _client._headers,
@@ -304,10 +321,11 @@ class AuthOAuthApi {
   Future<OAuthConsentResponse> denyAuthorization(
     String authorizationId,
   ) async {
+    final url = _authorizationUrl(authorizationId);
     final accessToken = await _client._userAccessToken();
 
     final data = await _fetch.requestObject(
-      '${_client._url}/oauth/authorizations/$authorizationId/consent',
+      '$url/consent',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _client._headers,

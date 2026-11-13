@@ -13,19 +13,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
-/// [segment] percent-encoded as one segment of a URL path, so a `/`, `?` or
-/// `#` in it stays part of the segment.
-///
-/// Throws an [ArgumentError] for an empty segment, `.` and `..`, which a URL
-/// cannot hold as a segment of their own.
-@internal
-String encodePathSegment(String segment) {
-  if (segment.isEmpty || segment == '.' || segment == '..') {
-    throw ArgumentError.value(segment, 'id', 'Must not be empty, "." or ".."');
-  }
-  return Uri(pathSegments: [segment]).path;
-}
-
 @internal
 class Fetch {
   const Fetch([this.httpClient, this.requestTimeout]);

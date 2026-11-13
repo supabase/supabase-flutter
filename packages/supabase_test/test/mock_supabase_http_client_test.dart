@@ -31,6 +31,32 @@ void main() {
       expect(todos.single['task'], 'Ship it');
     });
 
+    test('answers a table whose name the client percent-encodes', () async {
+      httpClient.stubTable(
+        'my table/2026',
+        rows: [
+          {'id': 1},
+        ],
+      );
+
+      final rows = await supabase.from('my table/2026').select();
+
+      expect(rows, [
+        {'id': 1},
+      ]);
+      expect(httpClient.requestsTo('/rest/v1/my table/2026'), hasLength(1));
+    });
+
+    test('a path that is not UTF-8 is matched as sent', () async {
+      httpClient
+        ..stubEdgeFunction('%FF', body: {'ok': true})
+        ..stub({}, path: '/rest/v1/todos');
+
+      final response = await supabase.functions.invoke('%FF');
+
+      expect(response.data, {'ok': true});
+    });
+
     test('records the payload an insert sent', () async {
       httpClient.stubTable('todos', method: HttpMethod.post, statusCode: 201);
 

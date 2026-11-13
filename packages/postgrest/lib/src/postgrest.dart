@@ -132,7 +132,7 @@ class PostgrestClient {
   /// schema this client was created with; `null` keeps the client's schema.
   @internal
   PostgrestQueryBuilder fromInSchema(String table, String? schema) {
-    final requestUrl = '$url/$table';
+    final requestUrl = '$url/${encodePathSegment(table, name: 'table')}';
     return PostgrestQueryBuilder(
       url: Uri.parse(requestUrl),
       headers: headers,
@@ -220,7 +220,7 @@ class PostgrestClient {
     Object? params,
     bool get = false,
   }) {
-    final requestUrl = '$url/rpc/$fn';
+    final requestUrl = '$url/rpc/${encodePathSegment(fn, name: 'fn')}';
     return PostgrestRpcBuilder(
       requestUrl,
       headers: headers,

@@ -144,7 +144,11 @@ class IcebergRestCatalog {
   }
 
   String _namespaceToPath(List<String> namespace) =>
-      namespace.map(Uri.encodeComponent).join('%1F');
+      encodePathSegment(namespace.join('\u001F'), name: 'namespace');
+
+  String _tableToPath(TableIdentifier id) =>
+      '${_namespaceToPath(id.namespace)}/tables/'
+      '${encodePathSegment(id.name, name: 'name')}';
 
   String _idempotencyKey() {
     final milliseconds = DateTime.now().millisecondsSinceEpoch;
@@ -209,6 +213,8 @@ class IcebergRestCatalog {
     if (warehouse == null) {
       return 'v1';
     }
+    final fallbackPrefix =
+        'v1/${encodePathSegment(warehouse, name: 'warehouse')}';
     final response = await _request(
       HttpMethod.get,
       'v1/config',
@@ -218,7 +224,7 @@ class IcebergRestCatalog {
     _idempotencyKeysSupported = config['idempotency-key-lifetime'] != null;
     final serverPrefix =
         _prefixOf(config['overrides']) ?? _prefixOf(config['defaults']);
-    return serverPrefix != null ? 'v1/$serverPrefix' : 'v1/$warehouse';
+    return serverPrefix != null ? 'v1/$serverPrefix' : fallbackPrefix;
   }
 
   static String? _prefixOf(Object? properties) => switch (properties) {
@@ -699,8 +705,7 @@ class IcebergRestCatalog {
     };
     final response = await _request(
       HttpMethod.get,
-      '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-      '${Uri.encodeComponent(id.name)}',
+      '$prefix/namespaces/${_tableToPath(id)}',
       query: query.isEmpty ? null : query,
       headers: {
         ..._accessDelegationHeader(),
@@ -729,8 +734,7 @@ class IcebergRestCatalog {
     try {
       await _request(
         HttpMethod.head,
-        '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-        '${Uri.encodeComponent(id.name)}',
+        '$prefix/namespaces/${_tableToPath(id)}',
         headers: _accessDelegationHeader(),
         abortSignal: abortSignal,
       );
@@ -752,8 +756,7 @@ class IcebergRestCatalog {
     final prefix = await _resolvePrefix(abortSignal);
     final response = await _request(
       HttpMethod.post,
-      '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-      '${Uri.encodeComponent(id.name)}',
+      '$prefix/namespaces/${_tableToPath(id)}',
       body: {
         'requirements': requirements
             .map((requirement) => requirement.toJson())
@@ -791,8 +794,7 @@ class IcebergRestCatalog {
     final prefix = await _resolvePrefix(abortSignal);
     await _request(
       HttpMethod.delete,
-      '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-      '${Uri.encodeComponent(id.name)}',
+      '$prefix/namespaces/${_tableToPath(id)}',
       query: {'purgeRequested': '$purge'},
       abortSignal: abortSignal,
     );

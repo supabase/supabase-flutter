@@ -22,7 +22,7 @@ class AuthAdminSSOApi {
   final AuthFetch _fetch;
 
   String _providerUrl(String id) =>
-      '$_url/admin/sso/providers/${Uri.encodeComponent(id)}';
+      '$_url/admin/sso/providers/${encodePathSegment(id, name: 'id')}';
 
   /// Lists the registered providers, optionally only those whose resource ID
   /// is [resourceId] or starts with [resourceIdPrefix].

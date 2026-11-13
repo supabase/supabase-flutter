@@ -1922,7 +1922,8 @@ class AuthClient {
   /// unlinked.
   Future<void> unlinkIdentity(UserIdentity identity) async {
     await _fetch.request(
-      '$_url/user/identities/${identity.identityId}',
+      '$_url/user/identities/'
+      '${encodePathSegment(identity.identityId, name: 'identityId')}',
       HttpMethod.delete,
       options: AuthRequestOptions(
         headers: _headers,

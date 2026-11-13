@@ -183,6 +183,55 @@ void main() {
     );
   });
 
+  group('function name', () {
+    test('a subpath and a query string are kept', () async {
+      httpClient.stub({}, path: '/functions/v1/api/users/1');
+
+      await functions.invoke('api/users/1?expand=posts');
+
+      final url = httpClient.requests.single.url;
+      expect(url.pathSegments, ['functions', 'v1', 'api', 'users', '1']);
+      expect(url.queryParameters, {'expand': 'posts'});
+    });
+
+    for (final name in [
+      '',
+      '?q=dart',
+      '.',
+      '..',
+      '/../auth',
+      '../../auth/v1/logout?scope=global',
+      'hello/../other',
+      'hello/./world',
+      r'hello\..\..\auth',
+      '%2e%2e/auth',
+      '.%2E/auth',
+      'hello/%2E',
+      '..%2fadmin',
+      'hello/..%2F..%2Fauth',
+      '%2e%2e%5Cadmin',
+    ]) {
+      test('"$name" throws an ArgumentError', () async {
+        await expectLater(functions.invoke(name), throwsArgumentError);
+
+        expect(httpClient.requests, isEmpty);
+      });
+    }
+
+    for (final name in ['hello..', '..hello', 'v1.2/hello', 'a/...']) {
+      test('"$name" is sent as it is', () async {
+        httpClient.stub({});
+
+        await functions.invoke(name);
+
+        expect(
+          httpClient.requests.single.url.path,
+          '/functions/v1/$name',
+        );
+      });
+    }
+  });
+
   group('JSON responses', () {
     for (final contentType in [
       'application/problem+json',

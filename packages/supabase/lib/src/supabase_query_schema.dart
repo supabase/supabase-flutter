@@ -5,7 +5,7 @@ import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart'
-    show ClientInfoFeature, withClientInfoFeatures;
+    show ClientInfoFeature, encodePathSegment, withClientInfoFeatures;
 
 import 'counter.dart';
 
@@ -48,7 +48,7 @@ class SupabaseQuerySchema {
   SupabaseQueryBuilder from(String table) => _from(table, _rest.headers);
 
   SupabaseQueryBuilder _from(String table, Map<String, String> headers) {
-    final url = '$_restUrl/$table';
+    final url = '$_restUrl/${encodePathSegment(table, name: 'table')}';
     return SupabaseQueryBuilder(
       url,
       _realtime,
