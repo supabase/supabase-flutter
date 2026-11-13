@@ -10,7 +10,7 @@ void main() {
 
   group('Session.fromJson', () {
     test('reads a well formed session', () {
-      final session = Session.fromJson(sessionJson())!;
+      final session = Session.fromJson(sessionJson());
 
       expect(session.tokenType, 'bearer');
       expect(session.user.id, testUserId);

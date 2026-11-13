@@ -111,7 +111,7 @@ Session _session({
     userId: userId,
     withRefreshToken: withRefreshToken,
   ),
-)!;
+);
 
 Map<String, dynamic> _sessionJson({
   required DateTime expiresAt,
@@ -358,7 +358,7 @@ void main() {
       final expired = _sessionString(
         expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
       );
-      client.signInWithSession(Session.fromJson(jsonDecode(expired))!);
+      client.signInWithSession(Session.fromJson(jsonDecode(expired)));
 
       final response = await client.getClaims(
         null,

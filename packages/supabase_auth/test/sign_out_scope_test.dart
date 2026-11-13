@@ -66,7 +66,7 @@ void main() {
     client.signInWithSession(
       Session.fromJson(
         testSessionResponseJson(accessToken: expiredAccessToken()),
-      )!,
+      ),
     );
     await pumpEventQueue();
     events.clear();
@@ -543,7 +543,7 @@ void main() {
             1000,
       });
       client.signInWithSession(
-        Session.fromJson(testSessionResponseJson(accessToken: expired))!,
+        Session.fromJson(testSessionResponseJson(accessToken: expired)),
       );
       httpClient
         ..stubSignIn()
@@ -684,7 +684,7 @@ void main() {
         failingClient.signInWithSession(
           Session.fromJson(
             testSessionResponseJson(accessToken: expiredAccessToken()),
-          )!,
+          ),
         );
         stubRejectedRefresh();
 

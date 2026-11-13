@@ -87,9 +87,8 @@ void main() {
       final bodyJson = json.decode(body);
       final session = Session.fromJson(bodyJson as Map<String, dynamic>);
 
-      expect(session, isNotNull);
       expect(
-        session!.accessToken,
+        session.accessToken,
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZ'
         'XhwIjoxNjExODk1MzExLCJzdWIiOiI0Njg3YjkzNi02ZDE5LTRkNmUtOGIyYi1kYmU0N2I'
         '1ZjYzOWMiLCJlbWFpbCI6InRlc3Q5QGdtYWlsLmNvbSIsImFwcF9tZXRhZGF0YSI6eyJwc'

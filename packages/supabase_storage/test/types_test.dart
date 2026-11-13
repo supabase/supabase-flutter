@@ -163,20 +163,20 @@ void main() {
     });
   });
 
-  group('FileSort.toMap', () {
+  group('FileSort.toJson', () {
     test('serializes column to snake_case and order to its value', () {
       const sort = FileSort(
         column: FileSortColumn.updatedAt,
         order: SortDirection.descending,
       );
-      expect(sort.toMap(), {'column': 'updated_at', 'order': 'desc'});
+      expect(sort.toJson(), {'column': 'updated_at', 'order': 'desc'});
     });
   });
 
-  group('ListFilesOptions.toMap', () {
+  group('ListFilesOptions.toJson', () {
     test('omits null values', () {
       const options = ListFilesOptions(limit: 50, prefix: 'folder/');
-      expect(options.toMap(), {'limit': 50, 'prefix': 'folder/'});
+      expect(options.toJson(), {'limit': 50, 'prefix': 'folder/'});
     });
   });
 
@@ -456,19 +456,19 @@ void main() {
   });
 
   group('version listing options', () {
-    test('ListFilesOptions.toMap serializes them', () {
+    test('ListFilesOptions.toJson serializes them', () {
       const options = ListFilesOptions(
         noncurrentVersions: ListInclusion.exclude,
         deleteMarkers: ListInclusion.include,
         exactMatch: false,
       );
 
-      expect(options.toMap(), {
+      expect(options.toJson(), {
         'noncurrentVersions': 'exclude',
         'deleteMarkers': 'include',
         'exactMatch': false,
       });
-      expect(const ListFilesOptions().toMap(), isEmpty);
+      expect(const ListFilesOptions().toJson(), isEmpty);
     });
   });
 

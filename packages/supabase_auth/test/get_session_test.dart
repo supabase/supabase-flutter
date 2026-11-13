@@ -41,7 +41,7 @@ void main() {
 
         final data = getSessionData(DateTime.now().add(Duration(hours: 1)));
         client.signInWithSession(
-          Session.fromJson(jsonDecode(data.sessionString))!,
+          Session.fromJson(jsonDecode(data.sessionString)),
         );
 
         final session = await client.getSession();
@@ -61,7 +61,7 @@ void main() {
       );
 
       client.signInWithSession(
-        Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+        Session.fromJson(jsonDecode(createExpiredSessionForUser1())),
       );
       expect(client.currentSession?.isExpired, isTrue);
 
@@ -83,7 +83,7 @@ void main() {
       );
 
       client.signInWithSession(
-        Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+        Session.fromJson(jsonDecode(createExpiredSessionForUser1())),
       );
 
       final sessions = await Future.wait([
@@ -113,7 +113,7 @@ void main() {
       );
 
       client.signInWithSession(
-        Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+        Session.fromJson(jsonDecode(createExpiredSessionForUser1())),
       );
 
       await expectLater(
@@ -148,7 +148,7 @@ void main() {
         // another 20 seconds.
         final data = getSessionData(DateTime.now().add(Duration(seconds: 20)));
         client.signInWithSession(
-          Session.fromJson(jsonDecode(data.sessionString))!,
+          Session.fromJson(jsonDecode(data.sessionString)),
         );
         expect(client.currentSession?.isExpired, isTrue);
 

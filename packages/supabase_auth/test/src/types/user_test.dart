@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   group('User', () {
     group('fromJson', () {
-      test('returns null when id is missing', () {
+      test('throws a FormatException when id is missing', () {
         final json = <String, dynamic>{
           'app_metadata': <String, dynamic>{},
           'user_metadata': <String, dynamic>{},
@@ -13,12 +13,19 @@ void main() {
           'created_at': '2023-01-01T00:00:00Z',
         };
 
-        final user = User.fromJson(json);
-
-        expect(user, isNull);
+        expect(
+          () => User.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('"id"'),
+            ),
+          ),
+        );
       });
 
-      test('returns null when id is null', () {
+      test('throws a FormatException when id is null', () {
         final json = <String, dynamic>{
           'id': null,
           'app_metadata': <String, dynamic>{},
@@ -27,9 +34,16 @@ void main() {
           'created_at': '2023-01-01T00:00:00Z',
         };
 
-        final user = User.fromJson(json);
-
-        expect(user, isNull);
+        expect(
+          () => User.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('"id"'),
+            ),
+          ),
+        );
       });
 
       test('creates user with required fields only', () {
@@ -43,8 +57,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.id, equals('123'));
+        expect(user.id, equals('123'));
         expect(user.appMetadata, equals(const AppMetadata()));
         expect(user.userMetadata, isEmpty);
         expect(user.audience, equals('authenticated'));
@@ -77,8 +90,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.id, equals('123'));
+        expect(user.id, equals('123'));
         expect(user.appMetadata, equals(const AppMetadata(provider: 'email')));
         expect(
           user.userMetadata,
@@ -113,8 +125,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.userMetadata, isEmpty);
+        expect(user.userMetadata, isEmpty);
         expect(
           () => user.userMetadata['key'] = 'value',
           throwsUnsupportedError,
@@ -132,8 +143,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.appMetadata, equals(const AppMetadata()));
+        expect(user.appMetadata, equals(const AppMetadata()));
       });
 
       test('handles missing app_metadata by defaulting to empty map', () {
@@ -146,22 +156,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.appMetadata, equals(const AppMetadata()));
-      });
-
-      test('returns null when id is null, before parsing any timestamp', () {
-        final json = <String, dynamic>{
-          'id': null,
-          'app_metadata': <String, dynamic>{},
-          'user_metadata': <String, dynamic>{},
-          'aud': null,
-          'created_at': null,
-        };
-
-        final user = User.fromJson(json);
-
-        expect(user, isNull);
+        expect(user.appMetadata, equals(const AppMetadata()));
       });
 
       test('throws when created_at is missing', () {
@@ -198,7 +193,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user!.createdAt, equals(DateTime.utc(2023, 1, 1)));
+        expect(user.createdAt, equals(DateTime.utc(2023, 1, 1)));
         expect(user.createdAt.isUtc, isTrue);
       });
 
@@ -224,8 +219,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.identities, isNotNull);
+        expect(user.identities, isNotNull);
         expect(user.identities, hasLength(1));
         expect(user.identities![0].id, equals('identity-1'));
         expect(user.identities![0].provider, equals('email'));
@@ -252,8 +246,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.factors, isNotNull);
+        expect(user.factors, isNotNull);
         expect(user.factors, hasLength(1));
         expect(user.factors![0].id, equals('factor-1'));
         expect(user.factors![0].friendlyName, equals('My Phone'));
@@ -272,8 +265,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.identities, isNull);
+        expect(user.identities, isNull);
         expect(user.factors, isNull);
       });
 
@@ -288,8 +280,7 @@ void main() {
 
         final user = User.fromJson(json);
 
-        expect(user, isNotNull);
-        expect(user!.isAnonymous, isFalse);
+        expect(user.isAnonymous, isFalse);
       });
     });
 
@@ -565,7 +556,7 @@ void main() {
           'updated_at': '2023-01-01T08:00:00Z',
         };
 
-        final identity = UserIdentity.fromMap(map);
+        final identity = UserIdentity.fromJson(map);
 
         expect(identity.id, equals('identity-1'));
         expect(identity.userId, equals('123'));
@@ -590,7 +581,7 @@ void main() {
           'last_sign_in_at': '2023-01-01T00:00:00Z',
         };
 
-        final identity = UserIdentity.fromMap(map);
+        final identity = UserIdentity.fromJson(map);
 
         expect(identity.identityId, equals(''));
       });
@@ -606,7 +597,7 @@ void main() {
           'last_sign_in_at': '2023-01-01T00:00:00Z',
         };
 
-        final identity = UserIdentity.fromMap(map);
+        final identity = UserIdentity.fromJson(map);
 
         expect(identity.identityData, isNull);
       });
@@ -622,7 +613,7 @@ void main() {
           'last_sign_in_at': '2023-01-01T00:00:00Z',
         };
 
-        final identity = UserIdentity.fromMap(map);
+        final identity = UserIdentity.fromJson(map);
 
         expect(identity.updatedAt, isNull);
       });
@@ -827,7 +818,7 @@ void main() {
         );
 
         final json = original.toJson();
-        final restored = UserIdentity.fromMap(json);
+        final restored = UserIdentity.fromJson(json);
 
         expect(restored, equals(original));
       });

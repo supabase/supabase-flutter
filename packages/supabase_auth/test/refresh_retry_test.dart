@@ -32,7 +32,7 @@ void main() {
     addTearDown(subscription.cancel);
 
     client.signInWithSession(
-      Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+      Session.fromJson(jsonDecode(createExpiredSessionForUser1())),
     );
 
     await expectLater(client.getSession(), throwsA(isA<AuthException>()));
@@ -146,7 +146,7 @@ void main() {
     addTearDown(subscription.cancel);
 
     client.signInWithSession(
-      Session.fromJson(jsonDecode(createExpiredSessionForUser1()))!,
+      Session.fromJson(jsonDecode(createExpiredSessionForUser1())),
     );
     await expectLater(client.getSession(), throwsA(isA<AuthException>()));
     await pumpEventQueue();

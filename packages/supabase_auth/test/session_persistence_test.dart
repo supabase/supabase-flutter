@@ -85,7 +85,7 @@ void main() {
     final persisted = await storage.getItem(storageKey);
     expect(persisted, isNotNull);
     expect(
-      Session.fromJson(jsonDecode(persisted!))?.accessToken,
+      Session.fromJson(jsonDecode(persisted!)).accessToken,
       session.accessToken,
     );
 
@@ -295,7 +295,7 @@ void main() {
           DateTime.now().add(const Duration(hours: 1)),
         );
         client.signInWithSession(
-          Session.fromJson(jsonDecode(stored.sessionString))!,
+          Session.fromJson(jsonDecode(stored.sessionString)),
         );
         await pumpEventQueue();
 
@@ -349,7 +349,7 @@ void main() {
     expect(client.currentSession?.accessToken, session.accessToken);
     final persisted = await slowStorage.getItem(storageKey);
     expect(
-      Session.fromJson(jsonDecode(persisted!))?.accessToken,
+      Session.fromJson(jsonDecode(persisted!)).accessToken,
       session.accessToken,
     );
     expect(states.map((state) => state.event), [
@@ -372,7 +372,7 @@ void main() {
 
     final persisted = await storage.getItem(storageKey);
     final session = Session.fromJson(jsonDecode(persisted!));
-    expect(session?.user.userMetadata['name'], 'Updated');
+    expect(session.user.userMetadata['name'], 'Updated');
   });
 
   test('does not write the restored session back to the storage', () async {

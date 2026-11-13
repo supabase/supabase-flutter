@@ -1224,7 +1224,7 @@ class StorageFileApi {
   Future<ListFilesResult> list({
     ListFilesOptions options = const ListFilesOptions(),
   }) async {
-    final body = options.toMap();
+    final body = options.toJson();
     if (options.prefix case final prefix?) {
       body['prefix'] = _normalizePrefix(prefix);
     }

@@ -19,6 +19,28 @@ class Session {
     this.receivedAt,
   });
 
+  /// Reads a session from its JSON representation, throwing a
+  /// [FormatException] when a required field such as `access_token` is
+  /// missing or a field holds the wrong type.
+  ///
+  /// [receivedAt] is used when [json] does not hold a `received_at` value,
+  /// as in a response from the server.
+  factory Session.fromJson(
+    Map<String, dynamic> json, {
+    DateTime? receivedAt,
+  }) {
+    return Session(
+      accessToken: json.field('access_token'),
+      expiresIn: json.field<num?>('expires_in')?.toInt(),
+      refreshToken: json.field('refresh_token'),
+      tokenType: json.field('token_type'),
+      providerToken: json.field('provider_token'),
+      providerRefreshToken: json.field('provider_refresh_token'),
+      user: User.fromJson(json.field('user')),
+      receivedAt: tryParseUnixMilliseconds(json, 'received_at') ?? receivedAt,
+    );
+  }
+
   /// The third-party provider's OAuth access token, `null` unless the user
   /// signed in through OAuth.
   final String? providerToken;
@@ -52,42 +74,6 @@ class Session {
   /// does not change it. When `null`, [isExpired] compares the device's clock
   /// with [expiresAt] instead.
   final DateTime? receivedAt;
-
-  /// Returns a `Session` object from a map of json
-  /// returns `null` if there is no `access_token` present
-  ///
-  /// [receivedAt] is used when [json] does not hold a `received_at` value,
-  /// as in a response from the server.
-  static Session? fromJson(
-    Map<String, dynamic> json, {
-    DateTime? receivedAt,
-  }) {
-    if (json['access_token'] == null) {
-      return null;
-    }
-    final userJson = json['user'];
-    if (userJson is! Map<String, dynamic>) {
-      throw FormatException(
-        'Expected user to be an object, got ${userJson.runtimeType}',
-      );
-    }
-    final user = User.fromJson(userJson);
-    if (user == null) {
-      throw FormatException(
-        'Failed to parse user: missing required id field',
-      );
-    }
-    return Session(
-      accessToken: json.field('access_token'),
-      expiresIn: json.field<num?>('expires_in')?.toInt(),
-      refreshToken: json.field('refresh_token'),
-      tokenType: json.field('token_type'),
-      providerToken: json.field('provider_token'),
-      providerRefreshToken: json.field('provider_refresh_token'),
-      user: user,
-      receivedAt: tryParseUnixMilliseconds(json, 'received_at') ?? receivedAt,
-    );
-  }
 
   Map<String, dynamic> toJson() {
     final expiresAt = this.expiresAt;

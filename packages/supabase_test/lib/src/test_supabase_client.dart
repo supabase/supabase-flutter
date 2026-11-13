@@ -116,7 +116,7 @@ Future<Session> signInTestUser(
       expiresIn: expiry.difference(now).inSeconds,
     ),
     receivedAt: now,
-  )!;
+  );
   // ignore: invalid_use_of_internal_member
   auth.signInWithSession(session);
   return session;
