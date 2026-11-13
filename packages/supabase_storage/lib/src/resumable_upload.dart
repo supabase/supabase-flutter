@@ -18,6 +18,12 @@ import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 /// in the same place as the session; a pure Dart client keeps them in memory
 /// unless another storage is passed through
 /// [ResumableUploadOptions.storage].
+///
+/// The record of an upload started with a signed upload token holds that
+/// token, so keep the storage as private as the session.
+///
+/// A record with an upload URL on another origin than the storage client is
+/// not listed or continued, but is kept.
 abstract class ResumableUploadStorage {
   const ResumableUploadStorage();
 
@@ -297,6 +303,7 @@ class ResumableUploadRegistry {
 
   /// The storage endpoint uploads are created under.
   final String url;
+  late final Uri _origin = Uri.parse(url);
   final ResumableUploadOptions options;
 
   /// The key the records are stored under.
@@ -314,8 +321,9 @@ class ResumableUploadRegistry {
 
   Future<void> _operations = Future.value();
 
-  /// The stored entries the last read could not parse, such as those of a
-  /// newer version of this package, kept so that writing does not drop them.
+  /// The stored entries the last read could not use, such as those of a
+  /// newer version of this package or with an upload URL on another origin,
+  /// kept so that writing does not drop them.
   Map<String, Object?> _unreadable = {};
 
   Future<T> _serialize<T>(Future<T> Function() operation) {
@@ -348,6 +356,14 @@ class ResumableUploadRegistry {
         final record = ResumableUploadRecord._fromJson(
           jsonObject(value, description: 'a resumable upload record'),
         );
+        if (!_isOnOrigin(record._uploadUrl, _origin)) {
+          storageLogger.warning(
+            'Skipping resumable upload record $key, its upload URL is not on '
+            'the storage origin',
+          );
+          _unreadable[key] = value;
+          continue;
+        }
         records[record.id] = record;
       } on FormatException catch (error, stackTrace) {
         storageLogger.warning(
@@ -536,6 +552,9 @@ class ResumableUploadRegistry {
   }
 }
 
+bool _isOnOrigin(Uri url, Uri origin) =>
+    url.scheme == origin.scheme && url.authority == origin.authority;
+
 Map<String, String> _tusHeaders(Map<String, String> headers, String? token) => {
   ...headers,
   'Tus-Resumable': '1.0.0',
@@ -565,6 +584,11 @@ enum _Step { create, resync, append }
 /// fails on the network, or that the server answers with HTTP 408, 429 or a
 /// 5xx status, is retried as [ResumableUploadOptions] configures. An upload
 /// the server no longer knows, because it expired, starts over.
+///
+/// Every request goes to the origin of the storage client. When the server
+/// names the upload on another origin, such as the `supabase.co` host of a
+/// project behind a custom domain, the upload is sent to the same path on the
+/// origin of the storage client.
 ///
 /// The upload is recorded under [id] as soon as the server created it, until
 /// it completes or is cancelled. After a restart,
@@ -933,13 +957,26 @@ class ResumableUpload {
         requestId: response.headers.requestId,
       );
     }
+    var uploadUrl = endpoint.resolve(location);
+    if (!_isOnOrigin(uploadUrl, endpoint)) {
+      storageLogger.fine(
+        'Storage created resumable upload $id at ${uploadUrl.loggable}, '
+        'sending it to the storage origin instead',
+      );
+      uploadUrl = uploadUrl.replace(
+        scheme: endpoint.scheme,
+        userInfo: endpoint.userInfo,
+        host: endpoint.host,
+        port: endpoint.port,
+      );
+    }
     final record = _record = ResumableUploadRecord._(
       id: id,
       bucketId: bucketId,
       path: path,
       totalBytes: totalBytes,
       createdAt: DateTime.now().toUtc(),
-      uploadUrl: endpoint.resolve(location),
+      uploadUrl: uploadUrl,
       upsert: _upsert,
       contentType: _contentType,
       cacheControl: _cacheControl,
