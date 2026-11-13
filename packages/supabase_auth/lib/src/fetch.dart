@@ -64,7 +64,7 @@ class AuthFetch {
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
       throw AuthRetryableFetchException(
-        message: error.toString(),
+        message: loggableErrorText(error),
         cause: error,
       );
     }
@@ -263,7 +263,7 @@ class AuthFetch {
     } catch (error) {
       // fetch failed, likely due to a network or CORS error, or it timed out
       throw AuthRetryableFetchException(
-        message: error.toString(),
+        message: loggableErrorText(error),
         cause: error,
       );
     }

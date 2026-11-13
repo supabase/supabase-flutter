@@ -16,6 +16,10 @@ class RealtimeException extends SupabaseException {
 
 /// Thrown when a request to the broadcast REST endpoint never received a
 /// response, because the connection failed or the request timed out.
+///
+/// A WebSocket connection that fails is reported as this exception too, on
+/// `RealtimeClient.onStatusChange` and with the `channelError` status of each
+/// channel.
 class RealtimeTransportException extends RealtimeException
     with SupabaseTransportException {
   const RealtimeTransportException(super.message, {this.cause});

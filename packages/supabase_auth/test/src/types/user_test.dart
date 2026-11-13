@@ -382,13 +382,30 @@ void main() {
     });
 
     group('toString', () {
-      test('includes all user properties', () {
+      test('leaves out the personal data', () {
         final user = User(
           id: '123',
-          appMetadata: const AppMetadata(provider: 'email'),
+          appMetadata: const AppMetadata(
+            provider: 'email',
+            additionalProperties: {'tenant': 'acme-tenant'},
+          ),
           userMetadata: {'name': 'John Doe'},
           audience: 'authenticated',
           email: 'test@example.com',
+          newEmail: 'new@example.com',
+          phone: '+15550100',
+          actionLink: 'https://example.com/verify?token=action-token',
+          identities: [
+            UserIdentity(
+              id: 'identity-1',
+              userId: '123',
+              identityData: const {'email': 'test@example.com'},
+              identityId: 'identity-1',
+              provider: 'email',
+              createdAt: DateTime.utc(2023, 1, 1),
+              lastSignInAt: DateTime.utc(2023, 1, 1),
+            ),
+          ],
           createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: true,
         );
@@ -397,8 +414,17 @@ void main() {
 
         expect(string, contains('User('));
         expect(string, contains('id: 123'));
-        expect(string, contains('email: test@example.com'));
         expect(string, contains('isAnonymous: true'));
+        expect(string, contains('UserIdentity(id: identity-1'));
+        for (final personal in [
+          'example.com',
+          '+15550100',
+          'John Doe',
+          'acme-tenant',
+          'action-token',
+        ]) {
+          expect(string, isNot(contains(personal)));
+        }
       });
     });
 
@@ -702,7 +728,7 @@ void main() {
     });
 
     group('toString', () {
-      test('includes all identity properties', () {
+      test('includes the identity properties but not its data', () {
         final identity = UserIdentity(
           id: 'identity-1',
           userId: '123',
@@ -719,6 +745,7 @@ void main() {
         expect(string, contains('id: identity-1'));
         expect(string, contains('provider: email'));
         expect(string, contains('userId: 123'));
+        expect(string, isNot(contains('test@example.com')));
       });
     });
 

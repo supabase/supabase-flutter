@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:supabase_common/src/redaction.dart';
 
 /// Base class for the exceptions thrown by the Supabase client packages.
 ///
@@ -104,13 +105,16 @@ mixin SupabaseTransportException on SupabaseException {
   /// The error that failed the request, such as a `ClientException` from the
   /// HTTP client or a `TimeoutException`.
   ///
+  /// Its own text can quote the request URL with its query, which [message]
+  /// and [toString] leave out.
+  ///
   /// `null` when the exception was built without one.
   Object? get cause;
 
   @override
   String toString() =>
       '$exceptionName(message: $message, errorCode: $errorCode, '
-      'requestId: $requestId, cause: $cause)';
+      'requestId: $requestId, cause: ${loggableErrorText(cause)})';
 }
 
 /// Thrown when the `accessToken` callback a client was created with fails.
@@ -128,7 +132,9 @@ mixin SupabaseTransportException on SupabaseException {
 /// ```
 class AccessTokenException extends SupabaseException {
   AccessTokenException(this.cause)
-    : super('Failed to resolve the access token: $cause');
+    : super(
+        'Failed to resolve the access token: ${loggableErrorText(cause)}',
+      );
 
   /// The error the `accessToken` callback threw.
   final Object cause;
@@ -139,5 +145,5 @@ class AccessTokenException extends SupabaseException {
   @override
   String toString() =>
       '$exceptionName(message: $message, errorCode: $errorCode, '
-      'requestId: $requestId, cause: $cause)';
+      'requestId: $requestId, cause: ${loggableErrorText(cause)})';
 }

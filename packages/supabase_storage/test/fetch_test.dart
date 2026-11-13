@@ -1085,6 +1085,71 @@ void main() {
       );
     });
 
+    test('keeps the signed URL token out of a transport failure', () async {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockSupabaseHttpClient()
+          ..stubHandler(
+            (request) =>
+                throw ClientException('Connection refused', request.url),
+          ),
+      );
+      final withoutToken = allOf(
+        contains('$storageUrl/object/upload/sign/bucket/a.txt'),
+        isNot(contains('signed-upload-token')),
+      );
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadBinaryToSignedUrl(
+              'a.txt',
+              'signed-upload-token',
+              Uint8List(1),
+            ),
+        throwsA(
+          isA<StorageTransportException>()
+              .having((error) => error.message, 'message', withoutToken)
+              .having((error) => '$error', 'toString', withoutToken),
+        ),
+      );
+    });
+
+    test('keeps the signed URL token out of a read failure', () {
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: MockClient.streaming(
+          (request, bodyStream) async => StreamedResponse(
+            Stream.error(ClientException('Connection reset', request.url)),
+            400,
+            request: request,
+          ),
+        ),
+      );
+      final withoutToken = allOf(
+        contains('$storageUrl/object/upload/sign/bucket/a.txt'),
+        isNot(contains('signed-upload-token')),
+      );
+
+      return expectLater(
+        client
+            .from('bucket')
+            .uploadBinaryToSignedUrl(
+              'a.txt',
+              'signed-upload-token',
+              Uint8List(1),
+            ),
+        throwsA(
+          isA<StorageApiException>()
+              .having((error) => error.statusCode, 'statusCode', 400)
+              .having((error) => error.message, 'message', withoutToken)
+              .having((error) => '$error', 'toString', withoutToken),
+        ),
+      );
+    });
+
     test('a body that fails to arrive throws a StorageTransportException', () {
       final client = SupabaseStorageClient(
         storageUrl,

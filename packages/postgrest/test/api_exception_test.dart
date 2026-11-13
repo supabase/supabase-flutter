@@ -7,6 +7,11 @@ import 'package:test/test.dart';
 
 const _requestIdHeaders = {'sb-request-id': 'request-1'};
 
+final _withoutQuery = allOf(
+  contains('http://localhost:3000/users'),
+  isNot(contains('alice')),
+);
+
 PostgrestClient _buildClient(MockSupabaseHttpClient httpClient) =>
     PostgrestClient('http://localhost:3000', httpClient: httpClient);
 
@@ -36,6 +41,16 @@ void main() {
         'details': 'unexpected token',
         'hint': 'check the filter',
       });
+    });
+
+    test('toString keeps a URL in the details PostgREST reported', () {
+      const exception = PostgrestApiException(
+        message: 'boom',
+        statusCode: 500,
+        details: 'request to https://example.com/hook?id=5 failed',
+      );
+
+      expect(exception.toString(), contains('https://example.com/hook?id=5'));
     });
 
     test('fromJson keeps the request id alongside the body fields', () {
@@ -120,6 +135,27 @@ void main() {
       );
     });
 
+    test('keeps the request query out of its text', () async {
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: MockSupabaseHttpClient()
+          ..stubHandler(
+            (request) =>
+                throw ClientException('Connection refused', request.url),
+          ),
+        retryOptions: const SupabaseRetryOptions(enabled: false),
+      );
+
+      await expectLater(
+        () => client.from('users').select().eq('email', 'alice@example.com'),
+        throwsA(
+          isA<PostgrestTransportException>()
+              .having((error) => error.message, 'message', _withoutQuery)
+              .having((error) => '$error', 'toString', _withoutQuery),
+        ),
+      );
+    });
+
     test('passes an exception the HTTP client classified through', () async {
       final client = _buildClient(
         MockSupabaseHttpClient()
@@ -196,7 +232,7 @@ void main() {
       );
 
       return expectLater(
-        () => client.from('users').select(),
+        () => client.from('users').select().eq('email', 'alice@example.com'),
         throwsA(
           isA<PostgrestApiException>()
               .having((error) => error.statusCode, 'statusCode', 401)
@@ -206,7 +242,9 @@ void main() {
                 (error) => error.details,
                 'details',
                 isA<ClientException>(),
-              ),
+              )
+              .having((error) => error.message, 'message', _withoutQuery)
+              .having((error) => '$error', 'toString', _withoutQuery),
         ),
       );
     });

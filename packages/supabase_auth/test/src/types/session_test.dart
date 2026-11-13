@@ -460,6 +460,34 @@ void main() {
         expect(string, isNot(contains('test-provider')));
       });
 
+      test('leaves out the personal data of the user', () {
+        final session = Session(
+          accessToken: 'test-token',
+          tokenType: 'bearer',
+          user: User(
+            id: '123',
+            userMetadata: const {'name': 'John Doe'},
+            audience: 'authenticated',
+            email: 'test@example.com',
+            phone: '+15550100',
+            actionLink: 'https://example.com/verify?token=action-token',
+            createdAt: DateTime.utc(2023, 1, 1),
+          ),
+        );
+
+        final string = session.toString();
+
+        expect(string, contains('id: 123'));
+        for (final personal in [
+          'test@example.com',
+          '+15550100',
+          'John Doe',
+          'action-token',
+        ]) {
+          expect(string, isNot(contains(personal)));
+        }
+      });
+
       test('keeps null tokens readable as null', () {
         final session = Session(
           accessToken: 'test-token',

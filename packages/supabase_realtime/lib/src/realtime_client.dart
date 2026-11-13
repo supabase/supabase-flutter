@@ -581,7 +581,8 @@ class RealtimeClient {
   /// Emits whenever the WebSocket connection opens or closes.
   ///
   /// Connection errors are emitted as stream errors, so they are observed with
-  /// the `onError` handler of [Stream.listen] rather than as status changes:
+  /// the `onError` handler of [Stream.listen] rather than as status changes.
+  /// A failed connection is a [RealtimeTransportException]:
   ///
   /// ```dart
   /// final subscription = client.onStatusChange.listen(
@@ -1116,9 +1117,15 @@ class RealtimeClient {
   }
 
   void _onConnectionError(Object error) {
-    realtimeLogger.warning('Connection error', error);
-    _triggerChanError(error);
-    _statusController.addError(error);
+    final exception = error is SupabaseException
+        ? error
+        : RealtimeTransportException(
+            'Connection failed: ${loggableErrorText(error)}',
+            cause: error,
+          );
+    realtimeLogger.warning('Connection error', exception);
+    _triggerChanError(exception);
+    _statusController.addError(exception);
   }
 
   void _triggerChanError([dynamic error]) {

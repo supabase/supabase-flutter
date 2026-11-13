@@ -125,9 +125,13 @@ class PostgrestApiException extends PostgrestException
 
   @override
   String toString() {
+    final details = this.details;
+    final loggableDetails = details is Exception
+        ? loggableErrorText(details)
+        : details;
     return '$exceptionName(message: $message, statusCode: $statusCode, '
-        'errorCode: $errorCode, requestId: $requestId, details: $details, '
-        'hint: $hint)';
+        'errorCode: $errorCode, requestId: $requestId, '
+        'details: $loggableDetails, hint: $hint)';
   }
 }
 

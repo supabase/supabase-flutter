@@ -17,6 +17,37 @@ String describe(AuthState state) => switch (state) {
 };
 
 void main() {
+  test('toString leaves out the personal data of the user', () {
+    final state = AuthSignedIn(
+      Session(
+        accessToken: 'test-token',
+        tokenType: 'bearer',
+        user: User(
+          id: '123',
+          userMetadata: const {'name': 'John Doe'},
+          audience: 'authenticated',
+          email: 'test@example.com',
+          phone: '+15550100',
+          actionLink: 'https://example.com/verify?token=action-token',
+          createdAt: DateTime.utc(2023, 1, 1),
+        ),
+      ),
+    );
+
+    final string = state.toString();
+
+    expect(string, contains('id: 123'));
+    for (final personal in [
+      'test-token',
+      'test@example.com',
+      '+15550100',
+      'John Doe',
+      'action-token',
+    ]) {
+      expect(string, isNot(contains(personal)));
+    }
+  });
+
   group('AuthState', () {
     late MockSupabaseHttpClient httpClient;
     late AuthClient client;

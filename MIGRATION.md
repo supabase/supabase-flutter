@@ -2940,6 +2940,37 @@ Replace a `toString()` check such as `contains('404')` with `on RealtimeApiExcep
 `RealtimeSubscribeException`, which `stream()` delivers to its error handler, now extends
 `RealtimeException`, with `status` and `details` unchanged.
 
+#### A failed realtime connection is a `RealtimeTransportException`
+
+A WebSocket connection that fails, such as an upgrade the server refuses, used to be reported as the
+raw `WebSocketChannelException`, whose text holds the endpoint URL with the API key. It is now a
+`RealtimeTransportException` with the raw error in `cause`, on `RealtimeClient.onStatusChange` and
+with the `channelError` status of each channel:
+
+```dart skip
+// Before
+supabase.realtime.onStatusChange.listen(
+  (_) {},
+  onError: (error) {
+    if (error is WebSocketChannelException) {
+      print('Connection failed: ${error.inner}');
+    }
+  },
+);
+```
+
+```dart
+// After
+supabase.realtime.onStatusChange.listen(
+  (_) {},
+  onError: (error) {
+    if (error is RealtimeTransportException) {
+      print('Connection failed: ${error.message}');
+    }
+  },
+);
+```
+
 ### Requests, retries and tokens
 
 #### Every client takes one `SupabaseRetryOptions`

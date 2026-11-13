@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:logging/logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_realtime/src/join_error.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
@@ -381,7 +382,13 @@ void main() {
 
           expect(connects, 1);
           expect(client.connectionState, SocketState.closed);
-          expect(errors, [isA<WebSocketChannelException>()]);
+          expect(errors, [
+            isA<RealtimeTransportException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<WebSocketChannelException>(),
+            ),
+          ]);
           expect(statuses.first, RealtimeSubscribeStatus.channelError);
 
           final other = client.channel('other').subscribe();
@@ -395,6 +402,53 @@ void main() {
         });
       });
     }
+
+    test('is reported without the API key in the endpoint URL', () {
+      fakeAsync((async) {
+        refusals.add(401);
+        final client = RealtimeClient(
+          'ws://localhost:0',
+          transport: connect,
+          parameters: const {'apikey': 'secret-key'},
+        );
+        final errors = <Object>[];
+        client.onStatusChange.listen((_) {}, onError: errors.add);
+        final channel = client.channel('room');
+        final channelErrors = <Object?>[];
+        channel.onStatusChange
+            .where(
+              (change) => change.status == RealtimeSubscribeStatus.channelError,
+            )
+            .listen((change) => channelErrors.add(change.error));
+        final loggedErrors = <String>[];
+        final logSubscription = Logger('supabase.realtime').onRecord.listen((
+          record,
+        ) {
+          if (record.error case final error?) {
+            loggedErrors.add('$error');
+          }
+        });
+        addTearDown(logSubscription.cancel);
+
+        channel.subscribe();
+        async.flushMicrotasks();
+
+        final withoutApiKey = allOf(
+          contains('/websocket'),
+          isNot(contains('secret-key')),
+        );
+        final exception = isA<RealtimeTransportException>()
+            .having((error) => error.message, 'message', withoutApiKey)
+            .having((error) => '$error', 'toString', withoutApiKey);
+        expect(errors, [exception]);
+        expect(channelErrors, [exception]);
+        expect(loggedErrors, isNotEmpty);
+        expect(loggedErrors, everyElement(isNot(contains('secret-key'))));
+
+        unawaited(client.disconnect());
+        async.flushMicrotasks();
+      });
+    });
 
     test('with another HTTP status is retried', () {
       fakeAsync((async) {

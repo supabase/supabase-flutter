@@ -119,6 +119,35 @@ extension RedactedUri on Uri {
   }
 }
 
+/// A URL in the text of an error, either wrapped in quotes, which are kept
+/// apart from it, or running up to the next whitespace.
+///
+/// A quoted URL ends at a matching quote that is followed by whitespace,
+/// punctuation or the end of the text: the first one when the URL has no
+/// query or fragment, and otherwise the last one, so that a quote in its
+/// query can neither end it early nor leave part of the query behind.
+final _urlInText = RegExp(
+  r'''(['"])([a-zA-Z][a-zA-Z0-9+.-]*://[^\s?#]*?(?:[?#]\S*)?)\1'''
+  r'''(?=[\s,.;:)\]}]|$)|[a-zA-Z][a-zA-Z0-9+.-]*://\S+''',
+);
+
+/// The text of [error] with every URL in it reduced to its
+/// [LoggableUri.loggable] form, safe to include in exception messages, in
+/// `toString` and in log records.
+///
+/// HTTP and WebSocket errors quote the URL of the failed request, whose query
+/// can hold filter values, the token of a signed URL or the API key.
+String loggableErrorText(Object? error) =>
+    '$error'.replaceAllMapped(_urlInText, (match) {
+      final quote = match[1];
+      if (quote == null) {
+        return _loggableUrl(match[0]!);
+      }
+      return '$quote${_loggableUrl(match[2]!)}$quote';
+    });
+
+String _loggableUrl(String url) => Uri.tryParse(url)?.loggable ?? '<redacted>';
+
 /// A copy of [payload] that is safe to include in log records.
 ///
 /// Every map entry whose key names a credential is replaced by `<redacted>`.

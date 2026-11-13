@@ -96,6 +96,80 @@ void main() {
     });
   });
 
+  group('loggableErrorText', () {
+    test('keeps the query of a request URL out of a ClientException', () {
+      final error = ClientException(
+        'Connection refused',
+        Uri.parse('https://example.com/rest/v1/users?email=eq.alice@a.com'),
+      );
+
+      expect(
+        loggableErrorText(error),
+        'ClientException: Connection refused, '
+        'uri=https://example.com/rest/v1/users',
+      );
+    });
+
+    test('keeps the quotes around a quoted URL', () {
+      const text =
+          "WebSocketException: Connection to 'http://localhost/realtime/v1/"
+          "websocket?apikey=the-key&vsn=2.0.0#' was not upgraded to websocket";
+
+      expect(
+        loggableErrorText(text),
+        "WebSocketException: Connection to 'http://localhost/realtime/v1/"
+        "websocket' was not upgraded to websocket",
+      );
+    });
+
+    test('drops a quote in the query of a quoted URL with the query', () {
+      const text = "to 'http://localhost/users?name=O'Brien&apikey=key' failed";
+
+      expect(loggableErrorText(text), "to 'http://localhost/users' failed");
+    });
+
+    test('drops a quote and a comma in the query of a quoted URL', () {
+      const text =
+          "to 'https://example.com/users?name=O',Brien&apikey=secret' failed";
+
+      expect(loggableErrorText(text), "to 'https://example.com/users' failed");
+    });
+
+    test('reduces each of two quoted URLs on its own', () {
+      const text = "'http://a.com/x?key=1' then 'http://b.com/y?key=2'";
+
+      expect(loggableErrorText(text), "'http://a.com/x' then 'http://b.com/y'");
+    });
+
+    test('ends a quoted URL without a query at its closing quote', () {
+      const text = '{"url":"https://example.com/a","message":"boom"}';
+
+      expect(loggableErrorText(text), text);
+    });
+
+    test('drops the query of a quoted URL in JSON', () {
+      const text = '{"url":"https://example.com/a?token=x","message":"boom"}';
+
+      expect(loggableErrorText(text), isNot(contains('token=x')));
+    });
+
+    test('drops the user info and fragment of every URL', () {
+      const text =
+          'first https://user:pass@example.com/a#access_token=x and '
+          'then http://example.com/b?token=y';
+
+      expect(
+        loggableErrorText(text),
+        'first https://example.com/a and then http://example.com/b',
+      );
+    });
+
+    test('leaves text without a URL as it is', () {
+      expect(loggableErrorText('Connection reset'), 'Connection reset');
+      expect(loggableErrorText(null), 'null');
+    });
+  });
+
   group('redacted', () {
     test('replaces credential values but keeps the names', () {
       const headers = {
