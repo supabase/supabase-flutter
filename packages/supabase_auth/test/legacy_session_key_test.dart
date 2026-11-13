@@ -13,14 +13,19 @@ void main() {
   const legacyKey = 'SUPABASE_PERSIST_SESSION_KEY';
   final storageKey = defaultPersistSessionKey(authUrl);
 
+  late MockSupabaseHttpClient httpClient;
   late MemoryAuthAsyncStorage storage;
 
   setUp(() {
+    httpClient = MockSupabaseHttpClient();
     storage = MemoryAuthAsyncStorage();
   });
 
-  String sessionValue({required String refreshToken}) {
-    final expiresAt = DateTime.now().add(const Duration(hours: 1));
+  String sessionValue({
+    required String refreshToken,
+    Duration expiresIn = const Duration(hours: 1),
+  }) {
+    final expiresAt = DateTime.now().add(expiresIn);
     return jsonEncode(
       testSessionResponseJson(
         accessToken: unsignedTestJwt({
@@ -32,14 +37,14 @@ void main() {
     );
   }
 
-  AuthClient createClient({String? storageKey}) {
+  AuthClient createClient({String? storageKey, bool autoRefreshToken = false}) {
     final client = AuthClient(
       url: authUrl,
-      httpClient: MockSupabaseHttpClient(),
+      httpClient: httpClient,
       asyncStorage: storage,
       persistSession: true,
       storageKey: storageKey,
-      autoRefreshToken: false,
+      autoRefreshToken: autoRefreshToken,
     );
     addTearDown(client.dispose);
     return client;
@@ -58,6 +63,47 @@ void main() {
     expect(await storage.getItem(legacyKey), isNull);
   });
 
+  test('refreshes an expired session it moved', () async {
+    httpClient.stub(
+      jsonDecode(sessionValue(refreshToken: 'refreshed')),
+      method: HttpMethod.post,
+      path: '/token',
+      query: {'grant_type': 'refresh_token'},
+    );
+    await storage.setItem(
+      legacyKey,
+      sessionValue(
+        refreshToken: 'legacy',
+        expiresIn: const Duration(hours: -1),
+      ),
+    );
+
+    final client = createClient(autoRefreshToken: true);
+    await client.onAuthStateChange.firstWhere(
+      (state) => state.event == AuthChangeEvent.tokenRefreshed,
+    );
+    await pumpEventQueue();
+
+    final refresh = httpClient.requestsTo('/token', method: HttpMethod.post);
+    expect(refresh.single.jsonBody, {'refresh_token': 'legacy'});
+    final persisted = await storage.getItem(storageKey);
+    expect(Session.fromJson(jsonDecode(persisted!)).refreshToken, 'refreshed');
+    expect(await storage.getItem(legacyKey), isNull);
+  });
+
+  test('keeps the legacy session when writing it to the storage key '
+      'fails', () async {
+    final value = sessionValue(refreshToken: 'legacy');
+    storage = _ReadOnlyStorage({legacyKey: value});
+
+    final client = createClient();
+    await client.initialized;
+    await pumpEventQueue();
+
+    expect(client.currentSession?.refreshToken, 'legacy');
+    expect(await storage.getItem(legacyKey), value);
+  });
+
   test('prefers the session under the storage key', () async {
     await storage.setItem(storageKey, sessionValue(refreshToken: 'current'));
     await storage.setItem(legacyKey, sessionValue(refreshToken: 'legacy'));
@@ -68,16 +114,22 @@ void main() {
     expect(client.currentSession?.refreshToken, 'current');
   });
 
-  test('removes a legacy value that holds no session', () async {
+  test('removes a legacy value that holds no session without signing '
+      'out', () async {
     await storage.setItem(legacyKey, 'not a session');
-
     final client = createClient();
+    final events = <AuthChangeEvent>[];
+    final subscription = client.onAuthStateChange.listen(
+      (state) => events.add(state.event),
+    );
+    addTearDown(subscription.cancel);
+
     await client.initialized;
     await pumpEventQueue();
 
     expect(client.currentSession, isNull);
+    expect(events, [AuthChangeEvent.initialSession]);
     expect(await storage.getItem(legacyKey), isNull);
-    expect(await storage.getItem(storageKey), isNull);
   });
 
   test('removes the legacy session when a sign in happens during the restore '
@@ -130,5 +182,24 @@ class _BlockingStorage extends MemoryAuthAsyncStorage {
       await _released.future;
     }
     return super.getItem(key);
+  }
+}
+
+/// Serves [_items] and rejects every write.
+class _ReadOnlyStorage extends MemoryAuthAsyncStorage {
+  _ReadOnlyStorage(this._items);
+
+  final Map<String, String> _items;
+
+  @override
+  Future<String?> getItem(String key) async => _items[key];
+
+  @override
+  Future<void> setItem(String key, String value) =>
+      Future.error(StateError('The storage is read only'));
+
+  @override
+  Future<void> removeItem(String key) async {
+    _items.remove(key);
   }
 }

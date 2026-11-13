@@ -2276,12 +2276,22 @@ class AuthClient {
     _queueStorageWrite((storage) => storage.removeItem(_storageKey));
   }
 
-  /// Removes the session stored under
+  /// Removes the value stored under
   /// [AuthConstants.legacySessionStorageKey], after the writes queued before.
   void _removeLegacySession() {
     _queueStorageWrite(
       (storage) => storage.removeItem(AuthConstants.legacySessionStorageKey),
     );
+  }
+
+  /// Writes [session], read from [AuthConstants.legacySessionStorageKey], to
+  /// [storageKey], and removes it from the legacy key once that succeeded, so
+  /// a failed write cannot lose it.
+  void _moveLegacySession(Session session) {
+    _queueStorageWrite((storage) async {
+      await storage.setItem(_storageKey, jsonEncode(session.toJson()));
+      await storage.removeItem(AuthConstants.legacySessionStorageKey);
+    });
   }
 
   /// Runs [write] after the storage writes queued before it, when the session
@@ -2374,15 +2384,14 @@ class AuthClient {
 
   /// Makes the session persisted in [storage] the current one.
   ///
-  /// When nothing is stored under [storageKey], a session stored under
-  /// [AuthConstants.legacySessionStorageKey] is moved over to it. The legacy
-  /// entry is removed whatever it holds, so no refresh token is left behind
-  /// there.
+  /// When nothing is stored under [storageKey], the value under
+  /// [AuthConstants.legacySessionStorageKey] is read instead. A session found
+  /// there is moved over to [storageKey], and anything else is removed.
   ///
-  /// A value that does not hold a session is removed from the storage and
-  /// reported as `discarded`. A sign-in or sign-out that happened while the
-  /// storage was being read is newer than what was read, so the current
-  /// session is kept in that case.
+  /// A value under [storageKey] that does not hold a session is removed from
+  /// the storage and reported as `discarded`. A sign-in or sign-out that
+  /// happened while the storage was being read is newer than what was read,
+  /// so the current session is kept in that case.
   ///
   /// Returns the persisted value as `expired` when the session it holds has
   /// expired, so that the caller can refresh it.
@@ -2437,19 +2446,16 @@ class AuthClient {
         );
       }
       if (session == null) {
-        _removeSession();
         if (fromLegacyKey) {
           _removeLegacySession();
+          return nothing;
         }
+        _removeSession();
         return (expired: null, discarded: true);
       }
+      _currentSession = session;
       if (fromLegacyKey) {
-        // Queued in this order, so that an interruption in between leaves the
-        // session under one of the keys.
-        _saveSession(session);
-        _removeLegacySession();
-      } else {
-        _currentSession = session;
+        _moveLegacySession(session);
       }
     }
     return (

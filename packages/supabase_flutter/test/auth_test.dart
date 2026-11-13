@@ -50,7 +50,6 @@ void main() {
           authOptions: FlutterAuthClientOptions(asyncStorage: mockStorage),
         );
 
-        // Then the key supabase_flutter v2 exported, since nothing is stored.
         expect(mockStorage.readKeys, [
           defaultPersistSessionKey(supabaseUrl),
           'SUPABASE_PERSIST_SESSION_KEY',
