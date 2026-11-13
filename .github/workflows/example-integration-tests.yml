@@ -20,6 +20,9 @@ permissions:
 env:
   SUPABASE_CLI_VERSION: 3.0.0
   CLOUDFLARED_VERSION: 2026.9.0
+  # The SHA-256 of that version's cloudflared-linux-amd64, as listed in its
+  # release notes. Update the two together.
+  CLOUDFLARED_SHA256: 53b7a7a5420d188758d24341294acb0d1bca54296548ac05e38811a694ac6134
 
 jobs:
   backend:
@@ -48,17 +51,69 @@ jobs:
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
+      # The tunnel below makes the stack public, so it must not accept the
+      # well-known keys every local stack starts with. The CLI reads these
+      # overrides in every later step, and the masks keep the secrets out of
+      # the public log, where `supabase start` prints them.
+      - name: Generate the credentials for this run
+        run: |
+          set -euo pipefail
+          jwt_secret=$(openssl rand -hex 32)
+          secret_key="sb_secret_$(openssl rand -hex 16)"
+          echo "::add-mask::$jwt_secret"
+          echo "::add-mask::$secret_key"
+          # Without a signing key of its own the stack trusts the CLI's
+          # published default one, which anyone can sign a service_role
+          # token with.
+          signing_keys="$RUNNER_TEMP/signing_keys.json"
+          supabase gen signing-key --algorithm ES256 --workdir examples \
+            | jq -s . > "$signing_keys"
+          {
+            echo "SUPABASE_AUTH_JWT_SECRET=$jwt_secret"
+            echo "SUPABASE_AUTH_SECRET_KEY=$secret_key"
+            echo "SUPABASE_AUTH_PUBLISHABLE_KEY=sb_publishable_$(openssl rand -hex 16)"
+            echo "SUPABASE_AUTH_SIGNING_KEYS_PATH=$signing_keys"
+            # Its access keys are fixed defaults that the config cannot
+            # change, and no example uses it.
+            echo "SUPABASE_STORAGE_S3_PROTOCOL_ENABLED=false"
+            # Studio brings pg-meta, which runs any SQL sent to /pg/ without
+            # a key, so keep both off even if the config turns them on.
+            echo "SUPABASE_STUDIO_ENABLED=false"
+            echo "SUPABASE_ANALYTICS_ENABLED=false"
+          } >> "$GITHUB_ENV"
+
       - name: Start Supabase
-        run: supabase start --workdir examples
+        run: |
+          set -euo pipefail
+          supabase start --workdir examples
+
+          # An override the CLI stops reading would quietly bring the default
+          # keys back.
+          status=$(supabase status -o json --workdir examples)
+          echo "::add-mask::$(jq -r .SERVICE_ROLE_KEY <<< "$status")"
+          jq -e --arg jwt_secret "$SUPABASE_AUTH_JWT_SECRET" \
+            --arg secret_key "$SUPABASE_AUTH_SECRET_KEY" \
+            --arg publishable_key "$SUPABASE_AUTH_PUBLISHABLE_KEY" \
+            '.JWT_SECRET == $jwt_secret and .SECRET_KEY == $secret_key
+              and .PUBLISHABLE_KEY == $publishable_key' \
+            <<< "$status" > /dev/null \
+            || { echo "::error::Supabase ignored the generated keys."; exit 1; }
+          kid=$(jq -r '.[0].kid' "$SUPABASE_AUTH_SIGNING_KEYS_PATH")
+          jwks_url="$(jq -r .API_URL <<< "$status")/auth/v1/.well-known/jwks.json"
+          curl -fsS "$jwks_url" \
+            | jq -e --arg kid "$kid" '[.keys[].kid] == [$kid]' > /dev/null \
+            || { echo "::error::Supabase ignored the generated signing key."; exit 1; }
 
       - name: Install cloudflared
         run: |
+          set -euo pipefail
           # Pinned: this suite only runs on release pull requests, which is the
           # worst place to discover that a new cloudflared behaves differently.
-          sudo curl -fsSL \
+          curl -fsSL \
             "https://github.com/cloudflare/cloudflared/releases/download/$CLOUDFLARED_VERSION/cloudflared-linux-amd64" \
-            -o /usr/local/bin/cloudflared
-          sudo chmod +x /usr/local/bin/cloudflared
+            -o "$RUNNER_TEMP/cloudflared"
+          echo "$CLOUDFLARED_SHA256  $RUNNER_TEMP/cloudflared" | sha256sum --check --strict
+          sudo install -m 755 "$RUNNER_TEMP/cloudflared" /usr/local/bin/cloudflared
 
       - name: Expose Supabase through a tunnel
         id: tunnel
@@ -68,12 +123,8 @@ jobs:
           METRICS_ADDRESS: 127.0.0.1:20241
         run: |
           set -euo pipefail
-          supabase status -o env --workdir examples > sb.env
-          api_url=$(grep '^API_URL=' sb.env | cut -d= -f2- | tr -d '"')
-          key=$(grep '^PUBLISHABLE_KEY=' sb.env | cut -d= -f2- | tr -d '"')
-          if [ -z "$key" ]; then
-            key=$(grep '^ANON_KEY=' sb.env | cut -d= -f2- | tr -d '"')
-          fi
+          api_url=$(supabase status -o json --workdir examples | jq -r .API_URL)
+          key=$SUPABASE_AUTH_PUBLISHABLE_KEY
 
           cloudflared tunnel --no-autoupdate --url "$api_url" \
             --metrics "$METRICS_ADDRESS" > cloudflared.log 2>&1 &
