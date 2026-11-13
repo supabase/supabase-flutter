@@ -2269,11 +2269,36 @@ class AuthClient {
   }
 
   /// Clears the current session and removes the persisted one.
+  ///
+  /// A session left under [AuthConstants.legacySessionStorageKey] is removed
+  /// as well, since the next start would restore it once [storageKey] is
+  /// empty.
   void _removeSession() {
     authLogger.fine('Removing session');
     _currentSession = null;
     _autoRefreshPausedUntil = null;
     _queueStorageWrite((storage) => storage.removeItem(_storageKey));
+    if (_storageKey != AuthConstants.legacySessionStorageKey) {
+      _removeLegacySession();
+    }
+  }
+
+  /// Removes the value stored under
+  /// [AuthConstants.legacySessionStorageKey], after the writes queued before.
+  void _removeLegacySession() {
+    _queueStorageWrite(
+      (storage) => storage.removeItem(AuthConstants.legacySessionStorageKey),
+    );
+  }
+
+  /// Writes [session], read from [AuthConstants.legacySessionStorageKey], to
+  /// [storageKey], and removes it from the legacy key once that succeeded, so
+  /// a failed write cannot lose it.
+  void _moveLegacySession(Session session) {
+    _queueStorageWrite((storage) async {
+      await storage.setItem(_storageKey, jsonEncode(session.toJson()));
+      await storage.removeItem(AuthConstants.legacySessionStorageKey);
+    });
   }
 
   /// Runs [write] after the storage writes queued before it, when the session
@@ -2366,10 +2391,14 @@ class AuthClient {
 
   /// Makes the session persisted in [storage] the current one.
   ///
-  /// A value that does not hold a session is removed from the storage and
-  /// reported as `discarded`. A sign-in or sign-out that happened while the
-  /// storage was being read is newer than what was read, so the current
-  /// session is kept in that case.
+  /// When nothing is stored under [storageKey], the value under
+  /// [AuthConstants.legacySessionStorageKey] is read instead. A session found
+  /// there is moved over to [storageKey], and anything else is removed.
+  ///
+  /// A value under [storageKey] that does not hold a session is removed from
+  /// the storage and reported as `discarded`. A sign-in or sign-out that
+  /// happened while the storage was being read is newer than what was read,
+  /// so the current session is kept in that case.
   ///
   /// Returns the persisted value as `expired` when the session it holds has
   /// expired, so that the caller can refresh it.
@@ -2379,8 +2408,16 @@ class AuthClient {
     const nothing = (expired: null, discarded: false);
     final versionBeforeRead = _sessionVersion;
     String? persisted;
+    var fromLegacyKey = false;
     try {
       persisted = await storage.getItem(_storageKey);
+      if (persisted == null &&
+          _storageKey != AuthConstants.legacySessionStorageKey) {
+        persisted = await storage.getItem(
+          AuthConstants.legacySessionStorageKey,
+        );
+        fromLegacyKey = persisted != null;
+      }
     } catch (error, stackTrace) {
       authLogger.warning(
         'Could not read the persisted session',
@@ -2393,6 +2430,9 @@ class AuthClient {
     }
     if (_sessionVersion != versionBeforeRead) {
       authLogger.fine('Session changed during restore, keeping it');
+      if (fromLegacyKey) {
+        _removeLegacySession();
+      }
       return nothing;
     }
     Session? session;
@@ -2413,10 +2453,17 @@ class AuthClient {
         );
       }
       if (session == null) {
+        if (fromLegacyKey) {
+          _removeLegacySession();
+          return nothing;
+        }
         _removeSession();
         return (expired: null, discarded: true);
       }
       _currentSession = session;
+      if (fromLegacyKey) {
+        _moveLegacySession(session);
+      }
     }
     return (
       expired: session != null && session.isExpired ? persisted : null,

@@ -1758,10 +1758,13 @@ preferences altogether.
 #### `supabasePersistSessionKey` is gone
 
 The session is stored under `AuthClientOptions.storageKey`, which defaults to
-`sb-<project-ref>-auth-token`. A custom `AuthAsyncStorage` receives the key with every call. To keep
-reading sessions stored under the old constant, pass
-`storageKey: 'SUPABASE_PERSIST_SESSION_KEY'` to `FlutterAuthClientOptions`; leaving the default
-signs your users out once instead.
+`sb-<project-ref>-auth-token`, the key v2 used unless you passed another one. A custom
+`AuthAsyncStorage` receives the key with every call.
+
+A session that a custom `LocalStorage` kept under `supabasePersistSessionKey` is moved to
+`storageKey` on the first start, and the old entry is deleted, so your users stay signed in and no
+refresh token is left behind. This needs the `AuthAsyncStorage` that replaces it to read the same
+store.
 
 If you are still on v1 with a session in [hive](https://pub.dev/packages/hive), upgrade to v2 first
 and let it migrate the session, then move to v3.

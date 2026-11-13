@@ -50,7 +50,10 @@ void main() {
           authOptions: FlutterAuthClientOptions(asyncStorage: mockStorage),
         );
 
-        expect(mockStorage.readKeys, [defaultPersistSessionKey(supabaseUrl)]);
+        expect(mockStorage.readKeys, [
+          defaultPersistSessionKey(supabaseUrl),
+          'SUPABASE_PERSIST_SESSION_KEY',
+        ]);
       });
 
       test(
