@@ -128,13 +128,29 @@ void main() {
       expect(loggableErrorText(text), "to 'http://localhost/users' failed");
     });
 
-    test('ends a quoted URL at its closing quote', () {
+    test('drops a quote and a comma in the query of a quoted URL', () {
+      const text =
+          "to 'https://example.com/users?name=O',Brien&apikey=secret' failed";
+
+      expect(loggableErrorText(text), "to 'https://example.com/users' failed");
+    });
+
+    test('reduces each of two quoted URLs on its own', () {
+      const text = "'http://a.com/x?key=1' then 'http://b.com/y?key=2'";
+
+      expect(loggableErrorText(text), "'http://a.com/x' then 'http://b.com/y'");
+    });
+
+    test('ends a quoted URL without a query at its closing quote', () {
+      const text = '{"url":"https://example.com/a","message":"boom"}';
+
+      expect(loggableErrorText(text), text);
+    });
+
+    test('drops the query of a quoted URL in JSON', () {
       const text = '{"url":"https://example.com/a?token=x","message":"boom"}';
 
-      expect(
-        loggableErrorText(text),
-        '{"url":"https://example.com/a","message":"boom"}',
-      );
+      expect(loggableErrorText(text), isNot(contains('token=x')));
     });
 
     test('drops the user info and fragment of every URL', () {

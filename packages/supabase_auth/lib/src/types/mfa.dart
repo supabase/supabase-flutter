@@ -397,10 +397,12 @@ class Factor {
         updatedAt.hashCode;
   }
 
+  /// The [friendlyName] is left out, since the user chooses it and it can
+  /// hold personal data such as their name or phone number.
   @override
   String toString() {
-    return 'Factor(id: $id, friendlyName: $friendlyName, factorType: '
-        '${factorType.name}, status: ${status.name}, createdAt: $createdAt, '
+    return 'Factor(id: $id, factorType: ${factorType.name}, '
+        'status: ${status.name}, createdAt: $createdAt, '
         'updatedAt: $updatedAt)';
   }
 }

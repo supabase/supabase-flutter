@@ -122,12 +122,13 @@ extension RedactedUri on Uri {
 /// A URL in the text of an error, either wrapped in quotes, which are kept
 /// apart from it, or running up to the next whitespace.
 ///
-/// A quoted URL ends at the first matching quote that is followed by
-/// whitespace, punctuation or the end of the text, so that a quote in its
-/// query does not end it early.
+/// A quoted URL ends at a matching quote that is followed by whitespace,
+/// punctuation or the end of the text: the first one when the URL has no
+/// query or fragment, and otherwise the last one, so that a quote in its
+/// query can neither end it early nor leave part of the query behind.
 final _urlInText = RegExp(
-  r'''(['"])([a-zA-Z][a-zA-Z0-9+.-]*://\S*?)\1(?=[\s,.;:)\]}]|$)'''
-  r'''|[a-zA-Z][a-zA-Z0-9+.-]*://\S+''',
+  r'''(['"])([a-zA-Z][a-zA-Z0-9+.-]*://[^\s?#]*?(?:[?#]\S*)?)\1'''
+  r'''(?=[\s,.;:)\]}]|$)|[a-zA-Z][a-zA-Z0-9+.-]*://\S+''',
 );
 
 /// The text of [error] with every URL in it reduced to its
