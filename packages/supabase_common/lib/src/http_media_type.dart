@@ -1,9 +1,14 @@
-/// The media types more than one Supabase client sends or reads in the
+/// A media type more than one Supabase client sends or reads in the
 /// `Content-Type` and `Accept` headers.
-abstract final class HttpMediaType {
+enum HttpMediaType {
   /// A JSON document.
-  static const json = 'application/json';
+  json('application/json'),
 
   /// Raw bytes of no particular type.
-  static const octetStream = 'application/octet-stream';
+  octetStream('application/octet-stream');
+
+  const HttpMediaType(this.value);
+
+  /// The media type sent on the wire, for example `'application/json'`.
+  final String value;
 }

@@ -1004,14 +1004,14 @@ class RealtimeChannel {
   Future<void> _httpSend({
     required String event,
     required Object body,
-    required String contentType,
+    required HttpMediaType contentType,
     Duration? timeout,
   }) async {
     final accessToken = await resolveAccessToken(socket.resolveAccessToken);
     final headers = {
       ..._broadcastHeaders,
       if (accessToken != null) HttpHeader.authorization: 'Bearer $accessToken',
-      HttpHeader.contentType: contentType,
+      HttpHeader.contentType: contentType.value,
     };
 
     final url = Uri.parse(
@@ -1220,7 +1220,7 @@ class RealtimeChannel {
   }
 
   Map<String, String> get _broadcastHeaders => {
-    HttpHeader.contentType: HttpMediaType.json,
+    HttpHeader.contentType: HttpMediaType.json.value,
     if (socket.parameters['apikey'] != null)
       HttpHeader.apiKey: socket.parameters['apikey']!,
     ...socket.headers,

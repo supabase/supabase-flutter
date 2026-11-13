@@ -252,7 +252,7 @@ class AuthFetch {
       ..headers.addAll(headers);
     if (method != HttpMethod.get && method != HttpMethod.head) {
       request
-        ..headers[HttpHeader.contentType] = HttpMediaType.json
+        ..headers[HttpHeader.contentType] = HttpMediaType.json.value
         ..body = json.encode(options?.body ?? {});
     }
     Response response;

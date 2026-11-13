@@ -38,7 +38,7 @@ class Fetch {
     final mime =
         lookupMimeType(path) ??
         (fallbackPath == null ? null : lookupMimeType(fallbackPath));
-    return MediaType.parse(mime ?? HttpMediaType.octetStream);
+    return MediaType.parse(mime ?? HttpMediaType.octetStream.value);
   }
 
   StorageApiException _handleError(
@@ -169,7 +169,7 @@ class Fetch {
     if (method != HttpMethod.get) {
       request.headers.putIfAbsent(
         HttpHeader.contentType,
-        () => HttpMediaType.json,
+        () => HttpMediaType.json.value,
       );
     }
     if (body != null) {

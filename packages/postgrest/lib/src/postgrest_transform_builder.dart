@@ -424,7 +424,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T> {
     // sends one
     final newHeaders = {..._headers};
     if (_stripNulls) _applyStripNulls(newHeaders);
-    final forMediatype = newHeaders[HttpHeader.accept] ?? HttpMediaType.json;
+    final forMediatype =
+        newHeaders[HttpHeader.accept] ?? HttpMediaType.json.value;
     newHeaders[HttpHeader.accept] =
         'application/vnd.pgrst.plan+${format.name}; for="$forMediatype"; options=$options;';
     return _copyWithType(headers: newHeaders);
