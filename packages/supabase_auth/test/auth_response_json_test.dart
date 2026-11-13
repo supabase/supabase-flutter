@@ -30,6 +30,17 @@ void main() {
       expect(response.user, isNull);
     });
 
+    test('has neither for a body with a null access token and id', () {
+      final response = AuthResponse.fromJson({
+        'access_token': null,
+        'id': null,
+        'created_at': null,
+      });
+
+      expect(response.session, isNull);
+      expect(response.user, isNull);
+    });
+
     test('throws a FormatException for a malformed session', () {
       expect(
         () => AuthResponse.fromJson({
@@ -48,6 +59,13 @@ void main() {
 
     test('has no user for a body without an id', () {
       expect(UserResponse.fromJson({}).user, isNull);
+    });
+
+    test('has no user for a body with a null id', () {
+      expect(
+        UserResponse.fromJson({'id': null, 'created_at': null}).user,
+        isNull,
+      );
     });
   });
 }

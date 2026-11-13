@@ -1946,7 +1946,10 @@ class AuthClient {
   Future<Session> recoverSession(String jsonString) async {
     final String refreshToken;
     try {
-      final Map<String, dynamic> sessionJson = json.decode(jsonString);
+      final sessionJson = jsonObject(
+        json.decode(jsonString),
+        description: 'the session',
+      );
       if (sessionJson['access_token'] == null) {
         authLogger.warning(
           "Can't recover session from string, it has no access token",
@@ -2395,7 +2398,13 @@ class AuthClient {
     Session? session;
     if (persisted != null) {
       try {
-        session = Session.fromJson(json.decode(persisted));
+        final sessionJson = jsonObject(
+          json.decode(persisted),
+          description: 'the persisted session',
+        );
+        if (sessionJson['access_token'] != null) {
+          session = Session.fromJson(sessionJson);
+        }
       } catch (error, stackTrace) {
         authLogger.warning(
           'Could not restore the persisted session',

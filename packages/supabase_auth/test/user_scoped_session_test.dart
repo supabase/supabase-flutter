@@ -457,6 +457,27 @@ void main() {
       expect(events, [AuthChangeEvent.signedIn]);
     });
 
+    test('throws for a session without an access token', () async {
+      await expectLater(
+        client.recoverSession(
+          jsonEncode({'token_type': 'bearer', 'user': testUserJson()}),
+        ),
+        throwsA(isA<AuthSessionMissingException>()),
+      );
+
+      expect(client.currentSession, isNull);
+    });
+
+    test(
+      'throws a FormatException for a value that is not an object',
+      () async {
+        await expectLater(
+          client.recoverSession('[]'),
+          throwsFormatException,
+        );
+      },
+    );
+
     test('emits signedIn for another user whose session expired', () async {
       await signInTestUser(client, userId: 'first-user');
       await pumpEventQueue();

@@ -543,9 +543,9 @@ void main() {
   });
 
   group('UserIdentity', () {
-    group('fromMap', () {
+    group('fromJson', () {
       test('creates identity with all required fields', () {
-        final map = {
+        final json = {
           'id': 'identity-1',
           'user_id': '123',
           'identity_data': {'email': 'test@example.com'},
@@ -556,7 +556,7 @@ void main() {
           'updated_at': '2023-01-01T08:00:00Z',
         };
 
-        final identity = UserIdentity.fromJson(map);
+        final identity = UserIdentity.fromJson(json);
 
         expect(identity.id, equals('identity-1'));
         expect(identity.userId, equals('123'));
@@ -572,7 +572,7 @@ void main() {
       });
 
       test('handles missing identity_id with empty string default', () {
-        final map = {
+        final json = {
           'id': 'identity-1',
           'user_id': '123',
           'identity_data': {'email': 'test@example.com'},
@@ -581,13 +581,13 @@ void main() {
           'last_sign_in_at': '2023-01-01T00:00:00Z',
         };
 
-        final identity = UserIdentity.fromJson(map);
+        final identity = UserIdentity.fromJson(json);
 
         expect(identity.identityId, equals(''));
       });
 
       test('handles null identity_data', () {
-        final map = {
+        final json = {
           'id': 'identity-1',
           'user_id': '123',
           'identity_data': null,
@@ -597,13 +597,13 @@ void main() {
           'last_sign_in_at': '2023-01-01T00:00:00Z',
         };
 
-        final identity = UserIdentity.fromJson(map);
+        final identity = UserIdentity.fromJson(json);
 
         expect(identity.identityData, isNull);
       });
 
       test('handles missing optional fields', () {
-        final map = {
+        final json = {
           'id': 'identity-1',
           'user_id': '123',
           'identity_data': {'email': 'test@example.com'},
@@ -613,7 +613,7 @@ void main() {
           'last_sign_in_at': '2023-01-01T00:00:00Z',
         };
 
-        final identity = UserIdentity.fromJson(map);
+        final identity = UserIdentity.fromJson(json);
 
         expect(identity.updatedAt, isNull);
       });
