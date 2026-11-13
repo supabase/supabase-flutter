@@ -43,6 +43,16 @@ void main() {
       });
     });
 
+    test('toString keeps a URL in the details PostgREST reported', () {
+      const exception = PostgrestApiException(
+        message: 'boom',
+        statusCode: 500,
+        details: 'request to https://example.com/hook?id=5 failed',
+      );
+
+      expect(exception.toString(), contains('https://example.com/hook?id=5'));
+    });
+
     test('fromJson keeps the request id alongside the body fields', () {
       final exception = PostgrestApiException.fromJson(
         {'message': 'boom', 'code': 'PGRST100'},

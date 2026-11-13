@@ -128,6 +128,15 @@ void main() {
       expect(loggableErrorText(text), "to 'http://localhost/users' failed");
     });
 
+    test('ends a quoted URL at its closing quote', () {
+      const text = '{"url":"https://example.com/a?token=x","message":"boom"}';
+
+      expect(
+        loggableErrorText(text),
+        '{"url":"https://example.com/a","message":"boom"}',
+      );
+    });
+
     test('drops the user info and fragment of every URL', () {
       const text =
           'first https://user:pass@example.com/a#access_token=x and '

@@ -17,6 +17,15 @@ void main() {
     }
   });
 
+  test('toString keeps a URL the Edge Function answered with', () {
+    const exception = FunctionsApiException(
+      statusCode: 400,
+      details: {'error': 'see https://example.com/docs?section=limits'},
+    );
+
+    expect(exception.toString(), contains('?section=limits'));
+  });
+
   test('toString keeps the request query out of the cause', () {
     final cause = ClientException(
       'Connection refused',
