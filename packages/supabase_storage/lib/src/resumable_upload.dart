@@ -309,6 +309,9 @@ class ResumableUploadRegistry {
   /// same handle.
   final _live = <String, ResumableUpload>{};
 
+  /// How often [forgetAll] ran, so an upload from before it cannot continue.
+  int _forgetCount = 0;
+
   Future<void> _operations = Future.value();
 
   /// The stored entries the last read could not parse, such as those of a
@@ -390,6 +393,20 @@ class ResumableUploadRegistry {
     if (records.remove(id) != null) await _write(records);
   });
 
+  /// Cancels every upload of this process and removes every record, leaving
+  /// what the server holds of them to expire.
+  Future<void> forgetAll() async {
+    _forgetCount++;
+    final stopped = [
+      for (final upload in _live.values.toList()) upload._forget(),
+    ];
+    await _serialize(() {
+      _unreadable = {};
+      return _storage.removeItem(storageKey);
+    });
+    await Future.wait(stopped);
+  }
+
   /// Starts uploading [source] to [path] in [bucketId].
   ResumableUpload start({
     required String bucketId,
@@ -440,11 +457,15 @@ class ResumableUploadRegistry {
   ) async {
     final live = _live[id];
     if (live != null) return live..resume();
+    final forgetCount = _forgetCount;
     final record = await _record(id);
     if (record == null) {
       throw StorageException('No resumable upload is recorded under $id');
     }
     final length = await source.length;
+    if (forgetCount != _forgetCount) {
+      throw StorageException('No resumable upload is recorded under $id');
+    }
     if (length != record.totalBytes) {
       throw ArgumentError.value(
         length,
@@ -549,6 +570,10 @@ enum _Step { create, resync, append }
 /// it completes or is cancelled. After a restart,
 /// `SupabaseStorageClient.resumableUploads` lists the records and
 /// `SupabaseStorageClient.resumeUpload` continues one with the same file.
+///
+/// When the user signs out of the `SupabaseClient` the upload belongs to,
+/// the upload is cancelled and its record removed, but what the server holds
+/// of it is left to expire.
 class ResumableUpload {
   ResumableUpload._({
     required this.id,
@@ -572,6 +597,7 @@ class ResumableUpload {
        _token = token,
        _record = record,
        _registry = registry,
+       _forgetCount = registry._forgetCount,
        _totalBytes = record?.totalBytes {
     _done.future.ignore();
   }
@@ -594,6 +620,7 @@ class ResumableUpload {
   final Map<String, dynamic>? _metadata;
   final String? _token;
   final ResumableUploadRegistry _registry;
+  final int _forgetCount;
 
   ResumableUploadRecord? _record;
   int? _totalBytes;
@@ -632,11 +659,17 @@ class ResumableUpload {
   }
 
   /// Continues a paused or failed upload from the offset the server
-  /// confirmed.
+  /// confirmed, or cancels it like [cancel] once the user signed out, without
+  /// deleting what the server holds of it.
   void resume() {
     if (_status != ResumableUploadStatus.paused &&
             _status != ResumableUploadStatus.failed ||
         _cancellation != null) {
+      return;
+    }
+    if (_forgetCount != _registry._forgetCount) {
+      if (_done.isCompleted) _done = Completer()..future.ignore();
+      unawaited(_forget());
       return;
     }
     _registry._live[id] = this;
@@ -648,9 +681,13 @@ class ResumableUpload {
   ///
   /// When the response that completes the upload is already in, the upload
   /// completes instead, and [done] with it.
-  Future<void> cancel() => _cancellation ??= _cancel();
+  Future<void> cancel() => _cancellation ??= _cancel(terminate: true);
 
-  Future<void> _cancel() async {
+  /// Cancels the upload like [cancel] without deleting what the server holds
+  /// of it.
+  Future<void> _forget() => _cancellation ??= _cancel(terminate: false);
+
+  Future<void> _cancel({required bool terminate}) async {
     if (_status == ResumableUploadStatus.completed ||
         _status == ResumableUploadStatus.cancelled) {
       return;
@@ -662,7 +699,7 @@ class ResumableUpload {
     _finish();
     final record = _record;
     if (record != null) {
-      await _registry._terminate(record, _headers);
+      if (terminate) await _registry._terminate(record, _headers);
       await _registry._remove(id);
     }
     if (_done.isCompleted) _done = Completer()..future.ignore();

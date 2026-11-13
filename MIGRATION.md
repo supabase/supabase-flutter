@@ -631,6 +631,8 @@ explicitly:
   and `reconnectAfter` no longer sets the channel rejoin delays
 - [A denied channel join is not retried](#a-denied-channel-join-is-not-retried), so a channel that
   a row level security policy denies stays errored until you subscribe it again
+- [Signing out removes every channel](#signing-out-removes-every-channel), so a channel that should
+  outlive a sign-out, such as a public one, has to be subscribed again
 
 ### Packages and setup
 
@@ -2072,6 +2074,18 @@ channel with `removeChannel()` before reusing its name with other options.
 `RealtimeClient.disconnect()` keeps the channels and rejoins them on the next connection. Call
 `removeAllChannels()` to unsubscribe them as well. A broadcast without `ack` resolves to `ok` once
 it is written to the socket, and to `error` on a channel that is leaving or has closed.
+
+#### Signing out removes every channel
+
+Channels used to stay subscribed after a sign-out, with the publishable key in place of the access
+token, so a channel opened for one user kept its listeners, presence and buffered messages for the
+next user of the device. Now `SupabaseClient` unsubscribes and removes every channel when the user
+is signed out by `signOut()` or because the session could no longer be refreshed.
+Each subscribed channel reports `closed`, and the streams of its listeners and of `stream()` close.
+
+Subscribe the channels again after the next sign-in. A channel that does not need a signed-in user,
+such as a public lobby, can be subscribed again from a listener of `onAuthStateChange` that reacts
+to `AuthSignedOut`.
 
 #### Realtime listener callbacks are now streams
 

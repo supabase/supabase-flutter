@@ -617,6 +617,59 @@ void main() {
     );
   });
 
+  test('forgets every upload without deleting it on the server', () async {
+    const key = 'sb-localhost-resumable-uploads';
+    await recordStorage.setItem(
+      key,
+      jsonEncode({'future-upload': 'from a newer version'}),
+    );
+    httpClient.stubStall(method: HttpMethod.patch, times: 1);
+    final upload = storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', data);
+    await upload.progress.first;
+    await pumpEventQueue();
+
+    await storage.forgetResumableUploads();
+
+    expect(upload.status, ResumableUploadStatus.cancelled);
+    await expectLater(
+      upload.done,
+      throwsA(isA<ResumableUploadCancelledException>()),
+    );
+    expect(
+      httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete),
+      isEmpty,
+    );
+    expect(await recordStorage.getItem(key), isNull);
+    expect(await storage.resumableUploads(), isEmpty);
+  });
+
+  test('cancels a failed upload resumed after forgetting it', () async {
+    httpClient.stubText(
+      'Forbidden',
+      statusCode: 403,
+      method: HttpMethod.patch,
+    );
+    final upload = storage
+        .from('videos')
+        .resumableUploadBinary('clip.mp4', data);
+    await expectLater(upload.done, throwsA(isA<StorageApiException>()));
+
+    await storage.forgetResumableUploads();
+    upload.resume();
+
+    await expectLater(
+      upload.done,
+      throwsA(isA<ResumableUploadCancelledException>()),
+    );
+    expect(upload.status, ResumableUploadStatus.cancelled);
+    expect(
+      httpClient.requestsTo('/upload/resumable', method: HttpMethod.post),
+      hasLength(1),
+    );
+  });
+
   test('completes instead of cancelling once the last chunk landed', () async {
     final answer = Completer<void>();
     httpClient.stubHandler(
@@ -810,6 +863,35 @@ void main() {
         storage.resumeUploadBinary('unknown', data),
         throwsA(isA<StorageException>()),
       );
+    });
+
+    test('forgets the records of an earlier run', () async {
+      final id = await interruptedUpload();
+      final restarted = createClient();
+
+      await restarted.forgetResumableUploads();
+
+      expect(await restarted.resumableUploads(), isEmpty);
+      await expectLater(
+        restarted.resumeUploadBinary(id, data),
+        throwsA(isA<StorageException>()),
+      );
+      expect(
+        httpClient.requestsTo(uploadUrlPath, method: HttpMethod.delete),
+        isEmpty,
+      );
+    });
+
+    test('does not continue an upload forgotten while resuming it', () async {
+      final id = await interruptedUpload();
+      final restarted = createClient();
+
+      final resumed = restarted.resumeUploadBinary(id, data);
+      await restarted.forgetResumableUploads();
+
+      await expectLater(resumed, throwsA(isA<StorageException>()));
+      expect(heads(), isEmpty);
+      expect(await restarted.resumableUploads(), isEmpty);
     });
 
     test('discards a record without the data', () async {
