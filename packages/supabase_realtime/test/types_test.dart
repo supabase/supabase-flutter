@@ -1,3 +1,4 @@
+import 'package:supabase_realtime/src/types.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
@@ -168,6 +169,34 @@ void main() {
       expect(first, second);
       expect(first.hashCode, second.hashCode);
       expect({first, second}, hasLength(1));
+    });
+  });
+
+  group('ChannelFilter.fromJson', () {
+    test('reads back what toJson wrote', () {
+      const filter = ChannelFilter(
+        event: '*',
+        schema: 'public',
+        table: 'todos',
+        filter: 'id=eq.1',
+        select: ['id', 'task'],
+      );
+
+      expect(ChannelFilter.fromJson(filter.toJson()), filter);
+    });
+
+    test('leaves missing fields null', () {
+      expect(
+        ChannelFilter.fromJson({'event': 'INSERT', 'id': 63346682}),
+        const ChannelFilter(event: 'INSERT'),
+      );
+    });
+
+    test('throws a FormatException for a field of the wrong type', () {
+      expect(
+        () => ChannelFilter.fromJson({'table': 1}),
+        throwsFormatException,
+      );
     });
   });
 

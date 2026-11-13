@@ -449,28 +449,23 @@ class RealtimeChannel {
 
     for (final (i, clientPostgresBinding)
         in (_bindings['postgres_changes'] ?? <Binding>[]).indexed) {
-      final echoed = i < echoedBindings.length && echoedBindings[i] != null
-          ? _echoedBinding(
-              jsonObject(
-                echoedBindings[i],
-                description: 'element $i of "postgres_changes"',
-              ),
-            )
-          : null;
-      final ChannelFilter(:event, :schema, :table, :filter) =
-          clientPostgresBinding.filter;
+      final echo = switch (echoedBindings.elementAtOrNull(i)) {
+        null => null,
+        final Object echoed => jsonObject(
+          echoed,
+          description: 'element $i of "postgres_changes"',
+        ),
+      };
 
       // NOTE: `select` is intentionally not part of this equality check
       // (mirroring supabase-js), so a server that echoes `select` back in a
       // slightly different shape does not force a spurious unsubscribe. The
       // client binding keeps its own `select` regardless.
-      final expected = ChannelFilter(
-        event: event,
-        schema: schema,
-        table: table,
-        filter: filter,
-      );
-      if (echoed == null || echoed.filter != expected) {
+      if (echo == null ||
+          !_listensToSameRows(
+            ChannelFilter.fromJson(echo),
+            clientPostgresBinding.filter,
+          )) {
         unawaited(unsubscribe());
         _addStatus(
           RealtimeSubscribeStatus.channelError,
@@ -481,7 +476,9 @@ class RealtimeChannel {
         );
         return;
       }
-      newPostgresBindings.add(clientPostgresBinding.copyWith(id: echoed.id));
+      newPostgresBindings.add(
+        clientPostgresBinding.copyWith(id: _bindingId(echo['id'])),
+      );
     }
 
     _bindings['postgres_changes'] = newPostgresBindings;
@@ -489,25 +486,18 @@ class RealtimeChannel {
     _addStatus(RealtimeSubscribeStatus.subscribed);
   }
 
-  /// Reads a binding the server echoed back in its join reply, without its
-  /// `select`, which the reply is not checked against.
-  static ({ChannelFilter filter, int? id}) _echoedBinding(
-    Map<String, dynamic> echo,
-  ) {
-    return (
-      filter: ChannelFilter(
-        event: echo.field('event'),
-        schema: echo.field('schema'),
-        table: echo.field('table'),
-        filter: echo.field('filter'),
-      ),
-      id: switch (echo['id']) {
-        final num id => id.toInt(),
-        final String id => int.tryParse(id),
-        _ => null,
-      },
-    );
-  }
+  /// Whether [a] and [b] listen to the same rows, whatever columns each
+  /// selects.
+  static bool _listensToSameRows(ChannelFilter a, ChannelFilter b) =>
+      (a.event, a.schema, a.table, a.filter) ==
+      (b.event, b.schema, b.table, b.filter);
+
+  /// The id the server assigned to a binding in its join reply.
+  static int? _bindingId(Object? value) => switch (value) {
+    final num id => id.toInt(),
+    final String id => int.tryParse(id),
+    _ => null,
+  };
 
   /// The current presence state, keyed by presence key.
   List<SinglePresenceState> presenceState() {

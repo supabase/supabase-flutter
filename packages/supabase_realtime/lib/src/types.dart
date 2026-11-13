@@ -81,6 +81,15 @@ class ChannelFilter {
     this.select,
   });
 
+  /// Reads a filter from its JSON form, the inverse of [toJson].
+  factory ChannelFilter.fromJson(Map<String, dynamic> json) => ChannelFilter(
+    event: json.field('event'),
+    schema: json.field('schema'),
+    table: json.field('table'),
+    filter: json.field('filter'),
+    select: json.listOf('select'),
+  );
+
   /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`,
   /// `DELETE`
   ///
@@ -103,7 +112,7 @@ class ChannelFilter {
   /// a subset of columns instead of the full row.
   final List<String>? select;
 
-  Map<String, Object> toMap() {
+  Map<String, Object> toJson() {
     return {
       'event': ?event,
       'schema': ?schema,
@@ -397,7 +406,7 @@ class ChannelJoinPayload {
       'broadcast': config._broadcastJson,
       'presence': {'key': config.presenceKey, 'enabled': presenceEnabled},
       'postgres_changes': [
-        for (final filter in postgresChanges) filter.toMap(),
+        for (final filter in postgresChanges) filter.toJson(),
       ],
       'private': config.private,
     },
