@@ -640,7 +640,7 @@ class RealtimeChannel {
       () => _eventStream(
         'postgres_changes',
         channelFilter,
-        (payload) => PostgresChangePayload.fromPayload(
+        (payload) => PostgresChangePayload.fromJson(
           jsonObject(payload, description: 'the postgres_changes payload'),
         ),
       ),

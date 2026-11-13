@@ -1849,7 +1849,7 @@ was stringified into the socket URL. Pass string values.
 | `channel.joinedOnce = value`       | removed, the getter remains (internal)               |
 | `channel.joinPush = push`          | removed, the getter remains (internal and test-only) |
 | `channel.presence`                 | removed                                              |
-| `channel.parameters` (mutable map) | `channel.parameters` (unmodifiable view, internal)   |
+| `channel.parameters` (mutable map) | removed                                              |
 
 If you read presence state through `channel.presence`, use `channel.presenceState()` and the
 `onPresenceSync`, `onPresenceJoin` and `onPresenceLeave` streams instead. Pass channel configuration
@@ -2046,6 +2046,17 @@ void handle(PostgresChangePayload payload, void Function() refetch) {
   if (payload.errors.isNotEmpty) refetch();
 }
 ```
+
+#### Realtime data classes convert with `fromJson` and `toJson`
+
+| Before                                       | After                                     |
+| -------------------------------------------- | ----------------------------------------- |
+| `PostgresChangePayload.fromPayload(payload)` | `PostgresChangePayload.fromJson(payload)` |
+| `ReplayOption.toMap()`                       | `ReplayOption.toJson()`                   |
+| `RealtimeChannelConfig.toMap()`              | removed                                   |
+
+`RealtimeChannelConfig.toMap()` returned part of the payload a channel joins with. The channel builds
+that payload itself, so nothing needs it.
 
 #### A channel name in use returns its channel
 

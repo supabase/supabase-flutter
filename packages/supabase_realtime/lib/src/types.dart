@@ -241,13 +241,7 @@ class ReplayOption {
   final int? limit;
 
   /// Converts this to the shape sent in the channel's broadcast config.
-  Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{'since': since};
-    if (limit != null) {
-      map['limit'] = limit;
-    }
-    return map;
-  }
+  Map<String, Object> toJson() => {'since': since, 'limit': ?limit};
 
   @override
   bool operator ==(Object other) =>
@@ -329,21 +323,10 @@ class RealtimeChannelConfig {
   /// next major version.
   final bool v2BroadcastCompatibility;
 
-  /// Converts this to the shape sent when joining the channel.
-  Map<String, dynamic> toMap() {
-    return {
-      'config': {
-        'broadcast': _broadcastJson,
-        'presence': {'key': presenceKey, 'enabled': presenceEnabled},
-        'private': private,
-      },
-    };
-  }
-
   Map<String, Object> get _broadcastJson => {
     'ack': ack,
     'self': self,
-    'replay': ?replay?.toMap(),
+    'replay': ?replay?.toJson(),
     if (replicationReady) 'replication_ready': true,
   };
 
@@ -470,8 +453,8 @@ class PostgresChangePayload {
     this.errors = const [],
   });
 
-  factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
-    final commitTimestampValue = payload['commit_timestamp'];
+  factory PostgresChangePayload.fromJson(Map<String, dynamic> json) {
+    final commitTimestampValue = json['commit_timestamp'];
     DateTime commitTimestamp;
     try {
       commitTimestamp = commitTimestampValue is String
@@ -481,19 +464,19 @@ class PostgresChangePayload {
       commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     }
 
-    final newData = payload['new'];
-    final oldData = payload['old'];
+    final newData = json['new'];
+    final oldData = json['old'];
 
     return PostgresChangePayload(
-      schema: payload.field('schema'),
-      table: payload.field('table'),
+      schema: json.field('schema'),
+      table: json.field('table'),
       commitTimestamp: commitTimestamp,
       eventType: PostgresChangeEvent.fromValue(
-        payload.field('eventType'),
+        json.field('eventType'),
       ),
       newRecord: newData is Map ? Map.from(newData) : {},
       oldRecord: oldData is Map ? Map.from(oldData) : {},
-      errors: switch (payload['errors']) {
+      errors: switch (json['errors']) {
         final List<dynamic> errors => List.unmodifiable(
           errors.nonNulls.map((error) => error is String ? error : '$error'),
         ),

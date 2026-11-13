@@ -13,9 +13,9 @@ Map<String, dynamic> payloadWith(Object? commitTimestamp) => {
 };
 
 void main() {
-  group('PostgresChangePayload.fromPayload', () {
+  group('PostgresChangePayload.fromJson', () {
     test('parses a commit timestamp as UTC', () {
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith('2022-09-21T04:59:30Z'),
       );
 
@@ -24,7 +24,7 @@ void main() {
     });
 
     test('normalizes a commit timestamp with an offset to UTC', () {
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith('2022-09-21T06:59:30+02:00'),
       );
 
@@ -33,7 +33,7 @@ void main() {
     });
 
     test('decodes an unrecognized event type as unknown', () {
-      final payload = PostgresChangePayload.fromPayload({
+      final payload = PostgresChangePayload.fromJson({
         ...payloadWith('2022-09-21T04:59:30Z'),
         'eventType': 'TRUNCATE',
       });
@@ -42,7 +42,7 @@ void main() {
     });
 
     test('reads errors as strings, keeping entries that are not strings', () {
-      final payload = PostgresChangePayload.fromPayload({
+      final payload = PostgresChangePayload.fromJson({
         ...payloadWith('2022-09-21T04:59:30Z'),
         'errors': [
           'Error 413: Payload Too Large',
@@ -55,7 +55,7 @@ void main() {
     });
 
     test('reads missing errors as an empty list', () {
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith('2022-09-21T04:59:30Z'),
       );
 
@@ -63,14 +63,14 @@ void main() {
     });
 
     test('falls back to the UTC epoch when the timestamp is missing', () {
-      final payload = PostgresChangePayload.fromPayload(payloadWith(null));
+      final payload = PostgresChangePayload.fromJson(payloadWith(null));
 
       expect(payload.commitTimestamp, DateTime.utc(1970));
       expect(payload.commitTimestamp.isUtc, isTrue);
     });
 
     test('falls back to the UTC epoch when the timestamp is malformed', () {
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith('not a timestamp'),
       );
 
@@ -81,7 +81,7 @@ void main() {
     test('falls back to the UTC epoch when the timestamp is not a string', () {
       // Casting this to String? raised a TypeError, which the FormatException
       // fallback around the parse does not catch.
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith(1663764570),
       );
 
@@ -101,7 +101,7 @@ void main() {
 
     test('a postgres change with a non-string table throws', () {
       expect(
-        () => PostgresChangePayload.fromPayload({
+        () => PostgresChangePayload.fromJson({
           ...payloadWith('2022-09-21T04:59:30Z'),
           'table': 42,
         }),
@@ -111,7 +111,7 @@ void main() {
 
     test('a postgres change without an event type throws', () {
       expect(
-        () => PostgresChangePayload.fromPayload({
+        () => PostgresChangePayload.fromJson({
           ...payloadWith('2022-09-21T04:59:30Z'),
           'eventType': null,
         }),
@@ -159,10 +159,10 @@ void main() {
 
   group('PostgresChangePayload equality', () {
     test('equal payloads with distinct maps share a hash code', () {
-      final first = PostgresChangePayload.fromPayload(
+      final first = PostgresChangePayload.fromJson(
         payloadWith('2026-06-15T00:00:00Z'),
       );
-      final second = PostgresChangePayload.fromPayload(
+      final second = PostgresChangePayload.fromJson(
         payloadWith('2026-06-15T00:00:00Z'),
       );
 
