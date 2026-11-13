@@ -148,92 +148,73 @@ void main() {
 
   group('Supabase.initialize with a v2 session', () {
     const supabaseUrl = 'https://abcdefghij.supabase.co';
+    const sessionKey = 'sb-abcdefghij-auth-token';
+
+    late int expiresAt;
+    late String accessToken;
+
+    setUp(() {
+      expiresAt =
+          DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+          1000;
+      accessToken = unsignedTestJwt({
+        'exp': expiresAt,
+        'sub': testUserId,
+        'role': 'authenticated',
+      });
+    });
 
     tearDown(() async {
       await Supabase.instance.dispose();
     });
 
+    Future<void> initialize() => Supabase.initialize(
+      url: supabaseUrl,
+      publishableKey: '',
+      httpClient: MockSupabaseHttpClient(),
+      authOptions: const FlutterAuthClientOptions(
+        detectSessionInUri: false,
+      ),
+    );
+
     test('restores the session supabase_flutter v2 persisted', () async {
-      final expiresAt =
-          DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
-          1000;
-      final accessToken = unsignedTestJwt({
-        'exp': expiresAt,
-        'sub': testUserId,
-        'role': 'authenticated',
-      });
-      // The value v2 wrote: `jsonEncode(session.toJson())` under the key it
-      // derived from the project ref.
-      final v2Session = jsonEncode({
-        'access_token': accessToken,
-        'expires_in': 3600,
-        'expires_at': expiresAt,
-        'refresh_token': 'v2-refresh-token',
-        'token_type': 'bearer',
-        'provider_token': null,
-        'provider_refresh_token': null,
-        'user': {
-          'id': testUserId,
-          'app_metadata': {
-            'provider': 'email',
-            'providers': ['email'],
-          },
-          'user_metadata': <String, dynamic>{},
-          'aud': 'authenticated',
-          'confirmation_sent_at': null,
-          'recovery_sent_at': null,
-          'email_change_sent_at': null,
-          'new_email': null,
-          'invited_at': null,
-          'action_link': null,
-          'email': 'v2@example.com',
-          'phone': '',
-          'created_at': '2024-05-01T12:00:00.000000Z',
-          'confirmed_at': '2024-05-01T12:00:00.000000Z',
-          'email_confirmed_at': '2024-05-01T12:00:00.000000Z',
-          'phone_confirmed_at': null,
-          'last_sign_in_at': '2024-05-02T08:30:00.000000Z',
-          'role': 'authenticated',
-          'updated_at': '2024-05-02T08:30:00.000000Z',
-          'identities': [
-            {
-              'id': testUserId,
-              'user_id': testUserId,
-              'identity_data': {'email': 'v2@example.com', 'sub': testUserId},
-              'identity_id': '6b1f5c2e-7a52-4d0b-9a1e-0f3f4c1d2e3a',
-              'provider': 'email',
-              'created_at': '2024-05-01T12:00:00.000000Z',
-              'last_sign_in_at': '2024-05-02T08:30:00.000000Z',
-              'updated_at': '2024-05-02T08:30:00.000000Z',
-            },
-          ],
-          'factors': null,
-          'is_anonymous': false,
-        },
-      });
       mockSharedPreferences(
-        legacyValues: {'sb-abcdefghij-auth-token': v2Session},
+        legacyValues: {sessionKey: _v2Session(accessToken, expiresAt)},
       );
 
-      await Supabase.initialize(
-        url: supabaseUrl,
-        publishableKey: '',
-        httpClient: MockSupabaseHttpClient(),
-        authOptions: const FlutterAuthClientOptions(
-          detectSessionInUri: false,
-        ),
-      );
+      await initialize();
 
       final session = Supabase.instance.client.auth.currentSession;
       expect(session?.accessToken, accessToken);
       expect(session?.refreshToken, 'v2-refresh-token');
       expect(session?.user.id, testUserId);
       expect(session?.user.email, 'v2@example.com');
-      expect(
-        await SharedPreferencesAsync().getString('sb-abcdefghij-auth-token'),
-        isNotNull,
-      );
+      expect(await SharedPreferencesAsync().getString(sessionKey), isNotNull);
+      final legacyPreferences = await SharedPreferences.getInstance();
+      expect(legacyPreferences.containsKey(sessionKey), isFalse);
     });
+
+    test(
+      'moves the session v2 persisted under supabasePersistSessionKey',
+      () async {
+        const legacySessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
+        mockSharedPreferences(
+          legacyValues: {legacySessionKey: _v2Session(accessToken, expiresAt)},
+        );
+
+        await initialize();
+        await pumpEventQueue();
+
+        final session = Supabase.instance.client.auth.currentSession;
+        expect(session?.accessToken, accessToken);
+        expect(session?.refreshToken, 'v2-refresh-token');
+        final preferences = SharedPreferencesAsync();
+        expect(await preferences.getString(sessionKey), isNotNull);
+        expect(await preferences.getString(legacySessionKey), isNull);
+        final legacyPreferences = await SharedPreferences.getInstance();
+        expect(legacyPreferences.containsKey(legacySessionKey), isFalse);
+      },
+    );
   });
 
   group('SharedPreferencesAuthAsyncStorage operation order', () {
@@ -309,6 +290,56 @@ void main() {
     });
   });
 }
+
+/// The value supabase_flutter v2 persisted for a session holding
+/// [accessToken], which expires at [expiresAt]: `jsonEncode(session.toJson())`.
+String _v2Session(String accessToken, int expiresAt) => jsonEncode({
+  'access_token': accessToken,
+  'expires_in': 3600,
+  'expires_at': expiresAt,
+  'refresh_token': 'v2-refresh-token',
+  'token_type': 'bearer',
+  'provider_token': null,
+  'provider_refresh_token': null,
+  'user': {
+    'id': testUserId,
+    'app_metadata': {
+      'provider': 'email',
+      'providers': ['email'],
+    },
+    'user_metadata': <String, dynamic>{},
+    'aud': 'authenticated',
+    'confirmation_sent_at': null,
+    'recovery_sent_at': null,
+    'email_change_sent_at': null,
+    'new_email': null,
+    'invited_at': null,
+    'action_link': null,
+    'email': 'v2@example.com',
+    'phone': '',
+    'created_at': '2024-05-01T12:00:00.000000Z',
+    'confirmed_at': '2024-05-01T12:00:00.000000Z',
+    'email_confirmed_at': '2024-05-01T12:00:00.000000Z',
+    'phone_confirmed_at': null,
+    'last_sign_in_at': '2024-05-02T08:30:00.000000Z',
+    'role': 'authenticated',
+    'updated_at': '2024-05-02T08:30:00.000000Z',
+    'identities': [
+      {
+        'id': testUserId,
+        'user_id': testUserId,
+        'identity_data': {'email': 'v2@example.com', 'sub': testUserId},
+        'identity_id': '6b1f5c2e-7a52-4d0b-9a1e-0f3f4c1d2e3a',
+        'provider': 'email',
+        'created_at': '2024-05-01T12:00:00.000000Z',
+        'last_sign_in_at': '2024-05-02T08:30:00.000000Z',
+        'updated_at': '2024-05-02T08:30:00.000000Z',
+      },
+    ],
+    'factors': null,
+    'is_anonymous': false,
+  },
+});
 
 /// Stands in for a legacy store that takes a while to answer, so that another
 /// operation can be started while a migration is still reading it.

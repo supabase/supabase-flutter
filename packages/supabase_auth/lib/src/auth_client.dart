@@ -2276,6 +2276,14 @@ class AuthClient {
     _queueStorageWrite((storage) => storage.removeItem(_storageKey));
   }
 
+  /// Removes the session stored under
+  /// [AuthConstants.legacySessionStorageKey], after the writes queued before.
+  void _removeLegacySession() {
+    _queueStorageWrite(
+      (storage) => storage.removeItem(AuthConstants.legacySessionStorageKey),
+    );
+  }
+
   /// Runs [write] after the storage writes queued before it, when the session
   /// is persisted.
   ///
@@ -2366,6 +2374,11 @@ class AuthClient {
 
   /// Makes the session persisted in [storage] the current one.
   ///
+  /// When nothing is stored under [storageKey], a session stored under
+  /// [AuthConstants.legacySessionStorageKey] is moved over to it. The legacy
+  /// entry is removed whatever it holds, so no refresh token is left behind
+  /// there.
+  ///
   /// A value that does not hold a session is removed from the storage and
   /// reported as `discarded`. A sign-in or sign-out that happened while the
   /// storage was being read is newer than what was read, so the current
@@ -2379,8 +2392,16 @@ class AuthClient {
     const nothing = (expired: null, discarded: false);
     final versionBeforeRead = _sessionVersion;
     String? persisted;
+    var fromLegacyKey = false;
     try {
       persisted = await storage.getItem(_storageKey);
+      if (persisted == null &&
+          _storageKey != AuthConstants.legacySessionStorageKey) {
+        persisted = await storage.getItem(
+          AuthConstants.legacySessionStorageKey,
+        );
+        fromLegacyKey = persisted != null;
+      }
     } catch (error, stackTrace) {
       authLogger.warning(
         'Could not read the persisted session',
@@ -2393,6 +2414,9 @@ class AuthClient {
     }
     if (_sessionVersion != versionBeforeRead) {
       authLogger.fine('Session changed during restore, keeping it');
+      if (fromLegacyKey) {
+        _removeLegacySession();
+      }
       return nothing;
     }
     Session? session;
@@ -2414,9 +2438,19 @@ class AuthClient {
       }
       if (session == null) {
         _removeSession();
+        if (fromLegacyKey) {
+          _removeLegacySession();
+        }
         return (expired: null, discarded: true);
       }
-      _currentSession = session;
+      if (fromLegacyKey) {
+        // Queued in this order, so that an interruption in between leaves the
+        // session under one of the keys.
+        _saveSession(session);
+        _removeLegacySession();
+      } else {
+        _currentSession = session;
+      }
     }
     return (
       expired: session != null && session.isExpired ? persisted : null,

@@ -165,9 +165,9 @@ The sections that most often apply:
 - "Timestamps are `DateTime` instead of `String` or `int`".
 - "`rpc` is a getter", "`insert()` and `upsert()` no longer take filters" and
   "The rest client and its builders are stateless".
-- "`supabasePersistSessionKey` is gone": keep the old key as `storageKey` only
-  if the app wrote sessions under it through a custom storage, otherwise users
-  are signed out once.
+- "`supabasePersistSessionKey` is gone": drop the constant. A session a custom
+  storage kept under it is moved to the new key on the first start, as long as
+  the `AuthAsyncStorage` that replaces it reads the same store.
 
 ## 7. Changes the compiler will not catch
 

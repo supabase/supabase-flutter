@@ -14,6 +14,11 @@ class AuthConstants {
   /// can complete.
   static const String legacyStorageKey = 'supabase.auth.token';
 
+  /// The key supabase_flutter v2 exported as `supabasePersistSessionKey`, for
+  /// apps that kept the session in their own storage. A session found under
+  /// it is moved to `AuthClient.storageKey` when it is restored.
+  static const String legacySessionStorageKey = 'SUPABASE_PERSIST_SESSION_KEY';
+
   /// Maximum number of PKCE code verifiers kept in storage at once. Starting
   /// another flow beyond this evicts the oldest pending verifier.
   static const int pkceMaxConcurrentFlows = 5;
