@@ -2269,11 +2269,18 @@ class AuthClient {
   }
 
   /// Clears the current session and removes the persisted one.
+  ///
+  /// A session left under [AuthConstants.legacySessionStorageKey] is removed
+  /// as well, since the next start would restore it once [storageKey] is
+  /// empty.
   void _removeSession() {
     authLogger.fine('Removing session');
     _currentSession = null;
     _autoRefreshPausedUntil = null;
     _queueStorageWrite((storage) => storage.removeItem(_storageKey));
+    if (_storageKey != AuthConstants.legacySessionStorageKey) {
+      _removeLegacySession();
+    }
   }
 
   /// Removes the value stored under

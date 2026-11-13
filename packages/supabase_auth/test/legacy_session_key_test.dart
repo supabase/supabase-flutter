@@ -114,6 +114,23 @@ void main() {
     expect(client.currentSession?.refreshToken, 'current');
   });
 
+  test('a sign out removes a legacy session left beside the current one, so '
+      'the next start does not restore it', () async {
+    httpClient.stubSignOut();
+    await storage.setItem(storageKey, sessionValue(refreshToken: 'current'));
+    await storage.setItem(legacyKey, sessionValue(refreshToken: 'legacy'));
+    final client = createClient();
+    await client.initialized;
+
+    await client.signOut();
+    await pumpEventQueue();
+
+    expect(await storage.getItem(legacyKey), isNull);
+    final restarted = createClient();
+    await restarted.initialized;
+    expect(restarted.currentSession, isNull);
+  });
+
   test('removes a legacy value that holds no session without signing '
       'out', () async {
     await storage.setItem(legacyKey, 'not a session');
