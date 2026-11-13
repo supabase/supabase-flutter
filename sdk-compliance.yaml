@@ -3765,7 +3765,7 @@ supporting_symbols:
   - UserIdentity.UserIdentity
   - UserIdentity.copyWith
   - UserIdentity.createdAt
-  - UserIdentity.fromMap
+  - UserIdentity.fromJson
   - UserIdentity.hashCode
   - UserIdentity.id
   - UserIdentity.identityData

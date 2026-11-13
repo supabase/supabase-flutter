@@ -566,7 +566,7 @@ class FileSort {
   final SortDirection order;
 
   @internal
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'column': column.snakeCase,
       'order': order.value,
@@ -621,13 +621,13 @@ class ListFilesOptions {
   final bool? exactMatch;
 
   @internal
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'limit': ?limit,
       'prefix': ?prefix,
       'cursor': ?cursor,
       'with_delimiter': ?withDelimiter,
-      'sortBy': ?sortBy?.toMap(),
+      'sortBy': ?sortBy?.toJson(),
       'noncurrentVersions': ?noncurrentVersions?.snakeCase,
       'deleteMarkers': ?deleteMarkers?.snakeCase,
       'exactMatch': ?exactMatch,

@@ -29,6 +29,45 @@ class User {
     this.isAnonymous = false,
   });
 
+  /// Reads a user from its JSON representation, throwing a [FormatException]
+  /// when a required field such as `id` is missing or a field holds the wrong
+  /// type.
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json.field('id'),
+      appMetadata: AppMetadata.fromJson(
+        json.field<Map<String, dynamic>?>('app_metadata') ?? const {},
+      ),
+      userMetadata: Map.unmodifiable(
+        json.field<Map<String, dynamic>?>('user_metadata') ?? const {},
+      ),
+      audience: json.field('aud') ?? '',
+      confirmationSentAt: tryParseIso8601(json, 'confirmation_sent_at'),
+      recoverySentAt: tryParseIso8601(json, 'recovery_sent_at'),
+      emailChangeSentAt: tryParseIso8601(json, 'email_change_sent_at'),
+      newEmail: json.field('new_email'),
+      invitedAt: tryParseIso8601(json, 'invited_at'),
+      actionLink: json.field('action_link'),
+      email: json.field('email'),
+      phone: json.field('phone'),
+      createdAt: parseIso8601(json, 'created_at'),
+      emailConfirmedAt: tryParseIso8601(json, 'email_confirmed_at'),
+      phoneConfirmedAt: tryParseIso8601(json, 'phone_confirmed_at'),
+      lastSignInAt: tryParseIso8601(json, 'last_sign_in_at'),
+      role: json.field('role'),
+      updatedAt: tryParseIso8601(json, 'updated_at'),
+      identities: json
+          .listOf<Map<String, dynamic>>('identities')
+          ?.map(UserIdentity.fromJson)
+          .toList(),
+      factors: json
+          .listOf<Map<String, dynamic>>('factors')
+          ?.map(Factor.fromJson)
+          .toList(),
+      isAnonymous: json.field('is_anonymous') ?? false,
+    );
+  }
+
   /// The user's unique identifier, matches the `sub` claim of their JWTs.
   final String id;
 
@@ -95,48 +134,6 @@ class User {
 
   /// Whether the user signed in anonymously.
   final bool isAnonymous;
-
-  /// Returns a `User` object from a map of json
-  /// returns `null` if there is no `id` present
-  static User? fromJson(Map<String, dynamic> json) {
-    if (json['id'] == null) {
-      return null;
-    }
-
-    return User(
-      id: json.field('id'),
-      appMetadata: AppMetadata.fromJson(
-        json.field<Map<String, dynamic>?>('app_metadata') ?? const {},
-      ),
-      userMetadata: Map.unmodifiable(
-        json.field<Map<String, dynamic>?>('user_metadata') ?? const {},
-      ),
-      audience: json.field('aud') ?? '',
-      confirmationSentAt: tryParseIso8601(json, 'confirmation_sent_at'),
-      recoverySentAt: tryParseIso8601(json, 'recovery_sent_at'),
-      emailChangeSentAt: tryParseIso8601(json, 'email_change_sent_at'),
-      newEmail: json.field('new_email'),
-      invitedAt: tryParseIso8601(json, 'invited_at'),
-      actionLink: json.field('action_link'),
-      email: json.field('email'),
-      phone: json.field('phone'),
-      createdAt: parseIso8601(json, 'created_at'),
-      emailConfirmedAt: tryParseIso8601(json, 'email_confirmed_at'),
-      phoneConfirmedAt: tryParseIso8601(json, 'phone_confirmed_at'),
-      lastSignInAt: tryParseIso8601(json, 'last_sign_in_at'),
-      role: json.field('role'),
-      updatedAt: tryParseIso8601(json, 'updated_at'),
-      identities: json
-          .listOf<Map<String, dynamic>>('identities')
-          ?.map(UserIdentity.fromMap)
-          .toList(),
-      factors: json
-          .listOf<Map<String, dynamic>>('factors')
-          ?.map(Factor.fromJson)
-          .toList(),
-      isAnonymous: json.field('is_anonymous') ?? false,
-    );
-  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -248,16 +245,16 @@ class UserIdentity {
     this.updatedAt,
   });
 
-  factory UserIdentity.fromMap(Map<String, dynamic> map) {
+  factory UserIdentity.fromJson(Map<String, dynamic> json) {
     return UserIdentity(
-      id: map.field('id'),
-      userId: map.field('user_id'),
-      identityData: map.field<Map<dynamic, dynamic>?>('identity_data')?.cast(),
-      identityId: map.field('identity_id') ?? '',
-      provider: map.field('provider'),
-      createdAt: tryParseIso8601(map, 'created_at'),
-      lastSignInAt: tryParseIso8601(map, 'last_sign_in_at'),
-      updatedAt: tryParseIso8601(map, 'updated_at'),
+      id: json.field('id'),
+      userId: json.field('user_id'),
+      identityData: json.field<Map<dynamic, dynamic>?>('identity_data')?.cast(),
+      identityId: json.field('identity_id') ?? '',
+      provider: json.field('provider'),
+      createdAt: tryParseIso8601(json, 'created_at'),
+      lastSignInAt: tryParseIso8601(json, 'last_sign_in_at'),
+      updatedAt: tryParseIso8601(json, 'updated_at'),
     );
   }
 

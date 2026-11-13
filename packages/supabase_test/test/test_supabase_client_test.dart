@@ -249,7 +249,7 @@ void main() {
 
   group('fixtures', () {
     test('testUserJson describes an authenticated user', () {
-      final user = User.fromJson(testUserJson())!;
+      final user = User.fromJson(testUserJson());
 
       expect(user.audience, 'authenticated');
       expect(user.role, 'authenticated');

@@ -128,7 +128,7 @@ void main() {
       final restored = Session.fromJson(
         received.copyWith(tokenType: 'bearer').toJson(),
         receivedAt: serverNow,
-      )!;
+      );
 
       expect(restored.receivedAt, deviceNow);
       expect(restored, received);

@@ -1946,10 +1946,13 @@ class AuthClient {
   Future<Session> recoverSession(String jsonString) async {
     final String refreshToken;
     try {
-      final session = Session.fromJson(json.decode(jsonString));
-      if (session == null) {
+      final sessionJson = jsonObject(
+        json.decode(jsonString),
+        description: 'the session',
+      );
+      if (sessionJson['access_token'] == null) {
         authLogger.warning(
-          "Can't recover session from string, session is null",
+          "Can't recover session from string, it has no access token",
         );
         await _discardSession(SignOutReason.sessionMissing);
         // The `catch` below notifies subscribers, so throw without notifying
@@ -1958,6 +1961,7 @@ class AuthClient {
           message: 'Current session is missing data.',
         );
       }
+      final session = Session.fromJson(sessionJson);
 
       if (!session.isExpired) {
         final previous = _currentSession;
@@ -2232,19 +2236,17 @@ class AuthClient {
         ),
       );
     }
-    final Session? session;
-    try {
-      session = Session.fromJson(body, receivedAt: result.sentAt);
-    } on FormatException catch (error) {
-      throw _undecodableSession(result.response, error);
-    }
-    if (session == null) {
+    if (body['access_token'] == null) {
       throw AuthSessionMissingException(
         message: 'The server response did not contain a session.',
         requestId: result.response.headers.requestId,
       );
     }
-    return session;
+    try {
+      return Session.fromJson(body, receivedAt: result.sentAt);
+    } on FormatException catch (error) {
+      throw _undecodableSession(result.response, error);
+    }
   }
 
   AuthRetryableFetchException _undecodableSession(
@@ -2396,7 +2398,13 @@ class AuthClient {
     Session? session;
     if (persisted != null) {
       try {
-        session = Session.fromJson(json.decode(persisted));
+        final sessionJson = jsonObject(
+          json.decode(persisted),
+          description: 'the persisted session',
+        );
+        if (sessionJson['access_token'] != null) {
+          session = Session.fromJson(sessionJson);
+        }
       } catch (error, stackTrace) {
         authLogger.warning(
           'Could not restore the persisted session',
@@ -2435,10 +2443,11 @@ class AuthClient {
           final event = AuthChangeEvent.fromValue(rawEvent);
 
           if (event != null) {
-            Session? session;
-            if (messageEvent['session'] != null) {
-              session = Session.fromJson(messageEvent['session']);
-            }
+            final sessionJson = messageEvent['session'];
+            final session =
+                sessionJson == null || sessionJson['access_token'] == null
+                ? null
+                : Session.fromJson(sessionJson);
             final state = _authStateFor(event, session, fromBroadcast: true);
             if (state == null) {
               authLogger.warning(

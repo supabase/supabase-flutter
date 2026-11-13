@@ -15,8 +15,12 @@ class AuthResponse {
   /// [receivedAt] is the [Session.receivedAt] of the session, and defaults to
   /// now.
   AuthResponse.fromJson(Map<String, dynamic> json, {DateTime? receivedAt})
-    : session = Session.fromJson(json, receivedAt: receivedAt ?? clock.now()),
-      user = User.fromJson(json) ?? Session.fromJson(json)?.user;
+    : this(
+        session: json['access_token'] == null
+            ? null
+            : Session.fromJson(json, receivedAt: receivedAt ?? clock.now()),
+        user: json['id'] == null ? null : User.fromJson(json),
+      );
 
   /// The new session, `null` when the call did not create one, for example
   /// a sign-up that requires email confirmation first.
@@ -54,7 +58,8 @@ class OAuthResponse {
 
 /// Response that contains a user
 class UserResponse {
-  UserResponse.fromJson(Map<String, dynamic> json) : user = User.fromJson(json);
+  UserResponse.fromJson(Map<String, dynamic> json)
+    : user = json['id'] == null ? null : User.fromJson(json);
 
   /// The user.
   final User? user;
@@ -145,24 +150,13 @@ enum AuthRedirectType {
 class GenerateLinkResponse {
   GenerateLinkResponse.fromJson(Map<String, dynamic> json)
     : properties = GenerateLinkProperties.fromJson(json),
-      user = _parseUser(json);
+      user = User.fromJson(json);
 
   /// The generated link and its associated metadata.
   final GenerateLinkProperties properties;
 
   /// The user the link was generated for.
   final User user;
-
-  static User _parseUser(Map<String, dynamic> json) {
-    final user = User.fromJson(json);
-    if (user == null) {
-      throw FormatException(
-        'Failed to parse user: missing required id field',
-        json.toString(),
-      );
-    }
-    return user;
-  }
 }
 
 /// The generated link and its associated metadata, part of a

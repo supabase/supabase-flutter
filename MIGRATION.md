@@ -590,6 +590,8 @@ explicitly:
   where writes without a `select()` now resolve to `void`
 - [`User.userMetadata` is never null](#userappmetadata-is-an-appmetadata-and-usermetadata-is-never-null),
   so a null check on it is dead code that the analyzer only warns about
+- [`User.fromJson` and `Session.fromJson` throw on incomplete JSON](#userfromjson-and-sessionfromjson-throw-on-incomplete-json),
+  so a null check on their result no longer catches a missing `id` or `access_token`
 - [`SupabaseClient` builds its own default HTTP client](#supabaseclient-builds-its-own-default-http-client),
   so on `dart:io` platforms a client installed with `runWithClient` is no longer picked up
 - [A request that gets no response throws a transport exception](#a-request-that-gets-no-response-throws-a-transport-exception),
@@ -1794,6 +1796,29 @@ await supabase.auth.updateUser(
 );
 ```
 
+#### `User.fromJson` and `Session.fromJson` throw on incomplete JSON
+
+`User.fromJson` and `Session.fromJson` are factory constructors, like every other `fromJson` in the
+SDK. They returned `null` for JSON without an `id` or an `access_token`, and throw a
+`FormatException` now. A null check on their result still compiles, but it is dead code that the
+analyzer only warns about, so check the field before parsing:
+
+```dart skip
+// Before
+final session = Session.fromJson(json);
+if (session == null) return null;
+```
+
+```dart file
+// After
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Session? readSession(Map<String, dynamic> json) =>
+    json['access_token'] == null ? null : Session.fromJson(json);
+```
+
+`UserIdentity.fromMap` is renamed to `UserIdentity.fromJson`.
+
 ### Realtime
 
 #### `RealtimeClient.connectionState` is now typed
@@ -2682,8 +2707,8 @@ servers can no longer be listed.
 
 The `StorageFileApi` constructor is internal. Get one for a bucket with
 `supabase.storage.from(bucketId)` instead. The methods that encode options for a request,
-`ListBucketsOptions.toQueryParameters`, `toMap` on `FileSort` and `ListFilesOptions`, and
-`Vector.toJson`, are internal too.
+`ListBucketsOptions.toQueryParameters`, `FileSort.toJson` and `ListFilesOptions.toJson` (`toMap`
+in v2), and `Vector.toJson`, are internal too.
 
 ### Errors
 

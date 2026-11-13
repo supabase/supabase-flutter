@@ -18,7 +18,7 @@ void main() {
     });
 
     group('fromJson', () {
-      test('returns null when access_token is missing', () {
+      test('throws a FormatException when access_token is missing', () {
         final json = {
           'user': {
             'id': '123',
@@ -29,12 +29,19 @@ void main() {
           },
         };
 
-        final session = Session.fromJson(json);
-
-        expect(session, isNull);
+        expect(
+          () => Session.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('"access_token"'),
+            ),
+          ),
+        );
       });
 
-      test('returns null when access_token is null', () {
+      test('throws a FormatException when access_token is null', () {
         final json = {
           'access_token': null,
           'user': {
@@ -46,9 +53,16 @@ void main() {
           },
         };
 
-        final session = Session.fromJson(json);
-
-        expect(session, isNull);
+        expect(
+          () => Session.fromJson(json),
+          throwsA(
+            isA<FormatException>().having(
+              (error) => error.message,
+              'message',
+              contains('"access_token"'),
+            ),
+          ),
+        );
       });
 
       test('creates session with required fields only', () {
@@ -66,8 +80,7 @@ void main() {
 
         final session = Session.fromJson(json);
 
-        expect(session, isNotNull);
-        expect(session!.accessToken, equals('test-access-token'));
+        expect(session.accessToken, equals('test-access-token'));
         expect(session.tokenType, equals('bearer'));
         expect(session.user.id, equals('123'));
         expect(session.expiresIn, isNull);
@@ -95,8 +108,7 @@ void main() {
 
         final session = Session.fromJson(json);
 
-        expect(session, isNotNull);
-        expect(session!.accessToken, equals('test-access-token'));
+        expect(session.accessToken, equals('test-access-token'));
         expect(session.expiresIn, equals(3600));
         expect(session.refreshToken, equals('test-refresh-token'));
         expect(session.tokenType, equals('bearer'));
@@ -124,8 +136,7 @@ void main() {
 
         final session = Session.fromJson(json);
 
-        expect(session, isNotNull);
-        expect(session!.expiresIn, equals(3600));
+        expect(session.expiresIn, equals(3600));
       });
     });
 
@@ -570,8 +581,7 @@ void main() {
         final json = original.toJson();
         final restored = Session.fromJson(json);
 
-        expect(restored, isNotNull);
-        expect(restored!.accessToken, equals(original.accessToken));
+        expect(restored.accessToken, equals(original.accessToken));
         expect(restored.expiresIn, equals(original.expiresIn));
         expect(restored.refreshToken, equals(original.refreshToken));
         expect(restored.tokenType, equals(original.tokenType));

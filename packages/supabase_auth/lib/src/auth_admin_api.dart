@@ -189,13 +189,7 @@ class AuthAdminApi {
     final links = _parsePaginationLinks(headers['link']);
 
     return ListUsersResponse(
-      users: [
-        for (final user in users)
-          User.fromJson(user) ??
-              (throw const FormatException(
-                'Expected each of "users" to have an "id"',
-              )),
-      ],
+      users: users.map(User.fromJson).toList(),
       total: int.tryParse(headers['x-total-count'] ?? ''),
       nextPage: links['next'],
       lastPage: links['last'],
