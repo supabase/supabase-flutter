@@ -73,10 +73,13 @@ jobs:
             echo "SUPABASE_AUTH_SECRET_KEY=$secret_key"
             echo "SUPABASE_AUTH_PUBLISHABLE_KEY=sb_publishable_$(openssl rand -hex 16)"
             echo "SUPABASE_AUTH_SIGNING_KEYS_PATH=$signing_keys"
-            echo "SIGNING_KEY_ID=$(jq -r '.[0].kid' "$signing_keys")"
             # Its access keys are fixed defaults that the config cannot
             # change, and no example uses it.
             echo "SUPABASE_STORAGE_S3_PROTOCOL_ENABLED=false"
+            # Studio brings pg-meta, which runs any SQL sent to /pg/ without
+            # a key, so keep both off even if the config turns them on.
+            echo "SUPABASE_STUDIO_ENABLED=false"
+            echo "SUPABASE_ANALYTICS_ENABLED=false"
           } >> "$GITHUB_ENV"
 
       - name: Start Supabase
@@ -87,14 +90,18 @@ jobs:
           # An override the CLI stops reading would quietly bring the default
           # keys back.
           status=$(supabase status -o json --workdir examples)
+          echo "::add-mask::$(jq -r .SERVICE_ROLE_KEY <<< "$status")"
           jq -e --arg jwt_secret "$SUPABASE_AUTH_JWT_SECRET" \
             --arg secret_key "$SUPABASE_AUTH_SECRET_KEY" \
-            '.JWT_SECRET == $jwt_secret and .SECRET_KEY == $secret_key' \
+            --arg publishable_key "$SUPABASE_AUTH_PUBLISHABLE_KEY" \
+            '.JWT_SECRET == $jwt_secret and .SECRET_KEY == $secret_key
+              and .PUBLISHABLE_KEY == $publishable_key' \
             <<< "$status" > /dev/null \
             || { echo "::error::Supabase ignored the generated keys."; exit 1; }
+          kid=$(jq -r '.[0].kid' "$SUPABASE_AUTH_SIGNING_KEYS_PATH")
           jwks_url="$(jq -r .API_URL <<< "$status")/auth/v1/.well-known/jwks.json"
           curl -fsS "$jwks_url" \
-            | jq -e --arg kid "$SIGNING_KEY_ID" '[.keys[].kid] == [$kid]' > /dev/null \
+            | jq -e --arg kid "$kid" '[.keys[].kid] == [$kid]' > /dev/null \
             || { echo "::error::Supabase ignored the generated signing key."; exit 1; }
 
       - name: Install cloudflared
