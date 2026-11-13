@@ -355,12 +355,12 @@ url = ""
 # If enabled, the nonce check will be skipped. Required for local sign in with Google auth.
 skip_nonce_check = false
 
-# Google provider enabled for the gotrue signInWithOAuth tests. The credentials below are dummy test
-# values carried over from the previous Docker setup.
+# Google provider enabled for the gotrue signInWithOAuth tests. The tests only build authorize URLs,
+# so the client id and secret are placeholders that no Google OAuth client accepts.
 [auth.external.google]
 enabled = true
-client_id = "53566906701-bmhc1ndue7hild39575gkpimhs06b7ds.apps.googleusercontent.com"
-secret = "Sm3s8RE85rDcS36iMy8YjrpC"
+client_id = "test-client-id"
+secret = "test-secret"
 redirect_uri = ""
 url = ""
 skip_nonce_check = true
