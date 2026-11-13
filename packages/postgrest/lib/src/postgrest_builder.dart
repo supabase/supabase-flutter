@@ -111,14 +111,15 @@ void _applyStripNulls(Map<String, String> headers) {
       existing = value;
     }
   }
-  final accept = existing ?? 'application/json';
+  final accept = existing ?? HttpMediaType.json.value;
   final separator = accept.indexOf(';');
   final mediaType = separator == -1 ? accept : accept.substring(0, separator);
   final parameters = separator == -1 ? '' : accept.substring(separator);
   final strippable = switch (mediaType.trim()) {
-    'application/json' ||
     'application/vnd.pgrst.array+json' => 'application/vnd.pgrst.array+json',
     'application/vnd.pgrst.object+json' => 'application/vnd.pgrst.object+json',
+    final other when other == HttpMediaType.json.value =>
+      'application/vnd.pgrst.array+json',
     _ => null,
   };
   if (strippable == null || parameters.contains('nulls=stripped')) return;
@@ -551,7 +552,7 @@ class PostgrestBuilder<T> implements Future<T> {
       execHeaders[HttpHeader.contentProfile] = schema;
     }
     if (method != HttpMethod.get && method != HttpMethod.head) {
-      execHeaders[HttpHeader.contentType] = 'application/json';
+      execHeaders[HttpHeader.contentType] = HttpMediaType.json.value;
     }
     // Only a write carries a body, so a read skips the encode entirely and a
     // client with a codec does not pay for one on every select.

@@ -1,3 +1,4 @@
+import 'package:supabase_realtime/src/types.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
@@ -12,9 +13,9 @@ Map<String, dynamic> payloadWith(Object? commitTimestamp) => {
 };
 
 void main() {
-  group('PostgresChangePayload.fromPayload', () {
+  group('PostgresChangePayload.fromJson', () {
     test('parses a commit timestamp as UTC', () {
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith('2022-09-21T04:59:30Z'),
       );
 
@@ -23,7 +24,7 @@ void main() {
     });
 
     test('normalizes a commit timestamp with an offset to UTC', () {
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith('2022-09-21T06:59:30+02:00'),
       );
 
@@ -32,7 +33,7 @@ void main() {
     });
 
     test('decodes an unrecognized event type as unknown', () {
-      final payload = PostgresChangePayload.fromPayload({
+      final payload = PostgresChangePayload.fromJson({
         ...payloadWith('2022-09-21T04:59:30Z'),
         'eventType': 'TRUNCATE',
       });
@@ -40,15 +41,36 @@ void main() {
       expect(payload.eventType, PostgresChangeEvent.unknown);
     });
 
+    test('reads errors as strings, keeping entries that are not strings', () {
+      final payload = PostgresChangePayload.fromJson({
+        ...payloadWith('2022-09-21T04:59:30Z'),
+        'errors': [
+          'Error 413: Payload Too Large',
+          {'code': 401},
+          null,
+        ],
+      });
+
+      expect(payload.errors, ['Error 413: Payload Too Large', '{code: 401}']);
+    });
+
+    test('reads missing errors as an empty list', () {
+      final payload = PostgresChangePayload.fromJson(
+        payloadWith('2022-09-21T04:59:30Z'),
+      );
+
+      expect(payload.errors, isEmpty);
+    });
+
     test('falls back to the UTC epoch when the timestamp is missing', () {
-      final payload = PostgresChangePayload.fromPayload(payloadWith(null));
+      final payload = PostgresChangePayload.fromJson(payloadWith(null));
 
       expect(payload.commitTimestamp, DateTime.utc(1970));
       expect(payload.commitTimestamp.isUtc, isTrue);
     });
 
     test('falls back to the UTC epoch when the timestamp is malformed', () {
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith('not a timestamp'),
       );
 
@@ -59,7 +81,7 @@ void main() {
     test('falls back to the UTC epoch when the timestamp is not a string', () {
       // Casting this to String? raised a TypeError, which the FormatException
       // fallback around the parse does not catch.
-      final payload = PostgresChangePayload.fromPayload(
+      final payload = PostgresChangePayload.fromJson(
         payloadWith(1663764570),
       );
 
@@ -79,7 +101,7 @@ void main() {
 
     test('a postgres change with a non-string table throws', () {
       expect(
-        () => PostgresChangePayload.fromPayload({
+        () => PostgresChangePayload.fromJson({
           ...payloadWith('2022-09-21T04:59:30Z'),
           'table': 42,
         }),
@@ -89,7 +111,7 @@ void main() {
 
     test('a postgres change without an event type throws', () {
       expect(
-        () => PostgresChangePayload.fromPayload({
+        () => PostgresChangePayload.fromJson({
           ...payloadWith('2022-09-21T04:59:30Z'),
           'eventType': null,
         }),
@@ -137,16 +159,44 @@ void main() {
 
   group('PostgresChangePayload equality', () {
     test('equal payloads with distinct maps share a hash code', () {
-      final first = PostgresChangePayload.fromPayload(
+      final first = PostgresChangePayload.fromJson(
         payloadWith('2026-06-15T00:00:00Z'),
       );
-      final second = PostgresChangePayload.fromPayload(
+      final second = PostgresChangePayload.fromJson(
         payloadWith('2026-06-15T00:00:00Z'),
       );
 
       expect(first, second);
       expect(first.hashCode, second.hashCode);
       expect({first, second}, hasLength(1));
+    });
+  });
+
+  group('ChannelFilter.fromJson', () {
+    test('reads back what toJson wrote', () {
+      const filter = ChannelFilter(
+        event: '*',
+        schema: 'public',
+        table: 'todos',
+        filter: 'id=eq.1',
+        select: ['id', 'task'],
+      );
+
+      expect(ChannelFilter.fromJson(filter.toJson()), filter);
+    });
+
+    test('leaves missing fields null', () {
+      expect(
+        ChannelFilter.fromJson({'event': 'INSERT', 'id': 63346682}),
+        const ChannelFilter(event: 'INSERT'),
+      );
+    });
+
+    test('throws a FormatException for a field of the wrong type', () {
+      expect(
+        () => ChannelFilter.fromJson({'table': 1}),
+        throwsFormatException,
+      );
     });
   });
 

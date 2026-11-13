@@ -84,7 +84,7 @@ class RealtimePresence {
         options?.events ??
         PresenceEvents(state: 'presence_state', diff: 'presence_diff');
 
-    channel.onEvents(events.state, ChannelFilter(), (newState, [_]) {
+    channel.onEvents(events.state, const ChannelFilter(), (newState, _) {
       final onJoin = _caller['onJoin'];
       final onLeave = _caller['onLeave'];
       final onSync = _caller['onSync'];
@@ -112,7 +112,7 @@ class RealtimePresence {
       onSync();
     });
 
-    channel.onEvents(events.diff, ChannelFilter(), (diff, [_]) {
+    channel.onEvents(events.diff, const ChannelFilter(), (diff, _) {
       final onJoin = _caller['onJoin'];
       final onLeave = _caller['onLeave'];
       final onSync = _caller['onSync'];

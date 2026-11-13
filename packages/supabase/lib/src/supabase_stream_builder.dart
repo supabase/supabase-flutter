@@ -350,7 +350,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       return;
     }
     final errors = payload.errors;
-    if (errors is List && errors.isNotEmpty) {
+    if (errors.isNotEmpty) {
       clientLogger.fine(
         'refetching table: $_table after a ${payload.eventType.name} arrived '
         'without its full record (${errors.length} errors)',

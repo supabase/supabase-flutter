@@ -279,8 +279,8 @@ void main() {
       );
 
       final message = await received;
-      expect(message['event'], 'cursor');
-      expect(message['payload'], {'x': 1, 'y': 2});
+      expect(message.event, 'cursor');
+      expect(message.payload, const JsonBroadcastPayload({'x': 1, 'y': 2}));
     });
 
     test('a broadcast the client sends is recorded and acknowledged', () async {
@@ -343,7 +343,7 @@ void main() {
       await subscribed(channel);
       final bytes = Uint8List.fromList([1, 2, 3]);
 
-      await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+      await channel.sendBinaryBroadcastMessage(event: 'file', bytes: bytes);
 
       final broadcast = realtime.sent.lastWhere(
         (message) => message.event == 'broadcast',

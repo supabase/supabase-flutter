@@ -5,6 +5,7 @@ library;
 export 'package:supabase_common/supabase_common.dart'
     show SupabaseApiException, SupabaseException, SupabaseTransportException;
 
+export 'src/broadcast_message.dart';
 export 'src/constants.dart' show ChannelState, RealtimeLogLevel, SocketState;
 export 'src/realtime_channel.dart';
 export 'src/realtime_client.dart';
@@ -15,4 +16,9 @@ export 'src/realtime_presence.dart' show Presence;
 export 'src/retry_timer.dart' show TimerCalculation;
 export 'src/transformers.dart' show PostgresColumn, PostgresType;
 export 'src/types.dart'
-    hide Binding, BindingCallback, ChannelFilter, RealtimeListenType;
+    hide
+        Binding,
+        BindingCallback,
+        ChannelFilter,
+        ChannelJoinPayload,
+        RealtimeListenType;

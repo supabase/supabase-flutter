@@ -618,10 +618,10 @@ explicitly:
 - [`exists()` only returns `false` for a missing object](#exists-only-returns-false-for-a-missing-object),
   so a missing bucket or an invalid token throws instead of returning `false`
 - [An `Authorization` header passed to `SupabaseClient` reaches the auth client](#an-authorization-header-passed-to-supabaseclient-reaches-the-auth-client)
-- [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so code that
-  reads the sent keys from the top of the received message gets `null`
-- [Invalid broadcast payloads throw in release builds](#invalid-broadcast-payloads-throw-in-release-builds),
-  so a `String` or `List` payload that used to be sent now fails
+- [Broadcast data arrives under `payload`](#broadcast-data-arrives-under-payload), so a `payload`
+  key that you wrapped the data in yourself arrives nested twice
+- [`PostgresChangePayload.errors` is a `List<String>`](#postgreschangepayloaderrors-is-a-liststring),
+  so a null check on it no longer tells whether the server reported errors
 - [A channel name in use returns its channel](#a-channel-name-in-use-returns-its-channel), so a
   second channel with the same name shares the first one instead of replacing it, and one with
   other options throws
@@ -1851,7 +1851,7 @@ was stringified into the socket URL. Pass string values.
 | `channel.joinedOnce = value`       | removed, the getter remains (internal)               |
 | `channel.joinPush = push`          | removed, the getter remains (internal and test-only) |
 | `channel.presence`                 | removed                                              |
-| `channel.parameters` (mutable map) | `channel.parameters` (unmodifiable view, internal)   |
+| `channel.parameters` (mutable map) | removed                                              |
 
 If you read presence state through `channel.presence`, use `channel.presenceState()` and the
 `onPresenceSync`, `onPresenceJoin` and `onPresenceLeave` streams instead. Pass channel configuration
@@ -1935,15 +1935,15 @@ never subscribed throw. `httpSend()` requires Realtime v2.97.0 or newer.
 
 `sendBroadcastMessage()` sends its `payload` under the `payload` key of the message, as `httpSend()`,
 database broadcasts and the JavaScript client already did. It used to put the keys next to `type`
-and `event`, so a listener only found them at the top level for messages sent from Dart. Read the
-data from `payload` on every `onBroadcast` message. If you wrapped the data in a `payload` key
-yourself, for example to match the JavaScript client or to send binary data, remove the wrapper,
-or the data arrives nested twice and a binary payload is sent as a JSON list of numbers:
+and `event`, so a listener only found them at the top level for messages sent from Dart. Every
+`onBroadcast` message now carries the data as its payload, see
+[Broadcast messages are typed](#broadcast-messages-are-typed). If you wrapped the data in a
+`payload` key yourself, for example to match the JavaScript client or to send binary data, remove
+the wrapper, or the data arrives nested twice and wrapped bytes are sent as a JSON list of numbers.
+Send binary data with `sendBinaryBroadcastMessage()`:
 
 ```dart skip
 // Before
-channel.onBroadcast(event: 'cursor').listen((message) => print(message['x']));
-await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
 await channel.sendBroadcastMessage(event: 'file', payload: {'payload': bytes});
 await channel.sendBroadcastMessage(event: 'ping', payload: {'payload': {'x': 30}});
 ```
@@ -1955,16 +1955,12 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> broadcast(RealtimeChannel channel, Uint8List bytes) async {
-  channel
-      .onBroadcast(event: 'cursor')
-      .listen((message) => print(message['payload']['x']));
-  await channel.sendBroadcastMessage(event: 'cursor', payload: {'x': 30});
-  await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+  await channel.sendBinaryBroadcastMessage(event: 'file', bytes: bytes);
   await channel.sendBroadcastMessage(event: 'ping', payload: {'x': 30});
 }
 ```
 
-A v3 listener moves the data of a broadcast from a v2 app under `payload`, so it reads broadcasts
+A v3 listener reads the data of a broadcast from a v2 app as its payload, so it reads broadcasts
 from v2 and v3 apps the same way. A v2 listener finds nothing at the top level of a message from a
 v3 app. While installed v2 apps still listen on a channel, enable `v2BroadcastCompatibility` on it,
 which sends the data in both places:
@@ -1980,19 +1976,89 @@ The option doubles the size of each message and is removed in the next major ver
 that is still being released can be made to speak the v3 shape instead, by sending
 `payload: {'payload': data}` and reading `message['payload'] ?? message`.
 
-#### Invalid broadcast payloads throw in release builds
+#### Broadcast messages are typed
 
-`sendBroadcastMessage()` and `httpSend()` complete with an `ArgumentError` when `payload` is
-neither a map nor binary data (`TypedData` or `ByteBuffer`). Only a debug assert checked it before,
-so a release build sent a `String` or a `List` anyway. Send such values inside a map instead:
+`onBroadcast` emits a `BroadcastMessage` instead of a map. Its `payload` is a sealed
+`BroadcastPayload`, either a `JsonBroadcastPayload` holding the decoded JSON `value` or a
+`BinaryBroadcastPayload` holding the `bytes`. A message broadcast from the database has an `id`,
+and one replayed from history has `isReplayed` set, instead of a `meta` map:
 
 ```dart skip
 // Before
-await channel.sendBroadcastMessage(event: 'note', payload: 'hello');
-
-// After
-await channel.sendBroadcastMessage(event: 'note', payload: {'text': 'hello'});
+channel.onBroadcast(
+  event: 'cursor',
+  callback: (payload) => print(payload['x']),
+);
 ```
+
+```dart
+// After
+final channel = supabase.channel('room');
+channel.onBroadcast(event: 'cursor').listen((message) {
+  if (message.payload case JsonBroadcastPayload(value: {'x': final num x})) {
+    print(x);
+  }
+});
+```
+
+A message from a v2 app whose data has a `payload` key of its own arrives with only the value of
+that key.
+
+#### Binary broadcasts have their own methods
+
+`httpSend()` takes a `Map<String, dynamic>`, like `sendBroadcastMessage()`, so a `String` or a
+`List`, which only a debug assert used to reject, no longer compiles. Send binary data with
+`httpSendBinary()`, or with `sendBinaryBroadcastMessage()` over the WebSocket. Both take a
+`Uint8List`, so convert a `ByteBuffer` with `asUint8List()` first:
+
+```dart skip
+// Before
+await channel.httpSend(event: 'file', payload: bytes);
+await channel.httpSend(event: 'note', payload: 'hello');
+```
+
+```dart file
+// After
+import 'dart:typed_data';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> send(RealtimeChannel channel, Uint8List bytes) async {
+  await channel.httpSendBinary(event: 'file', bytes: bytes);
+  await channel.httpSend(event: 'note', payload: {'text': 'hello'});
+}
+```
+
+#### `PostgresChangePayload.errors` is a `List<String>`
+
+`errors` holds the errors the server reported for a change, and is empty instead of `null` when
+there are none. A comparison with `null` still compiles but no longer tells whether there are
+errors, so check `isNotEmpty`:
+
+```dart skip
+// Before
+if (payload.errors != null) refetch();
+```
+
+```dart file
+// After
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+void handle(PostgresChangePayload payload, void Function() refetch) {
+  if (payload.errors.isNotEmpty) refetch();
+}
+```
+
+#### Realtime data classes convert with `fromJson` and `toJson`
+
+| Before                                       | After                                     |
+| -------------------------------------------- | ----------------------------------------- |
+| `PostgresChangePayload.fromPayload(payload)` | `PostgresChangePayload.fromJson(payload)` |
+| `ReplayOption.toMap()`                       | `ReplayOption.toJson()`                   |
+| `RealtimeChannelConfig.toMap()`              | removed                                   |
+
+`RealtimeChannelConfig.toMap()` returned part of the payload a channel joins with. The channel builds
+that payload itself, so nothing needs it.
 
 #### A channel name in use returns its channel
 

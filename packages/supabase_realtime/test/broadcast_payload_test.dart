@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:supabase_realtime/src/serializer.dart';
@@ -72,16 +73,6 @@ void main() {
     expect((await lastSentBroadcast())['payload'], {'x': 1});
   });
 
-  test('accepts a map without type arguments', () async {
-    final status = await channel.sendBroadcastMessage(
-      event: 'cursor',
-      payload: Map<Object?, Object?>.from({'x': 1}),
-    );
-
-    expect(status, ChannelResponse.ok);
-    expect((await lastSentBroadcast())['payload'], {'x': 1});
-  });
-
   test('leaves the payload map of the caller unchanged', () async {
     final payload = <String, dynamic>{'x': 1};
 
@@ -99,7 +90,7 @@ void main() {
   test('sends a binary payload as a binary frame', () async {
     final bytes = Uint8List.fromList([1, 2, 3]);
 
-    await channel.sendBroadcastMessage(event: 'file', payload: bytes);
+    await channel.sendBinaryBroadcastMessage(event: 'file', bytes: bytes);
     await pumpEventQueue();
 
     final frame = frames.last;
@@ -108,28 +99,75 @@ void main() {
     expect(frame.sublist(frame.length - bytes.length), bytes);
   });
 
-  test('rejects a payload that is neither a map nor binary', () async {
-    await expectLater(
-      channel.sendBroadcastMessage(event: 'cursor', payload: 'text'),
-      throwsArgumentError,
+  test('receives a binary payload as bytes', () async {
+    final bytes = Uint8List.fromList([1, 2, 3]);
+    final received = channel.onBroadcast(event: 'file').first;
+    final topic = utf8.encode('realtime:room');
+    final event = utf8.encode('file');
+
+    client.onConnectionMessage(
+      Uint8List.fromList([
+        Serializer.kindUserBroadcast,
+        topic.length,
+        event.length,
+        0,
+        Serializer.binaryEncoding,
+        ...topic,
+        ...event,
+        ...bytes,
+      ]),
     );
-    await expectLater(
-      channel.sendBroadcastMessage(event: 'cursor', payload: [1, 2]),
-      throwsArgumentError,
-    );
-    await pumpEventQueue();
 
     expect(
-      realtime.sent.where((message) => message.event == 'broadcast'),
-      isEmpty,
+      await received,
+      BroadcastMessage(event: 'file', payload: BinaryBroadcastPayload(bytes)),
     );
   });
 
-  test('httpSend rejects a payload that is neither a map nor binary', () {
-    return expectLater(
-      channel.httpSend(event: 'cursor', payload: 'text'),
-      throwsArgumentError,
+  test('reads the id and replay flag from the meta of a broadcast', () async {
+    final received = channel.onBroadcast(event: 'cursor').first;
+
+    realtime.emit(
+      RealtimeMessage(
+        topic: 'realtime:room',
+        event: 'broadcast',
+        payload: {
+          'type': 'broadcast',
+          'event': 'cursor',
+          'payload': {'x': 1},
+          'meta': {'id': 'abc', 'replayed': true},
+        },
+      ),
     );
+
+    expect(
+      await received,
+      const BroadcastMessage(
+        event: 'cursor',
+        payload: JsonBroadcastPayload({'x': 1}),
+        id: 'abc',
+        isReplayed: true,
+      ),
+    );
+  });
+
+  test('drops a broadcast without an event name', () async {
+    final received = <BroadcastMessage>[];
+    channel.onBroadcast(event: '*').listen(received.add);
+
+    realtime.emit(
+      RealtimeMessage(
+        topic: 'realtime:room',
+        event: 'broadcast',
+        payload: {
+          'type': 'broadcast',
+          'payload': {'x': 1},
+        },
+      ),
+    );
+    await pumpEventQueue();
+
+    expect(received, isEmpty);
   });
 
   test(
@@ -159,7 +197,7 @@ void main() {
 
       final messages = await received;
       expect(messages.first, messages.last);
-      expect(messages.first['payload'], {'x': 1});
+      expect(messages.first.payload, const JsonBroadcastPayload({'x': 1}));
     },
   );
 
@@ -188,31 +226,13 @@ void main() {
         ),
       );
 
-      expect(await received, {
-        'type': 'broadcast',
-        'event': 'cursor',
-        'payload': {'x': 1, 'y': 2},
-      });
-    });
-
-    test('leaves a broadcast that has a payload unchanged', () async {
-      final received = channel.onBroadcast(event: 'cursor').first;
-      final message = {
-        'type': 'broadcast',
-        'event': 'cursor',
-        'payload': {'x': 1},
-        'meta': {'id': 'abc'},
-      };
-
-      realtime.emit(
-        RealtimeMessage(
-          topic: 'realtime:room',
-          event: 'broadcast',
-          payload: message,
+      expect(
+        await received,
+        const BroadcastMessage(
+          event: 'cursor',
+          payload: JsonBroadcastPayload({'x': 1, 'y': 2}),
         ),
       );
-
-      expect(await received, message);
     });
 
     test('sends map data under payload and next to type and event', () async {
@@ -244,7 +264,7 @@ void main() {
     });
 
     test(
-      'emits a v2 broadcast with its own payload key as it was sent',
+      'reads only the payload key of a v2 broadcast that has one',
       () async {
         final received = channel.onBroadcast(event: 'file').first;
         final message = {
@@ -262,7 +282,13 @@ void main() {
           ),
         );
 
-        expect(await received, message);
+        expect(
+          await received,
+          const BroadcastMessage(
+            event: 'file',
+            payload: JsonBroadcastPayload([1, 2, 3]),
+          ),
+        );
       },
     );
 
@@ -281,22 +307,24 @@ void main() {
         ),
       );
 
-      expect(await received, {
-        'type': 'broadcast',
-        'event': 'selection',
-        'payload': {
-          'ids': [1, 2],
-        },
-      });
+      expect(
+        await received,
+        const BroadcastMessage(
+          event: 'selection',
+          payload: JsonBroadcastPayload({
+            'ids': [1, 2],
+          }),
+        ),
+      );
     });
 
     test('sends binary data as usual', () async {
       final compatibleChannel = await subscribeV2CompatibleChannel();
       final bytes = Uint8List.fromList([1, 2, 3]);
 
-      await compatibleChannel.sendBroadcastMessage(
+      await compatibleChannel.sendBinaryBroadcastMessage(
         event: 'file',
-        payload: bytes,
+        bytes: bytes,
       );
       await pumpEventQueue();
 
@@ -321,7 +349,7 @@ void main() {
         ),
       );
 
-      expect((await received)['payload'], {'x': 1});
+      expect((await received).payload, const JsonBroadcastPayload({'x': 1}));
     });
   });
 }

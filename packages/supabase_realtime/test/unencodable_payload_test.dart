@@ -61,22 +61,6 @@ void main() {
     );
   });
 
-  test(
-    'a map with a non-string key fails the send in v2 compatibility mode',
-    () async {
-      channel = client.channel(
-        'v2-room',
-        const RealtimeChannelConfig(v2BroadcastCompatibility: true),
-      );
-      await subscribe();
-
-      await expectLater(
-        channel.sendBroadcastMessage(event: 'cursor', payload: {1: 'one'}),
-        throwsA(isA<JsonUnsupportedObjectError>()),
-      );
-    },
-  );
-
   test('fails the send before the channel is joined', () async {
     await expectLater(
       channel.sendBroadcastMessage(

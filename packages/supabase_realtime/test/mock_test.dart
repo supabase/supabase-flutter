@@ -145,7 +145,7 @@ void main() {
       expect(
         changes,
         emitsInOrder([
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2021-08-01T08:00:20Z',
@@ -154,7 +154,7 @@ void main() {
             'old': {},
             'errors': null,
           }),
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2021-08-01T08:00:30Z',
@@ -163,7 +163,7 @@ void main() {
             'old': {'id': 2},
             'errors': null,
           }),
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-14T02:12:52Z',
@@ -193,7 +193,7 @@ void main() {
       expect(
         changes,
         emitsInOrder([
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2021-08-01T08:00:30Z',
@@ -202,7 +202,7 @@ void main() {
             'old': {'id': 2},
             'errors': null,
           }),
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-14T02:12:52Z',
@@ -397,7 +397,7 @@ void main() {
       expect(
         changes,
         emitsInOrder([
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -406,7 +406,7 @@ void main() {
             'old': {},
             'errors': null,
           }),
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -415,7 +415,7 @@ void main() {
             'old': {'id': 2},
             'errors': null,
           }),
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -445,7 +445,7 @@ void main() {
       expect(
         changes,
         emitsInOrder([
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -454,7 +454,7 @@ void main() {
             'old': {'id': 2},
             'errors': null,
           }),
-          PostgresChangePayload.fromPayload({
+          PostgresChangePayload.fromJson({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',

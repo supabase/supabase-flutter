@@ -2686,6 +2686,7 @@ features:
   realtime.channel.broadcast:
     status: implemented
     symbols:
+      - RealtimeChannel.sendBinaryBroadcastMessage
       - RealtimeChannel.sendBroadcastMessage
     supporting_symbols:
       - ChannelResponse
@@ -2693,6 +2694,7 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.httpSend
+      - RealtimeChannel.httpSendBinary
   realtime.channel.broadcast_persist: not_implemented
   # realtime — client
   realtime.client.channel:
@@ -2767,6 +2769,28 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.onBroadcast
+    supporting_symbols:
+      - BinaryBroadcastPayload
+      - BinaryBroadcastPayload.==
+      - BinaryBroadcastPayload.BinaryBroadcastPayload
+      - BinaryBroadcastPayload.bytes
+      - BinaryBroadcastPayload.hashCode
+      - BroadcastMessage
+      - BroadcastMessage.==
+      - BroadcastMessage.BroadcastMessage
+      - BroadcastMessage.event
+      - BroadcastMessage.hashCode
+      - BroadcastMessage.id
+      - BroadcastMessage.isReplayed
+      - BroadcastMessage.payload
+      - BroadcastMessage.toString
+      - BroadcastPayload
+      - BroadcastPayload.toString
+      - JsonBroadcastPayload
+      - JsonBroadcastPayload.==
+      - JsonBroadcastPayload.JsonBroadcastPayload
+      - JsonBroadcastPayload.hashCode
+      - JsonBroadcastPayload.value
   realtime.subscriptions.postgres_changes:
     status: implemented
     symbols:
@@ -2801,7 +2825,7 @@ features:
       - PostgresChangePayload.commitTimestamp
       - PostgresChangePayload.errors
       - PostgresChangePayload.eventType
-      - PostgresChangePayload.fromPayload
+      - PostgresChangePayload.fromJson
       - PostgresChangePayload.hashCode
       - PostgresChangePayload.newRecord
       - PostgresChangePayload.oldRecord
@@ -2906,7 +2930,7 @@ features:
       - ReplayOption.hashCode
       - ReplayOption.limit
       - ReplayOption.since
-      - ReplayOption.toMap
+      - ReplayOption.toJson
 
   # realtime — presence
   realtime.presence.track:
@@ -3521,7 +3545,6 @@ supporting_symbols:
   - RealtimeChannelConfig.RealtimeChannelConfig
   - RealtimeChannelConfig.hashCode
   - RealtimeChannelConfig.presenceEnabled
-  - RealtimeChannelConfig.toMap
   - RealtimeChannelConfig.v2BroadcastCompatibility
   - RealtimeClient
   - RealtimeClient.RealtimeClient

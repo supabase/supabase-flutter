@@ -269,9 +269,9 @@ class FunctionsClient {
         bodyRequest.headers.putIfAbsent(
           HttpHeader.contentType,
           () => switch (body) {
-            Uint8List() => 'application/octet-stream',
+            Uint8List() => HttpMediaType.octetStream.value,
             String() => 'text/plain',
-            _ => 'application/json',
+            _ => HttpMediaType.json.value,
           },
         );
 
@@ -352,7 +352,7 @@ class FunctionsClient {
         }
         data = decoded;
       }
-    } else if (responseType == 'application/octet-stream') {
+    } else if (responseType == HttpMediaType.octetStream.value) {
       data = bodyBytes;
     } else if (isSuccessStatus) {
       try {
@@ -382,7 +382,7 @@ class FunctionsClient {
   /// Whether [mediaType] is JSON, `application/json` or a structured syntax
   /// type such as `application/problem+json`.
   static bool _isJson(String mediaType) =>
-      mediaType == 'application/json' || mediaType.endsWith('+json');
+      mediaType == HttpMediaType.json.value || mediaType.endsWith('+json');
 
   /// The fields of a multipart request, from a [body] that must be a map of
   /// strings to strings.

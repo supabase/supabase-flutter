@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:collection/collection.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -31,24 +30,23 @@ class RealtimeChannel {
     this.socket, {
     this.config = const RealtimeChannelConfig(),
   }) : _timeout = socket.timeout,
-       _parameters = config.toMap(),
        subTopic = topic.replaceFirst(
          RegExp(r"^realtime:", caseSensitive: false),
          "",
        ) {
     broadcastEndpointUrl = '${httpEndpointUrl(socket.endpoint)}/api/broadcast';
 
-    _joinPush = Push(
+    _joinPush = Push.lazy(
       this,
       ChannelEvent.join,
-      _parameters,
+      () => _joinPayload.toJson(),
       _timeout,
     );
     _rejoinTimer = RetryTimer(
       () => rejoinUntilConnected(),
       RetryTimer.rejoinBackoff,
     );
-    _joinPush.receive('ok', (_) {
+    _joinPush.receive(PushStatus.ok, (_) {
       _state = ChannelState.joined;
       _rejoinTimer.reset();
       _refreshedTokenForRejoin = false;
@@ -66,7 +64,7 @@ class RealtimeChannel {
       final droppedPushes = _pushBuffer;
       _pushBuffer = [];
       for (final droppedPush in droppedPushes) {
-        droppedPush.trigger('error', {});
+        droppedPush.trigger(PushStatus.error, {});
       }
       // Deferred so that bindings registered after this one (such as the
       // status forwarding set up in [subscribe]) still run for this close
@@ -85,7 +83,7 @@ class RealtimeChannel {
       }
     });
 
-    _joinPush.receive('error', (error) {
+    _joinPush.receive(PushStatus.error, (error) {
       if (!isJoining) {
         return;
       }
@@ -114,7 +112,7 @@ class RealtimeChannel {
       );
     });
 
-    _joinPush.receive('timeout', (_) {
+    _joinPush.receive(PushStatus.timeout, (_) {
       if (!isJoining) {
         return;
       }
@@ -128,10 +126,10 @@ class RealtimeChannel {
       }
     });
 
-    onEvents(ChannelEvent.reply.eventName(), ChannelFilter(), (
-      payload, [
+    onEvents(ChannelEvent.reply.eventName(), const ChannelFilter(), (
+      payload,
       ref,
-    ]) {
+    ) {
       trigger(replyEventName(ref), payload);
     });
 
@@ -169,35 +167,6 @@ class RealtimeChannel {
   /// The full topic this channel subscribes to, for example
   /// `realtime:room`.
   final String topic;
-  final Map<String, dynamic> _parameters;
-
-  /// The parameters sent when joining the channel.
-  ///
-  /// The returned snapshot is unmodifiable all the way down; the join payload
-  /// is updated internally through [updateJoinPayload].
-  @internal
-  Map<String, dynamic> get parameters => _deepUnmodifiableMap(_parameters);
-
-  static Map<String, dynamic> _deepUnmodifiableMap(Map<String, dynamic> map) {
-    return Map.unmodifiable(
-      map.map((key, value) => MapEntry(key, _deepUnmodifiable(value))),
-    );
-  }
-
-  static Object? _deepUnmodifiable(Object? value) {
-    if (value is Map<String, dynamic>) {
-      return _deepUnmodifiableMap(value);
-    }
-    if (value is Map) {
-      return Map.unmodifiable(
-        value.map((key, nested) => MapEntry(key, _deepUnmodifiable(nested))),
-      );
-    }
-    if (value is List) {
-      return List.unmodifiable(value.map(_deepUnmodifiable));
-    }
-    return value;
-  }
 
   /// The client this channel was created on.
   @internal
@@ -212,20 +181,21 @@ class RealtimeChannel {
 
   /// Controllers backing the event streams handed out by the `on*` members,
   /// closed when the channel closes.
-  final List<StreamController<dynamic>> _eventControllers = [];
+  final List<StreamController<Object>> _eventControllers = [];
 
   Stream<RealtimePresenceSyncPayload>? _presenceSyncStream;
   Stream<RealtimePresenceJoinPayload>? _presenceJoinStream;
   Stream<RealtimePresenceLeavePayload>? _presenceLeaveStream;
   Stream<RealtimeSystemPayload>? _systemEventsStream;
 
-  /// Streams handed out by [onPostgresChanges], keyed by the encoded filter,
-  /// so that repeated calls with the same arguments reuse one binding.
-  final Map<String, Stream<PostgresChangePayload>> _postgresChangeStreams = {};
+  /// Streams handed out by [onPostgresChanges], keyed by their filter, so
+  /// that repeated calls with the same arguments reuse one binding.
+  final Map<ChannelFilter, Stream<PostgresChangePayload>>
+  _postgresChangeStreams = {};
 
   /// Streams handed out by [onBroadcast], keyed by the event name, so that
   /// repeated calls with the same event reuse one binding.
-  final Map<String, Stream<Map<String, dynamic>>> _broadcastStreams = {};
+  final Map<String, Stream<BroadcastMessage>> _broadcastStreams = {};
 
   /// Whether the server rejected the last join with an error that a retry
   /// cannot fix, so the channel waits for [subscribe] or a new access token
@@ -236,6 +206,15 @@ class RealtimeChannel {
   /// an expired token, so a second expired token rejection is final.
   bool _refreshedTokenForRejoin = false;
 
+  /// Whether the last join sent to the server asked it to enable presence.
+  bool _joinRequestedPresence = false;
+
+  /// The access token sent with the join.
+  String? _joinAccessToken;
+
+  /// The client version sent with the join.
+  String? _joinVersion;
+
   /// Whether the server rejected the last join with an error that a retry
   /// cannot fix, such as a row level security policy denying the topic.
   @internal
@@ -243,10 +222,10 @@ class RealtimeChannel {
 
   /// The `reason` of a join error reply, which the server sends as
   /// `<code>: <message>` or as a bare message.
-  static String _joinErrorReason(Object? error) {
-    final reason = error is Map ? error['reason'] : null;
-    return reason is String ? reason : '';
-  }
+  static String _joinErrorReason(Object? error) => switch (error) {
+    {'reason': final String reason} => reason,
+    _ => '',
+  };
 
   void _rejectJoin(String reason) {
     realtimeLogger.warning('Channel join rejected: $topic ($reason)');
@@ -300,28 +279,31 @@ class RealtimeChannel {
     }
   }
 
-  bool _shouldEnablePresence() {
-    return (_bindings['presence']?.isNotEmpty == true) ||
-        (_parameters['config']['presence']['enabled'] == true);
-  }
+  bool get _presenceEnabled =>
+      config.presenceEnabled || (_bindings['presence']?.isNotEmpty ?? false);
 
-  void _handlePresenceUpdate() {
-    if (_joinedOnce && isJoined) {
-      final currentPresenceEnabled =
-          _parameters['config']['presence']['enabled'];
-      final shouldEnablePresence = _shouldEnablePresence();
+  /// The payload of the next join, built from [config], the bindings
+  /// registered so far and the access token.
+  ChannelJoinPayload get _joinPayload => ChannelJoinPayload(
+    config: config,
+    presenceEnabled: _presenceEnabled,
+    postgresChanges: [
+      for (final binding in _bindings['postgres_changes'] ?? <Binding>[])
+        binding.filter,
+    ],
+    accessToken: _joinAccessToken,
+    version: _joinVersion,
+  );
 
-      if (!currentPresenceEnabled && shouldEnablePresence) {
-        final joinConfig = Map<String, dynamic>.from(_parameters['config']);
-        joinConfig['presence'] = Map<String, dynamic>.from(
-          joinConfig['presence'],
-        );
-        joinConfig['presence']['enabled'] = true;
-        _parameters['config'] = joinConfig;
-        updateJoinPayload({'config': joinConfig});
-        rejoin();
-      }
+  /// Rejoins a joined channel whose join did not ask for presence although a
+  /// presence listener was added since, for example while the join was in
+  /// flight, and returns whether it rejoined.
+  bool _rejoinIfPresenceMissing() {
+    if (!isJoined || !_presenceEnabled || _joinRequestedPresence) {
+      return false;
     }
+    rejoin();
+    return true;
   }
 
   /// Subscribes to receive real-time changes
@@ -357,9 +339,6 @@ class RealtimeChannel {
         "'RealtimeClient.channel' instead",
       );
     }
-    final broadcast = _parameters['config']['broadcast'];
-    final presenceConfig = _parameters['config']['presence'];
-    final isPrivate = _parameters['config']['private'];
 
     _onError((e) {
       if (!_isJoinRejected) {
@@ -381,46 +360,40 @@ class RealtimeChannel {
     // reaches the status stream. The result is a channel that reports
     // `subscribed` yet delivers nothing. Forward it as `channelError` so
     // consumers can detect and recover from the failed subscription.
-    onEvents('system', ChannelFilter(), (payload, [ref]) {
-      if (payload is Map && payload['status'] == 'error') {
+    onEvents('system', const ChannelFilter(), (payload, _) {
+      if (payload is! Map<String, dynamic>) {
+        return;
+      }
+      final system = RealtimeSystemPayload.fromJson(payload);
+      if (system.status == 'error') {
         _addStatus(
           RealtimeSubscribeStatus.channelError,
           RealtimeException(
-            payload['message']?.toString() ??
-                'postgres_changes subscription failed',
+            system.message.isEmpty
+                ? 'postgres_changes subscription failed'
+                : system.message,
           ),
         );
       }
     });
 
-    final presenceEnabled = _shouldEnablePresence();
-
-    final accessTokenPayload = <String, String>{};
-    final joinConfig = {
-      'broadcast': broadcast,
-      'presence': {...presenceConfig, 'enabled': presenceEnabled},
-      'postgres_changes':
-          _bindings['postgres_changes']?.map((r) => r.filter).toList() ?? [],
-      'private': isPrivate == true,
-    };
-
-    if (socket.accessToken != null) {
-      accessTokenPayload['access_token'] = socket.accessToken!;
-    }
-
-    updateJoinPayload({'config': joinConfig, ...accessTokenPayload});
+    _joinAccessToken = socket.accessToken ?? _joinAccessToken;
 
     _joinedOnce = true;
     rejoin(timeout ?? _timeout);
 
     _joinPush
         .receive(
-          'ok',
-          (response) => _handleJoinOk(
-            jsonObject(response, description: 'the join reply'),
-          ),
+          PushStatus.ok,
+          (response) {
+            if (!_rejoinIfPresenceMissing()) {
+              _handleJoinOk(
+                jsonObject(response, description: 'the join reply'),
+              );
+            }
+          },
         )
-        .receive('error', (error) {
+        .receive(PushStatus.error, (error) {
           _state = ChannelState.errored;
           final reply = jsonObject(error, description: 'the join error');
           _addStatus(
@@ -431,7 +404,7 @@ class RealtimeChannel {
             ),
           );
         })
-        .receive('timeout', (_) {
+        .receive(PushStatus.timeout, (_) {
           _addStatus(RealtimeSubscribeStatus.timedOut);
         });
     return this;
@@ -468,44 +441,31 @@ class RealtimeChannel {
       _addStatus(RealtimeSubscribeStatus.subscribed);
       return;
     }
-    final clientPostgresBindings = _bindings['postgres_changes'];
-    final bindingsLength = clientPostgresBindings?.length ?? 0;
+    final echoedBindings = switch (serverPostgresFilters) {
+      final List<dynamic> filters => filters,
+      _ => const <dynamic>[],
+    };
     final newPostgresBindings = <Binding>[];
 
-    for (var i = 0; i < bindingsLength; i++) {
-      final clientPostgresBinding = clientPostgresBindings![i];
-
-      final event = clientPostgresBinding.filter['event'];
-      final schema = clientPostgresBinding.filter['schema'];
-      final table = clientPostgresBinding.filter['table'];
-      final filter = clientPostgresBinding.filter['filter'];
-      final serverPostgresFilter = switch (serverPostgresFilters) {
-        final List<dynamic> filters when i < filters.length =>
-          switch (filters[i]) {
-            null => null,
-            final echoed => jsonObject(
-              echoed,
-              description: 'element $i of "postgres_changes"',
-            ),
-          },
-        _ => null,
+    for (final (i, clientPostgresBinding)
+        in (_bindings['postgres_changes'] ?? <Binding>[]).indexed) {
+      final echo = switch (echoedBindings.elementAtOrNull(i)) {
+        null => null,
+        final Object echoed => jsonObject(
+          echoed,
+          description: 'element $i of "postgres_changes"',
+        ),
       };
 
       // NOTE: `select` is intentionally not part of this equality check
       // (mirroring supabase-js), so a server that echoes `select` back in a
       // slightly different shape does not force a spurious unsubscribe. The
       // client binding keeps its own `select` regardless.
-      if (serverPostgresFilter != null &&
-          serverPostgresFilter['event'] == event &&
-          serverPostgresFilter['schema'] == schema &&
-          serverPostgresFilter['table'] == table &&
-          serverPostgresFilter['filter'] == filter) {
-        newPostgresBindings.add(
-          clientPostgresBinding.copyWith(
-            id: serverPostgresFilter['id']?.toString(),
-          ),
-        );
-      } else {
+      if (echo == null ||
+          !_listensToSameRows(
+            ChannelFilter.fromJson(echo),
+            clientPostgresBinding.filter,
+          )) {
         unawaited(unsubscribe());
         _addStatus(
           RealtimeSubscribeStatus.channelError,
@@ -516,12 +476,28 @@ class RealtimeChannel {
         );
         return;
       }
+      newPostgresBindings.add(
+        clientPostgresBinding.copyWith(id: _bindingId(echo['id'])),
+      );
     }
 
     _bindings['postgres_changes'] = newPostgresBindings;
 
     _addStatus(RealtimeSubscribeStatus.subscribed);
   }
+
+  /// Whether [a] and [b] listen to the same rows, whatever columns each
+  /// selects.
+  static bool _listensToSameRows(ChannelFilter a, ChannelFilter b) =>
+      (a.event, a.schema, a.table, a.filter) ==
+      (b.event, b.schema, b.table, b.filter);
+
+  /// The id the server assigned to a binding in its join reply.
+  static int? _bindingId(Object? value) => switch (value) {
+    final num id => id.toInt(),
+    final String id => int.tryParse(id),
+    _ => null,
+  };
 
   /// The current presence state, keyed by presence key.
   List<SinglePresenceState> presenceState() {
@@ -550,7 +526,7 @@ class RealtimeChannel {
         'event': 'track',
         'payload': payload,
       },
-      options: {'timeout': ?timeout},
+      timeout: timeout,
     );
   }
 
@@ -564,26 +540,26 @@ class RealtimeChannel {
       payload: {
         'event': 'untrack',
       },
-      options: {'timeout': ?timeout},
+      timeout: timeout,
     );
   }
 
   /// Registers a callback that will be executed when the channel closes.
-  void _onClose(Function callback) {
+  void _onClose(void Function() callback) {
     onEvents(
       ChannelEvent.close.eventName(),
-      ChannelFilter(),
-      (reason, [ref]) => callback(),
+      const ChannelFilter(),
+      (_, _) => callback(),
     );
   }
 
   /// Registers a callback that will be executed when the channel encounters an
   /// error.
-  void _onError(Function callback) {
+  void _onError(void Function(Object? reason) callback) {
     onEvents(
       ChannelEvent.error.eventName(),
-      ChannelFilter(),
-      (reason, [ref]) => callback(reason),
+      const ChannelFilter(),
+      (reason, _) => callback(reason),
     );
   }
 
@@ -656,15 +632,15 @@ class RealtimeChannel {
       schema: schema,
       table: table,
       filter: filterString,
-      select: select,
+      select: select == null ? null : List.unmodifiable(select),
     );
 
     return _postgresChangeStreams.putIfAbsent(
-      jsonEncode(channelFilter.toMap()),
+      channelFilter,
       () => _eventStream(
         'postgres_changes',
         channelFilter,
-        (payload) => PostgresChangePayload.fromPayload(
+        (payload) => PostgresChangePayload.fromJson(
           jsonObject(payload, description: 'the postgres_changes payload'),
         ),
       ),
@@ -678,27 +654,30 @@ class RealtimeChannel {
   /// Returns a broadcast stream of the matching messages. Repeated calls with
   /// the same [event] return the same stream.
   ///
-  /// Each message is a map with the `type` (always `broadcast`), the `event`
-  /// name and the sent data under `payload`. Messages broadcast from the
-  /// database also carry a `meta` map. A message from a v2 client, which has
-  /// its data next to `type` and `event`, arrives with that data moved under
-  /// `payload` as well, unless the data has a `payload` key of its own, in
-  /// which case the message is emitted as it was sent.
+  /// A message from a v2 client, which has its data next to `type` and
+  /// `event`, arrives with that data as its [JsonBroadcastPayload] as well,
+  /// unless the data has a `payload` key of its own, in which case only the
+  /// value of that key is read.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
   /// channel.onBroadcast(event: 'position').listen((message) {
-  ///   print(message['payload']['x']);
+  ///   switch (message.payload) {
+  ///     case JsonBroadcastPayload(:final value):
+  ///       print('moved to $value');
+  ///     case BinaryBroadcastPayload(:final bytes):
+  ///       print('received ${bytes.length} bytes');
+  ///   }
   /// });
   /// channel.subscribe();
   /// ```
-  Stream<Map<String, dynamic>> onBroadcast({required String event}) {
+  Stream<BroadcastMessage> onBroadcast({required String event}) {
     return _broadcastStreams.putIfAbsent(
       event,
       () => _eventStream(
         'broadcast',
         ChannelFilter(event: event),
-        (payload) => _normalizeBroadcast(
+        (payload) => _broadcastMessage(
           jsonObject(payload, description: 'the broadcast payload'),
         ),
       ),
@@ -712,19 +691,35 @@ class RealtimeChannel {
     'ids',
   };
 
-  Map<String, dynamic> _normalizeBroadcast(Map<String, dynamic> message) {
-    if (message.containsKey('payload')) {
-      return Map.of(message);
+  /// Reads a received broadcast, or returns `null` for one without an event
+  /// name.
+  static BroadcastMessage? _broadcastMessage(Map<String, dynamic> message) {
+    final event = message['event'];
+    if (event is! String) {
+      return null;
     }
-    return {
-      for (final key in _broadcastEnvelopeKeys)
-        if (message.containsKey(key)) key: message[key],
-      'payload': {
-        for (final entry in message.entries)
-          if (!_broadcastEnvelopeKeys.contains(entry.key))
-            entry.key: entry.value,
-      },
+    final data = message.containsKey('payload')
+        ? message['payload']
+        : {
+            for (final MapEntry(:key, :value) in message.entries)
+              if (!_broadcastEnvelopeKeys.contains(key)) key: value,
+          };
+    final meta = switch (message['meta']) {
+      final Map<String, dynamic> object => object,
+      _ => const <String, dynamic>{},
     };
+    return BroadcastMessage(
+      event: event,
+      payload: switch (data) {
+        final Uint8List bytes => BinaryBroadcastPayload(bytes),
+        _ => JsonBroadcastPayload(data),
+      },
+      id: switch (meta['id']) {
+        final String id => id,
+        _ => null,
+      },
+      isReplayed: meta['replayed'] == true,
+    );
   }
 
   /// Emits whenever the presence state of the channel is synced.
@@ -787,7 +782,7 @@ class RealtimeChannel {
       (payload) =>
           fromJson(jsonObject(payload, description: 'the presence payload')),
     );
-    _handlePresenceUpdate();
+    _rejoinIfPresenceMissing();
     return stream;
   }
 
@@ -813,7 +808,7 @@ class RealtimeChannel {
   Stream<RealtimeSystemPayload> get onSystemEvents {
     return _systemEventsStream ??= _eventStream(
       'system',
-      ChannelFilter(),
+      const ChannelFilter(),
       (payload) => payload is Map
           ? RealtimeSystemPayload.fromJson(
               jsonObject(payload, description: 'the system payload'),
@@ -831,7 +826,7 @@ class RealtimeChannel {
   Stream<T> _eventStream<T extends Object>(
     String type,
     ChannelFilter filter,
-    T? Function(dynamic payload) transform,
+    T? Function(Object? payload) transform,
   ) {
     final controller = StreamController<T>.broadcast();
 
@@ -843,7 +838,7 @@ class RealtimeChannel {
       return controller.stream;
     }
 
-    onEvents(type, filter, (payload, [ref]) {
+    onEvents(type, filter, (payload, _) {
       final value = transform(payload);
       if (value != null && !controller.isClosed) {
         controller.add(value);
@@ -868,26 +863,20 @@ class RealtimeChannel {
       );
     }
 
-    final binding = Binding(typeLower, filter.toMap(), callback);
-
-    if (_bindings[typeLower] != null) {
-      _bindings[typeLower]!.add(binding);
-    } else {
-      _bindings[typeLower] = [binding];
-    }
+    (_bindings[typeLower] ??= []).add(Binding(typeLower, filter, callback));
 
     return this;
   }
 
   /// Removes bindings of [type] registered with a matching [filter].
   @internal
-  RealtimeChannel off(String type, Map<String, dynamic> filter) {
+  RealtimeChannel off(String type, ChannelFilter filter) {
     final typeLower = type.toLowerCase();
 
-    final remaining = (_bindings[typeLower] ?? []).where((bind) {
-      return !(bind.type.toLowerCase() == typeLower &&
-          RealtimeChannel._isEqual(bind.filter, filter));
-    }).toList();
+    final remaining = [
+      for (final binding in _bindings[typeLower] ?? <Binding>[])
+        if (binding.filter != filter) binding,
+    ];
     if (remaining.isEmpty) {
       _bindings.remove(typeLower);
     } else {
@@ -935,14 +924,11 @@ class RealtimeChannel {
   ///
   /// This method always uses the REST API endpoint regardless of WebSocket
   /// connection state, so it is the way to broadcast without subscribing to
-  /// the channel first.
+  /// the channel first. Use [httpSendBinary] to send bytes.
   ///
-  /// [payload] must be either a map with string keys, which is JSON-encoded,
-  /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
-  /// is sent as `application/octet-stream`. Any other payload throws an
-  /// [ArgumentError]. Receivers get it under the `payload` key of the message
-  /// emitted by [onBroadcast], the same as messages sent with
-  /// [sendBroadcastMessage].
+  /// [payload] is sent as JSON. Receivers get it as the [JsonBroadcastPayload]
+  /// of the [BroadcastMessage] emitted by [onBroadcast], the same as messages
+  /// sent with [sendBroadcastMessage].
   ///
   /// [event] is the name of the broadcast event.
   /// [timeout] is an optional timeout duration.
@@ -968,26 +954,60 @@ class RealtimeChannel {
   /// ```
   Future<void> httpSend({
     required String event,
-    required Object payload,
+    required Map<String, dynamic> payload,
     Duration? timeout,
   }) async {
-    final isBinary = _isBinaryBroadcastPayload(payload);
+    await _httpSend(
+      event: event,
+      body: json.encode(payload),
+      contentType: HttpMediaType.json,
+      timeout: timeout,
+    );
+  }
 
+  /// Sends [bytes] as a broadcast message via REST API, with the
+  /// `application/octet-stream` content type.
+  ///
+  /// Receivers get the bytes as the [BinaryBroadcastPayload] of the
+  /// [BroadcastMessage] emitted by [onBroadcast]. Everything else works as
+  /// for [httpSend].
+  ///
+  /// ```dart
+  /// await channel.httpSendBinary(
+  ///   event: 'file',
+  ///   bytes: Uint8List.fromList([1, 2, 3]),
+  /// );
+  /// ```
+  Future<void> httpSendBinary({
+    required String event,
+    required Uint8List bytes,
+    Duration? timeout,
+  }) async {
+    await _httpSend(
+      event: event,
+      body: bytes,
+      contentType: HttpMediaType.octetStream,
+      timeout: timeout,
+    );
+  }
+
+  Future<void> _httpSend({
+    required String event,
+    required Object body,
+    required HttpMediaType contentType,
+    Duration? timeout,
+  }) async {
     final accessToken = await resolveAccessToken(socket.resolveAccessToken);
     final headers = {
       ..._broadcastHeaders,
       if (accessToken != null) HttpHeader.authorization: 'Bearer $accessToken',
-      HttpHeader.contentType: isBinary
-          ? 'application/octet-stream'
-          : 'application/json',
+      HttpHeader.contentType: contentType.value,
     };
 
     final url = Uri.parse(
       '$broadcastEndpointUrl/${Uri.encodeComponent(subTopic)}/events/'
       '${Uri.encodeComponent(event)}${config.private ? '?private=true' : ''}',
     );
-
-    final body = isBinary ? _asBytes(payload) : json.encode(payload);
 
     final Response response;
     try {
@@ -1035,38 +1055,18 @@ class RealtimeChannel {
     );
   }
 
-  bool _isBinaryBroadcastPayload(Object payload) {
-    if (payload is TypedData || payload is ByteBuffer) return true;
-    if (payload is Map) return false;
-    throw ArgumentError(
-      'Must be a map or binary data (TypedData or ByteBuffer), got '
-          '${payload.runtimeType}',
-      'payload',
-    );
-  }
-
-  Uint8List _asBytes(Object payload) {
-    if (payload is ByteBuffer) {
-      return payload.asUint8List();
-    }
-    final typed = payload as TypedData;
-    return typed.buffer.asUint8List(typed.offsetInBytes, typed.lengthInBytes);
-  }
-
   /// Sends a realtime broadcast message over the WebSocket.
   ///
   /// The channel has to be subscribed first, otherwise this throws. Use
-  /// [httpSend] to broadcast over the REST API without subscribing.
+  /// [httpSend] to broadcast over the REST API without subscribing, and
+  /// [sendBinaryBroadcastMessage] to send bytes.
   ///
-  /// [payload] must be either a map with string keys, which is sent as JSON,
-  /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
-  /// is sent as a WebSocket binary frame. Any other payload throws an
-  /// [ArgumentError]. Receivers get it under the `payload` key of the message
-  /// emitted by [onBroadcast], the same as messages sent with [httpSend], from
-  /// the database or from other Supabase clients. With
-  /// [RealtimeChannelConfig.v2BroadcastCompatibility], the entries of a map
-  /// payload are also sent next to `type` and `event`, except for the reserved
-  /// keys listed there, which are only sent under `payload`.
+  /// [payload] is sent as JSON. Receivers get it as the [JsonBroadcastPayload]
+  /// of the [BroadcastMessage] emitted by [onBroadcast], the same as messages
+  /// sent with [httpSend], from the database or from other Supabase clients.
+  /// With [RealtimeChannelConfig.v2BroadcastCompatibility], the entries of
+  /// [payload] are also sent next to `type` and `event`, except for the
+  /// reserved keys listed there, which are only sent under `payload`.
   ///
   /// ```dart
   /// await channel.sendBroadcastMessage(
@@ -1076,22 +1076,43 @@ class RealtimeChannel {
   /// ```
   Future<ChannelResponse> sendBroadcastMessage({
     required String event,
-    required Object payload,
+    required Map<String, dynamic> payload,
   }) {
-    return Future.sync(() {
-      final isBinary = _isBinaryBroadcastPayload(payload);
-      return send(
-        type: RealtimeListenType.broadcast,
-        event: event,
-        payload: {
-          if (config.v2BroadcastCompatibility && !isBinary)
-            for (final MapEntry(:key, :value) in (payload as Map).entries)
-              if (key is String && !_v2ReservedBroadcastKeys.contains(key))
-                key: value,
-          'payload': payload,
-        },
-      );
-    });
+    return send(
+      type: RealtimeListenType.broadcast,
+      event: event,
+      payload: {
+        if (config.v2BroadcastCompatibility)
+          for (final MapEntry(:key, :value) in payload.entries)
+            if (!_v2ReservedBroadcastKeys.contains(key)) key: value,
+        'payload': payload,
+      },
+    );
+  }
+
+  /// Sends [bytes] as a realtime broadcast message in a WebSocket binary
+  /// frame.
+  ///
+  /// Receivers get the bytes as the [BinaryBroadcastPayload] of the
+  /// [BroadcastMessage] emitted by [onBroadcast]. Everything else works as
+  /// for [sendBroadcastMessage]. Use [httpSendBinary] to send bytes without
+  /// subscribing.
+  ///
+  /// ```dart
+  /// await channel.sendBinaryBroadcastMessage(
+  ///   event: 'file',
+  ///   bytes: Uint8List.fromList([1, 2, 3]),
+  /// );
+  /// ```
+  Future<ChannelResponse> sendBinaryBroadcastMessage({
+    required String event,
+    required Uint8List bytes,
+  }) {
+    return send(
+      type: RealtimeListenType.broadcast,
+      event: event,
+      payload: {'payload': bytes},
+    );
   }
 
   /// Sends a `postgres_changes`, broadcast, or presence message over the
@@ -1113,7 +1134,7 @@ class RealtimeChannel {
     required RealtimeListenType type,
     String? event,
     required Map<String, dynamic> payload,
-    Map<String, dynamic> options = const {},
+    Duration? timeout,
   }) {
     if (_joinedOnce && (isLeaving || isClosed)) {
       return Future.value(ChannelResponse.error);
@@ -1123,7 +1144,7 @@ class RealtimeChannel {
 
     final message = <String, dynamic>{
       ...payload,
-      'type': type.toType(),
+      'type': type.channelEvent.eventName(),
       'event': ?event,
     };
 
@@ -1132,7 +1153,7 @@ class RealtimeChannel {
         const Serializer().encode(
           RealtimeMessage.outgoing(
             topic: topic,
-            event: ChannelEvent.fromValue(message['type']),
+            event: type.channelEvent,
             payload: message,
           ),
         );
@@ -1142,17 +1163,12 @@ class RealtimeChannel {
     }
 
     final isUnacknowledgedBroadcast =
-        message['type'] == 'broadcast' &&
-        _parameters['config']?['broadcast']?['ack'] != true;
+        type == RealtimeListenType.broadcast && !config.ack;
     final sendsImmediately = canPush;
 
     final Push push;
     try {
-      push = this.push(
-        ChannelEvent.fromValue(message['type']),
-        message,
-        options['timeout'] ?? _timeout,
-      );
+      push = this.push(type.channelEvent, message, timeout ?? _timeout);
     } catch (error, stackTrace) {
       return Future.error(error, stackTrace);
     }
@@ -1174,17 +1190,17 @@ class RealtimeChannel {
       push.onSent = completeSent;
     }
 
-    push.receive('ok', (_) {
+    push.receive(PushStatus.ok, (_) {
       if (!completer.isCompleted) {
         completer.complete(ChannelResponse.ok);
       }
     });
-    push.receive('error', (_) {
+    push.receive(PushStatus.error, (_) {
       if (!completer.isCompleted) {
         completer.complete(ChannelResponse.error);
       }
     });
-    push.receive('timeout', (_) {
+    push.receive(PushStatus.timeout, (_) {
       if (!completer.isCompleted) {
         completer.complete(ChannelResponse.timedOut);
       }
@@ -1194,7 +1210,7 @@ class RealtimeChannel {
   }
 
   Map<String, String> get _broadcastHeaders => {
-    HttpHeader.contentType: 'application/json',
+    HttpHeader.contentType: HttpMediaType.json.value,
     if (socket.parameters['apikey'] != null)
       HttpHeader.apiKey: socket.parameters['apikey']!,
     ...socket.headers,
@@ -1202,10 +1218,12 @@ class RealtimeChannel {
       HttpHeader.authorization: 'Bearer ${socket.accessToken}',
   };
 
-  /// Merges [payload] into the join request sent to the server.
+  /// Sends [accessToken] with the next join, and [version] as the client
+  /// version when given.
   @internal
-  void updateJoinPayload(Map<String, dynamic> payload) {
-    _joinPush.updatePayload(payload);
+  void updateJoinAccessToken(String accessToken, {String? version}) {
+    _joinAccessToken = accessToken;
+    _joinVersion = version ?? _joinVersion;
   }
 
   /// Leaves the channel
@@ -1235,19 +1253,19 @@ class RealtimeChannel {
     final leavePush = Push(this, ChannelEvent.leave, {}, timeout ?? _timeout);
 
     leavePush
-        .receive('ok', (_) {
+        .receive(PushStatus.ok, (_) {
           onClose();
           if (!completer.isCompleted) {
             completer.complete(ChannelResponse.ok);
           }
         })
-        .receive('timeout', (_) {
+        .receive(PushStatus.timeout, (_) {
           if (!completer.isCompleted) {
             onClose();
           }
           completer.complete(ChannelResponse.timedOut);
         })
-        .receive('error', (_) {
+        .receive(PushStatus.error, (_) {
           onClose();
           if (!completer.isCompleted) {
             completer.complete(ChannelResponse.error);
@@ -1263,19 +1281,10 @@ class RealtimeChannel {
     }
 
     if (!canPush) {
-      leavePush.trigger('ok', {});
+      leavePush.trigger(PushStatus.ok, {});
     }
 
     return completer.future;
-  }
-
-  /// Overridable message hook
-  ///
-  /// Receives all events for specialized message handling before dispatching to
-  /// the channel callbacks. Must return the payload, modified or unmodified.
-  @internal
-  dynamic onMessage(String event, dynamic payload, [String? ref]) {
-    return payload;
   }
 
   /// Whether this channel's [topic] matches [otherTopic].
@@ -1296,6 +1305,7 @@ class RealtimeChannel {
       return;
     }
     _state = ChannelState.joining;
+    _joinRequestedPresence = _presenceEnabled;
     _joinPush.resend(timeout ?? _timeout);
   }
 
@@ -1323,7 +1333,7 @@ class RealtimeChannel {
   @internal
   void trigger(
     String type, [
-    dynamic payload,
+    Object? payload,
     String? ref,
     String? messageJoinRef,
   ]) {
@@ -1346,71 +1356,73 @@ class RealtimeChannel {
       return;
     }
 
-    var handledPayload = onMessage(typeLower, payload, ref);
-    if (payload != null && handledPayload == null) {
-      throw StateError(
-        'channel onMessage callbacks must return the payload, modified or '
-        'unmodified',
+    if (const ['insert', 'update', 'delete'].contains(typeLower)) {
+      final bindings = (_bindings['postgres_changes'] ?? <Binding>[])
+          .where(
+            (bind) =>
+                bind.filter.event == '*' ||
+                bind.filter.event?.toLowerCase() == typeLower,
+          )
+          .toList();
+      if (bindings.isEmpty) {
+        return;
+      }
+      final enrichedPayload = getEnrichedPayload(
+        jsonObject(payload, description: 'the $typeLower payload'),
       );
+      for (final bind in bindings) {
+        bind.callback(enrichedPayload, ref);
+      }
+      return;
     }
 
-    if (['insert', 'update', 'delete'].contains(typeLower)) {
-      final bindings = _bindings['postgres_changes']?.where((bind) {
-        return (bind.filter['event'] == '*' ||
-            bind.filter['event']?.toLowerCase() == typeLower);
-      });
-
-      for (final bind in (bindings ?? <Binding>[])) {
-        handledPayload = getEnrichedPayload(
-          jsonObject(handledPayload, description: 'the $typeLower payload'),
-        );
-        bind.callback(handledPayload, ref);
+    final bindings = (_bindings[typeLower] ?? <Binding>[]).where((bind) {
+      if (!const [
+        'broadcast',
+        'presence',
+        'postgres_changes',
+      ].contains(typeLower)) {
+        return true;
       }
-    } else {
-      final bindings = (_bindings[typeLower] ?? []).where((bind) {
-        if (['broadcast', 'presence', 'postgres_changes'].contains(typeLower)) {
-          final bindId = bind.id;
-          if (bindId != null) {
-            final bindEvent = bind.filter['event'];
-
-            final changes = jsonObject(
+      final bindEvent = bind.filter.event?.toLowerCase();
+      final bindId = bind.id;
+      if (bindId != null) {
+        final changes = jsonObject(
+          payload,
+          description: 'the $typeLower payload',
+        );
+        final ids = changes.field<List<dynamic>?>('ids');
+        if (ids?.contains(bindId) != true) {
+          return false;
+        }
+        if (bindEvent == '*') {
+          return true;
+        }
+        final data = changes.field<Map<String, dynamic>?>('data');
+        return bindEvent == data?.field<String?>('type')?.toLowerCase();
+      }
+      if (bindEvent == '*') {
+        return true;
+      }
+      final event = payload == null
+          ? null
+          : jsonObject(
               payload,
               description: 'the $typeLower payload',
-            );
-            final ids = changes.field<List<dynamic>?>('ids');
-            if (ids?.contains(int.parse(bindId)) != true) {
-              return false;
-            }
-            if (bindEvent == '*') {
-              return true;
-            }
-            final data = changes.field<Map<String, dynamic>?>('data');
-            return bindEvent?.toLowerCase() ==
-                data?.field<String?>('type')?.toLowerCase();
-          }
-          final bindEvent = bind.filter['event']?.toLowerCase();
-          if (bindEvent == '*') {
-            return true;
-          }
-          final event = payload == null
-              ? null
-              : jsonObject(
-                  payload,
-                  description: 'the $typeLower payload',
-                ).field<String?>('event');
-          return bindEvent == event?.toLowerCase();
-        }
-        return bind.type.toLowerCase() == typeLower;
-      });
-      for (final bind in bindings) {
-        if (typeLower == 'postgres_changes' &&
-            handledPayload is Map<String, dynamic> &&
-            handledPayload.containsKey('ids')) {
-          handledPayload = getEnrichedPayload(handledPayload);
-        }
-
-        bind.callback(handledPayload, ref);
-      }
+            ).field<String?>('event');
+      return bindEvent == event?.toLowerCase();
+    }).toList();
+    if (bindings.isEmpty) {
+      return;
+    }
+    final dispatchedPayload =
+        typeLower == 'postgres_changes' &&
+            payload is Map<String, dynamic> &&
+            payload.containsKey('ids')
+        ? getEnrichedPayload(payload)
+        : payload;
+    for (final bind in bindings) {
+      bind.callback(dispatchedPayload, ref);
     }
   }
 
@@ -1444,22 +1456,4 @@ class RealtimeChannel {
   /// Whether the channel is in the process of leaving.
   @internal
   bool get isLeaving => _state == ChannelState.leaving;
-
-  static bool _isEqual(
-    Map<String, Object?> first,
-    Map<String, Object?> second,
-  ) {
-    if (first.keys.length != second.keys.length) {
-      return false;
-    }
-
-    const equality = DeepCollectionEquality();
-    for (final k in first.keys) {
-      if (!equality.equals(first[k], second[k])) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 }

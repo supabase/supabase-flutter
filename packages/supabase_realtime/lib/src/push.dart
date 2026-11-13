@@ -1,14 +1,30 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:supabase_common/supabase_common.dart' show JsonFields;
+import 'package:supabase_common/supabase_common.dart'
+    show JsonFields, jsonObject;
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/types.dart';
 import 'package:meta/meta.dart';
 
 @internal
-typedef Callback = void Function(dynamic response);
+typedef Callback = void Function(Object? response);
+
+/// The outcome of a [Push], from the `status` of the server reply or from the
+/// push timing out.
+@internal
+enum PushStatus {
+  ok,
+  error,
+  timeout;
+
+  static final _byName = PushStatus.values.asNameMap();
+
+  /// Parses the `status` of a reply, or returns `null` for a status this
+  /// client does not know.
+  static PushStatus? fromValue(String value) => _byName[value];
+}
 
 /// Initializes the Push
 @internal
@@ -18,10 +34,22 @@ class Push {
     this._event, [
     Map<String, dynamic> payload = const {},
     this._timeout = RealtimeConstants.defaultTimeout,
-  ]) : _payload = payload;
+  ]) : _buildPayload = (() => payload);
+
+  /// Creates a push whose payload is built when it is sent, so that every
+  /// resend carries the current state of the channel.
+  Push.lazy(
+    this._channel,
+    this._event,
+    this._buildPayload, [
+    this._timeout = RealtimeConstants.defaultTimeout,
+  ]);
   Timer? _timeoutTimer;
   String _ref = '';
-  Map<String, dynamic>? _receivedResponse;
+
+  /// The outcome of the last send, set once the server replied or the push
+  /// was triggered.
+  ({PushStatus status, Object? response})? _reply;
   final List<Hook> _receiveHooks = [];
 
   /// Called every time this push is handed to the socket.
@@ -34,15 +62,14 @@ class Push {
   /// The event, for example [ChannelEvent.join]
   final ChannelEvent _event;
 
-  Map<String, dynamic> _payload;
+  final Map<String, dynamic> Function() _buildPayload;
 
-  /// The payload, for example `{user_id: 123}`, replaced through
-  /// [updatePayload].
+  /// The payload, for example `{user_id: 123}`.
   ///
   /// The view is unmodifiable at the top level only: values can hold binary
   /// data such as [Uint8List], which a recursive wrap would copy into plain
   /// lists and thereby change its type.
-  Map<String, dynamic> get payload => UnmodifiableMapView(_payload);
+  Map<String, dynamic> get payload => UnmodifiableMapView(_buildPayload());
 
   /// The push timeout
   Duration _timeout;
@@ -59,13 +86,12 @@ class Push {
     _cancelRefEvent();
     _cancelTimeout();
     _ref = '';
-    _refEvent = null;
-    _receivedResponse = null;
+    _reply = null;
     send();
   }
 
   void send() {
-    if (_hasReceived('timeout')) {
+    if (_hasReceived(PushStatus.timeout)) {
       return;
     }
     startTimeout();
@@ -73,7 +99,7 @@ class Push {
       RealtimeMessage.outgoing(
         topic: _channel.topic,
         event: _event,
-        payload: _payload,
+        payload: _buildPayload(),
         ref: ref,
         joinRef: _channel.joinRef,
       ),
@@ -81,13 +107,10 @@ class Push {
     onSent?.call();
   }
 
-  void updatePayload(Map<String, dynamic> newPayload) {
-    _payload = {..._payload, ...newPayload};
-  }
-
-  Push receive(String status, Callback callback) {
-    if (_hasReceived(status)) {
-      callback(_receivedResponse?['response']);
+  Push receive(PushStatus status, Callback callback) {
+    final reply = _reply;
+    if (reply != null && reply.status == status) {
+      callback(reply.response);
     }
 
     _receiveHooks.add(Hook(status, callback));
@@ -101,28 +124,30 @@ class Push {
     _ref = _channel.socket.makeRef();
     _refEvent = _channel.replyEventName(ref);
 
-    _channel.onEvents(_refEvent!, ChannelFilter(), (dynamic response, [_]) {
+    _channel.onEvents(_refEvent!, const ChannelFilter(), (message, _) {
       _cancelRefEvent();
       _cancelTimeout();
-      if (response is! Map<String, dynamic>) {
-        throw FormatException(
-          'Expected a reply to be Map<String, dynamic>, got '
-          '${response.runtimeType}',
-        );
+      final reply = jsonObject(message, description: 'a reply');
+      final status = PushStatus.fromValue(reply.field<String>('status'));
+      if (status != null) {
+        _receive(status, reply['response']);
       }
-      _receivedResponse = response;
-      _matchReceive(response.field('status'), response['response']);
     });
 
     _timeoutTimer = Timer(timeout, () {
-      trigger('timeout', {});
+      trigger(PushStatus.timeout, {});
     });
   }
 
-  void trigger(String status, Map<String, dynamic> response) {
-    if (_refEvent != null) {
-      _channel.trigger(_refEvent!, {'status': status, 'response': response});
+  /// Settles a push that is waiting for its reply with [status] and
+  /// [response], as if the server had replied with them.
+  void trigger(PushStatus status, Map<String, dynamic> response) {
+    if (_refEvent == null) {
+      return;
     }
+    _cancelRefEvent();
+    _cancelTimeout();
+    _receive(status, response);
   }
 
   void destroy() {
@@ -135,7 +160,8 @@ class Push {
       return;
     }
 
-    _channel.off(_refEvent!, {});
+    _channel.off(_refEvent!, const ChannelFilter());
+    _refEvent = null;
   }
 
   void _cancelTimeout() {
@@ -143,23 +169,19 @@ class Push {
     _timeoutTimer = null;
   }
 
-  void _matchReceive(
-    String status,
-    dynamic response,
-  ) {
+  void _receive(PushStatus status, Object? response) {
+    _reply = (status: status, response: response);
     _receiveHooks.where((h) => h.status == status).forEach((h) {
       h.callback(response);
     });
   }
 
-  bool _hasReceived(String status) {
-    return _receivedResponse is Map && _receivedResponse?['status'] == status;
-  }
+  bool _hasReceived(PushStatus status) => _reply?.status == status;
 }
 
 @internal
 class Hook {
   const Hook(this.status, this.callback);
-  final String status;
+  final PushStatus status;
   final Callback callback;
 }

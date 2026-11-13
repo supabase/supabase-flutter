@@ -14,6 +14,7 @@ export 'src/client_info.dart';
 export 'src/fetch_options.dart';
 export 'src/http.dart';
 export 'src/http_header.dart';
+export 'src/http_media_type.dart';
 export 'src/http_method.dart';
 export 'src/http_status.dart';
 export 'src/idle_timeout.dart';

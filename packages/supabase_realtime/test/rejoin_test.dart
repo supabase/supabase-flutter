@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/push.dart';
 import 'package:test/test.dart';
 
 import 'socket_test_stubs.dart';
@@ -43,7 +44,7 @@ void main() {
 
   Future<RealtimeChannel> joinedChannel() async {
     final channel = client.channel('topic').subscribe();
-    channel.joinPush.trigger('ok', {});
+    channel.joinPush.trigger(PushStatus.ok, {});
     await pumpEventQueue();
     expect(channel.isJoined, isTrue);
     return channel;
@@ -81,7 +82,7 @@ void main() {
     await pumpEventQueue();
 
     expect(client.channels, [channel]);
-    expect(channel.parameters['config']['presence']['enabled'], isTrue);
+    expect(channel.joinPush.payload['config']['presence']['enabled'], isTrue);
     expect(sentEvents, ['phx_join', 'phx_join']);
   });
 
@@ -98,7 +99,7 @@ void main() {
 
   test('the rejoin timer resends a join answered with an error', () async {
     final channel = client.channel('topic').subscribe();
-    channel.joinPush.trigger('error', {});
+    channel.joinPush.trigger(PushStatus.error, {});
 
     channel.rejoinUntilConnected();
     await pumpEventQueue();

@@ -549,10 +549,11 @@ void main() {
 
       expect(channel.socket, socket);
       expect(channel.topic, 'realtime:topic');
-      expect(channel.parameters, {
+      expect(channel.joinPush.payload, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
+          'postgres_changes': <Object>[],
           'private': false,
         },
       });
@@ -626,7 +627,7 @@ void main() {
         );
 
         expect(replacement, isNot(same(channel)));
-        expect(replacement.parameters['config']['private'], isTrue);
+        expect(replacement.config.private, isTrue);
         expect(client.channels, [replacement]);
       },
     );
@@ -1075,9 +1076,9 @@ void main() {
       final socket = RealtimeClient(socketEndpoint);
       final channel = socket.channel('room');
 
-      Map<String, dynamic>? received;
-      channel.onBroadcast(event: 'cursor').listen((payload) {
-        received = payload;
+      BroadcastMessage? received;
+      channel.onBroadcast(event: 'cursor').listen((message) {
+        received = message;
       });
 
       final topic = utf8.encode('realtime:room');
@@ -1098,11 +1099,13 @@ void main() {
       // Wait for the async stream delivery of the broadcast event.
       await Future<void>.delayed(Duration.zero);
 
-      expect(received, {
-        'type': 'broadcast',
-        'event': 'cursor',
-        'payload': {'x': 1},
-      });
+      expect(
+        received,
+        const BroadcastMessage(
+          event: 'cursor',
+          payload: JsonBroadcastPayload({'x': 1}),
+        ),
+      );
     });
   });
 
@@ -1133,10 +1136,7 @@ void main() {
 
   group('setAccessToken', () {
     final token = generateJwt();
-    final updateJoinPayload = {
-      'access_token': token,
-      'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
-    };
+    final version = RealtimeConstants.defaultHeaders['X-Client-Info'];
     final pushPayload = {'access_token': token};
 
     test(
@@ -1173,8 +1173,12 @@ void main() {
 
         expect(mockedSocket.accessToken, token);
 
-        verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
-        verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
+        verify(
+          () => channel1.updateJoinAccessToken(token, version: version),
+        ).called(1);
+        verify(
+          () => channel2.updateJoinAccessToken(token, version: version),
+        ).called(1);
         verify(
           () => channel1.push(ChannelEvent.accessToken, pushPayload),
         ).called(1);
@@ -1227,23 +1231,19 @@ void main() {
 
         const authToken = 'sb-key';
         final expectedPushPayload = {'access_token': authToken};
-        final expectedUpdateJoinPayload = {
-          'access_token': authToken,
-          'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
-        };
 
         await mockedSocket.setAccessToken(authToken);
 
         expect(mockedSocket.accessToken, authToken);
 
         verify(
-          () => channel1.updateJoinPayload(expectedUpdateJoinPayload),
+          () => channel1.updateJoinAccessToken(authToken, version: version),
         ).called(1);
         verify(
-          () => channel2.updateJoinPayload(expectedUpdateJoinPayload),
+          () => channel2.updateJoinAccessToken(authToken, version: version),
         ).called(1);
         verify(
-          () => channel3.updateJoinPayload(expectedUpdateJoinPayload),
+          () => channel3.updateJoinAccessToken(authToken, version: version),
         ).called(1);
 
         verify(

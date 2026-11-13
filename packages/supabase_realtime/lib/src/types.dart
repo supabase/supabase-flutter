@@ -3,36 +3,28 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart'
     show JsonFields, postgresTimestampLiteral;
 import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/constants.dart';
 
 @internal
-typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
+typedef BindingCallback = void Function(Object? payload, String? ref);
 
 @internal
 class Binding {
-  Binding(
+  const Binding(
     this.type,
     this.filter,
     this.callback, [
     this.id,
   ]);
-  String type;
-  Map<String, dynamic> filter;
-  BindingCallback callback;
-  String? id;
+  final String type;
+  final ChannelFilter filter;
+  final BindingCallback callback;
 
-  Binding copyWith({
-    String? type,
-    Map<String, dynamic>? filter,
-    BindingCallback? callback,
-    String? id,
-  }) {
-    return Binding(
-      type ?? this.type,
-      filter ?? this.filter,
-      callback ?? this.callback,
-      id ?? this.id,
-    );
-  }
+  /// The id the server assigned to a `postgres_changes` binding when the
+  /// channel joined, matched against the `ids` of each change.
+  final int? id;
+
+  Binding copyWith({int? id}) => Binding(type, filter, callback, id ?? this.id);
 }
 
 /// The kind of Postgres change a [PostgresChangeFilter] listens for.
@@ -89,6 +81,15 @@ class ChannelFilter {
     this.select,
   });
 
+  /// Reads a filter from its JSON form, the inverse of [toJson].
+  factory ChannelFilter.fromJson(Map<String, dynamic> json) => ChannelFilter(
+    event: json.field('event'),
+    schema: json.field('schema'),
+    table: json.field('table'),
+    filter: json.field('filter'),
+    select: json.listOf('select'),
+  );
+
   /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`,
   /// `DELETE`
   ///
@@ -111,7 +112,7 @@ class ChannelFilter {
   /// a subset of columns instead of the full row.
   final List<String>? select;
 
-  Map<String, dynamic> toMap() {
+  Map<String, Object> toJson() {
     return {
       'event': ?event,
       'schema': ?schema,
@@ -120,6 +121,24 @@ class ChannelFilter {
       'select': ?select,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is ChannelFilter &&
+      other.event == event &&
+      other.schema == schema &&
+      other.table == table &&
+      other.filter == filter &&
+      const ListEquality<String>().equals(other.select, select);
+
+  @override
+  int get hashCode => Object.hash(
+    event,
+    schema,
+    table,
+    filter,
+    const ListEquality<String>().hash(select),
+  );
 }
 
 /// The result of sending a message on a [RealtimeChannel], such as a
@@ -137,17 +156,14 @@ enum ChannelResponse {
 
 @internal
 enum RealtimeListenType {
-  postgresChanges,
-  broadcast,
-  presence,
-  system;
+  postgresChanges(ChannelEvent.postgresChanges),
+  broadcast(ChannelEvent.broadcast),
+  presence(ChannelEvent.presence);
 
-  String toType() {
-    if (this == RealtimeListenType.postgresChanges) {
-      return 'postgres_changes';
-    }
-    return name;
-  }
+  const RealtimeListenType(this.channelEvent);
+
+  /// The event a message of this type is sent under.
+  final ChannelEvent channelEvent;
 }
 
 /// The kind of change a presence callback is reporting.
@@ -225,13 +241,7 @@ class ReplayOption {
   final int? limit;
 
   /// Converts this to the shape sent in the channel's broadcast config.
-  Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{'since': since};
-    if (limit != null) {
-      map['limit'] = limit;
-    }
-    return map;
-  }
+  Map<String, Object> toJson() => {'since': since, 'limit': ?limit};
 
   @override
   bool operator ==(Object other) =>
@@ -313,30 +323,12 @@ class RealtimeChannelConfig {
   /// next major version.
   final bool v2BroadcastCompatibility;
 
-  /// Converts this to the shape sent when joining the channel.
-  Map<String, dynamic> toMap() {
-    final broadcastConfig = <String, dynamic>{
-      'ack': ack,
-      'self': self,
-    };
-    if (replay != null) {
-      broadcastConfig['replay'] = replay!.toMap();
-    }
-    if (replicationReady) {
-      broadcastConfig['replication_ready'] = true;
-    }
-
-    return {
-      'config': {
-        'broadcast': broadcastConfig,
-        'presence': {
-          'key': presenceKey,
-          'enabled': presenceEnabled,
-        },
-        'private': private,
-      },
-    };
-  }
+  Map<String, Object> get _broadcastJson => {
+    'ack': ack,
+    'self': self,
+    'replay': ?replay?.toJson(),
+    if (replicationReady) 'replication_ready': true,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -361,6 +353,49 @@ class RealtimeChannelConfig {
     replicationReady,
     v2BroadcastCompatibility,
   );
+}
+
+/// The payload of the request that joins a channel.
+@internal
+class ChannelJoinPayload {
+  const ChannelJoinPayload({
+    required this.config,
+    required this.presenceEnabled,
+    this.postgresChanges = const [],
+    this.accessToken,
+    this.version,
+  });
+
+  /// The options the channel was created with.
+  final RealtimeChannelConfig config;
+
+  /// Whether the server should track presence on the channel, either because
+  /// [RealtimeChannelConfig.presenceEnabled] is set or because a presence
+  /// listener was added.
+  final bool presenceEnabled;
+
+  /// The Postgres changes the channel listens to.
+  final List<ChannelFilter> postgresChanges;
+
+  /// The access token the server authorizes the join with.
+  final String? accessToken;
+
+  /// The client version sent along with the access token.
+  final String? version;
+
+  /// The JSON sent as the payload of the join.
+  Map<String, Object> toJson() => {
+    'config': {
+      'broadcast': config._broadcastJson,
+      'presence': {'key': config.presenceKey, 'enabled': presenceEnabled},
+      'postgres_changes': [
+        for (final filter in postgresChanges) filter.toJson(),
+      ],
+      'private': config.private,
+    },
+    'access_token': ?accessToken,
+    'version': ?version,
+  };
 }
 
 /// Payload of a `system` event emitted by the server.
@@ -415,11 +450,11 @@ class PostgresChangePayload {
     required this.eventType,
     required this.newRecord,
     required this.oldRecord,
-    required this.errors,
+    this.errors = const [],
   });
 
-  factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
-    final commitTimestampValue = payload['commit_timestamp'];
+  factory PostgresChangePayload.fromJson(Map<String, dynamic> json) {
+    final commitTimestampValue = json['commit_timestamp'];
     DateTime commitTimestamp;
     try {
       commitTimestamp = commitTimestampValue is String
@@ -429,19 +464,24 @@ class PostgresChangePayload {
       commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     }
 
-    final newData = payload['new'];
-    final oldData = payload['old'];
+    final newData = json['new'];
+    final oldData = json['old'];
 
     return PostgresChangePayload(
-      schema: payload.field('schema'),
-      table: payload.field('table'),
+      schema: json.field('schema'),
+      table: json.field('table'),
       commitTimestamp: commitTimestamp,
       eventType: PostgresChangeEvent.fromValue(
-        payload.field('eventType'),
+        json.field('eventType'),
       ),
       newRecord: newData is Map ? Map.from(newData) : {},
       oldRecord: oldData is Map ? Map.from(oldData) : {},
-      errors: payload['errors'],
+      errors: switch (json['errors']) {
+        final List<dynamic> errors => List.unmodifiable(
+          errors.nonNulls.map((error) => error is String ? error : '$error'),
+        ),
+        _ => const [],
+      },
     );
   }
 
@@ -463,8 +503,11 @@ class PostgresChangePayload {
   /// The row before the change, empty for an insert.
   final Map<String, dynamic> oldRecord;
 
-  /// Errors reported by the server for this change, if any.
-  final dynamic errors;
+  /// Errors the server reported for this change, empty when there are none.
+  ///
+  /// The records of a change with errors can be incomplete, for example when
+  /// the row was too large to send.
+  final List<String> errors;
 
   @override
   String toString() {
@@ -485,7 +528,7 @@ class PostgresChangePayload {
         other.eventType == eventType &&
         mapEquals(other.newRecord, newRecord) &&
         mapEquals(other.oldRecord, oldRecord) &&
-        other.errors == errors;
+        const ListEquality<String>().equals(other.errors, errors);
   }
 
   @override
@@ -498,7 +541,7 @@ class PostgresChangePayload {
       eventType,
       mapEquality.hash(newRecord),
       mapEquality.hash(oldRecord),
-      errors,
+      const ListEquality<String>().hash(errors),
     );
   }
 }
