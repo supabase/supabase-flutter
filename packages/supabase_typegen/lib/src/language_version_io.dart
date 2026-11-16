@@ -50,6 +50,29 @@ String packageImportUri({Directory? startDirectory}) {
   return _importCandidates['postgrest']!;
 }
 
+/// The `pubspec.yaml` of the Dart package [startDirectory] belongs to, found
+/// the same way as for [packageLanguageVersion], when it lists
+/// `supabase_typegen` under neither `dependencies` nor `dev_dependencies`.
+/// Returns `null` when it lists it, is the pubspec of `supabase_typegen`
+/// itself, or no such pubspec exists.
+///
+/// Throws a [FormatException] when the pubspec is not valid YAML.
+File? pubspecWithoutTypegen({Directory? startDirectory}) {
+  final pubspec = _nearestPubspec(startDirectory ?? Directory.current);
+  if (pubspec == null) return null;
+  final document = _loadYaml(pubspec);
+  if (document['name'] == _typegenPackage) return null;
+  for (final section in ['dependencies', 'dev_dependencies']) {
+    final dependencies = document[section];
+    if (dependencies is Map && dependencies.containsKey(_typegenPackage)) {
+      return null;
+    }
+  }
+  return pubspec;
+}
+
+const _typegenPackage = 'supabase_typegen';
+
 /// The first major version of `supabase_flutter`, `supabase` and `postgrest`
 /// whose API the generated code compiles against.
 const supportedSupabaseMajorVersion = 3;

@@ -150,7 +150,9 @@ Future<int> _run(List<String> arguments) async {
   final Version languageVersion;
   final String importUri;
   final (String, Version)? unsupported;
+  final File? undeclared;
   try {
+    undeclared = pubspecWithoutTypegen(startDirectory: projectDirectory);
     languageVersion =
         packageLanguageVersion(startDirectory: projectDirectory) ??
         minimumLanguageVersion;
@@ -163,6 +165,13 @@ Future<int> _run(List<String> arguments) async {
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     return 78;
+  }
+  if (undeclared != null) {
+    stderr.writeln(
+      'Warning: ${undeclared.path} does not depend on supabase_typegen, so '
+      'the project does not pin the version that generates its types. Run '
+      '`dart pub add dev:supabase_typegen` in it.',
+    );
   }
   if (unsupported case (final name, final version)) {
     stderr.writeln(
