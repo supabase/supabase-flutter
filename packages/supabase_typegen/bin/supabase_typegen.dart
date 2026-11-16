@@ -40,6 +40,13 @@ Future<void> main(List<String> arguments) async {
   exitCode = await _run(arguments);
 }
 
+/// Reading stdin to its end closes file descriptor 0. Holding /dev/null
+/// there keeps the stdin pipe of `dart format` from landing on it, which
+/// would leave that pipe open and hang the formatter. The handle stays
+/// referenced until the formatter has run, since collecting it would close
+/// the descriptor again.
+RandomAccessFile? _stdinPlaceholder;
+
 Future<int> _run(List<String> arguments) async {
   final ArgResults options;
   try {
@@ -74,6 +81,7 @@ Future<int> _run(List<String> arguments) async {
   final Map<String, dynamic> document;
   try {
     final contents = await utf8.decodeStream(stdin);
+    if (!Platform.isWindows) _stdinPlaceholder = File('/dev/null').openSync();
     final decoded = jsonDecode(contents);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException(
@@ -183,6 +191,7 @@ Future<int> _run(List<String> arguments) async {
     languageVersion,
     path: output == '-' ? _defaultOutput : output,
   );
+  _stdinPlaceholder?.closeSync();
   if (formatted == null) {
     stderr.writeln(
       'Could not run `dart format` of the Dart SDK; the code is formatted '
