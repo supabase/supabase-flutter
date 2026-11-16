@@ -170,7 +170,8 @@ Future<int> _run(List<String> arguments) async {
     stderr.writeln(
       'Warning: ${undeclared.path} does not depend on supabase_typegen, so '
       'the project does not pin the version that generates its types. Run '
-      '`dart pub add dev:supabase_typegen` in it.',
+      '`dart pub add dev:supabase_typegen` in it, or '
+      '`flutter pub add dev:supabase_typegen` in a Flutter project.',
     );
   }
   if (unsupported case (final name, final version)) {
