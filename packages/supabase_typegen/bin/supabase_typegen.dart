@@ -74,6 +74,10 @@ Future<int> _run(List<String> arguments) async {
   final Map<String, dynamic> document;
   try {
     final contents = await utf8.decodeStream(stdin);
+    // Reading stdin to its end closes file descriptor 0. Holding /dev/null
+    // there keeps the stdin pipe of `dart format` from landing on it, which
+    // would leave that pipe open and hang the formatter.
+    if (!Platform.isWindows) File('/dev/null').openSync();
     final decoded = jsonDecode(contents);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException(
