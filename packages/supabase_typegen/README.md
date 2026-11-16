@@ -119,7 +119,9 @@ types with the
 version 3.0.0 or newer, from the directory of the project's
 `pubspec.yaml`. The CLI runs this package with `dart run` in that directory,
 so it must be a dev dependency there. In a Flutter project, use
-`flutter pub add dev:supabase_typegen`.
+`flutter pub add dev:supabase_typegen`. When the package resolves without
+the project depending on it, for example through another member of a pub
+workspace, the tool warns and generates the types anyway.
 
 ```sh
 dart pub add dev:supabase_typegen

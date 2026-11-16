@@ -36,7 +36,9 @@ void main() {
       'environment:\n'
       '  sdk: ^3.9.0\n'
       'dependencies:\n'
-      '  supabase_flutter: any\n',
+      '  supabase_flutter: any\n'
+      'dev_dependencies:\n'
+      '  supabase_typegen: any\n',
     );
   });
 
@@ -181,6 +183,29 @@ void main() {
       expect(result.exitCode, 65);
       expect(result.stdout, isEmpty);
     });
+  });
+
+  test('warns when the project does not depend on supabase_typegen', () async {
+    final pubspec = File('${project.path}/pubspec.yaml');
+    pubspec.writeAsStringSync(
+      pubspec.readAsStringSync().replaceAll('supabase_typegen', 'other'),
+    );
+
+    final result = await run(['--output', output.path]);
+
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(
+      result.stderr,
+      contains('Warning: ${pubspec.path} does not depend on supabase_typegen'),
+    );
+    expect(output.existsSync(), isTrue);
+  });
+
+  test('does not warn when the project depends on supabase_typegen', () async {
+    final result = await run(['--output', output.path]);
+
+    expect(result.exitCode, 0, reason: result.stderr);
+    expect(result.stderr, isNot(contains('supabase_typegen')));
   });
 
   test('warns when the document has no rpcFunctions collection', () async {
