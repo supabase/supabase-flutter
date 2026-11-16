@@ -3028,6 +3028,8 @@ features:
       - RealtimeLifecycleOptions.RealtimeLifecycleOptions
       - RealtimeLifecycleOptions.manual
       - RealtimeLifecycleOptions.managed
+  realtime.configuration.foreground_liveness_probe: not_implemented
+  realtime.configuration.network_path_wake: not_implemented
 
   # functions
   functions.invocation.invoke:
