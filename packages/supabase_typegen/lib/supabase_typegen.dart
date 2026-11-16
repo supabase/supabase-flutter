@@ -6,5 +6,6 @@ export 'src/dart_generator.dart';
 export 'src/identifiers.dart';
 export 'src/language_version_io.dart';
 export 'src/generator_metadata_parser.dart';
+export 'src/project_formatter_io.dart';
 export 'src/schema_description.dart';
 export 'src/sdk_formatter_io.dart';

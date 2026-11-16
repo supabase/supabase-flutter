@@ -170,11 +170,14 @@ schema. A coding agent learns this workflow from the `supabase-typegen-generate`
 [package skill](https://dart.dev/ai/package-skills) this package ships.
 Install it into your project with `dart run skills@ get -p supabase_typegen`.
 
-The code is formatted with the `dart format` of the SDK running the tool, for
-the language version of the project it is written into (the lower bound of
+The code is formatted with the dart_style package of the tool, for the
+language version of the project it is written into (the lower bound of
 the `environment.sdk` constraint of the nearest `pubspec.yaml`) and with the
 `formatter` settings of its `analysis_options.yaml`, such as `page_width`, so
-`dart format` in that project leaves it unchanged. The generated code needs
+`dart format` in that project leaves it unchanged. It falls back to the
+`dart format` of the SDK running the tool when the project is on a language
+version newer than the package supports, or its analysis options include a
+package the tool cannot resolve. The generated code needs
 version 3 of `supabase_flutter`, `supabase` or `postgrest`; the tool exits with
 an error when the project's `pubspec.lock` resolves an older one. It also exits
 with an error, without writing the file, when a `--schema` does not exist or

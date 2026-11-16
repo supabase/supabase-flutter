@@ -40,6 +40,20 @@ Future<void> main(List<String> arguments) async {
   exitCode = await _run(arguments);
 }
 
+/// Reads stdin synchronously. Listening to stdin as a stream closes file
+/// descriptor 0 at its end, and a process started afterwards then gets a
+/// stdin pipe that never closes, which hangs `dart format`.
+String _readStdin() {
+  final contents = StringBuffer();
+  for (
+    String? line;
+    (line = stdin.readLineSync(encoding: utf8, retainNewlines: true)) != null;
+  ) {
+    contents.write(line);
+  }
+  return contents.toString();
+}
+
 Future<int> _run(List<String> arguments) async {
   final ArgResults options;
   try {
@@ -73,8 +87,7 @@ Future<int> _run(List<String> arguments) async {
   }
   final Map<String, dynamic> document;
   try {
-    final contents = await utf8.decodeStream(stdin);
-    final decoded = jsonDecode(contents);
+    final decoded = jsonDecode(_readStdin());
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException(
         'expected a JSON object with the GeneratorMetadata shape.',
@@ -132,8 +145,8 @@ Future<int> _run(List<String> arguments) async {
     );
   }
 
-  // Formatted by the formatter of the running SDK for the language version
-  // and the formatter settings of the project the file lands in, so
+  // Formatted for the language version and the formatter settings of the
+  // project the file lands in, so
   // `dart format` there leaves it unchanged. Code written to stdout is
   // formatted as if it landed at the default output path.
   final projectDirectory = output == '-'
@@ -178,15 +191,15 @@ Future<int> _run(List<String> arguments) async {
     importUri: importUri,
     languageVersion: languageVersion,
   );
-  final formatted = await formatWithSdk(
+  final formatted = await formatForProject(
     code,
     languageVersion,
     path: output == '-' ? _defaultOutput : output,
   );
   if (formatted == null) {
     stderr.writeln(
-      'Could not run `dart format` of the Dart SDK; the code is formatted '
-      'with the dart_style package of this tool instead.',
+      'Could not apply the formatter settings of the project; the code is '
+      'formatted with the default settings instead.',
     );
   }
 

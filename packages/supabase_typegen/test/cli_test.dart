@@ -95,6 +95,23 @@ void main() {
     expect(lines.where((line) => line.length > 120), isEmpty);
   });
 
+  test(
+    'falls back to dart format for options it cannot resolve',
+    () async {
+      File('${project.path}/analysis_options.yaml').writeAsStringSync(
+        'include: package:missing/options.yaml\n'
+        'formatter:\n'
+        '  page_width: 120\n',
+      );
+
+      final result = await run(['--output', '-']);
+
+      expect(result.exitCode, 0, reason: result.stderr);
+      expect(result.stdout, contains('extension type'));
+    },
+    timeout: const Timeout(Duration(minutes: 1)),
+  );
+
   group('fails without writing the file', () {
     setUp(() {
       output

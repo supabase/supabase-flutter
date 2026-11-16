@@ -4,7 +4,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'generator_metadata_parser.dart';
 import 'identifiers.dart';
 import 'language_version_io.dart';
-import 'sdk_formatter_io.dart';
+import 'project_formatter_io.dart';
 import 'schema_description.dart';
 import 'version.dart';
 
@@ -70,7 +70,7 @@ final minimumLanguageVersion = Version(3, 8, 0);
 /// [packageLanguageVersion] finds for the project the file is written into.
 /// It defaults to, and is never lower than, [minimumLanguageVersion]. To
 /// match the formatter of a project exactly, pass the result through
-/// [formatWithSdk] as well.
+/// [formatForProject] as well.
 String generateDartCode(
   DatabaseDescription database, {
   String importUri = 'package:postgrest/postgrest.dart',
