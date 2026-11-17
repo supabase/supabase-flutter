@@ -247,7 +247,13 @@ class RealtimeClient {
     _networkReachabilitySubscription = networkReachability
         ?.skip(1)
         .where((reachable) => reachable)
-        .listen((_) => _onNetworkReachable());
+        .listen(
+          (_) => _onNetworkReachable(),
+          onError: (Object error) => realtimeLogger.warning(
+            'Network reachability report failed',
+            error,
+          ),
+        );
   }
 
   /// The JWT access token used for channel subscription authorization and
@@ -581,6 +587,7 @@ class RealtimeClient {
       // skipped, so without this an armed backoff timer would fire after the
       // user explicitly disconnected and silently reopen the connection.
       _reconnectTimer.cancel();
+      _stopNetworkWakeSpacing();
 
       _connection = null;
       await _connectionSubscription?.cancel();
@@ -604,7 +611,12 @@ class RealtimeClient {
   void detachNetworkReachability() {
     unawaited(_networkReachabilitySubscription?.cancel());
     _networkReachabilitySubscription = null;
+    _stopNetworkWakeSpacing();
+  }
+
+  void _stopNetworkWakeSpacing() {
     _networkWakeSpacingTimer?.cancel();
+    _networkWakePending = false;
   }
 
   void _startNetworkWakeSpacing() {

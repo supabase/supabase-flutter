@@ -152,6 +152,24 @@ void main() {
     });
   });
 
+  test('keeps listening after the monitor reports an error', () {
+    fakeAsync((async) {
+      final server = _Server(async);
+      final client = createClient(server, backoff: const Duration(seconds: 30));
+      startMonitor(async);
+      unawaited(client.connect());
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 5));
+
+      reachability.addError(Exception('monitor failed'));
+      reachability.add(true);
+      async.flushMicrotasks();
+
+      expect(server.attempts, hasLength(2));
+      finish(async, client);
+    });
+  });
+
   test('ignores a report while connected', () {
     fakeAsync((async) {
       final server = _Server(async)..accept = true;

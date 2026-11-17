@@ -781,17 +781,24 @@ once the app runs again.
 
 After the realtime socket drops, it waits for a growing backoff of up to 30
 seconds before it tries again. Pass a stream of network reachability reports
-as `networkReachability` to cut that wait short when the network comes back,
-for example from [`connectivity_plus`](https://pub.dev/packages/connectivity_plus):
+as `networkReachability` to cut that wait short when the network comes back.
+The stream starts with the current state, for example built on
+[`connectivity_plus`](https://pub.dev/packages/connectivity_plus):
 
 ```dart skip
+Stream<bool> networkReachability() async* {
+  final connectivity = Connectivity();
+  bool reachable(List<ConnectivityResult> results) =>
+      !results.contains(ConnectivityResult.none);
+  yield reachable(await connectivity.checkConnectivity());
+  yield* connectivity.onConnectivityChanged.map(reachable);
+}
+
 await Supabase.initialize(
   url: 'https://your-project.supabase.co',
   publishableKey: 'your-publishable-key',
   realtimeOptions: RealtimeClientOptions(
-    networkReachability: Connectivity().onConnectivityChanged.map(
-      (results) => !results.contains(ConnectivityResult.none),
-    ),
+    networkReachability: networkReachability(),
   ),
 );
 ```
