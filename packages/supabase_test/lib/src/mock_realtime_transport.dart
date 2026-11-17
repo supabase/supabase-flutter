@@ -55,9 +55,9 @@ class MockRealtimeTransport {
 
   /// Every message the client sent over any connection, oldest first.
   ///
-  /// A broadcast with a binary payload, which the client sends as a binary
-  /// frame, is decoded into the `payload` map of its JSON counterpart, with
-  /// the bytes under `payload['payload']`.
+  /// A broadcast the client sends as a binary frame is decoded into the
+  /// `payload` map of its JSON counterpart, with its frame metadata, such as
+  /// `persist`, next to `type` and `event`.
   final sent = <RealtimeMessage>[];
 
   /// The `postgres_changes` bindings of each joined topic, as the server
@@ -69,6 +69,10 @@ class MockRealtimeTransport {
   /// The reasons the next joins of each topic are rejected with, oldest
   /// first.
   final _joinRejections = <String, List<String>>{};
+
+  /// The error codes the next acknowledged broadcasts of each topic are
+  /// rejected with, oldest first.
+  final _broadcastRejections = <String, List<String>>{};
 
   var _nextBindingId = 1;
 
@@ -111,6 +115,16 @@ class MockRealtimeTransport {
   /// rejections is joined again.
   void rejectNextJoin(String topic, {required String reason}) {
     _joinRejections.putIfAbsent(_prefixed(topic), () => []).add(reason);
+  }
+
+  /// Answers the next broadcast sent on the channel [topic], given with or
+  /// without its `realtime:` prefix, that asks for an acknowledgement with an
+  /// error reply carrying [error], the way the server reports a broadcast it
+  /// did not store, for example `persistence_unauthorized`.
+  ///
+  /// Each call rejects one more broadcast.
+  void rejectNextBroadcast(String topic, {required String error}) {
+    _broadcastRejections.putIfAbsent(_prefixed(topic), () => []).add(error);
   }
 
   /// Sends [message] to the client as if the server had sent it.
@@ -368,6 +382,15 @@ class MockRealtimeTransport {
     if (message.ref == null) {
       return;
     }
+    final broadcastRejections = _broadcastRejections[message.topic];
+    if (message.event == 'broadcast' &&
+        broadcastRejections != null &&
+        broadcastRejections.isNotEmpty) {
+      _replyTo(connection, message, 'error', {
+        'error': broadcastRejections.removeAt(0),
+      });
+      return;
+    }
     _replyTo(connection, message, 'ok', response);
     if (message.event == 'phx_join' &&
         (_postgresBindings[message.topic]?.isNotEmpty ?? false)) {
@@ -410,11 +433,12 @@ void _replyTo(
 
 const _kindUserBroadcastPush = 3;
 const _broadcastPushHeaderLength = 7;
+const _jsonEncoding = 1;
 
 /// Decodes the binary frame a client sends for a broadcast with a binary
-/// payload: a kind byte, the sizes of the join ref, ref, topic, user event
-/// and metadata, the payload encoding, those fields in that order, and the
-/// payload bytes.
+/// payload or frame metadata: a kind byte, the sizes of the join ref, ref,
+/// topic, user event and metadata, the payload encoding, those fields in that
+/// order, and the payload bytes.
 RealtimeMessage _decodeBroadcastPush(Uint8List frame) {
   if (frame.isEmpty || frame[0] != _kindUserBroadcastPush) {
     throw FormatException('Unknown binary realtime frame', frame);
@@ -440,7 +464,9 @@ RealtimeMessage _decodeBroadcastPush(Uint8List frame) {
       'type': 'broadcast',
       'event': event,
       if (metadata.isNotEmpty) ...jsonDecode(metadata) as Map<String, dynamic>,
-      'payload': Uint8List.sublistView(frame, offset),
+      'payload': frame[6] == _jsonEncoding
+          ? jsonDecode(utf8.decode(Uint8List.sublistView(frame, offset)))
+          : Uint8List.sublistView(frame, offset),
     },
     ref: ref.isEmpty ? null : ref,
     joinRef: joinRef.isEmpty ? null : joinRef,

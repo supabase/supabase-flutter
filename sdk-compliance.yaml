@@ -2700,7 +2700,20 @@ features:
     symbols:
       - RealtimeChannel.httpSend
       - RealtimeChannel.httpSendBinary
-  realtime.channel.broadcast_persist: not_implemented
+  realtime.channel.broadcast_persist:
+    status: implemented
+    symbols:
+      - RealtimeChannel.httpSend
+      - RealtimeChannel.httpSendBinary
+      - RealtimeChannel.sendBinaryBroadcastMessage
+      - RealtimeChannel.sendBroadcastMessage
+    supporting_symbols:
+      - BroadcastPersistence
+      - BroadcastPersistence.==
+      - BroadcastPersistence.BroadcastPersistence
+      - BroadcastPersistence.expiresIn
+      - BroadcastPersistence.hashCode
+      - ChannelResponse
   # realtime — client
   realtime.client.channel:
     status: implemented

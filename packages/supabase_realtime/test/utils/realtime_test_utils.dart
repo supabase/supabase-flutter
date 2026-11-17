@@ -41,13 +41,16 @@ RealtimeClient createRealtimeClient({String? token}) {
 
 /// Opens a direct Postgres connection to the test database. Used to mutate rows
 /// so that postgres_changes events can be observed by the Realtime client.
-Future<Connection> openPostgresConnection() {
+///
+/// [username] defaults to `postgres`. `supabase_admin` owns the `_realtime`
+/// schema that holds the feature flags of the Realtime server.
+Future<Connection> openPostgresConnection({String? username}) {
   return Connection.open(
     Endpoint(
       host: _postgresEndpoint.host,
       port: _postgresEndpoint.port,
       database: _postgresEndpoint.database,
-      username: _postgresEndpoint.username,
+      username: username ?? _postgresEndpoint.username,
       password: _postgresEndpoint.password,
     ),
     settings: const ConnectionSettings(sslMode: SslMode.disable),

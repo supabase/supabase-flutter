@@ -249,6 +249,44 @@ void main() {
       expect(jsonDecode(metadata), {'trace_id': 'abc'});
     });
 
+    test('sends a JSON broadcast with persist as a binary frame', () {
+      final result = serializer.encode(
+        RealtimeMessage(
+          topic: 'top',
+          event: 'broadcast',
+          payload: {
+            'type': 'broadcast',
+            'event': 'user-event',
+            'persist': {'ttl': 60},
+            'payload': {'a': 'b'},
+          },
+        ),
+      );
+
+      expect(
+        utf8.decode(result as Uint8List),
+        '\x03\x00\x00\x03\x0a\x16\x01topuser-event'
+        '{"persist":{"ttl":60}}{"a":"b"}',
+      );
+    });
+
+    test('sends a broadcast as text when no metadata key is allowed', () {
+      final result = Serializer(allowedMetadataKeys: const []).encode(
+        RealtimeMessage(
+          topic: 'top',
+          event: 'broadcast',
+          payload: {
+            'type': 'broadcast',
+            'event': 'user-event',
+            'persist': true,
+            'payload': {'a': 'b'},
+          },
+        ),
+      );
+
+      expect(result, isA<String>());
+    });
+
     test('encodes multi-byte header fields as UTF-8 byte lengths', () {
       final serializerWithMeta = Serializer(allowedMetadataKeys: ['label']);
       final topic = 'realtime:café';

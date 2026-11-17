@@ -152,6 +152,17 @@ enum ChannelResponse {
 
   /// The server rejected the message.
   error,
+
+  /// The message was delivered but not stored, because the sender has no
+  /// policy that allows persisting it.
+  persistenceUnauthorized,
+
+  /// The message was delivered but storing it failed.
+  persistenceFailed,
+
+  /// The server refused the [BroadcastPersistence.expiresIn], so the message
+  /// was neither delivered nor stored.
+  persistenceInvalidExpiry,
 }
 
 @internal
@@ -224,6 +235,43 @@ class RealtimeSubscribeStatusChange {
   @override
   String toString() =>
       'RealtimeSubscribeStatusChange(status: ${status.name}, error: $error)';
+}
+
+/// Stores a broadcast message so that it can be replayed with
+/// [RealtimeChannelConfig.replay].
+///
+/// Only a private channel can store messages.
+class BroadcastPersistence {
+  const BroadcastPersistence({this.expiresIn});
+
+  /// How long the server keeps the message, in whole seconds. `null` keeps it
+  /// for the maximum retention the server allows.
+  final Duration? expiresIn;
+
+  /// Converts this to the `persist` value the server reads from the metadata
+  /// of a WebSocket frame.
+  @internal
+  Object toJson() {
+    final expiresIn = this.expiresIn;
+    return expiresIn == null ? true : {'ttl': expiresIn.inSeconds};
+  }
+
+  /// Converts this to the `persist` query parameter the broadcast REST
+  /// endpoint reads.
+  @internal
+  Map<String, String> toQueryParameters() {
+    final expiresIn = this.expiresIn;
+    return expiresIn == null
+        ? {'persist': 'true'}
+        : {'persist[ttl]': '${expiresIn.inSeconds}'};
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is BroadcastPersistence && other.expiresIn == expiresIn;
+
+  @override
+  int get hashCode => expiresIn.hashCode;
 }
 
 /// Configuration for broadcast replay feature.

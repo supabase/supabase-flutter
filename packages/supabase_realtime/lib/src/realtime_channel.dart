@@ -689,6 +689,7 @@ class RealtimeChannel {
     ..._broadcastEnvelopeKeys,
     'payload',
     'ids',
+    'persist',
   };
 
   /// Reads a received broadcast, or returns `null` for one without an event
@@ -932,6 +933,8 @@ class RealtimeChannel {
   ///
   /// [event] is the name of the broadcast event.
   /// [timeout] is an optional timeout duration.
+  /// [persist] stores the message so that it can be replayed, which requires
+  /// a private channel.
   ///
   /// Requires a Realtime server running v2.97.0 or newer.
   ///
@@ -940,7 +943,8 @@ class RealtimeChannel {
   /// a [RealtimeTransportException] when the request gets no response within
   /// [timeout], and an [AccessTokenException] when
   /// [RealtimeClient.customAccessToken] throws or does not complete within
-  /// [RealtimeClient.timeout].
+  /// [RealtimeClient.timeout]. It throws a [RealtimeException] without
+  /// sending anything when [persist] is set on a channel that is not private.
   ///
   /// ```dart
   /// try {
@@ -956,12 +960,14 @@ class RealtimeChannel {
     required String event,
     required Map<String, dynamic> payload,
     Duration? timeout,
+    BroadcastPersistence? persist,
   }) async {
     await _httpSend(
       event: event,
       body: json.encode(payload),
       contentType: HttpMediaType.json,
       timeout: timeout,
+      persist: persist,
     );
   }
 
@@ -982,12 +988,14 @@ class RealtimeChannel {
     required String event,
     required Uint8List bytes,
     Duration? timeout,
+    BroadcastPersistence? persist,
   }) async {
     await _httpSend(
       event: event,
       body: bytes,
       contentType: HttpMediaType.octetStream,
       timeout: timeout,
+      persist: persist,
     );
   }
 
@@ -996,7 +1004,12 @@ class RealtimeChannel {
     required Object body,
     required HttpMediaType contentType,
     Duration? timeout,
+    BroadcastPersistence? persist,
   }) async {
+    if (persist != null && !config.private) {
+      throw _persistOnPublicChannel;
+    }
+
     final accessToken = await resolveAccessToken(socket.resolveAccessToken);
     final headers = {
       ..._broadcastHeaders,
@@ -1004,10 +1017,14 @@ class RealtimeChannel {
       HttpHeader.contentType: contentType.value,
     };
 
+    final query = {
+      if (config.private) 'private': 'true',
+      ...?persist?.toQueryParameters(),
+    };
     final url = Uri.parse(
       '$broadcastEndpointUrl/${Uri.encodeComponent(subTopic)}/events/'
-      '${Uri.encodeComponent(event)}${config.private ? '?private=true' : ''}',
-    );
+      '${Uri.encodeComponent(event)}',
+    ).replace(queryParameters: query.isEmpty ? null : query);
 
     final Response response;
     try {
@@ -1055,6 +1072,11 @@ class RealtimeChannel {
     );
   }
 
+  static const _persistOnPublicChannel = RealtimeException(
+    'Cannot store a broadcast message on a public channel. Set '
+    'RealtimeChannelConfig.private to persist it.',
+  );
+
   /// Sends a realtime broadcast message over the WebSocket.
   ///
   /// The channel has to be subscribed first, otherwise this throws. Use
@@ -1068,6 +1090,16 @@ class RealtimeChannel {
   /// [payload] are also sent next to `type` and `event`, except for the
   /// reserved keys listed there, which are only sent under `payload`.
   ///
+  /// [persist] stores the message so that it can be replayed, which requires
+  /// a private channel without
+  /// [RealtimeChannelConfig.v2BroadcastCompatibility], otherwise this throws a
+  /// [RealtimeException] without sending anything. Set
+  /// [RealtimeChannelConfig.ack] to learn whether the
+  /// message was stored: the server then answers with
+  /// [ChannelResponse.persistenceUnauthorized],
+  /// [ChannelResponse.persistenceFailed] or
+  /// [ChannelResponse.persistenceInvalidExpiry] when it was not.
+  ///
   /// ```dart
   /// await channel.sendBroadcastMessage(
   ///   event: 'cursor-pos',
@@ -1077,7 +1109,17 @@ class RealtimeChannel {
   Future<ChannelResponse> sendBroadcastMessage({
     required String event,
     required Map<String, dynamic> payload,
+    BroadcastPersistence? persist,
   }) {
+    if (persist != null && config.v2BroadcastCompatibility) {
+      return Future.error(
+        const RealtimeException(
+          'Cannot store a broadcast message with '
+          'RealtimeChannelConfig.v2BroadcastCompatibility, since the stored '
+          'message only holds the payload that v3 clients read.',
+        ),
+      );
+    }
     return send(
       type: RealtimeListenType.broadcast,
       event: event,
@@ -1087,6 +1129,7 @@ class RealtimeChannel {
             if (!_v2ReservedBroadcastKeys.contains(key)) key: value,
         'payload': payload,
       },
+      persist: persist,
     );
   }
 
@@ -1107,11 +1150,13 @@ class RealtimeChannel {
   Future<ChannelResponse> sendBinaryBroadcastMessage({
     required String event,
     required Uint8List bytes,
+    BroadcastPersistence? persist,
   }) {
     return send(
       type: RealtimeListenType.broadcast,
       event: event,
       payload: {'payload': bytes},
+      persist: persist,
     );
   }
 
@@ -1135,7 +1180,12 @@ class RealtimeChannel {
     String? event,
     required Map<String, dynamic> payload,
     Duration? timeout,
+    BroadcastPersistence? persist,
   }) {
+    if (persist != null && !config.private) {
+      return Future.error(_persistOnPublicChannel);
+    }
+
     if (_joinedOnce && (isLeaving || isClosed)) {
       return Future.value(ChannelResponse.error);
     }
@@ -1146,6 +1196,7 @@ class RealtimeChannel {
       ...payload,
       'type': type.channelEvent.eventName(),
       'event': ?event,
+      'persist': ?persist?.toJson(),
     };
 
     if (socket.encode == null) {
@@ -1195,9 +1246,13 @@ class RealtimeChannel {
         completer.complete(ChannelResponse.ok);
       }
     });
-    push.receive(PushStatus.error, (_) {
+    push.receive(PushStatus.error, (response) {
       if (!completer.isCompleted) {
-        completer.complete(ChannelResponse.error);
+        completer.complete(
+          persist == null
+              ? ChannelResponse.error
+              : _persistenceResponse(response),
+        );
       }
     });
     push.receive(PushStatus.timeout, (_) {
@@ -1207,6 +1262,16 @@ class RealtimeChannel {
     });
 
     return completer.future;
+  }
+
+  static ChannelResponse _persistenceResponse(Object? response) {
+    final code = response is Map ? response['error'] : null;
+    return switch (code) {
+      'persistence_unauthorized' => ChannelResponse.persistenceUnauthorized,
+      'persistence_failed' => ChannelResponse.persistenceFailed,
+      'persistence_invalid_ttl' => ChannelResponse.persistenceInvalidExpiry,
+      _ => ChannelResponse.error,
+    };
   }
 
   Map<String, String> get _broadcastHeaders => {

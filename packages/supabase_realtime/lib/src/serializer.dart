@@ -10,14 +10,18 @@ import 'package:supabase_realtime/src/realtime_message.dart';
 /// `[joinRef, ref, topic, event, payload]`. This lets the server skip part of
 /// the JSON encoding/decoding work, lowering latency.
 ///
-/// Broadcast messages whose user payload is binary are sent as binary
-/// WebSocket frames so that raw bytes can be forwarded without JSON encoding.
+/// Broadcast messages whose user payload is binary, or that carry frame
+/// metadata such as `persist`, are sent as binary WebSocket frames, since only
+/// those frames hold raw bytes and metadata.
 /// Incoming binary broadcast frames are decoded back into the same map shape as
 /// their JSON counterparts.
 @internal
 class Serializer {
   const Serializer({List<String>? allowedMetadataKeys})
-    : allowedMetadataKeys = allowedMetadataKeys ?? const [];
+    : allowedMetadataKeys = allowedMetadataKeys ?? defaultMetadataKeys;
+
+  /// Keys the server reads as frame metadata rather than user payload.
+  static const List<String> defaultMetadataKeys = ['persist'];
   static const int headerLength = 1;
   static const int userBroadcastPushMetaLength = 6;
 
@@ -36,8 +40,7 @@ class Serializer {
   static const int jsonEncoding = 1;
   static const String broadcastEvent = 'broadcast';
 
-  /// Keys of the broadcast payload that are forwarded as frame metadata when
-  /// sending a binary broadcast push.
+  /// Keys of the broadcast payload that are forwarded as frame metadata.
   final List<String> allowedMetadataKeys;
 
   /// Encodes a message into the string or binary representation that is
@@ -47,8 +50,9 @@ class Serializer {
     if (message.event == broadcastEvent &&
         payload is Map &&
         payload['event'] is String &&
-        _isBinary(payload['payload'])) {
-      return _encodeBinaryUserBroadcastPush(message, payload);
+        (_isBinary(payload['payload']) ||
+            allowedMetadataKeys.any(payload.containsKey))) {
+      return _encodeUserBroadcastPush(message, payload);
     }
 
     return jsonEncode(message.toJson());
@@ -68,11 +72,15 @@ class Serializer {
     throw FormatException('Unsupported 2.0.0 frame', rawPayload);
   }
 
-  Uint8List _encodeBinaryUserBroadcastPush(
+  Uint8List _encodeUserBroadcastPush(
     RealtimeMessage message,
     Map<dynamic, dynamic> payload,
   ) {
-    final encodedPayload = _asBytes(payload['payload'])!;
+    final userPayload = payload['payload'];
+    final isBinary = _isBinary(userPayload);
+    final encodedPayload = isBinary
+        ? _asBytes(userPayload)!
+        : utf8.encode(jsonEncode(userPayload ?? const {}));
 
     final rest = allowedMetadataKeys.isEmpty
         ? const <String, dynamic>{}
@@ -111,7 +119,7 @@ class Serializer {
     frame[offset++] = topic.length;
     frame[offset++] = userEvent.length;
     frame[offset++] = metadata.length;
-    frame[offset++] = binaryEncoding;
+    frame[offset++] = isBinary ? binaryEncoding : jsonEncoding;
     offset = _writeBytes(frame, offset, joinRef);
     offset = _writeBytes(frame, offset, ref);
     offset = _writeBytes(frame, offset, topic);
