@@ -2262,11 +2262,11 @@ features:
       - SupabaseStorageClient.vectors
       - SupabaseVectorsClient
       - SupabaseVectorsClient.createBucket
-  storage.vector_buckets.list_vector_buckets:
+  storage.vector_buckets.get_vector_bucket:
     status: implemented
     symbols:
-      - SupabaseVectorsClient.listBuckets
       - SupabaseVectorsClient.getBucket
+    supporting_symbols:
       - VectorBucket
       - VectorBucket.VectorBucket
       - VectorBucket.name
@@ -2278,6 +2278,11 @@ features:
       - VectorBucketEncryption.kmsKeyArn
       - VectorBucketEncryption.serverSideEncryptionType
       - VectorBucketEncryption.fromJson
+  storage.vector_buckets.list_vector_buckets:
+    status: implemented
+    symbols:
+      - SupabaseVectorsClient.listBuckets
+    supporting_symbols:
       - VectorBucketList
       - VectorBucketList.VectorBucketList
       - VectorBucketList.buckets
