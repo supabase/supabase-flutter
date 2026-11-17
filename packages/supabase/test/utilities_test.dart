@@ -58,12 +58,10 @@ void main() {
     );
 
     test('should have platform getter', () {
-      if (kIsWeb) {
-        expect(conditionalPlatform, isNull);
-      } else {
-        expect(conditionalPlatform, isNotNull);
-        expect(conditionalPlatform, isA<String>());
-      }
+      expect(
+        conditionalPlatform,
+        kIsWeb ? 'browser' : normalizePlatformName(Platform.operatingSystem),
+      );
     });
 
     test('should have platformVersion getter', () {

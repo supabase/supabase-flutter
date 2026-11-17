@@ -5,37 +5,101 @@ import 'package:test/test.dart';
 
 void main() {
   group('buildClientInfoHeader', () {
-    test('returns the minimal form without platform info', () {
-      expect(
-        buildClientInfoHeader('gotrue-dart', '2.0.0'),
-        'gotrue-dart/2.0.0',
-      );
-    });
-
-    test('returns the rich form with platform info', () {
+    test('lists every known parameter after the product token', () {
       final header = buildClientInfoHeader(
-        'supabase-dart',
-        '2.0.0',
+        'supabase-flutter',
+        '3.0.0',
         platformInfo: const PlatformInfo(
-          platform: 'macOS',
-          platformVersion: 'Version 14.0',
-          runtimeVersion: '3.9.0',
+          platform: 'Android',
+          platformVersion: '15',
+          platformArchitecture: 'arm64',
+          runtimeVersion: '3.10.0',
+          framework: 'flutter',
+          frameworkVersion: '3.38.0',
         ),
       );
       expect(
         header,
-        'supabase-dart/2.0.0; platform=macOS; '
-        'platform-version=Version 14.0; runtime=dart; runtime-version=3.9.0',
+        'supabase-flutter/3.0.0; platform=Android; platform-version=15; '
+        'platform-architecture=arm64; runtime=dart; runtime-version=3.10.0; '
+        'framework=flutter; framework-version=3.38.0',
       );
     });
 
-    test('omits null platform segments but always includes runtime=dart', () {
-      final header = buildClientInfoHeader(
-        'supabase-dart',
-        '2.0.0',
-        platformInfo: const PlatformInfo(),
+    test('leaves out unknown parameters but always sends runtime=dart', () {
+      expect(
+        buildClientInfoHeader(
+          'supabase-dart',
+          '2.0.0',
+          platformInfo: const PlatformInfo(),
+        ),
+        'supabase-dart/2.0.0; runtime=dart',
       );
-      expect(header, 'supabase-dart/2.0.0; runtime=dart');
+    });
+
+    test('sends platform=browser without a platform version', () {
+      expect(
+        buildClientInfoHeader(
+          'supabase-dart',
+          '2.0.0',
+          platformInfo: const PlatformInfo(
+            platform: 'browser',
+            platformArchitecture: 'wasm',
+          ),
+        ),
+        'supabase-dart/2.0.0; platform=browser; platform-architecture=wasm; '
+        'runtime=dart',
+      );
+    });
+
+    test('leaves out empty and blank values', () {
+      expect(
+        buildClientInfoHeader(
+          'supabase-dart',
+          '2.0.0',
+          platformInfo: const PlatformInfo(
+            platform: '',
+            platformVersion: '  ',
+            frameworkVersion: '',
+          ),
+        ),
+        'supabase-dart/2.0.0; runtime=dart',
+      );
+    });
+
+    test('trims values and keeps inner spaces', () {
+      expect(
+        buildClientInfoHeader(
+          'supabase-dart',
+          '2.0.0',
+          platformInfo: const PlatformInfo(platformVersion: ' Version 14.0 '),
+        ),
+        'supabase-dart/2.0.0; platform-version=Version 14.0; runtime=dart',
+      );
+    });
+
+    test('percent-encodes semicolons, percent signs and non-ASCII', () {
+      expect(
+        buildClientInfoHeader(
+          'supabase-dart',
+          '2.0.0',
+          platformInfo: const PlatformInfo(
+            platformVersion: 'a;b%c\tü',
+          ),
+        ),
+        'supabase-dart/2.0.0; platform-version=a%3Bb%25c%09%C3%BC; '
+        'runtime=dart',
+      );
+    });
+
+    test('describes the running process by default', () {
+      final current = PlatformInfo.current;
+      expect(
+        buildClientInfoHeader('supabase-dart', '2.0.0'),
+        buildClientInfoHeader('supabase-dart', '2.0.0', platformInfo: current),
+      );
+      expect(current.framework, isNull);
+      expect(current.frameworkVersion, isNull);
     });
   });
 

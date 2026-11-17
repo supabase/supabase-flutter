@@ -1,22 +1,53 @@
-import 'package:supabase_common/src/http_header.dart';
+import 'dart:convert';
 
-/// Platform information used to build the richer, platform-aware form of the
-/// `X-Client-Info` header.
+import 'package:supabase_common/src/http_header.dart';
+import 'package:supabase_common/src/platform/platform_info.dart';
+
+/// The environment an SDK describes in the `X-Client-Info` header.
 class PlatformInfo {
   const PlatformInfo({
     this.platform,
     this.platformVersion,
+    this.platformArchitecture,
     this.runtimeVersion,
+    this.framework,
+    this.frameworkVersion,
   });
 
-  /// The normalized platform name, for example `'Android'` or `'iOS'`.
+  /// The environment of the running process.
+  static final current = PlatformInfo(
+    platform: conditionalPlatform,
+    platformVersion: conditionalPlatformVersion,
+    platformArchitecture: conditionalPlatformArchitecture,
+    runtimeVersion: conditionalRuntimeVersion,
+    framework: _isFlutter ? 'flutter' : null,
+    frameworkVersion: _isFlutter ? _flutterVersion : null,
+  );
+
+  static const _isFlutter = bool.fromEnvironment('dart.library.ui');
+
+  static const _flutterVersion = bool.hasEnvironment('FLUTTER_VERSION')
+      ? String.fromEnvironment('FLUTTER_VERSION')
+      : null;
+
+  /// The normalized platform name, for example `'Android'`, `'iOS'` or
+  /// `'browser'`.
   final String? platform;
 
   /// The operating system version.
   final String? platformVersion;
 
-  /// The Dart or Flutter runtime version.
+  /// The processor architecture, using Go's `GOARCH` names such as `'arm64'`.
+  final String? platformArchitecture;
+
+  /// The Dart runtime version.
   final String? runtimeVersion;
+
+  /// The application framework, `'flutter'` in a Flutter app.
+  final String? framework;
+
+  /// The version of [framework].
+  final String? frameworkVersion;
 }
 
 /// Platform names shared across the Supabase SDKs so per-platform stats can be
@@ -45,33 +76,52 @@ abstract final class ClientInfoFeature {
   static const typedApi = 'typed-api';
 }
 
-/// Builds the value of the `X-Client-Info` header.
+/// Builds the value of the `X-Client-Info` header for the SDK [clientName] at
+/// [version], describing the environment in [platformInfo], or
+/// [PlatformInfo.current] when it is `null`.
 ///
-/// When [platformInfo] is `null` the minimal `'$clientName/$version'` form is
-/// returned. Otherwise a `; `-joined list is returned, always including a
-/// `runtime=dart` segment and appending `platform`, `platform-version` and
-/// `runtime-version` segments for the non-null fields.
+/// Parameters whose value is unknown are left out. Values are trimmed, and
+/// `;`, `%` and every character outside printable ASCII are percent-encoded.
 String buildClientInfoHeader(
   String clientName,
   String version, {
   PlatformInfo? platformInfo,
 }) {
-  if (platformInfo == null) {
-    return '$clientName/$version';
-  }
-  final rawPlatformVersion = platformInfo.platformVersion;
-  final platformVersion = rawPlatformVersion == null
-      ? null
-      : Uri.encodeFull(rawPlatformVersion).replaceAll('%20', ' ');
+  final info = platformInfo ?? PlatformInfo.current;
+  final parameters = {
+    'platform': info.platform,
+    'platform-version': info.platformVersion,
+    'platform-architecture': info.platformArchitecture,
+    'runtime': 'dart',
+    'runtime-version': info.runtimeVersion,
+    'framework': info.framework,
+    'framework-version': info.frameworkVersion,
+  };
   return [
     '$clientName/$version',
-    if (platformInfo.platform != null) 'platform=${platformInfo.platform}',
-    if (platformVersion != null) 'platform-version=$platformVersion',
-    'runtime=dart',
-    if (platformInfo.runtimeVersion != null)
-      'runtime-version=${platformInfo.runtimeVersion}',
+    for (final MapEntry(:key, :value) in parameters.entries)
+      if (_encodeParameterValue(value) case final encoded?) '$key=$encoded',
   ].join('; ');
 }
+
+String? _encodeParameterValue(String? value) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) return null;
+  final buffer = StringBuffer();
+  for (final byte in utf8.encode(trimmed)) {
+    final isPrintable = byte >= 0x20 && byte <= 0x7E;
+    if (isPrintable && byte != _semicolon && byte != _percent) {
+      buffer.writeCharCode(byte);
+    } else {
+      final hex = byte.toRadixString(16).toUpperCase().padLeft(2, '0');
+      buffer.write('%$hex');
+    }
+  }
+  return buffer.toString();
+}
+
+const _semicolon = 0x3B;
+const _percent = 0x25;
 
 /// Returns a copy of [headers] whose `X-Client-Info` header also lists
 /// [features] in its `features` parameter.
