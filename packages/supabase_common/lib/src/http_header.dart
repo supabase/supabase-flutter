@@ -12,8 +12,8 @@ abstract final class HttpHeader {
   /// The bearer token that identifies the user making the request.
   static const authorization = 'Authorization';
 
-  /// The name and version of the client library, built by
-  /// `buildClientInfoHeader`.
+  /// The name and version of the client library and the environment it runs
+  /// in, built by `buildClientInfoHeader`.
   static const clientInfo = 'X-Client-Info';
 
   /// The schema PostgREST writes to.

@@ -17,6 +17,10 @@ class RealtimeConstants {
   @internal
   static const int webSocketCloseNormal = 1000;
 
+  /// The SDK name and version sent in the `version` field of a channel join.
+  @internal
+  static const joinVersion = 'realtime-dart/$version';
+
   /// The `X-Client-Info` header sent on every connection.
   @internal
   static final Map<String, String> defaultHeaders = {

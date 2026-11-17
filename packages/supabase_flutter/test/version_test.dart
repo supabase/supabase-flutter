@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/version.dart';
@@ -20,6 +21,16 @@ void main() {
         SupabaseFlutterConstants.defaultHeaders.keys,
         contains('X-Client-Info'),
       );
+    });
+
+    test('X-Client-Info names Flutter as the framework', () {
+      final clientInfo =
+          SupabaseFlutterConstants.defaultHeaders['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-flutter/$version; '));
+      expect(clientInfo, contains('; framework=flutter'));
+      if (FlutterVersion.version case final flutterVersion?) {
+        expect(clientInfo, contains('; framework-version=$flutterVersion'));
+      }
     });
   });
 }

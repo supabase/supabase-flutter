@@ -5,14 +5,6 @@ import 'package:meta/meta.dart';
 @internal
 class SupabaseFlutterConstants {
   static final Map<String, String> defaultHeaders = Map.unmodifiable({
-    HttpHeader.clientInfo: buildClientInfoHeader(
-      'supabase-flutter',
-      version,
-      platformInfo: PlatformInfo(
-        platform: conditionalPlatform,
-        platformVersion: conditionalPlatformVersion,
-        runtimeVersion: conditionalRuntimeVersion,
-      ),
-    ),
+    HttpHeader.clientInfo: buildClientInfoHeader('supabase-flutter', version),
   });
 }

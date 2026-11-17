@@ -3207,7 +3207,10 @@ features:
     status: implemented
     note: "Records go through the `supabase` logger hierarchy of `package:logging` instead of a logger supplied when the client is constructed."
     no_public_symbols: true
-  client.observability.client_info: not_implemented
+  client.observability.client_info:
+    status: implemented
+    note: "Every client sends the header on its own; no API configures it beyond overriding X-Client-Info through the global headers."
+    no_public_symbols: true
 
 # Public API the matrix accounts for but that no single capability owns: shared
 # domain models, the exception hierarchies, the client and sub-API handles that

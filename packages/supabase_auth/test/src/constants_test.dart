@@ -14,7 +14,7 @@ void main() {
       expect(AuthConstants.defaultHeaders, isA<Map<String, String>>());
       expect(
         AuthConstants.defaultHeaders['X-Client-Info'],
-        equals('gotrue-dart/$version'),
+        startsWith('gotrue-dart/$version; '),
       );
     });
 

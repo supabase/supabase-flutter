@@ -1145,7 +1145,7 @@ void main() {
 
   group('setAccessToken', () {
     final token = generateJwt();
-    final version = RealtimeConstants.defaultHeaders['X-Client-Info'];
+    const version = RealtimeConstants.joinVersion;
     final pushPayload = {'access_token': token};
 
     test(
