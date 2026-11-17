@@ -353,6 +353,55 @@ void main() {
       expect(payload['event'], 'file');
       expect(payload['payload'], bytes);
     });
+
+    test('carry their metadata and JSON payload in sent', () async {
+      final channel = supabase.channel(
+        'room',
+        options: const RealtimeChannelConfig(private: true),
+      );
+      await subscribed(channel);
+
+      await channel.sendBroadcastMessage(
+        event: 'cursor',
+        payload: {'x': 1},
+        persist: const BroadcastPersistence(),
+      );
+
+      final broadcast = realtime.sent.lastWhere(
+        (message) => message.event == 'broadcast',
+      );
+      expect(broadcast.payload, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'persist': true,
+        'payload': {'x': 1},
+      });
+    });
+  });
+
+  group('rejectNextBroadcast', () {
+    test('answers one acknowledged broadcast with an error', () async {
+      final channel = supabase.channel(
+        'room',
+        options: const RealtimeChannelConfig(private: true, ack: true),
+      );
+      await subscribed(channel);
+      realtime.rejectNextBroadcast('room', error: 'persistence_failed');
+
+      final rejected = await channel.sendBroadcastMessage(
+        event: 'cursor',
+        payload: {'x': 1},
+        persist: const BroadcastPersistence(),
+      );
+      final accepted = await channel.sendBroadcastMessage(
+        event: 'cursor',
+        payload: {'x': 2},
+        persist: const BroadcastPersistence(),
+      );
+
+      expect(rejected, ChannelResponse.persistenceFailed);
+      expect(accepted, ChannelResponse.ok);
+    });
   });
 
   group('presence', () {

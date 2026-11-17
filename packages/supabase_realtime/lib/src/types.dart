@@ -152,6 +152,17 @@ enum ChannelResponse {
 
   /// The server rejected the message.
   error,
+
+  /// The message was delivered but not stored, because the sender has no
+  /// policy that allows persisting it.
+  persistenceUnauthorized,
+
+  /// The message was delivered but storing it failed.
+  persistenceFailed,
+
+  /// The server refused the [BroadcastPersistence.ttl], so the message was
+  /// neither delivered nor stored.
+  persistenceInvalidTtl,
 }
 
 @internal
@@ -224,6 +235,32 @@ class RealtimeSubscribeStatusChange {
   @override
   String toString() =>
       'RealtimeSubscribeStatusChange(status: ${status.name}, error: $error)';
+}
+
+/// Stores a broadcast message so that it can be replayed with
+/// [RealtimeChannelConfig.replay].
+///
+/// Only a private channel can store messages.
+class BroadcastPersistence {
+  const BroadcastPersistence({this.ttl});
+
+  /// How long the server keeps the message, in whole seconds. `null` keeps it
+  /// for the maximum retention the server allows.
+  final Duration? ttl;
+
+  /// Converts this to the `persist` value the server reads.
+  @internal
+  Object toJson() {
+    final ttl = this.ttl;
+    return ttl == null ? true : {'ttl': ttl.inSeconds};
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is BroadcastPersistence && other.ttl == ttl;
+
+  @override
+  int get hashCode => ttl.hashCode;
 }
 
 /// Configuration for broadcast replay feature.

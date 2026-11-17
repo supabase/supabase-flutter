@@ -413,6 +413,195 @@ void main() {
     });
   });
 
+  group('broadcast persistence', () {
+    const storedPrefix = 'persist-stored-';
+    const deniedPrefix = 'persist-denied-';
+    late Connection database;
+    late RealtimeClient client;
+    var insertedFlag = false;
+    var topicCount = 0;
+
+    String uniqueTopic(String prefix) =>
+        '$prefix${DateTime.now().microsecondsSinceEpoch}-${topicCount++}';
+
+    Future<int> storedCount(String topic) async {
+      final result = await database.execute(
+        Sql.named('select count(*) from realtime.messages where topic = @t'),
+        parameters: {'t': topic},
+      );
+      return result.single.single! as int;
+    }
+
+    setUpAll(() async {
+      database = await openPostgresConnection();
+      await database.execute('''
+        create policy persist_test_read on realtime.messages
+          for select to anon
+          using (realtime.topic() like '$storedPrefix%'
+            or realtime.topic() like '$deniedPrefix%')''');
+      await database.execute('''
+        create policy persist_test_write on realtime.messages
+          for insert to anon
+          with check (realtime.topic() like '$storedPrefix%'
+            or (realtime.topic() like '$deniedPrefix%'
+              and extension <> 'persistence'))''');
+
+      final admin = await openPostgresConnection(username: 'supabase_admin');
+      try {
+        final inserted = await admin.execute('''
+          insert into _realtime.feature_flags
+            (id, name, enabled, inserted_at, updated_at)
+          values
+            (gen_random_uuid(), 'broadcast_persistence', true, now(), now())
+          on conflict (name) do nothing''');
+        insertedFlag = inserted.affectedRows == 1;
+      } finally {
+        await admin.close();
+      }
+
+      // The server caches feature flags for up to 30 seconds, so wait until
+      // it stores a message.
+      final probe = createRealtimeClient();
+      try {
+        final channel = probe.channel(
+          uniqueTopic(storedPrefix),
+          const RealtimeChannelConfig(private: true),
+        );
+        final deadline = DateTime.now().add(const Duration(seconds: 45));
+        while (await storedCount(channel.subTopic) == 0) {
+          if (DateTime.now().isAfter(deadline)) {
+            throw TimeoutException('Broadcast persistence never turned on');
+          }
+          await channel.httpSend(
+            event: 'probe',
+            payload: {},
+            persist: const BroadcastPersistence(),
+          );
+          await Future<void>.delayed(const Duration(seconds: 1));
+        }
+      } finally {
+        await probe.disconnect();
+      }
+    });
+
+    tearDownAll(() async {
+      await database.execute(
+        "delete from realtime.messages where topic like '$storedPrefix%' "
+        "or topic like '$deniedPrefix%'",
+      );
+      await database.execute(
+        'drop policy persist_test_read on realtime.messages',
+      );
+      await database.execute(
+        'drop policy persist_test_write on realtime.messages',
+      );
+      await database.close();
+      if (insertedFlag) {
+        final admin = await openPostgresConnection(username: 'supabase_admin');
+        try {
+          await admin.execute(
+            "delete from _realtime.feature_flags "
+            "where name = 'broadcast_persistence'",
+          );
+        } finally {
+          await admin.close();
+        }
+      }
+    });
+
+    setUp(() {
+      client = createRealtimeClient();
+    });
+
+    tearDown(() async {
+      await client.removeAllChannels();
+      await client.disconnect();
+    });
+
+    test('stores a message sent over the websocket', () async {
+      final channel = client.channel(
+        uniqueTopic(storedPrefix),
+        const RealtimeChannelConfig(private: true, ack: true),
+      );
+      await _subscribe(channel);
+
+      final status = await channel.sendBroadcastMessage(
+        event: 'stored',
+        payload: {'value': 1},
+        persist: const BroadcastPersistence(ttl: Duration(minutes: 5)),
+      );
+
+      expect(status, ChannelResponse.ok);
+      final result = await database.execute(
+        Sql.named(
+          'select payload, '
+          'extract(epoch from expires_at - inserted_at)::int '
+          'from realtime.messages where topic = @t',
+        ),
+        parameters: {'t': channel.subTopic},
+      );
+      final [payload, lifetime] = result.single;
+      expect(payload, {'value': 1});
+      expect(lifetime, closeTo(300, 5));
+    });
+
+    test('reports a message the sender may not store', () async {
+      final channel = client.channel(
+        uniqueTopic(deniedPrefix),
+        const RealtimeChannelConfig(private: true, ack: true),
+      );
+      await _subscribe(channel);
+
+      final status = await channel.sendBroadcastMessage(
+        event: 'denied',
+        payload: {'value': 1},
+        persist: const BroadcastPersistence(),
+      );
+
+      expect(status, ChannelResponse.persistenceUnauthorized);
+      expect(await storedCount(channel.subTopic), 0);
+    });
+
+    test('stores a message sent over HTTP', () async {
+      final channel = client.channel(
+        uniqueTopic(storedPrefix),
+        const RealtimeChannelConfig(private: true),
+      );
+
+      await channel.httpSend(
+        event: 'stored',
+        payload: {'value': 1},
+        persist: const BroadcastPersistence(),
+      );
+
+      expect(await storedCount(channel.subTopic), 1);
+    });
+
+    test('throws the message of a ttl the server refuses over HTTP', () {
+      final channel = client.channel(
+        uniqueTopic(storedPrefix),
+        const RealtimeChannelConfig(private: true),
+      );
+
+      return expectLater(
+        () => channel.httpSend(
+          event: 'refused',
+          payload: {'value': 1},
+          persist: const BroadcastPersistence(ttl: Duration.zero),
+        ),
+        throwsA(
+          isA<RealtimeApiException>()
+              .having((exception) => exception.statusCode, 'statusCode', 422)
+              .having(
+                (exception) => exception.message,
+                'message',
+                contains('persist ttl'),
+              ),
+        ),
+      );
+    });
+  });
+
   group('asynchronous codec', () {
     late RealtimeClient client;
 

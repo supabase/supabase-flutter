@@ -1851,6 +1851,7 @@ class _OptionsCapturingChannel extends RealtimeChannel {
     String? event,
     required Map<String, dynamic> payload,
     Duration? timeout,
+    BroadcastPersistence? persist,
   }) async {
     capturedTimeout = timeout;
     return ChannelResponse.ok;

@@ -2690,6 +2690,20 @@ features:
       - RealtimeChannel.sendBroadcastMessage
     supporting_symbols:
       - ChannelResponse
+  realtime.channel.broadcast_persist:
+    status: implemented
+    symbols:
+      - RealtimeChannel.httpSend
+      - RealtimeChannel.httpSendBinary
+      - RealtimeChannel.sendBinaryBroadcastMessage
+      - RealtimeChannel.sendBroadcastMessage
+    supporting_symbols:
+      - BroadcastPersistence
+      - BroadcastPersistence.==
+      - BroadcastPersistence.BroadcastPersistence
+      - BroadcastPersistence.hashCode
+      - BroadcastPersistence.ttl
+      - ChannelResponse
   realtime.channel.broadcast_http:
     status: implemented
     symbols:
