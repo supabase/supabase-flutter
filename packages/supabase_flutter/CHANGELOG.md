@@ -1,3 +1,18 @@
+## 3.0.0-dev.18
+
+> Note: This release has breaking changes.
+
+ - **FIX**(auth): move a session stored under supabasePersistSessionKey to the storage key ([#2168](https://github.com/supabase/supabase-flutter/issues/2168)). ([b856e823](https://github.com/supabase/supabase-flutter/commit/b856e8238d698f93e9b01b6e2f8b3b63c0a80112))
+ - **FEAT**(realtime): reconnect early when the network becomes reachable ([#2181](https://github.com/supabase/supabase-flutter/issues/2181)). ([8f9a33ec](https://github.com/supabase/supabase-flutter/commit/8f9a33ec4988303db13c5ae882d50edb8969bf8d))
+ - **FEAT**(realtime): probe the connection when the app returns to the foreground ([#2179](https://github.com/supabase/supabase-flutter/issues/2179)). ([5540cda8](https://github.com/supabase/supabase-flutter/commit/5540cda85c6523557d3920519e6e2a7f64ac78a3))
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **BREAKING** **FIX**(supabase): remove the channels and resumable uploads of a user on sign-out ([#2162](https://github.com/supabase/supabase-flutter/issues/2162)). ([87dfe23d](https://github.com/supabase/supabase-flutter/commit/87dfe23dc24058141fc7572e084b0fe9d020bb3c))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**(supabase): reject a supabaseUrl that does not use https ([#2160](https://github.com/supabase/supabase-flutter/issues/2160)). ([33cce842](https://github.com/supabase/supabase-flutter/commit/33cce842d95a0c3c90ac1c54fb5d8e627ce0ebc3))
+ - **BREAKING** **FIX**(realtime): throw when channel() reuses a topic with other options ([#2159](https://github.com/supabase/supabase-flutter/issues/2159)). ([d08ca074](https://github.com/supabase/supabase-flutter/commit/d08ca074f34bf991788e26c47627ed487943a061))
+ - **BREAKING** **FIX**(supabase_flutter): reject a secret key in Supabase.initialize ([#2158](https://github.com/supabase/supabase-flutter/issues/2158)). ([c6594036](https://github.com/supabase/supabase-flutter/commit/c6594036c4a7dd744cc48576c45beb43c3c350f0))
+ - **BREAKING** **FIX**(auth): reject access_token links when the flow type is PKCE ([#2156](https://github.com/supabase/supabase-flutter/issues/2156)). ([6b96f1ef](https://github.com/supabase/supabase-flutter/commit/6b96f1efb529454d78d554fb8c31d3ef2297622c))
+
 ## 3.0.0-dev.17
 
 > Note: This release has breaking changes.

@@ -1,3 +1,17 @@
+## 3.0.0-dev.16
+
+> Note: This release has breaking changes.
+
+ - **FEAT**(realtime): reconnect early when the network becomes reachable ([#2181](https://github.com/supabase/supabase-flutter/issues/2181)). ([8f9a33ec](https://github.com/supabase/supabase-flutter/commit/8f9a33ec4988303db13c5ae882d50edb8969bf8d))
+ - **FEAT**(realtime): probe the connection when the app returns to the foreground ([#2179](https://github.com/supabase/supabase-flutter/issues/2179)). ([5540cda8](https://github.com/supabase/supabase-flutter/commit/5540cda85c6523557d3920519e6e2a7f64ac78a3))
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **FIX**(realtime): take ReplayOption.since as a DateTime and make toJson internal ([#2182](https://github.com/supabase/supabase-flutter/issues/2182)). ([ac064913](https://github.com/supabase/supabase-flutter/commit/ac0649133620939b9a1c083a69841237396984b6))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**(realtime): throw when channel() reuses a topic with other options ([#2159](https://github.com/supabase/supabase-flutter/issues/2159)). ([d08ca074](https://github.com/supabase/supabase-flutter/commit/d08ca074f34bf991788e26c47627ed487943a061))
+ - **BREAKING** **FEAT**(realtime): persist broadcast messages for replay ([#2180](https://github.com/supabase/supabase-flutter/issues/2180)). ([97d8b4b7](https://github.com/supabase/supabase-flutter/commit/97d8b4b74b37b8ba723c377c56144b8598232b06))
+
 ## 3.0.0-dev.15
 
  - **FEAT**(realtime): read v2 broadcasts and opt in to sending them to v2 clients ([#2145](https://github.com/supabase/supabase-flutter/issues/2145)). ([d613866a](https://github.com/supabase/supabase-flutter/commit/d613866a1527ba4fdb082eac6728dd0e08dcffa8))

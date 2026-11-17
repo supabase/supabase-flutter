@@ -13,8 +13,8 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^3.0.0-dev.17
-  supabase_flutter_web_auth: ^0.3.1
+  supabase_flutter: ^3.0.0-dev.18
+  supabase_flutter_web_auth: ^0.3.2
 
 dev_dependencies:
   flutter_test:

@@ -3,6 +3,141 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-11-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`iceberg` - `v0.4.0`](#iceberg---v040)
+ - [`postgrest` - `v3.0.0-dev.18`](#postgrest---v300-dev18)
+ - [`supabase` - `v3.0.0-dev.18`](#supabase---v300-dev18)
+ - [`supabase_auth` - `v3.0.0-dev.15`](#supabase_auth---v300-dev15)
+ - [`supabase_common` - `v3.0.0-dev.11`](#supabase_common---v300-dev11)
+ - [`supabase_flutter` - `v3.0.0-dev.18`](#supabase_flutter---v300-dev18)
+ - [`supabase_functions` - `v3.0.0-dev.13`](#supabase_functions---v300-dev13)
+ - [`supabase_realtime` - `v3.0.0-dev.16`](#supabase_realtime---v300-dev16)
+ - [`supabase_storage` - `v3.0.0-dev.15`](#supabase_storage---v300-dev15)
+ - [`supabase_test` - `v0.9.0`](#supabase_test---v090)
+
+Packages with other changes:
+
+ - [`supabase_typegen` - `v0.9.1`](#supabase_typegen---v091)
+ - [`supabase_flutter_web_auth` - `v0.3.2`](#supabase_flutter_web_auth---v032)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter_web_auth` - `v0.3.2`
+
+---
+
+#### `iceberg` - `v0.4.0`
+
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
+#### `postgrest` - `v3.0.0-dev.18`
+
+ - **FIX**(postgrest): send rpc(get: true) as a POST when an argument cannot be a query parameter ([#2152](https://github.com/supabase/supabase-flutter/issues/2152)). ([e0e13357](https://github.com/supabase/supabase-flutter/commit/e0e133576d9c00899353a42818d1ef80e25a6c54))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
+#### `supabase` - `v3.0.0-dev.18`
+
+ - **FIX**(storage): keep resumable upload requests on the storage origin ([#2163](https://github.com/supabase/supabase-flutter/issues/2163)). ([ea15518c](https://github.com/supabase/supabase-flutter/commit/ea15518c76ad45501178912a7463c5b8411bed57))
+ - **FEAT**(realtime): reconnect early when the network becomes reachable ([#2181](https://github.com/supabase/supabase-flutter/issues/2181)). ([8f9a33ec](https://github.com/supabase/supabase-flutter/commit/8f9a33ec4988303db13c5ae882d50edb8969bf8d))
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **FIX**(supabase): remove the channels and resumable uploads of a user on sign-out ([#2162](https://github.com/supabase/supabase-flutter/issues/2162)). ([87dfe23d](https://github.com/supabase/supabase-flutter/commit/87dfe23dc24058141fc7572e084b0fe9d020bb3c))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+ - **BREAKING** **FIX**(supabase): reject a supabaseUrl that does not use https ([#2160](https://github.com/supabase/supabase-flutter/issues/2160)). ([33cce842](https://github.com/supabase/supabase-flutter/commit/33cce842d95a0c3c90ac1c54fb5d8e627ce0ebc3))
+ - **BREAKING** **FIX**(realtime): throw when channel() reuses a topic with other options ([#2159](https://github.com/supabase/supabase-flutter/issues/2159)). ([d08ca074](https://github.com/supabase/supabase-flutter/commit/d08ca074f34bf991788e26c47627ed487943a061))
+ - **BREAKING** **FIX**(supabase_flutter): reject a secret key in Supabase.initialize ([#2158](https://github.com/supabase/supabase-flutter/issues/2158)). ([c6594036](https://github.com/supabase/supabase-flutter/commit/c6594036c4a7dd744cc48576c45beb43c3c350f0))
+ - **BREAKING** **FIX**(auth): reject access_token links when the flow type is PKCE ([#2156](https://github.com/supabase/supabase-flutter/issues/2156)). ([6b96f1ef](https://github.com/supabase/supabase-flutter/commit/6b96f1efb529454d78d554fb8c31d3ef2297622c))
+
+#### `supabase_auth` - `v3.0.0-dev.15`
+
+ - **FIX**(auth): move a session stored under supabasePersistSessionKey to the storage key ([#2168](https://github.com/supabase/supabase-flutter/issues/2168)). ([b856e823](https://github.com/supabase/supabase-flutter/commit/b856e8238d698f93e9b01b6e2f8b3b63c0a80112))
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **REFACTOR**: name the remaining auth and storage serializers fromJson and toJson ([#2165](https://github.com/supabase/supabase-flutter/issues/2165)). ([6efdfb92](https://github.com/supabase/supabase-flutter/commit/6efdfb92e0e22ef4716c61ee178b468493bfe9f7))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+ - **BREAKING** **FIX**(auth): reject access_token links when the flow type is PKCE ([#2156](https://github.com/supabase/supabase-flutter/issues/2156)). ([6b96f1ef](https://github.com/supabase/supabase-flutter/commit/6b96f1efb529454d78d554fb8c31d3ef2297622c))
+
+#### `supabase_common` - `v3.0.0-dev.11`
+
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
+#### `supabase_flutter` - `v3.0.0-dev.18`
+
+ - **FIX**(auth): move a session stored under supabasePersistSessionKey to the storage key ([#2168](https://github.com/supabase/supabase-flutter/issues/2168)). ([b856e823](https://github.com/supabase/supabase-flutter/commit/b856e8238d698f93e9b01b6e2f8b3b63c0a80112))
+ - **FEAT**(realtime): reconnect early when the network becomes reachable ([#2181](https://github.com/supabase/supabase-flutter/issues/2181)). ([8f9a33ec](https://github.com/supabase/supabase-flutter/commit/8f9a33ec4988303db13c5ae882d50edb8969bf8d))
+ - **FEAT**(realtime): probe the connection when the app returns to the foreground ([#2179](https://github.com/supabase/supabase-flutter/issues/2179)). ([5540cda8](https://github.com/supabase/supabase-flutter/commit/5540cda85c6523557d3920519e6e2a7f64ac78a3))
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **BREAKING** **FIX**(supabase): remove the channels and resumable uploads of a user on sign-out ([#2162](https://github.com/supabase/supabase-flutter/issues/2162)). ([87dfe23d](https://github.com/supabase/supabase-flutter/commit/87dfe23dc24058141fc7572e084b0fe9d020bb3c))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**(supabase): reject a supabaseUrl that does not use https ([#2160](https://github.com/supabase/supabase-flutter/issues/2160)). ([33cce842](https://github.com/supabase/supabase-flutter/commit/33cce842d95a0c3c90ac1c54fb5d8e627ce0ebc3))
+ - **BREAKING** **FIX**(realtime): throw when channel() reuses a topic with other options ([#2159](https://github.com/supabase/supabase-flutter/issues/2159)). ([d08ca074](https://github.com/supabase/supabase-flutter/commit/d08ca074f34bf991788e26c47627ed487943a061))
+ - **BREAKING** **FIX**(supabase_flutter): reject a secret key in Supabase.initialize ([#2158](https://github.com/supabase/supabase-flutter/issues/2158)). ([c6594036](https://github.com/supabase/supabase-flutter/commit/c6594036c4a7dd744cc48576c45beb43c3c350f0))
+ - **BREAKING** **FIX**(auth): reject access_token links when the flow type is PKCE ([#2156](https://github.com/supabase/supabase-flutter/issues/2156)). ([6b96f1ef](https://github.com/supabase/supabase-flutter/commit/6b96f1efb529454d78d554fb8c31d3ef2297622c))
+
+#### `supabase_functions` - `v3.0.0-dev.13`
+
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
+#### `supabase_realtime` - `v3.0.0-dev.16`
+
+ - **FEAT**(realtime): reconnect early when the network becomes reachable ([#2181](https://github.com/supabase/supabase-flutter/issues/2181)). ([8f9a33ec](https://github.com/supabase/supabase-flutter/commit/8f9a33ec4988303db13c5ae882d50edb8969bf8d))
+ - **FEAT**(realtime): probe the connection when the app returns to the foreground ([#2179](https://github.com/supabase/supabase-flutter/issues/2179)). ([5540cda8](https://github.com/supabase/supabase-flutter/commit/5540cda85c6523557d3920519e6e2a7f64ac78a3))
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **FIX**(realtime): take ReplayOption.since as a DateTime and make toJson internal ([#2182](https://github.com/supabase/supabase-flutter/issues/2182)). ([ac064913](https://github.com/supabase/supabase-flutter/commit/ac0649133620939b9a1c083a69841237396984b6))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**(realtime): throw when channel() reuses a topic with other options ([#2159](https://github.com/supabase/supabase-flutter/issues/2159)). ([d08ca074](https://github.com/supabase/supabase-flutter/commit/d08ca074f34bf991788e26c47627ed487943a061))
+ - **BREAKING** **FEAT**(realtime): persist broadcast messages for replay ([#2180](https://github.com/supabase/supabase-flutter/issues/2180)). ([97d8b4b7](https://github.com/supabase/supabase-flutter/commit/97d8b4b74b37b8ba723c377c56144b8598232b06))
+
+#### `supabase_storage` - `v3.0.0-dev.15`
+
+ - **FIX**(storage): keep resumable upload requests on the storage origin ([#2163](https://github.com/supabase/supabase-flutter/issues/2163)). ([ea15518c](https://github.com/supabase/supabase-flutter/commit/ea15518c76ad45501178912a7463c5b8411bed57))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **REFACTOR**: name the remaining auth and storage serializers fromJson and toJson ([#2165](https://github.com/supabase/supabase-flutter/issues/2165)). ([6efdfb92](https://github.com/supabase/supabase-flutter/commit/6efdfb92e0e22ef4716c61ee178b468493bfe9f7))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(supabase): remove the channels and resumable uploads of a user on sign-out ([#2162](https://github.com/supabase/supabase-flutter/issues/2162)). ([87dfe23d](https://github.com/supabase/supabase-flutter/commit/87dfe23dc24058141fc7572e084b0fe9d020bb3c))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
+#### `supabase_test` - `v0.9.0`
+
+ - **BREAKING** **REFACTOR**: name the remaining auth and storage serializers fromJson and toJson ([#2165](https://github.com/supabase/supabase-flutter/issues/2165)). ([6efdfb92](https://github.com/supabase/supabase-flutter/commit/6efdfb92e0e22ef4716c61ee178b468493bfe9f7))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+ - **BREAKING** **FEAT**(realtime): persist broadcast messages for replay ([#2180](https://github.com/supabase/supabase-flutter/issues/2180)). ([97d8b4b7](https://github.com/supabase/supabase-flutter/commit/97d8b4b74b37b8ba723c377c56144b8598232b06))
+
+#### `supabase_typegen` - `v0.9.1`
+
+ - **FIX**(typegen): keep stdin's descriptor taken so dart format does not hang ([#2175](https://github.com/supabase/supabase-flutter/issues/2175)). ([4be78a64](https://github.com/supabase/supabase-flutter/commit/4be78a6426a707f3395b5fcc59226cd72343e56a))
+ - **FEAT**(typegen): warn when the project does not depend on supabase_typegen ([#2174](https://github.com/supabase/supabase-flutter/issues/2174)). ([2c39ca7a](https://github.com/supabase/supabase-flutter/commit/2c39ca7acde563bc7f3a769b3a2491f8cee46e6a))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **DOCS**(typegen): add an example ([#2155](https://github.com/supabase/supabase-flutter/issues/2155)). ([e64b10c0](https://github.com/supabase/supabase-flutter/commit/e64b10c036f7e47f5cc258b2cf8a666d3989e372))
+
+
 ## 2026-11-11
 
 ### Changes
