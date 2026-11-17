@@ -298,6 +298,10 @@ void main() {
     });
 
     test('disconnecting a closed connections stays closed', () async {
+      socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        reconnectAfter: (_) => const Duration(minutes: 1),
+      );
       await socket.connect();
       expect(socket.connectionState, SocketState.open);
       await mockServer.close();
