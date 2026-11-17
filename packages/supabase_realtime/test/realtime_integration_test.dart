@@ -432,6 +432,18 @@ void main() {
       return result.single.single! as int;
     }
 
+    // The server stores a message it does not acknowledge in the background,
+    // so it may not be there yet when the send completes.
+    Future<int> eventuallyStoredCount(String topic) async {
+      final deadline = DateTime.now().add(const Duration(seconds: 15));
+      var count = await storedCount(topic);
+      while (count == 0 && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        count = await storedCount(topic);
+      }
+      return count;
+    }
+
     setUpAll(() async {
       database = await openPostgresConnection();
       await database.execute(
@@ -587,7 +599,7 @@ void main() {
         persist: const BroadcastPersistence(),
       );
 
-      expect(await storedCount(channel.subTopic), 1);
+      expect(await eventuallyStoredCount(channel.subTopic), 1);
     });
 
     test('throws the message of an expiry the server refuses over HTTP', () {
