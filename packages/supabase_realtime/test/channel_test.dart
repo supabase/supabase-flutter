@@ -68,6 +68,24 @@ void main() {
       });
     });
 
+    test('sends the replay start in milliseconds since the epoch', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        config: RealtimeChannelConfig(
+          replay: ReplayOption(
+            since: DateTime.utc(2026, 1, 2, 3, 4, 5, 6),
+            limit: 10,
+          ),
+        ),
+      );
+
+      expect(channel.joinPush.payload['config']['broadcast']['replay'], {
+        'since': 1767323045006,
+        'limit': 10,
+      });
+    });
+
     test('forwards broadcast.replication_ready when opted in', () {
       channel = RealtimeChannel(
         'topic',

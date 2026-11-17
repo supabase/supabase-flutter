@@ -213,7 +213,10 @@ void main() {
     }) => RealtimeChannelConfig(
       ack: ack,
       self: self,
-      replay: ReplayOption(since: replaySince, limit: 10),
+      replay: ReplayOption(
+        since: DateTime.utc(2026, 1, 1, 0, 0, replaySince),
+        limit: 10,
+      ),
       presenceKey: presenceKey,
       presenceEnabled: presenceEnabled,
       private: private,
@@ -244,11 +247,29 @@ void main() {
     });
 
     test('replay options compare their limit', () {
+      final since = DateTime.utc(2026);
       expect(
-        ReplayOption(since: 1, limit: 10),
-        isNot(ReplayOption(since: 1, limit: 20)),
+        ReplayOption(since: since, limit: 10),
+        isNot(ReplayOption(since: since, limit: 20)),
       );
-      expect(ReplayOption(since: 1), ReplayOption(since: 1));
+      expect(ReplayOption(since: since), ReplayOption(since: since));
+    });
+
+    test('replay options compare the millisecond that is sent', () {
+      final since = DateTime.utc(2026, 1, 2, 3, 4, 5, 6);
+      final sameMillisecond = [
+        ReplayOption(since: since.toLocal()),
+        ReplayOption(since: since.add(const Duration(microseconds: 999))),
+      ];
+
+      for (final option in sameMillisecond) {
+        expect(option, ReplayOption(since: since));
+        expect(option.hashCode, ReplayOption(since: since).hashCode);
+      }
+      expect(
+        ReplayOption(since: since.add(const Duration(milliseconds: 1))),
+        isNot(ReplayOption(since: since)),
+      );
     });
   });
 
