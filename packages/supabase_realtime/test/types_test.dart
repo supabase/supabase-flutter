@@ -254,6 +254,23 @@ void main() {
       );
       expect(ReplayOption(since: since), ReplayOption(since: since));
     });
+
+    test('replay options compare the millisecond that is sent', () {
+      final since = DateTime.utc(2026, 1, 2, 3, 4, 5, 6);
+      final sameMillisecond = [
+        ReplayOption(since: since.toLocal()),
+        ReplayOption(since: since.add(const Duration(microseconds: 999))),
+      ];
+
+      for (final option in sameMillisecond) {
+        expect(option, ReplayOption(since: since));
+        expect(option.hashCode, ReplayOption(since: since).hashCode);
+      }
+      expect(
+        ReplayOption(since: since.add(const Duration(milliseconds: 1))),
+        isNot(ReplayOption(since: since)),
+      );
+    });
   });
 
   group('RealtimePresencePayload', () {

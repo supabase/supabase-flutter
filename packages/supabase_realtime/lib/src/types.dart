@@ -253,10 +253,12 @@ class ReplayOption {
 
   @override
   bool operator ==(Object other) =>
-      other is ReplayOption && other.since == since && other.limit == limit;
+      other is ReplayOption &&
+      other.since.millisecondsSinceEpoch == since.millisecondsSinceEpoch &&
+      other.limit == limit;
 
   @override
-  int get hashCode => Object.hash(since, limit);
+  int get hashCode => Object.hash(since.millisecondsSinceEpoch, limit);
 }
 
 /// Configuration for a [RealtimeChannel]'s broadcast, presence, and RLS
