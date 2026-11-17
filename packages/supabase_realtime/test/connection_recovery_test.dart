@@ -60,11 +60,15 @@ void main() {
 
   setUp(() => server = _Server());
 
-  RealtimeClient createClient({TimerCalculation? reconnectAfter}) {
+  RealtimeClient createClient({
+    TimerCalculation? reconnectAfter,
+    Duration heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
+  }) {
     return RealtimeClient(
       'ws://localhost:0',
       transport: server.connect,
       reconnectAfter: reconnectAfter,
+      heartbeatInterval: heartbeatInterval,
     );
   }
 
@@ -221,7 +225,10 @@ void main() {
     late List<int> attempts;
     late List<RealtimeHeartbeatStatus> heartbeats;
 
-    RealtimeClient connectedClient(FakeAsync async) {
+    RealtimeClient connectedClient(
+      FakeAsync async, {
+      Duration heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
+    }) {
       attempts = [];
       heartbeats = [];
       final client = createClient(
@@ -229,6 +236,7 @@ void main() {
           attempts.add(attempt);
           return const Duration(seconds: 10);
         },
+        heartbeatInterval: heartbeatInterval,
       );
       client.onHeartbeat.listen(heartbeats.add);
       unawaited(client.connect());
@@ -355,12 +363,33 @@ void main() {
         client.probeConnection();
         async.elapse(RealtimeClient.livenessProbeTimeout);
         expect(server.connections, hasLength(2));
-        expect(attempts.last, 2);
+        expect(attempts, [2]);
 
         async.elapse(const Duration(seconds: 9));
         expect(server.connections, hasLength(2));
         async.elapse(const Duration(seconds: 1));
         expect(server.connections, hasLength(3));
+
+        disconnect(client, async);
+      });
+    });
+
+    test('waits for the deadline when the heartbeat interval is shorter', () {
+      fakeAsync((async) {
+        final client = connectedClient(
+          async,
+          heartbeatInterval: const Duration(seconds: 2),
+        );
+
+        client.probeConnection();
+        async.elapse(const Duration(seconds: 4));
+        expect(client.isConnected, isTrue);
+        expect(server.sentEvents('heartbeat'), hasLength(1));
+        async.elapse(const Duration(seconds: 1));
+
+        expect(heartbeats.last, RealtimeHeartbeatStatus.timeout);
+        expect(server.connections, hasLength(2));
+        expect(attempts, isEmpty);
 
         disconnect(client, async);
       });

@@ -376,6 +376,24 @@ void main() {
       expect(realtime.connectionState, SocketState.open);
     });
 
+    test('a resume after the app was only hidden probes the socket', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+      final heartbeats = <RealtimeHeartbeatStatus>[];
+      final subscription = realtime.onHeartbeat.listen(heartbeats.add);
+      addTearDown(subscription.cancel);
+
+      final binding = TestWidgetsFlutterBinding.instance;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await settleLifecycle();
+
+      expect(heartbeats, [RealtimeHeartbeatStatus.sent]);
+    });
+
     test('a resume from inactive does not probe the socket', () async {
       final realtime = Supabase.instance.client.realtime;
       realtime.channel('test');

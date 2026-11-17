@@ -473,7 +473,7 @@ class RealtimeClient {
               _connectionState != SocketState.disconnecting) {
             _connectionState = SocketState.closed;
           }
-          _onConnectionClose();
+          _onConnectionClose(null);
         },
       );
     } catch (error) {
@@ -528,7 +528,7 @@ class RealtimeClient {
           // callback of the connection stream. By canceling the subscription,
           // we avoid calling the onDone too.
           _connectionState = SocketState.disconnected;
-          _onConnectionClose();
+          _onConnectionClose(null);
         }
 
         if (code != null) {
@@ -1102,7 +1102,10 @@ class RealtimeClient {
   }
 
   /// communication has been closed
-  void _onConnectionClose([RealtimeCloseEvent? closeEvent]) {
+  void _onConnectionClose(
+    RealtimeCloseEvent? closeEvent, {
+    Duration? reconnectDelay,
+  }) {
     final statusCode = _connection?.closeCode;
     RealtimeCloseEvent? event = closeEvent;
     if (event == null && statusCode != null) {
@@ -1117,7 +1120,7 @@ class RealtimeClient {
     /// SocketState.closed: NOT by user, should try to reconnect
     if (_connectionState == SocketState.closed) {
       _triggerChanError(event);
-      _reconnectTimer.scheduleTimeout();
+      _reconnectTimer.scheduleTimeout(delay: reconnectDelay);
     }
     _heartbeatTimer?.cancel();
     _cancelLivenessProbe();
@@ -1310,8 +1313,7 @@ class RealtimeClient {
         return;
       }
       realtimeLogger.warning('No reply to the liveness probe');
-      _closeOnHeartbeatTimeout();
-      _reconnectTimer.scheduleTimeout(delay: Duration.zero);
+      _closeOnHeartbeatTimeout(reconnectDelay: Duration.zero);
     });
   }
 
@@ -1324,11 +1326,15 @@ class RealtimeClient {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
       heartbeatInterval,
-      (Timer t) => unawaited(sendHeartbeat()),
+      (Timer t) {
+        if (_livenessProbeDeadline == null) {
+          unawaited(sendHeartbeat());
+        }
+      },
     );
   }
 
-  void _closeOnHeartbeatTimeout() {
+  void _closeOnHeartbeatTimeout({Duration? reconnectDelay}) {
     _pendingHeartbeatRef = null;
     realtimeLogger.warning(
       'Heartbeat timeout, attempting to re-establish connection',
@@ -1343,6 +1349,7 @@ class RealtimeClient {
         code: RealtimeConstants.webSocketCloseNormal,
         reason: 'heartbeat timeout',
       ),
+      reconnectDelay: reconnectDelay,
     );
     unawaited(
       timedOutConnection?.sink.close(

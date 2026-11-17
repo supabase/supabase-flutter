@@ -362,9 +362,9 @@ class Supabase {
   /// whether the pause counts as expired.
   DateTime? _pausedAt;
 
-  /// Whether the app was paused since it was last resumed, so that the resume
+  /// Whether the app was hidden since it was last resumed, so that the resume
   /// brings it back to the foreground.
-  bool _pausedSinceResume = false;
+  bool _hiddenSinceResume = false;
 
   /// Serial queue for lifecycle operations (connect/disconnect). Each event
   /// appends via `.then()` so operations never overlap. Null while no
@@ -404,6 +404,7 @@ class Supabase {
     _initialization = null;
 
     _targetLifecycleState = null;
+    _hiddenSinceResume = false;
     _cancelPendingPause();
     lifecycleListener?.dispose();
 
@@ -501,8 +502,8 @@ class Supabase {
           case AppLifecycleState.resumed:
             _resumeInterceptors();
             final pauseExpired = _pendingPauseExpired();
-            final returnedToForeground = _pausedSinceResume;
-            _pausedSinceResume = false;
+            final returnedToForeground = _hiddenSinceResume;
+            _hiddenSinceResume = false;
             _cancelPendingPause();
             _enqueueLifecycle(
               state,
@@ -513,7 +514,6 @@ class Supabase {
             _cancelPendingPause();
             _enqueueLifecycle(state);
           case AppLifecycleState.paused:
-            _pausedSinceResume = true;
             final delay = _realtimeLifecycleOptions.disconnectAfterPause;
             if (delay == Duration.zero) {
               _enqueueLifecycle(state);
@@ -526,6 +526,7 @@ class Supabase {
               });
             }
           case AppLifecycleState.hidden:
+            _hiddenSinceResume = true;
           case AppLifecycleState.inactive:
             break;
         }
