@@ -1094,6 +1094,7 @@ class RealtimeClient {
       channel.resetRejoinAttempts();
     }
     unawaited(_resolveAccessTokenAndFlush());
+    _pendingHeartbeatRef = null;
     _startHeartbeatTimer();
 
     _statusController.add(

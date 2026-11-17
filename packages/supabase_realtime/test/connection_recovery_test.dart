@@ -395,6 +395,28 @@ void main() {
       });
     });
 
+    test('sends a fresh heartbeat on a socket opened after a disconnect '
+        'left one unanswered', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        async.elapse(client.heartbeatInterval);
+        disconnect(client, async);
+        unawaited(client.connect());
+        async.flushMicrotasks();
+
+        client.probeConnection();
+        async.flushMicrotasks();
+        server.reply(server.sentEvents('heartbeat').last, 'ok');
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+
+        expect(server.sentEvents('heartbeat'), hasLength(2));
+        expect(client.isConnected, isTrue);
+        expect(server.connections, hasLength(2));
+
+        disconnect(client, async);
+      });
+    });
+
     test('does nothing while the socket is not connected', () {
       fakeAsync((async) {
         final client = createClient();
