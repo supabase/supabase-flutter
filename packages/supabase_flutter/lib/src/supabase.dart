@@ -362,6 +362,10 @@ class Supabase {
   /// whether the pause counts as expired.
   DateTime? _pausedAt;
 
+  /// Whether the app was paused since it was last resumed, so that the resume
+  /// brings it back to the foreground.
+  bool _pausedSinceResume = false;
+
   /// Serial queue for lifecycle operations (connect/disconnect). Each event
   /// appends via `.then()` so operations never overlap. Null while no
   /// operation is in flight, so [dispose] has nothing to await.
@@ -497,12 +501,19 @@ class Supabase {
           case AppLifecycleState.resumed:
             _resumeInterceptors();
             final pauseExpired = _pendingPauseExpired();
+            final returnedToForeground = _pausedSinceResume;
+            _pausedSinceResume = false;
             _cancelPendingPause();
-            _enqueueLifecycle(state, replaceConnection: pauseExpired);
+            _enqueueLifecycle(
+              state,
+              replaceConnection: pauseExpired,
+              probeConnection: returnedToForeground,
+            );
           case AppLifecycleState.detached:
             _cancelPendingPause();
             _enqueueLifecycle(state);
           case AppLifecycleState.paused:
+            _pausedSinceResume = true;
             final delay = _realtimeLifecycleOptions.disconnectAfterPause;
             if (delay == Duration.zero) {
               _enqueueLifecycle(state);
@@ -545,12 +556,17 @@ class Supabase {
   void _enqueueLifecycle(
     AppLifecycleState state, {
     bool replaceConnection = false,
+    bool probeConnection = false,
   }) {
     _targetLifecycleState = state;
     final previous = _pendingLifecycleOperation ?? Future<void>.value();
     final operation = previous
         .then(
-          (_) => _processLifecycle(state, replaceConnection: replaceConnection),
+          (_) => _processLifecycle(
+            state,
+            replaceConnection: replaceConnection,
+            probeConnection: probeConnection,
+          ),
         )
         .catchError((_) {});
     _pendingLifecycleOperation = operation;
@@ -585,9 +601,13 @@ class Supabase {
   /// [replaceConnection] closes an open socket before reconnecting, for a
   /// resume after a pause that outlasted its grace period while the app was
   /// frozen, since the socket may be dead by then.
+  ///
+  /// [probeConnection] checks with [RealtimeClient.probeConnection] that a
+  /// socket kept open through the pause still reaches the server.
   Future<void> _processLifecycle(
     AppLifecycleState captured, {
     bool replaceConnection = false,
+    bool probeConnection = false,
   }) async {
     if (captured != _targetLifecycleState) return;
 
@@ -597,6 +617,11 @@ class Supabase {
 
     if (captured == AppLifecycleState.resumed) {
       if (!_realtimeLifecycleOptions.managed) return;
+
+      if (probeConnection && !replaceConnection && realtime.isConnected) {
+        realtime.probeConnection();
+        return;
+      }
 
       // No channels subscribed — nothing to reconnect.
       if (realtime.channels.isEmpty) return;

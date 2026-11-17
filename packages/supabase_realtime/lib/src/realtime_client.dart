@@ -296,6 +296,12 @@ class RealtimeClient {
   final Duration heartbeatInterval;
   Timer? _heartbeatTimer;
 
+  /// How long [probeConnection] waits for the reply to its heartbeat.
+  static const livenessProbeTimeout = Duration(seconds: 5);
+
+  /// Fails the connection when [probeConnection] gets no reply in time.
+  Timer? _livenessProbeDeadline;
+
   /// Delay before the socket is disconnected once the last channel has been
   /// removed. [Duration.zero] disconnects immediately. Defaults to twice the
   /// heartbeat interval.
@@ -561,6 +567,7 @@ class RealtimeClient {
 
       // remove open handles
       _heartbeatTimer?.cancel();
+      _cancelLivenessProbe();
     }
   }
 
@@ -905,6 +912,12 @@ class RealtimeClient {
     final messageRef = message.ref;
     if (messageRef != null && messageRef == _pendingHeartbeatRef) {
       _pendingHeartbeatRef = null;
+      if (_livenessProbeDeadline != null) {
+        _cancelLivenessProbe();
+        if (_heartbeatTimer?.isActive != true) {
+          _startHeartbeatTimer();
+        }
+      }
       final heartbeatStatus = payload is Map ? payload['status'] : null;
       _heartbeatController.add(
         heartbeatStatus == 'ok'
@@ -1081,11 +1094,7 @@ class RealtimeClient {
       channel.resetRejoinAttempts();
     }
     unawaited(_resolveAccessTokenAndFlush());
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(
-      heartbeatInterval,
-      (Timer t) => unawaited(sendHeartbeat()),
-    );
+    _startHeartbeatTimer();
 
     _statusController.add(
       const RealtimeConnectionStatusChange(RealtimeConnectionStatus.open),
@@ -1111,6 +1120,7 @@ class RealtimeClient {
       _reconnectTimer.scheduleTimeout();
     }
     _heartbeatTimer?.cancel();
+    _cancelLivenessProbe();
     _statusController.add(
       RealtimeConnectionStatusChange(RealtimeConnectionStatus.closed, event),
     );
@@ -1275,6 +1285,73 @@ class RealtimeClient {
     }
   }
 
+  /// Checks that the open connection still reaches the server, for when the
+  /// app returns to the foreground and the socket may have died while the
+  /// app was suspended.
+  ///
+  /// Sends a heartbeat at once, unless one is already waiting for its reply,
+  /// and waits [livenessProbeTimeout] for the reply. Without a reply the
+  /// connection is handled as a heartbeat timeout and a reconnect starts
+  /// right away, without the [reconnectAfter] delay. Does nothing while the
+  /// client is not connected or a probe is already running.
+  void probeConnection() {
+    if (!isConnected || _livenessProbeDeadline != null) {
+      return;
+    }
+    if (_pendingHeartbeatRef == null) {
+      _startHeartbeatTimer();
+      unawaited(sendHeartbeat());
+    } else {
+      _heartbeatTimer?.cancel();
+    }
+    _livenessProbeDeadline = Timer(livenessProbeTimeout, () {
+      _livenessProbeDeadline = null;
+      if (!isConnected) {
+        return;
+      }
+      realtimeLogger.warning('No reply to the liveness probe');
+      _closeOnHeartbeatTimeout();
+      _reconnectTimer.scheduleTimeout(delay: Duration.zero);
+    });
+  }
+
+  void _cancelLivenessProbe() {
+    _livenessProbeDeadline?.cancel();
+    _livenessProbeDeadline = null;
+  }
+
+  void _startHeartbeatTimer() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(
+      heartbeatInterval,
+      (Timer t) => unawaited(sendHeartbeat()),
+    );
+  }
+
+  void _closeOnHeartbeatTimeout() {
+    _pendingHeartbeatRef = null;
+    realtimeLogger.warning(
+      'Heartbeat timeout, attempting to re-establish connection',
+    );
+    _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
+    final timedOutConnection = _connection;
+    _connectionState = SocketState.closed;
+    unawaited(_connectionSubscription?.cancel());
+    _connectionSubscription = null;
+    _onConnectionClose(
+      const RealtimeCloseEvent(
+        code: RealtimeConstants.webSocketCloseNormal,
+        reason: 'heartbeat timeout',
+      ),
+    );
+    unawaited(
+      timedOutConnection?.sink.close(
+        RealtimeConstants.webSocketCloseNormal,
+        'heartbeat timeout',
+      ),
+    );
+  }
+
   /// Sends a heartbeat, or treats the connection as dead if the previous one
   /// never received a reply: every joined channel is marked as errored, the
   /// socket is closed without waiting for more messages, and a reconnect is
@@ -1287,27 +1364,7 @@ class RealtimeClient {
 
     // If the previous heartbeat hasn't received a reply, close the connection.
     if (_pendingHeartbeatRef != null) {
-      _pendingHeartbeatRef = null;
-      realtimeLogger.warning(
-        'Heartbeat timeout, attempting to re-establish connection',
-      );
-      _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
-      final timedOutConnection = _connection;
-      _connectionState = SocketState.closed;
-      unawaited(_connectionSubscription?.cancel());
-      _connectionSubscription = null;
-      _onConnectionClose(
-        const RealtimeCloseEvent(
-          code: RealtimeConstants.webSocketCloseNormal,
-          reason: 'heartbeat timeout',
-        ),
-      );
-      unawaited(
-        timedOutConnection?.sink.close(
-          RealtimeConstants.webSocketCloseNormal,
-          'heartbeat timeout',
-        ),
-      );
+      _closeOnHeartbeatTimeout();
       return;
     }
     final heartbeatRef = makeRef();
