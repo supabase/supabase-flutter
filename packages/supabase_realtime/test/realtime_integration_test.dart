@@ -587,6 +587,23 @@ void main() {
       expect(await storedCount(channel.subTopic), 0);
     });
 
+    test('reports an expiry the server refuses over the websocket', () async {
+      final channel = client.channel(
+        uniqueTopic(storedPrefix),
+        const RealtimeChannelConfig(private: true, ack: true),
+      );
+      await _subscribe(channel);
+
+      final status = await channel.sendBroadcastMessage(
+        event: 'refused',
+        payload: {'value': 1},
+        persist: const BroadcastPersistence(expiresIn: Duration.zero),
+      );
+
+      expect(status, ChannelResponse.persistenceInvalidExpiry);
+      expect(await storedCount(channel.subTopic), 0);
+    });
+
     test('stores a message sent over HTTP', () async {
       final channel = client.channel(
         uniqueTopic(storedPrefix),

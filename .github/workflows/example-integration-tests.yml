@@ -18,7 +18,7 @@ permissions:
   actions: read
 
 env:
-  SUPABASE_CLI_VERSION: 3.0.0
+  SUPABASE_CLI_VERSION: 3.2.0
   CLOUDFLARED_VERSION: 2026.9.0
   # The SHA-256 of that version's cloudflared-linux-amd64, as listed in its
   # release notes. Update the two together.
