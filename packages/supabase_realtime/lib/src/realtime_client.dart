@@ -1049,7 +1049,7 @@ class RealtimeClient {
       if (tokenToSend != null) {
         channel.updateJoinAccessToken(
           tokenToSend,
-          version: RealtimeConstants.defaultHeaders[HttpHeader.clientInfo],
+          version: RealtimeConstants.joinVersion,
         );
       }
       if (channel.joinedOnce && channel.isJoined) {

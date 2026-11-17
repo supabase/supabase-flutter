@@ -11,10 +11,10 @@ String? get conditionalPlatformArchitecture =>
 
 /// The Dart runtime version. Only known on web when the Flutter tool compiled
 /// the app, otherwise `null`.
-String? get conditionalRuntimeVersion {
-  const dartVersion = String.fromEnvironment('FLUTTER_DART_VERSION');
-  return dartVersion.isEmpty ? null : dartVersion.split(' ').first;
-}
+String? get conditionalRuntimeVersion =>
+    const bool.hasEnvironment('FLUTTER_DART_VERSION')
+    ? const String.fromEnvironment('FLUTTER_DART_VERSION').split(' ').first
+    : null;
 
 /// Whether the current process is running under `flutter test`. Always
 /// `false` on web.

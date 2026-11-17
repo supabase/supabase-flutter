@@ -28,10 +28,9 @@ void main() {
           SupabaseFlutterConstants.defaultHeaders['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-flutter/$version; '));
       expect(clientInfo, contains('; framework=flutter'));
-      expect(
-        clientInfo,
-        contains('; framework-version=${FlutterVersion.version}'),
-      );
+      if (FlutterVersion.version case final flutterVersion?) {
+        expect(clientInfo, contains('; framework-version=$flutterVersion'));
+      }
     });
   });
 }
