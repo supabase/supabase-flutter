@@ -1,3 +1,16 @@
+## 3.0.0-dev.15
+
+> Note: This release has breaking changes.
+
+ - **FIX**(auth): move a session stored under supabasePersistSessionKey to the storage key ([#2168](https://github.com/supabase/supabase-flutter/issues/2168)). ([b856e823](https://github.com/supabase/supabase-flutter/commit/b856e8238d698f93e9b01b6e2f8b3b63c0a80112))
+ - **FEAT**: follow the client_info spec in the X-Client-Info header ([#2178](https://github.com/supabase/supabase-flutter/issues/2178)). ([bbed98cb](https://github.com/supabase/supabase-flutter/commit/bbed98cb5d7d7f1b250d25c9dafc5ed03da63eea))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **REFACTOR**: name the remaining auth and storage serializers fromJson and toJson ([#2165](https://github.com/supabase/supabase-flutter/issues/2165)). ([6efdfb92](https://github.com/supabase/supabase-flutter/commit/6efdfb92e0e22ef4716c61ee178b468493bfe9f7))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+ - **BREAKING** **FIX**(auth): reject access_token links when the flow type is PKCE ([#2156](https://github.com/supabase/supabase-flutter/issues/2156)). ([6b96f1ef](https://github.com/supabase/supabase-flutter/commit/6b96f1efb529454d78d554fb8c31d3ef2297622c))
+
 ## 3.0.0-dev.14
 
 > Note: This release has breaking changes.

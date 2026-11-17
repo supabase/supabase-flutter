@@ -1,3 +1,11 @@
+## 3.0.0-dev.13
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
 ## 3.0.0-dev.12
 
  - **FIX**(functions): keep a query string in the function name when adding query parameters ([#2120](https://github.com/supabase/supabase-flutter/issues/2120)). ([e5daacd1](https://github.com/supabase/supabase-flutter/commit/e5daacd1992a35613b1c15d9899612f88eadbd9b))

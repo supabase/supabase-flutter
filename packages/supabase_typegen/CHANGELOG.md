@@ -1,3 +1,10 @@
+## 0.9.1
+
+ - **FIX**(typegen): keep stdin's descriptor taken so dart format does not hang ([#2175](https://github.com/supabase/supabase-flutter/issues/2175)). ([4be78a64](https://github.com/supabase/supabase-flutter/commit/4be78a6426a707f3395b5fcc59226cd72343e56a))
+ - **FEAT**(typegen): warn when the project does not depend on supabase_typegen ([#2174](https://github.com/supabase/supabase-flutter/issues/2174)). ([2c39ca7a](https://github.com/supabase/supabase-flutter/commit/2c39ca7acde563bc7f3a769b3a2491f8cee46e6a))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **DOCS**(typegen): add an example ([#2155](https://github.com/supabase/supabase-flutter/issues/2155)). ([e64b10c0](https://github.com/supabase/supabase-flutter/commit/e64b10c036f7e47f5cc258b2cf8a666d3989e372))
+
 ## 0.9.0
 
 > Note: This release has breaking changes.

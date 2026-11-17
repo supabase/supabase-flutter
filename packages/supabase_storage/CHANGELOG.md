@@ -1,3 +1,15 @@
+## 3.0.0-dev.15
+
+> Note: This release has breaking changes.
+
+ - **FIX**(storage): keep resumable upload requests on the storage origin ([#2163](https://github.com/supabase/supabase-flutter/issues/2163)). ([ea15518c](https://github.com/supabase/supabase-flutter/commit/ea15518c76ad45501178912a7463c5b8411bed57))
+ - **DOCS**: remove constructor dartdocs that only restate the class ([#2153](https://github.com/supabase/supabase-flutter/issues/2153)). ([395a49b6](https://github.com/supabase/supabase-flutter/commit/395a49b66d478f2c17b440979ed9de4f0417b235))
+ - **BREAKING** **REFACTOR**: name the remaining auth and storage serializers fromJson and toJson ([#2165](https://github.com/supabase/supabase-flutter/issues/2165)). ([6efdfb92](https://github.com/supabase/supabase-flutter/commit/6efdfb92e0e22ef4716c61ee178b468493bfe9f7))
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(supabase): remove the channels and resumable uploads of a user on sign-out ([#2162](https://github.com/supabase/supabase-flutter/issues/2162)). ([87dfe23d](https://github.com/supabase/supabase-flutter/commit/87dfe23dc24058141fc7572e084b0fe9d020bb3c))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
 ## 3.0.0-dev.14
 
 > Note: This release has breaking changes.

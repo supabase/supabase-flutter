@@ -1,3 +1,12 @@
+## 0.9.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **REFACTOR**: name the remaining auth and storage serializers fromJson and toJson ([#2165](https://github.com/supabase/supabase-flutter/issues/2165)). ([6efdfb92](https://github.com/supabase/supabase-flutter/commit/6efdfb92e0e22ef4716c61ee178b468493bfe9f7))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+ - **BREAKING** **FEAT**(realtime): persist broadcast messages for replay ([#2180](https://github.com/supabase/supabase-flutter/issues/2180)). ([97d8b4b7](https://github.com/supabase/supabase-flutter/commit/97d8b4b74b37b8ba723c377c56144b8598232b06))
+
 ## 0.8.0
 
 > Note: This release has breaking changes.

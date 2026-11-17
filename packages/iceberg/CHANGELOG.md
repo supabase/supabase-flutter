@@ -1,3 +1,11 @@
+## 0.4.0
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** **FIX**: keep request queries out of exception text and personal data out of toString ([#2166](https://github.com/supabase/supabase-flutter/issues/2166)). ([fa447c92](https://github.com/supabase/supabase-flutter/commit/fa447c9291f2e038c8e9e41a71cfc257d04792c6))
+ - **BREAKING** **FIX**(realtime): make RealtimeChannel type safe, including its broadcast and Postgres change API ([#2161](https://github.com/supabase/supabase-flutter/issues/2161)). ([9881a389](https://github.com/supabase/supabase-flutter/commit/9881a38922040b8764da55681bb05f996f078439))
+ - **BREAKING** **FIX**: keep caller values inside their URL path segment ([#2164](https://github.com/supabase/supabase-flutter/issues/2164)). ([cfe0939f](https://github.com/supabase/supabase-flutter/commit/cfe0939f3f847852e71276bd0ebd7a28439c5096))
+
 ## 0.3.1
 
  - **FIX**: build per request log messages lazily and lower redundant log records to fine ([#2101](https://github.com/supabase/supabase-flutter/issues/2101)). ([b7ccb177](https://github.com/supabase/supabase-flutter/commit/b7ccb177101b0f5564b32a9493d8bdc7e8a18b4d))
