@@ -55,15 +55,28 @@ class RetryTimer {
     _timer?.cancel();
   }
 
+  /// Whether a callback is scheduled and has not fired yet.
+  bool get isActive => _timer?.isActive ?? false;
+
   /// Cancels any previous scheduleTimeout and schedules callback, after
   /// [delay] when given instead of the delay for the next attempt.
   void scheduleTimeout({Duration? delay}) {
     if (_timer != null) _timer!.cancel();
 
-    _timer = Timer(delay ?? timerCalculation(_tries + 1), () {
-      _tries = _tries + 1;
-      callback();
-    });
+    _timer = Timer(delay ?? timerCalculation(_tries + 1), _fire);
+  }
+
+  /// Fires a scheduled callback at once, counting it as the attempt it would
+  /// have been. Does nothing when no callback is scheduled.
+  void fireNow() {
+    if (!isActive) return;
+    _timer!.cancel();
+    _fire();
+  }
+
+  void _fire() {
+    _tries = _tries + 1;
+    callback();
   }
 
   /// The default reconnect delay: a uniformly random duration between zero

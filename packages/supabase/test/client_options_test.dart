@@ -58,6 +58,15 @@ void main() {
     expect(copy.heartbeatInterval, const Duration(seconds: 1));
   });
 
+  test('RealtimeClientOptions.copyWith keeps the network reachability', () {
+    final reachability = const Stream<bool>.empty();
+    final options = RealtimeClientOptions(networkReachability: reachability);
+
+    final copy = options.copyWith(timeout: const Duration(seconds: 1));
+
+    expect(copy.networkReachability, same(reachability));
+  });
+
   test('YAJsonIsolate is exported to build a realtime codec with', () async {
     final isolate = YAJsonIsolate();
     addTearDown(isolate.dispose);

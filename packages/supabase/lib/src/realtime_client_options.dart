@@ -12,6 +12,7 @@ class RealtimeClientOptions {
     this.disconnectOnEmptyChannelsAfter,
     this.encode,
     this.decode,
+    this.networkReachability,
   });
 
   /// Level of realtime server logs to be logged
@@ -66,6 +67,18 @@ class RealtimeClientOptions {
   /// Defaults to the built-in synchronous codec. See [encode] for an example.
   final RealtimeDecode? decode;
 
+  /// Reports from a platform network monitor whether the device can reach
+  /// the network, starting with the current state.
+  ///
+  /// While the socket waits out a reconnect backoff, a `true` report cuts the
+  /// wait short and reconnects, no sooner than 2 seconds after the previous
+  /// attempt started. The first report and `false` reports are ignored, and
+  /// the socket never waits for a report before connecting.
+  ///
+  /// The stream is listened to once, when the client is created, so it must
+  /// be a broadcast stream when anything else listens to it as well.
+  final Stream<bool>? networkReachability;
+
   /// Returns a copy with the given fields replaced.
   RealtimeClientOptions copyWith({
     RealtimeLogLevel? logLevel,
@@ -77,6 +90,7 @@ class RealtimeClientOptions {
     Duration? disconnectOnEmptyChannelsAfter,
     RealtimeEncode? encode,
     RealtimeDecode? decode,
+    Stream<bool>? networkReachability,
   }) {
     return RealtimeClientOptions(
       logLevel: logLevel ?? this.logLevel,
@@ -90,6 +104,7 @@ class RealtimeClientOptions {
           disconnectOnEmptyChannelsAfter ?? this.disconnectOnEmptyChannelsAfter,
       encode: encode ?? this.encode,
       decode: decode ?? this.decode,
+      networkReachability: networkReachability ?? this.networkReachability,
     );
   }
 }

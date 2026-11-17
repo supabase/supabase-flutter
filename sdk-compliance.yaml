@@ -3051,7 +3051,11 @@ features:
       - RealtimeClient.probeConnection
     supporting_symbols:
       - RealtimeClient.livenessProbeTimeout
-  realtime.configuration.network_path_wake: not_implemented
+  realtime.configuration.network_path_wake:
+    status: partially_implemented
+    note: "The SDK ships no network monitor and so has no on/off option. The app passes a stream of reachability reports, for example from connectivity_plus, and the wake is off until it does."
+    symbols:
+      - RealtimeClientOptions.networkReachability
 
   # functions
   functions.invocation.invoke:

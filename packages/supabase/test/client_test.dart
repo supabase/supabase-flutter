@@ -669,6 +669,23 @@ void main() {
     });
 
     group('dispose', () {
+      test('stops listening to the network reachability reports', () async {
+        final reachability = StreamController<bool>.broadcast();
+        final client = SupabaseClient(
+          supabaseUrl,
+          supabaseKey,
+          realtimeOptions: RealtimeClientOptions(
+            networkReachability: reachability.stream,
+          ),
+        );
+        expect(reachability.hasListener, isTrue);
+
+        await client.dispose();
+
+        expect(reachability.hasListener, isFalse);
+        await reachability.close();
+      });
+
       test('closes the http client it created', () async {
         final client = SupabaseClient('http://127.0.0.1:1', supabaseKey);
         await client.dispose();
