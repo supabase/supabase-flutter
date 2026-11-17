@@ -444,6 +444,8 @@ class SupabaseClient {
     // a future of the root zone. Awaiting it would resume this method outside
     // the fake async zone of a widget test, which then never completes.
     unawaited(_authStateSubscription?.cancel());
+    // ignore: invalid_use_of_internal_member
+    realtime.detachNetworkReachability();
     await realtime.disconnect();
     await functions.dispose();
     await _rest.dispose();
@@ -535,6 +537,7 @@ class SupabaseClient {
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
       encode: options.encode,
       decode: options.decode,
+      networkReachability: options.networkReachability,
     );
   }
 

@@ -3007,6 +3007,11 @@ features:
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
     symbols:
       - RealtimeClient.customAccessToken
+  realtime.configuration.network_path_wake:
+    status: partially_implemented
+    note: "The SDK ships no network monitor and so has no on/off option. The app passes a stream of reachability reports, for example from connectivity_plus, and the wake is off until it does."
+    symbols:
+      - RealtimeClientOptions.networkReachability
   realtime.configuration.custom_logger:
     status: implemented
     symbols:

@@ -240,6 +240,7 @@ releases when upgrading the SDK.
   - [Broadcast](#broadcast)
   - [Presence](#presence)
   - [Realtime and the app lifecycle](#realtime-and-the-app-lifecycle)
+  - [Reconnect when the network returns](#reconnect-when-the-network-returns)
 - [Storage](#storage)
 - [Edge Functions](#edge-functions)
 - [Errors](#errors)
@@ -775,6 +776,29 @@ await Supabase.initialize(
 entirely. The socket then stays open in the background until the operating
 system closes it, and the realtime client reconnects and rejoins its channels
 once the app runs again.
+
+### Reconnect when the network returns
+
+After the realtime socket drops, it waits for a growing backoff of up to 30
+seconds before it tries again. Pass a stream of network reachability reports
+as `networkReachability` to cut that wait short when the network comes back,
+for example from [`connectivity_plus`](https://pub.dev/packages/connectivity_plus):
+
+```dart skip
+await Supabase.initialize(
+  url: 'https://your-project.supabase.co',
+  publishableKey: 'your-publishable-key',
+  realtimeOptions: RealtimeClientOptions(
+    networkReachability: Connectivity().onConnectivityChanged.map(
+      (results) => !results.contains(ConnectivityResult.none),
+    ),
+  ),
+);
+```
+
+The first report is taken as the current state and ignored. A later `true`
+report reconnects at once, but no sooner than 2 seconds after the previous
+attempt started. Reports never delay a connection attempt.
 
 ## [Storage](https://supabase.com/docs/guides/storage)
 

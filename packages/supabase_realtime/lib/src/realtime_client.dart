@@ -185,6 +185,13 @@ class RealtimeClient {
   /// when a socket opens. Defaults to a random delay between zero and
   /// `min(30 s, 1 s × 2^(attempt − 1))`.
   ///
+  /// [networkReachability] Reports from a platform network monitor whether
+  /// the device can reach the network, starting with the current state.
+  /// While the client waits out a reconnect backoff, a `true` report cuts the
+  /// wait short and reconnects, no sooner than 2 seconds after the previous
+  /// attempt started. The first report and `false` reports are ignored, and
+  /// the client never waits for a report before connecting.
+  ///
   /// [logLevel] Specifies the log level for the connection on the server.
   RealtimeClient(
     String endpoint, {
@@ -202,6 +209,7 @@ class RealtimeClient {
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
+    Stream<bool>? networkReachability,
   }) : endpoint = Uri.parse('$endpoint/websocket')
            .replace(
              queryParameters: logLevel == null
@@ -236,6 +244,10 @@ class RealtimeClient {
       () => unawaited(_reconnect()),
       this.reconnectAfter,
     );
+    _networkReachabilitySubscription = networkReachability
+        ?.skip(1)
+        .where((reachable) => reachable)
+        .listen((_) => _onNetworkReachable());
   }
 
   /// The JWT access token used for channel subscription authorization and
@@ -339,6 +351,20 @@ class RealtimeClient {
   set ref(int value) => _ref = value;
 
   late final RetryTimer _reconnectTimer;
+
+  StreamSubscription<bool>? _networkReachabilitySubscription;
+
+  /// The shortest time between the start of an attempt and a reconnect that
+  /// a network reachability report causes, so a flapping network does not
+  /// start an attempt on every report.
+  static const _networkWakeSpacing = Duration(seconds: 2);
+
+  /// Runs for [_networkWakeSpacing] after each connection attempt starts.
+  Timer? _networkWakeSpacingTimer;
+
+  /// Whether a reachability report arrived during [_networkWakeSpacingTimer],
+  /// so the reconnect starts once it ends.
+  bool _networkWakePending = false;
   static const Serializer _serializer = Serializer();
 
   /// The Realtime wire protocol version, sent as the `vsn` parameter.
@@ -419,6 +445,7 @@ class RealtimeClient {
 
     try {
       realtimeLogger.fine('Connecting');
+      _startNetworkWakeSpacing();
       realtimeLogger.finest('Connecting to $_loggableEndpointUrl');
       _connectionState = SocketState.connecting;
       final WebSocketChannel localConnection = transport(
@@ -569,6 +596,36 @@ class RealtimeClient {
       _heartbeatTimer?.cancel();
       _cancelLivenessProbe();
     }
+  }
+
+  /// Stops listening to the network reachability reports, for a client that
+  /// is being released.
+  @internal
+  void detachNetworkReachability() {
+    unawaited(_networkReachabilitySubscription?.cancel());
+    _networkReachabilitySubscription = null;
+    _networkWakeSpacingTimer?.cancel();
+  }
+
+  void _startNetworkWakeSpacing() {
+    if (_networkReachabilitySubscription == null) return;
+    _networkWakePending = false;
+    _networkWakeSpacingTimer?.cancel();
+    _networkWakeSpacingTimer = Timer(_networkWakeSpacing, () {
+      if (!_networkWakePending) return;
+      _networkWakePending = false;
+      _reconnectTimer.fireNow();
+    });
+  }
+
+  void _onNetworkReachable() {
+    if (!_reconnectTimer.isActive) return;
+    if (_networkWakeSpacingTimer?.isActive ?? false) {
+      _networkWakePending = true;
+      return;
+    }
+    realtimeLogger.fine('Network reachable, reconnecting');
+    _reconnectTimer.fireNow();
   }
 
   /// Unsubscribes [channel] and removes it from [channels].
