@@ -61,7 +61,7 @@ void main() {
       });
     });
 
-    test('sends the ttl in seconds', () async {
+    test('sends the expiry in seconds', () async {
       final channel = await subscribedChannel(
         const RealtimeChannelConfig(private: true),
       );
@@ -69,7 +69,7 @@ void main() {
       await channel.sendBroadcastMessage(
         event: 'cursor',
         payload: {'x': 1},
-        persist: const BroadcastPersistence(ttl: Duration(hours: 1)),
+        persist: const BroadcastPersistence(expiresIn: Duration(hours: 1)),
       );
 
       expect((await lastSentBroadcast())['persist'], {'ttl': 3600});
@@ -84,7 +84,7 @@ void main() {
       await channel.sendBinaryBroadcastMessage(
         event: 'file',
         bytes: bytes,
-        persist: const BroadcastPersistence(ttl: Duration(minutes: 1)),
+        persist: const BroadcastPersistence(expiresIn: Duration(minutes: 1)),
       );
 
       final sent = await lastSentBroadcast();
@@ -115,6 +115,29 @@ void main() {
       final sent = await lastSentBroadcast();
       expect(sent, isNot(contains('persist')));
       expect(sent['payload'], {'persist': true});
+    });
+
+    test('throws without sending with v2 compatibility', () async {
+      final channel = await subscribedChannel(
+        const RealtimeChannelConfig(
+          private: true,
+          v2BroadcastCompatibility: true,
+        ),
+      );
+
+      await expectLater(
+        () => channel.sendBroadcastMessage(
+          event: 'cursor',
+          payload: {'x': 1},
+          persist: const BroadcastPersistence(),
+        ),
+        throwsA(isA<RealtimeException>()),
+      );
+      await pumpEventQueue();
+      expect(
+        realtime.sent.where((message) => message.event == 'broadcast'),
+        isEmpty,
+      );
     });
 
     test('throws without sending on a public channel', () async {
@@ -159,7 +182,7 @@ void main() {
       for (final (code, response) in [
         ('persistence_unauthorized', ChannelResponse.persistenceUnauthorized),
         ('persistence_failed', ChannelResponse.persistenceFailed),
-        ('persistence_invalid_ttl', ChannelResponse.persistenceInvalidTtl),
+        ('persistence_invalid_ttl', ChannelResponse.persistenceInvalidExpiry),
         ('unauthorized', ChannelResponse.error),
       ]) {
         test('resolves with ${response.name} for $code', () async {
@@ -169,7 +192,9 @@ void main() {
           final status = await channel.sendBroadcastMessage(
             event: 'cursor',
             payload: {'x': 1},
-            persist: const BroadcastPersistence(ttl: Duration(seconds: 1)),
+            persist: const BroadcastPersistence(
+              expiresIn: Duration(seconds: 1),
+            ),
           );
 
           expect(status, response);
@@ -211,7 +236,7 @@ void main() {
       expect(request.jsonBody, {'x': 1});
     });
 
-    test('sends the ttl as persist[ttl]', () async {
+    test('sends the expiry as persist[ttl]', () async {
       httpClient.stub(null, method: HttpMethod.post, statusCode: 202);
       final channel = client.channel(
         'room',
@@ -221,7 +246,7 @@ void main() {
       await channel.httpSendBinary(
         event: 'cursor',
         bytes: Uint8List.fromList([1]),
-        persist: const BroadcastPersistence(ttl: Duration(hours: 1)),
+        persist: const BroadcastPersistence(expiresIn: Duration(hours: 1)),
       );
 
       final request = httpClient.requestsTo(path).single;
@@ -258,7 +283,7 @@ void main() {
       expect(httpClient.requests, isEmpty);
     });
 
-    test('throws the message of a ttl the server refuses', () async {
+    test('throws the message of an expiry the server refuses', () async {
       const message =
           'persist ttl must be a positive integer of seconds from 1 to 259200';
       httpClient.stub(
@@ -275,7 +300,7 @@ void main() {
         () => channel.httpSend(
           event: 'cursor',
           payload: {'x': 1},
-          persist: const BroadcastPersistence(ttl: Duration.zero),
+          persist: const BroadcastPersistence(expiresIn: Duration.zero),
         ),
         throwsA(
           isA<RealtimeApiException>()

@@ -1006,7 +1006,9 @@ class RealtimeChannel {
     Duration? timeout,
     BroadcastPersistence? persist,
   }) async {
-    if (persist != null) _checkCanPersist();
+    if (persist != null && !config.private) {
+      throw _persistOnPublicChannel;
+    }
 
     final accessToken = await resolveAccessToken(socket.resolveAccessToken);
     final headers = {
@@ -1015,11 +1017,9 @@ class RealtimeChannel {
       HttpHeader.contentType: contentType.value,
     };
 
-    final ttl = persist?.ttl;
     final query = {
       if (config.private) 'private': 'true',
-      if (persist != null && ttl == null) 'persist': 'true',
-      if (ttl != null) 'persist[ttl]': '${ttl.inSeconds}',
+      ...?persist?.toQueryParameters(),
     };
     final url = Uri.parse(
       '$broadcastEndpointUrl/${Uri.encodeComponent(subTopic)}/events/'
@@ -1072,14 +1072,10 @@ class RealtimeChannel {
     );
   }
 
-  void _checkCanPersist() {
-    if (!config.private) {
-      throw const RealtimeException(
-        'Cannot store a broadcast message on a public channel. Set '
-        'RealtimeChannelConfig.private to persist it.',
-      );
-    }
-  }
+  static const _persistOnPublicChannel = RealtimeException(
+    'Cannot store a broadcast message on a public channel. Set '
+    'RealtimeChannelConfig.private to persist it.',
+  );
 
   /// Sends a realtime broadcast message over the WebSocket.
   ///
@@ -1095,12 +1091,14 @@ class RealtimeChannel {
   /// reserved keys listed there, which are only sent under `payload`.
   ///
   /// [persist] stores the message so that it can be replayed, which requires
-  /// a private channel, otherwise this throws a [RealtimeException] without
-  /// sending anything. Set [RealtimeChannelConfig.ack] to learn whether the
+  /// a private channel without
+  /// [RealtimeChannelConfig.v2BroadcastCompatibility], otherwise this throws a
+  /// [RealtimeException] without sending anything. Set
+  /// [RealtimeChannelConfig.ack] to learn whether the
   /// message was stored: the server then answers with
   /// [ChannelResponse.persistenceUnauthorized],
   /// [ChannelResponse.persistenceFailed] or
-  /// [ChannelResponse.persistenceInvalidTtl] when it was not.
+  /// [ChannelResponse.persistenceInvalidExpiry] when it was not.
   ///
   /// ```dart
   /// await channel.sendBroadcastMessage(
@@ -1113,6 +1111,15 @@ class RealtimeChannel {
     required Map<String, dynamic> payload,
     BroadcastPersistence? persist,
   }) {
+    if (persist != null && config.v2BroadcastCompatibility) {
+      return Future.error(
+        const RealtimeException(
+          'Cannot store a broadcast message with '
+          'RealtimeChannelConfig.v2BroadcastCompatibility, since the stored '
+          'message only holds the payload that v3 clients read.',
+        ),
+      );
+    }
     return send(
       type: RealtimeListenType.broadcast,
       event: event,
@@ -1175,12 +1182,8 @@ class RealtimeChannel {
     Duration? timeout,
     BroadcastPersistence? persist,
   }) {
-    if (persist != null) {
-      try {
-        _checkCanPersist();
-      } catch (error, stackTrace) {
-        return Future.error(error, stackTrace);
-      }
+    if (persist != null && !config.private) {
+      return Future.error(_persistOnPublicChannel);
     }
 
     if (_joinedOnce && (isLeaving || isClosed)) {
@@ -1266,7 +1269,7 @@ class RealtimeChannel {
     return switch (code) {
       'persistence_unauthorized' => ChannelResponse.persistenceUnauthorized,
       'persistence_failed' => ChannelResponse.persistenceFailed,
-      'persistence_invalid_ttl' => ChannelResponse.persistenceInvalidTtl,
+      'persistence_invalid_ttl' => ChannelResponse.persistenceInvalidExpiry,
       _ => ChannelResponse.error,
     };
   }

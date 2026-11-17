@@ -418,7 +418,7 @@ void main() {
     const deniedPrefix = 'persist-denied-';
     late Connection database;
     late RealtimeClient client;
-    var insertedFlag = false;
+    bool? previousFlag;
     var topicCount = 0;
 
     String uniqueTopic(String prefix) =>
@@ -434,6 +434,12 @@ void main() {
 
     setUpAll(() async {
       database = await openPostgresConnection();
+      await database.execute(
+        'drop policy if exists persist_test_read on realtime.messages',
+      );
+      await database.execute(
+        'drop policy if exists persist_test_write on realtime.messages',
+      );
       await database.execute('''
         create policy persist_test_read on realtime.messages
           for select to anon
@@ -448,13 +454,17 @@ void main() {
 
       final admin = await openPostgresConnection(username: 'supabase_admin');
       try {
-        final inserted = await admin.execute('''
+        final previous = await admin.execute(
+          "select enabled from _realtime.feature_flags "
+          "where name = 'broadcast_persistence'",
+        );
+        previousFlag = previous.isEmpty ? null : previous.single.single as bool;
+        await admin.execute('''
           insert into _realtime.feature_flags
             (id, name, enabled, inserted_at, updated_at)
           values
             (gen_random_uuid(), 'broadcast_persistence', true, now(), now())
-          on conflict (name) do nothing''');
-        insertedFlag = inserted.affectedRows == 1;
+          on conflict (name) do update set enabled = true''');
       } finally {
         await admin.close();
       }
@@ -496,12 +506,15 @@ void main() {
         'drop policy persist_test_write on realtime.messages',
       );
       await database.close();
-      if (insertedFlag) {
+      if (previousFlag != true) {
         final admin = await openPostgresConnection(username: 'supabase_admin');
         try {
           await admin.execute(
-            "delete from _realtime.feature_flags "
-            "where name = 'broadcast_persistence'",
+            previousFlag == null
+                ? "delete from _realtime.feature_flags "
+                      "where name = 'broadcast_persistence'"
+                : "update _realtime.feature_flags set enabled = false "
+                      "where name = 'broadcast_persistence'",
           );
         } finally {
           await admin.close();
@@ -528,7 +541,7 @@ void main() {
       final status = await channel.sendBroadcastMessage(
         event: 'stored',
         payload: {'value': 1},
-        persist: const BroadcastPersistence(ttl: Duration(minutes: 5)),
+        persist: const BroadcastPersistence(expiresIn: Duration(minutes: 5)),
       );
 
       expect(status, ChannelResponse.ok);
@@ -577,7 +590,7 @@ void main() {
       expect(await storedCount(channel.subTopic), 1);
     });
 
-    test('throws the message of a ttl the server refuses over HTTP', () {
+    test('throws the message of an expiry the server refuses over HTTP', () {
       final channel = client.channel(
         uniqueTopic(storedPrefix),
         const RealtimeChannelConfig(private: true),
@@ -587,7 +600,7 @@ void main() {
         () => channel.httpSend(
           event: 'refused',
           payload: {'value': 1},
-          persist: const BroadcastPersistence(ttl: Duration.zero),
+          persist: const BroadcastPersistence(expiresIn: Duration.zero),
         ),
         throwsA(
           isA<RealtimeApiException>()
