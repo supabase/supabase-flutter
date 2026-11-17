@@ -586,7 +586,7 @@ void main() {
       RealtimeChannelConfig config() => RealtimeChannelConfig(
         private: true,
         presenceKey: 'user-1',
-        replay: ReplayOption(since: 1, limit: 10),
+        replay: ReplayOption(since: DateTime.utc(2026), limit: 10),
       );
       final channel = socket.channel(tTopic, config());
 
@@ -600,7 +600,7 @@ void main() {
       for (final config in [
         const RealtimeChannelConfig(private: true),
         const RealtimeChannelConfig(presenceKey: 'other-user'),
-        const RealtimeChannelConfig(replay: ReplayOption(since: 1)),
+        RealtimeChannelConfig(replay: ReplayOption(since: DateTime.utc(2026))),
       ]) {
         expect(
           () => socket.channel(tTopic, config),

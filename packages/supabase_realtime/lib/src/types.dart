@@ -227,21 +227,29 @@ class RealtimeSubscribeStatusChange {
 }
 
 /// Configuration for broadcast replay feature.
-/// Allows replaying broadcast messages from a specific timestamp.
+/// Allows replaying broadcast messages from a specific point in time.
 class ReplayOption {
   const ReplayOption({
     required this.since,
     this.limit,
   });
 
-  /// Unix timestamp (in milliseconds) from which to start replaying messages
-  final int since;
+  /// The point in time from which to start replaying messages.
+  final DateTime since;
 
-  /// Optional limit on the number of messages to replay, maximum value of 25.
+  /// The maximum number of messages to replay, counting back from the most
+  /// recent one.
+  ///
+  /// The server replays at most 25 messages, which is also its default, and
+  /// lowers a higher [limit] to that.
   final int? limit;
 
   /// Converts this to the shape sent in the channel's broadcast config.
-  Map<String, Object> toJson() => {'since': since, 'limit': ?limit};
+  @internal
+  Map<String, Object> toJson() => {
+    'since': since.millisecondsSinceEpoch,
+    'limit': ?limit,
+  };
 
   @override
   bool operator ==(Object other) =>

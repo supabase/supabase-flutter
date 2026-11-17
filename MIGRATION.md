@@ -2084,11 +2084,34 @@ void handle(PostgresChangePayload payload, void Function() refetch) {
 | Before                                       | After                                     |
 | -------------------------------------------- | ----------------------------------------- |
 | `PostgresChangePayload.fromPayload(payload)` | `PostgresChangePayload.fromJson(payload)` |
-| `ReplayOption.toMap()`                       | `ReplayOption.toJson()`                   |
+| `ReplayOption.toMap()`                       | removed                                   |
 | `RealtimeChannelConfig.toMap()`              | removed                                   |
 
-`RealtimeChannelConfig.toMap()` returned part of the payload a channel joins with. The channel builds
-that payload itself, so nothing needs it.
+`RealtimeChannelConfig.toMap()` and `ReplayOption.toMap()` returned part of the payload a channel
+joins with. The channel builds that payload itself, so nothing needs them.
+
+#### `ReplayOption.since` is a `DateTime`
+
+`since` takes the point in time to replay broadcasts from instead of a Unix timestamp in
+milliseconds:
+
+```dart skip
+// Before
+final config = RealtimeChannelConfig(
+  private: true,
+  replay: ReplayOption(since: DateTime.now().millisecondsSinceEpoch - 60000),
+);
+```
+
+```dart
+// After
+final config = RealtimeChannelConfig(
+  private: true,
+  replay: ReplayOption(
+    since: DateTime.now().subtract(const Duration(minutes: 1)),
+  ),
+);
+```
 
 #### A channel name in use returns its channel
 

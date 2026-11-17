@@ -2935,7 +2935,6 @@ features:
       - ReplayOption.hashCode
       - ReplayOption.limit
       - ReplayOption.since
-      - ReplayOption.toJson
 
   # realtime — presence
   realtime.presence.track:
