@@ -360,6 +360,56 @@ void main() {
       expect(readyCompleters, hasLength(2), reason: 'the socket was replaced');
     });
 
+    test('a resume inside the delay probes the open socket', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+      final heartbeats = <RealtimeHeartbeatStatus>[];
+      final subscription = realtime.onHeartbeat.listen(heartbeats.add);
+      addTearDown(subscription.cancel);
+
+      pause();
+      resume();
+      await settleLifecycle();
+
+      expect(heartbeats, [RealtimeHeartbeatStatus.sent]);
+      expect(realtime.connectionState, SocketState.open);
+    });
+
+    test('a resume after the app was only hidden probes the socket', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+      final heartbeats = <RealtimeHeartbeatStatus>[];
+      final subscription = realtime.onHeartbeat.listen(heartbeats.add);
+      addTearDown(subscription.cancel);
+
+      final binding = TestWidgetsFlutterBinding.instance;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await settleLifecycle();
+
+      expect(heartbeats, [RealtimeHeartbeatStatus.sent]);
+    });
+
+    test('a resume from inactive does not probe the socket', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+      final heartbeats = <RealtimeHeartbeatStatus>[];
+      final subscription = realtime.onHeartbeat.listen(heartbeats.add);
+      addTearDown(subscription.cancel);
+
+      final binding = TestWidgetsFlutterBinding.instance;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await settleLifecycle();
+
+      expect(heartbeats, isEmpty);
+    });
+
     test('detached during the delay disconnects right away', () async {
       final realtime = Supabase.instance.client.realtime;
       realtime.channel('test');
@@ -414,6 +464,21 @@ void main() {
       await pumpEventQueue();
 
       expect(realtime.connectionState, SocketState.open);
+    });
+
+    test('resuming does not probe the socket', () async {
+      final realtime = Supabase.instance.client.realtime;
+      realtime.channel('test');
+      await connectAndReady(realtime);
+      final heartbeats = <RealtimeHeartbeatStatus>[];
+      final subscription = realtime.onHeartbeat.listen(heartbeats.add);
+      addTearDown(subscription.cancel);
+
+      pause();
+      resume();
+      await settleLifecycle();
+
+      expect(heartbeats, isEmpty);
     });
 
     test('resuming does not reconnect a socket the app closed', () async {

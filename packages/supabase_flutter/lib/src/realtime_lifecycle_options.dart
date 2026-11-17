@@ -30,7 +30,9 @@ class RealtimeLifecycleOptions {
   /// How long the app has to stay paused before the socket is disconnected.
   ///
   /// When the app is resumed before this has passed the socket stays open, so
-  /// nothing is reconnected or rejoined. The app being detached disconnects
+  /// nothing is reconnected or rejoined. The socket is probed with
+  /// `RealtimeClient.probeConnection` instead, which replaces it if the server
+  /// does not answer within a few seconds. The app being detached disconnects
   /// the socket right away regardless. The pause is measured in wall-clock
   /// time, so a pause that outlasted this while the operating system had the
   /// app suspended still disconnects and reconnects the socket when the app

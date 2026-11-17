@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,13 +14,19 @@ import 'socket_test_stubs.dart';
 class _Server {
   final connections = <StreamController<dynamic>>[];
   final sent = <List<dynamic>>[];
+  var refuseConnections = false;
 
   WebSocketChannel connect(String url, Map<String, String> headers) {
     final incoming = StreamController<dynamic>();
     connections.add(incoming);
     final channel = MockIOWebSocketChannel();
     final sink = MockWebSocketSink();
-    when(() => channel.ready).thenAnswer((_) => Future.value());
+    final refused = refuseConnections;
+    when(() => channel.ready).thenAnswer(
+      (_) => refused
+          ? Future.error(const SocketException('refused'))
+          : Future.value(),
+    );
     when(() => channel.stream).thenAnswer((_) => incoming.stream);
     when(() => channel.sink).thenReturn(sink);
     when(() => channel.closeCode).thenReturn(null);
@@ -53,11 +60,15 @@ void main() {
 
   setUp(() => server = _Server());
 
-  RealtimeClient createClient({TimerCalculation? reconnectAfter}) {
+  RealtimeClient createClient({
+    TimerCalculation? reconnectAfter,
+    Duration heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
+  }) {
     return RealtimeClient(
       'ws://localhost:0',
       transport: server.connect,
       reconnectAfter: reconnectAfter,
+      heartbeatInterval: heartbeatInterval,
     );
   }
 
@@ -206,6 +217,230 @@ void main() {
 
         unawaited(client.disconnect());
         async.flushMicrotasks();
+      });
+    });
+  });
+
+  group('probeConnection', () {
+    late List<int> attempts;
+    late List<RealtimeHeartbeatStatus> heartbeats;
+
+    RealtimeClient connectedClient(
+      FakeAsync async, {
+      Duration heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
+    }) {
+      attempts = [];
+      heartbeats = [];
+      final client = createClient(
+        reconnectAfter: (attempt) {
+          attempts.add(attempt);
+          return const Duration(seconds: 10);
+        },
+        heartbeatInterval: heartbeatInterval,
+      );
+      client.onHeartbeat.listen(heartbeats.add);
+      unawaited(client.connect());
+      async.flushMicrotasks();
+      return client;
+    }
+
+    void disconnect(RealtimeClient client, FakeAsync async) {
+      unawaited(client.disconnect());
+      async.flushMicrotasks();
+    }
+
+    test('sends a heartbeat at once and keeps the socket when the reply '
+        'arrives before the deadline', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+
+        client.probeConnection();
+        async.flushMicrotasks();
+        final heartbeat = server.sentEvents('heartbeat').single;
+        async.elapse(const Duration(seconds: 4));
+        server.reply(heartbeat, 'ok');
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+
+        expect(heartbeats, [
+          RealtimeHeartbeatStatus.sent,
+          RealtimeHeartbeatStatus.ok,
+        ]);
+        expect(client.isConnected, isTrue);
+        expect(server.connections, hasLength(1));
+
+        disconnect(client, async);
+      });
+    });
+
+    test('restarts the heartbeat interval from the probe', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        async.elapse(client.heartbeatInterval - const Duration(seconds: 1));
+
+        client.probeConnection();
+        async.flushMicrotasks();
+        server.reply(server.sentEvents('heartbeat').single, 'ok');
+        async.elapse(const Duration(seconds: 1));
+        expect(server.sentEvents('heartbeat'), hasLength(1));
+        async.elapse(client.heartbeatInterval - const Duration(seconds: 1));
+        expect(server.sentEvents('heartbeat'), hasLength(2));
+
+        disconnect(client, async);
+      });
+    });
+
+    test('closes the socket and reconnects without backoff when no reply '
+        'arrives', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        final channel = client.channel('room').subscribe();
+        async.flushMicrotasks();
+        server.reply(server.sentEvents('phx_join').single, 'ok');
+        async.flushMicrotasks();
+
+        client.probeConnection();
+        async.elapse(
+          RealtimeClient.livenessProbeTimeout - const Duration(milliseconds: 1),
+        );
+        expect(client.isConnected, isTrue);
+        async.elapse(const Duration(milliseconds: 1));
+
+        expect(heartbeats, [
+          RealtimeHeartbeatStatus.sent,
+          RealtimeHeartbeatStatus.timeout,
+        ]);
+        expect(channel.isJoined, isFalse);
+        expect(server.connections, hasLength(2));
+        expect(client.isConnected, isTrue);
+
+        disconnect(client, async);
+      });
+    });
+
+    test('sends no second heartbeat while one waits for its reply and '
+        'pauses the schedule until it arrives', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        async.elapse(client.heartbeatInterval);
+        final heartbeat = server.sentEvents('heartbeat').single;
+        async.elapse(client.heartbeatInterval - const Duration(seconds: 1));
+
+        client.probeConnection();
+        async.elapse(const Duration(seconds: 3));
+        expect(server.sentEvents('heartbeat'), hasLength(1));
+        expect(client.isConnected, isTrue);
+
+        server.reply(heartbeat, 'ok');
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+        expect(client.isConnected, isTrue);
+        async.elapse(client.heartbeatInterval);
+        expect(server.sentEvents('heartbeat'), hasLength(2));
+
+        disconnect(client, async);
+      });
+    });
+
+    test('ends on the deadline when the waiting heartbeat gets no reply', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        async.elapse(client.heartbeatInterval);
+
+        client.probeConnection();
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+
+        expect(server.sentEvents('heartbeat'), hasLength(1));
+        expect(heartbeats.last, RealtimeHeartbeatStatus.timeout);
+        expect(server.connections, hasLength(2));
+
+        disconnect(client, async);
+      });
+    });
+
+    test('follows the normal backoff when the immediate reconnect fails', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        server.refuseConnections = true;
+        client.probeConnection();
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+        expect(server.connections, hasLength(2));
+        expect(attempts, [2]);
+
+        async.elapse(const Duration(seconds: 9));
+        expect(server.connections, hasLength(2));
+        async.elapse(const Duration(seconds: 1));
+        expect(server.connections, hasLength(3));
+
+        disconnect(client, async);
+      });
+    });
+
+    test('waits for the deadline when the heartbeat interval is shorter', () {
+      fakeAsync((async) {
+        final client = connectedClient(
+          async,
+          heartbeatInterval: const Duration(seconds: 2),
+        );
+
+        client.probeConnection();
+        async.elapse(const Duration(seconds: 4));
+        expect(client.isConnected, isTrue);
+        expect(server.sentEvents('heartbeat'), hasLength(1));
+        async.elapse(const Duration(seconds: 1));
+
+        expect(heartbeats.last, RealtimeHeartbeatStatus.timeout);
+        expect(server.connections, hasLength(2));
+        expect(attempts, isEmpty);
+
+        disconnect(client, async);
+      });
+    });
+
+    test('sends a fresh heartbeat on a socket opened after a disconnect '
+        'left one unanswered', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        async.elapse(client.heartbeatInterval);
+        disconnect(client, async);
+        unawaited(client.connect());
+        async.flushMicrotasks();
+
+        client.probeConnection();
+        async.flushMicrotasks();
+        server.reply(server.sentEvents('heartbeat').last, 'ok');
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+
+        expect(server.sentEvents('heartbeat'), hasLength(2));
+        expect(client.isConnected, isTrue);
+        expect(server.connections, hasLength(2));
+
+        disconnect(client, async);
+      });
+    });
+
+    test('does nothing while the socket is not connected', () {
+      fakeAsync((async) {
+        final client = createClient();
+        heartbeats = [];
+        client.onHeartbeat.listen(heartbeats.add);
+
+        client.probeConnection();
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+
+        expect(heartbeats, isEmpty);
+        expect(server.connections, isEmpty);
+        expect(server.sent, isEmpty);
+      });
+    });
+
+    test('a disconnect cancels the deadline', () {
+      fakeAsync((async) {
+        final client = connectedClient(async);
+        client.probeConnection();
+        disconnect(client, async);
+        async.elapse(RealtimeClient.livenessProbeTimeout);
+
+        expect(heartbeats, [RealtimeHeartbeatStatus.sent]);
+        expect(server.connections, hasLength(1));
       });
     });
   });
