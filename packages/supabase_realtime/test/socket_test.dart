@@ -304,8 +304,13 @@ void main() {
       );
       await socket.connect();
       expect(socket.connectionState, SocketState.open);
+      final closed = socket.onStatusChange
+          .firstWhere(
+            (change) => change.status == RealtimeConnectionStatus.closed,
+          )
+          .timeout(const Duration(seconds: 5));
       await mockServer.close();
-      await Future.delayed(const Duration(milliseconds: 200));
+      await closed;
       expect(socket.connectionState, SocketState.closed);
       expect(socket.connection, isNotNull);
 
