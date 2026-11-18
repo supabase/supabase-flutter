@@ -8,6 +8,15 @@ This is a monorepo for the Supabase Flutter SDK, managed by
 [Melos](https://melos.invertase.dev/). It contains multiple independently
 versioned packages that provide Flutter and Dart clients for Supabase services.
 
+## SDK Engineering Principles
+
+This SDK follows the
+[Supabase SDK engineering principles](https://github.com/supabase/sdk/blob/main/docs/principles.md):
+thin clients, logic and validation in the service, service-owned defaults, and
+decoding that accepts new values. Read them before you write or review code.
+Cite a principle by a link to its heading. The conventions in this repository
+win for local matters such as commands, layout, and style.
+
 ## Package Architecture
 
 The repository follows a layered dependency structure:
