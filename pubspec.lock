@@ -683,10 +683,10 @@ packages:
     dependency: transitive
     description:
       name: passkeys
-      sha256: "95bea8590e95a82173462a0eb6ca193c4f5d4a98981df1ee06c0029d637b3dd3"
+      sha256: "3416cddb3ea43d9fb30f136241df83dc87b19ba60072bf0fb9b270c7bfc6e88b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.24.1"
+    version: "2.24.2"
   passkeys_android:
     dependency: transitive
     description:
@@ -707,10 +707,10 @@ packages:
     dependency: transitive
     description:
       name: passkeys_doctor
-      sha256: "50af0fb53febdd988d874e60e1b10b06ea0eed496c3900994924804a1a3b1be8"
+      sha256: "1b602706f637597fa1941c606a8d9dfb04370f314584ed9090fe1abf9f70583f"
       url: "https://pub.dev"
     source: hosted
-    version: "1.7.0"
+    version: "1.7.1"
   passkeys_platform_interface:
     dependency: transitive
     description:
