@@ -119,39 +119,48 @@ void main() {
       expect(client.channels, [channel]);
     });
 
+    // A client whose first socket closes only once [closeHandshake]
+    // completes, and whose stream cancels only after [streamCancel].
+    void useSlowClosingClient(
+      Completer<void> closeHandshake,
+      Completer<void> streamCancel,
+    ) {
+      client = RealtimeClient(
+        'ws://localhost:0',
+        disconnectOnEmptyChannelsAfter: Duration.zero,
+        transport: (url, headers) {
+          final connection = transport.call(url, headers);
+          if (transport.connectionCount > 1) return connection;
+          // The first socket closes only once the close handshake
+          // completes, and its stream cancels only after that.
+          final stream = StreamController<dynamic>(
+            onCancel: () => streamCancel.future,
+          );
+          connection.stream.listen(stream.add, onDone: stream.close);
+          final closing = MockIOWebSocketChannel();
+          final sink = MockWebSocketSink();
+          when(() => closing.ready).thenAnswer((_) => connection.ready);
+          when(() => closing.stream).thenAnswer((_) => stream.stream);
+          when(() => closing.sink).thenReturn(sink);
+          when(() => sink.add(any())).thenAnswer(
+            (invocation) =>
+                connection.sink.add(invocation.positionalArguments.single),
+          );
+          when(() => sink.close()).thenAnswer((_) async {
+            await closeHandshake.future;
+            await connection.sink.close();
+          });
+          return closing;
+        },
+      );
+    }
+
     test('a channel subscribed while the socket is closing joins on a new '
         'socket once the close is done', () {
       fakeAsync((async) {
         final closeHandshake = Completer<void>();
         final streamCancel = Completer<void>();
-        client = RealtimeClient(
-          'ws://localhost:0',
-          disconnectOnEmptyChannelsAfter: Duration.zero,
-          transport: (url, headers) {
-            final connection = transport.call(url, headers);
-            if (transport.connectionCount > 1) return connection;
-            // The first socket closes only once the close handshake
-            // completes, and its stream cancels only after that.
-            final stream = StreamController<dynamic>(
-              onCancel: () => streamCancel.future,
-            );
-            connection.stream.listen(stream.add, onDone: stream.close);
-            final closing = MockIOWebSocketChannel();
-            final sink = MockWebSocketSink();
-            when(() => closing.ready).thenAnswer((_) => connection.ready);
-            when(() => closing.stream).thenAnswer((_) => stream.stream);
-            when(() => closing.sink).thenReturn(sink);
-            when(() => sink.add(any())).thenAnswer(
-              (invocation) =>
-                  connection.sink.add(invocation.positionalArguments.single),
-            );
-            when(() => sink.close()).thenAnswer((_) async {
-              await closeHandshake.future;
-              await connection.sink.close();
-            });
-            return closing;
-          },
-        );
+        useSlowClosingClient(closeHandshake, streamCancel);
         final first = client.channel('first').subscribe();
         async.flushMicrotasks();
         unawaited(client.removeChannel(first));
@@ -170,6 +179,30 @@ void main() {
         streamCancel.complete();
         async.elapse(client.heartbeatInterval);
         expect(sentEvents('heartbeat'), hasLength(1));
+
+        unawaited(client.removeAllChannels());
+        async.elapse(client.timeout);
+      });
+    });
+
+    test('a disconnect requested while a connect waits for the close keeps '
+        'the client disconnected', () {
+      fakeAsync((async) {
+        final closeHandshake = Completer<void>();
+        useSlowClosingClient(closeHandshake, Completer<void>()..complete());
+        final first = client.channel('first').subscribe();
+        async.flushMicrotasks();
+        unawaited(client.removeChannel(first));
+        async.flushMicrotasks();
+        expect(client.connectionState, SocketState.disconnecting);
+
+        client.channel('second').subscribe();
+        unawaited(client.disconnect());
+        closeHandshake.complete();
+        async.flushMicrotasks();
+
+        expect(transport.connectionCount, 1);
+        expect(client.connectionState, SocketState.disconnected);
 
         unawaited(client.removeAllChannels());
         async.elapse(client.timeout);

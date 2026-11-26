@@ -395,6 +395,10 @@ class RealtimeClient {
   /// close is in progress.
   Future<void>? _closing;
 
+  /// Counts the calls to [_disconnect], so that a [connect] waiting for a
+  /// close can tell that a later disconnect was requested meanwhile.
+  int _disconnects = 0;
+
   /// Messages pushed while the socket was not connected, sent out once a
   /// connection is next established.
   ///
@@ -451,7 +455,10 @@ class RealtimeClient {
       // A connect while the socket closes opens a new socket after the close,
       // instead of returning below on the socket that is going away. A failed
       // close is reported to the disconnect that started it.
+      final disconnects = _disconnects;
       await closing.catchError((Object _) {});
+      // A disconnect requested during the wait wins over this connect.
+      if (disconnects != _disconnects) return;
     }
     if (_connection != null) {
       if (_connectionState != SocketState.closed) {
@@ -552,6 +559,7 @@ class RealtimeClient {
   Future<void> _disconnect({int? code, String? reason}) async {
     _cancelPendingDisconnect();
     _accessTokenResolution++;
+    _disconnects++;
     final localConnection = _connection;
     if (localConnection != null) {
       final oldState = _connectionState;
