@@ -2605,17 +2605,6 @@ features:
     status: implemented
     symbols:
       - IcebergRestCatalog.namespaceExists
-  storage.analytics.update_namespace_properties:
-    status: implemented
-    symbols:
-      - IcebergRestCatalog.updateNamespaceProperties
-    supporting_symbols:
-      - UpdateNamespacePropertiesResult
-      - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
-      - UpdateNamespacePropertiesResult.fromJson
-      - UpdateNamespacePropertiesResult.missing
-      - UpdateNamespacePropertiesResult.removed
-      - UpdateNamespacePropertiesResult.updated
   storage.analytics.register_table:
     status: implemented
     symbols:
