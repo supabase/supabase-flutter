@@ -2589,10 +2589,6 @@ features:
       - UpgradeFormatVersionUpdate.UpgradeFormatVersionUpdate
       - UpgradeFormatVersionUpdate.formatVersion
       - UpgradeFormatVersionUpdate.toJson
-  storage.analytics.rename_table:
-    status: implemented
-    symbols:
-      - IcebergRestCatalog.renameTable
   storage.analytics.delete_table:
     status: implemented
     symbols:
@@ -2605,28 +2601,6 @@ features:
     status: implemented
     symbols:
       - IcebergRestCatalog.namespaceExists
-  storage.analytics.update_namespace_properties:
-    status: implemented
-    symbols:
-      - IcebergRestCatalog.updateNamespaceProperties
-    supporting_symbols:
-      - UpdateNamespacePropertiesResult
-      - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
-      - UpdateNamespacePropertiesResult.fromJson
-      - UpdateNamespacePropertiesResult.missing
-      - UpdateNamespacePropertiesResult.removed
-      - UpdateNamespacePropertiesResult.updated
-  storage.analytics.register_table:
-    status: implemented
-    symbols:
-      - IcebergRestCatalog.registerTable
-    supporting_symbols:
-      - RegisterTableRequest
-      - RegisterTableRequest.RegisterTableRequest
-      - RegisterTableRequest.metadataLocation
-      - RegisterTableRequest.name
-      - RegisterTableRequest.overwrite
-      - RegisterTableRequest.toJson
   storage.analytics.table_exists:
     status: implemented
     symbols:
