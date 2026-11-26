@@ -391,6 +391,14 @@ class RealtimeClient {
 
   StreamSubscription<dynamic>? _connectionSubscription;
 
+  /// The close of the socket that [_disconnect] waits for, or `null` when no
+  /// close is in progress.
+  Future<void>? _closing;
+
+  /// Counts the calls to [_disconnect], so that a [connect] waiting for a
+  /// close can tell that a later disconnect was requested meanwhile.
+  int _disconnects = 0;
+
   /// Messages pushed while the socket was not connected, sent out once a
   /// connection is next established.
   ///
@@ -442,6 +450,16 @@ class RealtimeClient {
   /// channel subscribing.
   @internal
   Future<void> connect() async {
+    final closing = _closing;
+    if (closing != null) {
+      // A connect while the socket closes opens a new socket after the close,
+      // instead of returning below on the socket that is going away. A failed
+      // close is reported to the disconnect that started it.
+      final disconnects = _disconnects;
+      await closing.catchError((Object _) {});
+      // A disconnect requested during the wait wins over this connect.
+      if (disconnects != _disconnects) return;
+    }
     if (_connection != null) {
       if (_connectionState != SocketState.closed) {
         return;
@@ -541,6 +559,7 @@ class RealtimeClient {
   Future<void> _disconnect({int? code, String? reason}) async {
     _cancelPendingDisconnect();
     _accessTokenResolution++;
+    _disconnects++;
     final localConnection = _connection;
     if (localConnection != null) {
       final oldState = _connectionState;
@@ -564,19 +583,26 @@ class RealtimeClient {
           _onConnectionClose(null);
         }
 
+        final Future<void> closing;
         if (code != null) {
           // Add a timeout to close the sink to avoid hanging in case something
           // is wrong with the connection. The Dart SDK has a timeout of 5
           // seconds for closing the IO WebSocket connection, so we set a
           // timeout of 6 seconds here to avoid hanging indefinitely.
-          await localConnection.sink
+          closing = localConnection.sink
               .close(code, reason ?? '')
               .timeout(connectionCloseTimeout, onTimeout: onTimeout);
         } else {
-          await localConnection.sink.close().timeout(
+          closing = localConnection.sink.close().timeout(
             connectionCloseTimeout,
             onTimeout: onTimeout,
           );
+        }
+        _closing = closing;
+        try {
+          await closing;
+        } finally {
+          _closing = null;
         }
         _connectionState = SocketState.disconnected;
         realtimeLogger.fine('Disconnected');
@@ -590,7 +616,7 @@ class RealtimeClient {
       _stopNetworkWakeSpacing();
 
       _connection = null;
-      await _connectionSubscription?.cancel();
+      final subscription = _connectionSubscription;
       _connectionSubscription = null;
 
       // Drop the chain so a write or dispatch from the closed connection does
@@ -602,6 +628,10 @@ class RealtimeClient {
       // remove open handles
       _heartbeatTimer?.cancel();
       _cancelLivenessProbe();
+
+      // Awaited last, since a connect() waiting for the close above opens the
+      // next socket during this await.
+      await subscription?.cancel();
     }
   }
 
